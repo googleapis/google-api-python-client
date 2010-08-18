@@ -31,8 +31,8 @@ import uritemplate
 class HttpError(Exception):
   pass
 
-DISCOVERY_URI = 'http://www.googleapis.com/discovery/0.1/describe' +
-  '{?api,apiVersion}'
+DISCOVERY_URI = 'http://www.googleapis.com/discovery/0.1/describe\
+{?api,apiVersion}'
 
 
 def key2method(key):
@@ -96,7 +96,7 @@ class JsonModel(object):
       return simplejson.loads(content)['data']
     else:
       if resp['content-type'] != 'application/json':
-        raise HttpError("%d %s" % (resp.status, resp.reason))
+        raise HttpError('%d %s' % (resp.status, resp.reason))
       else:
         raise HttpError(simplejson.loads(content)['error'])
 
@@ -150,6 +150,7 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc):
     pathUrl = re.sub(r'\{', r'{+', pathUrl)
     httpMethod = methodDesc['httpMethod']
     args = methodDesc['parameters'].keys()
+    required = [arg for arg in args if methodDesc['parameters'][arg].get('required', True)]
     if httpMethod in ['PUT', 'POST']:
       args.append('body')
     argmap = dict([(key2param(key), key) for key in args])
@@ -161,11 +162,15 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc):
       params = dict(
           [(argmap[key], value) for key, value in kwargs.iteritems()]
           )
+      for name in required:
+        if name not in kwargs:
+          raise TypeError('Missing required parameter "%s"' % name)
       headers = {}
       headers, params, query, body = self._model.request(headers, params)
 
       url = urlparse.urljoin(self._baseUrl,
           uritemplate.expand(pathUrl, params) + query)
+
       return self._model.response(*self._http.request(
         url, method=httpMethod, headers=headers, body=body))
 

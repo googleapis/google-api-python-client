@@ -10,19 +10,21 @@ except ImportError:
     from cgi import parse_qs, parse_qsl
 
 httplib2.debuglevel = 4
-headers = {"user-agent": "jcgregorio-buzz-client",
+headers = {'user-agent': 'google-api-client-python-buzz-cmdline/1.0',
     'content-type': 'application/x-www-form-urlencoded'
     }
 
 consumer_key = 'anonymous'
 consumer_secret = 'anonymous'
 
-request_token_url = 'https://www.google.com/accounts/OAuthGetRequestToken' +
-  '?domain=anonymous&scope=https://www.googleapis.com/auth/buzz'
-access_token_url = 'https://www.google.com/accounts/OAuthGetAccessToken' +
-  '?domain=anonymous&scope=https://www.googleapis.com/auth/buzz'
-authorize_url = 'https://www.google.com/buzz/api/auth/OAuthAuthorizeToken' +
-  '?domain=anonymous&scope=https://www.googleapis.com/auth/buzz'
+request_token_url = 'https://www.google.com/accounts/OAuthGetRequestToken\
+?domain=anonymous&scope=https://www.googleapis.com/auth/buzz'
+
+access_token_url = 'https://www.google.com/accounts/OAuthGetAccessToken\
+?domain=anonymous&scope=https://www.googleapis.com/auth/buzz'
+
+authorize_url = 'https://www.google.com/buzz/api/auth/OAuthAuthorizeToken\
+?domain=anonymous&scope=https://www.googleapis.com/auth/buzz'
 
 consumer = oauth.Consumer(consumer_key, consumer_secret)
 client = oauth.Client(consumer)
@@ -31,17 +33,17 @@ client = oauth.Client(consumer)
 # having the user authorize an access token and to sign the request to obtain
 # said access token.
 
-resp, content = client.request(request_token_url, "POST", headers=headers,
-    body="oauth_callback=oob")
+resp, content = client.request(request_token_url, 'POST', headers=headers,
+    body='oauth_callback=oob')
 if resp['status'] != '200':
   print content
-  raise Exception("Invalid response %s." % resp['status'])
+  raise Exception('Invalid response %s.' % resp['status'])
 
 request_token = dict(parse_qsl(content))
 
-print "Request Token:"
-print "    - oauth_token        = %s" % request_token['oauth_token']
-print "    - oauth_token_secret = %s" % request_token['oauth_token_secret']
+print 'Request Token:'
+print '    - oauth_token        = %s' % request_token['oauth_token']
+print '    - oauth_token_secret = %s' % request_token['oauth_token_secret']
 print
 
 # Step 2: Redirect to the provider. Since this is a CLI script we do not
@@ -58,7 +60,7 @@ url = (base_url.scheme, base_url.netloc, base_url.path, base_url.params,
        urllib.urlencode(query, True), base_url.fragment)
 authorize_url = urlparse.urlunparse(url)
 
-print "Go to the following link in your browser:"
+print 'Go to the following link in your browser:'
 print authorize_url
 print
 
@@ -81,14 +83,14 @@ token = oauth.Token(request_token['oauth_token'],
 token.set_verifier(oauth_verifier)
 client = oauth.Client(consumer, token)
 
-resp, content = client.request(access_token_url, "POST", headers=headers)
+resp, content = client.request(access_token_url, 'POST', headers=headers)
 access_token = dict(parse_qsl(content))
 
-print "Access Token:"
-print "    - oauth_token        = %s" % access_token['oauth_token']
-print "    - oauth_token_secret = %s" % access_token['oauth_token_secret']
+print 'Access Token:'
+print '    - oauth_token        = %s' % access_token['oauth_token']
+print '    - oauth_token_secret = %s' % access_token['oauth_token_secret']
 print
-print "You may now access protected resources using the access tokens above."
+print 'You may now access protected resources using the access tokens above.'
 print
 
 d = dict(
@@ -98,6 +100,6 @@ d = dict(
 
 d.update(access_token)
 
-f = open("oauth_token.dat", "w")
+f = open('oauth_token.dat', 'w')
 f.write(simplejson.dumps(d))
 f.close()
