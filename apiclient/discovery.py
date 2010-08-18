@@ -150,7 +150,16 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc):
     pathUrl = re.sub(r'\{', r'{+', pathUrl)
     httpMethod = methodDesc['httpMethod']
     args = methodDesc['parameters'].keys()
-    required = [arg for arg in args if methodDesc['parameters'][arg].get('required', True)]
+
+    required = [] # Required parameters
+    pattern = {}  # Parameters the must match a regex
+    for arg, desc in methodDesc['parameters'].iteritems():
+      param = key2param(arg)
+      if desc.get('pattern', ''):
+        pattern[param] = desc['pattern']
+      if desc.get('required', False):
+        required.append(param)
+
     if httpMethod in ['PUT', 'POST']:
       args.append('body')
     argmap = dict([(key2param(key), key) for key in args])
@@ -159,20 +168,30 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc):
       for name in kwargs.iterkeys():
         if name not in argmap:
           raise TypeError('Got an unexpected keyword argument "%s"' % name)
-      params = dict(
-          [(argmap[key], value) for key, value in kwargs.iteritems()]
-          )
+
       for name in required:
         if name not in kwargs:
           raise TypeError('Missing required parameter "%s"' % name)
+
+      for name, regex in pattern.iteritems():
+        if name in kwargs:
+          if re.match(regex, kwargs[name]) is None:
+            raise TypeError('Parameter "%s" value "%s" does match the pattern "%s"' % (name, kwargs[name], regex))
+
+      params = {}
+      for key, value in kwargs.iteritems():
+        params[argmap[key]] = value
+
       headers = {}
       headers, params, query, body = self._model.request(headers, params)
 
       url = urlparse.urljoin(self._baseUrl,
           uritemplate.expand(pathUrl, params) + query)
 
-      return self._model.response(*self._http.request(
-        url, method=httpMethod, headers=headers, body=body))
+      resp, content = self._http.request(
+          url, method=httpMethod, headers=headers, body=body)
+
+      return self._model.response(resp, content)
 
     docs = ['A description of how to use this function\n\n']
     for arg in argmap.iterkeys():
