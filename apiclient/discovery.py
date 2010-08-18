@@ -27,9 +27,12 @@ import simplejson
 import urlparse
 import uritemplate
 
-class HttpError(Exception): pass
 
-DISCOVERY_URI = 'http://www.googleapis.com/discovery/0.1/describe{?api,apiVersion}'
+class HttpError(Exception):
+  pass
+
+DISCOVERY_URI = 'http://www.googleapis.com/discovery/0.1/describe' +
+  '{?api,apiVersion}'
 
 
 def key2method(key):
@@ -73,6 +76,7 @@ def key2param(key):
 
 
 class JsonModel(object):
+
   def request(self, headers, params):
     model = params.get('body', None)
     query = '?alt=json&prettyprint=true'
@@ -80,13 +84,14 @@ class JsonModel(object):
     if model == None:
       return (headers, params, query, None)
     else:
-      model = {'data': model }
+      model = {'data': model}
       headers['Content-Type'] = 'application/json'
       del params['body']
       return (headers, params, query, simplejson.dumps(model))
 
   def response(self, resp, content):
-    # Error handling is TBD
+    # Error handling is TBD, for example, do we retry
+    # for some operation/error combinations?
     if resp.status < 300:
       return simplejson.loads(content)['data']
     else:
@@ -97,7 +102,7 @@ class JsonModel(object):
 
 
 def build(service, version, http=httplib2.Http(),
-    discoveryServiceUrl = DISCOVERY_URI, auth = None, model = JsonModel()):
+    discoveryServiceUrl=DISCOVERY_URI, auth=None, model=JsonModel()):
   params = {
       'api': service,
       'apiVersion': version
@@ -117,6 +122,7 @@ def build(service, version, http=httplib2.Http(),
       self._model = model
 
   def createMethod(theclass, methodName, methodDesc):
+
     def method(self, **kwargs):
       return createResource(self._http, self._baseUrl, self._model,
           methodName, methodDesc)

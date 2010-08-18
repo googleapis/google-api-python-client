@@ -1,2 +1,2 @@
-default:
-	python discovery.py
+pep8:
+	find apiclient samples -name "*.py" | xargs pep8 --ignore=E111,E202
