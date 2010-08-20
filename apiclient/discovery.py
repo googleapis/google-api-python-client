@@ -80,12 +80,12 @@ class JsonModel(object):
   def request(self, headers, params):
     model = params.get('body', None)
     query = '?alt=json&prettyprint=true'
-    headers['Accept'] = 'application/json'
+    headers['accept'] = 'application/json'
     if model == None:
       return (headers, params, query, None)
     else:
       model = {'data': model}
-      headers['Content-Type'] = 'application/json'
+      headers['content-type'] = 'application/json'
       del params['body']
       return (headers, params, query, simplejson.dumps(model))
 
@@ -176,7 +176,7 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc):
       for name, regex in pattern.iteritems():
         if name in kwargs:
           if re.match(regex, kwargs[name]) is None:
-            raise TypeError('Parameter "%s" value "%s" does match the pattern "%s"' % (name, kwargs[name], regex))
+            raise TypeError('Parameter "%s" value "%s" does not match the pattern "%s"' % (name, kwargs[name], regex))
 
       params = {}
       for key, value in kwargs.iteritems():
