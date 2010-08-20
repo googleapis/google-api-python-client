@@ -22,6 +22,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 
 import httplib2
+import logging
 import re
 import simplejson
 import urlparse
@@ -77,17 +78,21 @@ def key2param(key):
 
 class JsonModel(object):
 
-  def request(self, headers, params):
-    model = params.get('body', None)
-    query = '?alt=json&prettyprint=true'
+  def request(self, headers, path_params, query_params, body_value):
+    query = self.build_query(query_params)
     headers['accept'] = 'application/json'
-    if model == None:
-      return (headers, params, query, None)
+    if body_value is None:
+      return (headers, path_params, query, None)
     else:
-      model = {'data': model}
+      model = {'data': body_value}
       headers['content-type'] = 'application/json'
-      del params['body']
-      return (headers, params, query, simplejson.dumps(model))
+      return (headers, path_params, query, simplejson.dumps(model))
+
+  def build_query(self, params):
+    query = '?alt=json&prettyprint=true'
+    for key,value in params.iteritems():
+      query += '&%s=%s' % (key, value)
+    return query
 
   def response(self, resp, content):
     # Error handling is TBD, for example, do we retry
@@ -95,6 +100,7 @@ class JsonModel(object):
     if resp.status < 300:
       return simplejson.loads(content)['data']
     else:
+      logging.debug('Content from bad request was: %s' % content)
       if resp['content-type'] != 'application/json':
         raise HttpError('%d %s' % (resp.status, resp.reason))
       else:
@@ -107,7 +113,10 @@ def build(service, version, http=httplib2.Http(),
       'api': service,
       'apiVersion': version
       }
-  resp, content = http.request(uritemplate.expand(discoveryServiceUrl, params))
+
+  requested_url = uritemplate.expand(discoveryServiceUrl, params)
+  logging.info('URL being requested: %s' % requested_url)
+  resp, content = http.request(requested_url)
   d = simplejson.loads(content)
   service = d['data'][service][version]
   base = service['baseUrl']
@@ -149,45 +158,59 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc):
     pathUrl = methodDesc['pathUrl']
     pathUrl = re.sub(r'\{', r'{+', pathUrl)
     httpMethod = methodDesc['httpMethod']
-    args = methodDesc['parameters'].keys()
 
-    required = [] # Required parameters
-    pattern = {}  # Parameters the must match a regex
+    argmap = {}
+    if httpMethod in ['PUT', 'POST']:
+      argmap['body'] = 'body'
+
+
+    required_params = [] # Required parameters
+    pattern_params = {}  # Parameters that must match a regex
+    query_params = [] # Parameters that will be used in the query string
+    path_params = {} # Parameters that will be used in the base URL
     for arg, desc in methodDesc['parameters'].iteritems():
       param = key2param(arg)
-      if desc.get('pattern', ''):
-        pattern[param] = desc['pattern']
-      if desc.get('required', False):
-        required.append(param)
+      argmap[param] = arg
 
-    if httpMethod in ['PUT', 'POST']:
-      args.append('body')
-    argmap = dict([(key2param(key), key) for key in args])
+      if desc.get('pattern', ''):
+        pattern_params[param] = desc['pattern']
+      if desc.get('required', False):
+        required_params.append(param)
+      if desc.get('parameterType') == 'query':
+        query_params.append(param)
+      if desc.get('parameterType') == 'path':
+        path_params[param]=param
 
     def method(self, **kwargs):
       for name in kwargs.iterkeys():
         if name not in argmap:
           raise TypeError('Got an unexpected keyword argument "%s"' % name)
 
-      for name in required:
+      for name in required_params:
         if name not in kwargs:
           raise TypeError('Missing required parameter "%s"' % name)
 
-      for name, regex in pattern.iteritems():
+      for name, regex in pattern_params.iteritems():
         if name in kwargs:
           if re.match(regex, kwargs[name]) is None:
             raise TypeError('Parameter "%s" value "%s" does not match the pattern "%s"' % (name, kwargs[name], regex))
 
-      params = {}
+      actual_query_params = {}
+      actual_path_params = {}
       for key, value in kwargs.iteritems():
-        params[argmap[key]] = value
+        if key in query_params:
+          actual_query_params[argmap[key]] = value
+        if key in path_params:
+          actual_path_params[argmap[key]] = value
+      body_value = kwargs.get('body', None)
 
       headers = {}
-      headers, params, query, body = self._model.request(headers, params)
+      headers, params, query, body = self._model.request(headers, actual_path_params, actual_query_params, body_value)
 
-      url = urlparse.urljoin(self._baseUrl,
-          uritemplate.expand(pathUrl, params) + query)
+      expanded_url = uritemplate.expand(pathUrl, params) 
+      url = urlparse.urljoin(self._baseUrl, expanded_url + query)
 
+      logging.info('URL being requested: %s' % url)
       resp, content = self._http.request(
           url, method=httpMethod, headers=headers, body=body)
 

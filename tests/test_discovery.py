@@ -61,7 +61,7 @@ class Discovery(unittest.TestCase):
     except TypeError, e:
       self.assertTrue('unexpected' in str(e))
 
-  def test_resources(self):
+  def test_buzz_resources(self):
     self.http = HttpMock('buzz.json', {'status': '200'})
     buzz = build('buzz', 'v1', self.http)
     self.assertTrue(getattr(buzz, 'activities'))

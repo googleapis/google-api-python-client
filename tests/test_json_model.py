@@ -19,9 +19,11 @@ class Model(unittest.TestCase):
     model = JsonModel()
 
     headers = {}
-    params = {}
+    path_params = {}
+    query_params = {}
+    body = None
 
-    headers, params, query, body = model.request(headers, params)
+    headers, params, query, body = model.request(headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
     self.assertTrue('content-type' not in headers)
@@ -32,9 +34,11 @@ class Model(unittest.TestCase):
     model = JsonModel()
 
     headers = {}
-    params = {'body': {}}
+    path_params = {}
+    query_params = {}
+    body = {}
 
-    headers, params, query, body = model.request(headers, params)
+    headers, params, query, body = model.request(headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
     self.assertEqual(headers['content-type'], 'application/json')
