@@ -63,5 +63,12 @@ class BuzzGaeClientTest(unittest.TestCase):
       api_client = client.build_api_client(oauth_parameters)
       self.assertTrue(api_client is not None)
 
+    def test_can_fetch_activites_from_buzz(self):
+      client = buzz_gae_client.BuzzGaeClient()
+      api_client = client.build_api_client()
+      count = 9
+      activities = api_client.activities().list(userId='googlebuzz', scope='@self', max_results=count)['items']
+      self.assertEquals(count, len(activities))
+
 if __name__ == '__main__':
   unittest.main()

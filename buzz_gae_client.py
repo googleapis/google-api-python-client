@@ -96,6 +96,9 @@ class BuzzGaeClient(object):
     d.update(access_token)
     return d
 
-  def build_api_client(self, oauth_params):
-    http = oauth_wrap.get_authorised_http(oauth_params)
-    return apiclient.discovery.build('buzz', 'v1', http = http)
+  def build_api_client(self, oauth_params=None):
+    if oauth_params is not None:
+      http = oauth_wrap.get_authorised_http(oauth_params)
+      return apiclient.discovery.build('buzz', 'v1', http = http)
+    else:
+      return apiclient.discovery.build('buzz', 'v1')
