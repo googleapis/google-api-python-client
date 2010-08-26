@@ -17,14 +17,14 @@ headers = {'user-agent': 'google-api-client-python-buzz-cmdline/1.0',
 consumer_key = 'anonymous'
 consumer_secret = 'anonymous'
 
-request_token_url = 'https://www.google.com/accounts/OAuthGetRequestToken\
-?domain=anonymous&scope=https://www.googleapis.com/auth/buzz'
+request_token_url = ('https://www.google.com/accounts/OAuthGetRequestToken'
+  '?domain=anonymous&scope=https://www.googleapis.com/auth/buzz')
 
-access_token_url = 'https://www.google.com/accounts/OAuthGetAccessToken\
-?domain=anonymous&scope=https://www.googleapis.com/auth/buzz'
+access_token_url = ('https://www.google.com/accounts/OAuthGetAccessToken'
+  '?domain=anonymous&scope=https://www.googleapis.com/auth/buzz')
 
-authorize_url = 'https://www.google.com/buzz/api/auth/OAuthAuthorizeToken\
-?domain=anonymous&scope=https://www.googleapis.com/auth/buzz'
+authorize_url = ('https://www.google.com/buzz/api/auth/OAuthAuthorizeToken'
+  '?domain=anonymous&scope=https://www.googleapis.com/auth/buzz')
 
 consumer = oauth.Consumer(consumer_key, consumer_secret)
 client = oauth.Client(consumer)

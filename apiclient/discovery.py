@@ -23,17 +23,21 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import httplib2
 import logging
+import os
 import re
 import simplejson
-import urlparse
 import uritemplate
+import urlparse
 
 
 class HttpError(Exception):
   pass
 
-DISCOVERY_URI = 'http://www.googleapis.com/discovery/0.1/describe\
-{?api,apiVersion}'
+class UnknownLinkType(Exception):
+  pass
+
+DISCOVERY_URI = ('http://www.googleapis.com/discovery/0.1/describe'
+  '{?api,apiVersion}')
 
 
 def key2method(key):
@@ -107,10 +111,10 @@ class JsonModel(object):
         raise HttpError(simplejson.loads(content)['error'])
 
 
-def build(service, version, http=httplib2.Http(),
+def build(serviceName, version, http=httplib2.Http(),
     discoveryServiceUrl=DISCOVERY_URI, auth=None, model=JsonModel()):
   params = {
-      'api': service,
+      'api': serviceName,
       'apiVersion': version
       }
 
@@ -118,7 +122,14 @@ def build(service, version, http=httplib2.Http(),
   logging.info('URL being requested: %s' % requested_url)
   resp, content = http.request(requested_url)
   d = simplejson.loads(content)
-  service = d['data'][service][version]
+  service = d['data'][serviceName][version]
+
+  fn = os.path.join(os.path.dirname(__file__), "contrib", serviceName, "future.json")
+  f = file(fn, "r")
+  d = simplejson.load(f)
+  f.close()
+  future = d['data'][serviceName][version]['resources']
+
   base = service['baseUrl']
   resources = service['resources']
 
@@ -130,21 +141,21 @@ def build(service, version, http=httplib2.Http(),
       self._baseUrl = base
       self._model = model
 
-  def createMethod(theclass, methodName, methodDesc):
+  def createMethod(theclass, methodName, methodDesc, futureDesc):
 
     def method(self, **kwargs):
       return createResource(self._http, self._baseUrl, self._model,
-          methodName, methodDesc)
+          methodName, methodDesc, futureDesc)
 
     setattr(method, '__doc__', 'A description of how to use this function')
     setattr(theclass, methodName, method)
 
   for methodName, methodDesc in resources.iteritems():
-    createMethod(Service, methodName, methodDesc)
+    createMethod(Service, methodName, methodDesc, future[methodName])
   return Service()
 
 
-def createResource(http, baseUrl, model, resourceName, resourceDesc):
+def createResource(http, baseUrl, model, resourceName, resourceDesc, futureDesc):
 
   class Resource(object):
     """A class for interacting with a resource."""
@@ -154,7 +165,7 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc):
       self._baseUrl = baseUrl
       self._model = model
 
-  def createMethod(theclass, methodName, methodDesc):
+  def createMethod(theclass, methodName, methodDesc, futureDesc):
     pathUrl = methodDesc['pathUrl']
     pathUrl = re.sub(r'\{', r'{+', pathUrl)
     httpMethod = methodDesc['httpMethod']
@@ -207,7 +218,7 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc):
       headers = {}
       headers, params, query, body = self._model.request(headers, actual_path_params, actual_query_params, body_value)
 
-      expanded_url = uritemplate.expand(pathUrl, params) 
+      expanded_url = uritemplate.expand(pathUrl, params)
       url = urlparse.urljoin(self._baseUrl, expanded_url + query)
 
       logging.info('URL being requested: %s' % url)
@@ -218,12 +229,53 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc):
 
     docs = ['A description of how to use this function\n\n']
     for arg in argmap.iterkeys():
-      docs.append('%s - A parameter\n' % arg)
+      required = ""
+      if arg in required_params:
+        required = " (required)"
+      docs.append('%s - A parameter%s\n' % (arg, required))
 
     setattr(method, '__doc__', ''.join(docs))
     setattr(theclass, methodName, method)
 
+  def createNextMethod(theclass, methodName, methodDesc):
+
+    def method(self, previous):
+      """
+      Takes a single argument, 'body', which is the results
+      from the last call, and returns the next set of items
+      in the collection.
+
+      Returns None if there are no more items in
+      the collection.
+      """
+      if methodDesc['type'] != 'uri':
+        raise UnknownLinkType(methodDesc['type'])
+
+      try:
+        p = previous
+        for key in methodDesc['location']:
+          p = p[key]
+        url = p
+      except KeyError:
+        return None
+
+      headers = {}
+      headers, params, query, body = self._model.request(headers, {}, {}, None)
+
+      logging.info('URL being requested: %s' % url)
+      resp, content = self._http.request(url, method='GET', headers=headers)
+
+      return self._model.response(resp, content)
+
+    setattr(theclass, methodName, method)
+
+  # Add basic methods to Resource
   for methodName, methodDesc in resourceDesc['methods'].iteritems():
-    createMethod(Resource, methodName, methodDesc)
+    createMethod(Resource, methodName, methodDesc, futureDesc['methods'].get(methodName, {}))
+
+  # Add <m>_next() methods to Resource
+  for methodName, methodDesc in futureDesc['methods'].iteritems():
+    if 'next' in methodDesc and methodName in resourceDesc['methods']:
+      createNextMethod(Resource, methodName + "_next", methodDesc['next'])
 
   return Resource()
