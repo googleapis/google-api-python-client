@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-import glob, unittest, os, sys
+import glob
+import logging
+import os
+import sys
+import unittest
 
 from trace import fullmodname
 try:
@@ -9,6 +13,20 @@ except:
         pass
 
 sys.path.insert(0, os.getcwd())
+
+verbosity = 1
+if "-q" in sys.argv or '--quiet' in sys.argv:
+    verbosity = 0
+if "-v" in sys.argv or '--verbose' in sys.argv:
+    verbosity = 2
+
+if verbosity == 0:
+  logging.disable(logging.CRITICAL)
+elif verbosity == 1:
+  logging.disable(logging.ERROR)
+elif verbosity == 2:
+  logging.basicConfig(level=logging.DEBUG)
+
 
 def build_suite(folder):
   # find all of the test modules
@@ -24,12 +42,6 @@ def build_suite(folder):
       for module in modules:
           __import__(module)
       raise
-
-verbosity = 1
-if "-q" in sys.argv or '--quiet' in sys.argv:
-    verbosity = 0
-if "-v" in sys.argv or '--verbose' in sys.argv:
-    verbosity = 2
 
 unit_tests = build_suite('tests')
 functional_tests = build_suite('functional_tests')

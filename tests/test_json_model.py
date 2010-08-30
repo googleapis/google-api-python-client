@@ -24,6 +24,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 from apiclient.discovery import JsonModel
 import os
 import unittest
+import urlparse
 
 
 class Model(unittest.TestCase):
@@ -56,6 +57,25 @@ class Model(unittest.TestCase):
     self.assertEqual(headers['content-type'], 'application/json')
     self.assertNotEqual(query, '')
     self.assertEqual(body, '{"data": {}}')
+
+  def test_json_build_query(self):
+    model = JsonModel()
+
+    headers = {}
+    path_params = {}
+    query_params = {'foo': 1, 'bar': u'\N{COMET}'}
+    body = {}
+
+    headers, params, query, body = model.request(headers, path_params, query_params, body)
+
+    self.assertEqual(headers['accept'], 'application/json')
+    self.assertEqual(headers['content-type'], 'application/json')
+
+    query_dict = urlparse.parse_qs(query)
+    self.assertEqual(query_dict['foo'], ['1'])
+    self.assertEqual(query_dict['bar'], [u'\N{COMET}'.encode('utf-8')])
+    self.assertEqual(body, '{"data": {}}')
+
 
 if __name__ == '__main__':
   unittest.main()

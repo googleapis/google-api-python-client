@@ -27,6 +27,7 @@ import os
 import re
 import simplejson
 import uritemplate
+import urllib
 import urlparse
 
 
@@ -93,10 +94,13 @@ class JsonModel(object):
       return (headers, path_params, query, simplejson.dumps(model))
 
   def build_query(self, params):
-    query = '?alt=json&prettyprint=true'
-    for key,value in params.iteritems():
-      query += '&%s=%s' % (key, value)
-    return query
+    params.update({'alt': 'json', 'prettyprint': 'true'})
+    astuples = []
+    for key, value in params.iteritems():
+      if getattr(value, 'encode', False) and callable(value.encode):
+        value = value.encode('utf-8')
+      astuples.append((key, value))
+    return '?' + urllib.urlencode(astuples)
 
   def response(self, resp, content):
     # Error handling is TBD, for example, do we retry
