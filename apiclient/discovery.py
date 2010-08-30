@@ -34,34 +34,12 @@ import urlparse
 class HttpError(Exception):
   pass
 
+
 class UnknownLinkType(Exception):
   pass
 
 DISCOVERY_URI = ('http://www.googleapis.com/discovery/0.1/describe'
   '{?api,apiVersion}')
-
-
-def key2method(key):
-  """
-  max-results -> MaxResults
-  """
-  result = []
-  key = list(key)
-  newWord = True
-  if not key[0].isalpha():
-    result.append('X')
-    newWord = False
-  for c in key:
-    if c.isalnum():
-      if newWord:
-        result.append(c.upper())
-        newWord = False
-      else:
-        result.append(c.lower())
-    else:
-      newWord = True
-
-  return ''.join(result)
 
 
 def key2param(key):
@@ -128,7 +106,8 @@ def build(serviceName, version, http=httplib2.Http(),
   d = simplejson.loads(content)
   service = d['data'][serviceName][version]
 
-  fn = os.path.join(os.path.dirname(__file__), "contrib", serviceName, "future.json")
+  fn = os.path.join(os.path.dirname(__file__), "contrib",
+      serviceName, "future.json")
   f = file(fn, "r")
   d = simplejson.load(f)
   f.close()
@@ -159,7 +138,8 @@ def build(serviceName, version, http=httplib2.Http(),
   return Service()
 
 
-def createResource(http, baseUrl, model, resourceName, resourceDesc, futureDesc):
+def createResource(http, baseUrl, model, resourceName, resourceDesc,
+    futureDesc):
 
   class Resource(object):
     """A class for interacting with a resource."""
@@ -194,7 +174,7 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc, futureDesc)
       if desc.get('parameterType') == 'query':
         query_params.append(param)
       if desc.get('parameterType') == 'path':
-        path_params[param]=param
+        path_params[param] = param
 
     def method(self, **kwargs):
       for name in kwargs.iterkeys():
@@ -208,7 +188,9 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc, futureDesc)
       for name, regex in pattern_params.iteritems():
         if name in kwargs:
           if re.match(regex, kwargs[name]) is None:
-            raise TypeError('Parameter "%s" value "%s" does not match the pattern "%s"' % (name, kwargs[name], regex))
+            raise TypeError(
+                'Parameter "%s" value "%s" does not match the pattern "%s"' %
+                (name, kwargs[name], regex))
 
       actual_query_params = {}
       actual_path_params = {}
@@ -220,7 +202,8 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc, futureDesc)
       body_value = kwargs.get('body', None)
 
       headers = {}
-      headers, params, query, body = self._model.request(headers, actual_path_params, actual_query_params, body_value)
+      headers, params, query, body = self._model.request(headers,
+          actual_path_params, actual_query_params, body_value)
 
       expanded_url = uritemplate.expand(pathUrl, params)
       url = urlparse.urljoin(self._baseUrl, expanded_url + query)
@@ -275,7 +258,8 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc, futureDesc)
 
   # Add basic methods to Resource
   for methodName, methodDesc in resourceDesc['methods'].iteritems():
-    createMethod(Resource, methodName, methodDesc, futureDesc['methods'].get(methodName, {}))
+    future = futureDesc['methods'].get(methodName, {})
+    createMethod(Resource, methodName, methodDesc, future)
 
   # Add <m>_next() methods to Resource
   for methodName, methodDesc in futureDesc['methods'].iteritems():
