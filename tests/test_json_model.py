@@ -24,7 +24,13 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 from apiclient.discovery import JsonModel
 import os
 import unittest
-import urlparse
+
+# Python 2.5 requires different modules
+try:
+  from urlparse import parse_qs
+except ImportError:
+  from cgi import parse_qs
+
 
 
 class Model(unittest.TestCase):
@@ -71,7 +77,7 @@ class Model(unittest.TestCase):
     self.assertEqual(headers['accept'], 'application/json')
     self.assertEqual(headers['content-type'], 'application/json')
 
-    query_dict = urlparse.parse_qs(query)
+    query_dict = parse_qs(query)
     self.assertEqual(query_dict['foo'], ['1'])
     self.assertEqual(query_dict['bar'], [u'\N{COMET}'.encode('utf-8')])
     self.assertEqual(body, '{"data": {}}')
