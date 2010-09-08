@@ -1,17 +1,45 @@
-from apiclient.oauth import buzz_discovery, Flow3LO
+# Copyright (C) 2010 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-import simplejson
+"""Do the OAuth 1.0a three legged dance.
+
+Do the OAuth 1.0a three legged dance for
+a Buzz command line application. Store the generated
+credentials in a common file that is used by
+other example apps in the same directory.
+"""
+
+__author__ = 'jcgregorio@google.com (Joe Gregorio)'
+
+from apiclient.oauth import buzz_discovery
+from apiclient.oauth import FlowThreeLegged
+
+import pickle
 
 user_agent = 'google-api-client-python-buzz-cmdline/1.0',
 consumer_key = 'anonymous'
 consumer_secret = 'anonymous'
 
-flow = Flow3LO(buzz_discovery, consumer_key, consumer_secret, user_agent,
-               domain='anonymous',
-               scope='https://www.googleapis.com/auth/buzz',
-               xoauth_displayname='Google API Client for Python Example App')
+flow = FlowThreeLegged(buzz_discovery,
+                       consumer_key='anonymous',
+                       consumer_secret='anonymous',
+                       user_agent='google-api-client-python-buzz-cmdline/1.0',
+                       domain='anonymous',
+                       scope='https://www.googleapis.com/auth/buzz',
+                       xoauth_displayname='Google API Client Example App')
 
-authorize_url = flow.step1()
+authorize_url = flow.step1_get_authorize_url()
 
 print 'Go to the following link in your browser:'
 print authorize_url
@@ -20,17 +48,10 @@ print
 accepted = 'n'
 while accepted.lower() == 'n':
     accepted = raw_input('Have you authorized me? (y/n) ')
-pin = raw_input('What is the PIN? ').strip()
+verification = raw_input('What is the verification code? ').strip()
 
-access_token = flow.step2_pin(pin)
-
-d = dict(
-  consumer_key='anonymous',
-  consumer_secret='anonymous'
-    )
-
-d.update(access_token)
+credentials = flow.step2_exchange(verification)
 
 f = open('oauth_token.dat', 'w')
-f.write(simplejson.dumps(d))
+f.write(pickle.dumps(credentials))
 f.close()
