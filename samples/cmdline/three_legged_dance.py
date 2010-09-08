@@ -27,10 +27,6 @@ from apiclient.oauth import FlowThreeLegged
 
 import pickle
 
-user_agent = 'google-api-client-python-buzz-cmdline/1.0',
-consumer_key = 'anonymous'
-consumer_secret = 'anonymous'
-
 flow = FlowThreeLegged(buzz_discovery,
                        consumer_key='anonymous',
                        consumer_secret='anonymous',
