@@ -26,23 +26,61 @@ class MissingParameter(Exception):
 
 
 def _abstract():
-  raise NotImplementedError("You need to override this function")
+  raise NotImplementedError('You need to override this function')
 
 
 buzz_discovery = {
-    'required': ['domain', 'scope'],
     'request': {
         'url': 'https://www.google.com/accounts/OAuthGetRequestToken',
-        'params': ['xoauth_displayname']
+        'parameters': {
+          'xoauth_displayname': {
+           'parameterType': 'query',
+           'required': False
+          },
+          'domain': {
+           'parameterType': 'query',
+           'required': True
+          },
+          'scope': {
+           'parameterType': 'query',
+           'required': True
+          },
         },
+      },
     'authorize': {
         'url': 'https://www.google.com/buzz/api/auth/OAuthAuthorizeToken',
-        'params': ['iconUrl', 'oauth_token']
+        'parameters': {
+          'oauth_token': {
+           'parameterType': 'query',
+           'required': True
+          },
+          'iconUrl': {
+           'parameterType': 'query',
+           'required': False
+          },
+          'domain': {
+           'parameterType': 'query',
+           'required': True
+          },
+          'scope': {
+           'parameterType': 'query',
+           'required': True
+          },
         },
+      },
     'access': {
         'url': 'https://www.google.com/accounts/OAuthGetAccessToken',
-        'params': []
+        'parameters': {
+          'domain': {
+           'parameterType': 'query',
+           'required': True
+          },
+          'scope': {
+           'parameterType': 'query',
+           'required': True
+          },
         },
+      },
     }
 
 
@@ -60,9 +98,7 @@ def _oauth_uri(name, discovery, params):
   """
   if name not in ['request', 'access', 'authorize']:
     raise KeyError(name)
-  keys = []
-  keys.extend(discovery['required'])
-  keys.extend(discovery[name]['params'])
+  keys = discovery[name]['parameters'].keys()
   query = {}
   for key in keys:
     if key in params:
@@ -128,7 +164,7 @@ class OAuthCredentials(Credentials):
     signer = oauth.SignatureMethod_HMAC_SHA1()
 
     # The closure that will replace 'httplib2.Http.request'.
-    def new_request(uri, method="GET", body=None, headers=None,
+    def new_request(uri, method='GET', body=None, headers=None,
                     redirections=httplib2.DEFAULT_MAX_REDIRECTS,
                     connection_type=None):
       """Modify the request headers to add the appropriate
@@ -169,7 +205,12 @@ class FlowThreeLegged(object):
     self.user_agent = user_agent
     self.params = kwargs
     self.request_token = {}
-    for key in discovery['required']:
+    required = {}
+    for uriinfo in discovery.itervalues():
+      for name, value in uriinfo['parameters'].iteritems():
+        if value['required'] and not name.startswith('oauth_'):
+          required[name] = 1
+    for key in required.iterkeys():
       if key not in self.params:
         raise MissingParameter('Required parameter %s not supplied' % key)
 
