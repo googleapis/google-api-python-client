@@ -112,6 +112,7 @@ def build(serviceName, version, http=httplib2.Http(),
   d = simplejson.load(f)
   f.close()
   future = d['data'][serviceName][version]['resources']
+  auth_discovery = d['data'][serviceName][version]['auth']
 
   base = service['baseUrl']
   resources = service['resources']
@@ -123,6 +124,9 @@ def build(serviceName, version, http=httplib2.Http(),
       self._http = http
       self._baseUrl = base
       self._model = model
+
+    def auth_discovery(self):
+      return auth_discovery
 
   def createMethod(theclass, methodName, methodDesc, futureDesc):
 

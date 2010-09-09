@@ -29,61 +29,6 @@ def _abstract():
   raise NotImplementedError('You need to override this function')
 
 
-buzz_discovery = {
-    'request': {
-        'url': 'https://www.google.com/accounts/OAuthGetRequestToken',
-        'parameters': {
-          'xoauth_displayname': {
-           'parameterType': 'query',
-           'required': False
-          },
-          'domain': {
-           'parameterType': 'query',
-           'required': True
-          },
-          'scope': {
-           'parameterType': 'query',
-           'required': True
-          },
-        },
-      },
-    'authorize': {
-        'url': 'https://www.google.com/buzz/api/auth/OAuthAuthorizeToken',
-        'parameters': {
-          'oauth_token': {
-           'parameterType': 'query',
-           'required': True
-          },
-          'iconUrl': {
-           'parameterType': 'query',
-           'required': False
-          },
-          'domain': {
-           'parameterType': 'query',
-           'required': True
-          },
-          'scope': {
-           'parameterType': 'query',
-           'required': True
-          },
-        },
-      },
-    'access': {
-        'url': 'https://www.google.com/accounts/OAuthGetAccessToken',
-        'parameters': {
-          'domain': {
-           'parameterType': 'query',
-           'required': True
-          },
-          'scope': {
-           'parameterType': 'query',
-           'required': True
-          },
-        },
-      },
-    }
-
-
 def _oauth_uri(name, discovery, params):
   """Look up the OAuth UR from the discovery
   document and add query parameters based on
