@@ -163,18 +163,19 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc,
     pattern_params = {}  # Parameters that must match a regex
     query_params = [] # Parameters that will be used in the query string
     path_params = {} # Parameters that will be used in the base URL
-    for arg, desc in methodDesc['parameters'].iteritems():
-      param = key2param(arg)
-      argmap[param] = arg
+    if 'parameters' in methodDesc:
+      for arg, desc in methodDesc['parameters'].iteritems():
+        param = key2param(arg)
+        argmap[param] = arg
 
-      if desc.get('pattern', ''):
-        pattern_params[param] = desc['pattern']
-      if desc.get('required', False):
-        required_params.append(param)
-      if desc.get('parameterType') == 'query':
-        query_params.append(param)
-      if desc.get('parameterType') == 'path':
-        path_params[param] = param
+        if desc.get('pattern', ''):
+          pattern_params[param] = desc['pattern']
+        if desc.get('required', False):
+          required_params.append(param)
+        if desc.get('parameterType') == 'query':
+          query_params.append(param)
+        if desc.get('parameterType') == 'path':
+          path_params[param] = param
 
     def method(self, **kwargs):
       for name in kwargs.iterkeys():
