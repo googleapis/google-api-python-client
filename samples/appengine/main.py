@@ -19,6 +19,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 
 import httplib2
+import logging
 import os
 
 from apiclient.discovery import build
@@ -33,7 +34,7 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp.util import login_required
 
-STEP2_URI = 'http://m-buzz.appspot.com/auth_return'
+STEP2_URI = 'http://%s.appspot.com/auth_return' % os.environ['APPLICATION_ID']
 
 
 class Flow(db.Model):
@@ -57,9 +58,15 @@ class MainHandler(webapp.RequestHandler):
       http = c.credentials.authorize(http)
       p = build("buzz", "v1", http=http)
       activities = p.activities()
-      activitylist = activities.list(scope='@self', userId='@me')
+      activitylist = activities.list(scope='@consumption', userId='@me')
+      logging.info(activitylist)
       path = os.path.join(os.path.dirname(__file__), 'welcome.html')
-      self.response.out.write(template.render(path, activitylist))
+      logout = users.create_logout_url('/')
+      self.response.out.write(
+          template.render(
+              path, {'activitylist': activitylist,
+                     'logout': logout
+                     }))
     else:
       flow = FlowThreeLegged(buzz_discovery,
                      consumer_key='anonymous',
