@@ -68,7 +68,7 @@ class JsonModel(object):
       headers['user-agent'] += ' '
     else:
       headers['user-agent'] = ''
-    headers['user-agent'] += 'google-api-client-python/1.0'
+    headers['user-agent'] += 'google-api-python-client/1.0'
     if body_value is None:
       return (headers, path_params, query, None)
     else:
