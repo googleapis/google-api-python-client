@@ -27,7 +27,7 @@ def main():
   http = credentials.authorize(http)
 
   p = build("moderator", "v1", http=http)
-  print p.submissions().list(seriesId="7035", topicId="64")
+  print p.submissions().list(seriesId="7035", topicId="64").execute()
 
 if __name__ == '__main__':
   main()

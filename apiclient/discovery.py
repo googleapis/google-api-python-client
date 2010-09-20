@@ -28,6 +28,7 @@ import re
 import uritemplate
 import urllib
 import urlparse
+from apiclient.http import HttpRequest
 
 try:
   import simplejson
@@ -228,10 +229,8 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc,
       url = urlparse.urljoin(self._baseUrl, expanded_url + query)
 
       logging.info('URL being requested: %s' % url)
-      resp, content = self._http.request(
-          url, method=httpMethod, headers=headers, body=body)
-
-      return self._model.response(resp, content)
+      return HttpRequest(self._http, url, method=httpMethod, body=body,
+                         headers=headers, postproc=self._model.response)
 
     docs = ['A description of how to use this function\n\n']
     for arg in argmap.iterkeys():
@@ -271,7 +270,8 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc,
       logging.info('URL being requested: %s' % url)
       resp, content = self._http.request(url, method='GET', headers=headers)
 
-      return self._model.response(resp, content)
+      return HttpRequest(self._http, url, method='GET',
+                         headers=headers, postproc=self._model.response)
 
     setattr(theclass, methodName, method)
 

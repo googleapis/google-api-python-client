@@ -28,7 +28,7 @@ def main():
 
   p = build("buzz", "v1", http=http)
   activities = p.activities()
-  activitylist = activities.list(scope='@self', userId='@me')
+  activitylist = activities.list(scope='@self', userId='@me').execute()
   print activitylist['items'][0]['title']
   activities.insert(userId='@me', body={
     'title': 'Testing insert',
@@ -36,7 +36,7 @@ def main():
       'content': u'Just a short note to show that insert is working. ☄',
       'type': 'note'}
     }
-  )
+  ).execute()
 
 if __name__ == '__main__':
   main()

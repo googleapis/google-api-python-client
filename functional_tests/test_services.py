@@ -26,6 +26,6 @@ class BuzzFunctionalTest(unittest.TestCase):
     max_results = 2
     activities = buzz.activities().list(userId='googlebuzz', scope='@self',
                                         max_comments=max_results*2 ,max_liked=max_results*3,
-                                        max_results=max_results)['items']
+                                        max_results=max_results).execute()['items']
     activity_count = len(activities)
     self.assertEquals(max_results, activity_count)

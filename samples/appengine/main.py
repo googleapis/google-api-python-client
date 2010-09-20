@@ -58,7 +58,8 @@ class MainHandler(webapp.RequestHandler):
       http = c.credentials.authorize(http)
       p = build("buzz", "v1", http=http)
       activities = p.activities()
-      activitylist = activities.list(scope='@consumption', userId='@me')
+      activitylist = activities.list(scope='@consumption',
+                                     userId='@me').execute()
       logging.info(activitylist)
       path = os.path.join(os.path.dirname(__file__), 'welcome.html')
       logout = users.create_logout_url('/')
