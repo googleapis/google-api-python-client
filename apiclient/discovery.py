@@ -25,10 +25,19 @@ import httplib2
 import logging
 import os
 import re
-import simplejson
 import uritemplate
 import urllib
 import urlparse
+
+try:
+  import simplejson
+except ImportError:
+  try:
+    # Try to import from django, should work on App Engine
+    from django.utils import simplejson
+  except ImportError:
+    # Should work for Python2.6 and higher.
+    import json as simplejson
 
 
 class HttpError(Exception):

@@ -23,8 +23,18 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import os
 import os.path
-import simplejson
 import sys
+
+try:
+  import simplejson
+except ImportError:
+  try:
+    # Try to import from django, should work on App Engine
+    from django.utils import simplejson
+  except ImportError:
+    # Should work for Python2.6 and higher.
+    import json as simplejson
+
 
 def main():
   for filename in sys.argv[1:]:
@@ -49,4 +59,3 @@ def main():
 
 if __name__ == '__main__':
   main()
-
