@@ -18,22 +18,14 @@
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 
-import httplib2
 import inspect
-import logging
-import os
 import pydoc
 import re
 
 from apiclient.discovery import build
 
-from google.appengine.api import users
 from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
-
-STEP2_URI = 'http://%s.appspot.com/auth_return' % os.environ['APPLICATION_ID']
-
 
 # Replicate render_doc here from pydoc.py as it isn't available in Python 2.5
 class _OldStyleClass: pass
@@ -76,6 +68,7 @@ class MainHandler(webapp.RequestHandler):
     </ul>
     """)
 
+
 class ServiceHandler(webapp.RequestHandler):
 
   def get(self, service_name, version):
@@ -92,12 +85,14 @@ class ServiceHandler(webapp.RequestHandler):
 
     self.response.out.write(page)
 
+
 class CollectionHandler(webapp.RequestHandler):
 
   def get(self, service_name, version, collection):
     service = build(service_name, version)
     page = "<p><a href='/'>Home</a></p><pre>%s</pre>" % pydoc.plain(render_doc(getattr(service, collection)()))
     self.response.out.write(page)
+
 
 def main():
   application = webapp.WSGIApplication(
