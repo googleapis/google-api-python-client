@@ -27,9 +27,13 @@ class BuzzFunctionalTest(unittest.TestCase):
     actcol = buzz.activities()
     activities = actcol.list(userId='googlebuzz', scope='@self',
                              max_comments=max_results*2 ,max_liked=max_results*3,
-                             max_results=max_results).execute()['items']
-    activity_count = len(activities)
+                             max_results=max_results).execute()
+    activity_count = len(activities['items'])
     self.assertEquals(max_results, activity_count)
 
-    activities = actcol.list_next(activities)
-    self.assertEquals(activities, None) # Public streams don't have next links
+    activities = actcol.list_next(activities).execute()
+    activity_count = len(activities['items'])
+    self.assertEquals(max_results, activity_count)
+
+if __name__ == '__main__':
+  unittest.main()

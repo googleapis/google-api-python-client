@@ -31,8 +31,9 @@ elif verbosity == 2:
 def build_suite(folder):
   # find all of the test modules
   modules = map(fullmodname, glob.glob(os.path.join(folder, 'test_*.py')))
-  print "Running the tests found in the following modules:"
-  print modules
+  if verbosity > 0:
+    print "Running the tests found in the following modules:"
+    print modules
 
   # load all of the tests into a suite
   try:
