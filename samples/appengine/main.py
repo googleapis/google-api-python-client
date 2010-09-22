@@ -26,7 +26,6 @@ from apiclient.discovery import build
 from apiclient.ext.appengine import FlowThreeLeggedProperty
 from apiclient.ext.appengine import OAuthCredentialsProperty
 from apiclient.oauth import FlowThreeLegged
-from apiclient.oauth import buzz_discovery
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
@@ -69,7 +68,8 @@ class MainHandler(webapp.RequestHandler):
                      'logout': logout
                      }))
     else:
-      flow = FlowThreeLegged(buzz_discovery,
+      p = build("buzz", "v1")
+      flow = FlowThreeLegged(p.auth_discovery(),
                      consumer_key='anonymous',
                      consumer_secret='anonymous',
                      user_agent='google-api-client-python-buzz-webapp/1.0',
