@@ -24,8 +24,12 @@ class BuzzFunctionalTest(unittest.TestCase):
   def test_can_get_buzz_activities_with_many_params(self):
     buzz = build('buzz', 'v1')
     max_results = 2
-    activities = buzz.activities().list(userId='googlebuzz', scope='@self',
-                                        max_comments=max_results*2 ,max_liked=max_results*3,
-                                        max_results=max_results).execute()['items']
+    actcol = buzz.activities()
+    activities = actcol.list(userId='googlebuzz', scope='@self',
+                             max_comments=max_results*2 ,max_liked=max_results*3,
+                             max_results=max_results).execute()['items']
     activity_count = len(activities)
     self.assertEquals(max_results, activity_count)
+
+    activities = actcol.list_next(activities)
+    self.assertEquals(activities, None) # Public streams don't have next links

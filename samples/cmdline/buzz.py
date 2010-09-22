@@ -28,8 +28,11 @@ def main():
 
   p = build("buzz", "v1", http=http)
   activities = p.activities()
-  activitylist = activities.list(scope='@self', userId='@me').execute()
+  activitylist = activities.list(max_results='2', scope='@self', userId='@me').execute()
   print activitylist['items'][0]['title']
+  activitylist = activities.list_next(activitylist).execute()
+  print activitylist['items'][0]['title']
+
   activities.insert(userId='@me', body={
     'title': 'Testing insert',
     'object': {

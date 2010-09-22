@@ -21,9 +21,10 @@ Unit tests for the JSON model.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-from apiclient.discovery import JsonModel
+from apiclient.discovery import JsonModel, HttpError
 import os
 import unittest
+import httplib2
 
 # Python 2.5 requires different modules
 try:
@@ -82,6 +83,47 @@ class Model(unittest.TestCase):
     self.assertEqual(query_dict['bar'], [u'\N{COMET}'.encode('utf-8')])
     self.assertEqual(body, '{"data": {}}')
 
+  def test_user_agent(self):
+    model = JsonModel()
+
+    headers = {'user-agent': 'my-test-app/1.23.4'}
+    path_params = {}
+    query_params = {}
+    body = {}
+
+    headers, params, query, body = model.request(headers, path_params, query_params, body)
+
+    self.assertEqual(headers['user-agent'], 'my-test-app/1.23.4 google-api-python-client/1.0')
+
+  def test_bad_response(self):
+    model = JsonModel()
+    resp = httplib2.Response({'status': '401'})
+    resp.reason = 'Unauthorized'
+    content = '{"error": "not authorized"}'
+
+    try:
+      content = model.response(resp, content)
+      self.fail('Should have thrown an exception')
+    except HttpError, e:
+      self.assertTrue('Unauthorized' in str(e))
+
+    resp['content-type'] = 'application/json'
+
+    try:
+      content = model.response(resp, content)
+      self.fail('Should have thrown an exception')
+    except HttpError, e:
+      self.assertTrue('not authorized' in str(e))
+
+
+  def test_good_response(self):
+    model = JsonModel()
+    resp = httplib2.Response({'status': '200'})
+    resp.reason = 'OK'
+    content = '{"data": "is good"}'
+
+    content = model.response(resp, content)
+    self.assertEqual(content, 'is good')
 
 if __name__ == '__main__':
   unittest.main()

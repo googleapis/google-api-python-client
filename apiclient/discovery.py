@@ -102,7 +102,7 @@ class JsonModel(object):
       return simplejson.loads(content)['data']
     else:
       logging.debug('Content from bad request was: %s' % content)
-      if resp['content-type'] != 'application/json':
+      if resp.get('content-type', '') != 'application/json':
         raise HttpError('%d %s' % (resp.status, resp.reason))
       else:
         raise HttpError(simplejson.loads(content)['error'])
@@ -263,7 +263,7 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc,
         for key in methodDesc['location']:
           p = p[key]
         url = p
-      except KeyError:
+      except (KeyError, TypeError):
         return None
 
       headers = {}

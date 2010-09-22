@@ -22,7 +22,7 @@ Unit tests for objects created from discovery documents.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-from apiclient.discovery import build
+from apiclient.discovery import build, key2param
 import httplib2
 import os
 import unittest
@@ -39,6 +39,12 @@ class HttpMock(object):
 
   def request(self, uri, method="GET", body=None, headers=None, redirections=1, connection_type=None):
     return httplib2.Response(self.headers), self.data
+
+
+class Utilities(unittest.TestCase):
+  def test_key2param(self):
+    self.assertEqual('max_results', key2param('max-results'))
+    self.assertEqual('x007_bond', key2param('007-bond'))
 
 
 class Discovery(unittest.TestCase):
@@ -85,6 +91,23 @@ class Discovery(unittest.TestCase):
     self.assertTrue(getattr(buzz, 'groups'))
     self.assertTrue(getattr(buzz, 'comments'))
     self.assertTrue(getattr(buzz, 'related'))
+
+  def test_auth(self):
+    self.http = HttpMock('buzz.json', {'status': '200'})
+    buzz = build('buzz', 'v1', self.http)
+    auth = buzz.auth_discovery()
+    self.assertTrue('request' in auth)
+
+
+class Next(unittest.TestCase):
+  def test_next(self):
+    self.http = HttpMock('buzz.json', {'status': '200'})
+    buzz = build('buzz', 'v1', self.http)
+    activities = {'links':
+                  {'next':
+                   [{'href': 'http://www.googleapis.com/next-link'}]}}
+    request = buzz.activities().list_next(activities)
+    self.assertEqual(request.uri, 'http://www.googleapis.com/next-link')
 
 
 if __name__ == '__main__':
