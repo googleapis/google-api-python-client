@@ -30,7 +30,7 @@ import urllib
 import urlparse
 from apiclient.http import HttpRequest
 
-try:
+try: # pragma: no cover
   import simplejson
 except ImportError:
   try:
