@@ -108,13 +108,15 @@ class JsonModel(object):
         raise HttpError(simplejson.loads(content)['error'])
 
 
-def build(serviceName, version, http=httplib2.Http(),
+def build(serviceName, version, http=None,
     discoveryServiceUrl=DISCOVERY_URI, auth=None, model=JsonModel()):
   params = {
       'api': serviceName,
       'apiVersion': version
       }
 
+  if http is None:
+    http = httplib2.Http()
   requested_url = uritemplate.expand(discoveryServiceUrl, params)
   logging.info('URL being requested: %s' % requested_url)
   resp, content = http.request(requested_url)
