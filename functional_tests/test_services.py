@@ -13,12 +13,8 @@ only work with publicly visible data in order to avoid dealing with OAuth.
 __author__ = 'ade@google.com (Ade Oshineye)'
 
 from apiclient.discovery import build
-
 import logging
 import unittest
-
-logging.basicConfig(level=logging.DEBUG)
-
 
 class BuzzFunctionalTest(unittest.TestCase):
   def test_can_get_buzz_activities_with_many_params(self):
@@ -34,6 +30,18 @@ class BuzzFunctionalTest(unittest.TestCase):
     activities = actcol.list_next(activities).execute()
     activity_count = len(activities['items'])
     self.assertEquals(max_results, activity_count)
+
+  def test_can_page_through_users_activities(self):
+    buzz = build('buzz', 'v1')
+    max_results = 2
+    actcol = buzz.activities()
+    
+    activities = actcol.list(userId='adewale', scope='@self',
+                             max_results=max_results).execute()
+    for count in range(10):
+      activities = actcol.list_next(activities).execute()
+      activity_count = len(activities['items'])
+      self.assertEquals(max_results, activity_count, 'Failed after %s pages' % str(count))
 
 if __name__ == '__main__':
   unittest.main()
