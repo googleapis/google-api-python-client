@@ -11,12 +11,16 @@ latest content and then adds a new entry.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+# Enable this sample to be run from the top-level directory
+import os
+import sys
+sys.path.insert(0, os.getcwd())
 
 from apiclient.discovery import build
 
 import httplib2
 import pickle
-
+import pprint
 
 def main():
   f = open("buzz.dat", "r")
@@ -33,13 +37,16 @@ def main():
   activitylist = activities.list_next(activitylist).execute()
   print activitylist['items'][0]['title']
 
-  activities.insert(userId='@me', body={
+  activity = activities.insert(userId='@me', body={
     'title': 'Testing insert',
     'object': {
       'content': u'Just a short note to show that insert is working. ☄',
       'type': 'note'}
     }
   ).execute()
+  pprint.pprint(activity)
+  print
+  print 'Just created: ', activity['links']['alternate'][0]['href']
 
 if __name__ == '__main__':
   main()
