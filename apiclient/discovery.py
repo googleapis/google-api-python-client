@@ -109,7 +109,7 @@ class JsonModel(object):
 
 
 def build(serviceName, version, http=None,
-    discoveryServiceUrl=DISCOVERY_URI, auth=None, model=JsonModel()):
+    discoveryServiceUrl=DISCOVERY_URI, developerKey=None, model=JsonModel()):
   params = {
       'api': serviceName,
       'apiVersion': version
@@ -141,6 +141,7 @@ def build(serviceName, version, http=None,
       self._http = http
       self._baseUrl = base
       self._model = model
+      self._developerKey = developerKey
 
     def auth_discovery(self):
       return auth_discovery
@@ -149,7 +150,7 @@ def build(serviceName, version, http=None,
 
     def method(self, **kwargs):
       return createResource(self._http, self._baseUrl, self._model,
-          methodName, methodDesc, futureDesc)
+          methodName, self._developerKey, methodDesc, futureDesc)
 
     setattr(method, '__doc__', 'A description of how to use this function')
     setattr(theclass, methodName, method)
@@ -159,8 +160,8 @@ def build(serviceName, version, http=None,
   return Service()
 
 
-def createResource(http, baseUrl, model, resourceName, resourceDesc,
-    futureDesc):
+def createResource(http, baseUrl, model, resourceName, developerKey,
+                   resourceDesc, futureDesc):
 
   class Resource(object):
     """A class for interacting with a resource."""
@@ -169,6 +170,7 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc,
       self._http = http
       self._baseUrl = baseUrl
       self._model = model
+      self._developerKey = developerKey
 
   def createMethod(theclass, methodName, methodDesc, futureDesc):
     pathUrl = methodDesc['pathUrl']
@@ -223,6 +225,9 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc,
           actual_path_params[argmap[key]] = value
       body_value = kwargs.get('body', None)
 
+      if self._developerKey:
+        actual_query_params['key'] = self._developerKey
+
       headers = {}
       headers, params, query, body = self._model.request(headers,
           actual_path_params, actual_query_params, body_value)
@@ -265,6 +270,13 @@ def createResource(http, baseUrl, model, resourceName, resourceDesc,
         url = p
       except (KeyError, TypeError):
         return None
+
+      if self._developerKey:
+        parsed = list(urlparse.urlparse(url))
+        q = urlparse.parse_qsl(parsed[4])
+        q.append(('key', self._developerKey))
+        parsed[4] = urllib.urlencode(q)
+        url = urlparse.urlunparse(parsed)
 
       headers = {}
       headers, params, query, body = self._model.request(headers, {}, {}, None)

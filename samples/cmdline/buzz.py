@@ -15,6 +15,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 from apiclient.discovery import build
 
 import httplib2
+httplib2.debuglevel = 4
 import pickle
 
 
@@ -26,7 +27,7 @@ def main():
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  p = build("buzz", "v1", http=http)
+  p = build("buzz", "v1", http=http, developerKey='AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0')
   activities = p.activities()
   activitylist = activities.list(max_results='2', scope='@self', userId='@me').execute()
   print activitylist['items'][0]['title']

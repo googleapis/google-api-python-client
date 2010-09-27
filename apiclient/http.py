@@ -12,7 +12,8 @@ class HttpRequest(object):
   """Encapsulate an HTTP request.
   """
 
-  def __init__(self, http, uri, method="GET", body=None, headers=None, postproc=None):
+  def __init__(self, http, uri, method="GET", body=None, headers=None,
+               postproc=None):
     self.uri = uri
     self.method = method
     self.body = body

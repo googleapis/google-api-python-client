@@ -22,10 +22,12 @@ Unit tests for objects created from discovery documents.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-from apiclient.discovery import build, key2param
 import httplib2
 import os
 import unittest
+import urlparse
+
+from apiclient.discovery import build, key2param
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -102,12 +104,27 @@ class Discovery(unittest.TestCase):
 class Next(unittest.TestCase):
   def test_next(self):
     self.http = HttpMock('buzz.json', {'status': '200'})
-    buzz = build('buzz', 'v1', self.http)
+    buzz = build('buzz', 'v1', self.http, developerKey='foobie_bletch')
     activities = {'links':
                   {'next':
                    [{'href': 'http://www.googleapis.com/next-link'}]}}
     request = buzz.activities().list_next(activities)
-    self.assertEqual(request.uri, 'http://www.googleapis.com/next-link')
+    self.assertEqual(request.uri,
+                     'http://www.googleapis.com/next-link?key=foobie_bletch')
+
+
+class DeveloperKey(unittest.TestCase):
+  def test_param(self):
+    self.http = HttpMock('buzz.json', {'status': '200'})
+    buzz = build('buzz', 'v1', self.http, developerKey='foobie_bletch')
+    activities = {'links':
+                  {'next':
+                   [{'href': 'http://www.googleapis.com/next-link'}]}}
+    request = buzz.activities().list_next(activities)
+    parsed = urlparse.urlparse(request.uri)
+    q = urlparse.parse_qs(parsed[4])
+    self.assertEqual(q['key'], ['foobie_bletch'])
+
 
 
 if __name__ == '__main__':
