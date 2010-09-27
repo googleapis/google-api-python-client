@@ -36,6 +36,7 @@ REQUEST_TOKEN_URL = 'https://www.google.com/accounts/OAuthGetRequestToken?domain
 AUTHORIZE_URL = 'https://www.google.com/buzz/api/auth/OAuthAuthorizeToken?domain=anonymous&scope=https://www.googleapis.com/auth/buzz'
 ACCESS_TOKEN_URL = 'https://www.google.com/accounts/OAuthGetAccessToken'
 
+# TODO(ade) This class is really a BuzzGaeBuilder. Rename it.
 class BuzzGaeClient(object):
   def __init__(self, consumer_key='anonymous', consumer_secret='anonymous'):
     self.consumer = oauth.Consumer(consumer_key, consumer_secret)

@@ -9,12 +9,28 @@ Functional tests that verify we can retrieve data from existing services.
 These tests are read-only in order to ensure they're repeatable. They also
 only work with publicly visible data in order to avoid dealing with OAuth.
 """
+import httplib2
 
 __author__ = 'ade@google.com (Ade Oshineye)'
 
 from apiclient.discovery import build
+import httplib2
 import logging
+import os
 import unittest
+
+# TODO(ade) Remove this mock once the bug in the discovery document is fixed
+DATA_DIR = os.path.join(logging.os.path.dirname(__file__), '../tests/data')
+class HttpMock(object):
+
+  def __init__(self, filename, headers):
+    f = file(os.path.join(DATA_DIR, filename), 'r')
+    self.data = f.read()
+    f.close()
+    self.headers = headers
+
+  def request(self, uri, method="GET", body=None, headers=None, redirections=1, connection_type=None):
+    return httplib2.Response(self.headers), self.data
 
 class BuzzFunctionalTest(unittest.TestCase):
   def test_can_get_buzz_activities_with_many_params(self):
@@ -31,7 +47,7 @@ class BuzzFunctionalTest(unittest.TestCase):
     activity_count = len(activities['items'])
     self.assertEquals(max_results, activity_count)
 
-  def test_can_page_through_users_activities(self):
+  def test_can_get_multiple_pages_of_buzz_activities(self):
     buzz = build('buzz', 'v1')
     max_results = 2
     actcol = buzz.activities()
@@ -42,6 +58,22 @@ class BuzzFunctionalTest(unittest.TestCase):
       activities = actcol.list_next(activities).execute()
       activity_count = len(activities['items'])
       self.assertEquals(max_results, activity_count, 'Failed after %s pages' % str(count))
+
+  def IGNORE__test_can_get_multiple_pages_of_buzz_likers(self):
+    # Ignore this test until the Buzz API fixes the bug with next links
+    # http://code.google.com/p/google-buzz-api/issues/detail?id=114
+    self.http = HttpMock('buzz.json', {'status': '200'})
+    buzz = build('buzz', 'v1', self.http)
+    max_results = 1
+    people_cmd = buzz.people()
+    #https://www.googleapis.com/buzz/v1/activities/111062888259659218284/@self/B:z13nh535yk2syfob004cdjyb3mjeulcwv3c?alt=json#
+    people = people_cmd.liked(groupId='@liked', userId='googlebuzz', scope='@self',
+                              postId='B:z13nh535yk2syfob004cdjyb3mjeulcwv3c', max_results=max_results).execute()
+
+    for count in range(10):
+      people = people_cmd.liked_next(people).execute()
+      people_count = len(people['items'])
+      self.assertEquals(max_results, people_count, 'Failed after %s pages' % str(count))
 
 if __name__ == '__main__':
   unittest.main()
