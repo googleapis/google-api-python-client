@@ -75,5 +75,15 @@ class BuzzFunctionalTest(unittest.TestCase):
       people_count = len(people['items'])
       self.assertEquals(max_results, people_count, 'Failed after %s pages' % str(count))
 
+  def test_can_get_user_profile(self):
+    buzz = build('buzz', 'v1')
+    person = buzz.people().get(userId='googlebuzz').execute()
+
+    self.assertTrue(person is not None)
+    self.assertEquals('buzz#person', person['kind'])
+    self.assertEquals('Google Buzz Team', person['displayName'])
+    self.assertEquals('111062888259659218284', person['id'])
+    self.assertEquals('http://www.google.com/profiles/googlebuzz', person['profileUrl'])
+
 if __name__ == '__main__':
   unittest.main()
