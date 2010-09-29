@@ -236,8 +236,14 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
       headers, params, query, body = self._model.request(headers,
           actual_path_params, actual_query_params, body_value)
 
+      # TODO(ade) This exists to fix a bug in V1 of the Buzz discovery document.
+      # Base URLs should not contain any path elements. If they do then urlparse.urljoin will strip them out
+      # This results in an incorrect URL which returns a 404
+      url_result = urlparse.urlsplit(self._baseUrl)
+      new_base_url = url_result.scheme + '://' + url_result.netloc
+
       expanded_url = uritemplate.expand(pathUrl, params)
-      url = urlparse.urljoin(self._baseUrl, expanded_url + query)
+      url = urlparse.urljoin(new_base_url, url_result.path + expanded_url + query)
 
       logging.info('URL being requested: %s' % url)
       return HttpRequest(self._http, url, method=httpMethod, body=body,
