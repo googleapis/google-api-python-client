@@ -85,5 +85,19 @@ class BuzzFunctionalTest(unittest.TestCase):
     self.assertEquals('111062888259659218284', person['id'])
     self.assertEquals('http://www.google.com/profiles/googlebuzz', person['profileUrl'])
 
+
+class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
+  def IGNORE__test_can_list_groups_belonging_to_user(self):
+    buzz = build('buzz', 'v1')
+    groups = buzz.groups().list(userId='googlebuzz').execute()
+
+    self.assertTrue(len(groups) > 1)
+
+  def IGNORE__test_can_get_followees_of_user(self):
+    buzz = build('buzz', 'v1')
+    following = buzz.groups().get(userId='googlebuzz', groupId='@following').execute()
+
+    self.assertEquals(17, len(following))
+
 if __name__ == '__main__':
   unittest.main()
