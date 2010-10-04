@@ -152,7 +152,7 @@ def build(serviceName, version, http=None,
 
   def createMethod(theclass, methodName, methodDesc, futureDesc):
 
-    def method(self, **kwargs):
+    def method(self):
       return createResource(self._http, self._baseUrl, self._model,
           methodName, self._developerKey, methodDesc, futureDesc)
 
