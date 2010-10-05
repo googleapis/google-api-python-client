@@ -16,6 +16,7 @@ __author__ = 'ade@google.com (Ade Oshineye)'
 from apiclient.discovery import build
 import httplib2
 import logging
+import pickle
 import os
 import unittest
 
@@ -87,14 +88,29 @@ class BuzzFunctionalTest(unittest.TestCase):
 
 
 class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
-  def IGNORE__test_can_list_groups_belonging_to_user(self):
-    buzz = build('buzz', 'v1')
-    groups = buzz.groups().list(userId='googlebuzz').execute()
+  def __init__(self, method_name):
+    unittest.TestCase.__init__(self, method_name)
+    credentials_dir = os.path.join(logging.os.path.dirname(__file__), './data')
+    f = file(os.path.join(credentials_dir, 'buzz_credentials.dat'), 'r')
+    credentials = pickle.loads(f.read())
+    f.close()
 
-    self.assertTrue(len(groups) > 1)
+    self.http = credentials.authorize(httplib2.Http())
+
+  def test_can_list_groups_belonging_to_user(self):
+    # TODO(ade) This should not require authentication. It does because we're adding a spurious @self to the URL
+    buzz = build('buzz', 'v1', http=self.http)
+    groups = buzz.groups().list(userId='108242092577082601423').execute()
+
+    # This should work as long as no-one edits the groups for this test account
+    expected_default_number_of_groups = 4
+    self.assertEquals(expected_default_number_of_groups, len(groups['items']))
 
   def IGNORE__test_can_get_followees_of_user(self):
-    buzz = build('buzz', 'v1')
+    # This currently fails with:
+    # Attempting to access self view of a different user.
+    # and URL: 
+    buzz = build('buzz', 'v1', http=self.http)
     following = buzz.groups().get(userId='googlebuzz', groupId='@following').execute()
 
     self.assertEquals(17, len(following))
