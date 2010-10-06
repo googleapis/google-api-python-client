@@ -86,6 +86,31 @@ class BuzzFunctionalTest(unittest.TestCase):
     self.assertEquals('111062888259659218284', person['id'])
     self.assertEquals('http://www.google.com/profiles/googlebuzz', person['profileUrl'])
 
+  def test_can_get_followees_of_user(self):
+    buzz = build('buzz', 'v1')
+    expected_followees = 30
+    following = buzz.people().list(userId='googlebuzz', groupId='@following', max_results=expected_followees).execute()
+
+    self.assertEquals(expected_followees, following['totalResults'])
+    self.assertEquals(expected_followees, len(following['entry']))
+
+  def test_can_efficiently_get_follower_count_of_user(self):
+    buzz = build('buzz', 'v1')
+
+    # Restricting max_results to 1 means only a tiny amount of data comes back but the totalResults still has the total.
+    following = buzz.people().list(userId='googlebuzz', groupId='@followers', max_results=1).execute()
+
+    # @googlebuzz has a large but fluctuating number of followers
+    # It is sufficient if the result is bigger than 10, 000
+    follower_count = following['totalResults']
+    self.assertTrue(follower_count > 10000, follower_count)
+
+  def test_follower_count_is_zero_for_user_with_hidden_follower_count(self):
+    buzz = build('buzz', 'v1')
+    following = buzz.people().list(userId='adewale', groupId='@followers').execute()
+    
+    self.assertEquals(0, following['totalResults'])
+
 
 class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
   def __init__(self, method_name):
@@ -98,7 +123,6 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
     self.http = credentials.authorize(httplib2.Http())
 
   def test_can_list_groups_belonging_to_user(self):
-    # TODO(ade) This should not require authentication. It does because we're adding a spurious @self to the URL
     buzz = build('buzz', 'v1', http=self.http)
     groups = buzz.groups().list(userId='108242092577082601423').execute()
 
@@ -106,14 +130,6 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
     expected_default_number_of_groups = 4
     self.assertEquals(expected_default_number_of_groups, len(groups['items']))
 
-  def IGNORE__test_can_get_followees_of_user(self):
-    # This currently fails with:
-    # Attempting to access self view of a different user.
-    # and URL: 
-    buzz = build('buzz', 'v1', http=self.http)
-    following = buzz.groups().get(userId='googlebuzz', groupId='@following').execute()
-
-    self.assertEquals(17, len(following))
 
 if __name__ == '__main__':
   unittest.main()
