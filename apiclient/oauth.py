@@ -21,7 +21,17 @@ except ImportError:
     from cgi import parse_qs, parse_qsl
 
 
-class MissingParameter(Exception):
+class Error(Exception):
+  """Base error for this module."""
+  pass
+
+
+class RequestError(Error):
+  """Error occurred during request."""
+  pass
+
+
+class MissingParameter(Error):
   pass
 
 
@@ -185,7 +195,7 @@ class FlowThreeLegged(object):
                                    body=body)
     if resp['status'] != '200':
       logging.error('Failed to retrieve temporary authorization: %s' % content)
-      raise Exception('Invalid response %s.' % resp['status'])
+      raise RequestError('Invalid response %s.' % resp['status'])
 
     self.request_token = dict(parse_qsl(content))
 
@@ -222,7 +232,7 @@ class FlowThreeLegged(object):
     resp, content = client.request(uri, 'POST', headers=headers)
     if resp['status'] != '200':
       logging.error('Failed to retrieve access token: %s' % content)
-      raise Exception('Invalid response %s.' % resp['status'])
+      raise RequestError('Invalid response %s.' % resp['status'])
 
     oauth_params = dict(parse_qsl(content))
     token = oauth.Token(

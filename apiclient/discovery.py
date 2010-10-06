@@ -45,12 +45,20 @@ except ImportError: # pragma: no cover
     import json as simplejson
 
 
-class HttpError(Exception):
+class Error(Exception):
+  """Base error for this module."""
   pass
 
 
-class UnknownLinkType(Exception):
+class HttpError(Error):
+  """HTTP data was invalid or unexpected."""
   pass
+
+
+class UnknownLinkType(Error):
+  """Link type unknown or unexpected."""
+  pass
+
 
 DISCOVERY_URI = ('http://www.googleapis.com/discovery/0.1/describe'
   '{?api,apiVersion}')
