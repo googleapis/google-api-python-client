@@ -99,7 +99,7 @@ class JsonModel(object):
       return (headers, path_params, query, simplejson.dumps(model))
 
   def build_query(self, params):
-    params.update({'alt': 'json', 'prettyprint': 'true'})
+    params.update({'alt': 'json'})
     astuples = []
     for key, value in params.iteritems():
       if getattr(value, 'encode', False) and callable(value.encode):

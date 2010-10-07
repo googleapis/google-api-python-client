@@ -22,11 +22,6 @@ other example apps in the same directory.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-# Enable this sample to be run from the top-level directory
-import os
-import sys
-sys.path.insert(0, os.getcwd())
-
 from apiclient.discovery import build
 from apiclient.oauth import FlowThreeLegged
 
