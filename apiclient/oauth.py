@@ -130,8 +130,11 @@ class OAuthCredentials(Credentials):
       if headers == None:
         headers = {}
       headers.update(req.to_header())
-      if 'user-agent' not in headers:
-        headers['user-agent'] = self.user_agent
+      if 'user-agent' in headers:
+        headers['user-agent'] += ' '
+      else:
+        headers['user-agent'] = ''
+      headers['user-agent'] += self.user_agent
       return request_orig(uri, method, body, headers,
                           redirections, connection_type)
 

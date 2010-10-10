@@ -94,7 +94,10 @@ class JsonModel(object):
     if body_value is None:
       return (headers, path_params, query, None)
     else:
-      model = {'data': body_value}
+      if len(body_value) == 1 and 'data' in body_value:
+        model = body_value
+      else:
+        model = {'data': body_value}
       headers['content-type'] = 'application/json'
       return (headers, path_params, query, simplejson.dumps(model))
 
