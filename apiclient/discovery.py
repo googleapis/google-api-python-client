@@ -33,17 +33,7 @@ try:
 except ImportError:
     from cgi import parse_qsl
 from apiclient.http import HttpRequest
-
-try: # pragma: no cover
-  import simplejson
-except ImportError: # pragma: no cover
-  try:
-    # Try to import from django, should work on App Engine
-    from django.utils import simplejson
-  except ImportError:
-    # Should work for Python2.6 and higher.
-    import json as simplejson
-
+from apiclient.json import simplejson
 
 class Error(Exception):
   """Base error for this module."""

@@ -25,15 +25,7 @@ import os
 import os.path
 import sys
 
-try:
-  import simplejson
-except ImportError:
-  try:
-    # Try to import from django, should work on App Engine
-    from django.utils import simplejson
-  except ImportError:
-    # Should work for Python2.6 and higher.
-    import json as simplejson
+from apiclient.json import simplejson
 
 
 def main():
