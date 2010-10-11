@@ -114,6 +114,9 @@ class JsonModel(object):
     # Error handling is TBD, for example, do we retry
     # for some operation/error combinations?
     if resp.status < 300:
+      if resp.status == 204:
+        # A 204: No Content response should be treated differently to all the other success states
+        return simplejson.loads('{}')
       return simplejson.loads(content)['data']
     else:
       logging.debug('Content from bad request was: %s' % content)

@@ -149,6 +149,23 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
     ).execute()
     self.assertTrue(activity is not None)
 
+  def test_can_create_private_activity(self):
+    buzz = build('buzz', 'v1', http=self.http)
+
+    activity = buzz.activities().insert(userId='@me', body={
+        'title': 'Testing insert',
+        'object': {
+        'content': 'This is a private post.'
+      },
+      'visibility': {
+        'entries': [
+          { 'id': 'tag:google.com,2010:buzz-group:108242092577082601423:13' }
+        ]
+      }
+    }
+    ).execute()
+    self.assertTrue(activity is not None)
+
   def test_can_identify_number_of_groups_belonging_to_user(self):
     buzz = build('buzz', 'v1', http=self.http)
     groups = buzz.groups().list(userId='108242092577082601423').execute()
@@ -208,6 +225,23 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
     group = buzz.groups().get(userId='108242092577082601423', groupId='G:108242092577082601423:9999999').execute()
     self.assertEquals(None, group, group)
 
+  def test_can_delete_activity(self):
+    buzz = build('buzz', 'v1', http=self.http)
+  
+    activity = buzz.activities().insert(userId='@me', body={
+      'title': 'Activity to be deleted',
+      'object': {
+        'content': u'Created this activity so that it can be deleted.',
+        'type': 'note'}
+      }
+    ).execute()
+    id = activity['id']
+
+    buzz.activities().delete(scope='@self', userId='@me', postId=id).execute()
+
+    activity_url = activity['links']['self'][0]['href']
+    resp, content = self.http.request(activity_url, 'GET')
+    self.assertEquals(404, resp.status)
 
 if __name__ == '__main__':
   unittest.main()
