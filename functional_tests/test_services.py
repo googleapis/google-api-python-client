@@ -10,6 +10,7 @@ These tests are read-only in order to ensure they're repeatable. They also
 only work with publicly visible data in order to avoid dealing with OAuth.
 """
 import httplib2
+import pprint
 
 __author__ = 'ade@google.com (Ade Oshineye)'
 
@@ -34,29 +35,43 @@ class HttpMock(object):
     return httplib2.Response(self.headers), self.data
 
 class BuzzFunctionalTest(unittest.TestCase):
+  def test_can_get_specific_activity(self):
+    buzz = build('buzz', 'v1')
+    activity = buzz.activities().get(userId='105037104815911535953',
+                                     postId='B:z12sspviqyakfvye123wehng0muwz5jzq04').execute()
+
+    self.assertTrue(activity is not None)
+
+  def test_can_get_specific_activity_with_tag_id(self):
+    buzz = build('buzz', 'v1')
+    activity = buzz.activities().get(userId='105037104815911535953',
+                                     postId='tag:google.com,2010:buzz:z13ptnw5usmnv15ey22fzlswnuqoebasu').execute()
+
+    self.assertTrue(activity is not None)
+
   def test_can_get_buzz_activities_with_many_params(self):
     buzz = build('buzz', 'v1')
     max_results = 2
-    actcol = buzz.activities()
-    activities = actcol.list(userId='googlebuzz', scope='@self',
+    activities_command = buzz.activities()
+    activities = activities_command.list(userId='googlebuzz', scope='@self',
                              max_comments=max_results*2 ,max_liked=max_results*3,
                              max_results=max_results).execute()
     activity_count = len(activities['items'])
     self.assertEquals(max_results, activity_count)
 
-    activities = actcol.list_next(activities).execute()
+    activities = activities_command.list_next(activities).execute()
     activity_count = len(activities['items'])
     self.assertEquals(max_results, activity_count)
 
   def test_can_get_multiple_pages_of_buzz_activities(self):
     buzz = build('buzz', 'v1')
     max_results = 2
-    actcol = buzz.activities()
+    activities_command = buzz.activities()
     
-    activities = actcol.list(userId='adewale', scope='@self',
+    activities = activities_command.list(userId='adewale', scope='@self',
                              max_results=max_results).execute()
     for count in range(10):
-      activities = actcol.list_next(activities).execute()
+      activities = activities_command.list_next(activities).execute()
       activity_count = len(activities['items'])
       self.assertEquals(max_results, activity_count, 'Failed after %s pages' % str(count))
 
@@ -122,13 +137,76 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
 
     self.http = credentials.authorize(httplib2.Http())
 
-  def test_can_list_groups_belonging_to_user(self):
+  def test_can_create_activity(self):
+    buzz = build('buzz', 'v1', http=self.http)
+
+    activity = buzz.activities().insert(userId='@me', body={
+      'title': 'Testing insert',
+      'object': {
+        'content': u'Just a short note to show that insert is working. ?',
+        'type': 'note'}
+      }
+    ).execute()
+    self.assertTrue(activity is not None)
+
+  def test_can_identify_number_of_groups_belonging_to_user(self):
     buzz = build('buzz', 'v1', http=self.http)
     groups = buzz.groups().list(userId='108242092577082601423').execute()
 
     # This should work as long as no-one edits the groups for this test account
     expected_default_number_of_groups = 4
     self.assertEquals(expected_default_number_of_groups, len(groups['items']))
+
+  def IGNORE__test_can_like_activity(self):
+    buzz = build('buzz', 'v1', http=self.http)
+    activity = buzz.activities().insert(userId='@me', body={
+      'title': 'Testing insert',
+      'object': {
+        'content': u'Just a short note to show that insert is working. ?',
+        'type': 'note'}
+      }
+    ).execute()
+    pprint.pprint(activity)
+    id = activity['id']
+    likers = buzz.people().liked(userId='105037104815911535953', postId=id, groupId='@liked', scope='@self').execute()
+    # Todo(ade) Insert the new liker once the Buzz back-end bug is fixed
+
+  def test_can_comment_on_activity(self):
+    buzz = build('buzz', 'v1', http=self.http)
+
+    activity = buzz.activities().insert(userId='@me', body={
+      'title': 'A new activity',
+      'object': {
+        'content': u'The body of the new activity',
+        'type': 'note'}
+      }
+    ).execute()
+
+    id = activity['id']
+    comment = buzz.comments().insert(userId='@me', postId=id, body={
+      "content": "A comment on the new activity"
+    }).execute()
+
+  def IGNORE__test_can_list_groups_belonging_to_user(self):
+    # TODO(ade) Uncomment this test once the related Buzz back-end bug is fixed
+    buzz = build('buzz', 'v1', http=self.http)
+    groups = buzz.groups().list(userId='108242092577082601423').execute()
+    pprint.pprint(groups)
+
+    group = buzz.groups().get(userId='108242092577082601423', groupId='G:108242092577082601423:15').execute()
+    self.assertEquals('G:108242092577082601423:15', group['id'], group)
+
+    group = buzz.groups().get(userId='108242092577082601423', groupId='G:108242092577082601423:14').execute()
+    self.assertEquals('G:108242092577082601423:14', group['id'], group)
+
+    group = buzz.groups().get(userId='108242092577082601423', groupId='G:108242092577082601423:13').execute()
+    self.assertEquals('G:108242092577082601423:13', group['id'], group)
+
+    group = buzz.groups().get(userId='108242092577082601423', groupId='G:108242092577082601423:6').execute()
+    self.assertEquals('G:108242092577082601423:6', group['id'], group)
+
+    group = buzz.groups().get(userId='108242092577082601423', groupId='G:108242092577082601423:9999999').execute()
+    self.assertEquals(None, group, group)
 
 
 if __name__ == '__main__':
