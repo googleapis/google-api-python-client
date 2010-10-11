@@ -19,6 +19,7 @@ import httplib2
 import logging
 import pickle
 import os
+import time
 import unittest
 
 # TODO(ade) Remove this mock once the bug in the discovery document is fixed
@@ -227,7 +228,7 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
 
   def test_can_delete_activity(self):
     buzz = build('buzz', 'v1', http=self.http)
-  
+
     activity = buzz.activities().insert(userId='@me', body={
       'title': 'Activity to be deleted',
       'object': {
@@ -238,6 +239,7 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
     id = activity['id']
 
     buzz.activities().delete(scope='@self', userId='@me', postId=id).execute()
+    time.sleep(2)
 
     activity_url = activity['links']['self'][0]['href']
     resp, content = self.http.request(activity_url, 'GET')
