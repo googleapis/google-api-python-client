@@ -26,6 +26,10 @@ import httplib2
 import os
 import unittest
 import urlparse
+try:
+    from urlparse import parse_qs
+except ImportError:
+    from cgi import parse_qs
 
 from apiclient.discovery import build, key2param
 
@@ -102,7 +106,7 @@ class Discovery(unittest.TestCase):
 
 
 class Next(unittest.TestCase):
-  def test_next(self):
+  def test_next_for_activities_list(self):
     self.http = HttpMock('buzz.json', {'status': '200'})
     buzz = build('buzz', 'v1', self.http, developerKey='foobie_bletch')
     activities = {'links':
@@ -122,10 +126,18 @@ class DeveloperKey(unittest.TestCase):
                    [{'href': 'http://www.googleapis.com/next-link'}]}}
     request = buzz.activities().list_next(activities)
     parsed = urlparse.urlparse(request.uri)
-    q = urlparse.parse_qs(parsed[4])
+    q = parse_qs(parsed[4])
     self.assertEqual(q['key'], ['foobie_bletch'])
 
 
+  def test_next_for_people_liked(self):
+    self.http = HttpMock('buzz.json', {'status': '200'})
+    buzz = build('buzz', 'v1', self.http)
+    people = {'links':
+                  {'next':
+                   [{'href': 'http://www.googleapis.com/next-link'}]}}
+    request = buzz.people().liked_next(people)
+    self.assertEqual(request.uri, 'http://www.googleapis.com/next-link')
 
 if __name__ == '__main__':
   unittest.main()

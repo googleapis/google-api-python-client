@@ -36,6 +36,18 @@ REQUEST_TOKEN_URL = 'https://www.google.com/accounts/OAuthGetRequestToken?domain
 AUTHORIZE_URL = 'https://www.google.com/buzz/api/auth/OAuthAuthorizeToken?domain=anonymous&scope=https://www.googleapis.com/auth/buzz'
 ACCESS_TOKEN_URL = 'https://www.google.com/accounts/OAuthGetAccessToken'
 
+
+class Error(Exception):
+  """Base error for this module."""
+  pass
+
+
+class RequestError(Error):
+  """Request returned failure or unexpected data."""
+  pass
+
+
+# TODO(ade) This class is really a BuzzGaeBuilder. Rename it.
 class BuzzGaeClient(object):
   def __init__(self, consumer_key='anonymous', consumer_secret='anonymous'):
     self.consumer = oauth.Consumer(consumer_key, consumer_secret)
@@ -48,7 +60,7 @@ class BuzzGaeClient(object):
 
     if resp['status'] != '200':
       logging.warn('Request: %s failed with status: %s. Content was: %s' % (url, resp['status'], content))
-      raise Exception('Invalid response %s.' % resp['status'])
+      raise RequestError('Invalid response %s.' % resp['status'])
     return resp, content
 
   def get_request_token(self, callback_url, display_name = None):

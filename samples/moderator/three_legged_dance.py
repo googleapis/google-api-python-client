@@ -35,6 +35,7 @@ flow = FlowThreeLegged(moderator_discovery,
                        user_agent='google-api-client-python-mdrtr-cmdline/1.0',
                        domain='anonymous',
                        scope='https://www.googleapis.com/auth/moderator',
+                       #scope='tag:google.com,2010:auth/moderator',
                        xoauth_displayname='Google API Client Example App')
 
 authorize_url = flow.step1_get_authorize_url()

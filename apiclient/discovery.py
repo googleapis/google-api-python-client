@@ -28,6 +28,10 @@ import re
 import uritemplate
 import urllib
 import urlparse
+try:
+    from urlparse import parse_qsl
+except ImportError:
+    from cgi import parse_qsl
 from apiclient.http import HttpRequest
 
 try: # pragma: no cover
@@ -41,12 +45,20 @@ except ImportError: # pragma: no cover
     import json as simplejson
 
 
-class HttpError(Exception):
+class Error(Exception):
+  """Base error for this module."""
   pass
 
 
-class UnknownLinkType(Exception):
+class HttpError(Error):
+  """HTTP data was invalid or unexpected."""
   pass
+
+
+class UnknownLinkType(Error):
+  """Link type unknown or unexpected."""
+  pass
+
 
 DISCOVERY_URI = ('http://www.googleapis.com/discovery/0.1/describe'
   '{?api,apiVersion}')
@@ -82,12 +94,15 @@ class JsonModel(object):
     if body_value is None:
       return (headers, path_params, query, None)
     else:
-      model = {'data': body_value}
+      if len(body_value) == 1 and 'data' in body_value:
+        model = body_value
+      else:
+        model = {'data': body_value}
       headers['content-type'] = 'application/json'
       return (headers, path_params, query, simplejson.dumps(model))
 
   def build_query(self, params):
-    params.update({'alt': 'json', 'prettyprint': 'true'})
+    params.update({'alt': 'json'})
     astuples = []
     for key, value in params.iteritems():
       if getattr(value, 'encode', False) and callable(value.encode):
@@ -99,6 +114,9 @@ class JsonModel(object):
     # Error handling is TBD, for example, do we retry
     # for some operation/error combinations?
     if resp.status < 300:
+      if resp.status == 204:
+        # A 204: No Content response should be treated differently to all the other success states
+        return simplejson.loads('{}')
       return simplejson.loads(content)['data']
     else:
       logging.debug('Content from bad request was: %s' % content)
@@ -148,7 +166,7 @@ def build(serviceName, version, http=None,
 
   def createMethod(theclass, methodName, methodDesc, futureDesc):
 
-    def method(self, **kwargs):
+    def method(self):
       return createResource(self._http, self._baseUrl, self._model,
           methodName, self._developerKey, methodDesc, futureDesc)
 
@@ -232,8 +250,14 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
       headers, params, query, body = self._model.request(headers,
           actual_path_params, actual_query_params, body_value)
 
+      # TODO(ade) This exists to fix a bug in V1 of the Buzz discovery document.
+      # Base URLs should not contain any path elements. If they do then urlparse.urljoin will strip them out
+      # This results in an incorrect URL which returns a 404
+      url_result = urlparse.urlsplit(self._baseUrl)
+      new_base_url = url_result.scheme + '://' + url_result.netloc
+
       expanded_url = uritemplate.expand(pathUrl, params)
-      url = urlparse.urljoin(self._baseUrl, expanded_url + query)
+      url = urlparse.urljoin(new_base_url, url_result.path + expanded_url + query)
 
       logging.info('URL being requested: %s' % url)
       return HttpRequest(self._http, url, method=httpMethod, body=body,
@@ -273,7 +297,7 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
 
       if self._developerKey:
         parsed = list(urlparse.urlparse(url))
-        q = urlparse.parse_qsl(parsed[4])
+        q = parse_qsl(parsed[4])
         q.append(('key', self._developerKey))
         parsed[4] = urllib.urlencode(q)
         url = urlparse.urlunparse(parsed)
