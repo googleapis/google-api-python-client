@@ -27,14 +27,14 @@ from apiclient.oauth import FlowThreeLegged
 
 import pickle
 
-moderator_discovery = build("moderator", "v1").auth_discovery()
+buzz_discovery = build("buzz", "v1").auth_discovery()
 
-flow = FlowThreeLegged(moderator_discovery,
+flow = FlowThreeLegged(buzz_discovery,
                        consumer_key='anonymous',
                        consumer_secret='anonymous',
-                       user_agent='google-api-client-python-mdrtr-cmdline/1.0',
+                       user_agent='google-api-client-python-buzz-cmdline/1.0',
                        domain='anonymous',
-                       scope='https://www.googleapis.com/auth/moderator',
+                       scope='https://www.googleapis.com/auth/buzz',
                        xoauth_displayname='Google API Client Example App')
 
 authorize_url = flow.step1_get_authorize_url()
@@ -50,6 +50,6 @@ verification = raw_input('What is the verification code? ').strip()
 
 credentials = flow.step2_exchange(verification)
 
-f = open('moderator.dat', 'w')
+f = open('buzz.dat', 'w')
 f.write(pickle.dumps(credentials))
 f.close()

@@ -55,9 +55,9 @@ from gettext import gettext as _
 import socket
 
 try:
-  from httplib2 import socks
+    from httplib2 import socks
 except ImportError:
-  socks = None
+    socks = None
 
 # Build the appropriate socket wrapper for ssl
 try:
@@ -83,7 +83,7 @@ def has_timeout(timeout): # python 2.6
 __all__ = ['Http', 'Response', 'ProxyInfo', 'HttpLib2Error',
   'RedirectMissingLocation', 'RedirectLimit', 'FailedToDecompressContent',
   'UnimplementedDigestAuthOptionError', 'UnimplementedHmacDigestAuthOptionError',
-  'debuglevel']
+  'debuglevel', 'ProxiesUnavailableError']
 
 
 # The httplib debug level, set to a non-zero value to get debug output
@@ -125,6 +125,7 @@ class UnimplementedHmacDigestAuthOptionError(HttpLib2ErrorWithResponse): pass
 
 class RelativeURIError(HttpLib2Error): pass
 class ServerNotFoundError(HttpLib2Error): pass
+class ProxiesUnavailableError(HttpLib2Error): pass
 
 # Open Items:
 # -----------
@@ -721,6 +722,9 @@ class HTTPConnectionWithTimeout(httplib.HTTPConnection):
     def connect(self):
         """Connect to the host and port specified in __init__."""
         # Mostly verbatim from httplib.py.
+        if self.proxy_info and socks is None:
+            raise ProxiesUnavailableError(
+                'Proxy support missing but proxy use was requested!')
         msg = "getaddrinfo returns an empty list"
         for res in socket.getaddrinfo(self.host, self.port, 0,
                 socket.SOCK_STREAM):

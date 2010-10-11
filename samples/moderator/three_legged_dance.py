@@ -22,24 +22,20 @@ other example apps in the same directory.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-# Enable this sample to be run from the top-level directory
-import os
-import sys
-sys.path.insert(0, os.getcwd())
-
 from apiclient.discovery import build
 from apiclient.oauth import FlowThreeLegged
 
 import pickle
 
-buzz_discovery = build("buzz", "v1").auth_discovery()
+moderator_discovery = build("moderator", "v1").auth_discovery()
 
-flow = FlowThreeLegged(buzz_discovery,
+flow = FlowThreeLegged(moderator_discovery,
                        consumer_key='anonymous',
                        consumer_secret='anonymous',
-                       user_agent='google-api-client-python-buzz-cmdline/1.0',
+                       user_agent='google-api-client-python-mdrtr-cmdline/1.0',
                        domain='anonymous',
-                       scope='https://www.googleapis.com/auth/buzz',
+                       scope='https://www.googleapis.com/auth/moderator',
+                       #scope='tag:google.com,2010:auth/moderator',
                        xoauth_displayname='Google API Client Example App')
 
 authorize_url = flow.step1_get_authorize_url()
@@ -55,6 +51,6 @@ verification = raw_input('What is the verification code? ').strip()
 
 credentials = flow.step2_exchange(verification)
 
-f = open('buzz.dat', 'w')
+f = open('moderator.dat', 'w')
 f.write(pickle.dumps(credentials))
 f.close()

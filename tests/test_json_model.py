@@ -65,6 +65,22 @@ class Model(unittest.TestCase):
     self.assertNotEqual(query, '')
     self.assertEqual(body, '{"data": {}}')
 
+  def test_json_body_default_data(self):
+    """Test that a 'data' wrapper doesn't get added if one is already present."""
+    model = JsonModel()
+
+    headers = {}
+    path_params = {}
+    query_params = {}
+    body = {'data': 'foo'}
+
+    headers, params, query, body = model.request(headers, path_params, query_params, body)
+
+    self.assertEqual(headers['accept'], 'application/json')
+    self.assertEqual(headers['content-type'], 'application/json')
+    self.assertNotEqual(query, '')
+    self.assertEqual(body, '{"data": "foo"}')
+
   def test_json_build_query(self):
     model = JsonModel()
 

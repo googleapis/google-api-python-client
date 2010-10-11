@@ -487,7 +487,7 @@ group.add_option("--rev", action="store", dest="revision",
                  help="Base revision/branch/tree to diff against. Use "
                       "rev1:rev2 range to review already committed changeset.")
 group.add_option("--send_mail", action="store_true",
-                 dest="send_mail", default=False,
+                 dest="send_mail", default=True,
                  help="Send notification email to reviewers.")
 group.add_option("--vcs", action="store", dest="vcs",
                  metavar="VCS", default=None,
