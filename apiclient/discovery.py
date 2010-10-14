@@ -42,7 +42,11 @@ class Error(Exception):
 
 class HttpError(Error):
   """HTTP data was invalid or unexpected."""
-  pass
+  def __init__(self, resp, detail):
+    self.resp = resp
+    self.detail = detail
+  def __str__(self):
+    return self.detail
 
 
 class UnknownLinkType(Error):
@@ -110,10 +114,10 @@ class JsonModel(object):
       return simplejson.loads(content)['data']
     else:
       logging.debug('Content from bad request was: %s' % content)
-      if resp.get('content-type', '') != 'application/json':
-        raise HttpError('%d %s' % (resp.status, resp.reason))
+      if resp.get('content-type', '').startswith('application/json'):
+        raise HttpError(resp, simplejson.loads(content)['error'])
       else:
-        raise HttpError(simplejson.loads(content)['error'])
+        raise HttpError(resp, '%d %s' % (resp.status, resp.reason))
 
 
 def build(serviceName, version, http=None,
