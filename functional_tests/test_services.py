@@ -177,13 +177,26 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
     ).execute()
     self.assertTrue(activity is not None)
 
+  def test_can_create_and_delete_new_group(self):
+    buzz = build('buzz', 'v1', http=self.http)
+    group_name = 'New Group Created At' + str(time.time())
+    group = buzz.groups().insert(userId='@me', body = {
+      'data': {
+        'title': group_name
+      }
+    }).execute()
+    self.assertTrue(group is not None)
+
+    result = buzz.groups().delete(userId='@me', groupId=group['id']).execute()
+    self.assertEquals({}, result)
+
   def test_can_identify_number_of_groups_belonging_to_user(self):
     buzz = build('buzz', 'v1', http=self.http)
     groups = buzz.groups().list(userId='108242092577082601423').execute()
 
-    # This should work as long as no-one edits the groups for this test account
+    # This should work as long as no-one deletes the 4 default groups for this test account
     expected_default_number_of_groups = 4
-    self.assertEquals(expected_default_number_of_groups, len(groups['items']))
+    self.assertTrue(len(groups['items']) > expected_default_number_of_groups)
 
   def IGNORE__test_can_like_activity(self):
     buzz = build('buzz', 'v1', http=self.http)
