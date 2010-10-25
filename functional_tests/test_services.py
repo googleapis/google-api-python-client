@@ -68,7 +68,7 @@ class BuzzFunctionalTest(unittest.TestCase):
     buzz = build('buzz', 'v1')
     max_results = 2
     activities_command = buzz.activities()
-    
+
     activities = activities_command.list(userId='adewale', scope='@self',
                              max_results=max_results).execute()
     for count in range(10):
@@ -134,7 +134,7 @@ class BuzzFunctionalTest(unittest.TestCase):
   def test_follower_count_is_zero_for_user_with_hidden_follower_count(self):
     buzz = build('buzz', 'v1')
     following = buzz.people().list(userId='adewale', groupId='@followers').execute()
-    
+
     self.assertEquals(0, following['totalResults'])
 
 
