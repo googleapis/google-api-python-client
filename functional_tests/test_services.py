@@ -228,11 +228,9 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
       "content": "A comment on the new activity"
     }).execute()
 
-  def IGNORE__test_can_list_groups_belonging_to_user(self):
-    # TODO(ade) Uncomment this test once the related Buzz back-end bug is fixed
+  def test_can_list_groups_belonging_to_user(self):
     buzz = build('buzz', 'v1', http=self.http)
     groups = buzz.groups().list(userId='108242092577082601423').execute()
-    pprint.pprint(groups)
 
     group = buzz.groups().get(userId='108242092577082601423', groupId='G:108242092577082601423:15').execute()
     self.assertEquals('G:108242092577082601423:15', group['id'], group)
@@ -245,9 +243,6 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
 
     group = buzz.groups().get(userId='108242092577082601423', groupId='G:108242092577082601423:6').execute()
     self.assertEquals('G:108242092577082601423:6', group['id'], group)
-
-    group = buzz.groups().get(userId='108242092577082601423', groupId='G:108242092577082601423:9999999').execute()
-    self.assertEquals(None, group, group)
 
   def test_can_delete_activity(self):
     buzz = build('buzz', 'v1', http=self.http)
