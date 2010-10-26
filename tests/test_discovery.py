@@ -35,6 +35,7 @@ from apiclient.discovery import build, key2param
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
+
 class HttpMock(object):
 
   def __init__(self, filename, headers):
@@ -54,6 +55,7 @@ class Utilities(unittest.TestCase):
 
 
 class Discovery(unittest.TestCase):
+
   def test_method_error_checking(self):
     self.http = HttpMock('buzz.json', {'status': '200'})
     buzz = build('buzz', 'v1', self.http)
@@ -90,7 +92,6 @@ class Discovery(unittest.TestCase):
     self.http = HttpMock('buzz.json', {'status': '200'})
     buzz = build('buzz', 'v1', self.http)
     self.assertTrue(getattr(buzz, 'activities'))
-    self.assertTrue(getattr(buzz, 'search'))
     self.assertTrue(getattr(buzz, 'feeds'))
     self.assertTrue(getattr(buzz, 'photos'))
     self.assertTrue(getattr(buzz, 'people'))
@@ -103,6 +104,19 @@ class Discovery(unittest.TestCase):
     buzz = build('buzz', 'v1', self.http)
     auth = buzz.auth_discovery()
     self.assertTrue('request' in auth)
+
+  def test_full_featured(self):
+    # Zoo should exercise all discovery facets
+    # and should also have no future.json file.
+    self.http = HttpMock('zoo.json', {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+    self.assertTrue(getattr(zoo, 'animals'))
+    request = zoo.animals().list(name="bat", projection="size")
+    parsed = urlparse.urlparse(request.uri)
+    q = parse_qs(parsed[4])
+    self.assertEqual(q['name'], ['bat'])
+    self.assertEqual(q['projection'], ['size'])
+
 
 
 class Next(unittest.TestCase):

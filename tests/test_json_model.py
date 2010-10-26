@@ -33,7 +33,6 @@ except ImportError:
   from cgi import parse_qs
 
 
-
 class Model(unittest.TestCase):
   def test_json_no_body(self):
     model = JsonModel()

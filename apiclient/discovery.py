@@ -54,8 +54,8 @@ class UnknownLinkType(Error):
   pass
 
 
-DISCOVERY_URI = ('http://www.googleapis.com/discovery/0.1/describe'
-  '{?api,apiVersion}')
+DISCOVERY_URI = ('https://www.googleapis.com/discovery/v0.2beta1/describe/'
+  '{api}/{apiVersion}')
 
 
 def key2param(key):
@@ -132,18 +132,21 @@ def build(serviceName, version, http=None,
   requested_url = uritemplate.expand(discoveryServiceUrl, params)
   logging.info('URL being requested: %s' % requested_url)
   resp, content = http.request(requested_url)
-  d = simplejson.loads(content)
-  service = d['data'][serviceName][version]
+  service = simplejson.loads(content)
 
   fn = os.path.join(os.path.dirname(__file__), "contrib",
       serviceName, "future.json")
-  f = file(fn, "r")
-  d = simplejson.load(f)
-  f.close()
-  future = d['data'][serviceName][version]['resources']
-  auth_discovery = d['data'][serviceName][version]['auth']
+  try:
+    f = file(fn, "r")
+    d = simplejson.load(f)
+    f.close()
+    future = d['resources']
+    auth_discovery = d['auth']
+  except IOError:
+    future = {}
+    auth_discovery = {}
 
-  base = service['baseUrl']
+  base = urlparse.urljoin(discoveryServiceUrl, service['restBasePath'])
   resources = service['resources']
 
   class Service(object):
@@ -168,7 +171,7 @@ def build(serviceName, version, http=None,
     setattr(theclass, methodName, method)
 
   for methodName, methodDesc in resources.iteritems():
-    createMethod(Service, methodName, methodDesc, future[methodName])
+    createMethod(Service, methodName, methodDesc, future.get(methodName, {}))
   return Service()
 
 
@@ -185,7 +188,7 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
       self._developerKey = developerKey
 
   def createMethod(theclass, methodName, methodDesc, futureDesc):
-    pathUrl = methodDesc['pathUrl']
+    pathUrl = methodDesc['restPath']
     pathUrl = re.sub(r'\{', r'{+', pathUrl)
     httpMethod = methodDesc['httpMethod']
 
@@ -207,9 +210,9 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
           pattern_params[param] = desc['pattern']
         if desc.get('required', False):
           required_params.append(param)
-        if desc.get('parameterType') == 'query':
+        if desc.get('restParameterType') == 'query':
           query_params.append(param)
-        if desc.get('parameterType') == 'path':
+        if desc.get('restParameterType') == 'path':
           path_params[param] = param
 
     def method(self, **kwargs):
@@ -308,13 +311,36 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
     setattr(theclass, methodName, method)
 
   # Add basic methods to Resource
-  for methodName, methodDesc in resourceDesc['methods'].iteritems():
-    future = futureDesc['methods'].get(methodName, {})
-    createMethod(Resource, methodName, methodDesc, future)
+  if 'methods' in resourceDesc:
+    for methodName, methodDesc in resourceDesc['methods'].iteritems():
+      if futureDesc:
+        future = futureDesc['methods'].get(methodName, {})
+      else:
+        future = None
+      createMethod(Resource, methodName, methodDesc, future)
+
+  # Add in nested resources
+  if 'resources' in resourceDesc:
+    def createMethod(theclass, methodName, methodDesc, futureDesc):
+
+      def method(self):
+        return createResource(self._http, self._baseUrl, self._model,
+            methodName, self._developerKey, methodDesc, futureDesc)
+
+      setattr(method, '__doc__', 'A description of how to use this function')
+      setattr(theclass, methodName, method)
+
+    for methodName, methodDesc in resourceDesc['resources'].iteritems():
+      if futureDesc and 'resources' in futureDesc:
+        future = futureDesc['resources'].get(methodName, {})
+      else:
+        future = {}
+      createMethod(Resource, methodName, methodDesc, future.get(methodName, {}))
 
   # Add <m>_next() methods to Resource
-  for methodName, methodDesc in futureDesc['methods'].iteritems():
-    if 'next' in methodDesc and methodName in resourceDesc['methods']:
-      createNextMethod(Resource, methodName + "_next", methodDesc['next'])
+  if futureDesc:
+    for methodName, methodDesc in futureDesc['methods'].iteritems():
+      if 'next' in methodDesc and methodName in resourceDesc['methods']:
+        createNextMethod(Resource, methodName + "_next", methodDesc['next'])
 
   return Resource()
