@@ -168,6 +168,7 @@ def build(serviceName, version, http=None,
           methodName, self._developerKey, methodDesc, futureDesc)
 
     setattr(method, '__doc__', 'A description of how to use this function')
+    setattr(method, '__is_resource__', True)
     setattr(theclass, methodName, method)
 
   for methodName, methodDesc in resources.iteritems():
@@ -328,6 +329,7 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
             methodName, self._developerKey, methodDesc, futureDesc)
 
       setattr(method, '__doc__', 'A description of how to use this function')
+      setattr(method, '__is_resource__', True)
       setattr(theclass, methodName, method)
 
     for methodName, methodDesc in resourceDesc['resources'].iteritems():

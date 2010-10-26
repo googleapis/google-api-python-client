@@ -90,7 +90,24 @@ class CollectionHandler(webapp.RequestHandler):
 
   def get(self, service_name, version, collection):
     service = build(service_name, version)
-    page = "<p><a href='/'>Home</a></p><pre>%s</pre>" % pydoc.plain(render_doc(getattr(service, collection)()))
+    # descend the object path
+    path = collection.split("/")
+    if path:
+      for method in path[:-1]:
+        service = getattr(service, method)()
+    method = getattr(service, path[-1])
+    obj = method()
+    page = "<p><a href='/'>Home</a></p><pre>%s</pre>" % pydoc.plain(render_doc(obj))
+
+    if hasattr(method, '__is_resource__'):
+      collections = []
+      for name in dir(obj):
+        if not "_" in name and callable(getattr(obj, name)) and hasattr(getattr(obj, name), '__is_resource__'):
+          collections.append(name)
+
+      for name in collections:
+        page = re.sub('(%s) =' % name, r'<a href="/%s/%s/%s">\1</a> =' % (service_name, version, collection + "/" + name), page)
+
     self.response.out.write(page)
 
 
@@ -99,7 +116,7 @@ def main():
       [
       (r'/', MainHandler),
       (r'/(\w*)/(\w*)', ServiceHandler),
-      (r'/(\w*)/(\w*)/(\w*)', CollectionHandler),
+      (r'/(\w*)/(\w*)/(.*)', CollectionHandler),
       ],
       debug=True)
   util.run_wsgi_app(application)
