@@ -111,7 +111,10 @@ class JsonModel(object):
       if resp.status == 204:
         # A 204: No Content response should be treated differently to all the other success states
         return simplejson.loads('{}')
-      return simplejson.loads(content)['data']
+      body = simplejson.loads(content)
+      if isinstance(body, dict) and 'data' in body:
+        body = body['data']
+      return body
     else:
       logging.debug('Content from bad request was: %s' % content)
       if resp.get('content-type', '').startswith('application/json'):

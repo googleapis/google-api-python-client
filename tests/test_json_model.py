@@ -140,5 +140,23 @@ class Model(unittest.TestCase):
     content = model.response(resp, content)
     self.assertEqual(content, 'is good')
 
+  def test_good_response_wo_data(self):
+    model = JsonModel()
+    resp = httplib2.Response({'status': '200'})
+    resp.reason = 'OK'
+    content = '{"foo": "is good"}'
+
+    content = model.response(resp, content)
+    self.assertEqual(content, {'foo': 'is good'})
+
+  def test_good_response_wo_data_str(self):
+    model = JsonModel()
+    resp = httplib2.Response({'status': '200'})
+    resp.reason = 'OK'
+    content = '"data goes here"'
+
+    content = model.response(resp, content)
+    self.assertEqual(content, 'data goes here')
+
 if __name__ == '__main__':
   unittest.main()
