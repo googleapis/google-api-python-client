@@ -20,7 +20,7 @@ are not already installed.
 
 import setup_utils
 
-packages = ['apiclient', 'uritemplate']
+packages = ['apiclient', 'apiclient.ext', 'uritemplate']
 
 # Don't clobber installed versions of third party libraries
 # with what we include.
