@@ -5,8 +5,8 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.db import models
 
-from apiclient.ext.django import FlowThreeLeggedField
-from apiclient.ext.django import OAuthCredentialsField
+from apiclient.ext.django_orm import FlowThreeLeggedField
+from apiclient.ext.django_orm import OAuthCredentialsField
 
 # Create your models here.
 
