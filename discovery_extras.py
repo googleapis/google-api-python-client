@@ -34,10 +34,9 @@ def main():
     dis = simplejson.load(f)
     f.close()
 
-    data = dis['data']
-    api = data[data.keys()[0]]
-    version = api[api.keys()[0]]
-    resources = version['resources']
+    api = dis['name']
+    version = dis['version']
+    resources = dis['resources']
     for res_name, res_desc in resources.iteritems():
       methods = res_desc['methods']
       for method_name, method_desc in methods.iteritems():

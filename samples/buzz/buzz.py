@@ -28,7 +28,7 @@ def main():
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  p = build("buzz", "v1", http=http)
+  p = build("buzz", "v1", http=http, developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
   activities = p.activities()
 
   # Retrieve the first two activities
