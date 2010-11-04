@@ -3,10 +3,10 @@
 #
 # Copyright 2010 Google Inc. All Rights Reserved.
 
-"""Simple command-line example for Buzz.
+"""Simple command-line example for Diacritize.
 
-Command-line application that retrieves the users
-latest content and then adds a new entry.
+Command-line application that adds diacritical
+marks to some text.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
