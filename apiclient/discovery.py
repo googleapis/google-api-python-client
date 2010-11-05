@@ -88,12 +88,8 @@ class JsonModel(object):
     if body_value is None:
       return (headers, path_params, query, None)
     else:
-      if len(body_value) == 1 and 'data' in body_value:
-        model = body_value
-      else:
-        model = {'data': body_value}
       headers['content-type'] = 'application/json'
-      return (headers, path_params, query, simplejson.dumps(model))
+      return (headers, path_params, query, simplejson.dumps(body_value))
 
   def build_query(self, params):
     params.update({'alt': 'json'})

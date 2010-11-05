@@ -36,15 +36,18 @@ def main():
   print "Retrieved the first two activities"
 
   # Retrieve the next two activities
-  activitylist = activities.list_next(activitylist).execute()
-  print "Retrieved the next two activities"
+  if activitylist:
+    activitylist = activities.list_next(activitylist).execute()
+    print "Retrieved the next two activities"
 
   # Add a new activity
   new_activity_body = {
-      'title': 'Testing insert',
-      'object': {
-          'content': u'Just a short note to show that insert is working. ☄',
-          'type': 'note'}
+      "data": {
+          'title': 'Testing insert',
+          'object': {
+              'content': u'Just a short note to show that insert is working. ☄',
+              'type': 'note'}
+          }
       }
   activity = activities.insert(userId='@me', body=new_activity_body).execute()
   print "Added a new activity"

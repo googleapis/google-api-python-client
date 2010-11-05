@@ -31,9 +31,11 @@ def main():
   p = build("moderator", "v1", http=http)
 
   series_body = {
+      "data": {
         "description": "Share and rank tips for eating healthily on the cheaps!",
         "name": "Eating Healthy & Cheap",
         "videoSubmissionAllowed": False
+        }
       }
   series = p.series().insert(body=series_body).execute()
   print "Created a new series"

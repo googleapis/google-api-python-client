@@ -81,9 +81,11 @@ def main():
   p = build("moderator", "v1", http=http)
 
   series_body = {
-        "description": "An example of bulk creating topics",
-        "name": "Using threading and queues",
-        "videoSubmissionAllowed": False
+      "data": {
+          "description": "An example of bulk creating topics",
+          "name": "Using threading and queues",
+          "videoSubmissionAllowed": False
+          }
       }
   series = p.series().insert(body=series_body).execute()
   print "Created a new series"
