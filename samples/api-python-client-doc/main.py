@@ -65,6 +65,9 @@ class MainHandler(webapp.RequestHandler):
       <li><a href='/buzz/v1'>buzz</a>
       <li><a href='/moderator/v1'>moderator</a>
       <li><a href='/latitude/v1'>latitude</a>
+      <li><a href='/customsearch/v1'>customsearch</a>
+      <li><a href='/diacritize/v1'>diacritize</a>
+      <li><a href='/translate/v2'>translate</a>
     </ul>
     """)
 
