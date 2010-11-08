@@ -35,6 +35,9 @@ except ImportError:
 from apiclient.http import HttpRequest
 from apiclient.json import simplejson
 
+URITEMPLATE = re.compile('{[^}]*}')
+VARNAME = re.compile('[a-zA-Z0-9_-]+')
+
 class Error(Exception):
   """Base error for this module."""
   pass
@@ -214,6 +217,13 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
           query_params.append(param)
         if desc.get('restParameterType') == 'path':
           path_params[param] = param
+
+    for match in URITEMPLATE.finditer(pathUrl):
+      for namematch in VARNAME.finditer(match.group(0)):
+        name = key2param(namematch.group(0))
+        path_params[name] = name
+        if name in query_params:
+          query_params.remove(name)
 
     def method(self, **kwargs):
       for name in kwargs.iterkeys():

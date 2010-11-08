@@ -124,7 +124,8 @@ class BuzzFunctionalTest(unittest.TestCase):
     buzz = build('buzz', 'v1')
 
     # Restricting max_results to 1 means only a tiny amount of data comes back but the totalResults still has the total.
-    following = buzz.people().list(userId='googlebuzz', groupId='@followers', max_results=1).execute()
+    following = buzz.people().list(userId='googlebuzz', groupId='@followers',
+                                   max_results='1').execute()
 
     # @googlebuzz has a large but fluctuating number of followers
     # It is sufficient if the result is bigger than 10, 000
@@ -152,11 +153,13 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
     buzz = build('buzz', 'v1', http=self.http)
 
     activity = buzz.activities().insert(userId='@me', body={
-      'title': 'Testing insert',
-      'object': {
-        'content': u'Just a short note to show that insert is working. ?',
-        'type': 'note'}
-      }
+        'data': {
+            'title': 'Testing insert',
+            'object': {
+                'content': u'Just a short note to show that insert is working. ?',
+                'type': 'note'}
+            }
+        }
     ).execute()
     self.assertTrue(activity is not None)
 
@@ -164,16 +167,18 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
     buzz = build('buzz', 'v1', http=self.http)
 
     activity = buzz.activities().insert(userId='@me', body={
-        'title': 'Testing insert',
-        'object': {
-        'content': 'This is a private post.'
-      },
-      'visibility': {
-        'entries': [
-          { 'id': 'tag:google.com,2010:buzz-group:108242092577082601423:13' }
-        ]
-      }
-    }
+        'data': {
+            'title': 'Testing insert',
+            'object': {
+                'content': 'This is a private post.'
+                },
+            'visibility': {
+                'entries': [
+                    { 'id': 'tag:google.com,2010:buzz-group:108242092577082601423:13' }
+                    ]
+                }
+            }
+        }
     ).execute()
     self.assertTrue(activity is not None)
 
@@ -201,11 +206,13 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
   def IGNORE__test_can_like_activity(self):
     buzz = build('buzz', 'v1', http=self.http)
     activity = buzz.activities().insert(userId='@me', body={
-      'title': 'Testing insert',
-      'object': {
-        'content': u'Just a short note to show that insert is working. ?',
-        'type': 'note'}
-      }
+        'data': {
+            'title': 'Testing insert',
+            'object': {
+                'content': u'Just a short note to show that insert is working. ?',
+                'type': 'note'}
+            }
+        }
     ).execute()
     pprint.pprint(activity)
     id = activity['id']
@@ -216,16 +223,20 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
     buzz = build('buzz', 'v1', http=self.http)
 
     activity = buzz.activities().insert(userId='@me', body={
-      'title': 'A new activity',
-      'object': {
-        'content': u'The body of the new activity',
-        'type': 'note'}
-      }
+        'data': {
+            'title': 'A new activity',
+            'object': {
+                'content': u'The body of the new activity',
+                'type': 'note'}
+            }
+        }
     ).execute()
 
     id = activity['id']
     comment = buzz.comments().insert(userId='@me', postId=id, body={
-      "content": "A comment on the new activity"
+        'data': {
+            'content': 'A comment on the new activity'
+            }
     }).execute()
 
   def test_can_list_groups_belonging_to_user(self):
@@ -248,11 +259,13 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
     buzz = build('buzz', 'v1', http=self.http)
 
     activity = buzz.activities().insert(userId='@me', body={
-      'title': 'Activity to be deleted',
-      'object': {
-        'content': u'Created this activity so that it can be deleted.',
-        'type': 'note'}
-      }
+        'data': {
+            'title': 'Activity to be deleted',
+            'object': {
+                'content': u'Created this activity so that it can be deleted.',
+                'type': 'note'}
+            }
+        }
     ).execute()
     id = activity['id']
 

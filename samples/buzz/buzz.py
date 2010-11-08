@@ -18,7 +18,7 @@ import pickle
 import pprint
 
 # Uncomment the next line to get very detailed logging
-# httplib2.debuglevel = 4
+#httplib2.debuglevel = 4
 
 def main():
   f = open("buzz.dat", "r")
@@ -56,7 +56,9 @@ def main():
 
   # Add a comment to that activity
   comment_body = {
+      "data": {
           "content": "This is a comment"
+          }
       }
   item = activitylist['items'][0]
   comment = p.comments().insert(
