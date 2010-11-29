@@ -68,7 +68,7 @@ class MainHandler(webapp.RequestHandler):
       <li><a href='/customsearch/v1'>customsearch</a>
       <li><a href='/diacritize/v1'>diacritize</a>
       <li><a href='/translate/v2'>translate</a>
-      <li><a href='/prediction/v1'>prediction</a>
+      <li><a href='/prediction/v1.1'>prediction</a>
     </ul>
     """)
 
@@ -119,8 +119,8 @@ def main():
   application = webapp.WSGIApplication(
       [
       (r'/', MainHandler),
-      (r'/(\w*)/(\w*)', ServiceHandler),
-      (r'/(\w*)/(\w*)/(.*)', CollectionHandler),
+      (r'/([^\/]*)/([^\/]*)', ServiceHandler),
+      (r'/([^\/]*)/([^\/]*)/(.*)', CollectionHandler),
       ],
       debug=True)
   util.run_wsgi_app(application)

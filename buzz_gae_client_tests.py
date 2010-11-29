@@ -53,7 +53,7 @@ class BuzzGaeClientTest(unittest.TestCase):
       self.assertEquals(consumer_secret, usable_token['consumer_secret'])
       self.assertTrue(usable_token['access_token'] is not None)
 
-    def test_can_build_apiary_client_with_access_token(self):
+    def test_can_build_apiclient_with_access_token(self):
       client = buzz_gae_client.BuzzGaeClient()
       oauth_parameters = {}
       oauth_parameters['oauth_token'] = ''
