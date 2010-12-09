@@ -37,7 +37,7 @@ except ImportError:
 else:
   print 'Loaded setuptools'
 
-long_desc = """The Google API Client for Python is a client library for 
+long_desc = """The Google API Client for Python is a client library for
 accessing the Buzz, Moderator, and Latitude APIs."""
 
 setup(name="google-api-python-client",
