@@ -36,10 +36,10 @@ flow = FlowThreeLegged(moderator_discovery,
                        # https://www.google.com/accounts/ManageDomains
                        consumer_key='REGISTERED DOMAIN NAME',
                        consumer_secret='KEY GIVEN DURING REGISTRATION',
-                       user_agent='google-api-client-python-latitude-cmdline/1.0',
+                       user_agent='google-api-client-python-latitude/1.0',
                        domain='REGISTERED DOMAIN NAME',
                        scope='https://www.googleapis.com/auth/latitude',
-                       xoauth_displayname='Google API Latitude Client Example App',
+                       xoauth_displayname='Google API Latitude Example',
                        location='current',
                        granularity='city'
                        )

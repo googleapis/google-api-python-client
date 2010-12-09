@@ -22,6 +22,7 @@ class Backoff:
 
   Implements an exponential backoff algorithm.
   """
+
   def __init__(self, maxretries=8):
     self.retry = 0
     self.maxretries = maxretries
@@ -36,7 +37,7 @@ class Backoff:
 
   def fail(self):
     self.retry += 1
-    delay = 2**self.retry
+    delay = 2 ** self.retry
     time.sleep(delay)
 
 
@@ -67,8 +68,8 @@ def start_threads(credentials):
     t.daemon = True
     t.start()
 
-def main():
 
+def main():
   f = open("moderator.dat", "r")
   credentials = pickle.loads(f.read())
   f.close()
@@ -98,7 +99,8 @@ def main():
           "presenter": "me"
           }
         }
-    topic_request = p.topics().insert(seriesId=series['id']['seriesId'], body=topic_body)
+    topic_request = p.topics().insert(seriesId=series['id']['seriesId'],
+                                      body=topic_body)
     print "Adding request to queue"
     queue.put(topic_request)
 

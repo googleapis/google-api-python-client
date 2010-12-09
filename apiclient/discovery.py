@@ -32,31 +32,15 @@ try:
     from urlparse import parse_qsl
 except ImportError:
     from cgi import parse_qsl
+
 from apiclient.http import HttpRequest
 from apiclient.json import simplejson
+from apiclient.model import JsonModel
+from apiclient.errors import HttpError
+from apiclient.errors import UnknownLinkType
 
 URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
-
-class Error(Exception):
-  """Base error for this module."""
-  pass
-
-
-class HttpError(Error):
-  """HTTP data was invalid or unexpected."""
-  def __init__(self, resp, detail):
-    self.resp = resp
-    self.detail = detail
-  def __str__(self):
-    return self.detail
-
-
-class UnknownLinkType(Error):
-  """Link type unknown or unexpected."""
-  pass
-
-
 DISCOVERY_URI = ('https://www.googleapis.com/discovery/v0.2beta1/describe/'
   '{api}/{apiVersion}')
 
@@ -78,52 +62,12 @@ def key2param(key):
   return ''.join(result)
 
 
-class JsonModel(object):
-
-  def request(self, headers, path_params, query_params, body_value):
-    query = self.build_query(query_params)
-    headers['accept'] = 'application/json'
-    if 'user-agent' in headers:
-      headers['user-agent'] += ' '
-    else:
-      headers['user-agent'] = ''
-    headers['user-agent'] += 'google-api-python-client/1.0'
-    if body_value is None:
-      return (headers, path_params, query, None)
-    else:
-      headers['content-type'] = 'application/json'
-      return (headers, path_params, query, simplejson.dumps(body_value))
-
-  def build_query(self, params):
-    params.update({'alt': 'json'})
-    astuples = []
-    for key, value in params.iteritems():
-      if getattr(value, 'encode', False) and callable(value.encode):
-        value = value.encode('utf-8')
-      astuples.append((key, value))
-    return '?' + urllib.urlencode(astuples)
-
-  def response(self, resp, content):
-    # Error handling is TBD, for example, do we retry
-    # for some operation/error combinations?
-    if resp.status < 300:
-      if resp.status == 204:
-        # A 204: No Content response should be treated differently to all the other success states
-        return simplejson.loads('{}')
-      body = simplejson.loads(content)
-      if isinstance(body, dict) and 'data' in body:
-        body = body['data']
-      return body
-    else:
-      logging.debug('Content from bad request was: %s' % content)
-      if resp.get('content-type', '').startswith('application/json'):
-        raise HttpError(resp, simplejson.loads(content)['error'])
-      else:
-        raise HttpError(resp, '%d %s' % (resp.status, resp.reason))
-
-
-def build(serviceName, version, http=None,
-    discoveryServiceUrl=DISCOVERY_URI, developerKey=None, model=JsonModel()):
+def build(serviceName, version,
+    http=None,
+    discoveryServiceUrl=DISCOVERY_URI,
+    developerKey=None,
+    model=JsonModel(),
+    requestBuilder=HttpRequest):
   params = {
       'api': serviceName,
       'apiVersion': version
@@ -159,6 +103,7 @@ def build(serviceName, version, http=None,
       self._baseUrl = base
       self._model = model
       self._developerKey = developerKey
+      self._requestBuilder = requestBuilder
 
     def auth_discovery(self):
       return auth_discovery
@@ -167,7 +112,8 @@ def build(serviceName, version, http=None,
 
     def method(self):
       return createResource(self._http, self._baseUrl, self._model,
-          methodName, self._developerKey, methodDesc, futureDesc)
+                            self._requestBuilder, methodName,
+                            self._developerKey, methodDesc, futureDesc)
 
     setattr(method, '__doc__', 'A description of how to use this function')
     setattr(method, '__is_resource__', True)
@@ -178,8 +124,8 @@ def build(serviceName, version, http=None,
   return Service()
 
 
-def createResource(http, baseUrl, model, resourceName, developerKey,
-                   resourceDesc, futureDesc):
+def createResource(http, baseUrl, model, requestBuilder, resourceName,
+                   developerKey, resourceDesc, futureDesc):
 
   class Resource(object):
     """A class for interacting with a resource."""
@@ -189,11 +135,13 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
       self._baseUrl = baseUrl
       self._model = model
       self._developerKey = developerKey
+      self._requestBuilder = requestBuilder
 
   def createMethod(theclass, methodName, methodDesc, futureDesc):
     pathUrl = methodDesc['restPath']
     pathUrl = re.sub(r'\{', r'{+', pathUrl)
     httpMethod = methodDesc['httpMethod']
+    methodId = methodDesc['rpcMethod']
 
     argmap = {}
     if httpMethod in ['PUT', 'POST']:
@@ -257,18 +205,23 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
       headers, params, query, body = self._model.request(headers,
           actual_path_params, actual_query_params, body_value)
 
-      # TODO(ade) This exists to fix a bug in V1 of the Buzz discovery document.
-      # Base URLs should not contain any path elements. If they do then urlparse.urljoin will strip them out
-      # This results in an incorrect URL which returns a 404
+      # TODO(ade) This exists to fix a bug in V1 of the Buzz discovery
+      # document.  Base URLs should not contain any path elements. If they do
+      # then urlparse.urljoin will strip them out This results in an incorrect
+      # URL which returns a 404
       url_result = urlparse.urlsplit(self._baseUrl)
       new_base_url = url_result.scheme + '://' + url_result.netloc
 
       expanded_url = uritemplate.expand(pathUrl, params)
-      url = urlparse.urljoin(new_base_url, url_result.path + expanded_url + query)
+      url = urlparse.urljoin(new_base_url,
+                             url_result.path + expanded_url + query)
 
       logging.info('URL being requested: %s' % url)
-      return HttpRequest(self._http, url, method=httpMethod, body=body,
-                         headers=headers, postproc=self._model.response)
+      return self._requestBuilder(self._http, url,
+                                  method=httpMethod, body=body,
+                                  headers=headers,
+                                  postproc=self._model.response,
+                                  methodId=methodId)
 
     docs = ['A description of how to use this function\n\n']
     for arg in argmap.iterkeys():
@@ -280,7 +233,8 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
     setattr(method, '__doc__', ''.join(docs))
     setattr(theclass, methodName, method)
 
-  def createNextMethod(theclass, methodName, methodDesc):
+  def createNextMethod(theclass, methodName, methodDesc, futureDesc):
+    methodId = methodDesc['rpcMethod'] + '.next'
 
     def method(self, previous):
       """
@@ -291,12 +245,12 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
       Returns None if there are no more items in
       the collection.
       """
-      if methodDesc['type'] != 'uri':
-        raise UnknownLinkType(methodDesc['type'])
+      if futureDesc['type'] != 'uri':
+        raise UnknownLinkType(futureDesc['type'])
 
       try:
         p = previous
-        for key in methodDesc['location']:
+        for key in futureDesc['location']:
           p = p[key]
         url = p
       except (KeyError, TypeError):
@@ -315,8 +269,10 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
       logging.info('URL being requested: %s' % url)
       resp, content = self._http.request(url, method='GET', headers=headers)
 
-      return HttpRequest(self._http, url, method='GET',
-                         headers=headers, postproc=self._model.response)
+      return self._requestBuilder(self._http, url, method='GET',
+                                  headers=headers,
+                                  postproc=self._model.response,
+                                  methodId=methodId)
 
     setattr(theclass, methodName, method)
 
@@ -331,6 +287,7 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
 
   # Add in nested resources
   if 'resources' in resourceDesc:
+
     def createMethod(theclass, methodName, methodDesc, futureDesc):
 
       def method(self):
@@ -346,12 +303,15 @@ def createResource(http, baseUrl, model, resourceName, developerKey,
         future = futureDesc['resources'].get(methodName, {})
       else:
         future = {}
-      createMethod(Resource, methodName, methodDesc, future.get(methodName, {}))
+      createMethod(Resource, methodName, methodDesc,
+                   future.get(methodName, {}))
 
   # Add <m>_next() methods to Resource
   if futureDesc:
     for methodName, methodDesc in futureDesc['methods'].iteritems():
       if 'next' in methodDesc and methodName in resourceDesc['methods']:
-        createNextMethod(Resource, methodName + "_next", methodDesc['next'])
+        createNextMethod(Resource, methodName + "_next",
+                         resourceDesc['methods'][methodName],
+                         methodDesc['next'])
 
   return Resource()

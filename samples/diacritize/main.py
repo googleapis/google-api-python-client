@@ -20,9 +20,10 @@ import pprint
 # Uncomment the next line to get very detailed logging
 # httplib2.debuglevel = 4
 
-def main():
 
-  p = build("diacritize", "v1", developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
+def main():
+  p = build("diacritize", "v1",
+            developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
   print p.diacritize().corpus().get(
       lang='ar',
       last_letter='false',

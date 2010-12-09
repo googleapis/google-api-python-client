@@ -20,6 +20,7 @@ import pickle
 # Uncomment to get detailed logging
 # httplib2.debuglevel = 4
 
+
 def main():
   f = open("latitude.dat", "r")
   credentials = pickle.loads(f.read())
@@ -32,11 +33,11 @@ def main():
 
   body = {
       "data": {
-          "kind":"latitude#location",
-          "latitude":37.420352,
-          "longitude":-122.083389,
-          "accuracy":130,
-          "altitude":35
+          "kind": "latitude#location",
+          "latitude": 37.420352,
+          "longitude": -122.083389,
+          "accuracy": 130,
+          "altitude": 35
           }
       }
   print p.currentLocation().insert(body=body).execute()

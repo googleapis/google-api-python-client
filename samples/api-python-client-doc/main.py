@@ -28,7 +28,11 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
 # Replicate render_doc here from pydoc.py as it isn't available in Python 2.5
-class _OldStyleClass: pass
+
+
+class _OldStyleClass:
+  pass
+
 
 def render_doc(thing, title='Python Library Documentation: %s', forceload=0):
     """Render text documentation, given an object or a path to an object."""
@@ -77,7 +81,8 @@ class ServiceHandler(webapp.RequestHandler):
 
   def get(self, service_name, version):
     service = build(service_name, version)
-    page = "<p><a href='/'>Home</a></p><pre>%s</pre>" % pydoc.plain(render_doc(service))
+    page = "<p><a href='/'>Home</a></p><pre>%s</pre>" % (
+        pydoc.plain(render_doc(service)),)
 
     collections = []
     for name in dir(service):
@@ -85,7 +90,8 @@ class ServiceHandler(webapp.RequestHandler):
         collections.append(name)
 
     for name in collections:
-      page = re.sub('(%s) =' % name, r'<a href="/%s/%s/%s">\1</a> =' % (service_name, version, name), page)
+      page = re.sub('(%s) =' % name, r'<a href="/%s/%s/%s">\1</a> =' % (
+          service_name, version, name), page)
 
     self.response.out.write(page)
 
@@ -101,16 +107,19 @@ class CollectionHandler(webapp.RequestHandler):
         service = getattr(service, method)()
     method = getattr(service, path[-1])
     obj = method()
-    page = "<p><a href='/'>Home</a></p><pre>%s</pre>" % pydoc.plain(render_doc(obj))
+    page = "<p><a href='/'>Home</a></p><pre>%s</pre>" % (
+        pydoc.plain(render_doc(obj)),)
 
     if hasattr(method, '__is_resource__'):
       collections = []
       for name in dir(obj):
-        if not "_" in name and callable(getattr(obj, name)) and hasattr(getattr(obj, name), '__is_resource__'):
+        if not "_" in name and callable(getattr(obj, name)) and hasattr(
+            getattr(obj, name), '__is_resource__'):
           collections.append(name)
 
       for name in collections:
-        page = re.sub('(%s) =' % name, r'<a href="/%s/%s/%s">\1</a> =' % (service_name, version, collection + "/" + name), page)
+        page = re.sub('(%s) =' % name, r'<a href="/%s/%s/%s">\1</a> =' % (
+            service_name, version, collection + "/" + name), page)
 
     self.response.out.write(page)
 

@@ -20,6 +20,7 @@ import pickle
 # Uncomment to get detailed logging
 # httplib2.debuglevel = 4
 
+
 def main():
   f = open("moderator.dat", "r")
   credentials = pickle.loads(f.read())
@@ -32,7 +33,7 @@ def main():
 
   series_body = {
       "data": {
-        "description": "Share and rank tips for eating healthily on the cheaps!",
+        "description": "Share and rank tips for eating healthy and cheap!",
         "name": "Eating Healthy & Cheap",
         "videoSubmissionAllowed": False
         }
@@ -47,7 +48,8 @@ def main():
         "presenter": "liz"
         }
       }
-  topic = p.topics().insert(seriesId=series['id']['seriesId'], body=topic_body).execute()
+  topic = p.topics().insert(seriesId=series['id']['seriesId'],
+                            body=topic_body).execute()
   print "Created a new topic"
 
   submission_body = {
@@ -69,7 +71,9 @@ def main():
         "vote": "PLUS"
         }
       }
-  p.votes().insert(seriesId=topic['id']['seriesId'], submissionId=submission['id']['submissionId'], body=vote_body)
+  p.votes().insert(seriesId=topic['id']['seriesId'],
+                   submissionId=submission['id']['submissionId'],
+                   body=vote_body)
   print "Voted on the submission"
 
 
