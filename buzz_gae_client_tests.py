@@ -67,7 +67,7 @@ class BuzzGaeClientTest(unittest.TestCase):
       client = buzz_gae_client.BuzzGaeClient()
       api_client = client.build_api_client()
       count = 9
-      activities = api_client.activities().list(userId='googlebuzz', scope='@self', max_results=count)['items']
+      activities = api_client.activities().list(userId='googlebuzz', scope='@self', max_results=count).execute()['items']
       self.assertEquals(count, len(activities))
 
 if __name__ == '__main__':
