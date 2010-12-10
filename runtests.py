@@ -18,7 +18,10 @@ sys.path.insert(0, os.getcwd())
 
 def build_suite(folder, verbosity):
   # find all of the test modules
-  modules = map(fullmodname, glob.glob(os.path.join(folder, 'test_*.py')))
+  top_level_modules = map(fullmodname, glob.glob(os.path.join(folder, 'test_*.py')))
+  # TODO(ade) Verify that this works on Windows. If it doesn't then switch to os.walk instead
+  lower_level_modules = map(fullmodname, glob.glob(os.path.join(folder, '*/test_*.py')))
+  modules = top_level_modules + lower_level_modules
   if verbosity > 0:
     print "Running the tests found in the following modules:"
     print modules
