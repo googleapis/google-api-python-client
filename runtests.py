@@ -50,9 +50,18 @@ def main():
     logging.disable(logging.ERROR)
   elif verbosity == 2:
     logging.basicConfig(level=logging.DEBUG)
-  run('tests', verbosity)
-  run('functional_tests', verbosity)
-  run('contrib_tests', verbosity)
+  
+  # Allow user to run a specific folder of tests
+  if 'tests' in sys.argv:
+    run('tests', verbosity)
+  elif 'functional_tests' in sys.argv:
+    run('functional_tests', verbosity)
+  elif 'contrib_tests' in sys.argv:
+    run('contrib_tests', verbosity)
+  else:
+    run('tests', verbosity)
+    run('functional_tests', verbosity)
+    run('contrib_tests', verbosity)
 
 if __name__ == '__main__':
   main()
