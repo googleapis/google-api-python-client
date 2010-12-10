@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class OAuthCredentialsField(models.Field):
 
   __metaclass__ = models.SubfieldBase
@@ -16,6 +17,7 @@ class OAuthCredentialsField(models.Field):
 
   def get_db_prep_value(self, value):
     return base64.b64encode(pickle.dumps(value))
+
 
 class FlowThreeLeggedField(models.Field):
 

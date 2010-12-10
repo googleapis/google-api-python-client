@@ -11,8 +11,8 @@ from apiclient.oauth import FlowThreeLegged
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 
-print os.environ
 STEP2_URI = 'http://localhost:8000/auth_return'
+
 
 @login_required
 def index(request):
@@ -44,6 +44,7 @@ def index(request):
     f = Flow(id=request.user, flow=flow)
     f.save()
     return HttpResponseRedirect(authorize_url)
+
 
 @login_required
 def auth_return(request):

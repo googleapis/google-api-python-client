@@ -32,20 +32,7 @@ except ImportError:
     from cgi import parse_qs
 
 from apiclient.discovery import build, key2param
-
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
-
-
-class HttpMock(object):
-
-  def __init__(self, filename, headers):
-    f = file(os.path.join(DATA_DIR, filename), 'r')
-    self.data = f.read()
-    f.close()
-    self.headers = headers
-
-  def request(self, uri, method="GET", body=None, headers=None, redirections=1, connection_type=None):
-    return httplib2.Response(self.headers), self.data
+from tests.util import HttpMock
 
 
 class Utilities(unittest.TestCase):

@@ -22,8 +22,9 @@ import httplib2
 import pickle
 import pprint
 
-DISCOVERY_URI = ('http://gregorio-ub.i:3990/discovery/v0.2beta1/describe/'
+DISCOVERY_URI = ('http://localhost:3990/discovery/v0.2beta1/describe/'
   '{api}/{apiVersion}')
+
 
 def main():
   http = httplib2.Http()

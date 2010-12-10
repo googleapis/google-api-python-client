@@ -18,9 +18,11 @@ import pprint
 # Uncomment the next line to get very detailed logging
 # httplib2.debuglevel = 4
 
+
 def main():
 
-  p = build("translate", "v2", developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
+  p = build("translate", "v2",
+            developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
   print p.translations().list(
       source="en",
       target="fr",
