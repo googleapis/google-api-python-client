@@ -96,6 +96,7 @@ class JsonModel(object):
 
   def build_query(self, params):
     params.update({'alt': 'json'})
+    params.update({'pp': '1'})
     astuples = []
     for key, value in params.iteritems():
       if getattr(value, 'encode', False) and callable(value.encode):
@@ -115,7 +116,7 @@ class JsonModel(object):
         body = body['data']
       return body
     else:
-      logging.debug('Content from bad request was: %s' % content)
+      logging.error('Content from bad request was: %s' % content)
       if resp.get('content-type', '').startswith('application/json'):
         raise HttpError(resp, simplejson.loads(content)['error'])
       else:

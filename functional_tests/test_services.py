@@ -83,7 +83,8 @@ class BuzzFunctionalTest(unittest.TestCase):
     buzz = build('buzz', 'v1', self.http)
     max_results = 1
     people_cmd = buzz.people()
-    #https://www.googleapis.com/buzz/v1/activities/111062888259659218284/@self/B:z13nh535yk2syfob004cdjyb3mjeulcwv3c?alt=json#
+    # The post https://www.googleapis.com/buzz/v1/activities/111062888259659218284/@self/B:z13nh535yk2syfob004cdjyb3mjeulcwv3c?alt=json#
+    #Perform this call https://www.googleapis.com/buzz/v1/activities/111062888259659218284/@self/B:z13nh535yk2syfob004cdjyb3mjeulcwv3c/@liked?alt=json&max-results=1
     people = people_cmd.liked(groupId='@liked', userId='googlebuzz', scope='@self',
                               postId='B:z13nh535yk2syfob004cdjyb3mjeulcwv3c', max_results=max_results).execute()
 
