@@ -40,7 +40,7 @@ def _abstract():
 
 
 def _oauth_uri(name, discovery, params):
-  """Look up the OAuth UR from the discovery
+  """Look up the OAuth URI from the discovery
   document and add query parameters based on
   params.
 

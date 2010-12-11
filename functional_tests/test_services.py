@@ -5,14 +5,12 @@
 """Discovery document tests
 
 Functional tests that verify we can retrieve data from existing services.
-
-These tests are read-only in order to ensure they're repeatable. They also
-only work with publicly visible data in order to avoid dealing with OAuth.
 """
-import httplib2
-import pprint
 
 __author__ = 'ade@google.com (Ade Oshineye)'
+
+import httplib2
+import pprint
 
 from apiclient.discovery import build
 import httplib2
