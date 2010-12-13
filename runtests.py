@@ -53,7 +53,7 @@ def main():
     logging.disable(logging.ERROR)
   elif verbosity == 2:
     logging.basicConfig(level=logging.DEBUG)
-  
+
   # Allow user to run a specific folder of tests
   if 'tests' in sys.argv:
     run('tests', verbosity)

@@ -15,8 +15,8 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import logging
 import urllib
 
-from apiclient.json import simplejson
-from apiclient.errors import HttpError
+from anyjson import simplejson
+from errors import HttpError
 
 
 class JsonModel(object):

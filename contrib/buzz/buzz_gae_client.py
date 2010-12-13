@@ -12,7 +12,7 @@ import urllib
 import urlparse
 
 try:
-  from urlparse import parse_qs, parse_qsl, urlparse
+  from urlparse import parse_qs, parse_qsl
 except ImportError:
   from cgi import parse_qs, parse_qsl
 

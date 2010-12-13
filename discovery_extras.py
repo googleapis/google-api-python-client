@@ -25,7 +25,7 @@ import os
 import os.path
 import sys
 
-from apiclient.json import simplejson
+from anyjson import simplejson
 
 
 def main():
