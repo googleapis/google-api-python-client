@@ -34,7 +34,7 @@ except ImportError:
     from cgi import parse_qsl
 
 from http import HttpRequest
-from json import simplejson
+from anyjson import simplejson
 from model import JsonModel
 from errors import HttpError
 from errors import UnknownLinkType
