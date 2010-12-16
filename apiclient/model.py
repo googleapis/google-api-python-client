@@ -99,7 +99,4 @@ class JsonModel(object):
       return body
     else:
       logging.debug('Content from bad request was: %s' % content)
-      if resp.get('content-type', '').startswith('application/json'):
-        raise HttpError(resp, simplejson.loads(content)['error'])
-      else:
-        raise HttpError(resp, '%d %s' % (resp.status, resp.reason))
+      raise HttpError(resp, content)
