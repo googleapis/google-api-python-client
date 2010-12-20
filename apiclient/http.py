@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 import httplib2
-from apiclient.model import JsonModel
+from model import JsonModel
 
 
 class HttpRequest(object):
