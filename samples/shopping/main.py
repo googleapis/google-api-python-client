@@ -3,7 +3,8 @@
 #
 # Copyright 2010 Google Inc. All Rights Reserved.
 
-"""Simple command-line example for The Google Shopping API.
+"""Simple command-line example for The Google Search
+API for Shopping.
 
 Command-line application that does a search for products.
 """
