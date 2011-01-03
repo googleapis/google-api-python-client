@@ -131,11 +131,11 @@ class BuzzFunctionalTest(unittest.TestCase):
     follower_count = following['totalResults']
     self.assertTrue(follower_count > 10000, follower_count)
 
-  def test_follower_count_is_zero_for_user_with_hidden_follower_count(self):
+  def test_follower_count_is_missing_for_user_with_hidden_follower_count(self):
     buzz = build('buzz', 'v1')
     following = buzz.people().list(userId='adewale', groupId='@followers').execute()
 
-    self.assertEquals(0, following['totalResults'])
+    self.assertFalse('totalResults' in following)
 
 
 class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
