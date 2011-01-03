@@ -42,8 +42,11 @@ def run(test_folder_name, verbosity=1):
   cleanup()
 
 def main():
+  if '--help' in sys.argv:
+    print 'Usage: python runtests.py [--q|-quiet|--v|-verbose] [tests|functional_tests|contrib_tests]'
+    return
   verbosity = 1
-  if "-q" in sys.argv or '--quiet' in sys.argv:
+  if '-q' in sys.argv or '--quiet' in sys.argv:
     verbosity = 0
   if "-v" in sys.argv or '--verbose' in sys.argv:
     verbosity = 2
