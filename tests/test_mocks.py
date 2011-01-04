@@ -61,7 +61,7 @@ class Mocks(unittest.TestCase):
       activity = buzz.activities().list(scope='@self', userId='@me').execute()
       self.fail('An exception should have been thrown')
     except HttpError, e:
-      self.assertEqual('500 Server Error', e.detail)
+      self.assertEqual('{}', e.content)
       self.assertEqual(500, e.resp.status)
       self.assertEqual('Server Error', e.resp.reason)
 

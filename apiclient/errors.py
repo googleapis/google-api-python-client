@@ -43,7 +43,6 @@ class HttpError(Error):
     return '<HttpError %s "%s">' % (self.resp.status, self._get_reason())
 
   __str__ = __repr__
-  
 
 
 class UnknownLinkType(Error):
