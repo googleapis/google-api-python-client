@@ -24,8 +24,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 from apiclient.discovery import build
 from apiclient.oauth import FlowThreeLegged
-
-import pickle
+from apiclient.ext.authtools import run
 
 moderator_discovery = build("latitude", "v1").auth_discovery()
 
@@ -44,19 +43,4 @@ flow = FlowThreeLegged(moderator_discovery,
                        granularity='city'
                        )
 
-authorize_url = flow.step1_get_authorize_url()
-
-print 'Go to the following link in your browser:'
-print authorize_url
-print
-
-accepted = 'n'
-while accepted.lower() == 'n':
-    accepted = raw_input('Have you authorized me? (y/n) ')
-verification = raw_input('What is the verification code? ').strip()
-
-credentials = flow.step2_exchange(verification)
-
-f = open('latitude.dat', 'w')
-f.write(pickle.dumps(credentials))
-f.close()
+run(flow, 'latitude.dat')
