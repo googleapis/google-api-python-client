@@ -12,8 +12,8 @@ __all__ = [
     'HttpRequest', 'RequestMockBuilder'
     ]
 
-from httplib2 import Response
-from apiclient.model import JsonModel
+import httplib2
+from model import JsonModel
 
 
 class HttpRequest(object):
@@ -86,7 +86,7 @@ class HttpRequestMock(object):
     self.content = content
     self.postproc = postproc
     if resp is None:
-      self.resp = Response({'status': 200, 'reason': 'OK'})
+      self.resp = httplib2.Response({'status': 200, 'reason': 'OK'})
     if 'reason' in self.resp:
       self.resp.reason = self.resp['reason']
 
