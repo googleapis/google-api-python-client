@@ -88,3 +88,48 @@ class OAuthCredentialsProperty(db.Property):
 
   def empty(self, value):
     return not value
+
+
+class StorageByKeyName(object):
+  """Store and retrieve a single credential to and from
+  the App Engine datastore.
+
+  This Storage helper presumes the Credentials
+  have been stored as a CredenialsProperty
+  on a datastore model class, and that entities
+  are stored by key_name.
+  """
+
+  def __init__(self, model, key_name, property_name):
+    """Constructor for Storage.
+
+    Args:
+      model: db.Model, model class
+      key_name: string, key name for the entity that has the credentials
+      property_name: string, name of the property that is an CredentialsProperty
+    """
+    self.model = model
+    self.key_name = key_name
+    self.property_name = property_name
+
+  def get(self):
+    """Retrieve Credential from datastore.
+
+    Returns:
+      Credentials
+    """
+    entity = self.model.get_or_insert(self.key_name)
+    credential = getattr(entity, self.property_name)
+    if credential and hasattr(credential, 'set_store'):
+      credential.set_store(self.put)
+    return credential
+
+  def put(self, credentials):
+    """Write a Credentials to the datastore.
+
+    Args:
+      credentials: Credentials, the credentials to store.
+    """
+    entity = self.model.get_or_insert(self.key_name)
+    setattr(entity, self.property_name, credentials)
+    entity.put()
