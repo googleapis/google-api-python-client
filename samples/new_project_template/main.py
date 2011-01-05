@@ -36,7 +36,11 @@ from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp.util import login_required
 
 APP_ID = os.environ['APPLICATION_ID']
-STEP2_URI = 'http://%s.appspot.com/auth_return' % APP_ID
+
+if 'Development' in os.environ['SERVER_SOFTWARE']:
+  STEP2_URI = 'http://localhost:8080/auth_return'
+else:
+  STEP2_URI = 'http://%s.appspot.com/auth_return' % APP_ID
 
 
 class Credentials(db.Model):
@@ -49,29 +53,33 @@ class MainHandler(webapp.RequestHandler):
   def get(self):
     user = users.get_current_user()
     storage = StorageByKeyName(Credentials, user.user_id(), 'credentials')
-    credentials = storage.get()
     http = httplib2.Http()
+    credentials = storage.get()
+
     if credentials:
       http = credentials.authorize(http)
+
     service = build("buzz", "v1", http=http)
 
-    if credentials:
-      followers = service.people().list(userId='@me', groupId='@followers').execute()
-      self.response.out.write('Hello, you have %s followers!' %
-                              followers['totalResults'])
-    else:
-      flow = FlowThreeLegged(service.auth_discovery(),
-                     consumer_key='anonymous',
-                     consumer_secret='anonymous',
-                     user_agent='%s/1.0' % APP_ID,
-                     domain='anonymous',
-                     scope='https://www.googleapis.com/auth/buzz',
-                     xoauth_displayname='App Name')
+    if not credentials:
+      return begin_oauth_flow(self, user, service)
 
-      authorize_url = flow.step1_get_authorize_url(STEP2_URI)
-      memcache.set(user.user_id(), pickle.dumps(flow))
-      self.redirect(authorize_url)
+    followers = service.people().list(userId='@me', groupId='@followers').execute()
+    self.response.out.write('Hello, you have %s followers!' %
+                            followers['totalResults'])
 
+def begin_oauth_flow(request_handler, user, service):
+    flow = FlowThreeLegged(service.auth_discovery(),
+                   consumer_key='anonymous',
+                   consumer_secret='anonymous',
+                   user_agent='%s/1.0' % APP_ID,
+                   domain='anonymous',
+                   scope='https://www.googleapis.com/auth/buzz',
+                   xoauth_displayname='App Name')
+
+    authorize_url = flow.step1_get_authorize_url(STEP2_URI)
+    memcache.set(user.user_id(), pickle.dumps(flow))
+    request_handler.redirect(authorize_url)
 
 class OAuthHandler(webapp.RequestHandler):
 

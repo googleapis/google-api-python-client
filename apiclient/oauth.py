@@ -124,18 +124,25 @@ class OAuthCredentials(Credentials):
                     connection_type=None):
       """Modify the request headers to add the appropriate
       Authorization header."""
-      req = oauth.Request.from_consumer_and_token(
-          self.consumer, self.token, http_method=method, http_url=uri)
-      req.sign_request(signer, self.consumer, self.token)
-      if headers == None:
-        headers = {}
-      headers.update(req.to_header())
-      if 'user-agent' in headers:
-        headers['user-agent'] = self.user_agent + ' ' + headers['user-agent']
-      else:
-        headers['user-agent'] = self.user_agent
-      return request_orig(uri, method, body, headers,
-                          redirections, connection_type)
+      response_code = 302
+      http.follow_redirects = False
+      while response_code in [301, 302]:
+        req = oauth.Request.from_consumer_and_token(
+            self.consumer, self.token, http_method=method, http_url=uri)
+        req.sign_request(signer, self.consumer, self.token)
+        if headers == None:
+          headers = {}
+        headers.update(req.to_header())
+        if 'user-agent' in headers:
+          headers['user-agent'] = self.user_agent + ' ' + headers['user-agent']
+        else:
+          headers['user-agent'] = self.user_agent
+        resp, content = request_orig(uri, method, body, headers,
+                            redirections, connection_type)
+        response_code = resp.status
+        if response_code in [301, 302]:
+          uri = resp['location']
+      return resp, content
 
     http.request = new_request
     return http
