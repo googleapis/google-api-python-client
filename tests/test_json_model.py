@@ -21,7 +21,8 @@ Unit tests for the JSON model.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-from apiclient.discovery import JsonModel, HttpError
+from apiclient.model import JsonModel
+from apiclient.errors import HttpError
 import os
 import unittest
 import httplib2

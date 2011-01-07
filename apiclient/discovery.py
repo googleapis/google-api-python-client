@@ -36,7 +36,6 @@ except ImportError:
 from http import HttpRequest
 from anyjson import simplejson
 from model import JsonModel
-from errors import HttpError
 from errors import UnknownLinkType
 
 URITEMPLATE = re.compile('{[^}]*}')
@@ -63,11 +62,11 @@ def key2param(key):
 
 
 def build(serviceName, version,
-    http=None,
-    discoveryServiceUrl=DISCOVERY_URI,
-    developerKey=None,
-    model=JsonModel(),
-    requestBuilder=HttpRequest):
+          http=None,
+          discoveryServiceUrl=DISCOVERY_URI,
+          developerKey=None,
+          model=JsonModel(),
+          requestBuilder=HttpRequest):
   params = {
       'api': serviceName,
       'apiVersion': version
@@ -292,7 +291,8 @@ def createResource(http, baseUrl, model, requestBuilder, resourceName,
 
       def method(self):
         return createResource(self._http, self._baseUrl, self._model,
-            methodName, self._developerKey, methodDesc, futureDesc)
+                              self._requestBuilder, methodName,
+                              self._developerKey, methodDesc, futureDesc)
 
       setattr(method, '__doc__', 'A description of how to use this function')
       setattr(method, '__is_resource__', True)

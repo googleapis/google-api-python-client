@@ -104,6 +104,15 @@ class Discovery(unittest.TestCase):
     self.assertEqual(q['name'], ['bat'])
     self.assertEqual(q['projection'], ['size'])
 
+  def test_nested_resources(self):
+    self.http = HttpMock('zoo.json', {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+    self.assertTrue(getattr(zoo, 'animals'))
+    request = zoo.my().favorites().list(max_results="5")
+    parsed = urlparse.urlparse(request.uri)
+    q = parse_qs(parsed[4])
+    self.assertEqual(q['max-results'], ['5'])
+
 
 
 class Next(unittest.TestCase):

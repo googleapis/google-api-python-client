@@ -106,7 +106,7 @@ class StorageByKeyName(object):
     Args:
       model: db.Model, model class
       key_name: string, key name for the entity that has the credentials
-      property_name: string, name of the property that is an CredentialsProperty
+      property_name: string, name of the property that is a CredentialsProperty
     """
     self.model = model
     self.key_name = key_name

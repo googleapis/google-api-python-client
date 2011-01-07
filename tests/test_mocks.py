@@ -21,7 +21,7 @@ Unit tests for the Mocks.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-from apiclient.discovery import HttpError
+from apiclient.errors import HttpError
 from apiclient.discovery import build
 from apiclient.http import RequestMockBuilder
 from tests.util import HttpMock

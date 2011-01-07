@@ -64,9 +64,11 @@ class MainHandler(webapp.RequestHandler):
     if not credentials:
       return begin_oauth_flow(self, user, service)
 
-    followers = service.people().list(userId='@me', groupId='@followers').execute()
+    followers = service.people().list(
+        userId='@me', groupId='@followers').execute()
     self.response.out.write('Hello, you have %s followers!' %
                             followers['totalResults'])
+
 
 def begin_oauth_flow(request_handler, user, service):
     flow = FlowThreeLegged(service.auth_discovery(),
@@ -80,6 +82,7 @@ def begin_oauth_flow(request_handler, user, service):
     authorize_url = flow.step1_get_authorize_url(STEP2_URI)
     memcache.set(user.user_id(), pickle.dumps(flow))
     request_handler.redirect(authorize_url)
+
 
 class OAuthHandler(webapp.RequestHandler):
 
