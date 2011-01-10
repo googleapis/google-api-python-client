@@ -33,8 +33,6 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp.util import login_required
 
-STEP2_URI = 'http://%s.appspot.com/auth_return' % os.environ['APPLICATION_ID']
-
 
 class Flow(db.Model):
   # FlowThreeLegged could also be stored in memcache.
@@ -77,7 +75,8 @@ class MainHandler(webapp.RequestHandler):
                      scope='https://www.googleapis.com/auth/buzz',
                      xoauth_displayname='Example Web App')
 
-      authorize_url = flow.step1_get_authorize_url(STEP2_URI)
+      callback = self.request.relative_url('/auth_return')
+      authorize_url = flow.step1_get_authorize_url(callback)
       f = Flow(key_name=user.user_id(), flow=flow)
       f.put()
       self.redirect(authorize_url)
