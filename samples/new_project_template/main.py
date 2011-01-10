@@ -37,11 +37,6 @@ from google.appengine.ext.webapp.util import login_required
 
 APP_ID = os.environ['APPLICATION_ID']
 
-if 'Development' in os.environ['SERVER_SOFTWARE']:
-  STEP2_URI = 'http://localhost:8080/auth_return'
-else:
-  STEP2_URI = 'http://%s.appspot.com/auth_return' % APP_ID
-
 
 class Credentials(db.Model):
   credentials = OAuthCredentialsProperty()
@@ -79,7 +74,8 @@ def begin_oauth_flow(request_handler, user, service):
                    scope='https://www.googleapis.com/auth/buzz',
                    xoauth_displayname='App Name')
 
-    authorize_url = flow.step1_get_authorize_url(STEP2_URI)
+    callback = self.request.relative_url('/auth_return')
+    authorize_url = flow.step1_get_authorize_url(callback)
     memcache.set(user.user_id(), pickle.dumps(flow))
     request_handler.redirect(authorize_url)
 
