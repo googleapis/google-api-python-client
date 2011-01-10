@@ -4,43 +4,45 @@
 
 __author__ = 'ade@google.com (Ade Oshineye)'
 
-from contrib.buzz.simple_buzz_wrapper import SimpleBuzzWrapper
+from contrib.buzz.simple_wrapper import SimpleWrapper
 
+import apiclient.oauth
 import httplib2
 import logging
+import oauth2 as oauth
 import os
 import pickle
 import unittest
 
-class SimpleBuzzWrapperTest(unittest.TestCase):
+class SimpleWrapperTest(unittest.TestCase):
 # None of these tests make a remote call. We assume the underlying libraries
 # and servers are working.
 
   def test_wrapper_rejects_empty_post(self):
-    wrapper = SimpleBuzzWrapper()
+    wrapper = SimpleWrapper()
     self.assertEquals(None, wrapper.post('', '108242092577082601423'))
 
   def test_wrapper_rejects_post_containing_only_whitespace(self):
-    wrapper = SimpleBuzzWrapper()
+    wrapper = SimpleWrapper()
     self.assertEquals(None, wrapper.post('            ', '108242092577082601423'))
 
   def test_wrapper_rejects_none_post(self):
-    wrapper = SimpleBuzzWrapper()
+    wrapper = SimpleWrapper()
     self.assertEquals(None, wrapper.post(None, '108242092577082601423'))
 
   def test_wrapper_rejects_empty_search(self):
-    wrapper = SimpleBuzzWrapper()
+    wrapper = SimpleWrapper()
     self.assertEquals(None, wrapper.search(''))
 
   def test_wrapper_rejects_search_containing_only_whitespace(self):
-    wrapper = SimpleBuzzWrapper()
+    wrapper = SimpleWrapper()
     self.assertEquals(None, wrapper.search(' '))
 
   def test_wrapper_rejects_search_with_none(self):
-    wrapper = SimpleBuzzWrapper()
+    wrapper = SimpleWrapper()
     self.assertEquals(None, wrapper.search(None))
 
-class SimpleBuzzWrapperRemoteTest(unittest.TestCase):
+class SimpleWrapperRemoteTest(unittest.TestCase):
   # These tests make remote calls
   def __init__(self, method_name):
     unittest.TestCase.__init__(self, method_name)
@@ -52,9 +54,13 @@ class SimpleBuzzWrapperRemoteTest(unittest.TestCase):
       key,value = line.split('=')
       oauth_params_dict[key.strip()] = value.strip()
 
-    self.wrapper = SimpleBuzzWrapper(consumer_key=oauth_params_dict['consumerKey'],
-      consumer_secret=oauth_params_dict['consumerSecret'], oauth_token=oauth_params_dict['accessToken'], 
-      oauth_token_secret=oauth_params_dict['accessTokenSecret'])
+    consumer = oauth.Consumer(oauth_params_dict['consumerKey'],
+                              oauth_params_dict['consumerSecret'])
+    token = oauth.Token(oauth_params_dict['accessToken'],
+                        oauth_params_dict['accessTokenSecret'])
+    user_agent = 'google-api-client-python-buzz-webapp/1.0'
+    credentials = apiclient.oauth.OAuthCredentials(consumer, token, user_agent)
+    self.wrapper = SimpleWrapper(credentials=credentials)
 
   def test_searching_returns_results(self):
     results = self.wrapper.search('oshineye')
