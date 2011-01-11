@@ -17,7 +17,7 @@ from google.appengine.ext import db
 
 import apiclient.ext.appengine
 import logging
-import simple_buzz_wrapper
+import simple_wrapper
 
 
 class Flow(db.Model):
@@ -124,5 +124,5 @@ class oauth_required(object):
 def build_buzz_wrapper_for_current_user(api_key):
   user = users.get_current_user()
   credentials = Credentials.get_by_key_name(user.user_id()).credentials
-  return simple_buzz_wrapper.SimpleBuzzWrapper(api_key=api_key, 
+  return simple_wrapper.SimpleWrapper(api_key=api_key, 
                                                  credentials=credentials)
