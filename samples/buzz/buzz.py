@@ -29,11 +29,13 @@ def main():
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  p = build("buzz", "v1", http=http, developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
+  p = build("buzz", "v1", http=http,
+      developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
   activities = p.activities()
 
   # Retrieve the first two activities
-  activitylist = activities.list(max_results='2', scope='@self', userId='@me').execute()
+  activitylist = activities.list(
+      max_results='2', scope='@self', userId='@me').execute()
   print "Retrieved the first two activities"
 
   # Retrieve the next two activities
@@ -44,16 +46,17 @@ def main():
   # Add a new activity
   new_activity_body = {
       "data": {
-          'title': 'Testing insert',
-          'object': {
-              'content': u'Just a short note to show that insert is working. ☄',
-              'type': 'note'}
-          }
+        'title': 'Testing insert',
+        'object': {
+          'content': u'Just a short note to show that insert is working. ☄',
+          'type': 'note'}
+        }
       }
   activity = activities.insert(userId='@me', body=new_activity_body).execute()
   print "Added a new activity"
 
-  activitylist = activities.list(max_results='2', scope='@self', userId='@me').execute()
+  activitylist = activities.list(
+      max_results='2', scope='@self', userId='@me').execute()
 
   # Add a comment to that activity
   comment_body = {
