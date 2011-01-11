@@ -123,19 +123,19 @@ class BuzzFunctionalTest(unittest.TestCase):
     buzz = build('buzz', 'v1')
 
     # Restricting max_results to 1 means only a tiny amount of data comes back but the totalResults still has the total.
-    following = buzz.people().list(userId='googlebuzz', groupId='@followers',
+    followers = buzz.people().list(userId='googlebuzz', groupId='@followers',
                                    max_results='1').execute()
 
     # @googlebuzz has a large but fluctuating number of followers
     # It is sufficient if the result is bigger than 10, 000
-    follower_count = following['totalResults']
+    follower_count = followers['totalResults']
     self.assertTrue(follower_count > 10000, follower_count)
 
   def test_follower_count_is_missing_for_user_with_hidden_follower_count(self):
     buzz = build('buzz', 'v1')
-    following = buzz.people().list(userId='adewale', groupId='@followers').execute()
+    followers = buzz.people().list(userId='adewale', groupId='@followers').execute()
 
-    self.assertFalse('totalResults' in following)
+    self.assertFalse('totalResults' in followers)
 
 
 class BuzzAuthenticatedFunctionalTest(unittest.TestCase):

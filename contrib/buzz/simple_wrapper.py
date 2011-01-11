@@ -12,14 +12,14 @@ class SimpleWrapper(object):
   "Simple client that exposes the bare minimum set of common Buzz operations"
 
   def __init__(self, api_key=None, credentials=None):
+    self.http = httplib2.Http()
     if credentials:
       logging.debug('Using api_client with credentials')
-      http = httplib2.Http()
-      http = credentials.authorize(http)
-      self.api_client = apiclient.discovery.build('buzz', 'v1', http=http, developerKey=api_key)
+      self.http = credentials.authorize(self.http)
+      self.api_client = apiclient.discovery.build('buzz', 'v1', http=self.http, developerKey=api_key)
     else:
       logging.debug('Using api_client that doesn\'t have credentials')
-      self.api_client = apiclient.discovery.build('buzz', 'v1', developerKey=api_key)
+      self.api_client = apiclient.discovery.build('buzz', 'v1', http=self.http, developerKey=api_key)
 
   def search(self, query, user_token=None, max_results=10):
     if query is None or query.strip() is '':
@@ -52,3 +52,19 @@ class SimpleWrapper(object):
   def get_profile(self, user_id='@me'):
     user_profile_data = self.api_client.people().get(userId=user_id).execute()
     return user_profile_data
+  
+  def get_follower_count(self, user_id='@me'):
+    return self.__get_group_count(user_id, '@followers')
+  
+  def get_following_count(self, user_id='@me'):
+    return self.__get_group_count(user_id, '@following')
+
+  def __get_group_count(self, user_id, group_id):
+    # Fetching 0 results is a performance optimisation that minimises the 
+    # amount of data that's getting retrieved from the server
+    cmd = self.api_client.people().list(userId=user_id, groupId=group_id,
+                                        max_results=0)
+    members = cmd.execute()
+    if 'totalResults' not in members.keys():
+      return -1
+    return members['totalResults']

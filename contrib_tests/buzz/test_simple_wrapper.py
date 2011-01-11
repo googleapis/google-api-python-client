@@ -41,6 +41,24 @@ class SimpleWrapperTest(unittest.TestCase):
   def test_wrapper_rejects_search_with_none(self):
     wrapper = SimpleWrapper()
     self.assertEquals(None, wrapper.search(None))
+  
+  def test_wrapper_returns_minus_one_for_hidden_follower_count(self):
+    wrapper = SimpleWrapper()
+    self.assertEquals(-1, wrapper.get_follower_count(user_id='108242092577082601423'))
+  
+  def test_wrapper_returns_positive_value_for_visible_follower_count(self):
+    wrapper = SimpleWrapper()
+    count = wrapper.get_follower_count(user_id='googlebuzz')
+    self.assertTrue(count > 0, "Got %s instead" % count)
+    
+  def test_wrapper_returns_minus_one_for_hidden_following_count(self):
+    wrapper = SimpleWrapper()
+    self.assertEquals(-1, wrapper.get_following_count(user_id='108242092577082601423'))
+
+  def test_wrapper_returns_positive_value_for_visible_following_count(self):
+    wrapper = SimpleWrapper()
+    count = wrapper.get_following_count(user_id='googlebuzz')
+    self.assertTrue(count > 0, "Got %s instead" % count)
 
 class SimpleWrapperRemoteTest(unittest.TestCase):
   # These tests make remote calls
@@ -87,6 +105,14 @@ class SimpleWrapperRemoteTest(unittest.TestCase):
     url = self.wrapper.post('test message', '108242092577082601423')
     self.assertTrue(url is not None)
     self.assertTrue(url.startswith('http://www.google.com/buzz/'))
+
+  def test_wrapper_returns_positive_value_for_hidden_follower_count_when_authorised(self):
+    count = self.wrapper.get_follower_count(user_id='108242092577082601423')
+    self.assertTrue(count > 0, "Got %s instead" % count)
+
+  def test_wrapper_returns_positive_value_for_hidden_following_count_when_authorised(self):
+    count = self.wrapper.get_following_count(user_id='108242092577082601423')
+    self.assertTrue(count > 0, "Got %s instead" % count)
 
 if __name__ == '__main__':
   unittest.main()
