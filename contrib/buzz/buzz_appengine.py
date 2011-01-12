@@ -160,7 +160,7 @@ class oauth_required(object):
       handler_method(*args)
     return check_oauth_credentials_wrapper
 
-def build_buzz_wrapper_for_current_user(api_key):
+def build_buzz_wrapper_for_current_user(api_key=None):
   user = users.get_current_user()
   credentials = Credentials.get_by_key_name(user.user_id()).credentials
   return simple_wrapper.SimpleWrapper(api_key=api_key, 
