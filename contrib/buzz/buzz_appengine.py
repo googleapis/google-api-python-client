@@ -47,7 +47,57 @@ class oauth_required(object):
     """
     self.decorator_args = decorator_args
     self.decorator_kwargs = decorator_kwargs
+
+  def __load_settings_from_file__(self):
+    # Load settings from settings.py module if it's available
+    # Only return the keys that the user has explicitly set
+    try:
+      import settings
+      
+      # This uses getattr so that the user can set just the parameters they care about
+      flow_settings = {
+      'consumer_key' : getattr(settings, 'CONSUMER_KEY', None),
+      'consumer_secret' :  getattr(settings, 'CONSUMER_SECRET', None),
+      'user_agent' :  getattr(settings, 'USER_AGENT', None),
+      'domain' :  getattr(settings, 'DOMAIN', None),
+      'scope' :  getattr(settings, 'SCOPE', None),
+      'xoauth_display_name' :  getattr(settings, 'XOAUTH_DISPLAY_NAME', None)
+      }
+      
+      # Strip out all the keys that weren't specified in the settings.py
+      # This is needed to ensure that those keys don't override what's 
+      # specified in the decorator invocation
+      cleaned_flow_settings = {}
+      for key,value in flow_settings.items():
+        if value is not None:
+          cleaned_flow_settings[key] = value
+      
+      return cleaned_flow_settings
+    except ImportError:
+      return {}
+
+  def __load_settings__(self):
+    # Set up the default arguments and override them with whatever values have been given to the decorator
+    flow_settings = {
+    'consumer_key' : 'anonymous',
+    'consumer_secret' : 'anonymous',
+    'user_agent' : 'google-api-client-python-buzz-webapp/1.0',
+    'domain' : 'anonymous',
+    'scope' : 'https://www.googleapis.com/auth/buzz',
+    'xoauth_display_name' : 'Default Display Name For OAuth Application'
+    }
+    logging.info('OAuth settings: %s ' % flow_settings)
     
+    # Override the defaults with whatever the user may have put into settings.py
+    settings_kwargs = self.__load_settings_from_file__()
+    flow_settings.update(settings_kwargs)
+    logging.info('OAuth settings: %s ' % flow_settings)
+    
+    # Override the defaults with whatever the user have specified in the decorator's invocation
+    flow_settings.update(self.decorator_kwargs)
+    logging.info('OAuth settings: %s ' % flow_settings)
+    return flow_settings
+  
   def __call__(self, handler_method):
     def check_oauth_credentials_wrapper(*args, **kwargs):
       handler_instance = args[0]
@@ -84,18 +134,7 @@ class oauth_required(object):
       # Now that we know who the user is look up their OAuth credentials
       # if we don't find the credentials then send them through the OAuth dance
       if not Credentials.get_by_key_name(user.user_id()):
-        
-        # Set up the default arguments and override them with whatever values have been given to the decorator
-        flow_settings = {
-        'consumer_key' : 'anonymous',
-        'consumer_secret' : 'anonymous',
-        'user_agent' : 'google-api-client-python-buzz-webapp/1.0',
-        'domain' : 'anonymous',
-        'scope' : 'https://www.googleapis.com/auth/buzz',
-        'xoauth_display_name' : 'Default Display Name For OAuth Application'
-        }
-        
-        flow_settings.update(self.decorator_kwargs)
+        flow_settings = self.__load_settings__()
         
         p = apiclient.discovery.build("buzz", "v1")
         flow = apiclient.oauth.FlowThreeLegged(p.auth_discovery(),
