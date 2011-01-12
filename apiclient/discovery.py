@@ -83,16 +83,47 @@ def build(serviceName, version,
       serviceName, "future.json")
   try:
     f = file(fn, "r")
-    d = simplejson.load(f)
+    future = f.read()
     f.close()
-    future = d['resources']
-    auth_discovery = d['auth']
   except IOError:
+    future = None
+
+  return build_from_document(content, discoveryServiceUrl, future,
+      http, developerKey, model, requestBuilder)
+
+def build_from_document(
+    service,
+    base,
+    future=None,
+    http=None,
+    developerKey=None,
+    model=JsonModel(),
+    requestBuilder=HttpRequest):
+  """
+  Args:
+    service: string, discovery document
+    base: string, base URI for all HTTP requests, usually the discovery URI
+    future: string, discovery document with future capabilities
+    auth_discovery: dict, information about the authentication the API supports
+    http: httplib2.Http, An instance of httplib2.Http or something that acts like
+      it that HTTP requests will be made through.
+    developerKey: string, Key for controlling API usage, generated
+      from the API Console.
+    model: Model class instance that serializes and
+      de-serializes requests and responses.
+    requestBuilder: Takes an http request and packages it up to be executed.
+  """
+
+  service = simplejson.loads(service)
+  base = urlparse.urljoin(base, service['restBasePath'])
+  resources = service['resources']
+  if future:
+    doc = simplejson.loads(future)
+    future = doc['resources']
+    auth_discovery = doc.get('auth', {})
+  else:
     future = {}
     auth_discovery = {}
-
-  base = urlparse.urljoin(discoveryServiceUrl, service['restBasePath'])
-  resources = service['resources']
 
   class Service(object):
     """Top level interface for a service"""
