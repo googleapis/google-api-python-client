@@ -163,5 +163,11 @@ class oauth_required(object):
 def build_buzz_wrapper_for_current_user(api_key=None):
   user = users.get_current_user()
   credentials = Credentials.get_by_key_name(user.user_id()).credentials
+  if not api_key:
+    try:
+      import settings
+      api_key = getattr(settings, 'API_KEY', None)
+    except ImportError:
+      return {}
   return simple_wrapper.SimpleWrapper(api_key=api_key, 
                                                  credentials=credentials)
