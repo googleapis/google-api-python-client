@@ -1,5 +1,3 @@
-#!/usr/bin/python2.4
-#
 # Copyright 2010 Google Inc. All Rights Reserved.
 
 """Utilities for OAuth.
@@ -10,10 +8,14 @@ Utilities for making it easier to work with OAuth.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import copy
+import datetime
 import httplib2
+import logging
 import oauth2 as oauth
 import urllib
-import logging
+import urlparse
+
+from anyjson import simplejson
 
 try:
     from urlparse import parse_qs, parse_qsl
@@ -77,6 +79,9 @@ class Credentials(object):
     """
     _abstract()
 
+class Flow(object):
+  """Base class for all Flow objects."""
+  pass
 
 class OAuthCredentials(Credentials):
   """Credentials object for OAuth 1.0a
@@ -148,7 +153,7 @@ class OAuthCredentials(Credentials):
     return http
 
 
-class FlowThreeLegged(object):
+class FlowThreeLegged(Flow):
   """Does the Three Legged Dance for OAuth 1.0a.
   """
 
@@ -249,3 +254,4 @@ class FlowThreeLegged(object):
         oauth_params['oauth_token_secret'])
 
     return OAuthCredentials(consumer, token, self.user_agent)
+
