@@ -212,7 +212,7 @@ class OAuth2Credentials(Credentials):
         headers['user-agent'] = self.user_agent
       resp, content = request_orig(uri, method, body, headers,
                           redirections, connection_type)
-      if resp.status == 401 and 'invalid_token' in resp.get('www-authenticate', ''):
+      if resp.status == 401:
         logging.info("Refreshing because we got a 401")
         self._refresh(request_orig)
         return request_orig(uri, method, body, headers,
