@@ -127,8 +127,8 @@ def configure_logging(options):
 
 
 def main():
-  usage = '''Usage: %prog [options] fetch <url>
-  Example: %prog -v fetch "https://www.googleapis.com/buzz/v1/people/@me/@self?alt=json&pp=1"
+  usage = '''Usage: python %prog [options] fetch <url>
+  Example: python %prog -v fetch "https://www.googleapis.com/buzz/v1/people/@me/@self?alt=json&pp=1"
   '''
   parser = optparse.OptionParser(usage=usage)
   parser.set_defaults(verbose=False)
