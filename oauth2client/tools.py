@@ -39,8 +39,9 @@ except ImportError:
 # TODO(jcgregorio)
 #  - docs
 #  - error handling
-#  - oob when implemented
 
+HOST_NAME = 'localhost'
+PORT_NUMBERS = [8080, 8090]
 
 class ClientRedirectServer(BaseHTTPServer.HTTPServer):
   """A server to handle OAuth 2.0 redirects back to localhost.
@@ -87,48 +88,50 @@ def run(flow, filename):
   parser = OptionParser()
   parser.add_option("-f", "--file", dest="filename",
       default=filename, help="write credentials to FILE", metavar="FILE")
-  parser.add_option("-p", "--no_local_web_server", dest="localhost",
-      action="store_false",
-      default=True,
-      help="Do not run a web server on localhost to handle redirect URIs")
-  parser.add_option("-w", "--local_web_server", dest="localhost",
-      action="store_true",
-      default=True,
-      help="Run a web server on localhost to handle redirect URIs")
+
+  # The support for localhost is a work in progress and does not
+  # work at this point.
+  #parser.add_option("-p", "--no_local_web_server", dest="localhost",
+  #    action="store_false",
+  #    default=True,
+  #    help="Do not run a web server on localhost to handle redirect URIs")
 
   (options, args) = parser.parse_args()
 
-  host_name = 'localhost'
-  port_numbers = [8080, 8090]
-  if options.localhost:
-    server_class = BaseHTTPServer.HTTPServer
-    try:
-      port_number = port_numbers[0]
-      httpd = server_class((host_name, port_number), ClientRedirectHandler)
-    except socket.error:
-      port_number = port_numbers[1]
-      try:
-        httpd = server_class((host_name, port_number), ClientRedirectHandler)
-      except socket.error:
-        options.localhost = False
+#if options.localhost:
+#  server_class = BaseHTTPServer.HTTPServer
+#  try:
+#    port_number = PORT_NUMBERS[0]
+#    httpd = server_class((HOST_NAME, port_number), ClientRedirectHandler)
+#  except socket.error:
+#    port_number = PORT_NUMBERS[1]
+#    try:
+#      httpd = server_class((HOST_NAME, port_number), ClientRedirectHandler)
+#    except socket.error:
+#      options.localhost = False
+#  redirect_uri = 'http://%s:%s/' % (HOST_NAME, port_number)
+#else:
+#  redirect_uri = 'oob'
 
-  authorize_url = flow.step1_get_authorize_url('http://%s:%s/' % (host_name, port_number))
+  redirect_uri = 'oob'
+
+  authorize_url = flow.step1_get_authorize_url(redirect_uri)
 
   print 'Go to the following link in your browser:'
   print authorize_url
   print
 
-  if options.localhost:
-    httpd.handle_request()
-    if 'error' in httpd.query_params:
-      sys.exit('Authentication request was rejected.')
-    if 'code' in httpd.query_params:
-      code = httpd.query_params['code']
-  else:
-    accepted = 'n'
-    while accepted.lower() == 'n':
-      accepted = raw_input('Have you authorized me? (y/n) ')
-    code = raw_input('What is the verification code? ').strip()
+#if options.localhost:
+#  httpd.handle_request()
+#  if 'error' in httpd.query_params:
+#    sys.exit('Authentication request was rejected.')
+#  if 'code' in httpd.query_params:
+#    code = httpd.query_params['code']
+#else:
+  accepted = 'n'
+  while accepted.lower() == 'n':
+    accepted = raw_input('Have you authorized me? (y/n) ')
+  code = raw_input('What is the verification code? ').strip()
 
   credentials = flow.step2_exchange(code)
 

@@ -26,8 +26,8 @@ from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.tools import run
 
 flow = OAuth2WebServerFlow(
-    client_id='anonymous',
-    client_secret='anonymous',
+    client_id='433807057907.apps.googleusercontent.com',
+    client_secret='jigtZpMApkRxncxikFpR+SFg',
     scope='https://www.googleapis.com/auth/buzz',
     user_agent='buzz-cmdline-sample/1.0',
     domain='anonymous',

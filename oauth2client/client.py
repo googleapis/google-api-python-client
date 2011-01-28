@@ -205,7 +205,7 @@ class OAuth2Credentials(Credentials):
       if ((self.token_expiry is not None) and (self.token_expiry <= datetime.datetime.now())):
         logging.info("Refreshing because %s <= %s" %(self.token_expiry, datetime.datetime.now()))
         self._refresh(request_orig)
-      headers['authorization'] = 'WRAP access_token=' + self.access_token
+      headers['authorization'] = 'OAuth ' + self.access_token
       if 'user-agent' in headers:
         headers['user-agent'] = self.user_agent + ' ' + headers['user-agent']
       else:

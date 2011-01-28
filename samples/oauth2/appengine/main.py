@@ -63,8 +63,11 @@ class MainHandler(webapp.RequestHandler):
                      }))
     else:
       flow = OAuth2WebServerFlow(
-          client_id='anonymous',
-          client_secret='anonymous',
+          # Visit https://code.google.com/apis/console to
+          # generate your client_id, client_secret and to
+          # register your redirect_uri.
+          client_id='<YOUR CLIENT ID HERE>',
+          client_secret='<YOUR CLIENT SECRET HERE>',
           scope='https://www.googleapis.com/auth/buzz',
           user_agent='buzz-cmdline-sample/1.0',
           domain='anonymous',
