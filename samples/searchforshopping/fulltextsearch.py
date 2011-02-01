@@ -23,9 +23,10 @@ def main():
   The "|" operator can be used to search for alternative search terms, for
   example: q = 'banana|apple' will search for bananas or apples.
 
-  Search phrases such as those containing spaces can be specified by surrounding
-  them with double quotes, for example q='"mp3 player"'. This can be useful when
-  combining with the "|" operator such as q = '"mp3 player"|ipod'.
+  Search phrases such as those containing spaces can be specified by
+  surrounding them with double quotes, for example q='"mp3 player"'. This can
+  be useful when combining with the "|" operator such as q = '"mp3
+  player"|ipod'.
   """
   client = build('shopping', SHOPPING_API_VERSION, developerKey=DEVELOPER_KEY)
   resource = client.products()

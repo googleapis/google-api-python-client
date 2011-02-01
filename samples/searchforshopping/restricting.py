@@ -3,7 +3,8 @@
 #
 # Copyright 2010 Google Inc. All Rights Reserved.
 
-"""Query that is restricted by a parameter against the public shopping search API"""
+"""Query that is restricted by a parameter against the public shopping search
+API"""
 
 import pprint
 

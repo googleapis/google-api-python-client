@@ -15,12 +15,12 @@ DEVELOPER_KEY = 'AIzaSyACZJW4JwcWwz5taR2gjIMNQrtgDLfILPc'
 
 
 def main():
-  """Get and print a feed of public products in the United States mathing a text
-  search query for 'digital camera' and grouped by the 8 top brands.
+  """Get and print a feed of public products in the United States mathing a
+  text search query for 'digital camera' and grouped by the 8 top brands.
 
-  The list method of the resource should be called with the "crowdBy" parameter.
-  Each parameter should be designed as <attribute>:<occurence>, where
-  <occurrence> is the number of that <attribute> that will be used. For
+  The list method of the resource should be called with the "crowdBy"
+  parameter.  Each parameter should be designed as <attribute>:<occurence>,
+  where <occurrence> is the number of that <attribute> that will be used. For
   example, to crowd by the 5 top brands, the parameter would be "brand:5". The
   possible rules for crowding are currently:
 

@@ -113,6 +113,14 @@ class Discovery(unittest.TestCase):
     q = parse_qs(parsed[4])
     self.assertEqual(q['max-results'], ['5'])
 
+  def test_top_level_functions(self):
+    self.http = HttpMock('zoo.json', {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+    self.assertTrue(getattr(zoo, 'query'))
+    request = zoo.query(q="foo")
+    parsed = urlparse.urlparse(request.uri)
+    q = parse_qs(parsed[4])
+    self.assertEqual(q['q'], ['foo'])
 
 
 class Next(unittest.TestCase):

@@ -91,6 +91,7 @@ def build(serviceName, version,
   return build_from_document(content, discoveryServiceUrl, future,
       http, developerKey, model, requestBuilder)
 
+
 def build_from_document(
     service,
     base,
@@ -105,8 +106,8 @@ def build_from_document(
     base: string, base URI for all HTTP requests, usually the discovery URI
     future: string, discovery document with future capabilities
     auth_discovery: dict, information about the authentication the API supports
-    http: httplib2.Http, An instance of httplib2.Http or something that acts like
-      it that HTTP requests will be made through.
+    http: httplib2.Http, An instance of httplib2.Http or something that acts
+      like it that HTTP requests will be made through.
     developerKey: string, Key for controlling API usage, generated
       from the API Console.
     model: Model class instance that serializes and
@@ -116,45 +117,26 @@ def build_from_document(
 
   service = simplejson.loads(service)
   base = urlparse.urljoin(base, service['restBasePath'])
-  resources = service['resources']
   if future:
-    doc = simplejson.loads(future)
-    future = doc['resources']
-    auth_discovery = doc.get('auth', {})
+    future = simplejson.loads(future)
+    auth_discovery = future.get('auth', {})
   else:
     future = {}
     auth_discovery = {}
 
-  class Service(object):
-    """Top level interface for a service"""
+  resource = createResource(http, base, model, requestBuilder, developerKey,
+                       service, future)
 
-    def __init__(self, http=http):
-      self._http = http
-      self._baseUrl = base
-      self._model = model
-      self._developerKey = developerKey
-      self._requestBuilder = requestBuilder
+  def auth_method():
+    """Discovery information about the authentication the API uses."""
+    return auth_discovery
 
-    def auth_discovery(self):
-      return auth_discovery
+  setattr(resource, 'auth_discovery', auth_method)
 
-  def createMethod(theclass, methodName, methodDesc, futureDesc):
-
-    def method(self):
-      return createResource(self._http, self._baseUrl, self._model,
-                            self._requestBuilder, methodName,
-                            self._developerKey, methodDesc, futureDesc)
-
-    setattr(method, '__doc__', 'A description of how to use this function')
-    setattr(method, '__is_resource__', True)
-    setattr(theclass, methodName, method)
-
-  for methodName, methodDesc in resources.iteritems():
-    createMethod(Service, methodName, methodDesc, future.get(methodName, {}))
-  return Service()
+  return resource
 
 
-def createResource(http, baseUrl, model, requestBuilder, resourceName,
+def createResource(http, baseUrl, model, requestBuilder,
                    developerKey, resourceDesc, futureDesc):
 
   class Resource(object):
@@ -322,8 +304,8 @@ def createResource(http, baseUrl, model, requestBuilder, resourceName,
 
       def method(self):
         return createResource(self._http, self._baseUrl, self._model,
-                              self._requestBuilder, methodName,
-                              self._developerKey, methodDesc, futureDesc)
+                              self._requestBuilder, self._developerKey,
+                              methodDesc, futureDesc)
 
       setattr(method, '__doc__', 'A description of how to use this function')
       setattr(method, '__is_resource__', True)
@@ -335,10 +317,10 @@ def createResource(http, baseUrl, model, requestBuilder, resourceName,
       else:
         future = {}
       createMethod(Resource, methodName, methodDesc,
-                   future.get(methodName, {}))
+                   future)
 
   # Add <m>_next() methods to Resource
-  if futureDesc:
+  if futureDesc and 'methods' in futureDesc:
     for methodName, methodDesc in futureDesc['methods'].iteritems():
       if 'next' in methodDesc and methodName in resourceDesc['methods']:
         createNextMethod(Resource, methodName + "_next",

@@ -79,9 +79,11 @@ class Credentials(object):
     """
     _abstract()
 
+
 class Flow(object):
   """Base class for all Flow objects."""
   pass
+
 
 class OAuthCredentials(Credentials):
   """Credentials object for OAuth 1.0a
@@ -254,4 +256,3 @@ class FlowThreeLegged(Flow):
         oauth_params['oauth_token_secret'])
 
     return OAuthCredentials(consumer, token, self.user_agent)
-

@@ -16,16 +16,17 @@ def main():
   """Get and print a histogram of the top 15 brand distribution for a search
   query.
 
-  Histograms are created by using the "Facets" functionality of the API. A Facet
-  is a view of a certain property of products, containing a number of buckets,
-  one for each value of that property. Or concretely, for a parameter such as
-  "brand" of a product, the facets would include a facet for brand, which would
-  contain a number of buckets, one for each brand returned in the result.
+  Histograms are created by using the "Facets" functionality of the API. A
+  Facet is a view of a certain property of products, containing a number of
+  buckets, one for each value of that property. Or concretely, for a parameter
+  such as "brand" of a product, the facets would include a facet for brand,
+  which would contain a number of buckets, one for each brand returned in the
+  result.
 
   A bucket contains either a value and a count, or a value and a range. In the
   simple case of a value and a count for our example of the "brand" property,
-  the value would be the brand name, eg "sony" and the count would be the number
-  of results in the search.
+  the value would be the brand name, eg "sony" and the count would be the
+  number of results in the search.
   """
   client = build('shopping', SHOPPING_API_VERSION, developerKey=DEVELOPER_KEY)
   resource = client.products()
