@@ -20,21 +20,19 @@ class HttpRequest(object):
   """Encapsulates a single HTTP request.
   """
 
-  def __init__(self, http, uri, method="GET", body=None, headers=None,
-               postproc=None, methodId=None):
+  def __init__(self, http, postproc, uri, method="GET", body=None, headers=None,
+               methodId=None):
     """Constructor for an HttpRequest.
-
-    Only http and uri are required.
 
     Args:
       http: httplib2.Http, the transport object to use to make a request
+      postproc: callable, called on the HTTP response and content to transform
+                it into a data object before returning, or raising an exception
+                on an error.
       uri: string, the absolute URI to send the request to
       method: string, the HTTP method to use
       body: string, the request body of the HTTP request
       headers: dict, the HTTP request headers
-      postproc: callable, called on the HTTP response and content to transform
-                it into a data object before returning, or raising an exception
-                on an error.
       methodId: string, a unique identifier for the API method being called.
     """
     self.uri = uri
@@ -136,8 +134,8 @@ class RequestMockBuilder(object):
     """
     self.responses = responses
 
-  def __call__(self, http, uri, method="GET", body=None, headers=None,
-               postproc=None, methodId=None):
+  def __call__(self, http, postproc, uri, method="GET", body=None,
+               headers=None, methodId=None):
     """Implements the callable interface that discovery.build() expects
     of requestBuilder, which is to build an object compatible with
     HttpRequest.execute(). See that method for the description of the

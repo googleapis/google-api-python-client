@@ -18,8 +18,54 @@ import urllib
 from anyjson import simplejson
 from errors import HttpError
 
+def _abstract():
+  raise NotImplementedError('You need to override this function')
 
-class JsonModel(object):
+
+class Model(object):
+  """Model base class.
+
+  All Model classes should implement this interface.
+  The Model serializes and de-serializes between a wire
+  format such as JSON and a Python object representation.
+  """
+
+  def request(self, headers, path_params, query_params, body_value):
+    """Updates outgoing requests with a deserialized body.
+
+    Args:
+      headers: dict, request headers
+      path_params: dict, parameters that appear in the request path
+      query_params: dict, parameters that appear in the query
+      body_value: object, the request body as a Python object, which must be
+                  serializable.
+    Returns:
+      A tuple of (headers, path_params, query, body)
+
+      headers: dict, request headers
+      path_params: dict, parameters that appear in the request path
+      query: string, query part of the request URI
+      body: string, the body serialized in the desired wire format.
+    """
+    _abstract()
+
+  def response(self, resp, content):
+    """Convert the response wire format into a Python object.
+
+    Args:
+      resp: httplib2.Response, the HTTP response headers and status
+      content: string, the body of the HTTP response
+
+    Returns:
+      The body de-serialized as a Python object.
+
+    Raises:
+      apiclient.errors.HttpError if a non 2xx response is received.
+    """
+    _abstract()
+
+
+class JsonModel(Model):
   """Model class for JSON.
 
   Serializes and de-serializes between JSON and the Python

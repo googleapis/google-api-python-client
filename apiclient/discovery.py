@@ -20,6 +20,9 @@ based APIs.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+__all__ = [
+    'build', 'build_from_document'
+    ]
 
 import httplib2
 import logging
@@ -67,6 +70,28 @@ def build(serviceName, version,
           developerKey=None,
           model=JsonModel(),
           requestBuilder=HttpRequest):
+  """Construct a Resource for interacting with an API.
+
+  Construct a Resource object for interacting with
+  an API. The serviceName and version are the
+  names from the Discovery service.
+
+  Args:
+    serviceName: string, name of the service
+    version: string, the version of the service
+    discoveryServiceUrl: string, a URI Template that points to
+      the location of the discovery service. It should have two
+      parameters {api} and {apiVersion} that when filled in
+      produce an absolute URI to the discovery document for
+      that service.
+    developerKey: string, key obtained from https://code.google.com/apis/console
+    model: apiclient.Model, converts to and from the wire format
+    requestBuilder: apiclient.http.HttpRequest, encapsulator for an HTTP request
+
+  Returns:
+    A Resource object with methods for interacting with
+    the service.
+  """
   params = {
       'api': serviceName,
       'apiVersion': version
@@ -100,7 +125,12 @@ def build_from_document(
     developerKey=None,
     model=JsonModel(),
     requestBuilder=HttpRequest):
-  """
+  """Create a Resource for interacting with an API.
+
+  Same as `build()`, but constructs the Resource object
+  from a discovery document that is it given, as opposed to
+  retrieving one over HTTP.
+
   Args:
     service: string, discovery document
     base: string, base URI for all HTTP requests, usually the discovery URI
@@ -113,6 +143,10 @@ def build_from_document(
     model: Model class instance that serializes and
       de-serializes requests and responses.
     requestBuilder: Takes an http request and packages it up to be executed.
+
+  Returns:
+    A Resource object with methods for interacting with
+    the service.
   """
 
   service = simplejson.loads(service)
@@ -229,10 +263,12 @@ def createResource(http, baseUrl, model, requestBuilder,
                              url_result.path + expanded_url + query)
 
       logging.info('URL being requested: %s' % url)
-      return self._requestBuilder(self._http, url,
-                                  method=httpMethod, body=body,
+      return self._requestBuilder(self._http,
+                                  self._model.response,
+                                  url,
+                                  method=httpMethod,
+                                  body=body,
                                   headers=headers,
-                                  postproc=self._model.response,
                                   methodId=methodId)
 
     docs = ['A description of how to use this function\n\n']
@@ -281,9 +317,11 @@ def createResource(http, baseUrl, model, requestBuilder,
       logging.info('URL being requested: %s' % url)
       resp, content = self._http.request(url, method='GET', headers=headers)
 
-      return self._requestBuilder(self._http, url, method='GET',
+      return self._requestBuilder(self._http,
+                                  self._model.response,
+                                  url,
+                                  method='GET',
                                   headers=headers,
-                                  postproc=self._model.response,
                                   methodId=methodId)
 
     setattr(theclass, methodName, method)
