@@ -9,10 +9,12 @@ actuall HTTP request.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 __all__ = [
-    'HttpRequest', 'RequestMockBuilder'
+    'HttpRequest', 'RequestMockBuilder', 'HttpMock'
     ]
 
 import httplib2
+import os
+
 from model import JsonModel
 
 
@@ -147,3 +149,20 @@ class RequestMockBuilder(object):
     else:
       model = JsonModel()
       return HttpRequestMock(None, '{}', model.response)
+
+class HttpMock(object):
+  """Mock of httplib2.Http"""
+
+  def __init__(self, filename, headers):
+    """
+    Args:
+      filename: string, absolute filename to read response from
+      headers: dict, header to return with response
+    """
+    f = file(filename, 'r')
+    self.data = f.read()
+    f.close()
+    self.headers = headers
+
+  def request(self, uri, method="GET", body=None, headers=None, redirections=1, connection_type=None):
+    return httplib2.Response(self.headers), self.data

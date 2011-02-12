@@ -24,15 +24,22 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 from apiclient.errors import HttpError
 from apiclient.discovery import build
 from apiclient.http import RequestMockBuilder
-from tests.util import HttpMock
+from apiclient.http import HttpMock
 
-import unittest
 import httplib2
+import os
+import unittest
+
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+
+def datafile(filename):
+  return os.path.join(DATA_DIR, filename)
 
 
 class Mocks(unittest.TestCase):
   def setUp(self):
-    self.http = HttpMock('buzz.json', {'status': '200'})
+    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
 
   def test_default_response(self):
     requestBuilder = RequestMockBuilder({})

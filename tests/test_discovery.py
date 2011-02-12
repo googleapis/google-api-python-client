@@ -32,7 +32,13 @@ except ImportError:
     from cgi import parse_qs
 
 from apiclient.discovery import build, key2param
-from tests.util import HttpMock
+from apiclient.http import HttpMock
+
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+
+def datafile(filename):
+  return os.path.join(DATA_DIR, filename)
 
 
 class Utilities(unittest.TestCase):
@@ -44,7 +50,7 @@ class Utilities(unittest.TestCase):
 class Discovery(unittest.TestCase):
 
   def test_method_error_checking(self):
-    self.http = HttpMock('buzz.json', {'status': '200'})
+    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
     buzz = build('buzz', 'v1', self.http)
 
     # Missing required parameters
@@ -76,7 +82,7 @@ class Discovery(unittest.TestCase):
       self.assertTrue('unexpected' in str(e))
 
   def test_buzz_resources(self):
-    self.http = HttpMock('buzz.json', {'status': '200'})
+    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
     buzz = build('buzz', 'v1', self.http)
     self.assertTrue(getattr(buzz, 'activities'))
     self.assertTrue(getattr(buzz, 'feeds'))
@@ -87,7 +93,7 @@ class Discovery(unittest.TestCase):
     self.assertTrue(getattr(buzz, 'related'))
 
   def test_auth(self):
-    self.http = HttpMock('buzz.json', {'status': '200'})
+    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
     buzz = build('buzz', 'v1', self.http)
     auth = buzz.auth_discovery()
     self.assertTrue('request' in auth)
@@ -95,7 +101,7 @@ class Discovery(unittest.TestCase):
   def test_full_featured(self):
     # Zoo should exercise all discovery facets
     # and should also have no future.json file.
-    self.http = HttpMock('zoo.json', {'status': '200'})
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', self.http)
     self.assertTrue(getattr(zoo, 'animals'))
     request = zoo.animals().list(name="bat", projection="size")
@@ -105,7 +111,7 @@ class Discovery(unittest.TestCase):
     self.assertEqual(q['projection'], ['size'])
 
   def test_nested_resources(self):
-    self.http = HttpMock('zoo.json', {'status': '200'})
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', self.http)
     self.assertTrue(getattr(zoo, 'animals'))
     request = zoo.my().favorites().list(max_results="5")
@@ -114,7 +120,7 @@ class Discovery(unittest.TestCase):
     self.assertEqual(q['max-results'], ['5'])
 
   def test_top_level_functions(self):
-    self.http = HttpMock('zoo.json', {'status': '200'})
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', self.http)
     self.assertTrue(getattr(zoo, 'query'))
     request = zoo.query(q="foo")
@@ -125,7 +131,7 @@ class Discovery(unittest.TestCase):
 
 class Next(unittest.TestCase):
   def test_next_for_people_liked(self):
-    self.http = HttpMock('buzz.json', {'status': '200'})
+    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
     buzz = build('buzz', 'v1', self.http)
     people = {'links':
                   {'next':
@@ -136,7 +142,7 @@ class Next(unittest.TestCase):
 
 class DeveloperKey(unittest.TestCase):
   def test_param(self):
-    self.http = HttpMock('buzz.json', {'status': '200'})
+    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
     buzz = build('buzz', 'v1', self.http, developerKey='foobie_bletch')
     activities = {'links':
                   {'next':
@@ -147,7 +153,7 @@ class DeveloperKey(unittest.TestCase):
     self.assertEqual(q['key'], ['foobie_bletch'])
 
   def test_next_for_activities_list(self):
-    self.http = HttpMock('buzz.json', {'status': '200'})
+    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
     buzz = build('buzz', 'v1', self.http, developerKey='foobie_bletch')
     activities = {'links':
                   {'next':
