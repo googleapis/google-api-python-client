@@ -1,3 +1,7 @@
+import oauth2client
+import base64
+import pickle
+
 from django.db import models
 from oauth2client.client import Storage as BaseStorage
 
@@ -9,9 +13,9 @@ class CredentialsField(models.Field):
     return 'VARCHAR'
 
   def to_python(self, value):
-    if value is None:
+    if not value:
       return None
-    if isinstance(value, oauth2client.Credentials):
+    if isinstance(value, oauth2client.client.Credentials):
       return value
     return pickle.loads(base64.b64decode(value))
 
@@ -30,7 +34,7 @@ class FlowField(models.Field):
     print "In to_python", value
     if value is None:
       return None
-    if isinstance(value, oauth2client.Flow):
+    if isinstance(value, oauth2client.client.Flow):
       return value
     return pickle.loads(base64.b64decode(value))
 
@@ -67,11 +71,14 @@ class Storage(BaseStorage):
     Returns:
       oauth2client.Credentials
     """
+    credential = None
+
     query = {self.key_name: self.key_value}
-    entity = self.model_class.objects.filter(*query)[0]
-    credential = getattr(entity, self.property_name)
-    if credential and hasattr(credential, 'set_store'):
-      credential.set_store(self.put)
+    entities = self.model_class.objects.filter(**query)
+    if len(entities) > 0:
+      credential = getattr(entities[0], self.property_name)
+      if credential and hasattr(credential, 'set_store'):
+        credential.set_store(self.put)
     return credential
 
   def put(self, credentials):
@@ -80,6 +87,7 @@ class Storage(BaseStorage):
     Args:
       credentials: Credentials, the credentials to store.
     """
-    entity = self.model_class(self.key_name=self.key_value)
+    args = {self.key_name: self.key_value}
+    entity = self.model_class(**args)
     setattr(entity, self.property_name, credentials)
     entity.save()
