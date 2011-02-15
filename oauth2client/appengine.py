@@ -25,6 +25,7 @@ import pickle
 from google.appengine.ext import db
 from client import Credentials
 from client import Flow
+from client import Storage
 
 
 class FlowProperty(db.Property):
@@ -90,7 +91,7 @@ class CredentialsProperty(db.Property):
     return not value
 
 
-class StorageByKeyName(object):
+class StorageByKeyName(Storage):
   """Store and retrieve a single credential to and from
   the App Engine datastore.
 

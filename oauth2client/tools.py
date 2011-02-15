@@ -23,111 +23,16 @@ other example apps in the same directory.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 __all__ = ["run"]
 
-import socket
-import sys
-import BaseHTTPServer
-import logging
 
-from optparse import OptionParser
-from oauth2client.file import Storage
-
-try:
-    from urlparse import parse_qsl
-except ImportError:
-    from cgi import parse_qsl
-
-# TODO(jcgregorio)
-#  - docs
-#  - error handling
-
-HOST_NAME = 'localhost'
-PORT_NUMBERS = [8080, 8090]
-
-class ClientRedirectServer(BaseHTTPServer.HTTPServer):
-  """A server to handle OAuth 2.0 redirects back to localhost.
-
-  Waits for a single request and parses the query parameters
-  into query_params and then stops serving.
-  """
-  query_params = {}
-
-class ClientRedirectHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-  """A handler for OAuth 2.0 redirects back to localhost.
-
-  Waits for a single request and parses the query parameters
-  into the servers query_params and then stops serving.
-  """
-
-  def do_GET(s):
-    """Handle a GET request
-
-    Checks the query parameters and if an error
-    occurred print a message of failure, otherwise
-    indicate success.
-    """
-    s.send_response(200)
-    s.send_header("Content-type", "text/html")
-    s.end_headers()
-    query = s.path.split('?', 1)[-1]
-    query = dict(parse_qsl(query))
-    s.server.query_params = query
-    s.wfile.write("<html><head><title>Authentication Status</title></head>")
-    if 'error' in query:
-      s.wfile.write("<body><p>The authentication request failed.</p>")
-    else:
-      s.wfile.write("<body><p>You have successfully authenticated</p>")
-    s.wfile.write("</body></html>")
-
-  def log_message(self, format, *args):
-    """Do not log messages to stdout while running as a command line program."""
-    pass
-
-def run(flow, filename):
+def run(flow, storage):
   """Core code for a command-line application.
   """
-  parser = OptionParser()
-  parser.add_option("-f", "--file", dest="filename",
-      default=filename, help="write credentials to FILE", metavar="FILE")
-
-  # The support for localhost is a work in progress and does not
-  # work at this point.
-  #parser.add_option("-p", "--no_local_web_server", dest="localhost",
-  #    action="store_false",
-  #    default=True,
-  #    help="Do not run a web server on localhost to handle redirect URIs")
-
-  (options, args) = parser.parse_args()
-
-#if options.localhost:
-#  server_class = BaseHTTPServer.HTTPServer
-#  try:
-#    port_number = PORT_NUMBERS[0]
-#    httpd = server_class((HOST_NAME, port_number), ClientRedirectHandler)
-#  except socket.error:
-#    port_number = PORT_NUMBERS[1]
-#    try:
-#      httpd = server_class((HOST_NAME, port_number), ClientRedirectHandler)
-#    except socket.error:
-#      options.localhost = False
-#  redirect_uri = 'http://%s:%s/' % (HOST_NAME, port_number)
-#else:
-#  redirect_uri = 'oob'
-
-  redirect_uri = 'oob'
-
-  authorize_url = flow.step1_get_authorize_url(redirect_uri)
+  authorize_url = flow.step1_get_authorize_url('oob')
 
   print 'Go to the following link in your browser:'
   print authorize_url
   print
 
-#if options.localhost:
-#  httpd.handle_request()
-#  if 'error' in httpd.query_params:
-#    sys.exit('Authentication request was rejected.')
-#  if 'code' in httpd.query_params:
-#    code = httpd.query_params['code']
-#else:
   accepted = 'n'
   while accepted.lower() == 'n':
     accepted = raw_input('Have you authorized me? (y/n) ')
@@ -135,5 +40,9 @@ def run(flow, filename):
 
   credentials = flow.step2_exchange(code)
 
-  Storage(options.filename).put(credentials)
-  print "You have successfully authenticated."
+  storage.put(credentials)
+  credentials.set_store(storage.put)
+
+  print 'You have successfully authenticated.'
+
+  return credentials

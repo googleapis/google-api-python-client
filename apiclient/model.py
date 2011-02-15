@@ -18,6 +18,7 @@ import urllib
 from anyjson import simplejson
 from errors import HttpError
 
+
 def _abstract():
   raise NotImplementedError('You need to override this function')
 

@@ -84,9 +84,11 @@ def build(serviceName, version,
       parameters {api} and {apiVersion} that when filled in
       produce an absolute URI to the discovery document for
       that service.
-    developerKey: string, key obtained from https://code.google.com/apis/console
+    developerKey: string, key obtained
+      from https://code.google.com/apis/console
     model: apiclient.Model, converts to and from the wire format
-    requestBuilder: apiclient.http.HttpRequest, encapsulator for an HTTP request
+    requestBuilder: apiclient.http.HttpRequest, encapsulator for
+      an HTTP request
 
   Returns:
     A Resource object with methods for interacting with

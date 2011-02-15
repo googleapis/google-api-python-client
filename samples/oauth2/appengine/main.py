@@ -45,7 +45,8 @@ class MainHandler(webapp.RequestHandler):
   @login_required
   def get(self):
     user = users.get_current_user()
-    credentials = StorageByKeyName(Credentials, user.user_id(), 'credentials').get()
+    credentials = StorageByKeyName(
+        Credentials, user.user_id(), 'credentials').get()
 
     if credentials:
       http = httplib2.Http()
@@ -87,7 +88,8 @@ class OAuthHandler(webapp.RequestHandler):
     flow = pickle.loads(memcache.get(user.user_id()))
     if flow:
       credentials = flow.step2_exchange(self.request.params)
-      StorageByKeyName(Credentials, user.user_id(), 'credentials').put(credentials)
+      StorageByKeyName(
+          Credentials, user.user_id(), 'credentials').put(credentials)
       self.redirect("/")
     else:
       pass

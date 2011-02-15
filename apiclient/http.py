@@ -22,7 +22,10 @@ class HttpRequest(object):
   """Encapsulates a single HTTP request.
   """
 
-  def __init__(self, http, postproc, uri, method="GET", body=None, headers=None,
+  def __init__(self, http, postproc, uri,
+               method="GET",
+               body=None,
+               headers=None,
                methodId=None):
     """Constructor for an HttpRequest.
 
@@ -150,6 +153,7 @@ class RequestMockBuilder(object):
       model = JsonModel()
       return HttpRequestMock(None, '{}', model.response)
 
+
 class HttpMock(object):
   """Mock of httplib2.Http"""
 
@@ -164,5 +168,10 @@ class HttpMock(object):
     f.close()
     self.headers = headers
 
-  def request(self, uri, method="GET", body=None, headers=None, redirections=1, connection_type=None):
+  def request(self, uri,
+              method="GET",
+              body=None,
+              headers=None,
+              redirections=1,
+              connection_type=None):
     return httplib2.Response(self.headers), self.data

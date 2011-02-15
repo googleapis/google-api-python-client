@@ -11,22 +11,30 @@ latest content and then adds a new entry.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import httplib2
 
 from apiclient.discovery import build
 from oauth2client.file import Storage
-
-import httplib2
+from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.tools import run
 
 # Uncomment to get low level HTTP logging
 #httplib2.debuglevel = 4
 
-# Uncomment to get logging
-#import logging
-#logging.basicConfig(level=logging.DEBUG)
-
 
 def main():
-  credentials = Storage('moderator.dat').get()
+  storage = Storage('moderator.dat')
+  credentials = storage.get()
+
+  if not credentials:
+    flow = OAuth2WebServerFlow(
+        client_id='433807057907.apps.googleusercontent.com',
+        client_secret='jigtZpMApkRxncxikFpR+SFg',
+        scope='https://www.googleapis.com/auth/moderator',
+        user_agent='moderator-cmdline-sample/1.0',
+        xoauth_displayname='Moderator Client Example App')
+
+    credentials = run(flow, storage)
 
   http = httplib2.Http()
   http = credentials.authorize(http)

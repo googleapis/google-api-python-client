@@ -10,8 +10,10 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import pickle
 
+from client import Storage as BaseStorage
 
-class Storage(object):
+
+class Storage(BaseStorage):
   """Store and retrieve a single credential to and from a file."""
 
   def __init__(self, filename):
@@ -23,10 +25,13 @@ class Storage(object):
     Returns:
       apiclient.oauth.Credentials
     """
-    f = open(self.filename, 'r')
-    credentials = pickle.loads(f.read())
-    f.close()
-    credentials.set_store(self.put)
+    try:
+      f = open(self.filename, 'r')
+      credentials = pickle.loads(f.read())
+      f.close()
+      credentials.set_store(self.put)
+    except:
+      credentials = None
     return credentials
 
   def put(self, credentials):
@@ -38,5 +43,3 @@ class Storage(object):
     f = open(self.filename, 'w')
     f.write(pickle.dumps(credentials))
     f.close()
-
-

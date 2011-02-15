@@ -70,6 +70,30 @@ class Flow(object):
   pass
 
 
+class Storage(object):
+  """Base class for all Storage objects.
+
+  Store and retrieve a single credential.
+  """
+
+
+  def get(self):
+    """Retrieve credential.
+
+    Returns:
+      apiclient.oauth.Credentials
+    """
+    _abstract()
+
+  def put(self, credentials):
+    """Write a credential.
+
+    Args:
+      credentials: Credentials, the credentials to store.
+    """
+    _abstract()
+
+
 class OAuth2Credentials(Credentials):
   """Credentials object for OAuth 2.0
 
