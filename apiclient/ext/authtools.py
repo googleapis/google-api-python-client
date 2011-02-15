@@ -138,3 +138,5 @@ def run(flow, filename):
   f.write(pickle.dumps(credentials))
   f.close()
   print "You have successfully authenticated."
+
+  return credentials

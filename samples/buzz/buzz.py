@@ -12,6 +12,9 @@ latest content and then adds a new entry.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 from apiclient.discovery import build
+from apiclient.oauth import FlowThreeLegged
+from apiclient.ext.authtools import run
+
 
 import httplib2
 import pickle
@@ -22,9 +25,22 @@ import pprint
 
 
 def main():
-  f = open("buzz.dat", "r")
-  credentials = pickle.loads(f.read())
-  f.close()
+  try:
+    f = open("buzz.dat", "r")
+    credentials = pickle.loads(f.read())
+    f.close()
+  except:
+    buzz_discovery = build("buzz", "v1").auth_discovery()
+
+    flow = FlowThreeLegged(buzz_discovery,
+                           consumer_key='anonymous',
+                           consumer_secret='anonymous',
+                           user_agent='google-api-client-python-buzz-cmdline/1.0',
+                           domain='anonymous',
+                           scope='https://www.googleapis.com/auth/buzz',
+                           xoauth_displayname='Google API Client Example App')
+
+    credentials = run(flow, 'buzz.dat')
 
   http = httplib2.Http()
   http = credentials.authorize(http)
