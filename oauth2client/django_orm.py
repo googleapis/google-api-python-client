@@ -1,3 +1,13 @@
+# Copyright 2010 Google Inc. All Rights Reserved.
+
+"""OAuth 2.0 utilities for Django.
+
+Utilities for using OAuth 2.0 in conjunction with
+the Django datastore.
+"""
+
+__author__ = 'jcgregorio@google.com (Joe Gregorio)'
+
 import oauth2client
 import base64
 import pickle
@@ -31,7 +41,6 @@ class FlowField(models.Field):
     return 'VARCHAR'
 
   def to_python(self, value):
-    print "In to_python", value
     if value is None:
       return None
     if isinstance(value, oauth2client.client.Flow):

@@ -17,21 +17,22 @@ class Storage(BaseStorage):
   """Store and retrieve a single credential to and from a file."""
 
   def __init__(self, filename):
-    self.filename = filename
+    self._filename = filename
 
   def get(self):
     """Retrieve Credential from file.
 
     Returns:
-      apiclient.oauth.Credentials
+      oauth2client.client.Credentials
     """
     try:
-      f = open(self.filename, 'r')
+      f = open(self._filename, 'r')
       credentials = pickle.loads(f.read())
       f.close()
       credentials.set_store(self.put)
     except:
       credentials = None
+
     return credentials
 
   def put(self, credentials):
@@ -40,6 +41,6 @@ class Storage(BaseStorage):
     Args:
       credentials: Credentials, the credentials to store.
     """
-    f = open(self.filename, 'w')
+    f = open(self._filename, 'w')
     f.write(pickle.dumps(credentials))
     f.close()

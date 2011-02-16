@@ -14,8 +14,7 @@
 
 """Utilities for Google App Engine
 
-Utilities for making it easier to use OAuth 2.0
-on Google App Engine.
+Utilities for making it easier to use OAuth 2.0 on Google App Engine.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
@@ -29,8 +28,9 @@ from client import Storage
 
 
 class FlowProperty(db.Property):
-  """Utility property that allows easy
-  storage and retreival of an
+  """App Engine datastore Property for Flow.
+
+  Utility property that allows easy storage and retreival of an
   oauth2client.Flow"""
 
   # Tell what the user type is.
@@ -60,8 +60,9 @@ class FlowProperty(db.Property):
 
 
 class CredentialsProperty(db.Property):
-  """Utility property that allows easy
-  storage and retrieval of
+  """App Engine datastore Property for Credentials.
+
+  Utility property that allows easy storage and retrieval of
   oath2client.Credentials
   """
 
@@ -109,9 +110,9 @@ class StorageByKeyName(Storage):
       key_name: string, key name for the entity that has the credentials
       property_name: string, name of the property that is an CredentialsProperty
     """
-    self.model = model
-    self.key_name = key_name
-    self.property_name = property_name
+    self._model = model
+    self._key_name = key_name
+    self._property_name = property_name
 
   def get(self):
     """Retrieve Credential from datastore.
@@ -119,8 +120,8 @@ class StorageByKeyName(Storage):
     Returns:
       oauth2client.Credentials
     """
-    entity = self.model.get_or_insert(self.key_name)
-    credential = getattr(entity, self.property_name)
+    entity = self._model.get_or_insert(self._key_name)
+    credential = getattr(entity, self._property_name)
     if credential and hasattr(credential, 'set_store'):
       credential.set_store(self.put)
     return credential
@@ -131,6 +132,6 @@ class StorageByKeyName(Storage):
     Args:
       credentials: Credentials, the credentials to store.
     """
-    entity = self.model.get_or_insert(self.key_name)
-    setattr(entity, self.property_name, credentials)
+    entity = self._model.get_or_insert(self._key_name)
+    setattr(entity, self._property_name, credentials)
     entity.put()

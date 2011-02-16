@@ -23,7 +23,7 @@ class HttpRequest(object):
   """
 
   def __init__(self, http, postproc, uri,
-               method="GET",
+               method='GET',
                body=None,
                headers=None,
                methodId=None):
@@ -139,7 +139,7 @@ class RequestMockBuilder(object):
     """
     self.responses = responses
 
-  def __call__(self, http, postproc, uri, method="GET", body=None,
+  def __call__(self, http, postproc, uri, method='GET', body=None,
                headers=None, methodId=None):
     """Implements the callable interface that discovery.build() expects
     of requestBuilder, which is to build an object compatible with
@@ -169,7 +169,7 @@ class HttpMock(object):
     self.headers = headers
 
   def request(self, uri,
-              method="GET",
+              method='GET',
               body=None,
               headers=None,
               redirections=1,

@@ -14,14 +14,13 @@
 
 """Command-line tools for authenticating via OAuth 2.0
 
-Do the OAuth 2.0 Web Server dance for
-a command line application. Stores the generated
-credentials in a common file that is used by
-other example apps in the same directory.
+Do the OAuth 2.0 Web Server dance for a command line application. Stores the
+generated credentials in a common file that is used by other example apps in
+the same directory.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
-__all__ = ["run"]
+__all__ = ['run']
 
 
 def run(flow, storage):

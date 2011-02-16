@@ -14,12 +14,10 @@
 
 """Client for discovery based APIs
 
-A client library for Google's discovery
-based APIs.
+A client library for Google's discovery based APIs.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
-
 __all__ = [
     'build', 'build_from_document'
     ]
@@ -48,8 +46,9 @@ DISCOVERY_URI = ('https://www.googleapis.com/discovery/v0.2beta1/describe/'
 
 
 def key2param(key):
-  """
-  max-results -> max_results
+  """Converts key names into parameter names.
+
+  For example, converting "max-results" -> "max_results"
   """
   result = []
   key = list(key)
@@ -106,10 +105,10 @@ def build(serviceName, version,
   resp, content = http.request(requested_url)
   service = simplejson.loads(content)
 
-  fn = os.path.join(os.path.dirname(__file__), "contrib",
-      serviceName, "future.json")
+  fn = os.path.join(os.path.dirname(__file__), 'contrib',
+      serviceName, 'future.json')
   try:
-    f = file(fn, "r")
+    f = file(fn, 'r')
     future = f.read()
     f.close()
   except IOError:
@@ -275,9 +274,9 @@ def createResource(http, baseUrl, model, requestBuilder,
 
     docs = ['A description of how to use this function\n\n']
     for arg in argmap.iterkeys():
-      required = ""
+      required = ''
       if arg in required_params:
-        required = " (required)"
+        required = ' (required)'
       docs.append('%s - A parameter%s\n' % (arg, required))
 
     setattr(method, '__doc__', ''.join(docs))
@@ -363,7 +362,7 @@ def createResource(http, baseUrl, model, requestBuilder,
   if futureDesc and 'methods' in futureDesc:
     for methodName, methodDesc in futureDesc['methods'].iteritems():
       if 'next' in methodDesc and methodName in resourceDesc['methods']:
-        createNextMethod(Resource, methodName + "_next",
+        createNextMethod(Resource, methodName + '_next',
                          resourceDesc['methods'][methodName],
                          methodDesc['next'])
 

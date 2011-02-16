@@ -8,7 +8,6 @@ Utilities for making it easier to work with OAuth.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import copy
-import datetime
 import httplib2
 import logging
 import oauth2 as oauth
@@ -18,9 +17,9 @@ import urlparse
 from anyjson import simplejson
 
 try:
-    from urlparse import parse_qs, parse_qsl
+  from urlparse import parse_qsl
 except ImportError:
-    from cgi import parse_qs, parse_qsl
+  from cgi import parse_qsl
 
 
 class Error(Exception):
@@ -137,7 +136,7 @@ class OAuthCredentials(Credentials):
         req = oauth.Request.from_consumer_and_token(
             self.consumer, self.token, http_method=method, http_url=uri)
         req.sign_request(signer, self.consumer, self.token)
-        if headers == None:
+        if headers is None:
           headers = {}
         headers.update(req.to_header())
         if 'user-agent' in headers:
@@ -210,7 +209,7 @@ class FlowThreeLegged(Flow):
     resp, content = client.request(uri, 'POST', headers=headers,
                                    body=body)
     if resp['status'] != '200':
-      logging.error('Failed to retrieve temporary authorization: %s' % content)
+      logging.error('Failed to retrieve temporary authorization: %s', content)
       raise RequestError('Invalid response %s.' % resp['status'])
 
     self.request_token = dict(parse_qsl(content))
@@ -247,7 +246,7 @@ class FlowThreeLegged(Flow):
     uri = _oauth_uri('access', self.discovery, self.params)
     resp, content = client.request(uri, 'POST', headers=headers)
     if resp['status'] != '200':
-      logging.error('Failed to retrieve access token: %s' % content)
+      logging.error('Failed to retrieve access token: %s', content)
       raise RequestError('Invalid response %s.' % resp['status'])
 
     oauth_params = dict(parse_qsl(content))

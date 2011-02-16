@@ -113,12 +113,12 @@ class OAuth2Credentials(Credentials):
     the OAuth2WebServerFlow.
 
     Args:
-      token_uri: string, URI of token endpoint
-      client_id: string, client identifier
-      client_secret: string, client secret
-      access_token: string, access token
-      token_expiry: datetime, when the access_token expires
-      refresh_token: string, refresh token
+      token_uri: string, URI of token endpoint.
+      client_id: string, client identifier.
+      client_secret: string, client secret.
+      access_token: string, access token.
+      token_expiry: datetime, when the access_token expires.
+      refresh_token: string, refresh token.
       user_agent: string, The HTTP User-Agent to provide for this application.
 
 
@@ -178,14 +178,16 @@ class OAuth2Credentials(Credentials):
         'user-agent': self.user_agent,
         'content-type': 'application/x-www-form-urlencoded'
     }
-    resp, content = http_request(self.token_uri, method='POST', body=body, headers=headers)
+    resp, content = http_request(
+        self.token_uri, method='POST', body=body, headers=headers)
     if resp.status == 200:
       # TODO(jcgregorio) Raise an error if loads fails?
       d = simplejson.loads(content)
       self.access_token = d['access_token']
       self.refresh_token = d.get('refresh_token', self.refresh_token)
       if 'expires_in' in d:
-        self.token_expiry = datetime.timedelta(seconds = int(d['expires_in'])) + datetime.datetime.now()
+        self.token_expiry = datetime.timedelta(
+            seconds = int(d['expires_in'])) + datetime.datetime.now()
       else:
         self.token_expiry = None
       if self.store is not None:
@@ -195,7 +197,8 @@ class OAuth2Credentials(Credentials):
       raise RequestError('Invalid response %s.' % resp['status'])
 
   def authorize(self, http):
-    """
+    """Authorize an httplib2.Http instance with these credentials.
+
     Args:
        http: An instance of httplib2.Http
            or something that acts like it.
@@ -232,7 +235,7 @@ class OAuth2Credentials(Credentials):
       else:
         headers['user-agent'] = self.user_agent
       resp, content = request_orig(uri, method, body, headers,
-                          redirections, connection_type)
+                                   redirections, connection_type)
       if resp.status == 401:
         logging.info("Refreshing because we got a 401")
         self._refresh(request_orig)
@@ -252,18 +255,20 @@ class OAuth2WebServerFlow(Flow):
   """
 
   def __init__(self, client_id, client_secret, scope, user_agent,
-      authorization_uri='https://www.google.com/accounts/o8/oauth2/authorization',
+      auth_uri='https://www.google.com/accounts/o8/oauth2/authorization',
       token_uri='https://www.google.com/accounts/o8/oauth2/token',
       **kwargs):
     """Constructor for OAuth2WebServerFlow
 
     Args:
-      client_id: string, client identifier
-      client_secret: string client secret
-      scope: string, scope of the credentials being requested
+      client_id: string, client identifier.
+      client_secret: string client secret.
+      scope: string, scope of the credentials being requested.
       user_agent: string, HTTP User-Agent to provide for this application.
-      authorization_uri: string, URI for authorization endpoint
-      token_uri: string, URI for token endpoint
+      auth_uri: string, URI for authorization endpoint. For convenience
+        defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+      token_uri: string, URI for token endpoint. For convenience
+        defaults to Google's endpoints but any OAuth 2.0 provider can be used.
       **kwargs: dict, The keyword arguments are all optional and required
                         parameters for the OAuth calls.
     """
@@ -271,7 +276,7 @@ class OAuth2WebServerFlow(Flow):
     self.client_secret = client_secret
     self.scope = scope
     self.user_agent = user_agent
-    self.authorization_uri = authorization_uri
+    self.auth_uri = auth_uri
     self.token_uri = token_uri
     self.params = kwargs
     self.redirect_uri = None
@@ -298,7 +303,7 @@ class OAuth2WebServerFlow(Flow):
       'scope': self.scope,
       }
     query.update(self.params)
-    parts = list(urlparse.urlparse(self.authorization_uri))
+    parts = list(urlparse.urlparse(self.auth_uri))
     query.update(dict(parse_qsl(parts[4]))) # 4 is the index of the query part
     parts[4] = urllib.urlencode(query)
     return urlparse.urlunparse(parts)
@@ -324,8 +329,8 @@ class OAuth2WebServerFlow(Flow):
       'scope': self.scope
       })
     headers = {
-        'user-agent': self.user_agent,
-        'content-type': 'application/x-www-form-urlencoded'
+      'user-agent': self.user_agent,
+      'content-type': 'application/x-www-form-urlencoded'
     }
     h = httplib2.Http()
     resp, content = h.request(self.token_uri, method='POST', body=body, headers=headers)
@@ -340,8 +345,8 @@ class OAuth2WebServerFlow(Flow):
 
       logging.info('Successfully retrieved access token: %s' % content)
       return OAuth2Credentials(access_token, self.client_id, self.client_secret,
-          refresh_token, token_expiry, self.token_uri,
-          self.user_agent)
+                               refresh_token, token_expiry, self.token_uri,
+                               self.user_agent)
     else:
       logging.error('Failed to retrieve access token: %s' % content)
       raise RequestError('Invalid response %s.' % resp['status'])
