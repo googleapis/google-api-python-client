@@ -2,7 +2,7 @@
 #
 # Copyright 2010 Google Inc. All Rights Reserved.
 
-"""Model objects for requests and responses
+"""Model objects for requests and responses.
 
 Each API may support one or more serializations, such
 as JSON, Atom, etc. The model classes are responsible

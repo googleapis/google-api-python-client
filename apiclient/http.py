@@ -157,12 +157,14 @@ class RequestMockBuilder(object):
 class HttpMock(object):
   """Mock of httplib2.Http"""
 
-  def __init__(self, filename, headers):
+  def __init__(self, filename, headers=None):
     """
     Args:
       filename: string, absolute filename to read response from
       headers: dict, header to return with response
     """
+    if headers is None:
+      headers = {'status': '200 OK'}
     f = file(filename, 'r')
     self.data = f.read()
     f.close()
