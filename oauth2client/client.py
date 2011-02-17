@@ -208,7 +208,8 @@ class OAuth2Credentials(Credentials):
         d = simplejson.loads(content)
         if 'error' in d:
           self._invalid = True
-          self.store(self)
+          if self.store is not None:
+            self.store(self)
       except:
         pass
       logging.error('Failed to retrieve access token: %s' % content)

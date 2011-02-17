@@ -28,7 +28,7 @@ from apiclient.ext.file import Storage
 
 def main():
   credentials = Storage('latitude.dat').get()
-  if credentials is None:
+  if credentials is None or credentials.invalid == True:
     auth_discovery = build("latitude", "v1").auth_discovery()
     flow = FlowThreeLegged(auth_discovery,
                            # You MUST have a consumer key and secret tied to a

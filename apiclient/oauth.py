@@ -7,13 +7,13 @@ Utilities for making it easier to work with OAuth.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+
 import copy
 import httplib2
 import logging
 import oauth2 as oauth
 import urllib
 import urlparse
-
 from anyjson import simplejson
 
 try:
@@ -33,6 +33,10 @@ class RequestError(Error):
 
 
 class MissingParameter(Error):
+  pass
+
+
+class CredentialsInvalidError(Error):
   pass
 
 
@@ -84,6 +88,29 @@ class Flow(object):
   pass
 
 
+class Storage(object):
+  """Base class for all Storage objects.
+
+  Store and retrieve a single credential.
+  """
+
+  def get(self):
+    """Retrieve credential.
+
+    Returns:
+      apiclient.oauth.Credentials
+    """
+    _abstract()
+
+  def put(self, credentials):
+    """Write a credential.
+
+    Args:
+      credentials: Credentials, the credentials to store.
+    """
+    _abstract()
+
+
 class OAuthCredentials(Credentials):
   """Credentials object for OAuth 1.0a
   """
@@ -98,6 +125,39 @@ class OAuthCredentials(Credentials):
     self.consumer = consumer
     self.token = token
     self.user_agent = user_agent
+    self.store = None
+
+    # True if the credentials have been revoked
+    self._invalid = False
+
+  @property
+  def invalid(self):
+    """True if the credentials are invalid, such as being revoked."""
+    return getattr(self, "_invalid", False)
+
+  def set_store(self, store):
+    """Set the storage for the credential.
+
+    Args:
+      store: callable, a callable that when passed a Credential
+        will store the credential back to where it came from.
+        This is needed to store the latest access_token if it
+        has been revoked.
+    """
+    self.store = store
+
+  def __getstate__(self):
+    """Trim the state down to something that can be pickled.
+    """
+    d = copy.copy(self.__dict__)
+    del d['store']
+    return d
+
+  def __setstate__(self, state):
+    """Reconstitute the state of the object from being pickled.
+    """
+    self.__dict__.update(state)
+    self.store = None
 
   def authorize(self, http):
     """
@@ -148,6 +208,15 @@ class OAuthCredentials(Credentials):
         response_code = resp.status
         if response_code in [301, 302]:
           uri = resp['location']
+
+      # Update the stored credential if it becomes invalid.
+      if response_code == 401:
+        logging.info('Access token no longer valid: %s' % content)
+        self._invalid = True
+        if self.store is not None:
+          self.store(self)
+        raise CredentialsInvalidError("Credentials are no longer valid.")
+
       return resp, content
 
     http.request = new_request

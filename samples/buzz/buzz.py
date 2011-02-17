@@ -14,7 +14,8 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 from apiclient.discovery import build
 from apiclient.oauth import FlowThreeLegged
 from apiclient.ext.authtools import run
-
+from apiclient.ext.file import Storage
+from apiclient.oauth import CredentialsInvalidError
 
 import httplib2
 import pickle
@@ -25,11 +26,8 @@ import pprint
 
 
 def main():
-  try:
-    f = open("buzz.dat", "r")
-    credentials = pickle.loads(f.read())
-    f.close()
-  except:
+  credentials = Storage('buzz.dat').get()
+  if credentials is None or credentials.invalid == True:
     buzz_discovery = build("buzz", "v1").auth_discovery()
 
     flow = FlowThreeLegged(buzz_discovery,
@@ -49,43 +47,49 @@ def main():
       developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
   activities = p.activities()
 
-  # Retrieve the first two activities
-  activitylist = activities.list(
-      max_results='2', scope='@self', userId='@me').execute()
-  print "Retrieved the first two activities"
+  try:
+    # Retrieve the first two activities
+    activitylist = activities.list(
+        max_results='2', scope='@self', userId='@me').execute()
+    print "Retrieved the first two activities"
 
-  # Retrieve the next two activities
-  if activitylist:
-    activitylist = activities.list_next(activitylist).execute()
-    print "Retrieved the next two activities"
+    # Retrieve the next two activities
+    if activitylist:
+      activitylist = activities.list_next(activitylist).execute()
+      print "Retrieved the next two activities"
 
-  # Add a new activity
-  new_activity_body = {
-      "data": {
-        'title': 'Testing insert',
-        'object': {
-          'content': u'Just a short note to show that insert is working. ☄',
-          'type': 'note'}
-        }
-      }
-  activity = activities.insert(userId='@me', body=new_activity_body).execute()
-  print "Added a new activity"
-
-  activitylist = activities.list(
-      max_results='2', scope='@self', userId='@me').execute()
-
-  # Add a comment to that activity
-  comment_body = {
-      "data": {
-          "content": "This is a comment"
+    # Add a new activity
+    new_activity_body = {
+        "data": {
+          'title': 'Testing insert',
+          'object': {
+            'content':
+              u'Just a short note to show that insert is working. ☄',
+            'type': 'note'}
           }
-      }
-  item = activitylist['items'][0]
-  comment = p.comments().insert(
-      userId=item['actor']['id'], postId=item['id'], body=comment_body
-      ).execute()
-  print 'Added a comment to the new activity'
-  pprint.pprint(comment)
+        }
+    activity = activities.insert(
+        userId='@me', body=new_activity_body).execute()
+    print "Added a new activity"
+
+    activitylist = activities.list(
+        max_results='2', scope='@self', userId='@me').execute()
+
+    # Add a comment to that activity
+    comment_body = {
+        "data": {
+            "content": "This is a comment"
+            }
+        }
+    item = activitylist['items'][0]
+    comment = p.comments().insert(
+        userId=item['actor']['id'], postId=item['id'], body=comment_body
+        ).execute()
+    print 'Added a comment to the new activity'
+    pprint.pprint(comment)
+  except CredentialsInvalidError:
+    print 'Your credentials are no longer valid.'
+    print 'Please re-run this application to re-authorize.'
 
 if __name__ == '__main__':
   main()

@@ -17,15 +17,14 @@ from apiclient.discovery import build
 from oauth2client.file import Storage
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.tools import run
+from apiclient.oauth import CredentialsInvalidError
 
 # Uncomment to get detailed logging
 #httplib2.debuglevel = 4
 
 
 def main():
-  storage = Storage('latitude.dat')
-  credentials = storage.get()
-
+  credentials = Storage('latitude.dat').get()
   if credentials is None or credentials.invalid:
     flow = OAuth2WebServerFlow(
         client_id='433807057907.apps.googleusercontent.com',
@@ -50,7 +49,11 @@ def main():
           "altitude": 35
           }
       }
-  print p.currentLocation().insert(body=body).execute()
+  try:
+    print p.currentLocation().insert(body=body).execute()
+  except CredentialsInvalidError:
+    print 'Your credentials are no longer valid.'
+    print 'Please re-run this application to re-authorize.'
 
 if __name__ == '__main__':
   main()
