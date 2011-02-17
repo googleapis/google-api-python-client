@@ -41,7 +41,8 @@ class RequestError(Error):
   pass
 
 
-class MissingParameter(Error):
+class AccessTokenCredentialsError(Error):
+  """Having only the access_token means no refresh is possible."""
   pass
 
 
@@ -97,9 +98,9 @@ class Storage(object):
 class OAuth2Credentials(Credentials):
   """Credentials object for OAuth 2.0
 
-  Credentials can be applied to an httplib2.Http object
-  using the authorize() method, which then signs each
-  request from that object with the OAuth 2.0 access token.
+  Credentials can be applied to an httplib2.Http object using the authorize()
+  method, which then signs each request from that object with the OAuth 2.0
+  access token.
 
   OAuth2Credentials objects may be safely pickled and unpickled.
   """
@@ -109,8 +110,7 @@ class OAuth2Credentials(Credentials):
     """Create an instance of OAuth2Credentials
 
     This constructor is not usually called by the user, instead
-    OAuth2Credentials objects are instantiated by
-    the OAuth2WebServerFlow.
+    OAuth2Credentials objects are instantiated by the OAuth2WebServerFlow.
 
     Args:
       token_uri: string, URI of token endpoint.
@@ -136,6 +136,10 @@ class OAuth2Credentials(Credentials):
     self.token_expiry = token_expiry
     self.token_uri = token_uri
     self.user_agent = user_agent
+
+    # True if the credentials have been revoked or expired and can't be
+    # refreshed.
+    self.invalid = False
 
   def set_store(self, store):
     """Set the storage for the credential.
@@ -193,6 +197,15 @@ class OAuth2Credentials(Credentials):
       if self.store is not None:
         self.store(self)
     else:
+      # An {'error':...} response body means the token is expired or revoked, so
+      # we flag the credentials as such.
+      try:
+        d = simplejson.loads(content)
+        if 'error' in d:
+          self.invalid = True
+          self.store(self)
+      except:
+        pass
       logging.error('Failed to retrieve access token: %s' % content)
       raise RequestError('Invalid response %s.' % resp['status'])
 
@@ -247,6 +260,58 @@ class OAuth2Credentials(Credentials):
     http.request = new_request
     return http
 
+
+class AccessTokenCredentials(OAuth2Credentials):
+  """Credentials object for OAuth 2.0
+
+  Credentials can be applied to an httplib2.Http object using the authorize()
+  method, which then signs each request from that object with the OAuth 2.0
+  access token.  This set of credentials is for the use case where you have
+  acquired an OAuth 2.0 access_token from another place such as a JavaScript
+  client or another web application, and wish to use it from Python. Because
+  only the access_token is present it can not be refreshed and will in time
+  expire.
+
+  OAuth2Credentials objects may be safely pickled and unpickled.
+
+  Usage:
+    credentials = AccessTokenCredentials('<an access token>',
+      'my-user-agent/1.0')
+    http = httplib2.Http()
+    http = credentials.authorize(http)
+
+  Exceptions:
+    AccessTokenCredentialsExpired: raised when the access_token expires or is
+      revoked.
+
+  """
+
+  def __init__(self, access_token, user_agent):
+    """Create an instance of OAuth2Credentials
+
+    This is one of the few types if Credentials that you should contrust,
+    Credentials objects are usually instantiated by a Flow.
+
+    Args:
+      token_uri: string, URI of token endpoint.
+      user_agent: string, The HTTP User-Agent to provide for this application.
+
+    Notes:
+      store: callable, a callable that when passed a Credential
+        will store the credential back to where it came from.
+    """
+    super(AccessTokenCredentials, self).__init__(
+        access_token,
+        None,
+        None,
+        None,
+        None,
+        None,
+        user_agent)
+
+  def _refresh(self, http_request):
+    raise AccessTokenCredentialsError(
+        "The access_token is expired or invalid and can't be refreshed.")
 
 class OAuth2WebServerFlow(Flow):
   """Does the Web Server Flow for OAuth 2.0.
