@@ -17,14 +17,35 @@ from apiclient.discovery import build
 import httplib2
 import pickle
 
+from apiclient.discovery import build
+from apiclient.oauth import FlowThreeLegged
+from apiclient.ext.authtools import run
+from apiclient.ext.file import Storage
+
 # Uncomment to get detailed logging
 # httplib2.debuglevel = 4
 
 
 def main():
-  f = open("latitude.dat", "r")
-  credentials = pickle.loads(f.read())
-  f.close()
+  credentials = Storage('latitude.dat').get()
+  if credentials is None:
+    auth_discovery = build("latitude", "v1").auth_discovery()
+    flow = FlowThreeLegged(auth_discovery,
+                           # You MUST have a consumer key and secret tied to a
+                           # registered domain to use the latitude API.
+                           #
+                           # https://www.google.com/accounts/ManageDomains
+                           consumer_key='REGISTERED DOMAIN NAME',
+                           consumer_secret='KEY GIVEN DURING REGISTRATION',
+                           user_agent='google-api-client-python-latitude/1.0',
+                           domain='REGISTERED DOMAIN NAME',
+                           scope='https://www.googleapis.com/auth/latitude',
+                           xoauth_displayname='Google API Latitude Example',
+                           location='current',
+                           granularity='city'
+                           )
+
+    credentials = run(flow, 'latitude.dat')
 
   http = httplib2.Http()
   http = credentials.authorize(http)

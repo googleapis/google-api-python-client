@@ -22,7 +22,7 @@ STEP2_URI = 'http://gregorio2.cnc.corp.google.com:8000/auth_return'
 def index(request):
   storage = Storage(CredentialsModel, 'id', request.user, 'credential')
   credential = storage.get()
-  if credential is None:
+  if credential is None or credential.invalid == True:
     flow = OAuth2WebServerFlow(
         client_id='837647042410.apps.googleusercontent.com',
         client_secret='+SWwMCL9d8gWtzPRa1lXw5R8',
@@ -46,6 +46,7 @@ def index(request):
     return render_to_response('buzz/welcome.html', {
                 'activitylist': activitylist,
                 })
+
 
 @login_required
 def auth_return(request):

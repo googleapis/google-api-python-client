@@ -27,7 +27,7 @@ from oauth2client.tools import run
 def main():
   storage = Storage('buzz.dat')
   credentials = storage.get()
-  if not credentials:
+  if credentials is None or credentials.invalid == True:
     flow = OAuth2WebServerFlow(
         client_id='433807057907.apps.googleusercontent.com',
         client_secret='jigtZpMApkRxncxikFpR+SFg',

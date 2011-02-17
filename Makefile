@@ -3,3 +3,7 @@ pep8:
 
 test:
 				python runtests.py tests
+
+.PHONY: docs
+docs:
+	cd docs; ./build.sh

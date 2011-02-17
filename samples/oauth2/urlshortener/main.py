@@ -37,26 +37,6 @@ def main():
 
     credentials = run(flow, storage)
 
-
-#  # Test AccessTokenCredentials
-#  at_credentials = AccessTokenCredentials(
-#      credentials.access_token, 'urlshortener-cmdline-sample/1.0')
-#  http = httplib2.Http()
-#  http = at_credentials.authorize(http)
-#
-#  # Build the url shortener service
-#  service = build("urlshortener", "v1", http=http,
-#            developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
-#  url = service.url()
-#
-#  # Create a shortened URL by inserting the URL into the url collection.
-#  body = {"longUrl": "http://code.google.com/apis/urlshortener/" }
-#  resp = url.insert(body=body).execute()
-#  pprint.pprint(resp)
-#  http = httplib2.Http()
-#  http = credentials.authorize(http)
-#
-
   http = httplib2.Http()
   http = credentials.authorize(http)
 
@@ -75,8 +55,6 @@ def main():
   # Convert the shortened URL back into a long URL
   resp = url.get(shortUrl=shortUrl).execute()
   pprint.pprint(resp)
-
-
 
 
 if __name__ == '__main__':

@@ -35,7 +35,7 @@ def main():
     flow = FlowThreeLegged(buzz_discovery,
                            consumer_key='anonymous',
                            consumer_secret='anonymous',
-                           user_agent='google-api-client-python-buzz-cmdline/1.0',
+                           user_agent='python-buzz-sample/1.0',
                            domain='anonymous',
                            scope='https://www.googleapis.com/auth/buzz',
                            xoauth_displayname='Google API Client Example App')

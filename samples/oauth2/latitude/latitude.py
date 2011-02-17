@@ -26,7 +26,7 @@ def main():
   storage = Storage('latitude.dat')
   credentials = storage.get()
 
-  if not credentials:
+  if credentials is None or credentials.invalid:
     flow = OAuth2WebServerFlow(
         client_id='433807057907.apps.googleusercontent.com',
         client_secret='jigtZpMApkRxncxikFpR+SFg',

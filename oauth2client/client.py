@@ -139,7 +139,12 @@ class OAuth2Credentials(Credentials):
 
     # True if the credentials have been revoked or expired and can't be
     # refreshed.
-    self.invalid = False
+    self._invalid = False
+
+  @property
+  def invalid(self):
+    """True if the credentials are invalid, such as being revoked."""
+    return self._invalid
 
   def set_store(self, store):
     """Set the storage for the credential.
@@ -202,7 +207,7 @@ class OAuth2Credentials(Credentials):
       try:
         d = simplejson.loads(content)
         if 'error' in d:
-          self.invalid = True
+          self._invalid = True
           self.store(self)
       except:
         pass
@@ -272,7 +277,7 @@ class AccessTokenCredentials(OAuth2Credentials):
   only the access_token is present it can not be refreshed and will in time
   expire.
 
-  OAuth2Credentials objects may be safely pickled and unpickled.
+  AccessTokenCredentials objects may be safely pickled and unpickled.
 
   Usage:
     credentials = AccessTokenCredentials('<an access token>',

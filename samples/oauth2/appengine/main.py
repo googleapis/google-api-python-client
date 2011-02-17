@@ -48,21 +48,7 @@ class MainHandler(webapp.RequestHandler):
     credentials = StorageByKeyName(
         Credentials, user.user_id(), 'credentials').get()
 
-    if credentials:
-      http = httplib2.Http()
-      http = credentials.authorize(http)
-      p = build("buzz", "v1", http=http)
-      activities = p.activities()
-      activitylist = activities.list(scope='@consumption',
-                                     userId='@me').execute()
-      path = os.path.join(os.path.dirname(__file__), 'welcome.html')
-      logout = users.create_logout_url('/')
-      self.response.out.write(
-          template.render(
-              path, {'activitylist': activitylist,
-                     'logout': logout
-                     }))
-    else:
+    if credentials is None or credentials.invalid == True:
       flow = OAuth2WebServerFlow(
           # Visit https://code.google.com/apis/console to
           # generate your client_id, client_secret and to
@@ -78,6 +64,20 @@ class MainHandler(webapp.RequestHandler):
       authorize_url = flow.step1_get_authorize_url(callback)
       memcache.set(user.user_id(), pickle.dumps(flow))
       self.redirect(authorize_url)
+    else:
+      http = httplib2.Http()
+      http = credentials.authorize(http)
+      p = build("buzz", "v1", http=http)
+      activities = p.activities()
+      activitylist = activities.list(scope='@consumption',
+                                     userId='@me').execute()
+      path = os.path.join(os.path.dirname(__file__), 'welcome.html')
+      logout = users.create_logout_url('/')
+      self.response.out.write(
+          template.render(
+              path, {'activitylist': activitylist,
+                     'logout': logout
+                     }))
 
 
 class OAuthHandler(webapp.RequestHandler):
