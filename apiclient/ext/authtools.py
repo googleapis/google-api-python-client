@@ -76,12 +76,21 @@ class ClientRedirectHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     pass
 
 
-def run(flow, filename):
+def run(flow, storage):
   """Core code for a command-line application.
+
+  Args:
+    flow: Flow, an OAuth 1.0 Flow to step through.
+    storage: Storage, a Storage to store the credential in.
+
+  Returns:
+    Credentials, the obtained credential.
+
+  Exceptions:
+    RequestError: if step2 of the flow fails.
+  Args:
   """
   parser = OptionParser()
-  parser.add_option("-f", "--file", dest="filename",
-      default=filename, help="write credentials to FILE", metavar="FILE")
   parser.add_option("-p", "--no_local_web_server", dest="localhost",
       action="store_false",
       default=True,
@@ -134,9 +143,8 @@ def run(flow, filename):
   except RequestError:
     sys.exit('The authentication has failed.')
 
-  f = open(filename, 'w')
-  f.write(pickle.dumps(credentials))
-  f.close()
+  storage.put(credentials)
+  credentials.set_store(storage.put)
   print "You have successfully authenticated."
 
   return credentials

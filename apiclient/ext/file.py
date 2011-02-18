@@ -28,9 +28,9 @@ class Storage(BaseStorage):
       f = open(self._filename, 'r')
       credentials = pickle.loads(f.read())
       f.close()
+      credentials.set_store(self.put)
     except:
       credentials = None
-    credentials.set_store(self.put)
 
     return credentials
 

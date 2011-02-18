@@ -1,9 +1,13 @@
 from apiclient.discovery import build
-from apiclient.discovery import HttpError
+from apiclient.discovery import build
+from apiclient.errors import HttpError
+from apiclient.ext.authtools import run
+from apiclient.ext.file import Storage
+from apiclient.oauth import CredentialsInvalidError
+from apiclient.oauth import FlowThreeLegged
 
 import Queue
 import httplib2
-import pickle
 import threading
 import time
 
@@ -47,8 +51,9 @@ def start_threads(credentials):
   def process_requests():
     http = httplib2.Http()
     http = credentials.authorize(http)
+    credentials_ok = True
 
-    while True:
+    while credentials_ok:
       request = queue.get()
       backoff = Backoff()
       while backoff.loop():
@@ -59,9 +64,14 @@ def start_threads(credentials):
           if e.resp.status in [402, 403, 408, 503, 504]:
             print "Increasing backoff, got status code: %d" % e.resp.status
             backoff.fail()
+        except CredentialsInvalidError:
+          print "Credentials no long valid. Exiting."
+          credentials_ok = False
+          break
 
       print "Completed request"
       queue.task_done()
+
 
   for i in range(NUM_THREADS):
     t = threading.Thread(target=process_requests)
@@ -70,9 +80,20 @@ def start_threads(credentials):
 
 
 def main():
-  f = open("moderator.dat", "r")
-  credentials = pickle.loads(f.read())
-  f.close()
+  storage = Storage('moderator.dat')
+  credentials = storage.get()
+  if credentials is None or credentials.invalid == True:
+    moderator_discovery = build("moderator", "v1").auth_discovery()
+
+    flow = FlowThreeLegged(moderator_discovery,
+                           consumer_key='anonymous',
+                           consumer_secret='anonymous',
+                           user_agent='google-api-client-python-thread-sample/1.0',
+                           domain='anonymous',
+                           scope='https://www.googleapis.com/auth/moderator',
+                           xoauth_displayname='Google API Client Example App')
+
+    credentials = run(flow, storage)
 
   start_threads(credentials)
 
@@ -88,21 +109,26 @@ def main():
           "videoSubmissionAllowed": False
           }
       }
-  series = p.series().insert(body=series_body).execute()
-  print "Created a new series"
+  try:
+    series = p.series().insert(body=series_body).execute()
+    print "Created a new series"
 
-  for i in range(NUM_ITEMS):
-    topic_body = {
-        "data": {
-          "description": "Sample Topic # %d" % i,
-          "name": "Sample",
-          "presenter": "me"
+    for i in range(NUM_ITEMS):
+      topic_body = {
+          "data": {
+            "description": "Sample Topic # %d" % i,
+            "name": "Sample",
+            "presenter": "me"
+            }
           }
-        }
-    topic_request = p.topics().insert(seriesId=series['id']['seriesId'],
-                                      body=topic_body)
-    print "Adding request to queue"
-    queue.put(topic_request)
+      topic_request = p.topics().insert(seriesId=series['id']['seriesId'],
+                                        body=topic_body)
+      print "Adding request to queue"
+      queue.put(topic_request)
+  except CredentialsInvalidError:
+    print 'Your credentials are no longer valid.'
+    print 'Please re-run this application to re-authorize.'
+
 
   queue.join()
 

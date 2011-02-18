@@ -18,7 +18,6 @@ from apiclient.ext.file import Storage
 from apiclient.oauth import CredentialsInvalidError
 
 import httplib2
-import pickle
 import pprint
 
 # Uncomment the next line to get very detailed logging
@@ -26,7 +25,8 @@ import pprint
 
 
 def main():
-  credentials = Storage('buzz.dat').get()
+  storage = Storage('buzz.dat')
+  credentials = storage.get()
   if credentials is None or credentials.invalid == True:
     buzz_discovery = build("buzz", "v1").auth_discovery()
 
@@ -38,7 +38,7 @@ def main():
                            scope='https://www.googleapis.com/auth/buzz',
                            xoauth_displayname='Google API Client Example App')
 
-    credentials = run(flow, 'buzz.dat')
+    credentials = run(flow, storage)
 
   http = httplib2.Http()
   http = credentials.authorize(http)

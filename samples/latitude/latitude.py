@@ -27,7 +27,8 @@ from apiclient.ext.file import Storage
 
 
 def main():
-  credentials = Storage('latitude.dat').get()
+  storage = Storage('latitude.dat')
+  credentials = storage.get()
   if credentials is None or credentials.invalid == True:
     auth_discovery = build("latitude", "v1").auth_discovery()
     flow = FlowThreeLegged(auth_discovery,
@@ -45,7 +46,7 @@ def main():
                            granularity='city'
                            )
 
-    credentials = run(flow, 'latitude.dat')
+    credentials = run(flow, storage)
 
   http = httplib2.Http()
   http = credentials.authorize(http)

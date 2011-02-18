@@ -25,6 +25,16 @@ __all__ = ['run']
 
 def run(flow, storage):
   """Core code for a command-line application.
+
+  Args:
+    flow: Flow, an OAuth 2.0 Flow to step through.
+    storage: Storage, a Storage to store the credential in.
+
+  Returns:
+    Credentials, the obtained credential.
+
+  Exceptions:
+    RequestError: if step2 of the flow fails.
   """
   authorize_url = flow.step1_get_authorize_url('oob')
 
@@ -37,7 +47,10 @@ def run(flow, storage):
     accepted = raw_input('Have you authorized me? (y/n) ')
   code = raw_input('What is the verification code? ').strip()
 
-  credentials = flow.step2_exchange(code)
+  try:
+    credentials = flow.step2_exchange(code)
+  except RequestError:
+    sys.exit('The authentication has failed.')
 
   storage.put(credentials)
   credentials.set_store(storage.put)
