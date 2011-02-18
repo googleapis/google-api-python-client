@@ -2,8 +2,7 @@
 
 """Utilities for OAuth.
 
-Utilities for making it easier to work with OAuth 1.0
-credentials.
+Utilities for making it easier to work with OAuth 1.0 credentials.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'

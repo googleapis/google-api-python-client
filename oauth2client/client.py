@@ -289,7 +289,6 @@ class AccessTokenCredentials(OAuth2Credentials):
   Exceptions:
     AccessTokenCredentialsExpired: raised when the access_token expires or is
       revoked.
-
   """
 
   def __init__(self, access_token, user_agent):

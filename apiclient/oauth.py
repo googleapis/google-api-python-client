@@ -147,15 +147,13 @@ class OAuthCredentials(Credentials):
     self.store = store
 
   def __getstate__(self):
-    """Trim the state down to something that can be pickled.
-    """
+    """Trim the state down to something that can be pickled."""
     d = copy.copy(self.__dict__)
     del d['store']
     return d
 
   def __setstate__(self, state):
-    """Reconstitute the state of the object from being pickled.
-    """
+    """Reconstitute the state of the object from being pickled."""
     self.__dict__.update(state)
     self.store = None
 
