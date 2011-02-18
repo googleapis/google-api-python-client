@@ -41,8 +41,9 @@ from errors import UnknownLinkType
 
 URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
-DISCOVERY_URI = ('https://www.googleapis.com/discovery/v0.2beta1/describe/'
+DISCOVERY_URI = ('https://www.googleapis.com/discovery/v0.3/describe/'
   '{api}/{apiVersion}')
+DEFAULT_METHOD_DOC = 'A description of how to use this function'
 
 
 def key2param(key):
@@ -192,8 +193,11 @@ def createResource(http, baseUrl, model, requestBuilder,
 
     argmap = {}
     if httpMethod in ['PUT', 'POST']:
-      argmap['body'] = 'body'
-
+      if 'parameters' not in methodDesc:
+        methodDesc['parameters'] = {}
+      methodDesc['parameters']['body'] = {
+          'description': 'The request body.',
+          }
 
     required_params = [] # Required parameters
     pattern_params = {}  # Parameters that must match a regex
@@ -272,12 +276,16 @@ def createResource(http, baseUrl, model, requestBuilder,
                                   headers=headers,
                                   methodId=methodId)
 
-    docs = ['A description of how to use this function\n\n']
+    docs = [methodDesc.get('description', DEFAULT_METHOD_DOC), '\n\n']
+    if len(argmap) > 0:
+      docs.append("Args:\n")
     for arg in argmap.iterkeys():
-      required = ''
+      required = ""
       if arg in required_params:
-        required = ' (required)'
-      docs.append('%s - A parameter%s\n' % (arg, required))
+        required = " (required)"
+      paramdoc = methodDesc['parameters'][argmap[arg]].get(
+          'description', 'A parameter')
+      docs.append('  %s: %s%s\n' % (arg, paramdoc, required))
 
     setattr(method, '__doc__', ''.join(docs))
     setattr(theclass, methodName, method)
@@ -285,7 +293,7 @@ def createResource(http, baseUrl, model, requestBuilder,
   def createNextMethod(theclass, methodName, methodDesc, futureDesc):
     methodId = methodDesc['rpcMethod'] + '.next'
 
-    def method(self, previous):
+    def methodNext(self, previous):
       """
       Takes a single argument, 'body', which is the results
       from the last call, and returns the next set of items
@@ -325,7 +333,7 @@ def createResource(http, baseUrl, model, requestBuilder,
                                   headers=headers,
                                   methodId=methodId)
 
-    setattr(theclass, methodName, method)
+    setattr(theclass, methodName, methodNext)
 
   # Add basic methods to Resource
   if 'methods' in resourceDesc:
@@ -339,30 +347,29 @@ def createResource(http, baseUrl, model, requestBuilder,
   # Add in nested resources
   if 'resources' in resourceDesc:
 
-    def createMethod(theclass, methodName, methodDesc, futureDesc):
+    def createResourceMethod(theclass, methodName, methodDesc, futureDesc):
 
-      def method(self):
+      def methodResource(self):
         return createResource(self._http, self._baseUrl, self._model,
                               self._requestBuilder, self._developerKey,
                               methodDesc, futureDesc)
 
-      setattr(method, '__doc__', 'A description of how to use this function')
-      setattr(method, '__is_resource__', True)
-      setattr(theclass, methodName, method)
+      setattr(methodResource, '__doc__', 'A collection resource.')
+      setattr(methodResource, '__is_resource__', True)
+      setattr(theclass, methodName, methodResource)
 
     for methodName, methodDesc in resourceDesc['resources'].iteritems():
       if futureDesc and 'resources' in futureDesc:
         future = futureDesc['resources'].get(methodName, {})
       else:
         future = {}
-      createMethod(Resource, methodName, methodDesc,
-                   future)
+      createResourceMethod(Resource, methodName, methodDesc, future)
 
   # Add <m>_next() methods to Resource
   if futureDesc and 'methods' in futureDesc:
     for methodName, methodDesc in futureDesc['methods'].iteritems():
       if 'next' in methodDesc and methodName in resourceDesc['methods']:
-        createNextMethod(Resource, methodName + '_next',
+        createNextMethod(Resource, methodName + "_next",
                          resourceDesc['methods'][methodName],
                          methodDesc['next'])
 

@@ -88,7 +88,8 @@ class ServiceHandler(webapp.RequestHandler):
 
     collections = []
     for name in dir(service):
-      if not "_" in name and callable(getattr(service, name)):
+      if not "_" in name and callable(getattr(service, name)) and hasattr(
+            getattr(service, name), '__is_resource__'):
         collections.append(name)
 
     for name in collections:
