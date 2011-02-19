@@ -88,7 +88,7 @@ def main():
     flow = FlowThreeLegged(moderator_discovery,
                            consumer_key='anonymous',
                            consumer_secret='anonymous',
-                           user_agent='google-api-client-python-thread-sample/1.0',
+                           user_agent='python-threading-sample/1.0',
                            domain='anonymous',
                            scope='https://www.googleapis.com/auth/moderator',
                            xoauth_displayname='Google API Client Example App')
