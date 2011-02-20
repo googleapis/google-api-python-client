@@ -7,3 +7,4 @@ test:
 .PHONY: docs
 docs:
 	cd docs; ./build.sh
+	python describe.py

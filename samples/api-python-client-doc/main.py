@@ -79,12 +79,16 @@ class MainHandler(webapp.RequestHandler):
     """)
 
 
+def render(resource):
+  obj, name = pydoc.resolve(type(resource))
+  return pydoc.html.page(
+      pydoc.describe(obj), pydoc.html.document(obj, name))
+
 class ServiceHandler(webapp.RequestHandler):
 
   def get(self, service_name, version):
     service = build(service_name, version)
-    page = "<p><a href='/'>Home</a></p><pre>%s</pre>" % (
-        pydoc.plain(render_doc(service)),)
+    page = render(service)
 
     collections = []
     for name in dir(service):
@@ -93,7 +97,7 @@ class ServiceHandler(webapp.RequestHandler):
         collections.append(name)
 
     for name in collections:
-      page = re.sub('(%s) =' % name, r'<a href="/%s/%s/%s">\1</a> =' % (
+      page = re.sub('strong>(%s)<' % name, r'strong><a href="/%s/%s/%s">\1</a><' % (
           service_name, version, name), page)
 
     self.response.out.write(page)
@@ -110,8 +114,7 @@ class CollectionHandler(webapp.RequestHandler):
         service = getattr(service, method)()
     method = getattr(service, path[-1])
     obj = method()
-    page = "<p><a href='/'>Home</a></p><pre>%s</pre>" % (
-        pydoc.plain(render_doc(obj)),)
+    page = render(obj)
 
     if hasattr(method, '__is_resource__'):
       collections = []
@@ -121,7 +124,7 @@ class CollectionHandler(webapp.RequestHandler):
           collections.append(name)
 
       for name in collections:
-        page = re.sub('(%s) =' % name, r'<a href="/%s/%s/%s">\1</a> =' % (
+        page = re.sub('strong>(%s)<' % name, r'strong><a href="/%s/%s/%s">\1</a><' % (
             service_name, version, collection + "/" + name), page)
 
     self.response.out.write(page)
