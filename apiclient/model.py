@@ -73,6 +73,14 @@ class JsonModel(Model):
   object representation of HTTP request and response bodies.
   """
 
+  def __init__(self, data_wrapper):
+    """Construct a JsonModel
+
+    Args:
+      data_wrapper: boolean, wrap requests and responses in a data wrapper
+    """
+    self._data_wrapper = data_wrapper
+
   def request(self, headers, path_params, query_params, body_value):
     """Updates outgoing requests with JSON bodies.
 
@@ -97,6 +105,10 @@ class JsonModel(Model):
     else:
       headers['user-agent'] = ''
     headers['user-agent'] += 'google-api-python-client/1.0'
+
+    if (isinstance(body_value, dict) and 'data' not in body_value and
+        self._data_wrapper):
+      body_value = {'data': body_value}
     if body_value is None:
       return (headers, path_params, query, None)
     else:

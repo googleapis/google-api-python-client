@@ -150,7 +150,7 @@ class RequestMockBuilder(object):
       resp, content = self.responses[methodId]
       return HttpRequestMock(resp, content, postproc)
     else:
-      model = JsonModel()
+      model = JsonModel(False)
       return HttpRequestMock(None, '{}', model.response)
 
 

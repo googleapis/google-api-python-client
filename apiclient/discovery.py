@@ -68,7 +68,7 @@ def build(serviceName, version,
           http=None,
           discoveryServiceUrl=DISCOVERY_URI,
           developerKey=None,
-          model=JsonModel(),
+          model=None,
           requestBuilder=HttpRequest):
   """Construct a Resource for interacting with an API.
 
@@ -125,7 +125,7 @@ def build_from_document(
     future=None,
     http=None,
     developerKey=None,
-    model=JsonModel(),
+    model=None,
     requestBuilder=HttpRequest):
   """Create a Resource for interacting with an API.
 
@@ -160,6 +160,8 @@ def build_from_document(
     future = {}
     auth_discovery = {}
 
+  if model is None:
+    model = JsonModel('dataWrapper' in service.get('features', []))
   resource = createResource(http, base, model, requestBuilder, developerKey,
                        service, future)
 

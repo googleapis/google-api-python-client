@@ -36,7 +36,7 @@ except ImportError:
 
 class Model(unittest.TestCase):
   def test_json_no_body(self):
-    model = JsonModel()
+    model = JsonModel(data_wrapper=False)
 
     headers = {}
     path_params = {}
@@ -51,7 +51,7 @@ class Model(unittest.TestCase):
     self.assertEqual(body, None)
 
   def test_json_body(self):
-    model = JsonModel()
+    model = JsonModel(data_wrapper=False)
 
     headers = {}
     path_params = {}
@@ -65,9 +65,24 @@ class Model(unittest.TestCase):
     self.assertNotEqual(query, '')
     self.assertEqual(body, '{}')
 
+  def test_json_body_data_wrapper(self):
+    model = JsonModel(data_wrapper=True)
+
+    headers = {}
+    path_params = {}
+    query_params = {}
+    body = {}
+
+    headers, params, query, body = model.request(headers, path_params, query_params, body)
+
+    self.assertEqual(headers['accept'], 'application/json')
+    self.assertEqual(headers['content-type'], 'application/json')
+    self.assertNotEqual(query, '')
+    self.assertEqual(body, '{"data": {}}')
+
   def test_json_body_default_data(self):
     """Test that a 'data' wrapper doesn't get added if one is already present."""
-    model = JsonModel()
+    model = JsonModel(data_wrapper=True)
 
     headers = {}
     path_params = {}
@@ -82,7 +97,7 @@ class Model(unittest.TestCase):
     self.assertEqual(body, '{"data": "foo"}')
 
   def test_json_build_query(self):
-    model = JsonModel()
+    model = JsonModel(data_wrapper=False)
 
     headers = {}
     path_params = {}
@@ -100,7 +115,7 @@ class Model(unittest.TestCase):
     self.assertEqual(body, '{}')
 
   def test_user_agent(self):
-    model = JsonModel()
+    model = JsonModel(data_wrapper=False)
 
     headers = {'user-agent': 'my-test-app/1.23.4'}
     path_params = {}
@@ -112,7 +127,7 @@ class Model(unittest.TestCase):
     self.assertEqual(headers['user-agent'], 'my-test-app/1.23.4 google-api-python-client/1.0')
 
   def test_bad_response(self):
-    model = JsonModel()
+    model = JsonModel(data_wrapper=False)
     resp = httplib2.Response({'status': '401'})
     resp.reason = 'Unauthorized'
     content = '{"error": {"message": "not authorized"}}'
@@ -133,7 +148,7 @@ class Model(unittest.TestCase):
 
 
   def test_good_response(self):
-    model = JsonModel()
+    model = JsonModel(data_wrapper=True)
     resp = httplib2.Response({'status': '200'})
     resp.reason = 'OK'
     content = '{"data": "is good"}'
@@ -142,7 +157,7 @@ class Model(unittest.TestCase):
     self.assertEqual(content, 'is good')
 
   def test_good_response_wo_data(self):
-    model = JsonModel()
+    model = JsonModel(data_wrapper=False)
     resp = httplib2.Response({'status': '200'})
     resp.reason = 'OK'
     content = '{"foo": "is good"}'
@@ -151,7 +166,7 @@ class Model(unittest.TestCase):
     self.assertEqual(content, {'foo': 'is good'})
 
   def test_good_response_wo_data_str(self):
-    model = JsonModel()
+    model = JsonModel(data_wrapper=False)
     resp = httplib2.Response({'status': '200'})
     resp.reason = 'OK'
     content = '"data goes here"'
