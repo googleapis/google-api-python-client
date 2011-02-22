@@ -62,17 +62,17 @@ class Discovery(unittest.TestCase):
 
     # Parameter doesn't match regex
     try:
-      buzz.activities().list(scope='@self', userId='')
+      buzz.activities().list(scope='@myself', userId='me')
       self.fail()
     except TypeError, e:
-      self.assertTrue('does not match' in str(e))
+      self.assertTrue('not in the list' in str(e))
 
     # Parameter doesn't match regex
     try:
       buzz.activities().list(scope='not@', userId='foo')
       self.fail()
     except TypeError, e:
-      self.assertTrue('does not match' in str(e))
+      self.assertTrue('not in the list' in str(e))
 
     # Unexpected parameter
     try:
@@ -81,11 +81,32 @@ class Discovery(unittest.TestCase):
     except TypeError, e:
       self.assertTrue('unexpected' in str(e))
 
+  def _check_query_types(self, request):
+    parsed = urlparse.urlparse(request.uri)
+    q = parse_qs(parsed[4])
+    self.assertEqual(q['q'], ['foo'])
+    self.assertEqual(q['i'], ['1'])
+    self.assertEqual(q['n'], ['1.0'])
+    self.assertEqual(q['b'], ['false'])
+    self.assertEqual(q['a'], ['[1, 2, 3]'])
+    self.assertEqual(q['o'], ['{\'a\': 1}'])
+    self.assertEqual(q['e'], ['bar'])
+
+  def test_type_coercion(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    request = zoo.query(q="foo", i=1.0, n=1.0, b=0, a=[1,2,3], o={'a':1}, e='bar')
+    self._check_query_types(request)
+    request = zoo.query(q="foo", i=1, n=1, b=False, a=[1,2,3], o={'a':1}, e='bar')
+    self._check_query_types(request)
+    request = zoo.query(q="foo", i="1", n="1", b="", a=[1,2,3], o={'a':1}, e='bar')
+    self._check_query_types(request)
+
   def test_buzz_resources(self):
     self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
     buzz = build('buzz', 'v1', self.http)
     self.assertTrue(getattr(buzz, 'activities'))
-    self.assertTrue(getattr(buzz, 'feeds'))
     self.assertTrue(getattr(buzz, 'photos'))
     self.assertTrue(getattr(buzz, 'people'))
     self.assertTrue(getattr(buzz, 'groups'))

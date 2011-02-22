@@ -172,6 +172,31 @@ def build_from_document(
   return resource
 
 
+def _to_string(value, schema_type):
+  """Convert value to a string based on JSON Schema type.
+
+  See http://tools.ietf.org/html/draft-zyp-json-schema-03 for more details on
+  JSON Schema.
+
+  Args:
+    value: any, the value to convert
+    schema_type: string, the type that value should be interpreted as
+
+  Returns:
+    A string representation of 'value' based on the schema_type.
+  """
+  if schema_type == 'string':
+    return str(value)
+  elif schema_type == 'integer':
+    return str(int(value))
+  elif schema_type == 'number':
+    return str(float(value))
+  elif schema_type == 'boolean':
+    return str(bool(value)).lower()
+  else:
+    return str(value)
+
+
 def createResource(http, baseUrl, model, requestBuilder,
                    developerKey, resourceDesc, futureDesc):
 
@@ -203,6 +228,8 @@ def createResource(http, baseUrl, model, requestBuilder,
     pattern_params = {}  # Parameters that must match a regex
     query_params = [] # Parameters that will be used in the query string
     path_params = {} # Parameters that will be used in the base URL
+    param_type = {} # The type of the parameter
+    enum_params = {}
     if 'parameters' in methodDesc:
       for arg, desc in methodDesc['parameters'].iteritems():
         param = key2param(arg)
@@ -210,12 +237,15 @@ def createResource(http, baseUrl, model, requestBuilder,
 
         if desc.get('pattern', ''):
           pattern_params[param] = desc['pattern']
+        if desc.get('enum', ''):
+          enum_params[param] = desc['enum']
         if desc.get('required', False):
           required_params.append(param)
         if desc.get('restParameterType') == 'query':
           query_params.append(param)
         if desc.get('restParameterType') == 'path':
           path_params[param] = param
+        param_type[param] = desc.get('type', 'string')
 
     for match in URITEMPLATE.finditer(pathUrl):
       for namematch in VARNAME.finditer(match.group(0)):
@@ -240,13 +270,20 @@ def createResource(http, baseUrl, model, requestBuilder,
                 'Parameter "%s" value "%s" does not match the pattern "%s"' %
                 (name, kwargs[name], regex))
 
+      for name, enums in enum_params.iteritems():
+        if name in kwargs:
+          if kwargs[name] not in enums:
+            raise TypeError(
+                'Parameter "%s" value "%s" is not in the list of allowed values "%s"' %
+                (name, kwargs[name], str(enums)))
+
       actual_query_params = {}
       actual_path_params = {}
       for key, value in kwargs.iteritems():
         if key in query_params:
-          actual_query_params[argmap[key]] = value
+          actual_query_params[argmap[key]] = _to_string(value, param_type[key])
         if key in path_params:
-          actual_path_params[argmap[key]] = value
+          actual_path_params[argmap[key]] = _to_string(value, param_type[key])
       body_value = kwargs.get('body', None)
 
       if self._developerKey:
