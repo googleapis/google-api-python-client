@@ -222,6 +222,7 @@ def createResource(http, baseUrl, model, requestBuilder,
         methodDesc['parameters'] = {}
       methodDesc['parameters']['body'] = {
           'description': 'The request body.',
+          'type': 'object',
           }
 
     required_params = [] # Required parameters
@@ -320,9 +321,16 @@ def createResource(http, baseUrl, model, requestBuilder,
       required = ""
       if arg in required_params:
         required = " (required)"
-      paramdoc = methodDesc['parameters'][argmap[arg]].get(
-          'description', 'A parameter')
-      docs.append('  %s: %s%s\n' % (arg, paramdoc, required))
+      paramdesc = methodDesc['parameters'][argmap[arg]]
+      paramdoc = paramdesc.get('description', 'A parameter')
+      paramtype = paramdesc.get('type', 'string')
+      docs.append('  %s: %s, %s%s\n' % (arg, paramtype, paramdoc, required))
+      enum = paramdesc.get('enum', [])
+      enumDesc = paramdesc.get('enumDescriptions', [])
+      if enum and enumDesc:
+        docs.append('    Allowed values\n')
+        for (name, desc) in zip(enum, enumDesc):
+          docs.append('      %s - %s\n' % (name, desc))
 
     setattr(method, '__doc__', ''.join(docs))
     setattr(theclass, methodName, method)
