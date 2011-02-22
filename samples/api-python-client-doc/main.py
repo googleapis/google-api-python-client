@@ -27,38 +27,6 @@ from apiclient.discovery import build
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 
-# Replicate render_doc here from pydoc.py as it isn't available in Python 2.5
-
-
-class _OldStyleClass:
-  pass
-
-
-def render_doc(thing, title='Python Library Documentation: %s', forceload=0):
-    """Render text documentation, given an object or a path to an object."""
-    object, name = pydoc.resolve(thing, forceload)
-    desc = pydoc.describe(object)
-    module = inspect.getmodule(object)
-    if name and '.' in name:
-        desc += ' in ' + name[:name.rfind('.')]
-    elif module and module is not object:
-        desc += ' in module ' + module.__name__
-    if type(object) is type(_OldStyleClass()):
-        # If the passed object is an instance of an old-style class,
-        # document its available methods instead of its value.
-        object = object.__class__
-    elif not (inspect.ismodule(object) or
-              inspect.isclass(object) or
-              inspect.isroutine(object) or
-              inspect.isgetsetdescriptor(object) or
-              inspect.ismemberdescriptor(object) or
-              isinstance(object, property)):
-        # If the passed object is a piece of data or an instance,
-        # document its available methods instead of its value.
-        object = type(object)
-        desc += ' object'
-    return title % desc + '\n\n' + pydoc.text.document(object, name)
-
 
 class MainHandler(webapp.RequestHandler):
 
@@ -84,49 +52,37 @@ def render(resource):
   return pydoc.html.page(
       pydoc.describe(obj), pydoc.html.document(obj, name))
 
-class ServiceHandler(webapp.RequestHandler):
 
-  def get(self, service_name, version):
-    service = build(service_name, version)
-    page = render(service)
-
-    collections = []
-    for name in dir(service):
-      if not "_" in name and callable(getattr(service, name)) and hasattr(
-            getattr(service, name), '__is_resource__'):
-        collections.append(name)
-
-    for name in collections:
-      page = re.sub('strong>(%s)<' % name, r'strong><a href="/%s/%s/%s">\1</a><' % (
-          service_name, version, name), page)
-
-    self.response.out.write(page)
-
-
-class CollectionHandler(webapp.RequestHandler):
+class ResourceHandler(webapp.RequestHandler):
 
   def get(self, service_name, version, collection):
-    service = build(service_name, version)
+    resource = build(service_name, version)
     # descend the object path
-    path = collection.split("/")
-    if path:
-      for method in path[:-1]:
-        service = getattr(service, method)()
-    method = getattr(service, path[-1])
-    obj = method()
-    page = render(obj)
+    if collection:
+      path = collection.split('/')
+      if path:
+        for method in path:
+          resource = getattr(resource, method)()
+    page = render(resource)
 
-    if hasattr(method, '__is_resource__'):
-      collections = []
-      for name in dir(obj):
-        if not "_" in name and callable(getattr(obj, name)) and hasattr(
-            getattr(obj, name), '__is_resource__'):
-          collections.append(name)
+    collections = []
+    for name in dir(resource):
+      if not "_" in name and callable(getattr(resource, name)) and hasattr(
+          getattr(resource, name), '__is_resource__'):
+        collections.append(name)
 
-      for name in collections:
-        page = re.sub('strong>(%s)<' % name, r'strong><a href="/%s/%s/%s">\1</a><' % (
-            service_name, version, collection + "/" + name), page)
+    if collection is None:
+      collection_path = ''
+    else:
+      collection_path = collection + '/'
+    for name in collections:
+      page = re.sub('strong>(%s)<' % name,
+          r'strong><a href="/%s/%s/%s">\1</a><' % (
+          service_name, version, collection_path + name), page)
 
+    # TODO(jcgregorio) breadcrumbs
+    # TODO(jcgregorio) sample code?
+    page = re.sub('<p>', r'<a href="/">Home</a><p>', page, 1)
     self.response.out.write(page)
 
 
@@ -134,8 +90,7 @@ def main():
   application = webapp.WSGIApplication(
       [
       (r'/', MainHandler),
-      (r'/([^\/]*)/([^\/]*)', ServiceHandler),
-      (r'/([^\/]*)/([^\/]*)/(.*)', CollectionHandler),
+      (r'/([^\/]*)/([^\/]*)(?:/(.*))?', ResourceHandler),
       ],
       debug=True)
   util.run_wsgi_app(application)
