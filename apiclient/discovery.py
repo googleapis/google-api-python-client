@@ -44,6 +44,7 @@ VARNAME = re.compile('[a-zA-Z0-9_-]+')
 DISCOVERY_URI = ('https://www.googleapis.com/discovery/v0.3/describe/'
   '{api}/{apiVersion}')
 DEFAULT_METHOD_DOC = 'A description of how to use this function'
+STACK_QUERY_PARAMETERS = ['trace']
 
 
 def key2param(key):
@@ -259,7 +260,7 @@ def createResource(http, baseUrl, model, requestBuilder,
 
     def method(self, **kwargs):
       for name in kwargs.iterkeys():
-        if name not in argmap:
+        if name not in argmap and name not in STACK_QUERY_PARAMETERS:
           raise TypeError('Got an unexpected keyword argument "%s"' % name)
 
       for name in required_params:

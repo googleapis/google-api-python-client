@@ -103,6 +103,11 @@ class Discovery(unittest.TestCase):
     request = zoo.query(q="foo", i="1", n="1", b="", a=[1,2,3], o={'a':1}, e='bar')
     self._check_query_types(request)
 
+  def test_optional_stack_query_parameters(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+    request = zoo.query(trace='html')
+
   def test_buzz_resources(self):
     self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
     buzz = build('buzz', 'v1', self.http)
