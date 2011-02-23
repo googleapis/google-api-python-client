@@ -73,7 +73,7 @@ class JsonModel(Model):
   object representation of HTTP request and response bodies.
   """
 
-  def __init__(self, data_wrapper):
+  def __init__(self, data_wrapper=False):
     """Construct a JsonModel
 
     Args:

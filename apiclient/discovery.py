@@ -164,7 +164,7 @@ def build_from_document(
     auth_discovery = {}
 
   if model is None:
-    model = JsonModel('dataWrapper' in service.get('features', []))
+    model = JsonModel('dataWrapper' in service.get('features', ['dataWrapper']))
   resource = createResource(http, base, model, requestBuilder, developerKey,
                        service, future)
 
