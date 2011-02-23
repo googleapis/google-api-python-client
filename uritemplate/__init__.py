@@ -56,7 +56,7 @@ def _tostring_query(varname, value, explode, operator, safe=""):
   varprefix = ""
   if operator == "?":
     joiner = "&"
-    varprefix = varname + "=" 
+    varprefix = varname + "="
   if type(value) == type([]):
     if 0 == len(value):
       return ""
@@ -101,7 +101,7 @@ def expand(template, vars):
       operator = ''
     varlist = groupdict.get('varlist')
 
-    safe = ""
+    safe = "@"
     if operator == '+':
       safe = RESERVED
     varspecs = varlist.split(",")

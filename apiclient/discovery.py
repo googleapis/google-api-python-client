@@ -164,7 +164,8 @@ def build_from_document(
     auth_discovery = {}
 
   if model is None:
-    model = JsonModel('dataWrapper' in service.get('features', ['dataWrapper']))
+    features = service.get('features', ['dataWrapper'])
+    model = JsonModel('dataWrapper' in features)
   resource = createResource(http, base, model, requestBuilder, developerKey,
                        service, future)
 
@@ -217,7 +218,6 @@ def createResource(http, baseUrl, model, requestBuilder,
 
   def createMethod(theclass, methodName, methodDesc, futureDesc):
     pathUrl = methodDesc['restPath']
-    pathUrl = re.sub(r'\{', r'{+', pathUrl)
     httpMethod = methodDesc['httpMethod']
     methodId = methodDesc['rpcMethod']
 
