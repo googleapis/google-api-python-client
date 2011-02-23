@@ -177,7 +177,7 @@ def build_from_document(
   return resource
 
 
-def _to_string(value, schema_type):
+def _cast(value, schema_type):
   """Convert value to a string based on JSON Schema type.
 
   See http://tools.ietf.org/html/draft-zyp-json-schema-03 for more details on
@@ -237,6 +237,7 @@ def createResource(http, baseUrl, model, requestBuilder,
 
     argmap = {} # Map from method parameter name to query parameter name
     required_params = [] # Required parameters
+    repeated_params = [] # Repeated parameters
     pattern_params = {}  # Parameters that must match a regex
     query_params = [] # Parameters that will be used in the query string
     path_params = {} # Parameters that will be used in the base URL
@@ -255,6 +256,8 @@ def createResource(http, baseUrl, model, requestBuilder,
           enum_params[param] = desc['enum']
         if desc.get('required', False):
           required_params.append(param)
+        if desc.get('repeated', False):
+          repeated_params.append(param)
         if desc.get('restParameterType') == 'query':
           query_params.append(param)
         if desc.get('restParameterType') == 'path':
@@ -294,11 +297,16 @@ def createResource(http, baseUrl, model, requestBuilder,
       actual_query_params = {}
       actual_path_params = {}
       for key, value in kwargs.iteritems():
-        value_as_str = _to_string(value, param_type.get(key, 'string'))
+        to_type = param_type.get(key, 'string')
+        # For repeated parameters we cast each member of the list.
+        if key in repeated_params and type(value) == type([]):
+          cast_value = [_cast(x, to_type) for x in value]
+        else:
+          cast_value = _cast(value, to_type)
         if key in query_params:
-          actual_query_params[argmap[key]] = value_as_str
+          actual_query_params[argmap[key]] = cast_value
         if key in path_params:
-          actual_path_params[argmap[key]] = value_as_str
+          actual_path_params[argmap[key]] = cast_value
       body_value = kwargs.get('body', None)
 
       if self._developerKey:
@@ -330,17 +338,21 @@ def createResource(http, baseUrl, model, requestBuilder,
 
     docs = [methodDesc.get('description', DEFAULT_METHOD_DOC), '\n\n']
     if len(argmap) > 0:
-      docs.append("Args:\n")
+      docs.append('Args:\n')
     for arg in argmap.iterkeys():
       if arg in STACK_QUERY_PARAMETERS:
         continue
-      required = ""
+      repeated = ''
+      if arg in repeated_params:
+        repeated = ' (repeated)'
+      required = ''
       if arg in required_params:
-        required = " (required)"
+        required = ' (required)'
       paramdesc = methodDesc['parameters'][argmap[arg]]
       paramdoc = paramdesc.get('description', 'A parameter')
       paramtype = paramdesc.get('type', 'string')
-      docs.append('  %s: %s, %s%s\n' % (arg, paramtype, paramdoc, required))
+      docs.append('  %s: %s, %s%s%s\n' % (arg, paramtype, paramdoc, required,
+                                          repeated))
       enum = paramdesc.get('enum', [])
       enumDesc = paramdesc.get('enumDescriptions', [])
       if enum and enumDesc:
@@ -430,7 +442,7 @@ def createResource(http, baseUrl, model, requestBuilder,
   if futureDesc and 'methods' in futureDesc:
     for methodName, methodDesc in futureDesc['methods'].iteritems():
       if 'next' in methodDesc and methodName in resourceDesc['methods']:
-        createNextMethod(Resource, methodName + "_next",
+        createNextMethod(Resource, methodName + '_next',
                          resourceDesc['methods'][methodName],
                          methodDesc['next'])
 

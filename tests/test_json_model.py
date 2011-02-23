@@ -101,7 +101,9 @@ class Model(unittest.TestCase):
 
     headers = {}
     path_params = {}
-    query_params = {'foo': 1, 'bar': u'\N{COMET}'}
+    query_params = {'foo': 1, 'bar': u'\N{COMET}',
+        'baz': ['fe', 'fi', 'fo', 'fum'], # Repeated parameters
+        'qux': []}
     body = {}
 
     headers, params, query, body = model.request(headers, path_params, query_params, body)
@@ -109,9 +111,11 @@ class Model(unittest.TestCase):
     self.assertEqual(headers['accept'], 'application/json')
     self.assertEqual(headers['content-type'], 'application/json')
 
-    query_dict = parse_qs(query)
+    query_dict = parse_qs(query[1:])
     self.assertEqual(query_dict['foo'], ['1'])
     self.assertEqual(query_dict['bar'], [u'\N{COMET}'.encode('utf-8')])
+    self.assertEqual(query_dict['baz'], ['fe', 'fi', 'fo', 'fum'])
+    self.assertTrue('qux' not in query_dict)
     self.assertEqual(body, '{}')
 
   def test_user_agent(self):

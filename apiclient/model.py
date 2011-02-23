@@ -127,9 +127,14 @@ class JsonModel(Model):
     params.update({'alt': 'json'})
     astuples = []
     for key, value in params.iteritems():
-      if getattr(value, 'encode', False) and callable(value.encode):
-        value = value.encode('utf-8')
-      astuples.append((key, value))
+      if type(value) == type([]):
+        for x in value:
+          x = x.encode('utf-8')
+          astuples.append((key, x))
+      else:
+        if getattr(value, 'encode', False) and callable(value.encode):
+          value = value.encode('utf-8')
+        astuples.append((key, value))
     return '?' + urllib.urlencode(astuples)
 
   def response(self, resp, content):
