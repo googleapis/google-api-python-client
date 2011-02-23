@@ -21,14 +21,14 @@ Unit tests for the Mocks.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import httplib2
+import os
+import unittest
+
 from apiclient.errors import HttpError
 from apiclient.discovery import build
 from apiclient.http import RequestMockBuilder
 from apiclient.http import HttpMock
-
-import httplib2
-import os
-import unittest
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')

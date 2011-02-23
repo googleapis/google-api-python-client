@@ -21,11 +21,12 @@ Unit tests for the JSON model.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-from apiclient.model import JsonModel
-from apiclient.errors import HttpError
 import os
 import unittest
 import httplib2
+
+from apiclient.model import JsonModel
+from apiclient.errors import HttpError
 
 # Python 2.5 requires different modules
 try:
