@@ -22,8 +22,10 @@ Unit tests for objects created from discovery documents.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import httplib2
 import unittest
 import urlparse
+
 try:
     from urlparse import parse_qs
 except ImportError:
