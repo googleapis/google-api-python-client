@@ -306,7 +306,7 @@ class AccessTokenCredentials(OAuth2Credentials):
     Credentials objects are usually instantiated by a Flow.
 
     Args:
-      token_uri: string, URI of token endpoint.
+      access_token: string, access token.
       user_agent: string, The HTTP User-Agent to provide for this application.
 
     Notes:
