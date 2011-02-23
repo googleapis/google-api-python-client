@@ -65,14 +65,14 @@ class Discovery(unittest.TestCase):
       buzz.activities().list(scope='@myself', userId='me')
       self.fail()
     except TypeError, e:
-      self.assertTrue('not in the list' in str(e))
+      self.assertTrue('not an allowed value' in str(e))
 
     # Parameter doesn't match regex
     try:
       buzz.activities().list(scope='not@', userId='foo')
       self.fail()
     except TypeError, e:
-      self.assertTrue('not in the list' in str(e))
+      self.assertTrue('not an allowed value' in str(e))
 
     # Unexpected parameter
     try:
@@ -107,6 +107,10 @@ class Discovery(unittest.TestCase):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', self.http)
     request = zoo.query(trace='html')
+
+    parsed = urlparse.urlparse(request.uri)
+    q = parse_qs(parsed[4])
+    self.assertEqual(q['trace'], ['html'])
 
   def test_buzz_resources(self):
     self.http = HttpMock(datafile('buzz.json'), {'status': '200'})

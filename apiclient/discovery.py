@@ -44,6 +44,8 @@ VARNAME = re.compile('[a-zA-Z0-9_-]+')
 DISCOVERY_URI = ('https://www.googleapis.com/discovery/v0.3/describe/'
   '{api}/{apiVersion}')
 DEFAULT_METHOD_DOC = 'A description of how to use this function'
+
+# Query parameters that work, but don't appear in discovery
 STACK_QUERY_PARAMETERS = ['trace']
 
 
@@ -219,21 +221,29 @@ def createResource(http, baseUrl, model, requestBuilder,
     httpMethod = methodDesc['httpMethod']
     methodId = methodDesc['rpcMethod']
 
-    argmap = {}
+    if 'parameters' not in methodDesc:
+      methodDesc['parameters'] = {}
+    for name in STACK_QUERY_PARAMETERS:
+      methodDesc['parameters'][name] = {
+          'type': 'string',
+          'restParameterType': 'query'
+          }
+
     if httpMethod in ['PUT', 'POST']:
-      if 'parameters' not in methodDesc:
-        methodDesc['parameters'] = {}
       methodDesc['parameters']['body'] = {
           'description': 'The request body.',
           'type': 'object',
           }
 
+    argmap = {} # Map from method parameter name to query parameter name
     required_params = [] # Required parameters
     pattern_params = {}  # Parameters that must match a regex
     query_params = [] # Parameters that will be used in the query string
     path_params = {} # Parameters that will be used in the base URL
     param_type = {} # The type of the parameter
-    enum_params = {}
+    enum_params = {} # Allowable enumeration values for each parameter
+
+
     if 'parameters' in methodDesc:
       for arg, desc in methodDesc['parameters'].iteritems():
         param = key2param(arg)
@@ -260,7 +270,7 @@ def createResource(http, baseUrl, model, requestBuilder,
 
     def method(self, **kwargs):
       for name in kwargs.iterkeys():
-        if name not in argmap and name not in STACK_QUERY_PARAMETERS:
+        if name not in argmap:
           raise TypeError('Got an unexpected keyword argument "%s"' % name)
 
       for name in required_params:
@@ -278,16 +288,17 @@ def createResource(http, baseUrl, model, requestBuilder,
         if name in kwargs:
           if kwargs[name] not in enums:
             raise TypeError(
-                'Parameter "%s" value "%s" is not in the list of allowed values "%s"' %
+                'Parameter "%s" value "%s" is not an allowed value in "%s"' %
                 (name, kwargs[name], str(enums)))
 
       actual_query_params = {}
       actual_path_params = {}
       for key, value in kwargs.iteritems():
+        value_as_str = _to_string(value, param_type.get(key, 'string'))
         if key in query_params:
-          actual_query_params[argmap[key]] = _to_string(value, param_type[key])
+          actual_query_params[argmap[key]] = value_as_str
         if key in path_params:
-          actual_path_params[argmap[key]] = _to_string(value, param_type[key])
+          actual_path_params[argmap[key]] = value_as_str
       body_value = kwargs.get('body', None)
 
       if self._developerKey:
@@ -321,6 +332,8 @@ def createResource(http, baseUrl, model, requestBuilder,
     if len(argmap) > 0:
       docs.append("Args:\n")
     for arg in argmap.iterkeys():
+      if arg in STACK_QUERY_PARAMETERS:
+        continue
       required = ""
       if arg in required_params:
         required = " (required)"

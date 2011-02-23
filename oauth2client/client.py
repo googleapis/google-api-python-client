@@ -37,12 +37,12 @@ class Error(Exception):
 
 
 class FlowExchangeError(Error):
-  """Error occurred during request."""
+  """Error trying to exchange an authorization grant for an access token."""
   pass
 
 
 class AccessTokenRefreshError(Error):
-  """Error occurred during request."""
+  """Error trying to refresh an expired access token."""
   pass
 
 
