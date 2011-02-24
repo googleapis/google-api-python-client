@@ -164,7 +164,7 @@ def build_from_document(
     auth_discovery = {}
 
   if model is None:
-    features = service.get('features', ['dataWrapper'])
+    features = service.get('features', [])
     model = JsonModel('dataWrapper' in features)
   resource = createResource(http, base, model, requestBuilder, developerKey,
                        service, future)
@@ -192,7 +192,10 @@ def _cast(value, schema_type):
     A string representation of 'value' based on the schema_type.
   """
   if schema_type == 'string':
-    return str(value)
+    if type(value) == type('') or type(value) == type(u''):
+      return value
+    else:
+      return str(value)
   elif schema_type == 'integer':
     return str(int(value))
   elif schema_type == 'number':
@@ -200,7 +203,10 @@ def _cast(value, schema_type):
   elif schema_type == 'boolean':
     return str(bool(value)).lower()
   else:
-    return str(value)
+    if type(value) == type('') or type(value) == type(u''):
+      return value
+    else:
+      return str(value)
 
 
 def createResource(http, baseUrl, model, requestBuilder,

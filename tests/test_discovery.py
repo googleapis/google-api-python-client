@@ -1,4 +1,5 @@
 #!/usr/bin/python2.4
+# -*- coding: utf-8 -*-
 #
 # Copyright 2010 Google Inc.
 #
@@ -100,6 +101,7 @@ class Discovery(unittest.TestCase):
     self._check_query_types(request)
     request = zoo.query(q="foo", i=1, n=1, b=False, a=[1,2,3], o={'a':1}, e='bar')
     self._check_query_types(request)
+
     request = zoo.query(q="foo", i="1", n="1", b="", a=[1,2,3], o={'a':1}, e='bar')
     self._check_query_types(request)
 
@@ -134,7 +136,8 @@ class Discovery(unittest.TestCase):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', self.http)
     self.assertTrue(getattr(zoo, 'animals'))
-    request = zoo.animals().list(name="bat", projection="size")
+
+    request = zoo.animals().list(name='bat', projection="size")
     parsed = urlparse.urlparse(request.uri)
     q = parse_qs(parsed[4])
     self.assertEqual(q['name'], ['bat'])

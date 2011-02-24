@@ -28,7 +28,7 @@ def main():
   storage = Storage('moderator.dat')
   credentials = storage.get()
   if credentials is None or credentials.invalid == True:
-    moderator_discovery = build("moderator", "v1").auth_discovery()
+    moderator_discovery = build('moderator', 'v1').auth_discovery()
 
     flow = FlowThreeLegged(moderator_discovery,
                            consumer_key='anonymous',
@@ -44,53 +44,45 @@ def main():
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  p = build("moderator", "v1", http=http)
+  p = build('moderator', 'v1', http=http)
 
   series_body = {
-      "data": {
-        "description": "Share and rank tips for eating healthy and cheap!",
-        "name": "Eating Healthy & Cheap",
-        "videoSubmissionAllowed": False
-        }
+      'description': 'Share and rank tips for eating healthy and cheap!',
+      'name': 'Eating Healthy & Cheap',
+      'videoSubmissionAllowed': False
       }
   try:
     series = p.series().insert(body=series_body).execute()
-    print "Created a new series"
+    print 'Created a new series'
 
     topic_body = {
-        "data": {
-          "description": "Share your ideas on eating healthy!",
-          "name": "Ideas",
-          "presenter": "liz"
-          }
+        'description': 'Share your ideas on eating healthy!',
+        'name': 'Ideas',
+        'presenter': 'liz'
         }
     topic = p.topics().insert(seriesId=series['id']['seriesId'],
                               body=topic_body).execute()
-    print "Created a new topic"
+    print 'Created a new topic'
 
     submission_body = {
-        "data": {
-          "attachmentUrl": "http://www.youtube.com/watch?v=1a1wyc5Xxpg",
-          "attribution": {
-            "displayName": "Bashan",
-            "location": "Bainbridge Island, WA"
-            },
-          "text": "Charlie Ayers @ Google"
-          }
+        'attachmentUrl': 'http://www.youtube.com/watch?v=1a1wyc5Xxpg',
+        'attribution': {
+          'displayName': 'Bashan',
+          'location': 'Bainbridge Island, WA'
+          },
+        'text': 'Charlie Ayers @ Google'
         }
     submission = p.submissions().insert(seriesId=topic['id']['seriesId'],
         topicId=topic['id']['topicId'], body=submission_body).execute()
-    print "Inserted a new submisson on the topic"
+    print 'Inserted a new submisson on the topic'
 
     vote_body = {
-        "data": {
-          "vote": "PLUS"
-          }
+        'vote': 'PLUS'
         }
     p.votes().insert(seriesId=topic['id']['seriesId'],
                      submissionId=submission['id']['submissionId'],
                      body=vote_body)
-    print "Voted on the submission"
+    print 'Voted on the submission'
   except CredentialsInvalidError:
     print 'Your credentials are no longer valid.'
     print 'Please re-run this application to re-authorize.'
