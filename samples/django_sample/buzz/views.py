@@ -20,8 +20,8 @@ def index(request):
     c = Credential.objects.get(id=request.user)
     http = httplib2.Http()
     http = c.credential.authorize(http)
-    p = build("buzz", "v1", http=http)
-    activities = p.activities()
+    service = build("buzz", "v1", http=http)
+    activities = service.activities()
     activitylist = activities.list(scope='@consumption',
                                    userId='@me').execute()
     logging.info(activitylist)
@@ -31,8 +31,8 @@ def index(request):
                 })
 
   except Credential.DoesNotExist:
-    p = build("buzz", "v1")
-    flow = FlowThreeLegged(p.auth_discovery(),
+    service = build("buzz", "v1")
+    flow = FlowThreeLegged(service.auth_discovery(),
                    consumer_key='anonymous',
                    consumer_secret='anonymous',
                    user_agent='google-api-client-python-buzz-django/1.0',

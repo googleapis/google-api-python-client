@@ -100,7 +100,7 @@ def main():
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  p = build("moderator", "v1", http=http)
+  service = build("moderator", "v1", http=http)
 
   series_body = {
       "data": {
@@ -110,7 +110,7 @@ def main():
           }
       }
   try:
-    series = p.series().insert(body=series_body).execute()
+    series = service.series().insert(body=series_body).execute()
     print "Created a new series"
 
     for i in range(NUM_ITEMS):
@@ -121,7 +121,7 @@ def main():
             "presenter": "me"
             }
           }
-      topic_request = p.topics().insert(seriesId=series['id']['seriesId'],
+      topic_request = service.topics().insert(seriesId=series['id']['seriesId'],
                                         body=topic_body)
       print "Adding request to queue"
       queue.put(topic_request)

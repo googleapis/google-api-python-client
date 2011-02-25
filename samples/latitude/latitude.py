@@ -51,7 +51,7 @@ def main():
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  p = build("latitude", "v1", http=http)
+  service = build("latitude", "v1", http=http)
 
   body = {
       "data": {
@@ -62,7 +62,7 @@ def main():
           "altitude": 35
           }
       }
-  print p.currentLocation().insert(body=body).execute()
+  print service.currentLocation().insert(body=body).execute()
 
 if __name__ == '__main__':
   main()

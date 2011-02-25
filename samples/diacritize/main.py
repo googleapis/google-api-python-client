@@ -22,9 +22,9 @@ import pprint
 
 
 def main():
-  p = build("diacritize", "v1",
+  service = build("diacritize", "v1",
             developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
-  print p.diacritize().corpus().get(
+  print service.diacritize().corpus().get(
       lang='ar',
       last_letter='false',
       message=u'مثال لتشكيل'

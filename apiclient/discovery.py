@@ -239,6 +239,7 @@ def createResource(http, baseUrl, model, requestBuilder,
       methodDesc['parameters']['body'] = {
           'description': 'The request body.',
           'type': 'object',
+          'required': True,
           }
 
     argmap = {} # Map from method parameter name to query parameter name

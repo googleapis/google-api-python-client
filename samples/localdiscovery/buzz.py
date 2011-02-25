@@ -55,12 +55,12 @@ def main():
   f.close()
 
   # Construct a service from the local documents
-  p = build_from_document(discovery,
+  service = build_from_document(discovery,
       base="https://www.googleapis.com/",
       future=future,
       http=http,
       developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
-  activities = p.activities()
+  activities = service.activities()
 
   try:
     # Retrieve the first two activities

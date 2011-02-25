@@ -36,7 +36,6 @@ def main():
                            user_agent='python-moderator-sample/1.0',
                            domain='anonymous',
                            scope='https://www.googleapis.com/auth/moderator',
-                           #scope='tag:google.com,2010:auth/moderator',
                            xoauth_displayname='Google API Client Example App')
 
     credentials = run(flow, storage)
@@ -44,7 +43,7 @@ def main():
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  p = build('moderator', 'v1', http=http)
+  service = build('moderator', 'v1', http=http)
 
   series_body = {
       'description': 'Share and rank tips for eating healthy and cheap!',
@@ -52,7 +51,7 @@ def main():
       'videoSubmissionAllowed': False
       }
   try:
-    series = p.series().insert(body=series_body).execute()
+    series = service.series().insert(body=series_body).execute()
     print 'Created a new series'
 
     topic_body = {
@@ -60,7 +59,7 @@ def main():
         'name': 'Ideas',
         'presenter': 'liz'
         }
-    topic = p.topics().insert(seriesId=series['id']['seriesId'],
+    topic = service.topics().insert(seriesId=series['id']['seriesId'],
                               body=topic_body).execute()
     print 'Created a new topic'
 
@@ -72,14 +71,14 @@ def main():
           },
         'text': 'Charlie Ayers @ Google'
         }
-    submission = p.submissions().insert(seriesId=topic['id']['seriesId'],
+    submission = service.submissions().insert(seriesId=topic['id']['seriesId'],
         topicId=topic['id']['topicId'], body=submission_body).execute()
     print 'Inserted a new submisson on the topic'
 
     vote_body = {
         'vote': 'PLUS'
         }
-    p.votes().insert(seriesId=topic['id']['seriesId'],
+    service.votes().insert(seriesId=topic['id']['seriesId'],
                      submissionId=submission['id']['submissionId'],
                      body=vote_body)
     print 'Voted on the submission'

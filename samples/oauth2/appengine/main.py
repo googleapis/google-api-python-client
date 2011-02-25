@@ -67,8 +67,8 @@ class MainHandler(webapp.RequestHandler):
     else:
       http = httplib2.Http()
       http = credentials.authorize(http)
-      p = build("buzz", "v1", http=http)
-      activities = p.activities()
+      service = build("buzz", "v1", http=http)
+      activities = service.activities()
       activitylist = activities.list(scope='@consumption',
                                      userId='@me').execute()
       path = os.path.join(os.path.dirname(__file__), 'welcome.html')

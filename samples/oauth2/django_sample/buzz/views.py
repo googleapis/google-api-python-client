@@ -37,8 +37,8 @@ def index(request):
   else:
     http = httplib2.Http()
     http = credential.authorize(http)
-    p = build("buzz", "v1", http=http)
-    activities = p.activities()
+    service = build("buzz", "v1", http=http)
+    activities = service.activities()
     activitylist = activities.list(scope='@consumption',
                                    userId='@me').execute()
     logging.info(activitylist)

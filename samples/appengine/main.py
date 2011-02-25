@@ -53,8 +53,8 @@ class MainHandler(webapp.RequestHandler):
     if c:
       http = httplib2.Http()
       http = c.credentials.authorize(http)
-      p = build("buzz", "v1", http=http)
-      activities = p.activities()
+      service = build("buzz", "v1", http=http)
+      activities = service.activities()
       activitylist = activities.list(scope='@consumption',
                                      userId='@me').execute()
       logging.info(activitylist)

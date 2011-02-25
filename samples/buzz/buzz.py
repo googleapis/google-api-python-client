@@ -43,9 +43,9 @@ def main():
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  p = build("buzz", "v1", http=http,
+  service = build("buzz", "v1", http=http,
       developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
-  activities = p.activities()
+  activities = service.activities()
 
   try:
     # Retrieve the first two activities
@@ -82,7 +82,7 @@ def main():
             }
         }
     item = activitylist['items'][0]
-    comment = p.comments().insert(
+    comment = service.comments().insert(
         userId=item['actor']['id'], postId=item['id'], body=comment_body
         ).execute()
     print 'Added a comment to the new activity'

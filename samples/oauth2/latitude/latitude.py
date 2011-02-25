@@ -38,7 +38,7 @@ def main():
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  p = build("latitude", "v1", http=http)
+  service = build("latitude", "v1", http=http)
 
   body = {
       "data": {
@@ -50,7 +50,7 @@ def main():
           }
       }
   try:
-    print p.currentLocation().insert(body=body).execute()
+    print service.currentLocation().insert(body=body).execute()
   except CredentialsInvalidError:
     print 'Your credentials are no longer valid.'
     print 'Please re-run this application to re-authorize.'

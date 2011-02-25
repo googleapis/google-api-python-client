@@ -21,9 +21,9 @@ import pprint
 
 def main():
 
-  p = build('translate', 'v2',
+  service = build('translate', 'v2',
             developerKey='AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0')
-  print p.translations().list(
+  print service.translations().list(
       source='en',
       target='fr',
       q=['flower', 'car']

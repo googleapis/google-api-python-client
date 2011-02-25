@@ -29,9 +29,9 @@ DISCOVERY_URI = ('http://localhost:3990/discovery/v0.2beta1/describe/'
 def main():
   http = httplib2.Http()
 
-  p = build("buzz", "v1", http=http, discoveryServiceUrl=DISCOVERY_URI)
-  help(p.activities().list)
-  print p.activities().list(userId='@self', scope='@me', c='foo').uri
+  service = build("buzz", "v1", http=http, discoveryServiceUrl=DISCOVERY_URI)
+  help(service.activities().list)
+  print service.activities().list(userId='@self', scope='@me', c='foo').uri
 
 if __name__ == '__main__':
   main()
