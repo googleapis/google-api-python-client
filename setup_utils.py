@@ -18,7 +18,7 @@
 __author__ = 'tom.h.miller@gmail.com (Tom Miller)'
 
 
-def get_missing_requirements():
+def get_missing_requirements(third_party_reqs ):
   """Return a list of missing third party packages."""
   import sys
 
@@ -32,7 +32,6 @@ def get_missing_requirements():
     import os.path
     sys.path.remove(os.path.abspath(os.path.curdir))
   missing_pkgs = []
-  third_party_reqs = ['oauth2', 'httplib2']
   for pkg in third_party_reqs:
     try:
       __import__(pkg)
@@ -83,4 +82,4 @@ def import_json(import_path=None):
   if pkg:
     return pkg
   else:
-    raise ImportError('Cannot find json support')    
+    raise ImportError('Cannot find json support')

@@ -31,12 +31,11 @@ def main():
         client_id='433807057907.apps.googleusercontent.com',
         client_secret='jigtZpMApkRxncxikFpR+SFg',
         scope='https://www.googleapis.com/auth/moderator',
-        user_agent='moderator-cmdline-sample/1.0',
-        xoauth_displayname='Moderator Client Example App')
+        user_agent='moderator-cmdline-sample/1.0')
 
     credentials = run(flow, storage)
 
-  http = httplib2.Http()
+  http = httplib2.Http(cache=".cache")
   http = credentials.authorize(http)
 
   service = build("moderator", "v1", http=http)

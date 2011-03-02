@@ -20,37 +20,43 @@ are not already installed.
 
 import setup_utils
 
-packages = ['apiclient', 'apiclient.ext', 'uritemplate']
+packages = [
+  'apiclient',
+  'oauth2client',
+  'apiclient.ext',
+  'apiclient.contrib',
+  'apiclient.contrib.buzz',
+  'apiclient.contrib.latitude',
+  'apiclient.contrib.moderator',
+  'uritemplate'
+]
+
+third_party_reqs = ['httplib2', 'oauth2']
 
 # Don't clobber installed versions of third party libraries
 # with what we include.
-packages.extend(setup_utils.get_missing_requirements())
-print 'Installing the following packages: '
-print str(packages)[1:-1]
+packages.extend(setup_utils.get_missing_requirements(third_party_reqs ))
 
 try:
   # Some people prefer setuptools, and may have that installed
   from setuptools import setup
 except ImportError:
   from distutils.core import setup
-  print 'Loaded distutils.core'
-else:
-  print 'Loaded setuptools'
 
 long_desc = """The Google API Client for Python is a client library for
 accessing the Buzz, Moderator, and Latitude APIs."""
 
 setup(name="google-api-python-client",
-      version="0.1",
+      version="1.0alpha1",
       description="Google API Client Library for Python",
       long_description=long_desc,
       author="Joe Gregorio",
       author_email="jcgregorio@google.com",
       url="http://code.google.com/p/google-api-python-client/",
       packages=packages,
-      package_data={'apiclient':['contrib/buzz/future.json',
-                                 'contrib/latitude/future.json',
-                                 'contrib/moderator/future.json']},
+      package_data={
+        'apiclient': ['contrib/*/*.json']
+        },
       license="Apache 2.0",
       keywords="google api client",
       classifiers=['Development Status :: 3 - Alpha',
@@ -59,4 +65,3 @@ setup(name="google-api-python-client",
                    'Operating System :: POSIX',
                    'Topic :: Internet :: WWW/HTTP'])
 
-print 'Setup complete!'

@@ -100,6 +100,7 @@ class JsonModel(Model):
     """
     query = self._build_query(query_params)
     headers['accept'] = 'application/json'
+    headers['accept-encoding'] = 'gzip, deflate'
     if 'user-agent' in headers:
       headers['user-agent'] += ' '
     else:
