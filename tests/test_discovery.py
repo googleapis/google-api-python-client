@@ -34,6 +34,7 @@ except ImportError:
 
 from apiclient.discovery import build, key2param
 from apiclient.http import HttpMock
+from apiclient.errors import HttpError
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -46,6 +47,17 @@ class Utilities(unittest.TestCase):
   def test_key2param(self):
     self.assertEqual('max_results', key2param('max-results'))
     self.assertEqual('x007_bond', key2param('007-bond'))
+
+
+class DiscoveryErrors(unittest.TestCase):
+
+  def test_failed_to_parse_discovery_json(self):
+    self.http = HttpMock(datafile('malformed.json'), {'status': '200'})
+    try:
+      buzz = build('buzz', 'v1', self.http)
+      self.fail("should have raised an exception over malformed JSON.")
+    except HttpError, e:
+      self.assertEqual(e.content, "{\n")
 
 
 class Discovery(unittest.TestCase):

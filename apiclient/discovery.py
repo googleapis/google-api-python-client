@@ -38,6 +38,7 @@ from http import HttpRequest
 from anyjson import simplejson
 from model import JsonModel
 from errors import UnknownLinkType
+from errors import HttpError
 
 URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
@@ -107,7 +108,10 @@ def build(serviceName, version,
   requested_url = uritemplate.expand(discoveryServiceUrl, params)
   logging.info('URL being requested: %s' % requested_url)
   resp, content = http.request(requested_url)
-  service = simplejson.loads(content)
+  try:
+    service = simplejson.loads(content)
+  except ValueError, e:
+    raise HttpError(resp, content)
 
   fn = os.path.join(os.path.dirname(__file__), 'contrib',
       serviceName, 'future.json')
