@@ -21,12 +21,19 @@ Unit tests for the JSON model.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import copy
+import gflags
 import os
 import unittest
 import httplib2
+import apiclient.model
 
-from apiclient.model import JsonModel
+from apiclient.anyjson import simplejson
 from apiclient.errors import HttpError
+from apiclient.model import JsonModel
+from apiclient.model import LoggingJsonModel
+
+FLAGS = gflags.FLAGS
 
 # Python 2.5 requires different modules
 try:
@@ -178,6 +185,55 @@ class Model(unittest.TestCase):
 
     content = model.response(resp, content)
     self.assertEqual(content, 'data goes here')
+
+
+class LoggingModel(unittest.TestCase):
+
+  def test_logging_json_model(self):
+    class MockLogging(object):
+      def __init__(self):
+        self.info_record = []
+        self.debug_record = []
+      def info(self, message, *args):
+        self.info_record.append(message % args)
+
+      def debug(self, message, *args):
+        self.debug_record.append(message % args)
+
+    class MockResponse(dict):
+      def __init__(self, items):
+        super(MockResponse, self).__init__()
+        self.status = items['status']
+        for key, value in items.iteritems():
+          self[key] = value
+    apiclient.model.logging = MockLogging()
+    apiclient.model.FLAGS = copy.deepcopy(FLAGS)
+    apiclient.model.FLAGS.dump_request = True
+    model = LoggingJsonModel()
+    request_body = {
+        'field1': 'value1',
+        'field2': 'value2'
+        }
+    body_string = model.request({}, {}, {}, request_body)[-1]
+    json_body = simplejson.loads(body_string)
+    self.assertEqual(request_body, json_body)
+
+    response = {'status': 200,
+                'response_field_1': 'response_value_1',
+                'response_field_2': 'response_value_2'}
+    response_body = model.response(MockResponse(response), body_string)
+    self.assertEqual(request_body, response_body)
+    self.assertEqual(apiclient.model.logging.info_record[:4],
+                     ['--response-start--',
+                      'status: 200',
+                      'response_field_1: response_value_1',
+                      'response_field_2: response_value_2'])
+    self.assertEqual(simplejson.loads(apiclient.model.logging.info_record[-2]),
+                     request_body)
+    self.assertEqual(apiclient.model.logging.info_record[-1],
+                     '--response-end--')
+
+
 
 if __name__ == '__main__':
   unittest.main()

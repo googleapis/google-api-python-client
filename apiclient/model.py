@@ -12,12 +12,17 @@ object representation.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import gflags
 import logging
 import urllib
 
 from anyjson import simplejson
 from errors import HttpError
 
+FLAGS = gflags.FLAGS
+
+gflags.DEFINE_boolean('dump_request', False,
+                     'Dump all http server requests and responses.')
 
 def _abstract():
   raise NotImplementedError('You need to override this function')
@@ -165,3 +170,27 @@ class JsonModel(Model):
     else:
       logging.debug('Content from bad request was: %s' % content)
       raise HttpError(resp, content)
+
+
+class LoggingJsonModel(JsonModel):
+  """A printable JsonModel class that supports logging response info."""
+
+  def response(self, resp, content):
+    """An overloaded response method that will output debug info if requested.
+
+    Args:
+      resp: An httplib2.Response object.
+      content: A string representing the response body.
+
+    Returns:
+      The body de-serialized as a Python object.
+    """
+    if FLAGS.dump_request:
+      logging.info('--response-start--')
+      for h, v in resp.iteritems():
+        logging.info('%s: %s', h, v)
+      if content:
+        logging.info(content)
+      logging.info('--response-end--')
+    return super(LoggingJsonModel, self).response(
+        resp, content)
