@@ -21,18 +21,12 @@ from apiclient.model import LoggingJsonModel
 
 
 FLAGS = gflags.FLAGS
-
+FLAGS.dump_request_response = True
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
 def main(argv):
-  try:
-    argv = FLAGS(argv)
-  except gflags.FlagsError, e:
-    print '%s\\nUsage: %s ARGS\\n%s' % (e, argv[0], FLAGS)
-    sys.exit(1)
-
   service = build('translate', 'v2',
                   developerKey='AIzaSyAQIKv_gwnob-YNrXV2stnY86GSGY81Zr0',
                   model=LoggingJsonModel())

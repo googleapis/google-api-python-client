@@ -35,6 +35,7 @@ except ImportError:
 from apiclient.discovery import build, key2param
 from apiclient.http import HttpMock
 from apiclient.errors import HttpError
+from apiclient.errors import InvalidJsonError
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -56,8 +57,8 @@ class DiscoveryErrors(unittest.TestCase):
     try:
       buzz = build('buzz', 'v1', self.http)
       self.fail("should have raised an exception over malformed JSON.")
-    except HttpError, e:
-      self.assertEqual(e.content, "{\n")
+    except InvalidJsonError:
+      pass
 
 
 class Discovery(unittest.TestCase):

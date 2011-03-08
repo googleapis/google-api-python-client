@@ -16,6 +16,7 @@ import httplib2
 import os
 
 from model import JsonModel
+from errors import HttpError
 
 
 class HttpRequest(object):
@@ -67,6 +68,9 @@ class HttpRequest(object):
     resp, content = http.request(self.uri, self.method,
                                       body=self.body,
                                       headers=self.headers)
+
+    if resp.status >= 300:
+      raise HttpError(resp, content, self.uri)
     return self.postproc(resp, content)
 
 
