@@ -70,7 +70,7 @@ def main():
   print 'Training is complete'
 
   # Now make a prediction using that training
-  body = {'input': {'mixture':["mucho bueno"]}}
+  body = {'input': {'mixture': ["mucho bueno"]}}
   prediction = service.predict(body=body, data=OBJECT_NAME).execute()
   print 'The prediction is:'
   pprint.pprint(prediction)

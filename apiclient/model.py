@@ -21,8 +21,9 @@ from errors import HttpError
 
 FLAGS = gflags.FLAGS
 
-gflags.DEFINE_boolean('dump_request', False,
+gflags.DEFINE_boolean('dump_request_response', False,
                      'Dump all http server requests and responses.')
+
 
 def _abstract():
   raise NotImplementedError('You need to override this function')
@@ -115,11 +116,10 @@ class JsonModel(Model):
     if (isinstance(body_value, dict) and 'data' not in body_value and
         self._data_wrapper):
       body_value = {'data': body_value}
-    if body_value is None:
-      return (headers, path_params, query, None)
-    else:
+    if body_value is not None:
       headers['content-type'] = 'application/json'
-      return (headers, path_params, query, simplejson.dumps(body_value))
+      body_value = simplejson.dumps(body_value)
+    return (headers, path_params, query, body_value)
 
   def _build_query(self, params):
     """Builds a query string.
@@ -185,7 +185,7 @@ class LoggingJsonModel(JsonModel):
     Returns:
       The body de-serialized as a Python object.
     """
-    if FLAGS.dump_request:
+    if FLAGS.dump_request_response:
       logging.info('--response-start--')
       for h, v in resp.iteritems():
         logging.info('%s: %s', h, v)
@@ -194,3 +194,38 @@ class LoggingJsonModel(JsonModel):
       logging.info('--response-end--')
     return super(LoggingJsonModel, self).response(
         resp, content)
+
+  def request(self, headers, path_params, query_params, body_value):
+    """An overloaded request method that will output debug info if requested.
+
+    Args:
+      headers: dict, request headers
+      path_params: dict, parameters that appear in the request path
+      query_params: dict, parameters that appear in the query
+      body_value: object, the request body as a Python object, which must be
+                  serializable by simplejson.
+    Returns:
+      A tuple of (headers, path_params, query, body)
+
+      headers: dict, request headers
+      path_params: dict, parameters that appear in the request path
+      query: string, query part of the request URI
+      body: string, the body serialized as JSON
+    """
+    (headers, path_params, query, body) = super(
+        LoggingJsonModel, self).request(
+            headers, path_params, query_params, body_value)
+    if FLAGS.dump_request_response:
+      logging.info('--request-start--')
+      logging.info('-headers-start-')
+      for h, v in headers.iteritems():
+        logging.info('%s: %s', h, v)
+      logging.info('-headers-end-')
+      logging.info('-path-parameters-start-')
+      for h, v in path_params.iteritems():
+        logging.info('%s: %s', h, v)
+      logging.info('-path-parameters-end-')
+      logging.info('body: %s', body)
+      logging.info('query: %s', query)
+      logging.info('--request-end--')
+    return (headers, path_params, query, body)

@@ -121,8 +121,8 @@ def main():
             "presenter": "me"
             }
           }
-      topic_request = service.topics().insert(seriesId=series['id']['seriesId'],
-                                        body=topic_body)
+      topic_request = service.topics().insert(
+          seriesId=series['id']['seriesId'], body=topic_body)
       print "Adding request to queue"
       queue.put(topic_request)
   except CredentialsInvalidError:

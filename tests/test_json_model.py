@@ -208,7 +208,7 @@ class LoggingModel(unittest.TestCase):
           self[key] = value
     apiclient.model.logging = MockLogging()
     apiclient.model.FLAGS = copy.deepcopy(FLAGS)
-    apiclient.model.FLAGS.dump_request = True
+    apiclient.model.FLAGS.dump_request_response = True
     model = LoggingJsonModel()
     request_body = {
         'field1': 'value1',
@@ -223,11 +223,13 @@ class LoggingModel(unittest.TestCase):
                 'response_field_2': 'response_value_2'}
     response_body = model.response(MockResponse(response), body_string)
     self.assertEqual(request_body, response_body)
-    self.assertEqual(apiclient.model.logging.info_record[:4],
-                     ['--response-start--',
-                      'status: 200',
-                      'response_field_1: response_value_1',
-                      'response_field_2: response_value_2'])
+    self.assertEqual(apiclient.model.logging.info_record[:2],
+                     ['--request-start--',
+                      '-headers-start-'])
+    self.assertTrue('response_field_1: response_value_1' in
+                    apiclient.model.logging.info_record)
+    self.assertTrue('response_field_2: response_value_2' in
+                    apiclient.model.logging.info_record)
     self.assertEqual(simplejson.loads(apiclient.model.logging.info_record[-2]),
                      request_body)
     self.assertEqual(apiclient.model.logging.info_record[-1],

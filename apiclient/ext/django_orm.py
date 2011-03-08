@@ -4,6 +4,7 @@ import pickle
 
 from django.db import models
 
+
 class OAuthCredentialsField(models.Field):
 
   __metaclass__ = models.SubfieldBase
