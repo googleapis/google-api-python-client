@@ -25,7 +25,6 @@ __all__ = ["run"]
 
 import BaseHTTPServer
 import logging
-import pickle
 import socket
 import sys
 

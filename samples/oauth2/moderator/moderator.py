@@ -3,26 +3,31 @@
 #
 # Copyright 2010 Google Inc. All Rights Reserved.
 
-"""Simple command-line example for Buzz.
+"""Simple command-line example for Moderator.
 
-Command-line application that retrieves the users
-latest content and then adds a new entry.
+Command-line application that exercises the Google Moderator API.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import gflags
 import httplib2
+import sys
 
 from apiclient.discovery import build
 from oauth2client.file import Storage
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.tools import run
 
-# Uncomment to get low level HTTP logging
-#httplib2.debuglevel = 4
+FLAGS = gflags.FLAGS
 
+def main(argv):
+  try:
+    argv = FLAGS(argv)
+  except gflags.FlagsError, e:
+    print '%s\\nUsage: %s ARGS\\n%s' % (e, argv[0], FLAGS)
+    sys.exit(1)
 
-def main():
   storage = Storage('moderator.dat')
   credentials = storage.get()
 
@@ -87,4 +92,4 @@ def main():
 
 
 if __name__ == '__main__':
-  main()
+  main(sys.argv)

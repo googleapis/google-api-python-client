@@ -290,9 +290,12 @@ class FlowThreeLegged(Flow):
     """Exhanges an authorized request token
     for OAuthCredentials.
 
-    verifier - either the verifier token, or a dictionary
+    Args:
+      verifier: string, dict - either the verifier token, or a dictionary
         of the query parameters to the callback, which contains
         the oauth_verifier.
+    Returns:
+       The Credentials object.
     """
 
     if not (isinstance(verifier, str) or isinstance(verifier, unicode)):
