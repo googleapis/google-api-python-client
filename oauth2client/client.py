@@ -333,8 +333,8 @@ class OAuth2WebServerFlow(Flow):
   """
 
   def __init__(self, client_id, client_secret, scope, user_agent,
-      auth_uri='https://www.google.com/accounts/o8/oauth2/authorization',
-      token_uri='https://www.google.com/accounts/o8/oauth2/token',
+      auth_uri='https://accounts.google.com/o/oauth2/auth',
+      token_uri='https://accounts.google.com/o/oauth2/token',
       **kwargs):
     """Constructor for OAuth2WebServerFlow
 

@@ -36,7 +36,7 @@ def run(flow, storage):
   Exceptions:
     RequestError: if step2 of the flow fails.
   """
-  authorize_url = flow.step1_get_authorize_url('oob')
+  authorize_url = flow.step1_get_authorize_url('http://localhost:8080/')
 
   print 'Go to the following link in your browser:'
   print authorize_url

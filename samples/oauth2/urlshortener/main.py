@@ -32,8 +32,7 @@ def main():
         client_id='433807057907.apps.googleusercontent.com',
         client_secret='jigtZpMApkRxncxikFpR+SFg',
         scope='https://www.googleapis.com/auth/urlshortener',
-        user_agent='urlshortener-cmdline-sample/1.0',
-        xoauth_displayname='URL Shortener Client Example App')
+        user_agent='urlshortener-cmdline-sample/1.0')
 
     credentials = run(flow, storage)
 

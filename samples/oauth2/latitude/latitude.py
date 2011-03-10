@@ -24,14 +24,14 @@ from apiclient.oauth import CredentialsInvalidError
 
 
 def main():
-  credentials = Storage('latitude.dat').get()
+  storage = Storage('latitude.dat')
+  credentials = storage.get()
   if credentials is None or credentials.invalid:
     flow = OAuth2WebServerFlow(
         client_id='433807057907.apps.googleusercontent.com',
         client_secret='jigtZpMApkRxncxikFpR+SFg',
         scope='https://www.googleapis.com/auth/latitude',
-        user_agent='latitude-cmdline-sample/1.0',
-        xoauth_displayname='Latitude Client Example App')
+        user_agent='latitude-cmdline-sample/1.0')
 
     credentials = run(flow, storage)
 
