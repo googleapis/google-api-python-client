@@ -223,3 +223,42 @@ class HttpMockSequence(object):
     elif content == 'echo_request_body':
       content = body
     return httplib2.Response(resp), content
+
+
+def set_user_agent(http, user_agent):
+  """
+  Args:
+     http - An instance of httplib2.Http
+         or something that acts like it.
+     user_agent: string, the value for the user-agent header.
+
+  Returns:
+     A modified instance of http that was passed in.
+
+  Example:
+
+    h = httplib2.Http()
+    h = set_user_agent(h, "my-app-name/6.0")
+
+  Most of the time the user-agent will be set doing auth, this is for the rare
+  cases where you are accessing an unauthenticated endpoint.
+  """
+  request_orig = http.request
+
+  # The closure that will replace 'httplib2.Http.request'.
+  def new_request(uri, method='GET', body=None, headers=None,
+                  redirections=httplib2.DEFAULT_MAX_REDIRECTS,
+                  connection_type=None):
+    """Modify the request headers to add the user-agent."""
+    if headers is None:
+      headers = {}
+    if 'user-agent' in headers:
+      headers['user-agent'] = user_agent + ' ' + headers['user-agent']
+    else:
+      headers['user-agent'] = user_agent
+    resp, content = request_orig(uri, method, body, headers,
+                        redirections, connection_type)
+    return resp, content
+
+  http.request = new_request
+  return http
