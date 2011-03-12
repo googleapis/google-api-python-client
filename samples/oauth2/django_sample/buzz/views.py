@@ -15,7 +15,7 @@ from apiclient.discovery import build
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 
-STEP2_URI = 'http://gregorio2.cnc.corp.google.com:8000/auth_return'
+STEP2_URI = 'http://localhost:8000/auth_return'
 
 
 @login_required
@@ -52,10 +52,6 @@ def index(request):
 def auth_return(request):
     try:
       f = FlowModel.objects.get(id=request.user)
-      print f
-      print f.flow
-      print dir(f.flow)
-      print type(f.flow)
       credential = f.flow.step2_exchange(request.REQUEST)
       storage = Storage(CredentialsModel, 'id', request.user, 'credential')
       storage.put(credential)

@@ -50,10 +50,6 @@ def index(request):
 def auth_return(request):
     try:
       f = Flow.objects.get(id=request.user)
-      print f
-      print f.flow
-      print dir(f.flow)
-      print type(f.flow)
       credential = f.flow.step2_exchange(request.REQUEST)
       c = Credential(id=request.user, credential=credential)
       c.save()

@@ -114,6 +114,7 @@ def build(serviceName, version,
   try:
     service = simplejson.loads(content)
   except ValueError, e:
+    logging.error('Failed to parse as JSON: ' + content)
     raise InvalidJsonError()
 
   fn = os.path.join(os.path.dirname(__file__), 'contrib',

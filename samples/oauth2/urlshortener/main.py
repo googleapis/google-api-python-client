@@ -10,8 +10,11 @@ Command-line application that shortens a URL.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import gflags
 import httplib2
+import logging
 import pprint
+import sys
 
 from apiclient.discovery import build
 from oauth2client.file import Storage
@@ -19,22 +22,31 @@ from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.client import AccessTokenCredentials
 from oauth2client.tools import run
 
-# Uncomment to get detailed logging
-#httplib2.debuglevel = 4
+FLAGS = gflags.FLAGS
+FLOW = OAuth2WebServerFlow(
+    client_id='433807057907.apps.googleusercontent.com',
+    client_secret='jigtZpMApkRxncxikFpR+SFg',
+    scope='https://www.googleapis.com/auth/urlshortener',
+    user_agent='urlshortener-cmdline-sample/1.0')
+
+gflags.DEFINE_enum('logging_level', 'ERROR',
+    ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+    'Set the level of logging detail.')
 
 
-def main():
+def main(argv):
+  try:
+    argv = FLAGS(argv)
+  except gflags.FlagsError, e:
+    print '%s\\nUsage: %s ARGS\\n%s' % (e, argv[0], FLAGS)
+    sys.exit(1)
+
+  logging.getLogger().setLevel(getattr(logging, FLAGS.logging_level))
+
   storage = Storage('urlshortener.dat')
   credentials = storage.get()
-
   if credentials is None or credentials.invalid == True:
-    flow = OAuth2WebServerFlow(
-        client_id='433807057907.apps.googleusercontent.com',
-        client_secret='jigtZpMApkRxncxikFpR+SFg',
-        scope='https://www.googleapis.com/auth/urlshortener',
-        user_agent='urlshortener-cmdline-sample/1.0')
-
-    credentials = run(flow, storage)
+    credentials = run(FLOW, storage)
 
   http = httplib2.Http()
   http = credentials.authorize(http)
@@ -57,4 +69,4 @@ def main():
 
 
 if __name__ == '__main__':
-  main()
+  main(sys.argv)

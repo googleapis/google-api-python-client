@@ -192,6 +192,7 @@ class OAuth2Credentials(Credentials):
         'user-agent': self.user_agent,
         'content-type': 'application/x-www-form-urlencoded'
     }
+    logging.info("Refresing access_token")
     resp, content = http_request(
         self.token_uri, method='POST', body=body, headers=headers)
     if resp.status == 200:
@@ -218,6 +219,8 @@ class OAuth2Credentials(Credentials):
           self._invalid = True
           if self.store is not None:
             self.store(self)
+          else:
+            logging.warning("Unable to store refreshed credentials, no Storage provided.")
       except:
         pass
       raise AccessTokenRefreshError(error_msg)

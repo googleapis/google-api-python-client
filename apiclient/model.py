@@ -22,7 +22,10 @@ from errors import HttpError
 FLAGS = gflags.FLAGS
 
 gflags.DEFINE_boolean('dump_request_response', False,
-                     'Dump all http server requests and responses.')
+                     'Dump all http server requests and responses. '
+                     'Must use apiclient.model.LoggingJsonModel as '
+                     'the model.'
+                     )
 
 
 def _abstract():

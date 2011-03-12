@@ -12,6 +12,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import gflags
 import httplib2
+import logging
 import sys
 
 from apiclient.discovery import build
@@ -20,6 +21,16 @@ from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.tools import run
 
 FLAGS = gflags.FLAGS
+FLOW = OAuth2WebServerFlow(
+    client_id='433807057907.apps.googleusercontent.com',
+    client_secret='jigtZpMApkRxncxikFpR+SFg',
+    scope='https://www.googleapis.com/auth/moderator',
+    user_agent='moderator-cmdline-sample/1.0')
+
+gflags.DEFINE_enum('logging_level', 'ERROR',
+    ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+    'Set the level of logging detail.')
+
 
 def main(argv):
   try:
@@ -28,17 +39,13 @@ def main(argv):
     print '%s\\nUsage: %s ARGS\\n%s' % (e, argv[0], FLAGS)
     sys.exit(1)
 
+  logging.getLogger().setLevel(getattr(logging, FLAGS.logging_level))
+
   storage = Storage('moderator.dat')
   credentials = storage.get()
 
   if credentials is None or credentials.invalid == True:
-    flow = OAuth2WebServerFlow(
-        client_id='433807057907.apps.googleusercontent.com',
-        client_secret='jigtZpMApkRxncxikFpR+SFg',
-        scope='https://www.googleapis.com/auth/moderator',
-        user_agent='moderator-cmdline-sample/1.0')
-
-    credentials = run(flow, storage)
+    credentials = run(FLOW, storage)
 
   http = httplib2.Http(cache=".cache")
   http = credentials.authorize(http)
