@@ -99,12 +99,12 @@ class SimpleWrapperRemoteTest(unittest.TestCase):
   def test_can_post_without_user_id(self):
     url = self.wrapper.post('test message')
     self.assertTrue(url is not None)
-    self.assertTrue(url.startswith('http://www.google.com/buzz/'))
+    self.assertTrue(url.startswith('https://profiles.google.com/'), url)
 
   def test_can_post_with_user_id(self):
     url = self.wrapper.post('test message', '108242092577082601423')
     self.assertTrue(url is not None)
-    self.assertTrue(url.startswith('http://www.google.com/buzz/'))
+    self.assertTrue(url.startswith('https://profiles.google.com/'), url)
 
   def test_wrapper_returns_positive_value_for_hidden_follower_count_when_authorised(self):
     count = self.wrapper.get_follower_count(user_id='108242092577082601423')

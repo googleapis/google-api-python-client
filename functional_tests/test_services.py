@@ -99,7 +99,7 @@ class BuzzFunctionalTest(unittest.TestCase):
     self.assertEquals('buzz#person', person['kind'])
     self.assertEquals('Google Buzz Team', person['displayName'])
     self.assertEquals('111062888259659218284', person['id'])
-    self.assertEquals('http://www.google.com/profiles/googlebuzz', person['profileUrl'])
+    self.assertEquals('https://profiles.google.com/googlebuzz', person['profileUrl'])
 
   def test_can_get_user_profile_using_numeric_identifier(self):
     buzz = build('buzz', 'v1')
@@ -109,7 +109,7 @@ class BuzzFunctionalTest(unittest.TestCase):
     self.assertEquals('buzz#person', person['kind'])
     self.assertEquals('Test Account', person['displayName'])
     self.assertEquals('108242092577082601423', person['id'])
-    self.assertEquals('http://www.google.com/profiles/108242092577082601423', person['profileUrl'])
+    self.assertEquals('https://profiles.google.com/108242092577082601423', person['profileUrl'])
 
   def test_can_get_followees_of_user(self):
     buzz = build('buzz', 'v1')
