@@ -47,7 +47,7 @@ long_desc = """The Google API Client for Python is a client library for
 accessing the Buzz, Moderator, and Latitude APIs."""
 
 setup(name="google-api-python-client",
-      version="1.0alpha2",
+      version="1.0alpha3",
       description="Google API Client Library for Python",
       long_description=long_desc,
       author="Joe Gregorio",
