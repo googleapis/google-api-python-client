@@ -18,33 +18,31 @@
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 
+import httplib2
 import inspect
+import os
 import pydoc
 import re
 
 from apiclient.discovery import build
-
+from apiclient.anyjson import simplejson
+from google.appengine.api import memcache
 from google.appengine.ext import webapp
+from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
 
 
 class MainHandler(webapp.RequestHandler):
 
   def get(self):
-    self.response.out.write("""
-    <h1>Google API Client for Python Documentation</h1>
-    <ul>
-      <li><a href='/buzz/v1'>buzz</a>
-      <li><a href='/moderator/v1'>moderator</a>
-      <li><a href='/latitude/v1'>latitude</a>
-      <li><a href='/customsearch/v1'>customsearch</a>
-      <li><a href='/diacritize/v1'>diacritize</a>
-      <li><a href='/translate/v2'>translate</a>
-      <li><a href='/prediction/v1.1'>prediction</a>
-      <li><a href='/shopping/v1'>shopping</a>
-      <li><a href='/urlshortener/v1'>urlshortener</a>
-    </ul>
-    """)
+    http = httplib2.Http(memcache)
+    resp, content = http.request('https://www.googleapis.com/discovery/v0.3/directory?preferred=true')
+    directory = simplejson.loads(content)['items']
+    path = os.path.join(os.path.dirname(__file__), 'index.html')
+    self.response.out.write(
+        template.render(
+            path, {'directory': directory,
+                   }))
 
 
 def render(resource):
