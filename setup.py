@@ -28,10 +28,10 @@ packages = [
   'apiclient.contrib.buzz',
   'apiclient.contrib.latitude',
   'apiclient.contrib.moderator',
-  'uritemplate'
+  'uritemplate',
 ]
 
-third_party_reqs = ['httplib2', 'oauth2']
+third_party_reqs = ['httplib2']
 
 # Don't clobber installed versions of third party libraries
 # with what we include.
@@ -47,7 +47,7 @@ long_desc = """The Google API Client for Python is a client library for
 accessing the Buzz, Moderator, and Latitude APIs."""
 
 setup(name="google-api-python-client",
-      version="1.0alpha1",
+      version="1.0alpha2",
       description="Google API Client Library for Python",
       long_description=long_desc,
       author="Joe Gregorio",
@@ -58,6 +58,7 @@ setup(name="google-api-python-client",
         'apiclient': ['contrib/*/*.json']
         },
       license="Apache 2.0",
+      install_requires = ['python-gflags', 'oauth2'],
       keywords="google api client",
       classifiers=['Development Status :: 3 - Alpha',
                    'Intended Audience :: Developers',
