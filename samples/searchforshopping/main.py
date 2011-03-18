@@ -26,7 +26,7 @@ def main():
   res = p.products().list(
       country='US',
       source='public',
-      q='android tshirt'
+      q='android t-shirt'
       ).execute()
   print_items(res['items'])
 
@@ -35,29 +35,37 @@ def main():
   print 'Searching Google Store.'
   res = p.products().list(
       country='US',
-      source='mc:5968952',
-      q='android tshirt'
+      source='public',
+      q='android t-shirt',
+      restrictBy='accountId:5968952',
       ).execute()
   print_items(res['items'])
 
-  # Get data for a single public offer:
+  # Remember the Google Id of the last product
+  googleId = res['items'][0]['product']['googleId']
+
+  # Get data for the single public offer:
   print
-  print 'Getting data for offer 8749318160742051003'
+  print 'Getting data for offer %s' % googleId
   res = p.products().get(
-      source='mc:5968952',
+      source='public',
       accountId='5968952',
       productIdType='gid',
-      productId='8749318160742051003'
+      productId=googleId
       ).execute()
   print_item(res)
 
 
 def print_item(item):
+  """Displays a single item: title, merchant, link."""
   product = item['product']
-  print '%s (%s)' % (product['title'], product['link'])
+  print '- %s [%s] (%s)' % (product['title'],
+                          product['author']['name'],
+                          product['link'])
 
 
 def print_items(items):
+  """Displays a number of items."""
   for item in items:
     print_item(item)
 
