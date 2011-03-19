@@ -48,7 +48,7 @@ DISCOVERY_URI = ('https://www.googleapis.com/discovery/v0.3/describe/'
 DEFAULT_METHOD_DOC = 'A description of how to use this function'
 
 # Query parameters that work, but don't appear in discovery
-STACK_QUERY_PARAMETERS = ['trace']
+STACK_QUERY_PARAMETERS = ['trace', 'fields']
 
 
 def key2param(key):
@@ -243,7 +243,7 @@ def createResource(http, baseUrl, model, requestBuilder,
           'restParameterType': 'query'
           }
 
-    if httpMethod in ['PUT', 'POST']:
+    if httpMethod in ['PUT', 'POST', 'PATCH']:
       methodDesc['parameters']['body'] = {
           'description': 'The request body.',
           'type': 'object',

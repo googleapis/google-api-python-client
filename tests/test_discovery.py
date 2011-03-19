@@ -34,6 +34,8 @@ except ImportError:
 
 from apiclient.discovery import build, key2param
 from apiclient.http import HttpMock
+from apiclient.http import tunnel_patch
+from apiclient.http import HttpMockSequence
 from apiclient.errors import HttpError
 from apiclient.errors import InvalidJsonError
 
@@ -107,8 +109,8 @@ class Discovery(unittest.TestCase):
     self.assertEqual(q['e'], ['bar'])
 
   def test_type_coercion(self):
-    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
-    zoo = build('zoo', 'v1', self.http)
+    http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http)
 
     request = zoo.query(q="foo", i=1.0, n=1.0, b=0, a=[1,2,3], o={'a':1}, e='bar')
     self._check_query_types(request)
@@ -119,13 +121,32 @@ class Discovery(unittest.TestCase):
     self._check_query_types(request)
 
   def test_optional_stack_query_parameters(self):
-    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
-    zoo = build('zoo', 'v1', self.http)
-    request = zoo.query(trace='html')
+    http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http)
+    request = zoo.query(trace='html', fields='description')
 
     parsed = urlparse.urlparse(request.uri)
     q = parse_qs(parsed[4])
     self.assertEqual(q['trace'], ['html'])
+    self.assertEqual(q['fields'], ['description'])
+
+  def test_patch(self):
+    http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http)
+    request = zoo.animals().patch(name='lion', body='{"description": "foo"}')
+
+    self.assertEqual(request.method, 'PATCH')
+
+  def test_tunnel_patch(self):
+    http = HttpMockSequence([
+      ({'status': '200'}, file(datafile('zoo.json'), 'r').read()),
+      ({'status': '200'}, 'echo_request_headers_as_json'),
+      ])
+    http = tunnel_patch(http)
+    zoo = build('zoo', 'v1', http)
+    resp = zoo.animals().patch(name='lion', body='{"description": "foo"}').execute()
+
+    self.assertTrue('x-http-method-override' in resp)
 
   def test_buzz_resources(self):
     self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
@@ -150,11 +171,11 @@ class Discovery(unittest.TestCase):
     zoo = build('zoo', 'v1', self.http)
     self.assertTrue(getattr(zoo, 'animals'))
 
-    request = zoo.animals().list(name='bat', projection="size")
+    request = zoo.animals().list(name='bat', projection="full")
     parsed = urlparse.urlparse(request.uri)
     q = parse_qs(parsed[4])
     self.assertEqual(q['name'], ['bat'])
-    self.assertEqual(q['projection'], ['size'])
+    self.assertEqual(q['projection'], ['full'])
 
   def test_nested_resources(self):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})

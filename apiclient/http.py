@@ -10,6 +10,7 @@ actuall HTTP request.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 __all__ = [
     'HttpRequest', 'RequestMockBuilder', 'HttpMock'
+    'set_user_agent', 'tunnel_patch'
     ]
 
 import httplib2
@@ -17,6 +18,7 @@ import os
 
 from model import JsonModel
 from errors import HttpError
+from anyjson import simplejson
 
 
 class HttpRequest(object):
@@ -201,6 +203,7 @@ class HttpMockSequence(object):
   behavours that are helpful in testing.
 
   'echo_request_headers' means return the request headers in the response body
+  'echo_request_headers_as_json' means return the request headers in the response body
   'echo_request_body' means return the request body in the response body
   """
 
@@ -220,13 +223,16 @@ class HttpMockSequence(object):
     resp, content = self._iterable.pop(0)
     if content == 'echo_request_headers':
       content = headers
+    elif content == 'echo_request_headers_as_json':
+      content = simplejson.dumps(headers)
     elif content == 'echo_request_body':
       content = body
     return httplib2.Response(resp), content
 
 
 def set_user_agent(http, user_agent):
-  """
+  """Set the user-agent on every request.
+
   Args:
      http - An instance of httplib2.Http
          or something that acts like it.
@@ -256,6 +262,46 @@ def set_user_agent(http, user_agent):
       headers['user-agent'] = user_agent + ' ' + headers['user-agent']
     else:
       headers['user-agent'] = user_agent
+    resp, content = request_orig(uri, method, body, headers,
+                        redirections, connection_type)
+    return resp, content
+
+  http.request = new_request
+  return http
+
+
+def tunnel_patch(http):
+  """Tunnel PATCH requests over POST.
+  Args:
+     http - An instance of httplib2.Http
+         or something that acts like it.
+
+  Returns:
+     A modified instance of http that was passed in.
+
+  Example:
+
+    h = httplib2.Http()
+    h = tunnel_patch(h, "my-app-name/6.0")
+
+  Useful if you are running on a platform that doesn't support PATCH.
+  Apply this last if you are using OAuth 1.0, as changing the method
+  will result in a different signature.
+  """
+  request_orig = http.request
+
+  # The closure that will replace 'httplib2.Http.request'.
+  def new_request(uri, method='GET', body=None, headers=None,
+                  redirections=httplib2.DEFAULT_MAX_REDIRECTS,
+                  connection_type=None):
+    """Modify the request headers to add the user-agent."""
+    if headers is None:
+      headers = {}
+    if method == 'PATCH':
+      if 'authorization' in headers and 'oauth_token' in headers['authorization']:
+        logging.warning('OAuth 1.0 request made with Credentials applied after tunnel_patch.')
+      headers['x-http-method-override'] = "PATCH"
+      method = 'POST'
     resp, content = request_orig(uri, method, body, headers,
                         redirections, connection_type)
     return resp, content
