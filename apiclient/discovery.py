@@ -336,11 +336,11 @@ def createResource(http, baseUrl, model, requestBuilder,
       # then urlparse.urljoin will strip them out This results in an incorrect
       # URL which returns a 404
       url_result = urlparse.urlsplit(self._baseUrl)
-      new_base_url = url_result.scheme + '://' + url_result.netloc
+      new_base_url = url_result[0] + '://' + url_result[1]
 
       expanded_url = uritemplate.expand(pathUrl, params)
-      url = urlparse.urljoin(new_base_url,
-                             url_result.path + expanded_url + query)
+      url = urlparse.urljoin(self._baseUrl,
+                             url_result[2] + expanded_url + query)
 
       logging.info('URL being requested: %s' % url)
       return self._requestBuilder(self._http,

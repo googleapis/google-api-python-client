@@ -11,7 +11,9 @@ docs:
 
 .PHONY: prerelease
 prerelease:
-	python runtests.py --exit_on_failure tests
+	python2.4 runtests.py --exit_on_failure
+	python2.6 runtests.py --exit_on_failure
+	python2.7 runtests.py --exit_on_failure
 	-rm dist/*
 	python setup.py clean
 	python setup.py sdist
