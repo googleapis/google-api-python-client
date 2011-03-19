@@ -21,11 +21,13 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import httplib2
 import logging
 import os
+import pickle
 
 from apiclient.discovery import build
-from apiclient.ext.appengine import FlowThreeLeggedProperty
-from apiclient.ext.appengine import OAuthCredentialsProperty
-from apiclient.oauth import FlowThreeLegged
+from oauth2client.appengine import CredentialsProperty
+from oauth2client.appengine import StorageByKeyName
+from oauth2client.client import OAuth2WebServerFlow
+from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
@@ -34,13 +36,8 @@ from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp.util import login_required
 
 
-class Flow(db.Model):
-  # FlowThreeLegged could also be stored in memcache.
-  flow = FlowThreeLeggedProperty()
-
-
 class Credentials(db.Model):
-  credentials = OAuthCredentialsProperty()
+  credentials = CredentialsProperty()
 
 
 class MainHandler(webapp.RequestHandler):
@@ -48,16 +45,32 @@ class MainHandler(webapp.RequestHandler):
   @login_required
   def get(self):
     user = users.get_current_user()
-    c = Credentials.get_by_key_name(user.user_id())
+    credentials = StorageByKeyName(
+        Credentials, user.user_id(), 'credentials').get()
 
-    if c:
+    if credentials is None or credentials.invalid == True:
+      flow = OAuth2WebServerFlow(
+          # Visit https://code.google.com/apis/console to
+          # generate your client_id, client_secret and to
+          # register your redirect_uri.
+          client_id='<YOUR CLIENT ID HERE>',
+          client_secret='<YOUR CLIENT SECRET HERE>',
+          scope='https://www.googleapis.com/auth/buzz',
+          user_agent='buzz-cmdline-sample/1.0',
+          domain='anonymous',
+          xoauth_displayname='Google App Engine Example App')
+
+      callback = self.request.relative_url('/auth_return')
+      authorize_url = flow.step1_get_authorize_url(callback)
+      memcache.set(user.user_id(), pickle.dumps(flow))
+      self.redirect(authorize_url)
+    else:
       http = httplib2.Http()
-      http = c.credentials.authorize(http)
+      http = credentials.authorize(http)
       service = build("buzz", "v1", http=http)
       activities = service.activities()
       activitylist = activities.list(scope='@consumption',
                                      userId='@me').execute()
-      logging.info(activitylist)
       path = os.path.join(os.path.dirname(__file__), 'welcome.html')
       logout = users.create_logout_url('/')
       self.response.out.write(
@@ -65,21 +78,6 @@ class MainHandler(webapp.RequestHandler):
               path, {'activitylist': activitylist,
                      'logout': logout
                      }))
-    else:
-      p = build("buzz", "v1")
-      flow = FlowThreeLegged(p.auth_discovery(),
-                     consumer_key='anonymous',
-                     consumer_secret='anonymous',
-                     user_agent='google-api-client-python-buzz-webapp/1.0',
-                     domain='anonymous',
-                     scope='https://www.googleapis.com/auth/buzz',
-                     xoauth_displayname='Example Web App')
-
-      callback = self.request.relative_url('/auth_return')
-      authorize_url = flow.step1_get_authorize_url(callback)
-      f = Flow(key_name=user.user_id(), flow=flow)
-      f.put()
-      self.redirect(authorize_url)
 
 
 class OAuthHandler(webapp.RequestHandler):
@@ -87,12 +85,11 @@ class OAuthHandler(webapp.RequestHandler):
   @login_required
   def get(self):
     user = users.get_current_user()
-    f = Flow.get_by_key_name(user.user_id())
-    if f:
-      credentials = f.flow.step2_exchange(self.request.params)
-      c = Credentials(key_name=user.user_id(), credentials=credentials)
-      c.put()
-      f.delete()
+    flow = pickle.loads(memcache.get(user.user_id()))
+    if flow:
+      credentials = flow.step2_exchange(self.request.params)
+      StorageByKeyName(
+          Credentials, user.user_id(), 'credentials').put(credentials)
       self.redirect("/")
     else:
       pass

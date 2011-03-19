@@ -5,23 +5,23 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.db import models
 
-from apiclient.ext.django_orm import FlowThreeLeggedField
-from apiclient.ext.django_orm import OAuthCredentialsField
+from oauth2client.django_orm import FlowField
+from oauth2client.django_orm import CredentialsField
 
 # The Flow could also be stored in memcache since it is short lived.
 
 
-class Flow(models.Model):
+class FlowModel(models.Model):
   id = models.ForeignKey(User, primary_key=True)
-  flow = FlowThreeLeggedField()
+  flow = FlowField()
 
 
-class Credential(models.Model):
+class CredentialsModel(models.Model):
   id = models.ForeignKey(User, primary_key=True)
-  credential = OAuthCredentialsField()
+  credential = CredentialsField()
 
 
-class CredentialAdmin(admin.ModelAdmin):
+class CredentialsAdmin(admin.ModelAdmin):
     pass
 
 
@@ -29,5 +29,5 @@ class FlowAdmin(admin.ModelAdmin):
     pass
 
 
-admin.site.register(Credential, CredentialAdmin)
-admin.site.register(Flow, FlowAdmin)
+admin.site.register(CredentialsModel, CredentialsAdmin)
+admin.site.register(FlowModel, FlowAdmin)
