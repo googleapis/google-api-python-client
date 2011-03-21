@@ -35,7 +35,7 @@ third_party_reqs = ['httplib2']
 
 # Don't clobber installed versions of third party libraries
 # with what we include.
-packages.extend(setup_utils.get_missing_requirements(third_party_reqs ))
+packages.extend(setup_utils.get_missing_requirements(third_party_reqs))
 
 try:
   # Some people prefer setuptools, and may have that installed
@@ -47,7 +47,7 @@ long_desc = """The Google API Client for Python is a client library for
 accessing the Buzz, Moderator, and Latitude APIs."""
 
 setup(name="google-api-python-client",
-      version="1.0alpha3",
+      version="1.0alpha4",
       description="Google API Client Library for Python",
       long_description=long_desc,
       author="Joe Gregorio",
@@ -65,4 +65,3 @@ setup(name="google-api-python-client",
                    'License :: OSI Approved :: Apache Software License',
                    'Operating System :: POSIX',
                    'Topic :: Internet :: WWW/HTTP'])
-

@@ -18,7 +18,7 @@
 __author__ = 'tom.h.miller@gmail.com (Tom Miller)'
 
 
-def get_missing_requirements(third_party_reqs ):
+def get_missing_requirements(third_party_reqs):
   """Return a list of missing third party packages."""
   import sys
 
@@ -30,7 +30,10 @@ def get_missing_requirements(third_party_reqs ):
     sys.path.remove('')
   except ValueError:
     import os.path
-    sys.path.remove(os.path.abspath(os.path.curdir))
+    try:
+      sys.path.remove(os.path.abspath(os.path.curdir))
+    except ValueError:
+      pass
   missing_pkgs = []
   for pkg in third_party_reqs:
     try:
