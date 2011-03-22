@@ -48,7 +48,7 @@ DISCOVERY_URI = ('https://www.googleapis.com/discovery/v0.3/describe/'
 DEFAULT_METHOD_DOC = 'A description of how to use this function'
 
 # Query parameters that work, but don't appear in discovery
-STACK_QUERY_PARAMETERS = ['trace', 'fields']
+STACK_QUERY_PARAMETERS = ['trace', 'fields', 'pp', 'prettyPrint', 'userIp', 'strict']
 
 
 def key2param(key):

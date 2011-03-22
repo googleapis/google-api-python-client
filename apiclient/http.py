@@ -203,7 +203,8 @@ class HttpMockSequence(object):
   behavours that are helpful in testing.
 
   'echo_request_headers' means return the request headers in the response body
-  'echo_request_headers_as_json' means return the request headers in the response body
+  'echo_request_headers_as_json' means return the request headers in
+     the response body
   'echo_request_body' means return the request body in the response body
   """
 
@@ -299,7 +300,8 @@ def tunnel_patch(http):
       headers = {}
     if method == 'PATCH':
       if 'authorization' in headers and 'oauth_token' in headers['authorization']:
-        logging.warning('OAuth 1.0 request made with Credentials applied after tunnel_patch.')
+        logging.warning(
+            'OAuth 1.0 request made with Credentials applied after tunnel_patch.')
       headers['x-http-method-override'] = "PATCH"
       method = 'POST'
     resp, content = request_orig(uri, method, body, headers,
