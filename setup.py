@@ -31,7 +31,7 @@ packages = [
   'uritemplate',
 ]
 
-third_party_reqs = ['httplib2']
+third_party_reqs = ['httplib2', 'gflags', 'gflags_validators']
 
 # Don't clobber installed versions of third party libraries
 # with what we include.
@@ -47,7 +47,7 @@ long_desc = """The Google API Client for Python is a client library for
 accessing the Buzz, Moderator, and Latitude APIs."""
 
 setup(name="google-api-python-client",
-      version="1.0alpha4",
+      version="1.0alpha5",
       description="Google API Client Library for Python",
       long_description=long_desc,
       author="Joe Gregorio",
