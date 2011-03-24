@@ -20,6 +20,8 @@ are not already installed.
 
 import setup_utils
 
+# Modules, not packages, that might need to be installed.
+
 packages = [
   'apiclient',
   'oauth2client',
@@ -30,12 +32,15 @@ packages = [
   'apiclient.contrib.moderator',
   'uritemplate',
 ]
+py_modules = []
 
-third_party_reqs = ['httplib2', 'gflags', 'gflags_validators']
+third_party_packages = ['httplib2']
+third_party_modules = ['gflags', 'gflags_validators']
 
 # Don't clobber installed versions of third party libraries
 # with what we include.
-packages.extend(setup_utils.get_missing_requirements(third_party_reqs))
+packages.extend(setup_utils.get_missing_requirements(third_party_packages))
+py_modules.extend(setup_utils.get_missing_requirements(third_party_modules))
 
 try:
   # Some people prefer setuptools, and may have that installed
@@ -54,6 +59,7 @@ setup(name="google-api-python-client",
       author_email="jcgregorio@google.com",
       url="http://code.google.com/p/google-api-python-client/",
       packages=packages,
+      py_modules=py_modules,
       package_data={
         'apiclient': ['contrib/*/*.json']
         },
