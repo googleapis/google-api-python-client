@@ -87,7 +87,7 @@ class Storage(object):
     """Retrieve credential.
 
     Returns:
-      apiclient.oauth.Credentials
+      oauth2client.client.Credentials
     """
     _abstract()
 

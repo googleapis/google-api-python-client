@@ -299,9 +299,9 @@ def tunnel_patch(http):
     if headers is None:
       headers = {}
     if method == 'PATCH':
-      if 'authorization' in headers and 'oauth_token' in headers['authorization']:
+      if 'oauth_token' in headers.get('authorization', ''):
         logging.warning(
-            'OAuth 1.0 request made with Credentials applied after tunnel_patch.')
+            'OAuth 1.0 request made with Credentials after tunnel_patch.')
       headers['x-http-method-override'] = "PATCH"
       method = 'POST'
     resp, content = request_orig(uri, method, body, headers,

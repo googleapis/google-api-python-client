@@ -34,7 +34,7 @@ packages = [
 ]
 py_modules = []
 
-third_party_packages = ['httplib2']
+third_party_packages = ['httplib2', 'oauth2']
 third_party_modules = ['gflags', 'gflags_validators']
 
 # Don't clobber installed versions of third party libraries
@@ -52,7 +52,7 @@ long_desc = """The Google API Client for Python is a client library for
 accessing the Buzz, Moderator, and Latitude APIs."""
 
 setup(name="google-api-python-client",
-      version="1.0alpha5",
+      version="1.0alpha6",
       description="Google API Client Library for Python",
       long_description=long_desc,
       author="Joe Gregorio",
@@ -64,7 +64,6 @@ setup(name="google-api-python-client",
         'apiclient': ['contrib/*/*.json']
         },
       license="Apache 2.0",
-      install_requires = ['python-gflags', 'oauth2'],
       keywords="google api client",
       classifiers=['Development Status :: 3 - Alpha',
                    'Intended Audience :: Developers',

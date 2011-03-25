@@ -30,7 +30,7 @@ import socket
 import sys
 
 from optparse import OptionParser
-from apiclient.oauth import RequestError
+from client import FlowExchangeError
 
 try:
     from urlparse import parse_qsl
@@ -140,7 +140,7 @@ def run(flow, storage):
 
   try:
     credentials = flow.step2_exchange(code)
-  except RequestError:
+  except FlowExchangeError:
     sys.exit('The authentication has failed.')
 
   storage.put(credentials)
