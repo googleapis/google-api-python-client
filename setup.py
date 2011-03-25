@@ -42,17 +42,14 @@ third_party_modules = ['gflags', 'gflags_validators']
 packages.extend(setup_utils.get_missing_requirements(third_party_packages))
 py_modules.extend(setup_utils.get_missing_requirements(third_party_modules))
 
-try:
-  # Some people prefer setuptools, and may have that installed
-  from setuptools import setup
-except ImportError:
-  from distutils.core import setup
+# It appears setuptools can't have packages and py_modules, but this project does.
+from distutils.core import setup
 
 long_desc = """The Google API Client for Python is a client library for
 accessing the Buzz, Moderator, and Latitude APIs."""
 
 setup(name="google-api-python-client",
-      version="1.0alpha8",
+      version="1.0alpha9",
       description="Google API Client Library for Python",
       long_description=long_desc,
       author="Joe Gregorio",
