@@ -17,10 +17,14 @@
 Also installs included versions of third party libraries, if those libraries
 are not already installed.
 """
-
 import setup_utils
 
-# Modules, not packages, that might need to be installed.
+has_setuptools = False
+try:
+  from setuptools import setup
+  has_setuptools = True
+except ImportError:
+  from distutils.core import setup
 
 packages = [
   'apiclient',
@@ -32,29 +36,41 @@ packages = [
   'apiclient.contrib.moderator',
   'uritemplate',
 ]
+
+install_requires = []
 py_modules = []
 
-third_party_packages = ['httplib2', 'oauth2']
-third_party_modules = ['gflags', 'gflags_validators']
 
-# Don't clobber installed versions of third party libraries
-# with what we include.
-packages.extend(setup_utils.get_missing_requirements(third_party_packages))
-py_modules.extend(setup_utils.get_missing_requirements(third_party_modules))
+# (module to test for, install_requires to add if missing, packages to add if missing, py_modules to add if missing)
+REQUIREMENTS = [
+  ('httplib2', 'httplib2', 'httplib2', None),
+  ('oauth2', 'oauth2', 'oauth2', None),
+  ('gflags', 'python-gflags', None, ['gflags', 'gflags_validators']),
+  (['json', 'simplejson', 'django.utils'], 'simplejson', 'simplejson', None)
+]
 
-# It appears setuptools can't have packages and py_modules, but this project does.
-from distutils.core import setup
+for import_name, requires, package, modules in REQUIREMENTS:
+  if setup_utils.is_missing(import_name):
+    if has_setuptools:
+      install_requires.append(requires)
+    else:
+      if package is not None:
+        packages.append(package)
+      else:
+        py_modules.extend(modules)
+
 
 long_desc = """The Google API Client for Python is a client library for
 accessing the Buzz, Moderator, and Latitude APIs."""
 
 setup(name="google-api-python-client",
-      version="1.0alpha9",
+      version="1.0alpha10",
       description="Google API Client Library for Python",
       long_description=long_desc,
       author="Joe Gregorio",
       author_email="jcgregorio@google.com",
       url="http://code.google.com/p/google-api-python-client/",
+      install_requires=install_requires,
       packages=packages,
       py_modules=py_modules,
       package_data={

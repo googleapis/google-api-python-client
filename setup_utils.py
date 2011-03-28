@@ -17,11 +17,13 @@
 
 __author__ = 'tom.h.miller@gmail.com (Tom Miller)'
 
+import sys
 
-def get_missing_requirements(third_party_reqs):
-  """Return a list of missing third party packages."""
-  import sys
 
+def is_missing(packages):
+  """Return True if a package can't be imported."""
+
+  retval = True
   sys_path_original = sys.path[:]
   # Remove the current directory from the list of paths to check when
   # importing modules.
@@ -34,55 +36,17 @@ def get_missing_requirements(third_party_reqs):
       sys.path.remove(os.path.abspath(os.path.curdir))
     except ValueError:
       pass
-  missing_pkgs = []
-  for pkg in third_party_reqs:
+  if not isinstance(packages, type([])):
+    packages = [packages]
+  for name in packages:
     try:
-      __import__(pkg)
+      __import__(name)
+      retval = False
     except ImportError:
-      missing_pkgs.append(pkg)
-  # JSON support gets its own special logic
-  try:
-    import_json(sys.path)
-  except ImportError:
-    missing_pkgs.append('simplejson')
+      retval = True
+    if retval == False:
+      break
 
   sys.path = sys_path_original
-  return missing_pkgs
 
-
-def import_json(import_path=None):
-  """Return a package that will provide JSON support.
-
-  Args:
-    import_path: list Value to assing to sys.path before checking for packages.
-                 Default None for default sys.path.
-  Return:
-    A package, one of 'json' (if running python 2.6),
-                      'django.utils.simplejson' (if django is installed)
-                      'simplejson' (if third party library simplejson is found)
-  Raises:
-    ImportError if none of those packages are found.
-  """
-  import sys
-  sys_path_orig = sys.path[:]
-  if import_path is not None:
-    sys.path = import_path
-
-  try:
-    # Should work for Python 2.6.
-    pkg = __import__('json')
-  except ImportError:
-    try:
-      pkg = __import__('django.utils').simplejson
-    except ImportError:
-      try:
-        pkg = __import__('simplejson')
-      except ImportError:
-        pkg = None
-
-  if import_path is not None:
-    sys.path = sys_path_orig
-  if pkg:
-    return pkg
-  else:
-    raise ImportError('Cannot find json support')
+  return retval
