@@ -17,7 +17,6 @@
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-
 import httplib2
 import inspect
 import os

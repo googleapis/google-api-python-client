@@ -1,22 +1,31 @@
+#!/usr/bin/env python
+#
+# Copyright 2007 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+__author__ = 'jcgregorio@google.com (Joe Gregorio)'
+
 import os
 import pydoc
 import re
+import sys
+import httplib2
 
+from apiclient.anyjson import simplejson
 from apiclient.discovery import build
 
 BASE = 'docs/dyn'
-
-APIS = [
-      ('buzz', 'v1'),
-      ('moderator', 'v1'),
-      ('latitude', 'v1'),
-      ('customsearch', 'v1'),
-      ('diacritize', 'v1'),
-      ('translate', 'v2'),
-      ('prediction', 'v1.1'),
-      ('shopping', 'v1'),
-      ('urlshortener', 'v1'),
-      ]
 
 def document(resource, path):
   print path
@@ -44,6 +53,11 @@ def document_api(name, version):
   document(service, '%s.%s.' % (name, version))
 
 if __name__ == '__main__':
-  for name, version in APIS:
-    document_api(name, version)
-
+  http = httplib2.Http()
+  resp, content = http.request('https://www.googleapis.com/discovery/v0.3/directory?preferred=true')
+  if resp.status == 200:
+    directory = simplejson.loads(content)['items']
+    for api in directory:
+      document_api(api['name'], api['version'])
+  else:
+    sys.exit("Failed to load the discovery document.")
