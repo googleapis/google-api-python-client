@@ -16,9 +16,12 @@
 
 """Copy the sources for google-api-python-client into an App Engine project.
 
-Copies, or symbolically links the sources of the google-api-python-client
+Copies the sources of the google-api-python-client
 library into a Google App Engine project. This is necessary so that the
 source can be uploaded when the application is deployed.
+
+  $ enable-app-engine-project [flags] directory
+
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
@@ -53,6 +56,15 @@ gflags.DEFINE_boolean('force', 'False',
 gflags.DEFINE_boolean('dry_run', 'False', 'Don\'t actually do anything.')
 
 def find_source(module):
+  """Find the absolute path for the source of a module.
+
+  Args:
+    module: str, Name of the module.
+  Returns:
+    A tuple of (isdir, location), a boolean indicating if it
+    is a directory (True) or a single file module (False), and
+    the absolute path of the source.
+  """
   isdir = False
   location = ''
   m = __import__(module)
@@ -71,7 +83,11 @@ def main(argv):
   try:
     argv = FLAGS(argv)
   except gflags.FlagsError, e:
-    print '%s\\nUsage: %s ARGS\\n%s' % (e, argv[0], FLAGS)
+    print '%s\nUsage: %s ARGS\n%s' % (e, argv[0], FLAGS)
+    sys.exit(1)
+
+  if len(argv) == 1:
+    print 'Usage: %s ARGS\n%s' % (argv[0], FLAGS)
     sys.exit(1)
 
   # Set the logging according to the command-line flag
@@ -82,7 +98,7 @@ def main(argv):
     # Check if the supplied directory is an App Engine project by looking
     # for an app.yaml
     if not os.path.isfile(os.path.join(dir, 'app.yaml')):
-      sys.exit('The given directory is not a Google App Engine project: %s', dir)
+      sys.exit('The given directory is not a Google App Engine project: %s' % dir)
 
 
     # Build up the set of file or directory copying actions we need to do
@@ -105,10 +121,10 @@ def main(argv):
         if isdir:
           results = copy_tree(src, dst, FLAGS.dry_run)
           for filename in results:
-            logging.info('Copied to: %s' % filename)
+            print 'Copied: %s' % filename
         else:
           filename, copied = copy_file(src, dst, FLAGS.dry_run)
-          logging.info('Copied to: %s Successfully: %s' % (filename, copied))
+          print 'Copied: %s Successfully: %s' % (filename, copied)
     except DistutilsFileError, e:
       sys.exit(str(e))
 

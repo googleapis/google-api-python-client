@@ -14,9 +14,11 @@ prerelease:
 	python2.4 runtests.py tests --exit_on_failure
 	python2.6 runtests.py tests --exit_on_failure
 	python2.7 runtests.py tests --exit_on_failure
-	-rm -rf dist/*
-	python setup.py clean
-	python setup.py sdist --formats=gztar,zip
+	-sudo rm -rf dist/
+	-sudo rm -rf snapshot/
+	python expand-symlinks.py
+	cd snapshot; python setup.py clean
+	cd snapshot; python setup.py sdist --formats=gztar,zip
 
 .PHONY: release
 release: prerelease
@@ -24,7 +26,7 @@ release: prerelease
 	@echo "Are you sure you want to proceed? (yes/no)"
 	@read yn; [ "yes" == $$yn ]
 	@echo "Here we go..."
-	python setup.py sdist --formats=gztar,zip register upload
+	cd snapshot; python setup.py sdist --formats=gztar,zip register upload
 	wget "http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py" -O googlecode_upload.py
-	python googlecode_upload.py --summary="Version $(shell python setup.py --version)" --project=google-api-python-client dist/*.tar.gz
-	python googlecode_upload.py --summary="Version $(shell python setup.py --version)" --project=google-api-python-client dist/*.zip
+	python googlecode_upload.py --summary="Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.tar.gz
+	python googlecode_upload.py --summary="Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.zip
