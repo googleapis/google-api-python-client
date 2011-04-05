@@ -41,10 +41,10 @@ def main(argv):
   logging.getLogger().setLevel(getattr(logging, FLAGS.logging_level))
 
   for dirname in os.listdir(FLAGS.sample_root):
+    fulldirname = os.path.join(FLAGS.sample_root, dirname)
     if dirname in FLAGS.samples_to_skip:
       logging.debug('Skipping ' + fulldirname + ' (blacklist)')
       continue
-    fulldirname = os.path.join(FLAGS.sample_root, dirname)
     filelist = os.listdir(fulldirname)
     if 'settings.py' in filelist and 'manage.py' in filelist:
       logging.info(fulldirname + ' [Django]')
@@ -99,4 +99,3 @@ def main(argv):
 
 if __name__ == '__main__':
   main(sys.argv)
-
