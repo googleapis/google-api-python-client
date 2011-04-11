@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Starting template for Google App Engine applications.
+
+Use this project as a starting point if you are just beginning to build a Google
+App Engine project. Remember to fill in the OAuth 2.0 client_id, client_secret
+and the developer key, all of which can be obtained from the Developer Console
+<https://code.google.com/apis/console/>
+"""
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -24,22 +31,34 @@ import os
 import pickle
 
 from apiclient.discovery import build
-from apiclient.ext.appengine import FlowThreeLeggedProperty
-from apiclient.ext.appengine import OAuthCredentialsProperty
-from apiclient.ext.appengine import StorageByKeyName
-from apiclient.oauth import FlowThreeLegged
+from oauth2client.appengine import CredentialsProperty
+from oauth2client.appengine import StorageByKeyName
+from oauth2client.client import OAuth2WebServerFlow
 from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
+from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp.util import login_required
 
-APP_ID = os.environ['APPLICATION_ID']
+# Set up a Flow object to be used if we need to authenticate. This
+# sample uses OAuth 2.0, and we set up the OAuth2WebServerFlow with
+# the information it needs to authenticate. Note that it is called
+# the Web Server Flow, but it can also handle the flow for native
+# applications <http://code.google.com/apis/accounts/docs/OAuth2.html#IA>
+# The client_id and client_secret are copied from the Identity tab on
+# the Google APIs Console <http://code.google.com/apis/console>
+
+FLOW = OAuth2WebServerFlow(
+    client_id='<client id goes here>',
+    client_secret='<client secret goes here>',
+    scope='https://www.googleapis.com/auth/buzz',
+    user_agent='my-sample-app/1.0')
 
 
 class Credentials(db.Model):
-  credentials = OAuthCredentialsProperty()
+  credentials = CredentialsProperty()
 
 
 class MainHandler(webapp.RequestHandler):
@@ -47,37 +66,36 @@ class MainHandler(webapp.RequestHandler):
   @login_required
   def get(self):
     user = users.get_current_user()
-    storage = StorageByKeyName(Credentials, user.user_id(), 'credentials')
-    http = httplib2.Http()
-    credentials = storage.get()
+    credentials = StorageByKeyName(
+        Credentials, user.user_id(), 'credentials').get()
 
-    if credentials:
-      http = credentials.authorize(http)
+    if not credentials or credentials.invalid:
+      return begin_oauth_flow(self, user)
 
-    service = build("buzz", "v1", http=http)
+    http = credentials.authorize(httplib2.Http())
 
-    if not credentials:
-      return begin_oauth_flow(self, user, service)
-
+    # Build a service object for interacting with the API. Visit
+    # the Google APIs Console <http://code.google.com/apis/console>
+    # to get a developerKey for your own application.
+    service = build("buzz", "v1", http=http,
+              developerKey="<developer key goes here>")
     followers = service.people().list(
         userId='@me', groupId='@followers').execute()
-    self.response.out.write('Hello, you have %s followers!' %
-                            followers['totalResults'])
+    text = 'Hello, you have %s followers!' % followers['totalResults']
+
+    path = os.path.join(os.path.dirname(__file__), 'welcome.html')
+    self.response.out.write(template.render(path, {'text': text }))
 
 
-def begin_oauth_flow(request_handler, user, service):
-    flow = FlowThreeLegged(service.auth_discovery(),
-                   consumer_key='anonymous',
-                   consumer_secret='anonymous',
-                   user_agent='%s/1.0' % APP_ID,
-                   domain='anonymous',
-                   scope='https://www.googleapis.com/auth/buzz',
-                   xoauth_displayname='App Name')
-
-    callback = self.request.relative_url('/auth_return')
-    authorize_url = flow.step1_get_authorize_url(callback)
-    memcache.set(user.user_id(), pickle.dumps(flow))
-    request_handler.redirect(authorize_url)
+def begin_oauth_flow(request_handler, user):
+  callback = request_handler.request.relative_url('/auth_return')
+  authorize_url = FLOW.step1_get_authorize_url(callback)
+  # Here we are using memcache to store the flow temporarily while the user
+  # is directed to authorize our service. You could also store the flow
+  # in the datastore depending on your utilization of memcache, just remember
+  # in that case to clean up the flow after you are done with it.
+  memcache.set(user.user_id(), pickle.dumps(FLOW))
+  request_handler.redirect(authorize_url)
 
 
 class OAuthHandler(webapp.RequestHandler):
@@ -85,11 +103,19 @@ class OAuthHandler(webapp.RequestHandler):
   @login_required
   def get(self):
     user = users.get_current_user()
-    storage = StorageByKeyName(Credentials, user.user_id(), 'credentials')
     flow = pickle.loads(memcache.get(user.user_id()))
-    credentials = flow.step2_exchange(self.request.params)
-    storage.put(credentials)
-    self.redirect("/")
+    # This code should be ammended with application specific error
+    # handling. The following cases should be considered:
+    # 1. What if the flow doesn't exist in memcache? Or is corrupt?
+    # 2. What if the step2_exchange fails?
+    if flow:
+      credentials = flow.step2_exchange(self.request.params)
+      StorageByKeyName(
+          Credentials, user.user_id(), 'credentials').put(credentials)
+      self.redirect("/")
+    else:
+      # Add application specific error handling here.
+      pass
 
 
 def main():

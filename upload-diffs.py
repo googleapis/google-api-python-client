@@ -16,7 +16,7 @@
 
 """Tool for uploading diffs from a version control system to the codereview app.
 
-Usage summary: upload.py [options] [-- diff_options]
+Usage summary: upload.py [options] [-- diff_options] [path...]
 
 Diff options are passed to the diff command of the underlying system.
 
@@ -24,6 +24,8 @@ Supported version control systems:
   Git
   Mercurial
   Subversion
+  Perforce
+  CVS
 
 It is important for Git/Mercurial users to specify a tree/node/branch to diff
 against by using the '--rev' option.
@@ -36,6 +38,7 @@ import cookielib
 import fnmatch
 import getpass
 import logging
+import marshal
 import mimetypes
 import optparse
 import os
@@ -58,12 +61,26 @@ try:
 except ImportError:
   pass
 
+try:
+  import keyring
+except ImportError:
+  keyring = None
+
 # The logging verbosity:
 #  0: Errors only.
 #  1: Status messages.
 #  2: Info logs.
 #  3: Debug logs.
 verbosity = 1
+
+# The account type used for authentication.
+# This line could be changed by the review server (see handler for
+# upload.py).
+AUTH_ACCOUNT_TYPE = "GOOGLE"
+
+# URL of the default review server. As for AUTH_ACCOUNT_TYPE, this line could be
+# changed by the review server (see handler for upload.py).
+DEFAULT_REVIEW_SERVER = "codereview.appspot.com"
 
 # Max size of patch or base file.
 MAX_UPLOAD_SIZE = 900 * 1024
@@ -72,19 +89,25 @@ MAX_UPLOAD_SIZE = 900 * 1024
 VCS_GIT = "Git"
 VCS_MERCURIAL = "Mercurial"
 VCS_SUBVERSION = "Subversion"
+VCS_PERFORCE = "Perforce"
+VCS_CVS = "CVS"
 VCS_UNKNOWN = "Unknown"
 
 # whitelist for non-binary filetypes which do not start with "text/"
 # .mm (Objective-C) shows up as application/x-freemind on my Linux box.
-TEXT_MIMETYPES = ['application/javascript', 'application/x-javascript',
-                  'application/x-freemind']
+TEXT_MIMETYPES = ['application/javascript', 'application/json',
+                  'application/x-javascript', 'application/xml',
+                  'application/x-freemind', 'application/x-sh']
 
 VCS_ABBREVIATIONS = {
   VCS_MERCURIAL.lower(): VCS_MERCURIAL,
   "hg": VCS_MERCURIAL,
   VCS_SUBVERSION.lower(): VCS_SUBVERSION,
   "svn": VCS_SUBVERSION,
+  VCS_PERFORCE.lower(): VCS_PERFORCE,
+  "p4": VCS_PERFORCE,
   VCS_GIT.lower(): VCS_GIT,
+  VCS_CVS.lower(): VCS_CVS,
 }
 
 # The result of parsing Subversion's [auto-props] setting.
@@ -153,7 +176,7 @@ class AbstractRpcServer(object):
   """Provides a common interface for a simple RPC server."""
 
   def __init__(self, host, auth_function, host_override=None, extra_headers={},
-               save_cookies=False):
+               save_cookies=False, account_type=AUTH_ACCOUNT_TYPE):
     """Creates a new HttpRpcServer.
 
     Args:
@@ -166,13 +189,19 @@ class AbstractRpcServer(object):
       save_cookies: If True, save the authentication cookies to local disk.
         If False, use an in-memory cookiejar instead.  Subclasses must
         implement this functionality.  Defaults to False.
+      account_type: Account type used for authentication. Defaults to
+        AUTH_ACCOUNT_TYPE.
     """
     self.host = host
+    if (not self.host.startswith("http://") and
+        not self.host.startswith("https://")):
+      self.host = "http://" + self.host
     self.host_override = host_override
     self.auth_function = auth_function
     self.authenticated = False
     self.extra_headers = extra_headers
     self.save_cookies = save_cookies
+    self.account_type = account_type
     self.opener = self._GetOpener()
     if self.host_override:
       logging.info("Server: %s; Host: %s", self.host, self.host_override)
@@ -211,7 +240,7 @@ class AbstractRpcServer(object):
     Returns:
       The authentication token returned by ClientLogin.
     """
-    account_type = "GOOGLE"
+    account_type = self.account_type
     if self.host.endswith(".google.com"):
       # Needed for use inside Google.
       account_type = "HOSTED"
@@ -252,7 +281,7 @@ class AbstractRpcServer(object):
     # This is a dummy value to allow us to identify when we're successful.
     continue_location = "http://localhost/"
     args = {"continue": continue_location, "auth": auth_token}
-    req = self._CreateRequest("http://%s/_ah/login?%s" %
+    req = self._CreateRequest("%s/_ah/login?%s" %
                               (self.host, urllib.urlencode(args)))
     try:
       response = self.opener.open(req)
@@ -291,7 +320,9 @@ class AbstractRpcServer(object):
           print >>sys.stderr, (
               "Please go to\n"
               "https://www.google.com/accounts/DisplayUnlockCaptcha\n"
-              "and verify you are a human.  Then try again.")
+              "and verify you are a human.  Then try again.\n"
+              "If you are using a Google Apps account the URL is:\n"
+              "https://www.google.com/a/yourdomain.com/UnlockCaptcha")
           break
         if e.reason == "NotVerified":
           print >>sys.stderr, "Account not verified."
@@ -319,6 +350,7 @@ class AbstractRpcServer(object):
   def Send(self, request_path, payload=None,
            content_type="application/octet-stream",
            timeout=None,
+           extra_headers=None,
            **kwargs):
     """Sends an RPC and returns the response.
 
@@ -328,6 +360,9 @@ class AbstractRpcServer(object):
       content_type: The Content-Type header to use.
       timeout: timeout in seconds; default None i.e. no timeout.
         (Note: for large requests on OS X, the timeout doesn't work right.)
+      extra_headers: Dict containing additional HTTP headers that should be
+        included in the request (string header names mapped to their values),
+        or None to not include any additional headers.
       kwargs: Any keyword arguments are converted into query string parameters.
 
     Returns:
@@ -345,11 +380,14 @@ class AbstractRpcServer(object):
       while True:
         tries += 1
         args = dict(kwargs)
-        url = "http://%s%s" % (self.host, request_path)
+        url = "%s%s" % (self.host, request_path)
         if args:
           url += "?" + urllib.urlencode(args)
         req = self._CreateRequest(url=url, data=payload)
         req.add_header("Content-Type", content_type)
+        if extra_headers:
+          for header, value in extra_headers.items():
+            req.add_header(header, value)
         try:
           f = self.opener.open(req)
           response = f.read()
@@ -363,6 +401,11 @@ class AbstractRpcServer(object):
 ##           elif e.code >= 500 and e.code < 600:
 ##             # Server Error - try again.
 ##             continue
+          elif e.code == 301:
+            # Handle permanent redirect manually.
+            url = e.info()["location"]
+            url_loc = urlparse.urlparse(url)
+            self.host = '%s://%s' % (url_loc[0], url_loc[1])
           else:
             raise
     finally:
@@ -417,7 +460,8 @@ class HttpRpcServer(AbstractRpcServer):
     return opener
 
 
-parser = optparse.OptionParser(usage="%prog [options] [-- diff_options]")
+parser = optparse.OptionParser(
+    usage="%prog [options] [-- diff_options] [path...]")
 parser.add_option("-y", "--assume_yes", action="store_true",
                   dest="assume_yes", default=False,
                   help="Assume that the answer to yes/no questions is 'yes'.")
@@ -427,13 +471,15 @@ group.add_option("-q", "--quiet", action="store_const", const=0,
                  dest="verbose", help="Print errors only.")
 group.add_option("-v", "--verbose", action="store_const", const=2,
                  dest="verbose", default=1,
-                 help="Print info level logs (default).")
+                 help="Print info level logs.")
 group.add_option("--noisy", action="store_const", const=3,
                  dest="verbose", help="Print all logs.")
+group.add_option("--print_diffs", dest="print_diffs", action="store_true",
+                 help="Print full diffs.")
 # Review server
 group = parser.add_option_group("Review server options")
 group.add_option("-s", "--server", action="store", dest="server",
-                 default="codereview.appspot.com",
+                 default=DEFAULT_REVIEW_SERVER,
                  metavar="SERVER",
                  help=("The server to upload to. The format is host[:port]. "
                        "Defaults to '%default'."))
@@ -446,6 +492,12 @@ group.add_option("-H", "--host", action="store", dest="host",
 group.add_option("--no_cookies", action="store_false",
                  dest="save_cookies", default=True,
                  help="Do not save authentication cookies to local disk.")
+group.add_option("--account_type", action="store", dest="account_type",
+                 metavar="TYPE", default=AUTH_ACCOUNT_TYPE,
+                 choices=["GOOGLE", "HOSTED"],
+                 help=("Override the default account type "
+                       "(defaults to '%default', "
+                       "valid choices are 'GOOGLE' and 'HOSTED')."))
 # Issue
 group = parser.add_option_group("Issue options")
 group.add_option("-d", "--description", action="store", dest="description",
@@ -457,10 +509,11 @@ group.add_option("-f", "--description_file", action="store",
                  help="Optional path of a file that contains "
                       "the description when creating an issue.")
 group.add_option("-r", "--reviewers", action="store", dest="reviewers",
-                 metavar="REVIEWERS", default=",joe.gregorio@gmail.com",
+                 metavar="REVIEWERS", default="jcgregorio@google.com",
                  help="Add reviewers (comma separated email addresses).")
 group.add_option("--cc", action="store", dest="cc",
-                 metavar="CC", default="google-api-python-client@googlegroups.com",
+                 metavar="CC",
+                 default="google-api-python-client@googlegroups.com",
                  help="Add CC (comma separated email addresses).")
 group.add_option("--private", action="store_true", dest="private",
                  default=False,
@@ -487,7 +540,7 @@ group.add_option("--rev", action="store", dest="revision",
                  help="Base revision/branch/tree to diff against. Use "
                       "rev1:rev2 range to review already committed changeset.")
 group.add_option("--send_mail", action="store_true",
-                 dest="send_mail", default=True,
+                 dest="send_mail", default=False,
                  help="Send notification email to reviewers.")
 group.add_option("--vcs", action="store", dest="vcs",
                  metavar="VCS", default=None,
@@ -496,10 +549,34 @@ group.add_option("--vcs", action="store", dest="vcs",
 group.add_option("--emulate_svn_auto_props", action="store_true",
                  dest="emulate_svn_auto_props", default=False,
                  help=("Emulate Subversion's auto properties feature."))
+# Perforce-specific
+group = parser.add_option_group("Perforce-specific options "
+                                "(overrides P4 environment variables)")
+group.add_option("--p4_port", action="store", dest="p4_port",
+                 metavar="P4_PORT", default=None,
+                 help=("Perforce server and port (optional)"))
+group.add_option("--p4_changelist", action="store", dest="p4_changelist",
+                 metavar="P4_CHANGELIST", default=None,
+                 help=("Perforce changelist id"))
+group.add_option("--p4_client", action="store", dest="p4_client",
+                 metavar="P4_CLIENT", default=None,
+                 help=("Perforce client/workspace"))
+group.add_option("--p4_user", action="store", dest="p4_user",
+                 metavar="P4_USER", default=None,
+                 help=("Perforce user"))
 
-
-def GetRpcServer(options):
+def GetRpcServer(server, email=None, host_override=None, save_cookies=True,
+                 account_type=AUTH_ACCOUNT_TYPE):
   """Returns an instance of an AbstractRpcServer.
+
+  Args:
+    server: String containing the review server URL.
+    email: String containing user's email address.
+    host_override: If not None, string containing an alternate hostname to use
+      in the host header.
+    save_cookies: Whether authentication cookies should be saved to disk.
+    account_type: Account type for authentication, either 'GOOGLE'
+      or 'HOSTED'. Defaults to AUTH_ACCOUNT_TYPE.
 
   Returns:
     A new AbstractRpcServer, on which RPC calls can be made.
@@ -507,35 +584,48 @@ def GetRpcServer(options):
 
   rpc_server_class = HttpRpcServer
 
-  def GetUserCredentials():
-    """Prompts the user for a username and password."""
-    email = options.email
-    if email is None:
-      email = GetEmail("Email (login for uploading to %s)" % options.server)
-    password = getpass.getpass("Password for %s: " % email)
-    return (email, password)
-
   # If this is the dev_appserver, use fake authentication.
-  host = (options.host or options.server).lower()
-  if host == "localhost" or host.startswith("localhost:"):
-    email = options.email
+  host = (host_override or server).lower()
+  if re.match(r'(http://)?localhost([:/]|$)', host):
     if email is None:
       email = "test@example.com"
       logging.info("Using debug user %s.  Override with --email" % email)
     server = rpc_server_class(
-        options.server,
+        server,
         lambda: (email, "password"),
-        host_override=options.host,
+        host_override=host_override,
         extra_headers={"Cookie":
                        'dev_appserver_login="%s:False"' % email},
-        save_cookies=options.save_cookies)
+        save_cookies=save_cookies,
+        account_type=account_type)
     # Don't try to talk to ClientLogin.
     server.authenticated = True
     return server
 
-  return rpc_server_class(options.server, GetUserCredentials,
-                          host_override=options.host,
-                          save_cookies=options.save_cookies)
+  def GetUserCredentials():
+    """Prompts the user for a username and password."""
+    # Create a local alias to the email variable to avoid Python's crazy
+    # scoping rules.
+    local_email = email
+    if local_email is None:
+      local_email = GetEmail("Email (login for uploading to %s)" % server)
+    password = None
+    if keyring:
+      password = keyring.get_password(host, local_email)
+    if password is not None:
+      print "Using password from system keyring."
+    else:
+      password = getpass.getpass("Password for %s: " % local_email)
+      if keyring:
+        answer = raw_input("Store password in system keyring?(y/N) ").strip()
+        if answer == "y":
+          keyring.set_password(host, local_email, password)
+    return (local_email, password)
+
+  return rpc_server_class(server,
+                          GetUserCredentials,
+                          host_override=host_override,
+                          save_cookies=save_cookies)
 
 
 def EncodeMultipartFormData(fields, files):
@@ -558,6 +648,8 @@ def EncodeMultipartFormData(fields, files):
     lines.append('--' + BOUNDARY)
     lines.append('Content-Disposition: form-data; name="%s"' % key)
     lines.append('')
+    if isinstance(value, unicode):
+      value = value.encode('utf-8')
     lines.append(value)
   for (key, filename, value) in files:
     lines.append('--' + BOUNDARY)
@@ -565,6 +657,8 @@ def EncodeMultipartFormData(fields, files):
              (key, filename))
     lines.append('Content-Type: %s' % GetContentType(filename))
     lines.append('')
+    if isinstance(value, unicode):
+      value = value.encode('utf-8')
     lines.append(value)
   lines.append('--' + BOUNDARY + '--')
   lines.append('')
@@ -640,6 +734,11 @@ class VersionControlSystem(object):
       options: Command line options.
     """
     self.options = options
+
+  def PostProcessDiff(self, diff):
+    """Return the diff with any special post processing this VCS needs, e.g.
+    to include an svn-style "Index:"."""
+    return diff
 
   def GenerateDiff(self, args):
     """Return the current diff as a string.
@@ -799,7 +898,7 @@ class SubversionVCS(VersionControlSystem):
     return self.svn_base
 
   def _GuessBase(self, required):
-    """Returns the SVN base URL.
+    """Returns base URL for current diff.
 
     Args:
       required: If true, exits if the url can't be guessed, otherwise None is
@@ -807,36 +906,21 @@ class SubversionVCS(VersionControlSystem):
     """
     info = RunShell(["svn", "info"])
     for line in info.splitlines():
-      words = line.split()
-      if len(words) == 2 and words[0] == "URL:":
-        url = words[1]
+      if line.startswith("URL: "):
+        url = line.split()[1]
         scheme, netloc, path, params, query, fragment = urlparse.urlparse(url)
-        username, netloc = urllib.splituser(netloc)
-        if username:
-          logging.info("Removed username from base URL")
-        if netloc.endswith("svn.python.org"):
-          if netloc == "svn.python.org":
-            if path.startswith("/projects/"):
-              path = path[9:]
-          elif netloc != "pythondev@svn.python.org":
-            ErrorExit("Unrecognized Python URL: %s" % url)
-          base = "http://svn.python.org/view/*checkout*%s/" % path
-          logging.info("Guessed Python base = %s", base)
-        elif netloc.endswith("svn.collab.net"):
-          if path.startswith("/repos/"):
-            path = path[6:]
-          base = "http://svn.collab.net/viewvc/*checkout*%s/" % path
-          logging.info("Guessed CollabNet base = %s", base)
+        guess = ""
+        if netloc == "svn.python.org" and scheme == "svn+ssh":
+          path = "projects" + path
+          scheme = "http"
+          guess = "Python "
         elif netloc.endswith(".googlecode.com"):
-          path = path + "/"
-          base = urlparse.urlunparse(("http", netloc, path, params,
-                                      query, fragment))
-          logging.info("Guessed Google Code base = %s", base)
-        else:
-          path = path + "/"
-          base = urlparse.urlunparse((scheme, netloc, path, params,
-                                      query, fragment))
-          logging.info("Guessed base = %s", base)
+          scheme = "http"
+          guess = "Google Code "
+        path = path + "/"
+        base = urlparse.urlunparse((scheme, netloc, path, params,
+                                    query, fragment))
+        logging.info("Guessed %sbase = %s", guess, base)
         return base
     if required:
       ErrorExit("Can't find URL in output from svn info")
@@ -984,8 +1068,12 @@ class SubversionVCS(VersionControlSystem):
         # File does not exist in the requested revision.
         # Reset mimetype, it contains an error message.
         mimetype = ""
+      else:
+        mimetype = mimetype.strip()
       get_base = False
-      is_binary = bool(mimetype) and not mimetype.startswith("text/")
+      is_binary = (bool(mimetype) and
+        not mimetype.startswith("text/") and
+        not mimetype in TEXT_MIMETYPES)
       if status[0] == " ":
         # Empty base content just to force an upload.
         base_content = ""
@@ -1017,9 +1105,17 @@ class SubversionVCS(VersionControlSystem):
                                   universal_newlines=universal_newlines,
                                   silent_ok=True)
         else:
-          base_content = RunShell(["svn", "cat", filename],
-                                  universal_newlines=universal_newlines,
-                                  silent_ok=True)
+          base_content, ret_code = RunShellWithReturnCode(
+            ["svn", "cat", filename], universal_newlines=universal_newlines)
+          if ret_code and status[0] == "R":
+            # It's a replaced file without local history (see issue208).
+            # The base file needs to be fetched from the server.
+            url = "%s/%s" % (self.svn_base, filename)
+            base_content = RunShell(["svn", "cat", url],
+                                    universal_newlines=universal_newlines,
+                                    silent_ok=True)
+          elif ret_code:
+            ErrorExit("Got error status from 'svn cat %s'" % filename)
         if not is_binary:
           args = []
           if self.rev_start:
@@ -1048,25 +1144,12 @@ class GitVCS(VersionControlSystem):
     # Map of new filename -> old filename for renames.
     self.renames = {}
 
-  def GenerateDiff(self, extra_args):
-    # This is more complicated than svn's GenerateDiff because we must convert
-    # the diff output to include an svn-style "Index:" line as well as record
-    # the hashes of the files, so we can upload them along with our diff.
-
+  def PostProcessDiff(self, gitdiff):
+    """Converts the diff output to include an svn-style "Index:" line as well
+    as record the hashes of the files, so we can upload them along with our
+    diff."""
     # Special used by git to indicate "no such content".
     NULL_HASH = "0"*40
-
-    extra_args = extra_args[:]
-    if self.options.revision:
-      extra_args = [self.options.revision] + extra_args
-
-    # --no-ext-diff is broken in some versions of Git, so try to work around
-    # this by overriding the environment (but there is still a problem if the
-    # git config key "diff.external" is used).
-    env = os.environ.copy()
-    if 'GIT_EXTERNAL_DIFF' in env: del env['GIT_EXTERNAL_DIFF']
-    gitdiff = RunShell(["git", "diff", "--no-ext-diff", "--full-index", "-M"]
-                       + extra_args, env=env)
 
     def IsFileNew(filename):
       return filename in self.hashes and self.hashes[filename][0] is None
@@ -1119,6 +1202,22 @@ class GitVCS(VersionControlSystem):
     AddSubversionPropertyChange(filename)
     return "".join(svndiff)
 
+  def GenerateDiff(self, extra_args):
+    extra_args = extra_args[:]
+    if self.options.revision:
+      if ":" in self.options.revision:
+        extra_args = self.options.revision.split(":", 1) + extra_args
+      else:
+        extra_args = [self.options.revision] + extra_args
+
+    # --no-ext-diff is broken in some versions of Git, so try to work around
+    # this by overriding the environment (but there is still a problem if the
+    # git config key "diff.external" is used).
+    env = os.environ.copy()
+    if 'GIT_EXTERNAL_DIFF' in env: del env['GIT_EXTERNAL_DIFF']
+    return RunShell(["git", "diff", "--no-ext-diff", "--full-index", "-M"]
+                    + extra_args, env=env)
+
   def GetUnknownFiles(self):
     status = RunShell(["git", "ls-files", "--exclude-standard", "--others"],
                       silent_ok=True)
@@ -1168,6 +1267,71 @@ class GitVCS(VersionControlSystem):
     return (base_content, new_content, is_binary, status)
 
 
+class CVSVCS(VersionControlSystem):
+  """Implementation of the VersionControlSystem interface for CVS."""
+
+  def __init__(self, options):
+    super(CVSVCS, self).__init__(options)
+
+  def GetOriginalContent_(self, filename):
+    RunShell(["cvs", "up", filename], silent_ok=True)
+    # TODO need detect file content encoding
+    content = open(filename).read()
+    return content.replace("\r\n", "\n")
+
+  def GetBaseFile(self, filename):
+    base_content = None
+    new_content = None
+    is_binary = False
+    status = "A"
+
+    output, retcode = RunShellWithReturnCode(["cvs", "status", filename])
+    if retcode:
+      ErrorExit("Got error status from 'cvs status %s'" % filename)
+
+    if output.find("Status: Locally Modified") != -1:
+      status = "M"
+      temp_filename = "%s.tmp123" % filename
+      os.rename(filename, temp_filename)
+      base_content = self.GetOriginalContent_(filename)
+      os.rename(temp_filename, filename)
+    elif output.find("Status: Locally Added"):
+      status = "A"
+      base_content = ""
+    elif output.find("Status: Needs Checkout"):
+      status = "D"
+      base_content = self.GetOriginalContent_(filename)
+
+    return (base_content, new_content, is_binary, status)
+
+  def GenerateDiff(self, extra_args):
+    cmd = ["cvs", "diff", "-u", "-N"]
+    if self.options.revision:
+      cmd += ["-r", self.options.revision]
+
+    cmd.extend(extra_args)
+    data, retcode = RunShellWithReturnCode(cmd)
+    count = 0
+    if retcode == 0:
+      for line in data.splitlines():
+        if line.startswith("Index:"):
+          count += 1
+          logging.info(line)
+
+    if not count:
+      ErrorExit("No valid patches found in output from cvs diff")
+
+    return data
+
+  def GetUnknownFiles(self):
+    status = RunShell(["cvs", "diff"],
+                    silent_ok=True)
+    unknown_files = []
+    for line in status.split("\n"):
+      if line and line[0] == "?":
+        unknown_files.append(line)
+    return unknown_files
+
 class MercurialVCS(VersionControlSystem):
   """Implementation of the VersionControlSystem interface for Mercurial."""
 
@@ -1191,8 +1355,6 @@ class MercurialVCS(VersionControlSystem):
     return filename[len(self.subdir):].lstrip(r"\/")
 
   def GenerateDiff(self, extra_args):
-    # If no file specified, restrict to the current subdir
-    extra_args = extra_args or ["."]
     cmd = ["hg", "diff", "--git", "-r", self.base_rev] + extra_args
     data = RunShell(cmd, silent_ok=True)
     svndiff = []
@@ -1243,13 +1405,12 @@ class MercurialVCS(VersionControlSystem):
     # the working copy
     if out[0].startswith('%s: ' % relpath):
       out = out[1:]
-    if len(out) > 1:
+    status, _ = out[0].split(' ', 1)
+    if len(out) > 1 and status == "A":
       # Moved/copied => considered as modified, use old filename to
       # retrieve base contents
       oldrelpath = out[1].strip()
       status = "M"
-    else:
-      status, _ = out[0].split(' ', 1)
     if ":" in self.base_rev:
       base_rev = self.base_rev.split(":", 1)[0]
     else:
@@ -1269,6 +1430,326 @@ class MercurialVCS(VersionControlSystem):
       new_content = None
     return base_content, new_content, is_binary, status
 
+
+class PerforceVCS(VersionControlSystem):
+  """Implementation of the VersionControlSystem interface for Perforce."""
+
+  def __init__(self, options):
+    
+    def ConfirmLogin():
+      # Make sure we have a valid perforce session
+      while True:
+        data, retcode = self.RunPerforceCommandWithReturnCode(
+            ["login", "-s"], marshal_output=True)
+        if not data:
+          ErrorExit("Error checking perforce login")
+        if not retcode and (not "code" in data or data["code"] != "error"):
+          break
+        print "Enter perforce password: "
+        self.RunPerforceCommandWithReturnCode(["login"])
+      
+    super(PerforceVCS, self).__init__(options)
+    
+    self.p4_changelist = options.p4_changelist
+    if not self.p4_changelist:
+      ErrorExit("A changelist id is required")
+    if (options.revision):
+      ErrorExit("--rev is not supported for perforce")
+    
+    self.p4_port = options.p4_port
+    self.p4_client = options.p4_client
+    self.p4_user = options.p4_user
+    
+    ConfirmLogin()
+    
+    if not options.message:
+      description = self.RunPerforceCommand(["describe", self.p4_changelist],
+                                            marshal_output=True)
+      if description and "desc" in description:
+        # Rietveld doesn't support multi-line descriptions
+        raw_message = description["desc"].strip()
+        lines = raw_message.splitlines()
+        if len(lines):
+          options.message = lines[0]
+  
+  def RunPerforceCommandWithReturnCode(self, extra_args, marshal_output=False,
+                                       universal_newlines=True):
+    args = ["p4"]
+    if marshal_output:
+      # -G makes perforce format its output as marshalled python objects
+      args.extend(["-G"])
+    if self.p4_port:
+      args.extend(["-p", self.p4_port])
+    if self.p4_client:
+      args.extend(["-c", self.p4_client])
+    if self.p4_user:
+      args.extend(["-u", self.p4_user])
+    args.extend(extra_args)
+    
+    data, retcode = RunShellWithReturnCode(
+        args, print_output=False, universal_newlines=universal_newlines)
+    if marshal_output and data:
+      data = marshal.loads(data)
+    return data, retcode
+    
+  def RunPerforceCommand(self, extra_args, marshal_output=False,
+                         universal_newlines=True):
+    # This might be a good place to cache call results, since things like
+    # describe or fstat might get called repeatedly.
+    data, retcode = self.RunPerforceCommandWithReturnCode(
+        extra_args, marshal_output, universal_newlines)
+    if retcode:
+      ErrorExit("Got error status from %s:\n%s" % (extra_args, data))
+    return data
+
+  def GetFileProperties(self, property_key_prefix = "", command = "describe"):
+    description = self.RunPerforceCommand(["describe", self.p4_changelist],
+                                          marshal_output=True)
+    
+    changed_files = {}
+    file_index = 0
+    # Try depotFile0, depotFile1, ... until we don't find a match
+    while True:
+      file_key = "depotFile%d" % file_index
+      if file_key in description:
+        filename = description[file_key]
+        change_type = description[property_key_prefix + str(file_index)]
+        changed_files[filename] = change_type
+        file_index += 1
+      else:
+        break
+    return changed_files
+
+  def GetChangedFiles(self):
+    return self.GetFileProperties("action")
+
+  def GetUnknownFiles(self):
+    # Perforce doesn't detect new files, they have to be explicitly added
+    return []
+
+  def IsBaseBinary(self, filename):
+    base_filename = self.GetBaseFilename(filename)
+    return self.IsBinaryHelper(base_filename, "files")
+
+  def IsPendingBinary(self, filename):
+    return self.IsBinaryHelper(filename, "describe")
+
+  def IsBinary(self, filename):
+    ErrorExit("IsBinary is not safe: call IsBaseBinary or IsPendingBinary")
+
+  def IsBinaryHelper(self, filename, command):
+    file_types = self.GetFileProperties("type", command)
+    if not filename in file_types:
+      ErrorExit("Trying to check binary status of unknown file %s." % filename)
+    # This treats symlinks, macintosh resource files, temporary objects, and
+    # unicode as binary. See the Perforce docs for more details:
+    # http://www.perforce.com/perforce/doc.current/manuals/cmdref/o.ftypes.html
+    return not file_types[filename].endswith("text")
+
+  def GetFileContent(self, filename, revision, is_binary):
+    file_arg = filename
+    if revision:
+      file_arg += "#" + revision
+    # -q suppresses the initial line that displays the filename and revision
+    return self.RunPerforceCommand(["print", "-q", file_arg],
+                                   universal_newlines=not is_binary)
+
+  def GetBaseFilename(self, filename):
+    actionsWithDifferentBases = [
+        "move/add", # p4 move
+        "branch", # p4 integrate (to a new file), similar to hg "add"
+        "add", # p4 integrate (to a new file), after modifying the new file
+    ]
+    
+    # We only see a different base for "add" if this is a downgraded branch
+    # after a file was branched (integrated), then edited. 
+    if self.GetAction(filename) in actionsWithDifferentBases:
+      # -Or shows information about pending integrations/moves
+      fstat_result = self.RunPerforceCommand(["fstat", "-Or", filename],
+                                             marshal_output=True)
+      
+      baseFileKey = "resolveFromFile0" # I think it's safe to use only file0
+      if baseFileKey in fstat_result:
+        return fstat_result[baseFileKey]
+    
+    return filename
+
+  def GetBaseRevision(self, filename):
+    base_filename = self.GetBaseFilename(filename)
+    
+    have_result = self.RunPerforceCommand(["have", base_filename],
+                                          marshal_output=True)
+    if "haveRev" in have_result:
+      return have_result["haveRev"]
+    
+  def GetLocalFilename(self, filename):
+    where = self.RunPerforceCommand(["where", filename], marshal_output=True)
+    if "path" in where:
+      return where["path"]
+
+  def GenerateDiff(self, args): 
+    class DiffData:
+      def __init__(self, perforceVCS, filename, action):
+        self.perforceVCS = perforceVCS
+        self.filename = filename
+        self.action = action
+        self.base_filename = perforceVCS.GetBaseFilename(filename)
+        
+        self.file_body = None
+        self.base_rev = None
+        self.prefix = None
+        self.working_copy = True
+        self.change_summary = None
+         
+    def GenerateDiffHeader(diffData):
+      header = []
+      header.append("Index: %s" % diffData.filename)
+      header.append("=" * 67)
+      
+      if diffData.base_filename != diffData.filename:
+        if diffData.action.startswith("move"):
+          verb = "rename"
+        else:
+          verb = "copy"
+        header.append("%s from %s" % (verb, diffData.base_filename))
+        header.append("%s to %s" % (verb, diffData.filename))
+        
+      suffix = "\t(revision %s)" % diffData.base_rev
+      header.append("--- " + diffData.base_filename + suffix)
+      if diffData.working_copy:
+        suffix = "\t(working copy)"
+      header.append("+++ " + diffData.filename + suffix)
+      if diffData.change_summary:
+        header.append(diffData.change_summary)
+      return header
+  
+    def GenerateMergeDiff(diffData, args):
+      # -du generates a unified diff, which is nearly svn format
+      diffData.file_body = self.RunPerforceCommand(
+          ["diff", "-du", diffData.filename] + args)
+      diffData.base_rev = self.GetBaseRevision(diffData.filename)
+      diffData.prefix = ""
+      
+      # We have to replace p4's file status output (the lines starting
+      # with +++ or ---) to match svn's diff format
+      lines = diffData.file_body.splitlines()
+      first_good_line = 0
+      while (first_good_line < len(lines) and
+            not lines[first_good_line].startswith("@@")):
+        first_good_line += 1
+      diffData.file_body = "\n".join(lines[first_good_line:])
+      return diffData
+
+    def GenerateAddDiff(diffData):
+      fstat = self.RunPerforceCommand(["fstat", diffData.filename],
+                                      marshal_output=True)
+      if "headRev" in fstat:
+        diffData.base_rev = fstat["headRev"] # Re-adding a deleted file
+      else:
+        diffData.base_rev = "0" # Brand new file
+      diffData.working_copy = False
+      rel_path = self.GetLocalFilename(diffData.filename)
+      diffData.file_body = open(rel_path, 'r').read()
+      # Replicate svn's list of changed lines
+      line_count = len(diffData.file_body.splitlines())
+      diffData.change_summary = "@@ -0,0 +1"
+      if line_count > 1:
+          diffData.change_summary += ",%d" % line_count
+      diffData.change_summary += " @@"
+      diffData.prefix = "+"
+      return diffData
+    
+    def GenerateDeleteDiff(diffData):
+      diffData.base_rev = self.GetBaseRevision(diffData.filename)
+      is_base_binary = self.IsBaseBinary(diffData.filename)
+      # For deletes, base_filename == filename
+      diffData.file_body = self.GetFileContent(diffData.base_filename, 
+          None, 
+          is_base_binary)
+      # Replicate svn's list of changed lines
+      line_count = len(diffData.file_body.splitlines())
+      diffData.change_summary = "@@ -1"
+      if line_count > 1:
+        diffData.change_summary += ",%d" % line_count
+      diffData.change_summary += " +0,0 @@"
+      diffData.prefix = "-"
+      return diffData
+  
+    changed_files = self.GetChangedFiles()
+    
+    svndiff = []
+    filecount = 0
+    for (filename, action) in changed_files.items():
+      svn_status = self.PerforceActionToSvnStatus(action)
+      if svn_status == "SKIP":
+        continue
+    
+      diffData = DiffData(self, filename, action)
+      # Is it possible to diff a branched file? Stackoverflow says no:
+      # http://stackoverflow.com/questions/1771314/in-perforce-command-line-how-to-diff-a-file-reopened-for-add
+      if svn_status == "M":
+        diffData = GenerateMergeDiff(diffData, args)
+      elif svn_status == "A":
+        diffData = GenerateAddDiff(diffData)
+      elif svn_status == "D":
+        diffData = GenerateDeleteDiff(diffData)
+      else:
+        ErrorExit("Unknown file action %s (svn action %s)." % \
+                  (action, svn_status))
+      
+      svndiff += GenerateDiffHeader(diffData)
+      
+      for line in diffData.file_body.splitlines():
+        svndiff.append(diffData.prefix + line)
+      filecount += 1
+    if not filecount:
+      ErrorExit("No valid patches found in output from p4 diff")
+    return "\n".join(svndiff) + "\n"
+
+  def PerforceActionToSvnStatus(self, status):
+    # Mirroring the list at http://permalink.gmane.org/gmane.comp.version-control.mercurial.devel/28717
+    # Is there something more official?
+    return {
+            "add" : "A",
+            "branch" : "A",
+            "delete" : "D",
+            "edit" : "M", # Also includes changing file types.
+            "integrate" : "M",
+            "move/add" : "M",
+            "move/delete": "SKIP",
+            "purge" : "D", # How does a file's status become "purge"?
+            }[status]
+
+  def GetAction(self, filename):
+    changed_files = self.GetChangedFiles()
+    if not filename in changed_files:
+      ErrorExit("Trying to get base version of unknown file %s." % filename)
+      
+    return changed_files[filename]
+
+  def GetBaseFile(self, filename):
+    base_filename = self.GetBaseFilename(filename)
+    base_content = ""
+    new_content = None
+    
+    status = self.PerforceActionToSvnStatus(self.GetAction(filename))
+    
+    if status != "A":
+      revision = self.GetBaseRevision(base_filename)
+      if not revision:
+        ErrorExit("Couldn't find base revision for file %s" % filename)
+      is_base_binary = self.IsBaseBinary(base_filename)
+      base_content = self.GetFileContent(base_filename,
+                                         revision,
+                                         is_base_binary)
+    
+    is_binary = self.IsPendingBinary(filename)
+    if status != "D" and status != "SKIP":
+      relpath = self.GetLocalFilename(filename)
+      if is_binary and self.IsImage(relpath):
+        new_content = open(relpath, "rb").read()
+    
+    return base_content, new_content, is_binary, status
 
 # NOTE: The SplitPatch function is duplicated in engine.py, keep them in sync.
 def SplitPatch(data):
@@ -1339,7 +1820,7 @@ def UploadSeparatePatches(issue, rpc_server, patchset, data, options):
   return rv
 
 
-def GuessVCSName():
+def GuessVCSName(options):
   """Helper to guess the version control system.
 
   This examines the current directory, guesses which VersionControlSystem
@@ -1347,10 +1828,17 @@ def GuessVCSName():
 
   Returns:
     A pair (vcs, output).  vcs is a string indicating which VCS was detected
-    and is one of VCS_GIT, VCS_MERCURIAL, VCS_SUBVERSION, or VCS_UNKNOWN.
+    and is one of VCS_GIT, VCS_MERCURIAL, VCS_SUBVERSION, VCS_PERFORCE,
+    VCS_CVS, or VCS_UNKNOWN.
+    Since local perforce repositories can't be easily detected, this method
+    will only guess VCS_PERFORCE if any perforce options have been specified.
     output is a string containing any interesting output from the vcs
     detection routine, or None if there is nothing interesting.
   """
+  for attribute, value in options.__dict__.iteritems():
+    if attribute.startswith("p4") and value != None:
+      return (VCS_PERFORCE, None)
+  
   # Mercurial has a command to get the base directory of a repository
   # Try running it, but don't die if we don't have hg installed.
   # NOTE: we try Mercurial first as it can sit on top of an SVN working copy.
@@ -1378,6 +1866,15 @@ def GuessVCSName():
     if errno != 2:  # ENOENT -- they don't have git installed.
       raise
 
+  # detect CVS repos use `cvs status && $? == 0` rules
+  try:
+    out, returncode = RunShellWithReturnCode(["cvs", "status"])
+    if returncode == 0:
+      return (VCS_CVS, None)
+  except OSError, (errno, message):
+    if errno != 2:
+      raise
+
   return (VCS_UNKNOWN, None)
 
 
@@ -1402,7 +1899,7 @@ def GuessVCS(options):
       ErrorExit("Unknown version control system %r specified." % vcs)
     (vcs, extra_output) = (v, None)
   else:
-    (vcs, extra_output) = GuessVCSName()
+    (vcs, extra_output) = GuessVCSName(options)
 
   if vcs == VCS_MERCURIAL:
     if extra_output is None:
@@ -1410,8 +1907,12 @@ def GuessVCS(options):
     return MercurialVCS(options, extra_output)
   elif vcs == VCS_SUBVERSION:
     return SubversionVCS(options)
+  elif vcs == VCS_PERFORCE:
+    return PerforceVCS(options)
   elif vcs == VCS_GIT:
     return GitVCS(options)
+  elif vcs == VCS_CVS:
+    return CVSVCS(options)
 
   ErrorExit(("Could not guess version control system. "
              "Are you in a working copy directory?"))
@@ -1446,8 +1947,10 @@ def LoadSubversionAutoProperties():
       - config file doesn't exist, or
       - 'enable-auto-props' is not set to 'true-like-value' in [miscellany].
   """
-  # Todo(hayato): Windows users might use different path for configuration file.
-  subversion_config = os.path.expanduser("~/.subversion/config")
+  if os.name == 'nt':
+    subversion_config = os.environ.get("APPDATA") + "\\Subversion\\config"
+  else:
+    subversion_config = os.path.expanduser("~/.subversion/config")
   if not os.path.exists(subversion_config):
     return {}
   config = ConfigParser.ConfigParser()
@@ -1587,6 +2090,11 @@ def RealMain(argv, data=None):
     vcs.CheckForUnknownFiles()
   if data is None:
     data = vcs.GenerateDiff(args)
+  data = vcs.PostProcessDiff(data)
+  if options.print_diffs:
+    print "Rietveld diff start:*****"
+    print data
+    print "Rietveld diff end:*****"
   files = vcs.GetBaseFiles(data)
   if verbosity >= 1:
     print "Upload server:", options.server, "(change with -s/--server)"
@@ -1597,9 +2105,19 @@ def RealMain(argv, data=None):
   message = options.message or raw_input(prompt).strip()
   if not message:
     ErrorExit("A non-empty message is required")
-  rpc_server = GetRpcServer(options)
+  rpc_server = GetRpcServer(options.server,
+                            options.email,
+                            options.host,
+                            options.save_cookies,
+                            options.account_type)
   form_fields = [("subject", message)]
   if base:
+    b = urlparse.urlparse(base)
+    username, netloc = urllib.splituser(b.netloc)
+    if username:
+      logging.info("Removed username from base URL")
+      base = urlparse.urlunparse((b.scheme, netloc, b.path, b.params,
+                                  b.query, b.fragment))
     form_fields.append(("base", base))
   if options.issue:
     form_fields.append(("issue", str(options.issue)))
