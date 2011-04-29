@@ -31,7 +31,6 @@ import apiclient.model
 from apiclient.anyjson import simplejson
 from apiclient.errors import HttpError
 from apiclient.model import JsonModel
-from apiclient.model import LoggingJsonModel
 
 FLAGS = gflags.FLAGS
 
@@ -186,10 +185,16 @@ class Model(unittest.TestCase):
     content = model.response(resp, content)
     self.assertEqual(content, 'data goes here')
 
+  def test_no_content_response(self):
+    model = JsonModel(data_wrapper=False)
+    resp = httplib2.Response({'status': '204'})
+    resp.reason = 'No Content'
+    content = ''
 
-class LoggingModel(unittest.TestCase):
+    content = model.response(resp, content)
+    self.assertEqual(content, {})
 
-  def test_logging_json_model(self):
+  def test_logging(self):
     class MockLogging(object):
       def __init__(self):
         self.info_record = []
@@ -206,10 +211,11 @@ class LoggingModel(unittest.TestCase):
         self.status = items['status']
         for key, value in items.iteritems():
           self[key] = value
+    old_logging = apiclient.model.logging
     apiclient.model.logging = MockLogging()
     apiclient.model.FLAGS = copy.deepcopy(FLAGS)
     apiclient.model.FLAGS.dump_request_response = True
-    model = LoggingJsonModel()
+    model = JsonModel()
     request_body = {
         'field1': 'value1',
         'field2': 'value2'
@@ -234,7 +240,7 @@ class LoggingModel(unittest.TestCase):
                      request_body)
     self.assertEqual(apiclient.model.logging.info_record[-1],
                      '--response-end--')
-
+    apiclient.model.logging = old_logging
 
 
 if __name__ == '__main__':

@@ -34,9 +34,7 @@ from errors import HttpError
 FLAGS = gflags.FLAGS
 
 gflags.DEFINE_boolean('dump_request_response', False,
-                     'Dump all http server requests and responses. '
-                     'Must use apiclient.model.LoggingJsonModel as '
-                     'the model.'
+                      'Dump all http server requests and responses. '
                      )
 
 
@@ -53,7 +51,7 @@ class Model(object):
   """
 
   def request(self, headers, path_params, query_params, body_value):
-    """Updates outgoing requests with a deserialized body.
+    """Updates outgoing requests with a serialized body.
 
     Args:
       headers: dict, request headers
@@ -87,23 +85,43 @@ class Model(object):
     _abstract()
 
 
-class JsonModel(Model):
-  """Model class for JSON.
+class BaseModel(Model):
+  """Base model class.
 
-  Serializes and de-serializes between JSON and the Python
-  object representation of HTTP request and response bodies.
+  Subclasses should provide implementations for the "serialize" and
+  "deserialize" methods, as well as values for the following class attributes.
+
+  Attributes:
+    accept: The value to use for the HTTP Accept header.
+    content_type: The value to use for the HTTP Content-type header.
+    no_content_response: The value to return when deserializing a 204 "No
+        Content" response.
+    alt_param: The value to supply as the "alt" query parameter for requests.
   """
 
-  def __init__(self, data_wrapper=False):
-    """Construct a JsonModel
+  accept = None
+  content_type = None
+  no_content_response = None
+  alt_param = None
 
-    Args:
-      data_wrapper: boolean, wrap requests and responses in a data wrapper
-    """
-    self._data_wrapper = data_wrapper
+  def _log_request(self, headers, path_params, query, body):
+    """Logs debugging information about the request if requested."""
+    if FLAGS.dump_request_response:
+      logging.info('--request-start--')
+      logging.info('-headers-start-')
+      for h, v in headers.iteritems():
+        logging.info('%s: %s', h, v)
+      logging.info('-headers-end-')
+      logging.info('-path-parameters-start-')
+      for h, v in path_params.iteritems():
+        logging.info('%s: %s', h, v)
+      logging.info('-path-parameters-end-')
+      logging.info('body: %s', body)
+      logging.info('query: %s', query)
+      logging.info('--request-end--')
 
   def request(self, headers, path_params, query_params, body_value):
-    """Updates outgoing requests with JSON bodies.
+    """Updates outgoing requests with a serialized body.
 
     Args:
       headers: dict, request headers
@@ -120,7 +138,7 @@ class JsonModel(Model):
       body: string, the body serialized as JSON
     """
     query = self._build_query(query_params)
-    headers['accept'] = 'application/json'
+    headers['accept'] = self.accept
     headers['accept-encoding'] = 'gzip, deflate'
     if 'user-agent' in headers:
       headers['user-agent'] += ' '
@@ -128,12 +146,10 @@ class JsonModel(Model):
       headers['user-agent'] = ''
     headers['user-agent'] += 'google-api-python-client/1.0'
 
-    if (isinstance(body_value, dict) and 'data' not in body_value and
-        self._data_wrapper):
-      body_value = {'data': body_value}
     if body_value is not None:
-      headers['content-type'] = 'application/json'
-      body_value = simplejson.dumps(body_value)
+      headers['content-type'] = self.content_type
+      body_value = self.serialize(body_value)
+    self._log_request(headers, path_params, query, body_value)
     return (headers, path_params, query, body_value)
 
   def _build_query(self, params):
@@ -145,7 +161,7 @@ class JsonModel(Model):
     Returns:
       The query parameters properly encoded into an HTTP URI query string.
     """
-    params.update({'alt': 'json'})
+    params.update({'alt': self.alt_param})
     astuples = []
     for key, value in params.iteritems():
       if type(value) == type([]):
@@ -157,6 +173,16 @@ class JsonModel(Model):
           value = value.encode('utf-8')
         astuples.append((key, value))
     return '?' + urllib.urlencode(astuples)
+
+  def _log_response(self, resp, content):
+    """Logs debugging information about the response if requested."""
+    if FLAGS.dump_request_response:
+      logging.info('--response-start--')
+      for h, v in resp.iteritems():
+        logging.info('%s: %s', h, v)
+      if content:
+        logging.info(content)
+      logging.info('--response-end--')
 
   def response(self, resp, content):
     """Convert the response wire format into a Python object.
@@ -171,76 +197,105 @@ class JsonModel(Model):
     Raises:
       apiclient.errors.HttpError if a non 2xx response is received.
     """
+    self._log_response(resp, content)
     # Error handling is TBD, for example, do we retry
     # for some operation/error combinations?
     if resp.status < 300:
       if resp.status == 204:
         # A 204: No Content response should be treated differently
         # to all the other success states
-        return simplejson.loads('{}')
-      body = simplejson.loads(content)
-      if isinstance(body, dict) and 'data' in body:
-        body = body['data']
-      return body
+        return self.no_content_response
+      return self.deserialize(content)
     else:
       logging.debug('Content from bad request was: %s' % content)
       raise HttpError(resp, content)
 
-
-class LoggingJsonModel(JsonModel):
-  """A printable JsonModel class that supports logging response info."""
-
-  def response(self, resp, content):
-    """An overloaded response method that will output debug info if requested.
+  def serialize(self, body_value):
+    """Perform the actual Python object serialization.
 
     Args:
-      resp: An httplib2.Response object.
-      content: A string representing the response body.
+      body_value: object, the request body as a Python object.
+
+    Returns:
+      string, the body in serialized form.
+    """
+    _abstract()
+
+  def deserialize(self, content):
+    """Perform the actual deserialization from response string to Python object.
+
+    Args:
+      content: string, the body of the HTTP response
 
     Returns:
       The body de-serialized as a Python object.
     """
-    if FLAGS.dump_request_response:
-      logging.info('--response-start--')
-      for h, v in resp.iteritems():
-        logging.info('%s: %s', h, v)
-      if content:
-        logging.info(content)
-      logging.info('--response-end--')
-    return super(LoggingJsonModel, self).response(
-        resp, content)
+    _abstract()
 
-  def request(self, headers, path_params, query_params, body_value):
-    """An overloaded request method that will output debug info if requested.
+
+class JsonModel(BaseModel):
+  """Model class for JSON.
+
+  Serializes and de-serializes between JSON and the Python
+  object representation of HTTP request and response bodies.
+  """
+  accept = 'application/json'
+  content_type = 'application/json'
+  alt_param = 'json'
+
+  def __init__(self, data_wrapper=False):
+    """Construct a JsonModel.
 
     Args:
-      headers: dict, request headers
-      path_params: dict, parameters that appear in the request path
-      query_params: dict, parameters that appear in the query
-      body_value: object, the request body as a Python object, which must be
-                  serializable by simplejson.
-    Returns:
-      A tuple of (headers, path_params, query, body)
-
-      headers: dict, request headers
-      path_params: dict, parameters that appear in the request path
-      query: string, query part of the request URI
-      body: string, the body serialized as JSON
+      data_wrapper: boolean, wrap requests and responses in a data wrapper
     """
-    (headers, path_params, query, body) = super(
-        LoggingJsonModel, self).request(
-            headers, path_params, query_params, body_value)
-    if FLAGS.dump_request_response:
-      logging.info('--request-start--')
-      logging.info('-headers-start-')
-      for h, v in headers.iteritems():
-        logging.info('%s: %s', h, v)
-      logging.info('-headers-end-')
-      logging.info('-path-parameters-start-')
-      for h, v in path_params.iteritems():
-        logging.info('%s: %s', h, v)
-      logging.info('-path-parameters-end-')
-      logging.info('body: %s', body)
-      logging.info('query: %s', query)
-      logging.info('--request-end--')
-    return (headers, path_params, query, body)
+    self._data_wrapper = data_wrapper
+
+  def serialize(self, body_value):
+    if (isinstance(body_value, dict) and 'data' not in body_value and
+        self._data_wrapper):
+      body_value = {'data': body_value}
+    return simplejson.dumps(body_value)
+
+  def deserialize(self, content):
+    body = simplejson.loads(content)
+    if isinstance(body, dict) and 'data' in body:
+      body = body['data']
+    return body
+
+  @property
+  def no_content_response(self):
+    return {}
+
+
+class ProtocolBufferModel(BaseModel):
+  """Model class for protocol buffers.
+
+  Serializes and de-serializes the binary protocol buffer sent in the HTTP
+  request and response bodies.
+  """
+  accept = 'application/x-protobuf'
+  content_type = 'application/x-protobuf'
+  alt_param = 'proto'
+
+  def __init__(self, protocol_buffer):
+    """Constructs a ProtocolBufferModel.
+
+    The serialzed protocol buffer returned in an HTTP response will be
+    de-serialized using the given protocol buffer class.
+
+    Args:
+      protocol_buffer: The protocol buffer class used to de-serialize a response
+          from the API.
+    """
+    self._protocol_buffer = protocol_buffer
+
+  def serialize(self, body_value):
+    return body_value.SerializeToString()
+
+  def deserialize(self, content):
+    return self._protocol_buffer.FromString(content)
+
+  @property
+  def no_content_response(self):
+    return self._protocol_buffer()

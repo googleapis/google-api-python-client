@@ -17,7 +17,7 @@ import pprint
 import sys
 
 from apiclient.discovery import build
-from apiclient.model import LoggingJsonModel
+from apiclient.model import JsonModel
 
 
 FLAGS = gflags.FLAGS
@@ -34,7 +34,7 @@ def main(argv):
 
   service = build('translate', 'v2',
                   developerKey='AIzaSyAQIKv_gwnob-YNrXV2stnY86GSGY81Zr0',
-                  model=LoggingJsonModel())
+                  model=JsonModel())
   print service.translations().list(
       source='en',
       target='fr',
