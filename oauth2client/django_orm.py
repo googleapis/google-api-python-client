@@ -31,7 +31,7 @@ class CredentialsField(models.Field):
 
   __metaclass__ = models.SubfieldBase
 
-  def db_type(self):
+  def db_type(self, connection=None):
     return 'VARCHAR'
 
   def to_python(self, value):
@@ -49,7 +49,7 @@ class FlowField(models.Field):
 
   __metaclass__ = models.SubfieldBase
 
-  def db_type(self):
+  def db_type(self, connection=None):
     return 'VARCHAR'
 
   def to_python(self, value):
