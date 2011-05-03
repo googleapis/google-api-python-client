@@ -35,8 +35,10 @@ class MainHandler(webapp.RequestHandler):
 
   def get(self):
     http = httplib2.Http(memcache)
-    resp, content = http.request('https://www.googleapis.com/discovery/v0.3/directory?preferred=true')
+    resp, content = http.request('https://www.googleapis.com/discovery/v1/apis?preferred=true')
     directory = simplejson.loads(content)['items']
+    for item in directory:
+      item['title'] = item.get('title', item.get('description', ''))
     path = os.path.join(os.path.dirname(__file__), 'index.html')
     self.response.out.write(
         template.render(

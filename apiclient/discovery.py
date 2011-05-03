@@ -43,8 +43,8 @@ from errors import InvalidJsonError
 
 URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
-DISCOVERY_URI = ('https://www.googleapis.com/discovery/v0.3/describe/'
-  '{api}/{apiVersion}')
+DISCOVERY_URI = ('https://www.googleapis.com/discovery/v1/apis/'
+  '{api}/{apiVersion}/rest')
 DEFAULT_METHOD_DOC = 'A description of how to use this function'
 
 # Query parameters that work, but don't appear in discovery
@@ -164,7 +164,7 @@ def build_from_document(
   """
 
   service = simplejson.loads(service)
-  base = urlparse.urljoin(base, service['restBasePath'])
+  base = urlparse.urljoin(base, service['basePath'])
   if future:
     future = simplejson.loads(future)
     auth_discovery = future.get('auth', {})
@@ -232,16 +232,16 @@ def createResource(http, baseUrl, model, requestBuilder,
       self._requestBuilder = requestBuilder
 
   def createMethod(theclass, methodName, methodDesc, futureDesc):
-    pathUrl = methodDesc['restPath']
+    pathUrl = methodDesc['path']
     httpMethod = methodDesc['httpMethod']
-    methodId = methodDesc['rpcMethod']
+    methodId = methodDesc['id']
 
     if 'parameters' not in methodDesc:
       methodDesc['parameters'] = {}
     for name in STACK_QUERY_PARAMETERS:
       methodDesc['parameters'][name] = {
           'type': 'string',
-          'restParameterType': 'query'
+          'location': 'query'
           }
 
     if httpMethod in ['PUT', 'POST', 'PATCH']:
@@ -274,9 +274,9 @@ def createResource(http, baseUrl, model, requestBuilder,
           required_params.append(param)
         if desc.get('repeated', False):
           repeated_params.append(param)
-        if desc.get('restParameterType') == 'query':
+        if desc.get('location') == 'query':
           query_params.append(param)
-        if desc.get('restParameterType') == 'path':
+        if desc.get('location') == 'path':
           path_params[param] = param
         param_type[param] = desc.get('type', 'string')
 
@@ -380,7 +380,7 @@ def createResource(http, baseUrl, model, requestBuilder,
     setattr(theclass, methodName, method)
 
   def createNextMethod(theclass, methodName, methodDesc, futureDesc):
-    methodId = methodDesc['rpcMethod'] + '.next'
+    methodId = methodDesc['id'] + '.next'
 
     def methodNext(self, previous):
       """
