@@ -63,7 +63,7 @@ except ImportError:
 try:
     import ssl # python 2.6
     _ssl_wrap_socket = ssl.wrap_socket
-except ImportError:
+except (AttributeError, ImportError):
     def _ssl_wrap_socket(sock, key_file, cert_file):
         ssl_sock = socket.ssl(sock, key_file, cert_file)
         return httplib.FakeSocket(sock, ssl_sock)
@@ -123,6 +123,7 @@ class FailedToDecompressContent(HttpLib2ErrorWithResponse): pass
 class UnimplementedDigestAuthOptionError(HttpLib2ErrorWithResponse): pass
 class UnimplementedHmacDigestAuthOptionError(HttpLib2ErrorWithResponse): pass
 
+class MalformedHeader(HttpLib2Error): pass
 class RelativeURIError(HttpLib2Error): pass
 class ServerNotFoundError(HttpLib2Error): pass
 class ProxiesUnavailableError(HttpLib2Error): pass
@@ -246,25 +247,28 @@ def _parse_www_authenticate(headers, headername='www-authenticate'):
     per auth_scheme."""
     retval = {}
     if headers.has_key(headername):
-        authenticate = headers[headername].strip()
-        www_auth = USE_WWW_AUTH_STRICT_PARSING and WWW_AUTH_STRICT or WWW_AUTH_RELAXED
-        while authenticate:
-            # Break off the scheme at the beginning of the line
-            if headername == 'authentication-info':
-                (auth_scheme, the_rest) = ('digest', authenticate)
-            else:
-                (auth_scheme, the_rest) = authenticate.split(" ", 1)
-            # Now loop over all the key value pairs that come after the scheme,
-            # being careful not to roll into the next scheme
-            match = www_auth.search(the_rest)
-            auth_params = {}
-            while match:
-                if match and len(match.groups()) == 3:
-                    (key, value, the_rest) = match.groups()
-                    auth_params[key.lower()] = UNQUOTE_PAIRS.sub(r'\1', value) # '\\'.join([x.replace('\\', '') for x in value.split('\\\\')])
-                match = www_auth.search(the_rest)
-            retval[auth_scheme.lower()] = auth_params
-            authenticate = the_rest.strip()
+        try:
+          authenticate = headers[headername].strip()
+          www_auth = USE_WWW_AUTH_STRICT_PARSING and WWW_AUTH_STRICT or WWW_AUTH_RELAXED
+          while authenticate:
+              # Break off the scheme at the beginning of the line
+              if headername == 'authentication-info':
+                  (auth_scheme, the_rest) = ('digest', authenticate)
+              else:
+                  (auth_scheme, the_rest) = authenticate.split(" ", 1)
+              # Now loop over all the key value pairs that come after the scheme,
+              # being careful not to roll into the next scheme
+              match = www_auth.search(the_rest)
+              auth_params = {}
+              while match:
+                  if match and len(match.groups()) == 3:
+                      (key, value, the_rest) = match.groups()
+                      auth_params[key.lower()] = UNQUOTE_PAIRS.sub(r'\1', value) # '\\'.join([x.replace('\\', '') for x in value.split('\\\\')])
+                  match = www_auth.search(the_rest)
+              retval[auth_scheme.lower()] = auth_params
+              authenticate = the_rest.strip()
+        except ValueError:
+          raise MalformedHeader("WWW-Authenticate")
     return retval
 
 
@@ -388,7 +392,7 @@ def _updateCache(request_headers, response_headers, content, cache, cachekey):
             if status == 304:
                 status = 200
 
-            status_header = 'status: %d\r\n' % response_headers.status
+            status_header = 'status: %d\r\n' % status
 
             header_str = info.as_string()
 
@@ -712,7 +716,14 @@ p = ProxyInfo(proxy_type=socks.PROXY_TYPE_HTTP, proxy_host='localhost', proxy_po
 
 
 class HTTPConnectionWithTimeout(httplib.HTTPConnection):
-    """HTTPConnection subclass that supports timeouts"""
+    """
+    HTTPConnection subclass that supports timeouts
+
+    All timeouts are in seconds. If None is passed for timeout then
+    Python's default timeout for sockets will be used. See for example
+    the docs of socket.setdefaulttimeout():
+    http://docs.python.org/library/socket.html#socket.setdefaulttimeout
+    """
 
     def __init__(self, host, port=None, strict=None, timeout=None, proxy_info=None):
         httplib.HTTPConnection.__init__(self, host, port, strict)
@@ -756,8 +767,14 @@ class HTTPConnectionWithTimeout(httplib.HTTPConnection):
             raise socket.error, msg
 
 class HTTPSConnectionWithTimeout(httplib.HTTPSConnection):
-    "This class allows communication via SSL."
+    """
+    This class allows communication via SSL.
 
+    All timeouts are in seconds. If None is passed for timeout then
+    Python's default timeout for sockets will be used. See for example
+    the docs of socket.setdefaulttimeout():
+    http://docs.python.org/library/socket.html#socket.setdefaulttimeout
+    """
     def __init__(self, host, port=None, key_file=None, cert_file=None,
                  strict=None, timeout=None, proxy_info=None):
         httplib.HTTPSConnection.__init__(self, host, port=port, key_file=key_file,
@@ -768,17 +785,33 @@ class HTTPSConnectionWithTimeout(httplib.HTTPSConnection):
     def connect(self):
         "Connect to a host on a given (SSL) port."
 
-        if self.proxy_info and self.proxy_info.isgood():
-            sock = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.setproxy(*self.proxy_info.astuple())
-        else:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        msg = "getaddrinfo returns an empty list"
+        for family, socktype, proto, canonname, sockaddr in socket.getaddrinfo(
+            self.host, self.port, 0, socket.SOCK_STREAM):
+            try:
+                if self.proxy_info and self.proxy_info.isgood():
+                    sock = socks.socksocket(family, socktype, proto)
+                    sock.setproxy(*self.proxy_info.astuple())
+                else:
+                    sock = socket.socket(family, socktype, proto)
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
-        if has_timeout(self.timeout):
-            sock.settimeout(self.timeout)
-        sock.connect((self.host, self.port))
-        self.sock =_ssl_wrap_socket(sock, self.key_file, self.cert_file)
+                if has_timeout(self.timeout):
+                    sock.settimeout(self.timeout)
+                sock.connect((self.host, self.port))
+                self.sock =_ssl_wrap_socket(sock, self.key_file, self.cert_file)
+                if self.debuglevel > 0:
+                    print "connect: (%s, %s)" % (self.host, self.port)
+            except socket.error, msg:
+              if self.debuglevel > 0:
+                  print 'connect fail:', (self.host, self.port)
+              if self.sock:
+                  self.sock.close()
+              self.sock = None
+              continue
+            break
+        if not self.sock:
+          raise socket.error, msg
 
 
 
@@ -796,11 +829,18 @@ class Http(object):
 and more.
     """
     def __init__(self, cache=None, timeout=None, proxy_info=None):
-        """The value of proxy_info is a ProxyInfo instance.
+        """
+        The value of proxy_info is a ProxyInfo instance.
 
-If 'cache' is a string then it is used as a directory name
-for a disk cache. Otherwise it must be an object that supports
-the same interface as FileCache."""
+        If 'cache' is a string then it is used as a directory name for
+        a disk cache. Otherwise it must be an object that supports the
+        same interface as FileCache.
+
+        All timeouts are in seconds. If None is passed for timeout
+        then Python's default timeout for sockets will be used. See
+        for example the docs of socket.setdefaulttimeout():
+        http://docs.python.org/library/socket.html#socket.setdefaulttimeout
+        """
         self.proxy_info = proxy_info
         # Map domain name to an httplib connection
         self.connections = {}
@@ -867,15 +907,34 @@ the same interface as FileCache."""
         for i in range(2):
             try:
                 conn.request(method, request_uri, body, headers)
+            except socket.timeout:
+                raise
             except socket.gaierror:
                 conn.close()
                 raise ServerNotFoundError("Unable to find the server at %s" % conn.host)
             except socket.error, e:
-                if e.errno == errno.ECONNREFUSED: # Connection refused
+                err = 0
+                if hasattr(e, 'args'):
+                    err = getattr(e, 'args')[0]
+                else:
+                    err = e.errno
+                if err == errno.ECONNREFUSED: # Connection refused
                     raise
             except httplib.HTTPException:
                 # Just because the server closed the connection doesn't apparently mean
                 # that the server didn't send a response.
+                if conn.sock is None:
+                    if i == 0:
+                        conn.close()
+                        conn.connect()
+                        continue
+                    else:
+                        conn.close()
+                        raise
+                if i == 0:
+                    conn.close()
+                    conn.connect()
+                    continue
                 pass
             try:
                 response = conn.getresponse()
@@ -952,11 +1011,13 @@ the same interface as FileCache."""
                         old_response = copy.deepcopy(response)
                         if not old_response.has_key('content-location'):
                             old_response['content-location'] = absolute_uri
-                        redirect_method = ((response.status == 303) and (method not in ["GET", "HEAD"])) and "GET" or method
+                        redirect_method = method
+                        if response.status == 303:
+                            redirect_method = "GET"
                         (response, content) = self.request(location, redirect_method, body=body, headers = headers, redirections = redirections - 1)
                         response.previous = old_response
                 else:
-                    raise RedirectLimit( _("Redirected more times than rediection_limit allows."), response, content)
+                    raise RedirectLimit("Redirected more times than rediection_limit allows.", response, content)
             elif response.status in [200, 203] and method == "GET":
                 # Don't cache 206's since we aren't going to handle byte range requests
                 if not response.has_key('content-location'):
@@ -1025,7 +1086,7 @@ a string that contains the response entity body.
                     conn = self.connections[conn_key] = connection_type(authority, timeout=self.timeout, proxy_info=self.proxy_info)
                 conn.set_debuglevel(debuglevel)
 
-            if method in ["GET", "HEAD"] and 'range' not in headers and 'accept-encoding' not in headers:
+            if 'range' not in headers and 'accept-encoding' not in headers:
                 headers['accept-encoding'] = 'gzip, deflate'
 
             info = email.Message.Message()
@@ -1075,6 +1136,8 @@ a string that contains the response entity body.
             if cached_value and method in ["GET", "HEAD"] and self.cache and 'range' not in headers:
                 if info.has_key('-x-permanent-redirect-url'):
                     # Should cached permanent redirects be counted in our redirection count? For now, yes.
+                    if redirections <= 0:
+                      raise RedirectLimit("Redirected more times than rediection_limit allows.", {}, "")
                     (response, new_content) = self.request(info['-x-permanent-redirect-url'], "GET", headers = headers, redirections = redirections - 1)
                     response.previous = Response(info)
                     response.previous.fromcache = True
