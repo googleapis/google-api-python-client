@@ -15,22 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Simple command-line sample for Buzz.
+"""Simple command-line sample for the Google Prediction API
 
-Command-line application that retrieves the users latest content and
-then adds a new entry.
+Command-line application that trains on some data. This sample does
+the same thing as the Hello Prediction! example.
 
 Usage:
-  $ python buzz.py
+  $ python prediction.py
 
 You can also get help on all the command-line flags the program understands
 by running:
 
-  $ python buzz.py --help
+  $ python prediction.py --help
 
 To get detailed log output run:
 
-  $ python buzz.py --logging_level=DEBUG
+  $ python prediction.py --logging_level=DEBUG
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
@@ -60,8 +60,8 @@ FLAGS = gflags.FLAGS
 FLOW = OAuth2WebServerFlow(
     client_id='433807057907.apps.googleusercontent.com',
     client_secret='jigtZpMApkRxncxikFpR+SFg',
-    scope='https://www.googleapis.com/auth/buzz',
-    user_agent='buzz-cmdline-sample/1.0')
+    scope='https://www.googleapis.com/auth/prediction',
+    user_agent='prediction-cmdline-sample/1.0')
 
 # The gflags module makes defining command-line options easy for
 # applications. Run this program with the '--help' argument to see
@@ -85,7 +85,7 @@ def main(argv):
   # If the Credentials don't exist or are invalid run through the native client
   # flow. The Storage object will ensure that if successful the good
   # Credentials will get written back to a file.
-  storage = Storage('buzz.dat')
+  storage = Storage('prediction.dat')
   credentials = storage.get()
   if credentials is None or credentials.invalid:
     credentials = run(FLOW, storage)
@@ -95,44 +95,34 @@ def main(argv):
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  service = build("buzz", "v1", http=http)
+  service = build("prediction", "v1.2", http=http)
 
-  activities = service.activities()
+  # Name of Google Storage bucket/object that contains the training data
+  OBJECT_NAME = "apiclient-prediction-sample/prediction_models/languages"
 
-  # Retrieve the first two activities
-  activitylist = activities.list(
-      max_results='2', scope='@self', userId='@me').execute()
-  print "Retrieved the first two activities"
+  # Start training on a data set
+  train = service.training()
+  start = train.insert(data=OBJECT_NAME, body={}).execute()
 
-  # Retrieve the next two activities
-  if activitylist:
-    activitylist = activities.list_next(activitylist).execute()
-    print "Retrieved the next two activities"
+  print 'Started training'
+  pprint.pprint(start)
 
-  # Add a new activity
-  new_activity_body = {
-      'title': 'Testing insert',
-      'object': {
-        'content':
-        u'Just a short note to show that insert is working. ☄',
-        'type': 'note'}
-      }
-  activity = activities.insert(userId='@me', body=new_activity_body).execute()
-  print "Added a new activity"
+  import time
+  # Wait for the training to complete
+  while True:
+    status = train.get(data=OBJECT_NAME).execute()
+    pprint.pprint(status)
+    if 'RUNNING' != status['trainingStatus']:
+      break
+    print 'Waiting for training to complete.'
+    time.sleep(10)
+  print 'Training is complete'
 
-  activitylist = activities.list(
-      max_results='2', scope='@self', userId='@me').execute()
-
-  # Add a comment to that activity
-  comment_body = {
-      "content": "This is a comment"
-      }
-  item = activitylist['items'][0]
-  comment = service.comments().insert(
-      userId=item['actor']['id'], postId=item['id'], body=comment_body
-      ).execute()
-  print 'Added a comment to the new activity'
-  pprint.pprint(comment)
+  # Now make a prediction using that training
+  body = {'input': {'csvInstance': ["mucho bueno"]}}
+  prediction = service.predict(body=body, data=OBJECT_NAME).execute()
+  print 'The prediction is:'
+  pprint.pprint(prediction)
 
 
 

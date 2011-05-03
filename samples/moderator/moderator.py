@@ -37,6 +37,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import gflags
 import httplib2
 import logging
+import pprint
 import sys
 
 from apiclient.discovery import build
@@ -51,8 +52,10 @@ FLAGS = gflags.FLAGS
 # the information it needs to authenticate. Note that it is called
 # the Web Server Flow, but it can also handle the flow for native
 # applications <http://code.google.com/apis/accounts/docs/OAuth2.html#IA>
-# The client_id client_secret are copied from the Identity tab on
-# the Google APIs Console <http://code.google.com/apis/console>
+# The client_id client_secret are copied from the API Access tab on
+# the Google APIs Console <http://code.google.com/apis/console>. When
+# creating credentials for this application be sure to choose an Application
+# type of "Installed application".
 FLOW = OAuth2WebServerFlow(
     client_id='433807057907.apps.googleusercontent.com',
     client_secret='jigtZpMApkRxncxikFpR+SFg',
@@ -78,27 +81,20 @@ def main(argv):
   # Set the logging according to the command-line flag
   logging.getLogger().setLevel(getattr(logging, FLAGS.logging_level))
 
-  # A Storage object is used to storage and retrieve Credentials.
-  # See <http://code.google.com/p/google-api-python-client/wiki/HowAuthenticationWorks>
+  # If the Credentials don't exist or are invalid run through the native client
+  # flow. The Storage object will ensure that if successful the good
+  # Credentials will get written back to a file.
   storage = Storage('moderator.dat')
   credentials = storage.get()
-
-  # If the Credentials don't exist or are invalid run through the
-  # native client flow. The Storage object will ensure that if successful
-  # the good Credentials will get written back to a file.
-  if credentials is None or credentials.invalid == True:
+  if credentials is None or credentials.invalid:
     credentials = run(FLOW, storage)
 
   # Create an httplib2.Http object to handle our HTTP requests and authorize it
   # with our good Credentials.
-  http = httplib2.Http(cache=".cache")
+  http = httplib2.Http()
   http = credentials.authorize(http)
 
-  # Build a service object for interacting with the API. Visit
-  # the Google APIs Console <http://code.google.com/apis/console>
-  # to get a developerKey for your own application.
-  service = build("moderator", "v1", http=http,
-            developerKey="AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0")
+  service = build("moderator", "v1", http=http)
 
   # Create a new Moderator series.
   series_body = {
@@ -140,6 +136,8 @@ def main(argv):
                    submissionId=submission['id']['submissionId'],
                    body=vote_body)
   print "Voted on the submission"
+
+
 
 
 if __name__ == '__main__':

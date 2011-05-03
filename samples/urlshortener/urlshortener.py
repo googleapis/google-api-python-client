@@ -15,22 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Simple command-line sample for Buzz.
+"""Command-line sample for the Google URL Shortener API.
 
-Command-line application that retrieves the users latest content and
-then adds a new entry.
+Simple command-line example for Google URL Shortener API that shortens
+a URI then expands it.
 
 Usage:
-  $ python buzz.py
+  $ python urlshortener.py
 
 You can also get help on all the command-line flags the program understands
 by running:
 
-  $ python buzz.py --help
+  $ python urlshortener.py --help
 
 To get detailed log output run:
 
-  $ python buzz.py --logging_level=DEBUG
+  $ python urlshortener.py --logging_level=DEBUG
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
@@ -60,8 +60,8 @@ FLAGS = gflags.FLAGS
 FLOW = OAuth2WebServerFlow(
     client_id='433807057907.apps.googleusercontent.com',
     client_secret='jigtZpMApkRxncxikFpR+SFg',
-    scope='https://www.googleapis.com/auth/buzz',
-    user_agent='buzz-cmdline-sample/1.0')
+    scope='https://www.googleapis.com/auth/urlshortener',
+    user_agent='urlshortener-cmdline-sample/1.0')
 
 # The gflags module makes defining command-line options easy for
 # applications. Run this program with the '--help' argument to see
@@ -85,7 +85,7 @@ def main(argv):
   # If the Credentials don't exist or are invalid run through the native client
   # flow. The Storage object will ensure that if successful the good
   # Credentials will get written back to a file.
-  storage = Storage('buzz.dat')
+  storage = Storage('urlshortener.dat')
   credentials = storage.get()
   if credentials is None or credentials.invalid:
     credentials = run(FLOW, storage)
@@ -95,44 +95,20 @@ def main(argv):
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  service = build("buzz", "v1", http=http)
+  service = build("urlshortener", "v1", http=http)
 
-  activities = service.activities()
+  url = service.url()
 
-  # Retrieve the first two activities
-  activitylist = activities.list(
-      max_results='2', scope='@self', userId='@me').execute()
-  print "Retrieved the first two activities"
+  # Create a shortened URL by inserting the URL into the url collection.
+  body = {"longUrl": "http://code.google.com/apis/urlshortener/" }
+  resp = url.insert(body=body).execute()
+  pprint.pprint(resp)
 
-  # Retrieve the next two activities
-  if activitylist:
-    activitylist = activities.list_next(activitylist).execute()
-    print "Retrieved the next two activities"
+  short_url = resp['id']
 
-  # Add a new activity
-  new_activity_body = {
-      'title': 'Testing insert',
-      'object': {
-        'content':
-        u'Just a short note to show that insert is working. ☄',
-        'type': 'note'}
-      }
-  activity = activities.insert(userId='@me', body=new_activity_body).execute()
-  print "Added a new activity"
-
-  activitylist = activities.list(
-      max_results='2', scope='@self', userId='@me').execute()
-
-  # Add a comment to that activity
-  comment_body = {
-      "content": "This is a comment"
-      }
-  item = activitylist['items'][0]
-  comment = service.comments().insert(
-      userId=item['actor']['id'], postId=item['id'], body=comment_body
-      ).execute()
-  print 'Added a comment to the new activity'
-  pprint.pprint(comment)
+  # Convert the shortened URL back into a long URL
+  resp = url.get(shortUrl=short_url).execute()
+  pprint.pprint(resp)
 
 
 
