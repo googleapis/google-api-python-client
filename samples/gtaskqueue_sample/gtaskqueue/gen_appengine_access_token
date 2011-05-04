@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Tool to get an Access Token to access an auth protected Appengine end point.
+
+This tool talks to the appengine end point, and gets an Access Token that is
+stored in a file. This token can be used by a tool to do authorized access to
+an appengine end point.
+"""
+
+
+
+from google.apputils import app
+import gflags as flags
+import httplib2
+import oauth2 as oauth
+import time
+
+FLAGS = flags.FLAGS
+
+flags.DEFINE_string(
+        'appengine_host',
+        None,
+        'Appengine Host for whom we are trying to get an access token')
+flags.DEFINE_string(
+        'access_token_file',
+        None,
+        'The file where the access token is stored')
+
+
+def get_access_token():
+    if not FLAGS.appengine_host:
+        print('must supply the appengine host')
+        exit(1)
+
+    # setup
+    server = FLAGS.appengine_host
+    request_token_url = server + '/_ah/OAuthGetRequestToken'
+    authorization_url = server + '/_ah/OAuthAuthorizeToken'
+    access_token_url = server + '/_ah/OAuthGetAccessToken'
+    consumer = oauth.Consumer('anonymous', 'anonymous')
+    signature_method_hmac_sha1 = oauth.SignatureMethod_HMAC_SHA1()
+
+    # The Http client that will be used to make the requests.
+    h = httplib2.Http()
+
+    # get request token
+    print '* Obtain a request token ...'
+    parameters = {}
+    # We dont have a callback server, we're going to use the browser to
+    # authorize.
+
+    #TODO: Add check for 401 etc
+    parameters['oauth_callback'] = 'oob'
+    oauth_req1 = oauth.Request.from_consumer_and_token(
+        consumer, http_url=request_token_url, parameters=parameters)
+    oauth_req1.sign_request(signature_method_hmac_sha1, consumer, None)
+    print 'Request headers: %s' % str(oauth_req1.to_header())
+    response, content = h.request(oauth_req1.to_url(), 'GET')
+    token = oauth.Token.from_string(content)
+    print 'GOT key: %s  secret:%s' % (str(token.key), str(token.secret))
+
+    print '* Authorize the request token ...'
+    oauth_req2 = oauth.Request.from_token_and_callback(
+        token=token, callback='oob', http_url=authorization_url)
+    print 'Please run this URL in a browser and paste the token back here'
+    print oauth_req2.to_url()
+    verification_code = raw_input('Enter verification code: ').strip()
+    token.set_verifier(verification_code)
+
+    # get access token
+    print '* Obtain an access token ...'
+    oauth_req3 = oauth.Request.from_consumer_and_token(
+        consumer, token=token, http_url=access_token_url)
+    oauth_req3.sign_request(signature_method_hmac_sha1, consumer, token)
+    print 'Request headers: %s' % str(oauth_req3.to_header())
+    response, content = h.request(oauth_req3.to_url(), 'GET')
+    access_token = oauth.Token.from_string(content)
+    print 'Access Token key: %s  secret:%s' % (str(access_token.key),
+                                               str(access_token.secret))
+
+    # Save the token to a file if its specified.
+    if FLAGS.access_token_file:
+        fhandle = open(FLAGS.access_token_file, 'w')
+        fhandle.write(access_token.to_string())
+        fhandle.close()
+
+    # Example : access some protected resources
+    print '* Checking the access token against protected resources...'
+    # Assumes that the server + "/" is protected.
+    test_url = server + "/"
+    oauth_req4 = oauth.Request.from_consumer_and_token(consumer,
+                                                       token=token,
+                                                       http_url=test_url)
+    oauth_req4.sign_request(signature_method_hmac_sha1, consumer, token)
+    resp, content = h.request(test_url, "GET", headers=oauth_req4.to_header())
+    print resp
+    print content
+
+
+def main(argv):
+    get_access_token()
+
+if __name__ == '__main__':
+        app.run()
