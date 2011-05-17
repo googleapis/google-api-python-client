@@ -43,6 +43,7 @@ import sys
 
 from apiclient.discovery import build
 from oauth2client.file import Storage
+from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.tools import run
 
@@ -97,44 +98,49 @@ def main(argv):
 
   service = build("buzz", "v1", http=http)
 
-  activities = service.activities()
+  try:
 
-  # Retrieve the first two activities
-  activitylist = activities.list(
-      max_results='2', scope='@self', userId='@me').execute()
-  print "Retrieved the first two activities"
+    activities = service.activities()
 
-  # Retrieve the next two activities
-  if activitylist:
-    activitylist = activities.list_next(activitylist).execute()
-    print "Retrieved the next two activities"
+    # Retrieve the first two activities
+    activitylist = activities.list(
+        max_results='2', scope='@self', userId='@me').execute()
+    print "Retrieved the first two activities"
 
-  # Add a new activity
-  new_activity_body = {
-      'title': 'Testing insert',
-      'object': {
-        'content':
-        u'Just a short note to show that insert is working. ☄',
-        'type': 'note'}
-      }
-  activity = activities.insert(userId='@me', body=new_activity_body).execute()
-  print "Added a new activity"
+    # Retrieve the next two activities
+    if activitylist:
+      activitylist = activities.list_next(activitylist).execute()
+      print "Retrieved the next two activities"
 
-  activitylist = activities.list(
-      max_results='2', scope='@self', userId='@me').execute()
+    # Add a new activity
+    new_activity_body = {
+        'title': 'Testing insert',
+        'object': {
+          'content':
+          u'Just a short note to show that insert is working. ☄',
+          'type': 'note'}
+        }
+    activity = activities.insert(userId='@me', body=new_activity_body).execute()
+    print "Added a new activity"
 
-  # Add a comment to that activity
-  comment_body = {
-      "content": "This is a comment"
-      }
-  item = activitylist['items'][0]
-  comment = service.comments().insert(
-      userId=item['actor']['id'], postId=item['id'], body=comment_body
-      ).execute()
-  print 'Added a comment to the new activity'
-  pprint.pprint(comment)
+    activitylist = activities.list(
+        max_results='2', scope='@self', userId='@me').execute()
+
+    # Add a comment to that activity
+    comment_body = {
+        "content": "This is a comment"
+        }
+    item = activitylist['items'][0]
+    comment = service.comments().insert(
+        userId=item['actor']['id'], postId=item['id'], body=comment_body
+        ).execute()
+    print 'Added a comment to the new activity'
+    pprint.pprint(comment)
 
 
+  except AccessTokenRefreshError:
+    print ("The credentials have been revoked or expired, please re-run"
+      "the application to re-authorize")
 
 if __name__ == '__main__':
   main(sys.argv)

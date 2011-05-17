@@ -43,6 +43,7 @@ import sys
 
 from apiclient.discovery import build
 from oauth2client.file import Storage
+from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.tools import run
 
@@ -97,20 +98,25 @@ def main(argv):
 
   service = build("urlshortener", "v1", http=http)
 
-  url = service.url()
+  try:
 
-  # Create a shortened URL by inserting the URL into the url collection.
-  body = {"longUrl": "http://code.google.com/apis/urlshortener/" }
-  resp = url.insert(body=body).execute()
-  pprint.pprint(resp)
+    url = service.url()
 
-  short_url = resp['id']
+    # Create a shortened URL by inserting the URL into the url collection.
+    body = {"longUrl": "http://code.google.com/apis/urlshortener/" }
+    resp = url.insert(body=body).execute()
+    pprint.pprint(resp)
 
-  # Convert the shortened URL back into a long URL
-  resp = url.get(shortUrl=short_url).execute()
-  pprint.pprint(resp)
+    short_url = resp['id']
+
+    # Convert the shortened URL back into a long URL
+    resp = url.get(shortUrl=short_url).execute()
+    pprint.pprint(resp)
 
 
+  except AccessTokenRefreshError:
+    print ("The credentials have been revoked or expired, please re-run"
+      "the application to re-authorize")
 
 if __name__ == '__main__':
   main(sys.argv)

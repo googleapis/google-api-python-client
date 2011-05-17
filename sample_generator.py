@@ -54,9 +54,20 @@ for filename in glob.glob('samples/src/*.py'):
   for line in config.split('\n'):
     key, value = line[1:].split(':', 1)
     variables[key.strip()] = value.strip()
+
+  lines = content.split('\n')
+  outlines = []
+  for l in lines:
+    if l:
+      outlines.append('  ' + l)
+    else:
+      outlines.append('')
+  content = '\n'.join(outlines)
+
   variables['description'] = textwrap.fill(variables['description'])
   variables['content'] = content
   variables['name'] = os.path.basename(filename).split('.', 1)[0]
+
   f = open(os.path.join('samples', variables['name'], variables['name'] + '.py'), 'w')
   f.write(template.substitute(variables))
   f.close()
