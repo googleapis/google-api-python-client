@@ -125,6 +125,11 @@ def run(flow, storage):
   print 'Go to the following link in your browser:'
   print authorize_url
   print
+  if FLAGS.auth_local_webserver:
+    print 'If your browser is on a different machine then exit and re-run this'
+    print 'application with the command-line parameter --noauth_local_webserver.'
+    print
+
 
   if FLAGS.auth_local_webserver:
     httpd.handle_request()

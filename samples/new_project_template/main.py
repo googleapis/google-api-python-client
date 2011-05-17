@@ -17,8 +17,8 @@
 """Starting template for Google App Engine applications.
 
 Use this project as a starting point if you are just beginning to build a Google
-App Engine project. Remember to fill in the OAuth 2.0 client_id, client_secret
-and the developer key, all of which can be obtained from the Developer Console
+App Engine project. Remember to fill in the OAuth 2.0 client_id and
+client_secret which can be obtained from the Developer Console
 <https://code.google.com/apis/console/>
 """
 
@@ -77,8 +77,7 @@ class MainHandler(webapp.RequestHandler):
     # Build a service object for interacting with the API. Visit
     # the Google APIs Console <http://code.google.com/apis/console>
     # to get a developerKey for your own application.
-    service = build("buzz", "v1", http=http,
-              developerKey="<developer key goes here>")
+    service = build("buzz", "v1", http=http)
     followers = service.people().list(
         userId='@me', groupId='@followers').execute()
     text = 'Hello, you have %s followers!' % followers['totalResults']
@@ -88,7 +87,7 @@ class MainHandler(webapp.RequestHandler):
 
 
 def begin_oauth_flow(request_handler, user):
-  callback = request_handler.request.relative_url('/auth_return')
+  callback = request_handler.request.relative_url('/oauth2callback')
   authorize_url = FLOW.step1_get_authorize_url(callback)
   # Here we are using memcache to store the flow temporarily while the user
   # is directed to authorize our service. You could also store the flow
@@ -122,7 +121,7 @@ def main():
   application = webapp.WSGIApplication(
       [
       ('/', MainHandler),
-      ('/auth_return', OAuthHandler)
+      ('/oauth2callback', OAuthHandler)
       ],
       debug=True)
   util.run_wsgi_app(application)
