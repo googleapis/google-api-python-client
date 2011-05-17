@@ -49,7 +49,7 @@ DEFAULT_METHOD_DOC = 'A description of how to use this function'
 
 # Query parameters that work, but don't appear in discovery
 STACK_QUERY_PARAMETERS = ['trace', 'fields', 'pp', 'prettyPrint', 'userIp',
-  'strict']
+  'userip', 'strict']
 
 
 def key2param(key):
