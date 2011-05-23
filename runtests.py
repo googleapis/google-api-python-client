@@ -6,6 +6,8 @@ import sys
 import unittest
 from trace import fullmodname
 
+APP_ENGINE_PATH='../google_appengine'
+
 # Conditional import of cleanup function
 try:
   from tests.utils import cleanup
@@ -15,6 +17,7 @@ except:
 
 # Ensure current working directory is in path
 sys.path.insert(0, os.getcwd())
+sys.path.insert(0, APP_ENGINE_PATH)
 
 def build_suite(folder, verbosity):
   # find all of the test modules
@@ -60,6 +63,8 @@ def main():
   elif verbosity == 2:
     logging.basicConfig(level=logging.DEBUG)
 
+  import dev_appserver
+  dev_appserver.fix_sys_path()
   # Allow user to run a specific folder of tests
   if 'tests' in sys.argv:
     run('tests', verbosity, exit_on_failure)
