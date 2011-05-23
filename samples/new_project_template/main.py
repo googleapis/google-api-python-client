@@ -31,64 +31,100 @@ import os
 import pickle
 
 from apiclient.discovery import build
-from oauth2client.appengine import OAuth2Decorator
-from oauth2client.client import AccessTokenRefreshError
+from oauth2client.appengine import CredentialsProperty
+from oauth2client.appengine import StorageByKeyName
+from oauth2client.client import OAuth2WebServerFlow
 from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
-from google.appengine.ext.webapp.util import run_wsgi_app
+from google.appengine.ext.webapp import util
+from google.appengine.ext.webapp.util import login_required
 
-# The client_id and client_secret are copied from the API Access tab on
+# Set up a Flow object to be used if we need to authenticate. This
+# sample uses OAuth 2.0, and we set up the OAuth2WebServerFlow with
+# the information it needs to authenticate. Note that it is called
+# the Web Server Flow, but it can also handle the flow for native
+# applications <http://code.google.com/apis/accounts/docs/OAuth2.html#IA>
+# The client_id and client_secret are copied from the Identity tab on
 # the Google APIs Console <http://code.google.com/apis/console>
-decorator = OAuth2Decorator(
-    client_id='837647042410-75ifgipj95q4agpm0cs452mg7i2pn17c.apps.googleusercontent.com',
-    client_secret='QhxYsjM__u4vy5N0DXUFRwwI',
+
+FLOW = OAuth2WebServerFlow(
+    client_id='<client id goes here>',
+    client_secret='<client secret goes here>',
     scope='https://www.googleapis.com/auth/buzz',
     user_agent='my-sample-app/1.0')
 
 
+class Credentials(db.Model):
+  credentials = CredentialsProperty()
+
+
 class MainHandler(webapp.RequestHandler):
 
-  @decorator.oauth_required
+  @login_required
   def get(self):
-    http = decorator.http()
+    user = users.get_current_user()
+    credentials = StorageByKeyName(
+        Credentials, user.user_id(), 'credentials').get()
+
+    if not credentials or credentials.invalid:
+      return begin_oauth_flow(self, user)
+
+    http = credentials.authorize(httplib2.Http())
 
     # Build a service object for interacting with the API. Visit
     # the Google APIs Console <http://code.google.com/apis/console>
     # to get a developerKey for your own application.
-    try:
-      service = build("buzz", "v1", http=http)
-      followers = service.people().list(
-          userId='@me', groupId='@followers').execute()
-      text = 'Hello, you have %s followers!' % followers['totalResults']
+    service = build("buzz", "v1", http=http)
+    followers = service.people().list(
+        userId='@me', groupId='@followers').execute()
+    text = 'Hello, you have %s followers!' % followers['totalResults']
 
-      path = os.path.join(os.path.dirname(__file__), 'welcome.html')
-      self.response.out.write(template.render(path, {'text': text }))
-    except AccessTokenRefreshError:
-      self.redirect('/grant')
+    path = os.path.join(os.path.dirname(__file__), 'welcome.html')
+    self.response.out.write(template.render(path, {'text': text }))
 
 
-class GrantHandler(webapp.RequestHandler):
+def begin_oauth_flow(request_handler, user):
+  callback = request_handler.request.relative_url('/oauth2callback')
+  authorize_url = FLOW.step1_get_authorize_url(callback)
+  # Here we are using memcache to store the flow temporarily while the user
+  # is directed to authorize our service. You could also store the flow
+  # in the datastore depending on your utilization of memcache, just remember
+  # in that case to clean up the flow after you are done with it.
+  memcache.set(user.user_id(), pickle.dumps(FLOW))
+  request_handler.redirect(authorize_url)
 
-  @decorator.oauth_aware
+
+class OAuthHandler(webapp.RequestHandler):
+
+  @login_required
   def get(self):
-    path = os.path.join(os.path.dirname(__file__), 'grant.html')
-    variables = {
-        'url': decorator.authorize_url(),
-        'has_credentials': decorator.has_credentials()
-        }
-    self.response.out.write(template.render(path, variables))
+    user = users.get_current_user()
+    flow = pickle.loads(memcache.get(user.user_id()))
+    # This code should be ammended with application specific error
+    # handling. The following cases should be considered:
+    # 1. What if the flow doesn't exist in memcache? Or is corrupt?
+    # 2. What if the step2_exchange fails?
+    if flow:
+      credentials = flow.step2_exchange(self.request.params)
+      StorageByKeyName(
+          Credentials, user.user_id(), 'credentials').put(credentials)
+      self.redirect("/")
+    else:
+      # Add application specific error handling here.
+      pass
+
 
 def main():
   application = webapp.WSGIApplication(
       [
-       ('/', MainHandler),
-       ('/grant', GrantHandler),
+      ('/', MainHandler),
+      ('/oauth2callback', OAuthHandler)
       ],
       debug=True)
-  run_wsgi_app(application)
+  util.run_wsgi_app(application)
 
 
 if __name__ == '__main__':
