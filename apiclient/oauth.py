@@ -170,7 +170,8 @@ class OAuthCredentials(Credentials):
     self.store = None
 
   def authorize(self, http):
-    """
+    """Authorize an httplib2.Http instance with these Credentials
+
     Args:
        http - An instance of httplib2.Http
            or something that acts like it.
@@ -213,6 +214,7 @@ class OAuthCredentials(Credentials):
           headers['user-agent'] = self.user_agent + ' ' + headers['user-agent']
         else:
           headers['user-agent'] = self.user_agent
+
         resp, content = request_orig(uri, method, body, headers,
                             redirections, connection_type)
         response_code = resp.status
@@ -231,6 +233,149 @@ class OAuthCredentials(Credentials):
 
     http.request = new_request
     return http
+
+
+class TwoLeggedOAuthCredentials(Credentials):
+  """Two Legged Credentials object for OAuth 1.0a.
+
+  The Two Legged object is created directly, not from a flow.  Once you
+  authorize and httplib2.Http instance you can change the requestor and that
+  change will propogate to the authorized httplib2.Http instance. For example:
+
+    http = httplib2.Http()
+    http = credentials.authorize(http)
+
+    credentials.requestor = 'foo@example.info'
+    http.request(...)
+    credentials.requestor = 'bar@example.info'
+    http.request(...)
+  """
+
+  def __init__(self, consumer_key, consumer_secret, user_agent):
+    """
+    Args:
+      consumer_key: string, An OAuth 1.0 consumer key
+      consumer_secret: string, An OAuth 1.0 consumer secret
+      user_agent: string, The HTTP User-Agent to provide for this application.
+    """
+    self.consumer = oauth.Consumer(consumer_key, consumer_secret)
+    self.user_agent = user_agent
+    self.store = None
+
+    # email address of the user to act on the behalf of.
+    self._requestor = None
+
+  @property
+  def invalid(self):
+    """True if the credentials are invalid, such as being revoked.
+
+    Always returns False for Two Legged Credentials.
+    """
+    return False
+
+  def getrequestor(self):
+    return self._requestor
+
+  def setrequestor(self, email):
+    self._requestor = email
+
+  requestor = property(getrequestor, setrequestor, None,
+      'The email address of the user to act on behalf of')
+
+  def set_store(self, store):
+    """Set the storage for the credential.
+
+    Args:
+      store: callable, a callable that when passed a Credential
+        will store the credential back to where it came from.
+        This is needed to store the latest access_token if it
+        has been revoked.
+    """
+    self.store = store
+
+  def __getstate__(self):
+    """Trim the state down to something that can be pickled."""
+    d = copy.copy(self.__dict__)
+    del d['store']
+    return d
+
+  def __setstate__(self, state):
+    """Reconstitute the state of the object from being pickled."""
+    self.__dict__.update(state)
+    self.store = None
+
+  def authorize(self, http):
+    """Authorize an httplib2.Http instance with these Credentials
+
+    Args:
+       http - An instance of httplib2.Http
+           or something that acts like it.
+
+    Returns:
+       A modified instance of http that was passed in.
+
+    Example:
+
+      h = httplib2.Http()
+      h = credentials.authorize(h)
+
+    You can't create a new OAuth
+    subclass of httplib2.Authenication because
+    it never gets passed the absolute URI, which is
+    needed for signing. So instead we have to overload
+    'request' with a closure that adds in the
+    Authorization header and then calls the original version
+    of 'request()'.
+    """
+    request_orig = http.request
+    signer = oauth.SignatureMethod_HMAC_SHA1()
+
+    # The closure that will replace 'httplib2.Http.request'.
+    def new_request(uri, method='GET', body=None, headers=None,
+                    redirections=httplib2.DEFAULT_MAX_REDIRECTS,
+                    connection_type=None):
+      """Modify the request headers to add the appropriate
+      Authorization header."""
+      response_code = 302
+      http.follow_redirects = False
+      while response_code in [301, 302]:
+        # add in xoauth_requestor_id=self._requestor to the uri
+        if self._requestor is None:
+          raise MissingParameter(
+              'Requestor must be set before using TwoLeggedOAuthCredentials')
+        parsed = list(urlparse.urlparse(uri))
+        q = parse_qsl(parsed[4])
+        q.append(('xoauth_requestor_id', self._requestor))
+        parsed[4] = urllib.urlencode(q)
+        uri = urlparse.urlunparse(parsed)
+
+        req = oauth.Request.from_consumer_and_token(
+            self.consumer, None, http_method=method, http_url=uri)
+        req.sign_request(signer, self.consumer, None)
+        if headers is None:
+          headers = {}
+        headers.update(req.to_header())
+        if 'user-agent' in headers:
+          headers['user-agent'] = self.user_agent + ' ' + headers['user-agent']
+        else:
+          headers['user-agent'] = self.user_agent
+        resp, content = request_orig(uri, method, body, headers,
+                            redirections, connection_type)
+        response_code = resp.status
+        if response_code in [301, 302]:
+          uri = resp['location']
+
+      if response_code == 401:
+        logging.info('Access token no longer valid: %s' % content)
+        # Do not store the invalid state of the Credentials because
+        # being 2LO they could be reinstated in the future.
+        raise CredentialsInvalidError("Credentials are invalid.")
+
+      return resp, content
+
+    http.request = new_request
+    return http
+
 
 
 class FlowThreeLegged(Flow):

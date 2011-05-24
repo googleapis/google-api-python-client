@@ -218,6 +218,7 @@ class HttpMockSequence(object):
   'echo_request_headers_as_json' means return the request headers in
      the response body
   'echo_request_body' means return the request body in the response body
+  'echo_request_uri' means return the request uri in the response body
   """
 
   def __init__(self, iterable):
@@ -240,6 +241,8 @@ class HttpMockSequence(object):
       content = simplejson.dumps(headers)
     elif content == 'echo_request_body':
       content = body
+    elif content == 'echo_request_uri':
+      content = uri
     return httplib2.Response(resp), content
 
 

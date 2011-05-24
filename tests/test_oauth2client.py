@@ -15,9 +15,9 @@
 # limitations under the License.
 
 
-"""Discovery document tests
+"""Oauth2client tests
 
-Unit tests for objects created from discovery documents.
+Unit tests for oauth2client.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
