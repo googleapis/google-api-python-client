@@ -24,6 +24,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 __all__ = ["run"]
 
 import BaseHTTPServer
+import gflags
 import logging
 import socket
 import sys
@@ -37,6 +38,21 @@ except ImportError:
     from cgi import parse_qsl
 
 
+FLAGS = gflags.FLAGS
+
+gflags.DEFINE_boolean('auth_local_webserver', True,
+                     ('Run a local web server to handle redirects during '
+                       'OAuth authorization.'))
+
+gflags.DEFINE_string('auth_host_name', 'localhost',
+                     ('Host name to use when running a local web server to '
+                       'handle redirects during OAuth authorization.'))
+
+gflags.DEFINE_multi_int('auth_host_port', [8080, 8090],
+                     ('Port to use when running a local web server to '
+                       'handle redirects during OAuth authorization.'))
+
+
 class ClientRedirectServer(BaseHTTPServer.HTTPServer):
   """A server to handle OAuth 1.0 redirects back to localhost.
 
@@ -47,7 +63,7 @@ class ClientRedirectServer(BaseHTTPServer.HTTPServer):
 
 
 class ClientRedirectHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-  """A handler for OAuth 2.0 redirects back to localhost.
+  """A handler for OAuth 1.0 redirects back to localhost.
 
   Waits for a single request and parses the query parameters
   into the servers query_params and then stops serving.
@@ -89,34 +105,24 @@ def run(flow, storage):
     RequestError: if step2 of the flow fails.
   Args:
   """
-  parser = OptionParser()
-  parser.add_option("-p", "--no_local_web_server", dest="localhost",
-      action="store_false",
-      default=True,
-      help="Do not run a web server on localhost to handle redirect URIs")
-  parser.add_option("-w", "--local_web_server", dest="localhost",
-      action="store_true",
-      default=True,
-      help="Run a web server on localhost to handle redirect URIs")
 
-  (options, args) = parser.parse_args()
-
-  host_name = 'localhost'
-  port_numbers = [8080, 8090]
-  if options.localhost:
-    server_class = BaseHTTPServer.HTTPServer
-    try:
-      port_number = port_numbers[0]
-      httpd = server_class((host_name, port_number), ClientRedirectHandler)
-    except socket.error:
-      port_number = port_numbers[1]
+  if FLAGS.auth_local_webserver:
+    success = False
+    port_number = 0
+    for port in FLAGS.auth_host_port:
+      port_number = port
       try:
-        httpd = server_class((host_name, port_number), ClientRedirectHandler)
-      except socket.error:
-        options.localhost = False
+        httpd = BaseHTTPServer.HTTPServer((FLAGS.auth_host_name, port),
+            ClientRedirectHandler)
+      except socket.error, e:
+        pass
+      else:
+        success = True
+        break
+    FLAGS.auth_local_webserver = success
 
-  if options.localhost:
-    oauth_callback = 'http://%s:%s/' % (host_name, port_number)
+  if FLAGS.auth_local_webserver:
+    oauth_callback = 'http://%s:%s/' % (FLAGS.auth_host_name, port_number)
   else:
     oauth_callback = 'oob'
   authorize_url = flow.step1_get_authorize_url(oauth_callback)
@@ -124,8 +130,12 @@ def run(flow, storage):
   print 'Go to the following link in your browser:'
   print authorize_url
   print
+  if FLAGS.auth_local_webserver:
+    print 'If your browser is on a different machine then exit and re-run this'
+    print 'application with the command-line parameter --noauth_local_webserver.'
+    print
 
-  if options.localhost:
+  if FLAGS.auth_local_webserver:
     httpd.handle_request()
     if 'error' in httpd.query_params:
       sys.exit('Authentication request was rejected.')

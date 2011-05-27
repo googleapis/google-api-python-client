@@ -29,7 +29,6 @@ import logging
 import socket
 import sys
 
-from optparse import OptionParser
 from client import FlowExchangeError
 
 try:
