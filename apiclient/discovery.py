@@ -29,17 +29,21 @@ import re
 import uritemplate
 import urllib
 import urlparse
+import mimetypes
+
 try:
     from urlparse import parse_qsl
 except ImportError:
     from cgi import parse_qsl
 
-from http import HttpRequest
 from anyjson import simplejson
-from model import JsonModel
-from errors import UnknownLinkType
+from email.mime.multipart import MIMEMultipart
+from email.mime.nonmultipart import MIMENonMultipart
 from errors import HttpError
 from errors import InvalidJsonError
+from errors import UnknownLinkType
+from http import HttpRequest
+from model import JsonModel
 
 URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
@@ -50,6 +54,11 @@ DEFAULT_METHOD_DOC = 'A description of how to use this function'
 # Query parameters that work, but don't appear in discovery
 STACK_QUERY_PARAMETERS = ['trace', 'fields', 'pp', 'prettyPrint', 'userIp',
   'userip', 'strict']
+
+
+def _write_headers(self):
+  # Utility no-op method for multipart media handling
+  pass
 
 
 def key2param(key):
@@ -250,6 +259,11 @@ def createResource(http, baseUrl, model, requestBuilder,
           'type': 'object',
           'required': True,
           }
+      methodDesc['parameters']['media_body'] = {
+          'description': 'The filename of the media request body.',
+          'type': 'string',
+          'required': False,
+          }
 
     argmap = {} # Map from method parameter name to query parameter name
     required_params = [] # Required parameters
@@ -310,6 +324,7 @@ def createResource(http, baseUrl, model, requestBuilder,
                 'Parameter "%s" value "%s" is not an allowed value in "%s"' %
                 (name, kwargs[name], str(enums)))
 
+      media_filename = kwargs.pop('media_body', None)
       actual_query_params = {}
       actual_path_params = {}
       for key, value in kwargs.iteritems():
@@ -332,16 +347,49 @@ def createResource(http, baseUrl, model, requestBuilder,
       headers, params, query, body = self._model.request(headers,
           actual_path_params, actual_query_params, body_value)
 
-      # TODO(ade) This exists to fix a bug in V1 of the Buzz discovery
-      # document.  Base URLs should not contain any path elements. If they do
-      # then urlparse.urljoin will strip them out This results in an incorrect
-      # URL which returns a 404
-      url_result = urlparse.urlsplit(self._baseUrl)
-      new_base_url = url_result[0] + '://' + url_result[1]
-
       expanded_url = uritemplate.expand(pathUrl, params)
-      url = urlparse.urljoin(self._baseUrl,
-                             url_result[2] + expanded_url + query)
+      url = urlparse.urljoin(self._baseUrl, expanded_url + query)
+
+      if media_filename:
+        (media_mime_type, encoding) = mimetypes.guess_type(media_filename)
+        if media_mime_type is None:
+          raise UnknownFileType(media_filename)
+
+        # modify the path to prepend '/upload'
+        parsed = list(urlparse.urlparse(url))
+        parsed[2] = '/upload' + parsed[2]
+        url = urlparse.urlunparse(parsed)
+
+        if body is None:
+          headers['content-type'] = media_mime_type
+          # make the body the contents of the file
+          f = file(media_filename, 'rb')
+          body = f.read()
+          f.close()
+        else:
+          msgRoot = MIMEMultipart('related')
+          # msgRoot should not write out it's own headers
+          setattr(msgRoot, '_write_headers', lambda self: None)
+
+          # attach the body as one part
+          msg = MIMENonMultipart(*headers['content-type'].split('/'))
+          msg.set_payload(body)
+          msgRoot.attach(msg)
+
+          # attach the media as the second part
+          msg = MIMENonMultipart(*media_mime_type.split('/'))
+          msg['Content-Transfer-Encoding'] = 'binary'
+
+          f = file(media_filename, 'rb')
+          msg.set_payload(f.read())
+          f.close()
+          msgRoot.attach(msg)
+
+          body = msgRoot.as_string()
+
+          # must appear after the call to as_string() to get the right boundary
+          headers['content-type'] = ('multipart/related; '
+                                     'boundary="%s"') % msgRoot.get_boundary()
 
       logging.info('URL being requested: %s' % url)
       return self._requestBuilder(self._http,
@@ -357,6 +405,8 @@ def createResource(http, baseUrl, model, requestBuilder,
       docs.append('Args:\n')
     for arg in argmap.iterkeys():
       if arg in STACK_QUERY_PARAMETERS:
+        continue
+      if arg == 'media_body':
         continue
       repeated = ''
       if arg in repeated_params:

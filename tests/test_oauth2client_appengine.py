@@ -98,10 +98,12 @@ class DecoratorTests(unittest.TestCase):
                                          debug=True)
     self.app = TestApp(application)
     users.get_current_user = UserMock
+    self.httplib2_orig = httplib2.Http
     httplib2.Http = Http2Mock
 
   def tearDown(self):
     self.testbed.deactivate()
+    httplib2.Http = self.httplib2_orig
 
   def test_required(self):
     # An initial request to an oauth_required decorated path should be a
