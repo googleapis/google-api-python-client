@@ -142,6 +142,45 @@ class BuzzAuthenticatedFunctionalTest(unittest.TestCase):
     ).execute()
     self.assertTrue(activity is not None)
 
+  def test_fields_parameter_restricts_response_fields(self):
+    activity = self.buzz.activities().insert(userId='@me', body={
+        'data': {
+            'title': 'Testing patch',
+            'object': {
+                'content': u'Just a short note to show that insert is working. ?',
+                'type': 'note'}
+            }
+        }
+    ).execute()
+    self.assertTrue('kind' in activity)
+
+    # test fields to restrict what is returned
+    activity = self.buzz.activities().get(userId='@me', postId=activity['id'],
+                                        fields='object,id').execute()
+    self.assertTrue('kind' not in activity)
+    self.assertTrue('object' in activity)
+    self.assertTrue('id' in activity)
+
+  def test_patch(self):
+    activity = self.buzz.activities().insert(userId='@me', body={
+        'data': {
+            'title': 'Testing patch',
+            'object': {
+                'content': u'Just a short note to show that insert is working. ?',
+                'type': 'note'}
+            }
+        }).execute()
+    # Construct a raw patch to send, also restrict the response with fields
+    activity = self.buzz.activities().patch(userId='@me',
+                                            scope='@self',
+                                            postId=activity['id'],
+                                            body={
+        'object': {
+            'content': 'Updated content only!'}},
+        fields='object').execute()
+    self.assertEquals(activity['object']['content'], 'Updated content only!')
+    self.assertTrue('id' not in activity)
+
   def test_can_create_private_activity(self):
     activity = self.buzz.activities().insert(userId='@me', body={
         'data': {
