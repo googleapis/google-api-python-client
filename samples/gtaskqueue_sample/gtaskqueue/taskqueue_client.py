@@ -81,7 +81,7 @@ class TaskQueueClient:
             raise app.UsageError('You must specify a project name'
                                  ' using the "--project_name" flag.')
         discovery_uri = (
-                FLAGS.api_host + 'discovery/v0.3/describe/{api}/{apiVersion}')
+            FLAGS.api_host + 'discovery/v1/apis/{api}/{apiVersion}/rest')
         logger.info(discovery_uri)
         try:
             # If the Credentials don't exist or are invalid run through the
