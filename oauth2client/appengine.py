@@ -220,12 +220,16 @@ class OAuth2Decorator(object):
       method: callable, to be decorated method of a webapp.RequestHandler
         instance.
     """
-    @login_required
     def check_oauth(request_handler, *args):
+      user = users.get_current_user()
+      # Don't use @login_decorator as this could be used in a POST request.
+      if not user:
+        request_handler.redirect(users.create_login_url(
+            request_handler.request.uri))
+        return
       # Store the request URI in 'state' so we can use it later
       self.flow.params['state'] = request_handler.request.url
       self._request_handler = request_handler
-      user = users.get_current_user()
       self.credentials = StorageByKeyName(
           CredentialsModel, user.user_id(), 'credentials').get()
 
@@ -251,11 +255,15 @@ class OAuth2Decorator(object):
       method: callable, to be decorated method of a webapp.RequestHandler
         instance.
     """
-    @login_required
     def setup_oauth(request_handler, *args):
+      user = users.get_current_user()
+      # Don't use @login_decorator as this could be used in a POST request.
+      if not user:
+        request_handler.redirect(users.create_login_url(
+            request_handler.request.uri))
+        return
       self.flow.params['state'] = request_handler.request.url
       self._request_handler = request_handler
-      user = users.get_current_user()
       self.credentials = StorageByKeyName(
           CredentialsModel, user.user_id(), 'credentials').get()
       method(request_handler, *args)
