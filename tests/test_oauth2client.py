@@ -35,6 +35,7 @@ from apiclient.http import HttpMockSequence
 from oauth2client.client import AccessTokenCredentials
 from oauth2client.client import AccessTokenCredentialsError
 from oauth2client.client import AccessTokenRefreshError
+from oauth2client.client import AssertionCredentials
 from oauth2client.client import FlowExchangeError
 from oauth2client.client import OAuth2Credentials
 from oauth2client.client import OAuth2WebServerFlow
@@ -115,6 +116,35 @@ class AccessTokenCredentialsTests(unittest.TestCase):
     self.assertEqual(400, resp.status)
 
 
+class TestAssertionCredentials(unittest.TestCase):
+  assertion_text = "This is the assertion"
+  assertion_type = "http://www.google.com/assertionType"
+
+  class AssertionCredentialsTestImpl(AssertionCredentials):
+
+    def _generate_assertion(self):
+      return TestAssertionCredentials.assertion_text
+
+  def setUp(self):
+    user_agent = "fun/2.0"
+    self.credentials = self.AssertionCredentialsTestImpl(self.assertion_type,
+        user_agent)
+
+  def test_assertion_body(self):
+    body = urlparse.parse_qs(self.credentials._generate_refresh_request_body())
+    self.assertEqual(body['assertion'][0], self.assertion_text)
+    self.assertEqual(body['assertion_type'][0], self.assertion_type)
+
+  def test_assertion_refresh(self):
+    http = HttpMockSequence([
+      ({'status': '200'}, '{"access_token":"1/3w"}'),
+      ({'status': '200'}, 'echo_request_headers'),
+      ])
+    http = self.credentials.authorize(http)
+    resp, content = http.request("http://example.com")
+    self.assertEqual(content['authorization'], 'OAuth 1/3w')
+
+
 class OAuth2WebServerFlowTest(unittest.TestCase):
 
   def setUp(self):
@@ -137,7 +167,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
 
   def test_exchange_failure(self):
     http = HttpMockSequence([
-      ({'status': '400'}, '{"error":"invalid_request"}')
+      ({'status': '400'}, '{"error":"invalid_request"}'),
       ])
 
     try:
@@ -158,7 +188,6 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
     self.assertEqual(credentials.access_token, 'SlAV32hkKG')
     self.assertNotEqual(credentials.token_expiry, None)
     self.assertEqual(credentials.refresh_token, '8xLOxBtZp8')
-
 
   def test_exchange_no_expires_in(self):
     http = HttpMockSequence([

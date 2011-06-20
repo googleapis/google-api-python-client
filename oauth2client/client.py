@@ -83,6 +83,7 @@ class Credentials(object):
     """
     _abstract()
 
+
 class Flow(object):
   """Base class for all Flow objects."""
   pass
@@ -93,7 +94,6 @@ class Storage(object):
 
   Store and retrieve a single credential.
   """
-
 
   def get(self):
     """Retrieve credential.
@@ -187,6 +187,26 @@ class OAuth2Credentials(Credentials):
     self.__dict__.update(state)
     self.store = None
 
+  def _generate_refresh_request_body(self):
+    """Generate the body that will be used in the refresh request
+    """
+    body = urllib.urlencode({
+      'grant_type': 'refresh_token',
+      'client_id': self.client_id,
+      'client_secret': self.client_secret,
+      'refresh_token': self.refresh_token,
+      })
+    return body
+
+  def _generate_refresh_request_headers(self):
+    """Generate the headers that will be used in the refresh request
+    """
+    headers = {
+        'user-agent': self.user_agent,
+        'content-type': 'application/x-www-form-urlencoded',
+    }
+    return headers
+
   def _refresh(self, http_request):
     """Refresh the access_token using the refresh_token.
 
@@ -194,16 +214,9 @@ class OAuth2Credentials(Credentials):
        http: An instance of httplib2.Http.request
            or something that acts like it.
     """
-    body = urllib.urlencode({
-      'grant_type': 'refresh_token',
-      'client_id': self.client_id,
-      'client_secret': self.client_secret,
-      'refresh_token' : self.refresh_token
-      })
-    headers = {
-        'user-agent': self.user_agent,
-        'content-type': 'application/x-www-form-urlencoded'
-    }
+    body = self._generate_refresh_request_body()
+    headers = self._generate_refresh_request_headers()
+
     logging.info("Refresing access_token")
     resp, content = http_request(
         self.token_uri, method='POST', body=body, headers=headers)
@@ -214,14 +227,14 @@ class OAuth2Credentials(Credentials):
       self.refresh_token = d.get('refresh_token', self.refresh_token)
       if 'expires_in' in d:
         self.token_expiry = datetime.timedelta(
-            seconds = int(d['expires_in'])) + datetime.datetime.now()
+            seconds=int(d['expires_in'])) + datetime.datetime.now()
       else:
         self.token_expiry = None
       if self.store is not None:
         self.store(self)
     else:
-      # An {'error':...} response body means the token is expired or revoked, so
-      # we flag the credentials as such.
+      # An {'error':...} response body means the token is expired or revoked,
+      # so we flag the credentials as such.
       logging.error('Failed to retrieve access token: %s' % content)
       error_msg = 'Invalid response %s.' % resp['status']
       try:
@@ -232,7 +245,8 @@ class OAuth2Credentials(Credentials):
           if self.store is not None:
             self.store(self)
           else:
-            logging.warning("Unable to store refreshed credentials, no Storage provided.")
+            logging.warning(
+                "Unable to store refreshed credentials, no Storage provided.")
       except:
         pass
       raise AccessTokenRefreshError(error_msg)
@@ -266,6 +280,10 @@ class OAuth2Credentials(Credentials):
     def new_request(uri, method='GET', body=None, headers=None,
                     redirections=httplib2.DEFAULT_MAX_REDIRECTS,
                     connection_type=None):
+      if not self.access_token:
+        logging.info("Attempting refresh to obtain initial access_token")
+        self._refresh(request_orig)
+
       """Modify the request headers to add the appropriate
       Authorization header."""
       if headers == None:
@@ -275,8 +293,10 @@ class OAuth2Credentials(Credentials):
         headers['user-agent'] = self.user_agent + ' ' + headers['user-agent']
       else:
         headers['user-agent'] = self.user_agent
+
       resp, content = request_orig(uri, method, body, headers,
                                    redirections, connection_type)
+
       if resp.status == 401:
         logging.info("Refreshing because we got a 401")
         self._refresh(request_orig)
@@ -340,6 +360,57 @@ class AccessTokenCredentials(OAuth2Credentials):
   def _refresh(self, http_request):
     raise AccessTokenCredentialsError(
         "The access_token is expired or invalid and can't be refreshed.")
+
+
+class AssertionCredentials(OAuth2Credentials):
+  """Abstract Credentials object used for OAuth 2.0 assertion grants
+
+  This credential does not require a flow to instantiate because it represents
+  a two legged flow, and therefore has all of the required information to
+  generate and refresh its own access tokens.  It must be subclassed to
+  generate the appropriate assertion string.
+
+  AssertionCredentials objects may be safely pickled and unpickled.
+  """
+
+  def __init__(self, assertion_type, user_agent,
+      token_uri='https://accounts.google.com/o/oauth2/token', **kwargs):
+    """Constructor for AssertionFlowCredentials
+
+    Args:
+      assertion_type: string, assertion type that will be declared to the auth
+          server
+      user_agent: string, The HTTP User-Agent to provide for this application.
+      token_uri: string, URI for token endpoint. For convenience
+        defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+    """
+    super(AssertionCredentials, self).__init__(
+        None,
+        None,
+        None,
+        None,
+        None,
+        token_uri,
+        user_agent)
+    self.assertion_type = assertion_type
+
+  def _generate_refresh_request_body(self):
+    assertion = self._generate_assertion()
+
+    body = urllib.urlencode({
+      'assertion_type': self.assertion_type,
+      'assertion': assertion,
+      'grant_type': "assertion",
+    })
+
+    return body
+
+  def _generate_assertion(self):
+    """Generate the assertion string that will be used in the access token
+    request.
+    """
+    _abstract()
+
 
 class OAuth2WebServerFlow(Flow):
   """Does the Web Server Flow for OAuth 2.0.
@@ -420,15 +491,16 @@ class OAuth2WebServerFlow(Flow):
       'client_secret': self.client_secret,
       'code': code,
       'redirect_uri': self.redirect_uri,
-      'scope': self.scope
+      'scope': self.scope,
       })
     headers = {
       'user-agent': self.user_agent,
-      'content-type': 'application/x-www-form-urlencoded'
+      'content-type': 'application/x-www-form-urlencoded',
     }
     if http is None:
       http = httplib2.Http()
-    resp, content = http.request(self.token_uri, method='POST', body=body, headers=headers)
+    resp, content = http.request(self.token_uri, method='POST', body=body,
+                                 headers=headers)
     if resp.status == 200:
       # TODO(jcgregorio) Raise an error if simplejson.loads fails?
       d = simplejson.loads(content)
@@ -436,12 +508,13 @@ class OAuth2WebServerFlow(Flow):
       refresh_token = d.get('refresh_token', None)
       token_expiry = None
       if 'expires_in' in d:
-        token_expiry = datetime.datetime.now() + datetime.timedelta(seconds = int(d['expires_in']))
+        token_expiry = datetime.datetime.now() + datetime.timedelta(
+            seconds=int(d['expires_in']))
 
       logging.info('Successfully retrieved access token: %s' % content)
-      return OAuth2Credentials(access_token, self.client_id, self.client_secret,
-                               refresh_token, token_expiry, self.token_uri,
-                               self.user_agent)
+      return OAuth2Credentials(access_token, self.client_id,
+                               self.client_secret, refresh_token, token_expiry,
+                               self.token_uri, self.user_agent)
     else:
       logging.error('Failed to retrieve access token: %s' % content)
       error_msg = 'Invalid response %s.' % resp['status']

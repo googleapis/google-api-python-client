@@ -21,20 +21,105 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import httplib2
 import pickle
+import time
+import base64
+import logging
+
+try: # pragma: no cover
+  import simplejson
+except ImportError: # pragma: no cover
+  try:
+    # Try to import from django, should work on App Engine
+    from django.utils import simplejson
+  except ImportError:
+    # Should work for Python2.6 and higher.
+    import json as simplejson
 
 from client import AccessTokenRefreshError
+from client import AssertionCredentials
 from client import Credentials
 from client import Flow
 from client import OAuth2WebServerFlow
 from client import Storage
 from google.appengine.api import memcache
 from google.appengine.api import users
+from google.appengine.api.app_identity import app_identity
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 OAUTH2CLIENT_NAMESPACE = 'oauth2client#ns'
+
+
+class AppAssertionCredentials(AssertionCredentials):
+  """Credentials object for App Engine Assertion Grants
+
+  This object will allow an App Engine application to identify itself to Google
+  and other OAuth 2.0 servers that can verify assertions. It can be used for
+  the purpose of accessing data stored under an account assigned to the App
+  Engine application itself. The algorithm used for generating the assertion is
+  the Signed JSON Web Token (JWT) algorithm. Additional details can be found at
+  the following link:
+
+  http://self-issued.info/docs/draft-jones-json-web-token.html
+
+  This credential does not require a flow to instantiate because it represents
+  a two legged flow, and therefore has all of the required information to
+  generate and refresh its own access tokens.
+
+  AssertionFlowCredentials objects may be safely pickled and unpickled.
+  """
+
+  def __init__(self, scope, user_agent,
+      audience='https://accounts.google.com/o/oauth2/token',
+      assertion_type='http://oauth.net/grant_type/jwt/1.0/bearer',
+      token_uri='https://accounts.google.com/o/oauth2/token', **kwargs):
+    """Constructor for AppAssertionCredentials
+
+    Args:
+      scope: string, scope of the credentials being requested.
+      user_agent: string, The HTTP User-Agent to provide for this application.
+      audience: string, The audience, or verifier of the assertion.  For
+        convenience defaults to Google's audience.
+      assertion_type: string, Type name that will identify the format of the
+        assertion string.  For convience, defaults to the JSON Web Token (JWT)
+        assertion type string.
+      token_uri: string, URI for token endpoint. For convenience
+        defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+    """
+    self.scope = scope
+    self.audience = audience
+    self.app_name = app_identity.get_service_account_name()
+
+    super(AppAssertionCredentials, self).__init__(
+        assertion_type,
+        user_agent,
+        token_uri)
+
+  def _generate_assertion(self):
+    header = {
+      'typ': 'JWT',
+      'alg': 'RS256',
+    }
+
+    now = int(time.time())
+    claims = {
+      'aud': self.audience,
+      'scope': self.scope,
+      'iat': now,
+      'exp': now + 3600,
+      'iss': self.app_name,
+    }
+
+    jwt_components = [base64.b64encode(simplejson.dumps(seg))
+        for seg in [header, claims]]
+
+    base_str = ".".join(jwt_components)
+    key_name, signature = app_identity.sign_blob(base_str)
+    jwt_components.append(base64.b64encode(signature))
+    return ".".join(jwt_components)
+
 
 class FlowProperty(db.Property):
   """App Engine datastore Property for Flow.
@@ -117,7 +202,7 @@ class StorageByKeyName(Storage):
     Args:
       model: db.Model, model class
       key_name: string, key name for the entity that has the credentials
-      property_name: string, name of the property that is an CredentialsProperty
+      property_name: string, name of the property that is a CredentialsProperty
       cache: memcache, a write-through cache to put in front of the datastore
     """
     self._model = model
@@ -189,6 +274,7 @@ class OAuth2Decorator(object):
         # in API calls
 
   """
+
   def __init__(self, client_id, client_secret, scope, user_agent,
                auth_uri='https://accounts.google.com/o/oauth2/auth',
                token_uri='https://accounts.google.com/o/oauth2/token'):
@@ -205,8 +291,8 @@ class OAuth2Decorator(object):
       token_uri: string, URI for token endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
     """
-    self.flow = OAuth2WebServerFlow(client_id, client_secret, scope, user_agent,
-      auth_uri, token_uri)
+    self.flow = OAuth2WebServerFlow(client_id, client_secret, scope,
+      user_agent, auth_uri, token_uri)
     self.credentials = None
     self._request_handler = None
 
@@ -220,6 +306,7 @@ class OAuth2Decorator(object):
       method: callable, to be decorated method of a webapp.RequestHandler
         instance.
     """
+
     def check_oauth(request_handler, *args):
       user = users.get_current_user()
       # Don't use @login_decorator as this could be used in a POST request.
@@ -255,6 +342,7 @@ class OAuth2Decorator(object):
       method: callable, to be decorated method of a webapp.RequestHandler
         instance.
     """
+
     def setup_oauth(request_handler, *args):
       user = users.get_current_user()
       # Don't use @login_decorator as this could be used in a POST request.
@@ -308,10 +396,12 @@ class OAuth2Handler(webapp.RequestHandler):
     error = self.request.get('error')
     if error:
       errormsg = self.request.get('error_description', error)
-      self.response.out.write('The authorization request failed: %s' % errormsg)
+      self.response.out.write(
+          'The authorization request failed: %s' % errormsg)
     else:
       user = users.get_current_user()
-      flow = pickle.loads(memcache.get(user.user_id(), namespace=OAUTH2CLIENT_NAMESPACE))
+      flow = pickle.loads(memcache.get(user.user_id(),
+                                       namespace=OAUTH2CLIENT_NAMESPACE))
       # This code should be ammended with application specific error
       # handling. The following cases should be considered:
       # 1. What if the flow doesn't exist in memcache? Or is corrupt?
@@ -327,6 +417,7 @@ class OAuth2Handler(webapp.RequestHandler):
 
 
 application = webapp.WSGIApplication([('/oauth2callback', OAuth2Handler)])
+
 
 def main():
   run_wsgi_app(application)

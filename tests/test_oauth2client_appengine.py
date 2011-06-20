@@ -22,6 +22,7 @@ Unit tests for objects created from discovery documents.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import base64
 import httplib2
 import unittest
 import urlparse
@@ -31,20 +32,24 @@ try:
 except ImportError:
     from cgi import parse_qs
 
-from apiclient.http import HttpMockSequence
 from apiclient.anyjson import simplejson
-from webtest import TestApp
+from apiclient.http import HttpMockSequence
+from google.appengine.api import apiproxy_stub
+from google.appengine.api import apiproxy_stub_map
+from google.appengine.api import users
+from google.appengine.ext import testbed
+from google.appengine.ext import webapp
 from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import FlowExchangeError
+from oauth2client.appengine import AppAssertionCredentials
 from oauth2client.appengine import OAuth2Decorator
-from google.appengine.ext import webapp
-from google.appengine.api import users
 from oauth2client.appengine import OAuth2Handler
-from google.appengine.ext import testbed
+from webtest import TestApp
 
 
 class UserMock(object):
   """Mock the app engine user service"""
+
   def user_id(self):
     return 'foo_user'
 
@@ -55,13 +60,66 @@ class Http2Mock(object):
   content = {
       'access_token': 'foo_access_token',
       'refresh_token': 'foo_refresh_token',
-      'expires_in': 3600
+      'expires_in': 3600,
     }
 
   def request(self, token_uri, method, body, headers, *args, **kwargs):
     self.body = body
     self.headers = headers
     return (self, simplejson.dumps(self.content))
+
+
+class TestAppAssertionCredentials(unittest.TestCase):
+  account_name = "service_account_name@appspot.com"
+  signature = "signature"
+
+  class AppIdentityStubImpl(apiproxy_stub.APIProxyStub):
+
+    def __init__(self):
+      super(TestAppAssertionCredentials.AppIdentityStubImpl, self).__init__(
+          'app_identity_service')
+
+    def _Dynamic_GetServiceAccountName(self, request, response):
+      return response.set_service_account_name(
+          TestAppAssertionCredentials.account_name)
+
+    def _Dynamic_SignForApp(self, request, response):
+      return response.set_signature_bytes(
+          TestAppAssertionCredentials.signature)
+
+  def setUp(self):
+    app_identity_stub = self.AppIdentityStubImpl()
+    apiproxy_stub_map.apiproxy.RegisterStub("app_identity_service",
+                                            app_identity_stub)
+
+    self.scope = "http://www.googleapis.com/scope"
+    user_agent = "hal/3.0"
+
+    self.credentials = AppAssertionCredentials(self.scope, user_agent)
+
+  def test_assertion(self):
+    assertion = self.credentials._generate_assertion()
+
+    parts = assertion.split(".")
+    self.assertTrue(len(parts) == 3)
+
+    header, body, signature = [base64.b64decode(part) for part in parts]
+
+    header_dict = simplejson.loads(header)
+    self.assertEqual(header_dict['typ'], 'JWT')
+    self.assertEqual(header_dict['alg'], 'RS256')
+
+    body_dict = simplejson.loads(body)
+    self.assertEqual(body_dict['aud'],
+                     'https://accounts.google.com/o/oauth2/token')
+    self.assertEqual(body_dict['scope'], self.scope)
+    self.assertEqual(body_dict['iss'], self.account_name)
+
+    issuedAt = body_dict['iat']
+    self.assertTrue(issuedAt > 0)
+    self.assertEqual(body_dict['exp'], issuedAt + 3600)
+
+    self.assertEqual(signature, self.signature)
 
 
 class DecoratorTests(unittest.TestCase):
@@ -79,14 +137,14 @@ class DecoratorTests(unittest.TestCase):
                                 user_agent='foo_user_agent')
     self.decorator = decorator
 
-
     class TestRequiredHandler(webapp.RequestHandler):
+
       @decorator.oauth_required
       def get(self):
         pass
 
-
     class TestAwareHandler(webapp.RequestHandler):
+
       @decorator.oauth_aware
       def get(self):
         self.response.out.write('Hello World!')
@@ -121,7 +179,7 @@ class DecoratorTests(unittest.TestCase):
     # Now simulate the callback to /oauth2callback
     response = self.app.get('/oauth2callback', {
         'code': 'foo_access_code',
-        'state': 'foo_path'
+        'state': 'foo_path',
         })
     self.assertEqual('http://localhost/foo_path', response.headers['Location'])
     self.assertEqual(None, self.decorator.credentials)
@@ -130,8 +188,10 @@ class DecoratorTests(unittest.TestCase):
     response = self.app.get('/foo_path')
     self.assertEqual('200 OK', response.status)
     self.assertEqual(True, self.decorator.has_credentials())
-    self.assertEqual('foo_refresh_token', self.decorator.credentials.refresh_token)
-    self.assertEqual('foo_access_token', self.decorator.credentials.access_token)
+    self.assertEqual('foo_refresh_token',
+                     self.decorator.credentials.refresh_token)
+    self.assertEqual('foo_access_token',
+                     self.decorator.credentials.access_token)
 
     # Invalidate the stored Credentials
     self.decorator.credentials._invalid = True
@@ -161,7 +221,7 @@ class DecoratorTests(unittest.TestCase):
     url = self.decorator.authorize_url()
     response = self.app.get('/oauth2callback', {
         'code': 'foo_access_code',
-        'state': 'bar_path'
+        'state': 'bar_path',
         })
     self.assertEqual('http://localhost/bar_path', response.headers['Location'])
     self.assertEqual(False, self.decorator.has_credentials())
@@ -171,8 +231,10 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('200 OK', response.status)
     self.assertEqual('Hello World!', response.body)
     self.assertEqual(True, self.decorator.has_credentials())
-    self.assertEqual('foo_refresh_token', self.decorator.credentials.refresh_token)
-    self.assertEqual('foo_access_token', self.decorator.credentials.access_token)
+    self.assertEqual('foo_refresh_token',
+                     self.decorator.credentials.refresh_token)
+    self.assertEqual('foo_access_token',
+                     self.decorator.credentials.access_token)
 
 if __name__ == '__main__':
   unittest.main()
