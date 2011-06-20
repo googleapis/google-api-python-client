@@ -112,9 +112,16 @@ class AccessTokenCredentialsTests(unittest.TestCase):
       ({'status': '400'}, ''),
       ])
     http = self.credentials.authorize(http)
-    resp, content = http.request("http://example.com")
+    resp, content = http.request('http://example.com')
     self.assertEqual(400, resp.status)
 
+  def test_auth_header_sent(self):
+    http = HttpMockSequence([
+      ({'status': '200'}, 'echo_request_headers'),
+      ])
+    http = self.credentials.authorize(http)
+    resp, content = http.request('http://example.com')
+    self.assertEqual(content['authorization'], 'OAuth foo')
 
 class TestAssertionCredentials(unittest.TestCase):
   assertion_text = "This is the assertion"
