@@ -21,6 +21,8 @@ Unit tests for the apiclient.http.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+# Do not remove the httplib2 import
+import httplib2
 import unittest
 
 from apiclient.http import set_user_agent
