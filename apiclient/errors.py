@@ -40,8 +40,7 @@ class HttpError(Error):
     self.uri = uri
 
   def _get_reason(self):
-    """Calculate the reason for the error from the response content.
-    """
+    """Calculate the reason for the error from the response content."""
     if self.resp.get('content-type', '').startswith('application/json'):
       try:
         data = simplejson.loads(self.content)
@@ -69,4 +68,12 @@ class InvalidJsonError(Error):
 
 class UnknownLinkType(Error):
   """Link type unknown or unexpected."""
+  pass
+
+class UnacceptableMimeTypeError(Error):
+  """That is an unacceptable mimetype for this operation."""
+  pass
+
+class MediaUploadSizeError(Error):
+  """Media is larger than the method can accept."""
   pass

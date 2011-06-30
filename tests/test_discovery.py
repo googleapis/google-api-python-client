@@ -38,6 +38,8 @@ from apiclient.http import tunnel_patch
 from apiclient.http import HttpMockSequence
 from apiclient.errors import HttpError
 from apiclient.errors import InvalidJsonError
+from apiclient.errors import MediaUploadSizeError
+from apiclient.errors import UnacceptableMimeTypeError
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -195,6 +197,66 @@ class Discovery(unittest.TestCase):
     q = parse_qs(parsed[4])
     self.assertEqual(q['q'], ['foo'])
 
+  def test_simple_media_uploads(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+    doc = getattr(zoo.animals().insert, '__doc__')
+    self.assertTrue('media_body' in doc)
+
+  def test_simple_media_raise_correct_exceptions(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    try:
+      zoo.animals().insert(media_body=datafile('smiley.png'))
+      self.fail("should throw exception if media is too large.")
+    except MediaUploadSizeError:
+      pass
+
+    try:
+      zoo.animals().insert(media_body=datafile('small.jpg'))
+      self.fail("should throw exception if mimetype is unacceptable.")
+    except UnacceptableMimeTypeError:
+      pass
+
+  def test_simple_media_good_upload(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    request = zoo.animals().insert(media_body=datafile('small.png'))
+    self.assertEquals('image/png', request.headers['content-type'])
+    self.assertEquals('PNG', request.body[1:4])
+
+  def test_multipart_media_raise_correct_exceptions(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    try:
+      zoo.animals().insert(media_body=datafile('smiley.png'), body={})
+      self.fail("should throw exception if media is too large.")
+    except MediaUploadSizeError:
+      pass
+
+    try:
+      zoo.animals().insert(media_body=datafile('small.jpg'), body={})
+      self.fail("should throw exception if mimetype is unacceptable.")
+    except UnacceptableMimeTypeError:
+      pass
+
+  def test_multipart_media_good_upload(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    request = zoo.animals().insert(media_body=datafile('small.png'), body={})
+    self.assertTrue(request.headers['content-type'].startswith('multipart/related'))
+    self.assertEquals('--==', request.body[0:4])
+
+  def test_media_capable_method_without_media(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    request = zoo.animals().insert(body={})
+    self.assertTrue(request.headers['content-type'], 'application/json')
 
 class Next(unittest.TestCase):
   def test_next_for_people_liked(self):

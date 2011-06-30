@@ -29,6 +29,7 @@ import re
 import uritemplate
 import urllib
 import urlparse
+import mimeparse
 import mimetypes
 
 try:
@@ -41,6 +42,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from errors import HttpError
 from errors import InvalidJsonError
+from errors import MediaUploadSizeError
+from errors import UnacceptableMimeTypeError
 from errors import UnknownLinkType
 from http import HttpRequest
 from model import JsonModel
@@ -226,6 +229,22 @@ def _cast(value, schema_type):
     else:
       return str(value)
 
+MULTIPLIERS = {
+    "KB": 2**10,
+    "MB": 2**20,
+    "GB": 2**30,
+    "TB": 2**40,
+    }
+
+def _media_size_to_long(maxSize):
+  """Convert a string media size, such as 10GB or 3TB into an integer."""
+  units = maxSize[-2:].upper()
+  multiplier = MULTIPLIERS.get(units, 0)
+  if multiplier:
+    return int(maxSize[:-2])*multiplier
+  else:
+    return int(maxSize)
+
 
 def createResource(http, baseUrl, model, requestBuilder,
                    developerKey, resourceDesc, futureDesc):
@@ -245,6 +264,15 @@ def createResource(http, baseUrl, model, requestBuilder,
     httpMethod = methodDesc['httpMethod']
     methodId = methodDesc['id']
 
+    mediaPathUrl = None
+    accept = []
+    maxSize = 0
+    if 'mediaUpload' in methodDesc:
+      mediaUpload = methodDesc['mediaUpload']
+      mediaPathUrl = mediaUpload['protocols']['simple']['path']
+      accept = mediaUpload['accept']
+      maxSize = _media_size_to_long(mediaUpload['maxSize'])
+
     if 'parameters' not in methodDesc:
       methodDesc['parameters'] = {}
     for name in STACK_QUERY_PARAMETERS:
@@ -259,11 +287,13 @@ def createResource(http, baseUrl, model, requestBuilder,
           'type': 'object',
           'required': True,
           }
-      methodDesc['parameters']['media_body'] = {
-          'description': 'The filename of the media request body.',
-          'type': 'string',
-          'required': False,
-          }
+      if 'mediaUpload' in methodDesc:
+        methodDesc['parameters']['media_body'] = {
+            'description': 'The filename of the media request body.',
+            'type': 'string',
+            'required': False,
+            }
+        methodDesc['parameters']['body']['required'] = False
 
     argmap = {} # Map from method parameter name to query parameter name
     required_params = [] # Required parameters
@@ -324,7 +354,6 @@ def createResource(http, baseUrl, model, requestBuilder,
                 'Parameter "%s" value "%s" is not an allowed value in "%s"' %
                 (name, kwargs[name], str(enums)))
 
-      media_filename = kwargs.pop('media_body', None)
       actual_query_params = {}
       actual_path_params = {}
       for key, value in kwargs.iteritems():
@@ -339,6 +368,7 @@ def createResource(http, baseUrl, model, requestBuilder,
         if key in path_params:
           actual_path_params[argmap[key]] = cast_value
       body_value = kwargs.get('body', None)
+      media_filename = kwargs.get('media_body', None)
 
       if self._developerKey:
         actual_query_params['key'] = self._developerKey
@@ -354,11 +384,16 @@ def createResource(http, baseUrl, model, requestBuilder,
         (media_mime_type, encoding) = mimetypes.guess_type(media_filename)
         if media_mime_type is None:
           raise UnknownFileType(media_filename)
+        if not mimeparse.best_match([media_mime_type], ','.join(accept)):
+          raise UnacceptableMimeTypeError(media_mime_type)
 
-        # modify the path to prepend '/upload'
-        parsed = list(urlparse.urlparse(url))
-        parsed[2] = '/upload' + parsed[2]
-        url = urlparse.urlunparse(parsed)
+        # Check the maxSize
+        if maxSize > 0 and os.path.getsize(media_filename) > maxSize:
+          raise MediaUploadSizeError(media_filename)
+
+        # Use the media path uri for media uploads
+        expanded_url = uritemplate.expand(mediaPathUrl, params)
+        url = urlparse.urljoin(self._baseUrl, expanded_url + query)
 
         if body is None:
           headers['content-type'] = media_mime_type
@@ -405,8 +440,6 @@ def createResource(http, baseUrl, model, requestBuilder,
       docs.append('Args:\n')
     for arg in argmap.iterkeys():
       if arg in STACK_QUERY_PARAMETERS:
-        continue
-      if arg == 'media_body':
         continue
       repeated = ''
       if arg in repeated_params:
