@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2007 Google Inc.
+# Copyright 2011 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Sample application for Python documentation of APIs.
+
+This is running live at http://api-python-client-doc.appspot.com where it
+provides a list of APIs and PyDoc documentation for all the generated API
+surfaces as they appear in the google-api-python-client. In addition it also
+provides a Google Gadget.
+"""
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -23,8 +30,8 @@ import os
 import pydoc
 import re
 
-from apiclient.discovery import build
 from apiclient.anyjson import simplejson
+from apiclient import discovery
 from google.appengine.api import memcache
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
@@ -32,6 +39,8 @@ from google.appengine.ext.webapp import util
 
 
 class MainHandler(webapp.RequestHandler):
+  """Handles serving the main landing page.
+  """
 
   def get(self):
     http = httplib2.Http(memcache)
@@ -46,23 +55,45 @@ class MainHandler(webapp.RequestHandler):
                    }))
 
 
-def render(resource):
+class GadgetHandler(webapp.RequestHandler):
+  """Handles serving the Google Gadget.
+  """
+
+  def get(self):
+    http = httplib2.Http(memcache)
+    resp, content = http.request('https://www.googleapis.com/discovery/v1/apis?preferred=true')
+    directory = simplejson.loads(content)['items']
+    for item in directory:
+      item['title'] = item.get('title', item.get('description', ''))
+    path = os.path.join(os.path.dirname(__file__), 'gadget.html')
+    self.response.out.write(
+        template.render(
+            path, {'directory': directory,
+                   }))
+    self.response.headers.add_header('Content-Type', 'application/xml')
+
+
+def _render(resource):
+  """Use pydoc helpers on an instance to generate the help documentation.
+  """
   obj, name = pydoc.resolve(type(resource))
   return pydoc.html.page(
       pydoc.describe(obj), pydoc.html.document(obj, name))
 
 
 class ResourceHandler(webapp.RequestHandler):
+  """Handles serving the PyDoc for a given collection.
+  """
 
   def get(self, service_name, version, collection):
-    resource = build(service_name, version)
+    resource = discovery.build(service_name, version)
     # descend the object path
     if collection:
       path = collection.split('/')
       if path:
         for method in path:
           resource = getattr(resource, method)()
-    page = render(resource)
+    page = _render(resource)
 
     collections = []
     for name in dir(resource):
@@ -89,6 +120,7 @@ def main():
   application = webapp.WSGIApplication(
       [
       (r'/', MainHandler),
+      (r'/_gadget/', GadgetHandler),
       (r'/([^\/]*)/([^\/]*)(?:/(.*))?', ResourceHandler),
       ],
       debug=True)
