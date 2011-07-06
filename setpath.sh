@@ -1,1 +1,1 @@
-export PYTHONPATH=`pwd`:$PYTHONPATH
+export PYTHONPATH=`pwd`:${PYTHONPATH}

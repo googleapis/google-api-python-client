@@ -36,6 +36,16 @@ from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp.util import login_required
 
 
+FLOW = OAuth2WebServerFlow(
+    # Visit https://code.google.com/apis/console to
+    # generate your client_id, client_secret and to
+    # register your redirect_uri.
+    client_id='<YOUR CLIENT ID HERE>',
+    client_secret='<YOUR CLIENT SECRET HERE>',
+    scope='https://www.googleapis.com/auth/buzz',
+    user_agent='buzz-cmdline-sample/1.0')
+
+
 class Credentials(db.Model):
   credentials = CredentialsProperty()
 
@@ -49,20 +59,9 @@ class MainHandler(webapp.RequestHandler):
         Credentials, user.user_id(), 'credentials').get()
 
     if credentials is None or credentials.invalid == True:
-      flow = OAuth2WebServerFlow(
-          # Visit https://code.google.com/apis/console to
-          # generate your client_id, client_secret and to
-          # register your redirect_uri.
-          client_id='<YOUR CLIENT ID HERE>',
-          client_secret='<YOUR CLIENT SECRET HERE>',
-          scope='https://www.googleapis.com/auth/buzz',
-          user_agent='buzz-cmdline-sample/1.0',
-          domain='anonymous',
-          xoauth_displayname='Google App Engine Example App')
-
-      callback = self.request.relative_url('/auth_return')
-      authorize_url = flow.step1_get_authorize_url(callback)
-      memcache.set(user.user_id(), pickle.dumps(flow))
+      callback = self.request.relative_url('/oauth2callback')
+      authorize_url = FLOW.step1_get_authorize_url(callback)
+      memcache.set(user.user_id(), pickle.dumps(FLOW))
       self.redirect(authorize_url)
     else:
       http = httplib2.Http()
@@ -99,7 +98,7 @@ def main():
   application = webapp.WSGIApplication(
       [
       ('/', MainHandler),
-      ('/auth_return', OAuthHandler)
+      ('/oauth2callback', OAuthHandler)
       ],
       debug=True)
   util.run_wsgi_app(application)

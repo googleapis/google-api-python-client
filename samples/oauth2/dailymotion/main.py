@@ -23,7 +23,6 @@ import logging
 import os
 import pickle
 
-from apiclient.discovery import build
 from oauth2client.appengine import CredentialsProperty
 from oauth2client.appengine import StorageByKeyName
 from oauth2client.client import OAuth2WebServerFlow
@@ -34,6 +33,16 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
 from google.appengine.ext.webapp.util import login_required
+
+
+FLOW = OAuth2WebServerFlow(
+    client_id='2ad565600216d25d9cde',
+    client_secret='03b56df2949a520be6049ff98b89813f17b467dc',
+    scope='read',
+    user_agent='oauth2client-sample/1.0',
+    auth_uri='https://api.dailymotion.com/oauth/authorize',
+    token_uri='https://api.dailymotion.com/oauth/token'
+    )
 
 
 class Credentials(db.Model):
@@ -49,37 +58,23 @@ class MainHandler(webapp.RequestHandler):
         Credentials, user.user_id(), 'credentials').get()
 
     if credentials is None or credentials.invalid == True:
-      flow = OAuth2WebServerFlow(
-          client_id='2ad565600216d25d9cde',
-          client_secret='03b56df2949a520be6049ff98b89813f17b467dc',
-          scope='read',
-          user_agent='oauth2client-sample/1.0',
-          auth_uri='https://api.dailymotion.com/oauth/authorize',
-          token_uri='https://api.dailymotion.com/oauth/token'
-          )
-
       callback = self.request.relative_url('/auth_return')
-      authorize_url = flow.step1_get_authorize_url(callback)
-      memcache.set(user.user_id(), pickle.dumps(flow))
+      authorize_url = FLOW.step1_get_authorize_url(callback)
+      memcache.set(user.user_id(), pickle.dumps(FLOW))
       self.redirect(authorize_url)
     else:
       http = httplib2.Http()
-
-      resp, content1 = http.request('https://api.dailymotion.com/me?access_token=%s' %
-                   credentials.access_token)
-
       http = credentials.authorize(http)
-      resp, content2 = http.request('https://api.dailymotion.com/me')
+
+      resp, content = http.request('https://api.dailymotion.com/me')
 
       path = os.path.join(os.path.dirname(__file__), 'welcome.html')
       logout = users.create_logout_url('/')
-      self.response.out.write(
-          template.render(
-              path, {
-                  'content1': content1,
-                  'content2': content2,
-                  'logout': logout
-                  }))
+      variables = {
+          'content': content,
+          'logout': logout
+          }
+      self.response.out.write(template.render(path, variables))
 
 
 class OAuthHandler(webapp.RequestHandler):
