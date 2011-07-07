@@ -58,6 +58,16 @@ DEFAULT_METHOD_DOC = 'A description of how to use this function'
 STACK_QUERY_PARAMETERS = ['trace', 'fields', 'pp', 'prettyPrint', 'userIp',
   'userip', 'strict']
 
+RESERVED_WORDS = [ 'and', 'assert', 'break', 'class', 'continue', 'def', 'del',
+                  'elif', 'else', 'except', 'exec', 'finally', 'for', 'from',
+                  'global', 'if', 'import', 'in', 'is', 'lambda', 'not', 'or',
+                  'pass', 'print', 'raise', 'return', 'try', 'while' ]
+
+def _fix_method_name(name):
+  if name in RESERVED_WORDS:
+    return name + '_'
+  else:
+    return name
 
 def _write_headers(self):
   # Utility no-op method for multipart media handling
@@ -260,6 +270,7 @@ def createResource(http, baseUrl, model, requestBuilder,
       self._requestBuilder = requestBuilder
 
   def createMethod(theclass, methodName, methodDesc, futureDesc):
+    methodName = _fix_method_name(methodName)
     pathUrl = methodDesc['path']
     httpMethod = methodDesc['httpMethod']
     methodId = methodDesc['id']
@@ -463,6 +474,7 @@ def createResource(http, baseUrl, model, requestBuilder,
     setattr(theclass, methodName, method)
 
   def createNextMethod(theclass, methodName, methodDesc, futureDesc):
+    methodName = _fix_method_name(methodName)
     methodId = methodDesc['id'] + '.next'
 
     def methodNext(self, previous):
@@ -520,6 +532,7 @@ def createResource(http, baseUrl, model, requestBuilder,
   if 'resources' in resourceDesc:
 
     def createResourceMethod(theclass, methodName, methodDesc, futureDesc):
+      methodName = _fix_method_name(methodName)
 
       def methodResource(self):
         return createResource(self._http, self._baseUrl, self._model,
