@@ -40,8 +40,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 from oauth2client.appengine import AppAssertionCredentials
 
 credentials = AppAssertionCredentials(
-    scope='https://www.googleapis.com/auth/urlshortener',
-    user_agent='my-sample-app/1.0')
+    scope='https://www.googleapis.com/auth/urlshortener')
 
 http = credentials.authorize(httplib2.Http(memcache))
 service = build("urlshortener", "v1", http=http)

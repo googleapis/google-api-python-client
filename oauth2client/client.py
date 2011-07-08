@@ -202,9 +202,12 @@ class OAuth2Credentials(Credentials):
     """Generate the headers that will be used in the refresh request
     """
     headers = {
-        'user-agent': self.user_agent,
         'content-type': 'application/x-www-form-urlencoded',
     }
+
+    if self.user_agent is not None:
+      headers['user-agent'] = self.user_agent
+
     return headers
 
   def _refresh(self, http_request):
@@ -289,10 +292,12 @@ class OAuth2Credentials(Credentials):
       if headers == None:
         headers = {}
       headers['authorization'] = 'OAuth ' + self.access_token
-      if 'user-agent' in headers:
-        headers['user-agent'] = self.user_agent + ' ' + headers['user-agent']
-      else:
-        headers['user-agent'] = self.user_agent
+
+      if self.user_agent is not None:
+        if 'user-agent' in headers:
+          headers['user-agent'] = self.user_agent + ' ' + headers['user-agent']
+        else:
+          headers['user-agent'] = self.user_agent
 
       resp, content = request_orig(uri, method, body, headers,
                                    redirections, connection_type)
@@ -494,9 +499,12 @@ class OAuth2WebServerFlow(Flow):
       'scope': self.scope,
       })
     headers = {
-      'user-agent': self.user_agent,
       'content-type': 'application/x-www-form-urlencoded',
     }
+
+    if self.user_agent is not None:
+      headers['user-agent'] = self.user_agent
+
     if http is None:
       http = httplib2.Http()
     resp, content = http.request(self.token_uri, method='POST', body=body,

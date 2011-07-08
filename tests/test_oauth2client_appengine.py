@@ -93,9 +93,7 @@ class TestAppAssertionCredentials(unittest.TestCase):
                                             app_identity_stub)
 
     self.scope = "http://www.googleapis.com/scope"
-    user_agent = "hal/3.0"
-
-    self.credentials = AppAssertionCredentials(self.scope, user_agent)
+    self.credentials = AppAssertionCredentials(self.scope)
 
   def test_assertion(self):
     assertion = self.credentials._generate_assertion()
@@ -133,8 +131,7 @@ class DecoratorTests(unittest.TestCase):
 
     decorator = OAuth2Decorator(client_id='foo_client_id',
                                 client_secret='foo_client_secret',
-                                scope='foo_scope',
-                                user_agent='foo_user_agent')
+                                scope='foo_scope')
     self.decorator = decorator
 
     class TestRequiredHandler(webapp.RequestHandler):

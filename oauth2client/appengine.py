@@ -71,7 +71,7 @@ class AppAssertionCredentials(AssertionCredentials):
   AssertionFlowCredentials objects may be safely pickled and unpickled.
   """
 
-  def __init__(self, scope, user_agent,
+  def __init__(self, scope,
       audience='https://accounts.google.com/o/oauth2/token',
       assertion_type='http://oauth.net/grant_type/jwt/1.0/bearer',
       token_uri='https://accounts.google.com/o/oauth2/token', **kwargs):
@@ -79,7 +79,6 @@ class AppAssertionCredentials(AssertionCredentials):
 
     Args:
       scope: string, scope of the credentials being requested.
-      user_agent: string, The HTTP User-Agent to provide for this application.
       audience: string, The audience, or verifier of the assertion.  For
         convenience defaults to Google's audience.
       assertion_type: string, Type name that will identify the format of the
@@ -94,7 +93,7 @@ class AppAssertionCredentials(AssertionCredentials):
 
     super(AppAssertionCredentials, self).__init__(
         assertion_type,
-        user_agent,
+        None,
         token_uri)
 
   def _generate_assertion(self):
@@ -261,8 +260,7 @@ class OAuth2Decorator(object):
     decorator = OAuth2Decorator(
         client_id='837...ent.com',
         client_secret='Qh...wwI',
-        scope='https://www.googleapis.com/auth/buzz',
-        user_agent='my-sample-app/1.0')
+        scope='https://www.googleapis.com/auth/buzz')
 
 
     class MainHandler(webapp.RequestHandler):
@@ -275,7 +273,7 @@ class OAuth2Decorator(object):
 
   """
 
-  def __init__(self, client_id, client_secret, scope, user_agent,
+  def __init__(self, client_id, client_secret, scope,
                auth_uri='https://accounts.google.com/o/oauth2/auth',
                token_uri='https://accounts.google.com/o/oauth2/token'):
 
@@ -285,14 +283,13 @@ class OAuth2Decorator(object):
       client_id: string, client identifier.
       client_secret: string client secret.
       scope: string, scope of the credentials being requested.
-      user_agent: string, HTTP User-Agent to provide for this application.
       auth_uri: string, URI for authorization endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
       token_uri: string, URI for token endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
     """
-    self.flow = OAuth2WebServerFlow(client_id, client_secret, scope,
-      user_agent, auth_uri, token_uri)
+    self.flow = OAuth2WebServerFlow(client_id, client_secret, scope, None,
+        auth_uri, token_uri)
     self.credentials = None
     self._request_handler = None
 
