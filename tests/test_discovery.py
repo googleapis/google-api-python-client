@@ -211,6 +211,13 @@ class Discovery(unittest.TestCase):
     doc = getattr(zoo.animals().insert, '__doc__')
     self.assertTrue('media_body' in doc)
 
+  def test_simple_media_upload_no_max_size_provided(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+    request = zoo.animals().crossbreed(media_body=datafile('small.png'))
+    self.assertEquals('image/png', request.headers['content-type'])
+    self.assertEquals('PNG', request.body[1:4])
+
   def test_simple_media_raise_correct_exceptions(self):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', self.http)

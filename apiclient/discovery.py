@@ -250,6 +250,8 @@ MULTIPLIERS = {
 
 def _media_size_to_long(maxSize):
   """Convert a string media size, such as 10GB or 3TB into an integer."""
+  if len(maxSize) < 2:
+    return 0
   units = maxSize[-2:].upper()
   multiplier = MULTIPLIERS.get(units, 0)
   if multiplier:
@@ -284,7 +286,7 @@ def createResource(http, baseUrl, model, requestBuilder,
       mediaUpload = methodDesc['mediaUpload']
       mediaPathUrl = mediaUpload['protocols']['simple']['path']
       accept = mediaUpload['accept']
-      maxSize = _media_size_to_long(mediaUpload['maxSize'])
+      maxSize = _media_size_to_long(mediaUpload.get('maxSize', ''))
 
     if 'parameters' not in methodDesc:
       methodDesc['parameters'] = {}
