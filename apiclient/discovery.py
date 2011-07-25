@@ -22,6 +22,7 @@ __all__ = [
     'build', 'build_from_document'
     ]
 
+import copy
 import httplib2
 import logging
 import os
@@ -193,12 +194,13 @@ def build_from_document(
   else:
     future = {}
     auth_discovery = {}
+  schema = service.get('schemas', {})
 
   if model is None:
     features = service.get('features', [])
     model = JsonModel('dataWrapper' in features)
   resource = createResource(http, base, model, requestBuilder, developerKey,
-                       service, future)
+                       service, future, schema)
 
   def auth_method():
     """Discovery information about the authentication the API uses."""
@@ -257,7 +259,7 @@ def _media_size_to_long(maxSize):
 
 
 def createResource(http, baseUrl, model, requestBuilder,
-                   developerKey, resourceDesc, futureDesc):
+                   developerKey, resourceDesc, futureDesc, schema):
 
   class Resource(object):
     """A class for interacting with a resource."""
@@ -473,7 +475,10 @@ def createResource(http, baseUrl, model, requestBuilder,
     setattr(method, '__doc__', ''.join(docs))
     setattr(theclass, methodName, method)
 
-  def createNextMethod(theclass, methodName, methodDesc, futureDesc):
+  # This is a legacy method, as only Buzz and Moderator use the future.json
+  # functionality for generating _next methods. It will be kept around as long
+  # as those API versions are around, but no new APIs should depend upon it.
+  def createNextMethodFromFuture(theclass, methodName, methodDesc, futureDesc):
     methodName = _fix_method_name(methodName)
     methodId = methodDesc['id'] + '.next'
 
@@ -519,6 +524,49 @@ def createResource(http, baseUrl, model, requestBuilder,
 
     setattr(theclass, methodName, methodNext)
 
+
+  def createNextMethod(theclass, methodName, methodDesc, futureDesc):
+    methodName = _fix_method_name(methodName)
+    methodId = methodDesc['id'] + '.next'
+
+    def methodNext(self, previous_request, previous_response):
+      """Retrieves the next page of results.
+
+      Args:
+        previous_request: The request for the previous page.
+        previous_response: The response from the request for the previous page.
+
+      Returns:
+        A request object that you can call 'execute()' on to request the next
+        page. Returns None if there are no more items in the collection.
+      """
+      # Retrieve nextPageToken from previous_response
+      # Use as pageToken in previous_request to create new request.
+
+      if 'nextPageToken' not in previous_response:
+        return None
+
+      request = copy.copy(previous_request)
+
+      pageToken = previous_response['nextPageToken']
+      parsed = list(urlparse.urlparse(request.uri))
+      q = parse_qsl(parsed[4])
+
+      # Find and remove old 'pageToken' value from URI
+      newq = [(key, value) for (key, value) in q if key != 'pageToken']
+      newq.append(('pageToken', pageToken))
+      parsed[4] = urllib.urlencode(newq)
+      uri = urlparse.urlunparse(parsed)
+
+      request.uri = uri
+
+      logging.info('URL being requested: %s' % uri)
+
+      return request
+
+    setattr(theclass, methodName, methodNext)
+
+
   # Add basic methods to Resource
   if 'methods' in resourceDesc:
     for methodName, methodDesc in resourceDesc['methods'].iteritems():
@@ -537,7 +585,7 @@ def createResource(http, baseUrl, model, requestBuilder,
       def methodResource(self):
         return createResource(self._http, self._baseUrl, self._model,
                               self._requestBuilder, self._developerKey,
-                              methodDesc, futureDesc)
+                              methodDesc, futureDesc, schema)
 
       setattr(methodResource, '__doc__', 'A collection resource.')
       setattr(methodResource, '__is_resource__', True)
@@ -554,8 +602,23 @@ def createResource(http, baseUrl, model, requestBuilder,
   if futureDesc and 'methods' in futureDesc:
     for methodName, methodDesc in futureDesc['methods'].iteritems():
       if 'next' in methodDesc and methodName in resourceDesc['methods']:
-        createNextMethod(Resource, methodName + '_next',
+        createNextMethodFromFuture(Resource, methodName + '_next',
                          resourceDesc['methods'][methodName],
                          methodDesc['next'])
+  # Add _next() methods
+  # Look for response bodies in schema that contain nextPageToken, and methods
+  # that take a pageToken parameter.
+  if 'methods' in resourceDesc:
+    for methodName, methodDesc in resourceDesc['methods'].iteritems():
+      if 'response' in methodDesc:
+        responseSchema = methodDesc['response']
+        if '$ref' in responseSchema:
+          responseSchema = schema[responseSchema['$ref']]
+        hasNextPageToken = 'nextPageToken' in responseSchema['properties']
+        hasPageToken = 'pageToken' in methodDesc.get('parameters', {})
+        if hasNextPageToken and hasPageToken:
+          createNextMethod(Resource, methodName + '_next',
+                           resourceDesc['methods'][methodName],
+                           methodName)
 
   return Resource()

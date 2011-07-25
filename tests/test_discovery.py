@@ -268,6 +268,7 @@ class Discovery(unittest.TestCase):
 
 class Next(unittest.TestCase):
   def test_next_for_people_liked(self):
+    """Legacy test for Buzz _next support."""
     self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
     buzz = build('buzz', 'v1', self.http)
     people = {'links':
@@ -275,6 +276,21 @@ class Next(unittest.TestCase):
                    [{'href': 'http://www.googleapis.com/next-link'}]}}
     request = buzz.people().liked_next(people)
     self.assertEqual(request.uri, 'http://www.googleapis.com/next-link')
+
+  def test_next_successful_none_on_no_next_page_token(self):
+    self.http = HttpMock(datafile('tasks.json'), {'status': '200'})
+    tasks = build('tasks', 'v1', self.http)
+    request = tasks.tasklists().list()
+    self.assertEqual(None, tasks.tasklists().list_next(request, {}))
+
+  def test_next_successful_with_next_page_token(self):
+    self.http = HttpMock(datafile('tasks.json'), {'status': '200'})
+    tasks = build('tasks', 'v1', self.http)
+    request = tasks.tasklists().list()
+    next_request = tasks.tasklists().list_next(request, {'nextPageToken': '123abc'})
+    parsed = list(urlparse.urlparse(next_request.uri))
+    q = parse_qs(parsed[4])
+    self.assertEqual(q['pageToken'][0], '123abc')
 
 
 class DeveloperKey(unittest.TestCase):
