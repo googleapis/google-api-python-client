@@ -299,6 +299,10 @@ class Next(unittest.TestCase):
     q = parse_qs(parsed[4])
     self.assertEqual(q['pageToken'][0], '123abc')
 
+  def test_next_with_method_with_no_properties(self):
+    self.http = HttpMock(datafile('latitude.json'), {'status': '200'})
+    service = build('latitude', 'v1', self.http)
+    request = service.currentLocation().get()
 
 class DeveloperKey(unittest.TestCase):
   def test_param(self):

@@ -616,7 +616,8 @@ def createResource(http, baseUrl, model, requestBuilder,
         responseSchema = methodDesc['response']
         if '$ref' in responseSchema:
           responseSchema = schema[responseSchema['$ref']]
-        hasNextPageToken = 'nextPageToken' in responseSchema['properties']
+        hasNextPageToken = 'nextPageToken' in responseSchema.get('properties',
+                                                                 {})
         hasPageToken = 'pageToken' in methodDesc.get('parameters', {})
         if hasNextPageToken and hasPageToken:
           createNextMethod(Resource, methodName + '_next',
