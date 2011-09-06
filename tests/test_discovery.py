@@ -32,7 +32,7 @@ try:
 except ImportError:
     from cgi import parse_qs
 
-from apiclient.discovery import build, key2param
+from apiclient.discovery import build, build_from_document, key2param
 from apiclient.http import HttpMock
 from apiclient.http import tunnel_patch
 from apiclient.http import HttpMockSequence
@@ -63,6 +63,20 @@ class DiscoveryErrors(unittest.TestCase):
       self.fail("should have raised an exception over malformed JSON.")
     except InvalidJsonError:
       pass
+
+
+class DiscoveryFromDocument(unittest.TestCase):
+  def test_can_build_from_local_document(self):
+    discovery = file(datafile('buzz.json')).read()
+    buzz = build_from_document(discovery, base="https://www.googleapis.com/")
+    self.assertTrue(buzz is not None)
+   
+  def test_building_with_base_remembers_base(self):
+    discovery = file(datafile('buzz.json')).read()
+    
+    base = "https://www.example.com/"
+    buzz = build_from_document(discovery, base=base)
+    self.assertEquals(base + "buzz/v1/", buzz._baseUrl)
 
 
 class Discovery(unittest.TestCase):
