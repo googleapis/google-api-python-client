@@ -26,6 +26,8 @@ import os
 import unittest
 
 from apiclient.errors import HttpError
+from apiclient.errors import UnexpectedBodyError
+from apiclient.errors import UnexpectedMethodError
 from apiclient.discovery import build
 from apiclient.http import RequestMockBuilder
 from apiclient.http import HttpMock
@@ -56,6 +58,76 @@ class Mocks(unittest.TestCase):
     activity = buzz.activities().get(postId='tag:blah', userId='@me').execute()
     self.assertEqual({"foo": "bar"}, activity)
 
+  def test_unexpected_call(self):
+    requestBuilder = RequestMockBuilder({}, check_unexpected=True)
+
+    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+
+    try:
+      buzz.activities().get(postId='tag:blah', userId='@me').execute()
+      self.fail('UnexpectedMethodError should have been raised')
+    except UnexpectedMethodError:
+      pass
+
+  def test_simple_unexpected_body(self):
+    requestBuilder = RequestMockBuilder({
+        'chili.activities.insert': (None, '{"data": {"foo": "bar"}}', None)
+        })
+    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+
+    try:
+      buzz.activities().insert(userId='@me', body='{}').execute()
+      self.fail('UnexpectedBodyError should have been raised')
+    except UnexpectedBodyError:
+      pass
+
+  def test_simple_expected_body(self):
+    requestBuilder = RequestMockBuilder({
+        'chili.activities.insert': (None, '{"data": {"foo": "bar"}}', '{}')
+        })
+    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+
+    try:
+      buzz.activities().insert(userId='@me', body='').execute()
+      self.fail('UnexpectedBodyError should have been raised')
+    except UnexpectedBodyError:
+      pass
+
+  def test_simple_wrong_body(self):
+    requestBuilder = RequestMockBuilder({
+        'chili.activities.insert': (None, '{"data": {"foo": "bar"}}',
+                                    '{"data": {"foo": "bar"}}')
+        })
+    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+
+    try:
+      buzz.activities().insert(
+          userId='@me', body='{"data": {"foo": "blah"}}').execute()
+      self.fail('UnexpectedBodyError should have been raised')
+    except UnexpectedBodyError:
+      pass
+
+  def test_simple_matching_str_body(self):
+    requestBuilder = RequestMockBuilder({
+        'chili.activities.insert': (None, '{"data": {"foo": "bar"}}',
+                                    '{"data": {"foo": "bar"}}')
+        })
+    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+
+    activity = buzz.activities().insert(
+        userId='@me', body={'data': {'foo': 'bar'}}).execute()
+    self.assertEqual({'foo': 'bar'}, activity)
+
+  def test_simple_matching_dict_body(self):
+    requestBuilder = RequestMockBuilder({
+        'chili.activities.insert': (None, '{"data": {"foo": "bar"}}',
+                                    {'data': {'foo': 'bar'}})
+        })
+    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+
+    activity = buzz.activities().insert(
+        userId='@me', body={'data': {'foo': 'bar'}}).execute()
+    self.assertEqual({'foo': 'bar'}, activity)
 
   def test_errors(self):
     errorResponse = httplib2.Response({'status': 500, 'reason': 'Server Error'})
@@ -71,8 +143,6 @@ class Mocks(unittest.TestCase):
       self.assertEqual('{}', e.content)
       self.assertEqual(500, e.resp.status)
       self.assertEqual('Server Error', e.resp.reason)
-
-
 
 
 if __name__ == '__main__':

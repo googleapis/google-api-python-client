@@ -30,6 +30,8 @@ import os
 
 from model import JsonModel
 from errors import HttpError
+from errors import UnexpectedBodyError
+from errors import UnexpectedMethodError
 from anyjson import simplejson
 
 
@@ -124,9 +126,11 @@ class RequestMockBuilder(object):
   """A simple mock of HttpRequest
 
     Pass in a dictionary to the constructor that maps request methodIds to
-    tuples of (httplib2.Response, content) that should be returned when that
-    method is called. None may also be passed in for the httplib2.Response, in
-    which case a 200 OK response will be generated.
+    tuples of (httplib2.Response, content, opt_expected_body) that should be
+    returned when that method is called. None may also be passed in for the
+    httplib2.Response, in which case a 200 OK response will be generated.
+    If an opt_expected_body (str or dict) is provided, it will be compared to
+    the body and UnexpectedBodyError will be raised on inequality.
 
     Example:
       response = '{"data": {"id": "tag:google.c...'
@@ -138,13 +142,14 @@ class RequestMockBuilder(object):
       apiclient.discovery.build("buzz", "v1", requestBuilder=requestBuilder)
 
     Methods that you do not supply a response for will return a
-    200 OK with an empty string as the response content. The methodId
-    is taken from the rpcName in the discovery document.
+    200 OK with an empty string as the response content or raise an excpetion if
+    check_unexpected is set to True. The methodId is taken from the rpcName
+    in the discovery document.
 
     For more details see the project wiki.
   """
 
-  def __init__(self, responses):
+  def __init__(self, responses, check_unexpected=False):
     """Constructor for RequestMockBuilder
 
     The constructed object should be a callable object
@@ -154,8 +159,11 @@ class RequestMockBuilder(object):
                 of (httplib2.Response, content). The methodId
                 comes from the 'rpcName' field in the discovery
                 document.
+    check_unexpected - A boolean setting whether or not UnexpectedMethodError
+                       should be raised on unsupplied method.
     """
     self.responses = responses
+    self.check_unexpected = check_unexpected
 
   def __call__(self, http, postproc, uri, method='GET', body=None,
                headers=None, methodId=None):
@@ -165,8 +173,23 @@ class RequestMockBuilder(object):
     parameters and the expected response.
     """
     if methodId in self.responses:
-      resp, content = self.responses[methodId]
+      response = self.responses[methodId]
+      resp, content = response[:2]
+      if len(response) > 2:
+        # Test the body against the supplied expected_body.
+        expected_body = response[2]
+        if bool(expected_body) != bool(body):
+          # Not expecting a body and provided one
+          # or expecting a body and not provided one.
+          raise UnexpectedBodyError(expected_body, body)
+        if isinstance(expected_body, str):
+          expected_body = simplejson.loads(expected_body)
+        body = simplejson.loads(body)
+        if body != expected_body:
+          raise UnexpectedBodyError(expected_body, body)
       return HttpRequestMock(resp, content, postproc)
+    elif self.check_unexpected:
+      raise UnexpectedMethodError(methodId)
     else:
       model = JsonModel(False)
       return HttpRequestMock(None, '{}', model.response)
