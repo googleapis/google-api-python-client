@@ -99,7 +99,7 @@ class Storage(BaseStorage):
     if len(entities) > 0:
       credential = getattr(entities[0], self.property_name)
       if credential and hasattr(credential, 'set_store'):
-        credential.set_store(self.put)
+        credential.set_store(self)
     return credential
 
   def put(self, credentials):

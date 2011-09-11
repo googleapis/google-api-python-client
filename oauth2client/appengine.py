@@ -23,7 +23,6 @@ import httplib2
 import pickle
 import time
 import base64
-import logging
 
 try: # pragma: no cover
   import simplejson
@@ -222,7 +221,7 @@ class StorageByKeyName(Storage):
     entity = self._model.get_or_insert(self._key_name)
     credential = getattr(entity, self._property_name)
     if credential and hasattr(credential, 'set_store'):
-      credential.set_store(self.put)
+      credential.set_store(self)
       if self._cache:
         self._cache.set(self._key_name, pickle.dumps(credentials))
 

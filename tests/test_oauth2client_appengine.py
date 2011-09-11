@@ -191,8 +191,8 @@ class DecoratorTests(unittest.TestCase):
                      self.decorator.credentials.access_token)
 
     # Invalidate the stored Credentials
-    self.decorator.credentials._invalid = True
-    self.decorator.credentials.store(self.decorator.credentials)
+    self.decorator.credentials.invalid = True
+    self.decorator.credentials.store.put(self.decorator.credentials)
 
     # Invalid Credentials should start the OAuth dance again
     response = self.app.get('/foo_path')
