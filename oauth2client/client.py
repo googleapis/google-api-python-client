@@ -584,7 +584,6 @@ class OAuth2WebServerFlow(Flow):
         'scope': self.scope,
         })
     headers = {
-        'user-agent': self.user_agent,
         'content-type': 'application/x-www-form-urlencoded',
     }
 
