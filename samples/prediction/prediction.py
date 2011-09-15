@@ -109,7 +109,7 @@ def main(argv):
 
     # Start training on a data set
     train = service.training()
-    body = {'id' : FLAGS.object_name}
+    body = {'id': FLAGS.object_name}
     start = train.insert(body=body).execute()
 
     print 'Started training'

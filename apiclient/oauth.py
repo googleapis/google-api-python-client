@@ -377,7 +377,6 @@ class TwoLeggedOAuthCredentials(Credentials):
     return http
 
 
-
 class FlowThreeLegged(Flow):
   """Does the Three Legged Dance for OAuth 1.0a.
   """

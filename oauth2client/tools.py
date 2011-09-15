@@ -129,12 +129,16 @@ def run(flow, storage):
     print '--noauth_local_webserver.'
     print
 
+  code = None
   if FLAGS.auth_local_webserver:
     httpd.handle_request()
     if 'error' in httpd.query_params:
       sys.exit('Authentication request was rejected.')
     if 'code' in httpd.query_params:
       code = httpd.query_params['code']
+    else:
+      print 'Failed to find "code" in the query parameters of the redirect.'
+      sys.exit('Try running with --noauth_local_webserver.')
   else:
     code = raw_input('Enter verification code: ').strip()
 

@@ -88,6 +88,7 @@ def main(argv):
   # Credentials will get written back to a file.
   storage = Storage('buzz.dat')
   credentials = storage.get()
+
   if credentials is None or credentials.invalid:
     credentials = run(FLOW, storage)
 
@@ -112,31 +113,10 @@ def main(argv):
       activitylist = activities.list_next(activitylist).execute()
       print "Retrieved the next two activities"
 
-    # Add a new activity
-    new_activity_body = {
-        'title': 'Testing insert',
-        'object': {
-          'content':
-          u'Just a short note to show that insert is working. ☄',
-          'type': 'note'}
-        }
-    activity = activities.insert(userId='@me', body=new_activity_body).execute()
-    print "Added a new activity"
-
-    activitylist = activities.list(
-        max_results='2', scope='@self', userId='@me').execute()
-
-    # Add a comment to that activity
-    comment_body = {
-        "content": "This is a comment"
-        }
-    item = activitylist['items'][0]
-    comment = service.comments().insert(
-        userId=item['actor']['id'], postId=item['id'], body=comment_body
-        ).execute()
-    print 'Added a comment to the new activity'
-    pprint.pprint(comment)
-
+    # List the number of followers
+    followers = service.people().list(
+        userId='@me', groupId='@followers').execute(http)
+    print 'Hello, you have %s followers!' % followers['totalResults']
 
   except AccessTokenRefreshError:
     print ("The credentials have been revoked or expired, please re-run"

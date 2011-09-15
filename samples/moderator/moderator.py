@@ -140,8 +140,6 @@ def main(argv):
                      body=vote_body)
     print "Voted on the submission"
 
-
-
   except AccessTokenRefreshError:
     print ("The credentials have been revoked or expired, please re-run"
       "the application to re-authorize")

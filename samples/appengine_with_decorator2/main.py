@@ -43,8 +43,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 decorator = OAuth2Decorator(
     client_id='837647042410-75ifgipj95q4agpm0cs452mg7i2pn17c.apps.googleusercontent.com',
     client_secret='QhxYsjM__u4vy5N0DXUFRwwI',
-    scope='https://www.googleapis.com/auth/buzz',
-    user_agent='my-sample-app/1.0')
+    scope='https://www.googleapis.com/auth/buzz')
 
 http = httplib2.Http(memcache)
 service = build("buzz", "v1", http=http)

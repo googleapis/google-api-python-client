@@ -95,6 +95,16 @@ class AppAssertionCredentials(AssertionCredentials):
         None,
         token_uri)
 
+  @classmethod
+  def from_json(cls, json):
+    data = simplejson.loads(json)
+    retval = AccessTokenCredentials(
+        data['scope'],
+        data['audience'],
+        data['assertion_type'],
+        data['token_uri'])
+    return retval
+
   def _generate_assertion(self):
     header = {
       'typ': 'JWT',
@@ -165,17 +175,28 @@ class CredentialsProperty(db.Property):
   def get_value_for_datastore(self, model_instance):
     cred = super(CredentialsProperty,
                  self).get_value_for_datastore(model_instance)
-    return db.Blob(pickle.dumps(cred))
+    if cred is None:
+      cred = ''
+    else:
+      cred = cred.to_json()
+    return db.Blob(cred)
 
   # For reading from datastore.
   def make_value_from_datastore(self, value):
     if value is None:
       return None
-    return pickle.loads(value)
+    if len(value) == 0:
+      return None
+    credentials = None
+    try:
+      credentials = Credentials.new_from_json(value)
+    except ValueError:
+      credentials = pickle.loads(value)
+    return credentials
 
   def validate(self, value):
     if value is not None and not isinstance(value, Credentials):
-      raise BadValueError('Property %s must be convertible '
+      raise db.BadValueError('Property %s must be convertible '
                           'to an Credentials instance (%s)' %
                           (self.name, value))
     return super(CredentialsProperty, self).validate(value)
@@ -215,15 +236,15 @@ class StorageByKeyName(Storage):
       oauth2client.Credentials
     """
     if self._cache:
-      credential = self._cache.get(self._key_name)
-      if credential:
-        return pickle.loads(credential)
+      json = self._cache.get(self._key_name)
+      if json:
+        return Credentials.new_from_json(json)
     entity = self._model.get_or_insert(self._key_name)
     credential = getattr(entity, self._property_name)
     if credential and hasattr(credential, 'set_store'):
       credential.set_store(self)
       if self._cache:
-        self._cache.set(self._key_name, pickle.dumps(credentials))
+        self._cache.set(self._key_name, credentials.to_json())
 
     return credential
 
@@ -237,7 +258,7 @@ class StorageByKeyName(Storage):
     setattr(entity, self._property_name, credentials)
     entity.put()
     if self._cache:
-      self._cache.set(self._key_name, pickle.dumps(credentials))
+      self._cache.set(self._key_name, credentials.to_json())
 
 
 class CredentialsModel(db.Model):

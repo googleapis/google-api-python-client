@@ -59,10 +59,11 @@ DEFAULT_METHOD_DOC = 'A description of how to use this function'
 STACK_QUERY_PARAMETERS = ['trace', 'fields', 'pp', 'prettyPrint', 'userIp',
   'userip', 'strict']
 
-RESERVED_WORDS = [ 'and', 'assert', 'break', 'class', 'continue', 'def', 'del',
+RESERVED_WORDS = ['and', 'assert', 'break', 'class', 'continue', 'def', 'del',
                   'elif', 'else', 'except', 'exec', 'finally', 'for', 'from',
                   'global', 'if', 'import', 'in', 'is', 'lambda', 'not', 'or',
                   'pass', 'print', 'raise', 'return', 'try', 'while' ]
+
 
 def _fix_method_name(name):
   if name in RESERVED_WORDS:
@@ -242,10 +243,10 @@ def _cast(value, schema_type):
       return str(value)
 
 MULTIPLIERS = {
-    "KB": 2**10,
-    "MB": 2**20,
-    "GB": 2**30,
-    "TB": 2**40,
+    "KB": 2 ** 10,
+    "MB": 2 ** 20,
+    "GB": 2 ** 30,
+    "TB": 2 ** 40,
     }
 
 def _media_size_to_long(maxSize):
@@ -255,7 +256,7 @@ def _media_size_to_long(maxSize):
   units = maxSize[-2:].upper()
   multiplier = MULTIPLIERS.get(units, 0)
   if multiplier:
-    return int(maxSize[:-2])*multiplier
+    return int(maxSize[:-2]) * multiplier
   else:
     return int(maxSize)
 

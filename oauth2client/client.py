@@ -43,6 +43,9 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Expiry is stored in RFC3339 UTC format
+EXPIRY_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+
 
 class Error(Exception):
   """Base error for this module."""
@@ -71,9 +74,14 @@ def _abstract():
 class Credentials(object):
   """Base class for all Credentials objects.
 
-  Subclasses must define an authorize() method
-  that applies the credentials to an HTTP transport.
+  Subclasses must define an authorize() method that applies the credentials to
+  an HTTP transport.
+
+  Subclasses must also specify a classmethod named 'from_json' that takes a JSON
+  string as input and returns an instaniated Crentials object.
   """
+
+  NON_SERIALIZED_MEMBERS = ['store']
 
   def authorize(self, http):
     """Take an httplib2.Http instance (or equivalent) and
@@ -83,6 +91,58 @@ class Credentials(object):
     Http.request() method.
     """
     _abstract()
+
+  def _to_json(self, strip):
+    """Utility function for creating a JSON representation of an instance of Credentials.
+
+    Args:
+      strip: array, An array of names of members to not include in the JSON.
+
+    Returns:
+       string, a JSON representation of this instance, suitable to pass to
+       from_json().
+    """
+    t = type(self)
+    d = copy.copy(self.__dict__)
+    for member in strip:
+      del d[member]
+    if 'token_expiry' in d and isinstance(d['token_expiry'], datetime.datetime):
+      d['token_expiry'] = d['token_expiry'].strftime(EXPIRY_FORMAT)
+    # Add in information we will need later to reconsistitue this instance.
+    d['_class'] = t.__name__
+    d['_module'] = t.__module__
+    return simplejson.dumps(d)
+
+  def to_json(self):
+    """Creating a JSON representation of an instance of Credentials.
+
+    Returns:
+       string, a JSON representation of this instance, suitable to pass to
+       from_json().
+    """
+    return self._to_json(Credentials.NON_SERIALIZED_MEMBERS)
+
+  @classmethod
+  def new_from_json(cls, s):
+    """Utility class method to instantiate a Credentials subclass from a JSON
+    representation produced by to_json().
+
+    Args:
+      s: string, JSON from to_json().
+
+    Returns:
+      An instance of the subclass of Credentials that was serialized with
+      to_json().
+    """
+    data = simplejson.loads(s)
+    # Find and call the right classmethod from_json() to restore the object.
+    module = data['_module']
+    m = __import__(module)
+    for sub_module in module.split('.')[1:]:
+      m = getattr(m, sub_module)
+    kls = getattr(m, data['_class'])
+    from_json = getattr(kls, 'from_json')
+    return from_json(s)
 
 
 class Flow(object):
@@ -206,6 +266,36 @@ class OAuth2Credentials(Credentials):
     # refreshed.
     self.invalid = False
 
+  def to_json(self):
+    return self._to_json(Credentials.NON_SERIALIZED_MEMBERS)
+
+  @classmethod
+  def from_json(cls, s):
+    """Instantiate a Credentials object from a JSON description of it. The JSON
+    should have been produced by calling .to_json() on the object.
+
+    Args:
+      data: dict, A deserialized JSON object.
+
+    Returns:
+      An instance of a Credentials subclass.
+    """
+    data = simplejson.loads(s)
+    if 'token_expiry' in data and not isinstance(data['token_expiry'],
+        datetime.datetime):
+      data['token_expiry'] = datetime.datetime.strptime(
+          data['token_expiry'], EXPIRY_FORMAT)
+    retval = OAuth2Credentials(
+        data['access_token'],
+        data['client_id'],
+        data['client_secret'],
+        data['refresh_token'],
+        data['token_expiry'],
+        data['token_uri'],
+        data['user_agent'])
+    retval.invalid = data['invalid']
+    return retval
+
   @property
   def access_token_expired(self):
     """True if the credential is expired or invalid.
@@ -218,7 +308,7 @@ class OAuth2Credentials(Credentials):
     if not self.token_expiry:
       return False
 
-    now = datetime.datetime.now()
+    now = datetime.datetime.utcnow()
     if now >= self.token_expiry:
       logger.info('access_token is expired. Now: %s, token_expiry: %s',
                   now, self.token_expiry)
@@ -318,7 +408,7 @@ class OAuth2Credentials(Credentials):
       self.refresh_token = d.get('refresh_token', self.refresh_token)
       if 'expires_in' in d:
         self.token_expiry = datetime.timedelta(
-            seconds=int(d['expires_in'])) + datetime.datetime.now()
+            seconds=int(d['expires_in'])) + datetime.datetime.utcnow()
       else:
         self.token_expiry = None
       if self.store:
@@ -445,6 +535,15 @@ class AccessTokenCredentials(OAuth2Credentials):
         None,
         None,
         user_agent)
+
+
+  @classmethod
+  def from_json(cls, s):
+    data = simplejson.loads(s)
+    retval = AccessTokenCredentials(
+        data['access_token'],
+        data['user_agent'])
+    return retval
 
   def _refresh(self, http_request):
     raise AccessTokenCredentialsError(
@@ -601,7 +700,7 @@ class OAuth2WebServerFlow(Flow):
       refresh_token = d.get('refresh_token', None)
       token_expiry = None
       if 'expires_in' in d:
-        token_expiry = datetime.datetime.now() + datetime.timedelta(
+        token_expiry = datetime.datetime.utcnow() + datetime.timedelta(
             seconds=int(d['expires_in']))
 
       logger.info('Successfully retrieved access token: %s' % content)

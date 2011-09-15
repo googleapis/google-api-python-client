@@ -43,4 +43,3 @@
                    submissionId=submission['id']['submissionId'],
                    body=vote_body)
   print "Voted on the submission"
-

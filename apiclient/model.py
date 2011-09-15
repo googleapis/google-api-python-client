@@ -222,7 +222,8 @@ class BaseModel(Model):
     _abstract()
 
   def deserialize(self, content):
-    """Perform the actual deserialization from response string to Python object.
+    """Perform the actual deserialization from response string to Python
+    object.
 
     Args:
       content: string, the body of the HTTP response
@@ -285,8 +286,8 @@ class ProtocolBufferModel(BaseModel):
     de-serialized using the given protocol buffer class.
 
     Args:
-      protocol_buffer: The protocol buffer class used to de-serialize a response
-          from the API.
+      protocol_buffer: The protocol buffer class used to de-serialize a
+      response from the API.
     """
     self._protocol_buffer = protocol_buffer
 

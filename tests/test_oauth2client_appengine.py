@@ -173,7 +173,7 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('code', q['response_type'][0])
     self.assertEqual(False, self.decorator.has_credentials())
 
-    # Now simulate the callback to /oauth2callback
+    # Now simulate the callback to /oauth2callback.
     response = self.app.get('/oauth2callback', {
         'code': 'foo_access_code',
         'state': 'foo_path',
@@ -181,7 +181,7 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('http://localhost/foo_path', response.headers['Location'])
     self.assertEqual(None, self.decorator.credentials)
 
-    # Now requesting the decorated path should work
+    # Now requesting the decorated path should work.
     response = self.app.get('/foo_path')
     self.assertEqual('200 OK', response.status)
     self.assertEqual(True, self.decorator.has_credentials())
@@ -190,18 +190,18 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('foo_access_token',
                      self.decorator.credentials.access_token)
 
-    # Invalidate the stored Credentials
+    # Invalidate the stored Credentials.
     self.decorator.credentials.invalid = True
     self.decorator.credentials.store.put(self.decorator.credentials)
 
-    # Invalid Credentials should start the OAuth dance again
+    # Invalid Credentials should start the OAuth dance again.
     response = self.app.get('/foo_path')
     self.assertTrue(response.status.startswith('302'))
     q = parse_qs(response.headers['Location'].split('?', 1)[1])
     self.assertEqual('http://localhost/oauth2callback', q['redirect_uri'][0])
 
   def test_aware(self):
-    # An initial request to an oauth_aware decorated path should not redirect
+    # An initial request to an oauth_aware decorated path should not redirect.
     response = self.app.get('/bar_path')
     self.assertEqual('Hello World!', response.body)
     self.assertEqual('200 OK', response.status)
@@ -214,7 +214,7 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('http://localhost/bar_path', q['state'][0])
     self.assertEqual('code', q['response_type'][0])
 
-    # Now simulate the callback to /oauth2callback
+    # Now simulate the callback to /oauth2callback.
     url = self.decorator.authorize_url()
     response = self.app.get('/oauth2callback', {
         'code': 'foo_access_code',
@@ -223,7 +223,7 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('http://localhost/bar_path', response.headers['Location'])
     self.assertEqual(False, self.decorator.has_credentials())
 
-    # Now requesting the decorated path will have credentials
+    # Now requesting the decorated path will have credentials.
     response = self.app.get('/bar_path')
     self.assertEqual('200 OK', response.status)
     self.assertEqual('Hello World!', response.body)

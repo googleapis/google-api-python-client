@@ -23,7 +23,20 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import pickle
 import threading
 
+
+try:  # pragma: no cover
+  import simplejson
+except ImportError:  # pragma: no cover
+  try:
+    # Try to import from django, should work on App Engine
+    from django.utils import simplejson
+  except ImportError:
+    # Should work for Python2.6 and higher.
+    import json as simplejson
+
+
 from client import Storage as BaseStorage
+from client import Credentials
 
 
 class Storage(BaseStorage):
@@ -40,25 +53,40 @@ class Storage(BaseStorage):
       oauth2client.client.Credentials
     """
     self._lock.acquire()
+    credentials = None
     try:
       f = open(self._filename, 'r')
-      credentials = pickle.loads(f.read())
+      content = f.read()
       f.close()
+    except IOError:
+      self._lock.release()
+      return credentials
+
+    # First try reading as JSON, and if that fails fall back to pickle.
+    try:
+      credentials = Credentials.new_from_json(content)
       credentials.set_store(self)
-    except:
-      credentials = None
-    self._lock.release()
+    except ValueError:
+      # TODO(jcgregorio) On a future release remove this path to finally remove
+      # all pickle support.
+      try:
+        credentials = pickle.loads(content)
+        credentials.set_store(self)
+      except:
+        pass
+    finally:
+      self._lock.release()
 
     return credentials
 
   def put(self, credentials):
-    """Write a pickled Credentials to file.
+    """Write Credentials to file.
 
     Args:
       credentials: Credentials, the credentials to store.
     """
     self._lock.acquire()
     f = open(self._filename, 'w')
-    f.write(pickle.dumps(credentials))
+    f.write(credentials.to_json())
     f.close()
     self._lock.release()

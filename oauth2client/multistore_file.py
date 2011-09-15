@@ -21,7 +21,9 @@ The format of the stored data is like so:
         'userAgent': '<user agent>',
         'scope': '<scope>'
       },
-      'credential': '<base64 encoding of pickeled Credential object>'
+      'credential': {
+        # JSON serialized Credentials.
+      }
     }
   ]
 }
@@ -47,6 +49,7 @@ except ImportError:  # pragma: no cover
     import json as simplejson
 
 from client import Storage as BaseStorage
+from client import Credentials
 
 logger = logging.getLogger(__name__)
 
@@ -295,7 +298,8 @@ class _MultiStore(object):
     user_agent = raw_key['userAgent']
     scope = raw_key['scope']
     key = (client_id, user_agent, scope)
-    credential = pickle.loads(base64.b64decode(cred_entry['credential']))
+    credential = None
+    credential = Credentials.new_from_json(simplejson.dumps(cred_entry['credential']))
     return (key, credential)
 
   def _write(self):
@@ -312,7 +316,7 @@ class _MultiStore(object):
           'userAgent': cred_key[1],
           'scope': cred_key[2]
           }
-      raw_cred = base64.b64encode(pickle.dumps(cred))
+      raw_cred = simplejson.loads(cred.to_json())
       raw_creds.append({'key': raw_key, 'credential': raw_cred})
     self._locked_json_write(raw_data)
 
@@ -330,6 +334,7 @@ class _MultiStore(object):
       The credential specified or None if not present
     """
     key = (client_id, user_agent, scope)
+
     return self._data.get(key, None)
 
   def _update_credential(self, cred, scope):

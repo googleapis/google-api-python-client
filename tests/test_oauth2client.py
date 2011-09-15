@@ -22,6 +22,7 @@ Unit tests for oauth2client.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import datetime
 import httplib2
 import unittest
 import urlparse
@@ -30,6 +31,16 @@ try:
     from urlparse import parse_qs
 except ImportError:
     from cgi import parse_qs
+
+try:  # pragma: no cover
+  import simplejson
+except ImportError:  # pragma: no cover
+  try:
+    # Try to import from django, should work on App Engine
+    from django.utils import simplejson
+  except ImportError:
+    # Should work for Python2.6 and higher.
+    import json as simplejson
 
 from apiclient.http import HttpMockSequence
 from oauth2client.client import AccessTokenCredentials
@@ -48,7 +59,7 @@ class OAuth2CredentialsTests(unittest.TestCase):
     client_id = "some_client_id"
     client_secret = "cOuDdkfjxxnv+"
     refresh_token = "1/0/a.df219fjls0"
-    token_expiry = "ignored"
+    token_expiry = datetime.datetime.utcnow()
     token_uri = "https://www.google.com/accounts/o8/oauth2/token"
     user_agent = "refresh_checker/1.0"
     self.credentials = OAuth2Credentials(
@@ -85,6 +96,12 @@ class OAuth2CredentialsTests(unittest.TestCase):
     http = self.credentials.authorize(http)
     resp, content = http.request("http://example.com")
     self.assertEqual(400, resp.status)
+
+  def test_to_from_json(self):
+    json = self.credentials.to_json()
+    instance = OAuth2Credentials.from_json(json)
+    self.assertEquals(type(instance), OAuth2Credentials)
+    self.assertEquals(self.credentials.__dict__, instance.__dict__)
 
 
 class AccessTokenCredentialsTests(unittest.TestCase):
