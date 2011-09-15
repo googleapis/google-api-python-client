@@ -55,7 +55,7 @@ for import_name, requires, package, modules in REQUIREMENTS:
 long_desc = """The oauth2client is a client library for OAuth 2.0."""
 
 setup(name="oauth2client",
-      version="1.0beta2",
+      version="1.0beta3",
       description="OAuth 2.0 client library",
       long_description=long_desc,
       author="Joe Gregorio",
