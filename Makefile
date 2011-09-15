@@ -27,8 +27,8 @@ release: prerelease
 	@echo "Here we go..."
 	cd snapshot; python setup.py sdist --formats=gztar,zip register upload
 	wget "http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py" -O googlecode_upload.py
-	python googlecode_upload.py --summary="Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.tar.gz
-	python googlecode_upload.py --summary="Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.zip
+	python googlecode_upload.py --summary="google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.tar.gz
+	python googlecode_upload.py --summary="google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.zip
 
 
 .PHONY: oauth2_prerelease
@@ -56,5 +56,5 @@ oauth2_release: oauth2_prerelease
 	@echo "Here we go..."
 	cd snapshot; python setup.py sdist --formats=gztar,zip register upload
 	wget "http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py" -O googlecode_upload.py
-	python googlecode_upload.py --summary="Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.tar.gz
-	python googlecode_upload.py --summary="Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.zip
+	python googlecode_upload.py --summary="oauth2client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.tar.gz
+	python googlecode_upload.py --summary="oauth2client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.zip

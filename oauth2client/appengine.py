@@ -19,10 +19,11 @@ Utilities for making it easier to use OAuth 2.0 on Google App Engine.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import base64
 import httplib2
+import logging
 import pickle
 import time
-import base64
 
 try: # pragma: no cover
   import simplejson
@@ -152,7 +153,7 @@ class FlowProperty(db.Property):
 
   def validate(self, value):
     if value is not None and not isinstance(value, Flow):
-      raise BadValueError('Property %s must be convertible '
+      raise db.BadValueError('Property %s must be convertible '
                           'to a FlowThreeLegged instance (%s)' %
                           (self.name, value))
     return super(FlowProperty, self).validate(value)
@@ -173,6 +174,7 @@ class CredentialsProperty(db.Property):
 
   # For writing to datastore.
   def get_value_for_datastore(self, model_instance):
+    logging.info("get: Got type " + str(type(model_instance)))
     cred = super(CredentialsProperty,
                  self).get_value_for_datastore(model_instance)
     if cred is None:
@@ -183,6 +185,8 @@ class CredentialsProperty(db.Property):
 
   # For reading from datastore.
   def make_value_from_datastore(self, value):
+    logging.info("make: Got a " + value)
+    logging.info("make: Got type " + str(type(value)))
     if value is None:
       return None
     if len(value) == 0:
@@ -191,18 +195,22 @@ class CredentialsProperty(db.Property):
     try:
       credentials = Credentials.new_from_json(value)
     except ValueError:
-      credentials = pickle.loads(value)
+      try:
+        credentials = pickle.loads(value)
+      except ValueError:
+        credentials = None
     return credentials
 
   def validate(self, value):
+    value = super(CredentialsProperty, self).validate(value)
+    logging.info("validate: Got type " + str(type(value)))
     if value is not None and not isinstance(value, Credentials):
       raise db.BadValueError('Property %s must be convertible '
-                          'to an Credentials instance (%s)' %
-                          (self.name, value))
-    return super(CredentialsProperty, self).validate(value)
-
-  def empty(self, value):
-    return not value
+                          'to a Credentials instance (%s)' %
+                            (self.name, value))
+    #if value is not None and not isinstance(value, Credentials):
+    #  return None
+    return value
 
 
 class StorageByKeyName(Storage):

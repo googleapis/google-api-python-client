@@ -101,6 +101,9 @@ class OAuth2CredentialsTests(unittest.TestCase):
     json = self.credentials.to_json()
     instance = OAuth2Credentials.from_json(json)
     self.assertEquals(type(instance), OAuth2Credentials)
+    instance.token_expiry = None
+    self.credentials.token_expiry = None
+
     self.assertEquals(self.credentials.__dict__, instance.__dict__)
 
 

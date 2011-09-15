@@ -44,7 +44,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 # Expiry is stored in RFC3339 UTC format
-EXPIRY_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+EXPIRY_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
 class Error(Exception):
@@ -283,8 +283,11 @@ class OAuth2Credentials(Credentials):
     data = simplejson.loads(s)
     if 'token_expiry' in data and not isinstance(data['token_expiry'],
         datetime.datetime):
-      data['token_expiry'] = datetime.datetime.strptime(
-          data['token_expiry'], EXPIRY_FORMAT)
+      try:
+        data['token_expiry'] = datetime.datetime.strptime(
+            data['token_expiry'], EXPIRY_FORMAT)
+      except:
+        data['token_expiry'] = None
     retval = OAuth2Credentials(
         data['access_token'],
         data['client_id'],

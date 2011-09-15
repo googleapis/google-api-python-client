@@ -41,8 +41,8 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 # The client_id and client_secret are copied from the API Access tab on
 # the Google APIs Console <http://code.google.com/apis/console>
 decorator = OAuth2Decorator(
-    client_id='837647042410-75ifgipj95q4agpm0cs452mg7i2pn17c.apps.googleusercontent.com',
-    client_secret='QhxYsjM__u4vy5N0DXUFRwwI',
+    client_id='837647042410-49mlotv28bfpn5a0igtinipsb8so5eob.apps.googleusercontent.com',
+    client_secret='d4BSDjl4rmFmk-wh28_aK1Oz',
     scope='https://www.googleapis.com/auth/buzz')
 
 http = httplib2.Http(memcache)
