@@ -22,6 +22,7 @@ Unit tests for oauth2client.file
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import copy
 import os
 import pickle
 import unittest
@@ -38,6 +39,7 @@ except ImportError:  # pragma: no cover
     # Should work for Python2.6 and higher.
     import json as simplejson
 
+from apiclient.http import HttpMockSequence
 
 from oauth2client.client import OAuth2Credentials
 from oauth2client.client import AccessTokenCredentials
@@ -103,6 +105,32 @@ class OAuth2ClientFileTests(unittest.TestCase):
     self.assertEquals(data['access_token'], 'foo')
     self.assertEquals(data['_class'], 'OAuth2Credentials')
     self.assertEquals(data['_module'], 'oauth2client.client')
+
+  def test_token_refresh(self):
+    # Write a file with a pickled OAuth2Credentials.
+    access_token = 'foo'
+    client_id = 'some_client_id'
+    client_secret = 'cOuDdkfjxxnv+'
+    refresh_token = '1/0/a.df219fjls0'
+    token_expiry = datetime.datetime.utcnow()
+    token_uri = 'https://www.google.com/accounts/o8/oauth2/token'
+    user_agent = 'refresh_checker/1.0'
+
+    credentials = OAuth2Credentials(
+        access_token, client_id, client_secret,
+        refresh_token, token_expiry, token_uri,
+        user_agent)
+
+    s = Storage(FILENAME)
+    s.put(credentials)
+    credentials = s.get()
+    new_cred = copy.copy(credentials)
+    new_cred.access_token = 'bar'
+    s.put(new_cred)
+
+    credentials._refresh(lambda x: x)
+    self.assertEquals(credentials.access_token, 'bar')
+
 
   def test_access_token_credentials(self):
     access_token = 'foo'

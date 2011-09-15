@@ -11,7 +11,6 @@ docs:
 
 .PHONY: prerelease
 prerelease:
-	python2.4 runtests.py tests --exit_on_failure
 	python2.6 runtests.py tests --exit_on_failure
 	python2.7 runtests.py tests --exit_on_failure
 	-sudo rm -rf dist/

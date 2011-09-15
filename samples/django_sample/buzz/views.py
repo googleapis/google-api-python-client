@@ -24,8 +24,8 @@ def index(request):
   credential = storage.get()
   if credential is None or credential.invalid == True:
     flow = OAuth2WebServerFlow(
-        client_id='887851474342.apps.googleusercontent.com',
-        client_secret='6V9MHBUQqOQtxI7uXPIEnV8e',
+        client_id='837647042410.apps.googleusercontent.com',
+        client_secret='+SWwMCL9d8gWtzPRa1lXw5R8',
         scope='https://www.googleapis.com/auth/buzz',
         user_agent='buzz-django-sample/1.0',
         )

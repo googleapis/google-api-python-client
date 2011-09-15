@@ -229,7 +229,7 @@ class StorageByKeyName(Storage):
     self._property_name = property_name
     self._cache = cache
 
-  def get(self):
+  def locked_get(self):
     """Retrieve Credential from datastore.
 
     Returns:
@@ -248,7 +248,7 @@ class StorageByKeyName(Storage):
 
     return credential
 
-  def put(self, credentials):
+  def locked_put(self, credentials):
     """Write a Credentials to the datastore.
 
     Args:
