@@ -19,12 +19,7 @@ are not already installed.
 """
 import setup_utils
 
-has_setuptools = False
-try:
-  from setuptools import setup
-  has_setuptools = True
-except ImportError:
-  from distutils.core import setup
+from setuptools import setup
 
 packages = [
   'apiclient',
@@ -51,13 +46,7 @@ REQUIREMENTS = [
 
 for import_name, requires, package, modules in REQUIREMENTS:
   if setup_utils.is_missing(import_name):
-    if has_setuptools:
-      install_requires.append(requires)
-    else:
-      if package is not None:
-        packages.append(package)
-      else:
-        py_modules.extend(modules)
+    install_requires.append(requires)
 
 
 long_desc = """The Google API Client for Python is a client library for
