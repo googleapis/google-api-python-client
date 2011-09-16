@@ -71,9 +71,31 @@ def _fix_method_name(name):
   else:
     return name
 
+
 def _write_headers(self):
   # Utility no-op method for multipart media handling
   pass
+
+
+def _add_query_parameter(url, name, value):
+  """Adds a query parameter to a url
+
+  Args:
+    url: string, url to add the query parameter to.
+    name: string, query parameter name.
+    value: string, query parameter value.
+
+  Returns:
+    Updated query parameter. Does not update the url if value is None.
+  """
+  if value is None:
+    return url
+  else:
+    parsed = list(urlparse.urlparse(url))
+    q = parse_qsl(parsed[4])
+    q.append((name, value))
+    parsed[4] = urllib.urlencode(q)
+    return urlparse.urlunparse(parsed)
 
 
 def key2param(key):
@@ -131,21 +153,26 @@ def build(serviceName, version,
 
   if http is None:
     http = httplib2.Http()
+
   requested_url = uritemplate.expand(discoveryServiceUrl, params)
+  requested_url = _add_query_parameter(requested_url, 'key', developerKey)
   logging.info('URL being requested: %s' % requested_url)
+
   resp, content = http.request(requested_url)
-  if resp.status > 400:
+
+  if resp.status >= 400:
     raise HttpError(resp, content, requested_url)
+
   try:
     service = simplejson.loads(content)
   except ValueError, e:
     logging.error('Failed to parse as JSON: ' + content)
     raise InvalidJsonError()
 
-  fn = os.path.join(os.path.dirname(__file__), 'contrib',
+  filename = os.path.join(os.path.dirname(__file__), 'contrib',
       serviceName, 'future.json')
   try:
-    f = file(fn, 'r')
+    f = file(filename, 'r')
     future = f.read()
     f.close()
   except IOError:
@@ -248,6 +275,7 @@ MULTIPLIERS = {
     "GB": 2 ** 30,
     "TB": 2 ** 40,
     }
+
 
 def _media_size_to_long(maxSize):
   """Convert a string media size, such as 10GB or 3TB into an integer."""
@@ -478,21 +506,23 @@ def createResource(http, baseUrl, model, requestBuilder,
     setattr(method, '__doc__', ''.join(docs))
     setattr(theclass, methodName, method)
 
-  # This is a legacy method, as only Buzz and Moderator use the future.json
-  # functionality for generating _next methods. It will be kept around as long
-  # as those API versions are around, but no new APIs should depend upon it.
   def createNextMethodFromFuture(theclass, methodName, methodDesc, futureDesc):
+    """ This is a legacy method, as only Buzz and Moderator use the future.json
+    functionality for generating _next methods. It will be kept around as long
+    as those API versions are around, but no new APIs should depend upon it.
+    """
     methodName = _fix_method_name(methodName)
     methodId = methodDesc['id'] + '.next'
 
     def methodNext(self, previous):
-      """
+      """Retrieve the next page of results.
+
       Takes a single argument, 'body', which is the results
       from the last call, and returns the next set of items
       in the collection.
 
-      Returns None if there are no more items in
-      the collection.
+      Returns:
+        None if there are no more items in the collection.
       """
       if futureDesc['type'] != 'uri':
         raise UnknownLinkType(futureDesc['type'])
@@ -505,12 +535,7 @@ def createResource(http, baseUrl, model, requestBuilder,
       except (KeyError, TypeError):
         return None
 
-      if self._developerKey:
-        parsed = list(urlparse.urlparse(url))
-        q = parse_qsl(parsed[4])
-        q.append(('key', self._developerKey))
-        parsed[4] = urllib.urlencode(q)
-        url = urlparse.urlunparse(parsed)
+      url = _add_query_parameter(url, 'key', self._developerKey)
 
       headers = {}
       headers, params, query, body = self._model.request(headers, {}, {}, None)
@@ -526,7 +551,6 @@ def createResource(http, baseUrl, model, requestBuilder,
                                   methodId=methodId)
 
     setattr(theclass, methodName, methodNext)
-
 
   def createNextMethod(theclass, methodName, methodDesc, futureDesc):
     methodName = _fix_method_name(methodName)

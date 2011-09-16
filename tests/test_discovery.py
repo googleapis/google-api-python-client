@@ -27,6 +27,7 @@ import httplib2
 import os
 import unittest
 import urlparse
+
 try:
     from urlparse import parse_qs
 except ImportError:
@@ -43,6 +44,7 @@ from apiclient.errors import UnacceptableMimeTypeError
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+
 
 def datafile(filename):
   return os.path.join(DATA_DIR, filename)
@@ -66,17 +68,47 @@ class DiscoveryErrors(unittest.TestCase):
 
 
 class DiscoveryFromDocument(unittest.TestCase):
+
   def test_can_build_from_local_document(self):
     discovery = file(datafile('buzz.json')).read()
     buzz = build_from_document(discovery, base="https://www.googleapis.com/")
     self.assertTrue(buzz is not None)
-   
+
   def test_building_with_base_remembers_base(self):
     discovery = file(datafile('buzz.json')).read()
-    
+
     base = "https://www.example.com/"
     buzz = build_from_document(discovery, base=base)
     self.assertEquals(base + "buzz/v1/", buzz._baseUrl)
+
+
+class DiscoveryFromHttp(unittest.TestCase):
+
+  def test_api_key_is_added_to_discovery_uri(self):
+    # build() will raise an HttpError on a 400, use this to pick the request uri
+    # out of the raised exception.
+    try:
+      http = HttpMockSequence([
+        ({'status': '400'}, file(datafile('zoo.json'), 'r').read()),
+        ])
+      zoo = build('zoo', 'v1', http, developerKey='foo',
+                  discoveryServiceUrl='http://example.com')
+      self.fail('Should have raised an exception.')
+    except HttpError, e:
+      self.assertEqual(e.uri, 'http://example.com?key=foo')
+
+  def test_api_key_of_none_is_not_added_to_discovery_uri(self):
+    # build() will raise an HttpError on a 400, use this to pick the request uri
+    # out of the raised exception.
+    try:
+      http = HttpMockSequence([
+        ({'status': '400'}, file(datafile('zoo.json'), 'r').read()),
+        ])
+      zoo = build('zoo', 'v1', http, developerKey=None,
+                  discoveryServiceUrl='http://example.com')
+      self.fail('Should have raised an exception.')
+    except HttpError, e:
+      self.assertEqual(e.uri, 'http://example.com')
 
 
 class Discovery(unittest.TestCase):
@@ -128,12 +160,15 @@ class Discovery(unittest.TestCase):
     http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http)
 
-    request = zoo.query(q="foo", i=1.0, n=1.0, b=0, a=[1,2,3], o={'a':1}, e='bar')
+    request = zoo.query(
+        q="foo", i=1.0, n=1.0, b=0, a=[1,2,3], o={'a':1}, e='bar')
     self._check_query_types(request)
-    request = zoo.query(q="foo", i=1, n=1, b=False, a=[1,2,3], o={'a':1}, e='bar')
+    request = zoo.query(
+        q="foo", i=1, n=1, b=False, a=[1,2,3], o={'a':1}, e='bar')
     self._check_query_types(request)
 
-    request = zoo.query(q="foo", i="1", n="1", b="", a=[1,2,3], o={'a':1}, e='bar')
+    request = zoo.query(
+        q="foo", i="1", n="1", b="", a=[1,2,3], o={'a':1}, e='bar')
     self._check_query_types(request)
 
   def test_optional_stack_query_parameters(self):
@@ -160,7 +195,8 @@ class Discovery(unittest.TestCase):
       ])
     http = tunnel_patch(http)
     zoo = build('zoo', 'v1', http)
-    resp = zoo.animals().patch(name='lion', body='{"description": "foo"}').execute()
+    resp = zoo.animals().patch(
+        name='lion', body='{"description": "foo"}').execute()
 
     self.assertTrue('x-http-method-override' in resp)
 
@@ -277,7 +313,8 @@ class Discovery(unittest.TestCase):
     zoo = build('zoo', 'v1', self.http)
 
     request = zoo.animals().insert(media_body=datafile('small.png'), body={})
-    self.assertTrue(request.headers['content-type'].startswith('multipart/related'))
+    self.assertTrue(request.headers['content-type'].startswith(
+        'multipart/related'))
     self.assertEquals('--==', request.body[0:4])
 
   def test_media_capable_method_without_media(self):
@@ -308,7 +345,8 @@ class Next(unittest.TestCase):
     self.http = HttpMock(datafile('tasks.json'), {'status': '200'})
     tasks = build('tasks', 'v1', self.http)
     request = tasks.tasklists().list()
-    next_request = tasks.tasklists().list_next(request, {'nextPageToken': '123abc'})
+    next_request = tasks.tasklists().list_next(
+        request, {'nextPageToken': '123abc'})
     parsed = list(urlparse.urlparse(next_request.uri))
     q = parse_qs(parsed[4])
     self.assertEqual(q['pageToken'][0], '123abc')
@@ -318,7 +356,9 @@ class Next(unittest.TestCase):
     service = build('latitude', 'v1', self.http)
     request = service.currentLocation().get()
 
+
 class DeveloperKey(unittest.TestCase):
+
   def test_param(self):
     self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
     buzz = build('buzz', 'v1', self.http, developerKey='foobie_bletch')
