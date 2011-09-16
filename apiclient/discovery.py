@@ -155,7 +155,14 @@ def build(serviceName, version,
     http = httplib2.Http()
 
   requested_url = uritemplate.expand(discoveryServiceUrl, params)
-  requested_url = _add_query_parameter(requested_url, 'key', developerKey)
+
+  # REMOTE_ADDR is defined by the CGI spec [RFC3875] as the environment variable
+  # that contains the network address of the client sending the request. If it
+  # exists then add that to the request for the discovery document to avoid
+  # exceeding the quota on discovery requests.
+  if 'REMOTE_ADDR' in os.environ:
+    requested_url = _add_query_parameter(requested_url, 'userIp',
+                                         os.environ['REMOTE_ADDR'])
   logging.info('URL being requested: %s' % requested_url)
 
   resp, content = http.request(requested_url)

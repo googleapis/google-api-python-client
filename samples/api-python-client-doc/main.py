@@ -38,14 +38,26 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
 
 
+DISCOVERY_URI = 'https://www.googleapis.com/discovery/v1/apis?preferred=true'
+
+
+def get_directory_doc():
+  http = httplib2.Http(memcache)
+  ip = os.environ.get('REMOTE_ADDR', None)
+  uri = DISCOVERY_URI
+  if ip:
+    uri += ('&userIp=' + ip)
+  resp, content = http.request(uri)
+  directory = simplejson.loads(content)['items']
+  return directory
+
+
 class MainHandler(webapp.RequestHandler):
   """Handles serving the main landing page.
   """
 
   def get(self):
-    http = httplib2.Http(memcache)
-    resp, content = http.request('https://www.googleapis.com/discovery/v1/apis?preferred=true')
-    directory = simplejson.loads(content)['items']
+    directory = get_directory_doc()
     for item in directory:
       item['title'] = item.get('title', item.get('description', ''))
     path = os.path.join(os.path.dirname(__file__), 'index.html')
@@ -60,9 +72,7 @@ class GadgetHandler(webapp.RequestHandler):
   """
 
   def get(self):
-    http = httplib2.Http(memcache)
-    resp, content = http.request('https://www.googleapis.com/discovery/v1/apis?preferred=true')
-    directory = simplejson.loads(content)['items']
+    directory = get_directory_doc()
     for item in directory:
       item['title'] = item.get('title', item.get('description', ''))
     path = os.path.join(os.path.dirname(__file__), 'gadget.html')
@@ -86,7 +96,8 @@ class ResourceHandler(webapp.RequestHandler):
   """
 
   def get(self, service_name, version, collection):
-    resource = discovery.build(service_name, version)
+    http = httplib2.Http(memcache)
+    resource = discovery.build(service_name, version, http=http)
     # descend the object path
     if collection:
       path = collection.split('/')

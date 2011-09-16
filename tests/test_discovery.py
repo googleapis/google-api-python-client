@@ -23,6 +23,7 @@ Unit tests for objects created from discovery documents.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import copy
 import httplib2
 import os
 import unittest
@@ -83,10 +84,16 @@ class DiscoveryFromDocument(unittest.TestCase):
 
 
 class DiscoveryFromHttp(unittest.TestCase):
+  def setUp(self):
+    self.old_environ = copy.copy(os.environ)
 
-  def test_api_key_is_added_to_discovery_uri(self):
+  def tearDown(self):
+    os.environ = self.old_environ
+
+  def test_userip_is_added_to_discovery_uri(self):
     # build() will raise an HttpError on a 400, use this to pick the request uri
     # out of the raised exception.
+    os.environ['REMOTE_ADDR'] = '10.0.0.1'
     try:
       http = HttpMockSequence([
         ({'status': '400'}, file(datafile('zoo.json'), 'r').read()),
@@ -95,9 +102,9 @@ class DiscoveryFromHttp(unittest.TestCase):
                   discoveryServiceUrl='http://example.com')
       self.fail('Should have raised an exception.')
     except HttpError, e:
-      self.assertEqual(e.uri, 'http://example.com?key=foo')
+      self.assertEqual(e.uri, 'http://example.com?userIp=10.0.0.1')
 
-  def test_api_key_of_none_is_not_added_to_discovery_uri(self):
+  def test_userip_missing_is_not_added_to_discovery_uri(self):
     # build() will raise an HttpError on a 400, use this to pick the request uri
     # out of the raised exception.
     try:
