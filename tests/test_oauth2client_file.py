@@ -23,10 +23,12 @@ Unit tests for oauth2client.file
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import copy
+import datetime
+import httplib2
 import os
 import pickle
+import tempfile
 import unittest
-import datetime
 
 
 try:  # pragma: no cover
@@ -48,7 +50,7 @@ from oauth2client.file import Storage
 from oauth2client import multistore_file
 
 
-FILENAME = os.path.join(os.path.dirname(__file__), 'test_file_storage.data')
+FILENAME = tempfile.mktemp('oauth2client_test.data')
 
 
 class OAuth2ClientFileTests(unittest.TestCase):
@@ -104,7 +106,7 @@ class OAuth2ClientFileTests(unittest.TestCase):
 
     self.assertEquals(data['access_token'], 'foo')
     self.assertEquals(data['_class'], 'OAuth2Credentials')
-    self.assertEquals(data['_module'], 'oauth2client.client')
+    self.assertEquals(data['_module'], OAuth2Credentials.__module__)
 
   def test_token_refresh(self):
     # Write a file with a pickled OAuth2Credentials.
