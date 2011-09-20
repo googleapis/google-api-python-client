@@ -23,7 +23,6 @@ Unit tests for objects created from discovery documents.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-import copy
 import httplib2
 import os
 import unittest
@@ -85,7 +84,7 @@ class DiscoveryFromDocument(unittest.TestCase):
 
 class DiscoveryFromHttp(unittest.TestCase):
   def setUp(self):
-    self.old_environ = copy.copy(os.environ)
+    self.old_environ = os.environ.copy()
 
   def tearDown(self):
     os.environ = self.old_environ
