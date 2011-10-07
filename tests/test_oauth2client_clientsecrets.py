@@ -21,6 +21,7 @@ import os
 import unittest
 import StringIO
 
+import httplib2
 
 from oauth2client import clientsecrets
 
