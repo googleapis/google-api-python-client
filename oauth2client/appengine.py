@@ -446,5 +446,3 @@ application = webapp.WSGIApplication([('/oauth2callback', OAuth2Handler)])
 
 def main():
   run_wsgi_app(application)
-
-#
