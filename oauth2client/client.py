@@ -19,10 +19,12 @@ Tools for interacting with OAuth 2.0 protected resources.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import clientsecrets
 import copy
 import datetime
 import httplib2
 import logging
+import sys
 import urllib
 import urlparse
 
@@ -59,6 +61,10 @@ class FlowExchangeError(Error):
 
 class AccessTokenRefreshError(Error):
   """Error trying to refresh an expired access token."""
+  pass
+
+class UnknownClientSecretsFlowError(Error):
+  """The client secrets file called for an unknown type of OAuth 2.0 flow. """
   pass
 
 
@@ -610,7 +616,7 @@ class OAuth2WebServerFlow(Flow):
   OAuth2Credentials objects may be safely pickled and unpickled.
   """
 
-  def __init__(self, client_id, client_secret, scope, user_agent,
+  def __init__(self, client_id, client_secret, scope, user_agent=None,
                auth_uri='https://accounts.google.com/o/oauth2/auth',
                token_uri='https://accounts.google.com/o/oauth2/token',
                **kwargs):
@@ -721,3 +727,71 @@ class OAuth2WebServerFlow(Flow):
         pass
 
       raise FlowExchangeError(error_msg)
+
+def flow_from_clientsecrets(filename, scope, message=None):
+  """Create a Flow from a clientsecrets file.
+
+  Will create the right kind of Flow based on the contents of the clientsecrets
+  file or will raise InvalidClientSecretsError for unknown types of Flows.
+
+  Args:
+    filename: string, File name of client secrets.
+    scope: string, Space separated list of scopes.
+    message: string, A friendly string to display to the user if the
+      clientsecrets file is missing or invalid. If message is provided then
+      sys.exit will be called in the case of an error. If message in not
+      provided then clientsecrets.InvalidClientSecretsError will be raised.
+
+  Returns:
+    A Flow object.
+
+  Raises:
+    UnknownClientSecretsFlowError if the file describes an unknown kind of Flow.
+    clientsecrets.InvalidClientSecretsError if the clientsecrets file is
+      invalid.
+  """
+  client_type, client_info = clientsecrets.loadfile(filename)
+  if client_type in [clientsecrets.TYPE_WEB, clientsecrets.TYPE_INSTALLED]:
+    return OAuth2WebServerFlow(
+        client_info['client_id'],
+        client_info['client_secret'],
+        scope,
+        None, # user_agent
+        client_info['auth_uri'],
+        client_info['token_uri'])
+  else:
+    raise UnknownClientSecretsFlowError(
+        'This OAuth 2.0 flow is unsupported: "%s"' * client_type)
+
+
+class OAuth2WebServerFlowFromClientSecrets(Flow):
+  """Does the Web Server Flow for OAuth 2.0.
+
+  """
+
+  def __init__(self, client_secrets, scope, user_agent,
+      auth_uri='https://accounts.google.com/o/oauth2/auth',
+      token_uri='https://accounts.google.com/o/oauth2/token',
+      **kwargs):
+    """Constructor for OAuth2WebServerFlow
+
+    Args:
+      client_id: string, client identifier.
+      client_secret: string client secret.
+      scope: string, scope of the credentials being requested.
+      user_agent: string, HTTP User-Agent to provide for this application.
+      auth_uri: string, URI for authorization endpoint. For convenience
+        defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+      token_uri: string, URI for token endpoint. For convenience
+        defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+      **kwargs: dict, The keyword arguments are all optional and required
+                        parameters for the OAuth calls.
+    """
+    self.client_id = client_id
+    self.client_secret = client_secret
+    self.scope = scope
+    self.user_agent = user_agent
+    self.auth_uri = auth_uri
+    self.token_uri = token_uri
+    self.params = kwargs
+    self.redirect_uri = None

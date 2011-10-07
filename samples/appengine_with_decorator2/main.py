@@ -17,9 +17,9 @@
 """Starting template for Google App Engine applications.
 
 Use this project as a starting point if you are just beginning to build a Google
-App Engine project. Remember to fill in the OAuth 2.0 client_id and
-client_secret which can be obtained from the Developer Console
-<https://code.google.com/apis/console/>
+App Engine project. Remember to download the OAuth 2.0 client secrets which can
+be obtained from the Developer Console <https://code.google.com/apis/console/>
+and save them as 'client_secrets.json' in the project directory.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
@@ -31,23 +31,43 @@ import os
 import pickle
 
 from apiclient.discovery import build
-from oauth2client.appengine import OAuth2Decorator
+from oauth2client.appengine import oauth2decorator_from_clientsecrets
 from oauth2client.client import AccessTokenRefreshError
 from google.appengine.api import memcache
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 
-# The client_id and client_secret are copied from the API Access tab on
-# the Google APIs Console <http://code.google.com/apis/console>
-decorator = OAuth2Decorator(
-    client_id='837647042410-49mlotv28bfpn5a0igtinipsb8so5eob.apps.googleusercontent.com',
-    client_secret='d4BSDjl4rmFmk-wh28_aK1Oz',
-    scope='https://www.googleapis.com/auth/buzz')
+
+# CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
+# application, including client_id and client_secret, which are found
+# on the API Access tab on the Google APIs
+# Console <http://code.google.com/apis/console>
+CLIENT_SECRETS = os.path.join(os.path.dirname(__file__), 'client_secrets.json')
+
+# Helpful message to display in the browser if the CLIENT_SECRETS file
+# is missing.
+MISSING_CLIENT_SECRETS_MESSAGE = """
+<h1>Warning: Please configure OAuth 2.0</h1>
+<p>
+To make this sample run you will need to populate the client_secrets.json file
+found at:
+</p>
+<p>
+<code>%s</code>.
+</p>
+<p>with information found on the <a
+href="https://code.google.com/apis/console">APIs Console</a>.
+</p>
+""" % CLIENT_SECRETS
+
 
 http = httplib2.Http(memcache)
 service = build("buzz", "v1", http=http)
-
+decorator = oauth2decorator_from_clientsecrets(
+    CLIENT_SECRETS,
+    'https://www.googleapis.com/auth/buzz',
+    MISSING_CLIENT_SECRETS_MESSAGE)
 
 class MainHandler(webapp.RequestHandler):
 

@@ -35,6 +35,8 @@ except ImportError: # pragma: no cover
     # Should work for Python2.6 and higher.
     import json as simplejson
 
+import clientsecrets
+
 from client import AccessTokenRefreshError
 from client import AssertionCredentials
 from client import Credentials
@@ -50,6 +52,11 @@ from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 OAUTH2CLIENT_NAMESPACE = 'oauth2client#ns'
+
+
+class InvalidClientSecretsError(Exception):
+  """The client_secrets.json file is malformed or missing required fields."""
+  pass
 
 
 class AppAssertionCredentials(AssertionCredentials):
@@ -303,7 +310,8 @@ class OAuth2Decorator(object):
 
   def __init__(self, client_id, client_secret, scope,
                auth_uri='https://accounts.google.com/o/oauth2/auth',
-               token_uri='https://accounts.google.com/o/oauth2/token'):
+               token_uri='https://accounts.google.com/o/oauth2/token',
+               message=None):
 
     """Constructor for OAuth2Decorator
 
@@ -315,11 +323,21 @@ class OAuth2Decorator(object):
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
       token_uri: string, URI for token endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+      message: Message to display if there are problems with the OAuth 2.0
+        configuration. The message may contain HTML and will be presented on the
+        web interface for any method that uses the decorator.
     """
     self.flow = OAuth2WebServerFlow(client_id, client_secret, scope, None,
         auth_uri, token_uri)
     self.credentials = None
     self._request_handler = None
+    self._message = message
+    self._in_error = False
+
+  def _display_error_message(self, request_handler):
+    request_handler.response.out.write('<html><body>')
+    request_handler.response.out.write(self._message)
+    request_handler.response.out.write('</body></html>')
 
   def oauth_required(self, method):
     """Decorator that starts the OAuth 2.0 dance.
@@ -333,6 +351,10 @@ class OAuth2Decorator(object):
     """
 
     def check_oauth(request_handler, *args):
+      if self._in_error:
+        self._display_error_message(request_handler)
+        return
+
       user = users.get_current_user()
       # Don't use @login_decorator as this could be used in a POST request.
       if not user:
@@ -369,12 +391,18 @@ class OAuth2Decorator(object):
     """
 
     def setup_oauth(request_handler, *args):
+      if self._in_error:
+        self._display_error_message(request_handler)
+        return
+
       user = users.get_current_user()
       # Don't use @login_decorator as this could be used in a POST request.
       if not user:
         request_handler.redirect(users.create_login_url(
             request_handler.request.uri))
         return
+
+
       self.flow.params['state'] = request_handler.request.url
       self._request_handler = request_handler
       self.credentials = StorageByKeyName(
@@ -411,6 +439,76 @@ class OAuth2Decorator(object):
     returns True.
     """
     return self.credentials.authorize(httplib2.Http())
+
+
+class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
+  """An OAuth2Decorator that builds from a clientsecrets file.
+
+  Uses a clientsecrets file as the source for all the information when
+  constructing an OAuth2Decorator.
+
+  Example:
+
+    decorator = OAuth2DecoratorFromClientSecrets(
+      os.path.join(os.path.dirname(__file__), 'client_secrets.json')
+      scope='https://www.googleapis.com/auth/buzz')
+
+
+    class MainHandler(webapp.RequestHandler):
+
+      @decorator.oauth_required
+      def get(self):
+        http = decorator.http()
+        # http is authorized with the user's Credentials and can be used
+        # in API calls
+  """
+
+  def __init__(self, filename, scope, message=None):
+    """Constructor
+
+    Args:
+      filename: string, File name of client secrets.
+      scope: string, Space separated list of scopes.
+      message: string, A friendly string to display to the user if the
+        clientsecrets file is missing or invalid. The message may contain HTML and
+        will be presented on the web interface for any method that uses the
+        decorator.
+    """
+    try:
+      client_type, client_info = clientsecrets.loadfile(filename)
+      if client_type not in [clientsecrets.TYPE_WEB, clientsecrets.TYPE_INSTALLED]:
+        raise InvalidClientSecretsError('OAuth2Decorator doesn\'t support this OAuth 2.0 flow.')
+      super(OAuth2DecoratorFromClientSecrets,
+            self).__init__(
+                client_info['client_id'],
+                client_info['client_secret'],
+                scope,
+                client_info['auth_uri'],
+                client_info['token_uri'],
+                message)
+    except clientsecrets.InvalidClientSecretsError:
+      self._in_error = True
+    if message is not None:
+      self._message = message
+    else:
+      self._message = "Please configure your application for OAuth 2.0"
+
+
+def oauth2decorator_from_clientsecrets(filename, scope, message=None):
+  """Creates an OAuth2Decorator populated from a clientsecrets file.
+
+  Args:
+    filename: string, File name of client secrets.
+    scope: string, Space separated list of scopes.
+    message: string, A friendly string to display to the user if the
+      clientsecrets file is missing or invalid. The message may contain HTML and
+      will be presented on the web interface for any method that uses the
+      decorator.
+
+  Returns: An OAuth2Decorator
+
+  """
+  return OAuth2DecoratorFromClientSecrets(filename, scope, message)
 
 
 class OAuth2Handler(webapp.RequestHandler):
