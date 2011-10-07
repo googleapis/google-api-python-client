@@ -22,7 +22,7 @@ import unittest
 import StringIO
 
 
-import oauth2client.clientsecrets as clientsecrets
+from oauth2client import clientsecrets
 
 
 class OAuth2CredentialsTests(unittest.TestCase):
@@ -35,7 +35,6 @@ class OAuth2CredentialsTests(unittest.TestCase):
 
   def test_validate_error(self):
     ERRORS = [
-      (None, 'Invalid'),
       ('{}', 'Invalid'),
       ('{"foo": {}}', 'Unknown'),
       ('{"web": {}}', 'Missing'),
