@@ -143,9 +143,7 @@ class Credentials(object):
     data = simplejson.loads(s)
     # Find and call the right classmethod from_json() to restore the object.
     module = data['_module']
-    m = __import__(module)
-    for sub_module in module.split('.')[1:]:
-      m = getattr(m, sub_module)
+    m = __import__(module, fromlist=module.split('.')[:-1])
     kls = getattr(m, data['_class'])
     from_json = getattr(kls, 'from_json')
     return from_json(s)
