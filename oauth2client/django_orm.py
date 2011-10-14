@@ -31,8 +31,8 @@ class CredentialsField(models.Field):
 
   __metaclass__ = models.SubfieldBase
 
-  def db_type(self, connection=None):
-    return 'VARCHAR'
+  def get_internal_type(self):
+    return "TextField"
 
   def to_python(self, value):
     if not value:
@@ -41,7 +41,7 @@ class CredentialsField(models.Field):
       return value
     return pickle.loads(base64.b64decode(value))
 
-  def get_db_prep_value(self, value):
+  def get_db_prep_value(self, value, connection, prepared=False):
     return base64.b64encode(pickle.dumps(value))
 
 
@@ -49,8 +49,8 @@ class FlowField(models.Field):
 
   __metaclass__ = models.SubfieldBase
 
-  def db_type(self, connection=None):
-    return 'VARCHAR'
+  def get_internal_type(self):
+    return "TextField"
 
   def to_python(self, value):
     if value is None:
@@ -59,7 +59,7 @@ class FlowField(models.Field):
       return value
     return pickle.loads(base64.b64decode(value))
 
-  def get_db_prep_value(self, value):
+  def get_db_prep_value(self, value, connection, prepared=False):
     return base64.b64encode(pickle.dumps(value))
 
 

@@ -19,6 +19,10 @@ except:
 sys.path.insert(0, os.getcwd())
 sys.path.insert(0, APP_ENGINE_PATH)
 
+from google.appengine.dist import use_library
+use_library('django', '1.2')
+
+
 def build_suite(folder, verbosity):
   # find all of the test modules
   top_level_modules = map(fullmodname, glob.glob(os.path.join(folder, 'test_*.py')))
