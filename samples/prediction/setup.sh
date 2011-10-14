@@ -4,13 +4,14 @@
 # Author: jcgregorio@google.com (Joe Gregorio)
 #
 # Uploads a training data set to Google Storage to be used by this sample
-# application. 
+# application.
 #
 # Usage:
-# setup.sh bucket/object 
+# setup.sh file_name bucket/object
 #
 # Requirements:
 #   gsutil - a client application for interacting with Google Storage. It
 #     can be downloaded from https://code.google.com/apis/storage/docs/gsutil.html
-OBJECT_NAME=$1
-gsutil cp language_id.txt gs://$OBJECT_NAME
+FILE_NAME=$1
+OBJECT_NAME=$2
+gsutil cp $FILE_NAME gs://$OBJECT_NAME
