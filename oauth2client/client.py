@@ -748,15 +748,21 @@ def flow_from_clientsecrets(filename, scope, message=None):
     clientsecrets.InvalidClientSecretsError if the clientsecrets file is
       invalid.
   """
-  client_type, client_info = clientsecrets.loadfile(filename)
-  if client_type in [clientsecrets.TYPE_WEB, clientsecrets.TYPE_INSTALLED]:
-    return OAuth2WebServerFlow(
-        client_info['client_id'],
-        client_info['client_secret'],
-        scope,
-        None, # user_agent
-        client_info['auth_uri'],
-        client_info['token_uri'])
+  try:
+    client_type, client_info = clientsecrets.loadfile(filename)
+    if client_type in [clientsecrets.TYPE_WEB, clientsecrets.TYPE_INSTALLED]:
+        return OAuth2WebServerFlow(
+            client_info['client_id'],
+            client_info['client_secret'],
+            scope,
+            None, # user_agent
+            client_info['auth_uri'],
+            client_info['token_uri'])
+  except clientsecrets.InvalidClientSecretsError:
+    if message:
+      sys.exit(message)
+    else:
+      raise
   else:
     raise UnknownClientSecretsFlowError(
         'This OAuth 2.0 flow is unsupported: "%s"' * client_type)
