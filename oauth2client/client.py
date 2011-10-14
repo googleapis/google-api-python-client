@@ -623,7 +623,8 @@ class OAuth2WebServerFlow(Flow):
     Args:
       client_id: string, client identifier.
       client_secret: string client secret.
-      scope: string, scope of the credentials being requested.
+      scope: string or list of strings, scope(s) of the credentials being
+        requested.
       user_agent: string, HTTP User-Agent to provide for this application.
       auth_uri: string, URI for authorization endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
@@ -634,6 +635,8 @@ class OAuth2WebServerFlow(Flow):
     """
     self.client_id = client_id
     self.client_secret = client_secret
+    if type(scope) is list:
+      scope = ' '.join(scope)
     self.scope = scope
     self.user_agent = user_agent
     self.auth_uri = auth_uri
@@ -734,7 +737,7 @@ def flow_from_clientsecrets(filename, scope, message=None):
 
   Args:
     filename: string, File name of client secrets.
-    scope: string, Space separated list of scopes.
+    scope: string or list of strings, scope(s) to request.
     message: string, A friendly string to display to the user if the
       clientsecrets file is missing or invalid. If message is provided then
       sys.exit will be called in the case of an error. If message in not
@@ -766,36 +769,3 @@ def flow_from_clientsecrets(filename, scope, message=None):
   else:
     raise UnknownClientSecretsFlowError(
         'This OAuth 2.0 flow is unsupported: "%s"' * client_type)
-
-
-class OAuth2WebServerFlowFromClientSecrets(Flow):
-  """Does the Web Server Flow for OAuth 2.0.
-
-  """
-
-  def __init__(self, client_secrets, scope, user_agent,
-      auth_uri='https://accounts.google.com/o/oauth2/auth',
-      token_uri='https://accounts.google.com/o/oauth2/token',
-      **kwargs):
-    """Constructor for OAuth2WebServerFlow
-
-    Args:
-      client_id: string, client identifier.
-      client_secret: string client secret.
-      scope: string, scope of the credentials being requested.
-      user_agent: string, HTTP User-Agent to provide for this application.
-      auth_uri: string, URI for authorization endpoint. For convenience
-        defaults to Google's endpoints but any OAuth 2.0 provider can be used.
-      token_uri: string, URI for token endpoint. For convenience
-        defaults to Google's endpoints but any OAuth 2.0 provider can be used.
-      **kwargs: dict, The keyword arguments are all optional and required
-                        parameters for the OAuth calls.
-    """
-    self.client_id = client_id
-    self.client_secret = client_secret
-    self.scope = scope
-    self.user_agent = user_agent
-    self.auth_uri = auth_uri
-    self.token_uri = token_uri
-    self.params = kwargs
-    self.redirect_uri = None

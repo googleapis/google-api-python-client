@@ -318,7 +318,8 @@ class OAuth2Decorator(object):
     Args:
       client_id: string, client identifier.
       client_secret: string client secret.
-      scope: string, scope of the credentials being requested.
+      scope: string or list of strings, scope(s) of the credentials being
+        requested.
       auth_uri: string, URI for authorization endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
       token_uri: string, URI for token endpoint. For convenience

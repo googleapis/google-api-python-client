@@ -76,7 +76,7 @@ def get_credential_storage(filename, client_id, user_agent, scope,
     filename: The JSON file storing a set of credentials
     client_id: The client_id for the credential
     user_agent: The user agent for the credential
-    scope: A string for the scope being requested
+    scope: string or list of strings, Scope(s) being requested
     warn_on_readonly: if True, log a warning if the store is readonly
 
   Returns:
@@ -90,6 +90,8 @@ def get_credential_storage(filename, client_id, user_agent, scope,
         filename, _MultiStore(filename, warn_on_readonly))
   finally:
     _multistores_lock.release()
+  if type(scope) is list:
+    scope = ' '.join(scope)
   return multistore._get_storage(client_id, user_agent, scope)
 
 
@@ -328,7 +330,7 @@ class _MultiStore(object):
     Args:
       client_id: The client_id for the credential
       user_agent: The user agent for the credential
-      scope: A string for the scope being requested
+      scope: A string for the scope(s) being requested
 
     Returns:
       The credential specified or None if not present
@@ -344,7 +346,7 @@ class _MultiStore(object):
 
     Args:
       cred: The OAuth2Credential to update/set
-      scope: The scope that this credential covers
+      scope: The scope(s) that this credential covers
     """
     key = (cred.client_id, cred.user_agent, scope)
     self._data[key] = cred
@@ -358,7 +360,7 @@ class _MultiStore(object):
     Args:
       client_id: The client_id for the credential
       user_agent: The user agent for the credential
-      scope: A string for the scope being requested
+      scope: A string for the scope(s) being requested
 
     Returns:
       A Storage object that can be used to get/set this cred

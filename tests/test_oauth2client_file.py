@@ -152,7 +152,7 @@ class OAuth2ClientFileTests(unittest.TestCase):
         FILENAME,
         'some_client_id',
         'user-agent/1.0',
-        'some-scope')
+        ['some-scope', 'some-other-scope'])
 
     credentials = store.get()
     self.assertEquals(None, credentials)
@@ -175,7 +175,7 @@ class OAuth2ClientFileTests(unittest.TestCase):
         FILENAME,
         credentials.client_id,
         credentials.user_agent,
-        'some-scope')
+        ['some-scope', 'some-other-scope'])
 
     store.put(credentials)
     credentials = store.get()

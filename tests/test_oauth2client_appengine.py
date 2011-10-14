@@ -131,7 +131,7 @@ class DecoratorTests(unittest.TestCase):
 
     decorator = OAuth2Decorator(client_id='foo_client_id',
                                 client_secret='foo_client_secret',
-                                scope='foo_scope')
+                                scope=['foo_scope', 'bar_scope'])
     self.decorator = decorator
 
     class TestRequiredHandler(webapp.RequestHandler):
@@ -168,7 +168,7 @@ class DecoratorTests(unittest.TestCase):
     q = parse_qs(response.headers['Location'].split('?', 1)[1])
     self.assertEqual('http://localhost/oauth2callback', q['redirect_uri'][0])
     self.assertEqual('foo_client_id', q['client_id'][0])
-    self.assertEqual('foo_scope', q['scope'][0])
+    self.assertEqual('foo_scope bar_scope', q['scope'][0])
     self.assertEqual('http://localhost/foo_path', q['state'][0])
     self.assertEqual('code', q['response_type'][0])
     self.assertEqual(False, self.decorator.has_credentials())
@@ -210,7 +210,7 @@ class DecoratorTests(unittest.TestCase):
     q = parse_qs(url.split('?', 1)[1])
     self.assertEqual('http://localhost/oauth2callback', q['redirect_uri'][0])
     self.assertEqual('foo_client_id', q['client_id'][0])
-    self.assertEqual('foo_scope', q['scope'][0])
+    self.assertEqual('foo_scope bar_scope', q['scope'][0])
     self.assertEqual('http://localhost/bar_path', q['state'][0])
     self.assertEqual('code', q['response_type'][0])
 
