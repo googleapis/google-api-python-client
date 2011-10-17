@@ -17,8 +17,6 @@
 Also installs included versions of third party libraries, if those libraries
 are not already installed.
 """
-import setup_utils
-
 from setuptools import setup
 
 packages = [
@@ -30,30 +28,28 @@ packages = [
   'apiclient.contrib.latitude',
   'apiclient.contrib.moderator',
   'uritemplate',
-]
+  ]
 
-install_requires = []
-py_modules = []
+install_requires = [
+    'httplib2',
+    'oauth2',
+    'python-gflags',
+    ]
 
+try:
+  import json
+  needs_json = False
+except ImportError:
+  needs_json = True
 
-# (module to test for, install_requires to add if missing, packages to add if missing, py_modules to add if missing)
-REQUIREMENTS = [
-  ('httplib2', 'httplib2', 'httplib2', None),
-  ('oauth2', 'oauth2', 'oauth2', None),
-  ('gflags', 'python-gflags', None, ['gflags', 'gflags_validators']),
-  (['json', 'simplejson', 'django.utils'], 'simplejson', 'simplejson', None)
-]
-
-for import_name, requires, package, modules in REQUIREMENTS:
-  if setup_utils.is_missing(import_name):
-    install_requires.append(requires)
-
+if needs_json:
+  install_requires.append('simplejson')
 
 long_desc = """The Google API Client for Python is a client library for
 accessing the Buzz, Moderator, and Latitude APIs."""
 
 setup(name="google-api-python-client",
-      version="1.0beta4",
+      version="1.0beta5prerelease",
       description="Google API Client Library for Python",
       long_description=long_desc,
       author="Joe Gregorio",
@@ -61,11 +57,9 @@ setup(name="google-api-python-client",
       url="http://code.google.com/p/google-api-python-client/",
       install_requires=install_requires,
       packages=packages,
-      py_modules=py_modules,
       package_data={
         'apiclient': ['contrib/*/*.json']
         },
-      scripts=['bin/enable-app-engine-project'],
       license="Apache 2.0",
       keywords="google api client",
       classifiers=['Development Status :: 4 - Beta',

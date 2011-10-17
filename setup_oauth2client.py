@@ -17,34 +17,30 @@
 Also installs included versions of third party libraries, if those libraries
 are not already installed.
 """
-import setup_utils
-
 from setuptools import setup
 
 packages = [
   'oauth2client',
 ]
 
-install_requires = []
-py_modules = []
+install_requires = [
+    'httplib2',
+    'python-gflags',
+    ]
 
+try:
+  import json
+  needs_json = False
+except ImportError
+  needs_json = True
 
-# (module to test for, install_requires to add if missing, packages to add if missing, py_modules to add if missing)
-REQUIREMENTS = [
-  ('httplib2', 'httplib2', 'httplib2', None),
-  ('gflags', 'python-gflags', None, ['gflags', 'gflags_validators']),
-  (['json', 'simplejson', 'django.utils'], 'simplejson', 'simplejson', None)
-]
-
-for import_name, requires, package, modules in REQUIREMENTS:
-  if setup_utils.is_missing(import_name):
-    install_requires.append(requires)
-
+if needs_json:
+  install_requires.append('simplejson')
 
 long_desc = """The oauth2client is a client library for OAuth 2.0."""
 
 setup(name="oauth2client",
-      version="1.0beta4",
+      version="1.0beta5prerelease",
       description="OAuth 2.0 client library",
       long_description=long_desc,
       author="Joe Gregorio",
