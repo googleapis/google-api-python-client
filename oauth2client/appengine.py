@@ -192,7 +192,6 @@ class CredentialsProperty(db.Property):
 
   # For reading from datastore.
   def make_value_from_datastore(self, value):
-    logging.info("make: Got a " + value)
     logging.info("make: Got type " + str(type(value)))
     if value is None:
       return None
