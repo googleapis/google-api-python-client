@@ -91,12 +91,11 @@ class OAuth2ClientFileTests(unittest.TestCase):
     pickle.dump(credentials, f)
     f.close()
 
-    # Storage should be able to read that object.
-    # TODO(jcgregorio) This should fail once pickle support is removed.
+    # Storage should be not be able to read that object, as the capability to
+    # read and write credentials as pickled objects has been removed.
     s = Storage(FILENAME)
-    credentials = s.get()
-    self.assertNotEquals(None, credentials)
-    self.assertEquals('foo', credentials.access_token)
+    read_credentials = s.get()
+    self.assertEquals(None, read_credentials)
 
     # Now write it back out and confirm it has been rewritten as JSON
     s.put(credentials)

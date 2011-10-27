@@ -35,7 +35,6 @@ import base64
 import fcntl
 import logging
 import os
-import pickle
 import threading
 
 try:  # pragma: no cover

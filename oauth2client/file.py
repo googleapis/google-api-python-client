@@ -20,7 +20,6 @@ credentials.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-import pickle
 import threading
 
 
@@ -74,18 +73,11 @@ class Storage(BaseStorage):
     except IOError:
       return credentials
 
-    # First try reading as JSON, and if that fails fall back to pickle.
     try:
       credentials = Credentials.new_from_json(content)
       credentials.set_store(self)
     except ValueError:
-      # TODO(jcgregorio) On a future release remove this path to finally remove
-      # all pickle support.
-      try:
-        credentials = pickle.loads(content)
-        credentials.set_store(self)
-      except:
-        pass
+      pass
 
     return credentials
 

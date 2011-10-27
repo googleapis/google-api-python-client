@@ -75,7 +75,6 @@ class AppAssertionCredentials(AssertionCredentials):
   a two legged flow, and therefore has all of the required information to
   generate and refresh its own access tokens.
 
-  AssertionFlowCredentials objects may be safely pickled and unpickled.
   """
 
   def __init__(self, scope,
@@ -197,14 +196,10 @@ class CredentialsProperty(db.Property):
       return None
     if len(value) == 0:
       return None
-    credentials = None
     try:
       credentials = Credentials.new_from_json(value)
     except ValueError:
-      try:
-        credentials = pickle.loads(value)
-      except ValueError:
-        credentials = None
+      credentials = None
     return credentials
 
   def validate(self, value):
