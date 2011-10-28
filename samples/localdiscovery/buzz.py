@@ -25,16 +25,10 @@ def main():
   discovery = f.read()
   f.close()
 
-  # Optionally load a futures discovery document
-  f = file(os.path.join(os.path.dirname(__file__), "../../apiclient/contrib/buzz/future.json"), "r")
-  future = f.read()
-  f.close()
-
   # Construct a service from the local documents
   service = build_from_document(discovery,
       base="https://www.googleapis.com/",
-      http=http,
-      future=future)
+      http=http)
 
   pprint.pprint(service.activities().search(q='lady gaga').execute())
 
