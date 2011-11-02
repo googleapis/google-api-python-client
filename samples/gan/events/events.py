@@ -3,7 +3,7 @@
 #
 # Copyright (C) 2011 Google Inc.
 
-"""Sample for retrieving credit-card offers from GAN."""
+"""Sample for retrieving event information from GAN."""
 
 __author__ = 'leadpipe@google.com (Luke Blanshard)'
 
@@ -22,7 +22,8 @@ from django.template.loader import get_template
 
 from apiclient.discovery import build
 from oauth2client.file import Storage
-from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.client import AccessTokenRefreshError
+from oauth2client.client import flow_from_clientsecrets
 from oauth2client.tools import run
 
 settings.configure(DEBUG=True, TEMPLATE_DEBUG=True,
@@ -31,20 +32,30 @@ settings.configure(DEBUG=True, TEMPLATE_DEBUG=True,
 
 FLAGS = gflags.FLAGS
 
-# Set up a Flow object to be used if we need to authenticate. This
-# sample uses OAuth 2.0, and we set up the OAuth2WebServerFlow with
-# the information it needs to authenticate. Note that it is called
-# the Web Server Flow, but it can also handle the flow for native
-# applications <http://code.google.com/apis/accounts/docs/OAuth2.html#IA>
-# The client_id client_secret are copied from the API Access tab on
-# the Google APIs Console <http://code.google.com/apis/console>. When
-# creating credentials for this application be sure to choose an Application
-# type of "Installed application".
-FLOW = OAuth2WebServerFlow(
-    client_id='767567128246-ti2q06i1neqm5boe2m1pqdc2riivhk41.apps.googleusercontent.com',
-    client_secret='UtdXI8nKD2SEcQRLQDZPkGT9',
+# CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
+# application, including client_id and client_secret, which are found
+# on the API Access tab on the Google APIs
+# Console <http://code.google.com/apis/console>
+CLIENT_SECRETS = '../client_secrets.json'
+
+# Helpful message to display in the browser if the CLIENT_SECRETS file
+# is missing.
+MISSING_CLIENT_SECRETS_MESSAGE = """
+WARNING: Please configure OAuth 2.0
+
+To make this sample run you will need to populate the client_secrets.json file
+found at:
+
+   %s
+
+with information from the APIs Console <https://code.google.com/apis/console>.
+
+""" % os.path.join(os.path.dirname(__file__), CLIENT_SECRETS)
+
+# Set up a Flow object to be used if we need to authenticate.
+FLOW = flow_from_clientsecrets(CLIENT_SECRETS,
     scope='https://www.googleapis.com/auth/gan.readonly',
-    user_agent='gan-events-sample/1.0')
+    message=MISSING_CLIENT_SECRETS_MESSAGE)
 
 # The gflags module makes defining command-line options easy for
 # applications. Run this program with the '--help' argument to see
@@ -56,7 +67,7 @@ gflags.DEFINE_enum('logging_level', 'DEBUG',
 gflags.DEFINE_enum("output_type", 'STDOUT', ['BOTH', 'HTML', 'STDOUT'],
                    'Set how to output the results received from the API')
 
-gflags.DEFINE_string('credentials_filename', 'events.dat',
+gflags.DEFINE_string('credentials_filename', '../credentials.dat',
                      'File to store credentials in', short_name='cf')
 
 API_FLAGS = {'eventDateMin':None, 'eventDateMax':None, 'advertiserId':None,
@@ -146,15 +157,22 @@ def main(argv):
       params[key] = FLAGS[key].value
 
   # Retrieve the relevant events.
+  all_items = []
   try:
-    list_call = events.list(**params)
-    list = list_call.execute()
+    request = events.list(**params)
+    while request:
+      response = request.execute()
+      if FLAGS.output_type in ["BOTH", "STDOUT"]:
+        print json.dumps(response, sort_keys=True, indent=4)
+      all_items.extend(response['items'])
+      request = events.list_next(request, response)
+
   except apiclient.errors.HttpError, e:
     print json.dumps(e.__dict__, sort_keys=True, indent=4)
 
   if FLAGS.output_type in ["BOTH", "HTML"]:
     template = get_template('events_template.html')
-    context = Context(list)
+    context = Context({'items':items})
 
     out = open("output.html", 'w')
     out.write(template.render(context).encode('UTF-8'))
@@ -162,9 +180,6 @@ def main(argv):
     out.close()
 
     print 'Wrote output.html'
-
-  if FLAGS.output_type in ["BOTH", "STDOUT"]:
-    print json.dumps(list, sort_keys=True, indent=4)
 
 if __name__ == '__main__':
   main(sys.argv)
