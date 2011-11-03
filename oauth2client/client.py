@@ -641,7 +641,10 @@ class OAuth2WebServerFlow(Flow):
     self.user_agent = user_agent
     self.auth_uri = auth_uri
     self.token_uri = token_uri
-    self.params = kwargs
+    self.params = {
+        'access_type': 'offline',
+        }
+    self.params.update(kwargs)
     self.redirect_uri = None
 
   def step1_get_authorize_url(self, redirect_uri='oob'):

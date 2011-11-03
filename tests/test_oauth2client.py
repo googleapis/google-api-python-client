@@ -191,6 +191,26 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
     self.assertEqual(q['response_type'][0], 'code')
     self.assertEqual(q['scope'][0], 'foo')
     self.assertEqual(q['redirect_uri'][0], 'oob')
+    self.assertEqual(q['access_type'][0], 'offline')
+
+  def test_override_flow_access_type(self):
+    """Passing access_type overrides the default."""
+    flow = OAuth2WebServerFlow(
+        client_id='client_id+1',
+        client_secret='secret+1',
+        scope='foo',
+        user_agent='unittest-sample/1.0',
+        access_type='online'
+        )
+    authorize_url = flow.step1_get_authorize_url('oob')
+
+    parsed = urlparse.urlparse(authorize_url)
+    q = parse_qs(parsed[4])
+    self.assertEqual(q['client_id'][0], 'client_id+1')
+    self.assertEqual(q['response_type'][0], 'code')
+    self.assertEqual(q['scope'][0], 'foo')
+    self.assertEqual(q['redirect_uri'][0], 'oob')
+    self.assertEqual(q['access_type'][0], 'online')
 
   def test_exchange_failure(self):
     http = HttpMockSequence([
