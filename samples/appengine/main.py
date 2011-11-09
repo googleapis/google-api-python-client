@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""Starting template for Google App Engine applications.
+
+Use this project as a starting point if you are just beginning to build a Google
+App Engine project. Remember to download the OAuth 2.0 client secrets which can
+be obtained from the Developer Console <https://code.google.com/apis/console/>
+and save them as 'client_secrets.json' in the project directory.
+"""
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -24,84 +31,79 @@ import os
 import pickle
 
 from apiclient.discovery import build
-from oauth2client.appengine import CredentialsProperty
-from oauth2client.appengine import StorageByKeyName
-from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.appengine import oauth2decorator_from_clientsecrets
+from oauth2client.client import AccessTokenRefreshError
 from google.appengine.api import memcache
-from google.appengine.api import users
-from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
-from google.appengine.ext.webapp import util
-from google.appengine.ext.webapp.util import login_required
+from google.appengine.ext.webapp.util import run_wsgi_app
 
 
-FLOW = OAuth2WebServerFlow(
-    # Visit https://code.google.com/apis/console to
-    # generate your client_id, client_secret and to
-    # register your redirect_uri.
-    client_id='<YOUR CLIENT ID HERE>',
-    client_secret='<YOUR CLIENT SECRET HERE>',
-    scope='https://www.googleapis.com/auth/buzz',
-    user_agent='buzz-cmdline-sample/1.0')
+# CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
+# application, including client_id and client_secret, which are found
+# on the API Access tab on the Google APIs
+# Console <http://code.google.com/apis/console>
+CLIENT_SECRETS = os.path.join(os.path.dirname(__file__), 'client_secrets.json')
+
+# Helpful message to display in the browser if the CLIENT_SECRETS file
+# is missing.
+MISSING_CLIENT_SECRETS_MESSAGE = """
+<h1>Warning: Please configure OAuth 2.0</h1>
+<p>
+To make this sample run you will need to populate the client_secrets.json file
+found at:
+</p>
+<p>
+<code>%s</code>.
+</p>
+<p>with information found on the <a
+href="https://code.google.com/apis/console">APIs Console</a>.
+</p>
+""" % CLIENT_SECRETS
 
 
-class Credentials(db.Model):
-  credentials = CredentialsProperty()
-
+http = httplib2.Http(memcache)
+service = build("plus", "v1", http=http)
+decorator = oauth2decorator_from_clientsecrets(
+    CLIENT_SECRETS,
+    'https://www.googleapis.com/auth/plus.me',
+    MISSING_CLIENT_SECRETS_MESSAGE)
 
 class MainHandler(webapp.RequestHandler):
 
-  @login_required
+  @decorator.oauth_aware
   def get(self):
-    user = users.get_current_user()
-    credentials = StorageByKeyName(
-        Credentials, user.user_id(), 'credentials').get()
+    path = os.path.join(os.path.dirname(__file__), 'grant.html')
+    variables = {
+        'url': decorator.authorize_url(),
+        'has_credentials': decorator.has_credentials()
+        }
+    self.response.out.write(template.render(path, variables))
 
-    if credentials is None or credentials.invalid == True:
-      callback = self.request.relative_url('/oauth2callback')
-      authorize_url = FLOW.step1_get_authorize_url(callback)
-      memcache.set(user.user_id(), pickle.dumps(FLOW))
-      self.redirect(authorize_url)
-    else:
-      http = httplib2.Http()
-      http = credentials.authorize(http)
-      service = build("buzz", "v1", http=http)
-      activities = service.activities()
-      activitylist = activities.list(scope='@consumption',
-                                     userId='@me').execute()
+
+class AboutHandler(webapp.RequestHandler):
+
+  @decorator.oauth_required
+  def get(self):
+    try:
+      http = decorator.http()
+      user = service.people().get(userId='me').execute(http)
+      text = 'Hello, %s!' % user['displayName']
+
       path = os.path.join(os.path.dirname(__file__), 'welcome.html')
-      logout = users.create_logout_url('/')
-      self.response.out.write(
-          template.render(
-              path, {'activitylist': activitylist,
-                     'logout': logout
-                     }))
-
-
-class OAuthHandler(webapp.RequestHandler):
-
-  @login_required
-  def get(self):
-    user = users.get_current_user()
-    flow = pickle.loads(memcache.get(user.user_id()))
-    if flow:
-      credentials = flow.step2_exchange(self.request.params)
-      StorageByKeyName(
-          Credentials, user.user_id(), 'credentials').put(credentials)
-      self.redirect("/")
-    else:
-      pass
+      self.response.out.write(template.render(path, {'text': text }))
+    except AccessTokenRefreshError:
+      self.redirect('/')
 
 
 def main():
   application = webapp.WSGIApplication(
       [
-      ('/', MainHandler),
-      ('/oauth2callback', OAuthHandler)
+       ('/', MainHandler),
+       ('/about', AboutHandler),
       ],
       debug=True)
-  util.run_wsgi_app(application)
+  run_wsgi_app(application)
 
 
 if __name__ == '__main__':
