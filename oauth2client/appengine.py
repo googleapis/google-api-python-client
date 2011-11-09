@@ -289,7 +289,7 @@ class OAuth2Decorator(object):
     decorator = OAuth2Decorator(
         client_id='837...ent.com',
         client_secret='Qh...wwI',
-        scope='https://www.googleapis.com/auth/buzz')
+        scope='https://www.googleapis.com/auth/plus')
 
 
     class MainHandler(webapp.RequestHandler):
@@ -446,7 +446,7 @@ class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
 
     decorator = OAuth2DecoratorFromClientSecrets(
       os.path.join(os.path.dirname(__file__), 'client_secrets.json')
-      scope='https://www.googleapis.com/auth/buzz')
+      scope='https://www.googleapis.com/auth/plus')
 
 
     class MainHandler(webapp.RequestHandler):
