@@ -15,22 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Simple command-line sample for Buzz.
+"""Simple command-line sample for the Google+ API.
 
 Command-line application that retrieves the users latest content and
 then adds a new entry.
 
 Usage:
-  $ python buzz.py
+  $ python plus.py
 
 You can also get help on all the command-line flags the program understands
 by running:
 
-  $ python buzz.py --help
+  $ python plus.py --help
 
 To get detailed log output run:
 
-  $ python buzz.py --logging_level=DEBUG
+  $ python plus.py --logging_level=DEBUG
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
@@ -73,7 +73,7 @@ with information from the APIs Console <https://code.google.com/apis/console>.
 
 # Set up a Flow object to be used if we need to authenticate.
 FLOW = flow_from_clientsecrets(CLIENT_SECRETS,
-    scope='https://www.googleapis.com/auth/buzz',
+    scope='https://www.googleapis.com/auth/plus.me',
     message=MISSING_CLIENT_SECRETS_MESSAGE)
 
 
@@ -99,7 +99,7 @@ def main(argv):
   # If the Credentials don't exist or are invalid run through the native client
   # flow. The Storage object will ensure that if successful the good
   # Credentials will get written back to a file.
-  storage = Storage('buzz.dat')
+  storage = Storage('plus.dat')
   credentials = storage.get()
 
   if credentials is None or credentials.invalid:
@@ -110,26 +110,25 @@ def main(argv):
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  service = build("buzz", "v1", http=http)
+  service = build("plus", "v1", http=http)
 
   try:
+    person = service.people().get(userId='me').execute(http)
 
-    activities = service.activities()
+    print "Got your ID: %s" % person['displayName']
+    print
+    print "%-040s -> %s" % ("[Activitity ID]", "[Content]")
 
-    # Retrieve the first two activities
-    activitylist = activities.list(
-        max_results='2', scope='@self', userId='@me').execute()
-    print "Retrieved the first two activities"
+    # Don't execute the request until we reach the paging loop below
+    request = service.activities().list(
+        userId=person['id'], collection='public')
+    # Loop over every activity and print the ID and a short snippet of content.
+    while ( request != None ):
+      activities_doc = request.execute()
+      for item in activities_doc.get('items', []):
+        print '%-040s -> %s' % (item['id'], item['object']['content'][:30])
 
-    # Retrieve the next two activities
-    if activitylist:
-      activitylist = activities.list_next(activitylist).execute()
-      print "Retrieved the next two activities"
-
-    # List the number of followers
-    followers = service.people().list(
-        userId='@me', groupId='@followers').execute(http)
-    print 'Hello, you have %s followers!' % followers['totalResults']
+      request = service.activities().list_next(request, activities_doc)
 
   except AccessTokenRefreshError:
     print ("The credentials have been revoked or expired, please re-run"
