@@ -41,103 +41,104 @@ def datafile(filename):
 
 class Mocks(unittest.TestCase):
   def setUp(self):
-    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
+    self.http = HttpMock(datafile('plus.json'), {'status': '200'})
+    self.zoo_http = HttpMock(datafile('zoo.json'), {'status': '200'})
 
   def test_default_response(self):
     requestBuilder = RequestMockBuilder({})
-    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
-    activity = buzz.activities().get(postId='tag:blah', userId='@me').execute()
+    plus = build('plus', 'v1', http=self.http, requestBuilder=requestBuilder)
+    activity = plus.activities().get(activityId='tag:blah').execute()
     self.assertEqual({}, activity)
 
   def test_simple_response(self):
     requestBuilder = RequestMockBuilder({
-        'chili.activities.get': (None, '{"data": {"foo": "bar"}}')
+        'plus.activities.get': (None, '{"data": {"foo": "bar"}}')
         })
-    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+    plus = build('plus', 'v1', http=self.http, requestBuilder=requestBuilder)
 
-    activity = buzz.activities().get(postId='tag:blah', userId='@me').execute()
+    activity = plus.activities().get(activityId='tag:blah').execute()
     self.assertEqual({"foo": "bar"}, activity)
 
   def test_unexpected_call(self):
     requestBuilder = RequestMockBuilder({}, check_unexpected=True)
 
-    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+    plus = build('plus', 'v1', http=self.http, requestBuilder=requestBuilder)
 
     try:
-      buzz.activities().get(postId='tag:blah', userId='@me').execute()
+      plus.activities().get(activityId='tag:blah').execute()
       self.fail('UnexpectedMethodError should have been raised')
     except UnexpectedMethodError:
       pass
 
   def test_simple_unexpected_body(self):
     requestBuilder = RequestMockBuilder({
-        'chili.activities.insert': (None, '{"data": {"foo": "bar"}}', None)
+        'zoo.animals.insert': (None, '{"data": {"foo": "bar"}}', None)
         })
-    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+    zoo = build('zoo', 'v1', http=self.zoo_http, requestBuilder=requestBuilder)
 
     try:
-      buzz.activities().insert(userId='@me', body='{}').execute()
+      zoo.animals().insert(body='{}').execute()
       self.fail('UnexpectedBodyError should have been raised')
     except UnexpectedBodyError:
       pass
 
   def test_simple_expected_body(self):
     requestBuilder = RequestMockBuilder({
-        'chili.activities.insert': (None, '{"data": {"foo": "bar"}}', '{}')
+        'zoo.animals.insert': (None, '{"data": {"foo": "bar"}}', '{}')
         })
-    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+    zoo = build('zoo', 'v1', http=self.zoo_http, requestBuilder=requestBuilder)
 
     try:
-      buzz.activities().insert(userId='@me', body='').execute()
+      zoo.animals().insert(body='').execute()
       self.fail('UnexpectedBodyError should have been raised')
     except UnexpectedBodyError:
       pass
 
   def test_simple_wrong_body(self):
     requestBuilder = RequestMockBuilder({
-        'chili.activities.insert': (None, '{"data": {"foo": "bar"}}',
+        'zoo.animals.insert': (None, '{"data": {"foo": "bar"}}',
                                     '{"data": {"foo": "bar"}}')
         })
-    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+    zoo = build('zoo', 'v1', http=self.zoo_http, requestBuilder=requestBuilder)
 
     try:
-      buzz.activities().insert(
-          userId='@me', body='{"data": {"foo": "blah"}}').execute()
+      zoo.animals().insert(
+          body='{"data": {"foo": "blah"}}').execute()
       self.fail('UnexpectedBodyError should have been raised')
     except UnexpectedBodyError:
       pass
 
   def test_simple_matching_str_body(self):
     requestBuilder = RequestMockBuilder({
-        'chili.activities.insert': (None, '{"data": {"foo": "bar"}}',
+        'zoo.animals.insert': (None, '{"data": {"foo": "bar"}}',
                                     '{"data": {"foo": "bar"}}')
         })
-    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+    zoo = build('zoo', 'v1', http=self.zoo_http, requestBuilder=requestBuilder)
 
-    activity = buzz.activities().insert(
-        userId='@me', body={'data': {'foo': 'bar'}}).execute()
+    activity = zoo.animals().insert(
+        body={'data': {'foo': 'bar'}}).execute()
     self.assertEqual({'foo': 'bar'}, activity)
 
   def test_simple_matching_dict_body(self):
     requestBuilder = RequestMockBuilder({
-        'chili.activities.insert': (None, '{"data": {"foo": "bar"}}',
+        'zoo.animals.insert': (None, '{"data": {"foo": "bar"}}',
                                     {'data': {'foo': 'bar'}})
         })
-    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+    zoo = build('zoo', 'v1', http=self.zoo_http, requestBuilder=requestBuilder)
 
-    activity = buzz.activities().insert(
-        userId='@me', body={'data': {'foo': 'bar'}}).execute()
+    activity = zoo.animals().insert(
+        body={'data': {'foo': 'bar'}}).execute()
     self.assertEqual({'foo': 'bar'}, activity)
 
   def test_errors(self):
     errorResponse = httplib2.Response({'status': 500, 'reason': 'Server Error'})
     requestBuilder = RequestMockBuilder({
-        'chili.activities.list': (errorResponse, '{}')
+        'plus.activities.list': (errorResponse, '{}')
         })
-    buzz = build('buzz', 'v1', http=self.http, requestBuilder=requestBuilder)
+    plus = build('plus', 'v1', http=self.http, requestBuilder=requestBuilder)
 
     try:
-      activity = buzz.activities().list(scope='@self', userId='@me').execute()
+      activity = plus.activities().list(collection='public', userId='me').execute()
       self.fail('An exception should have been thrown')
     except HttpError, e:
       self.assertEqual('{}', e.content)

@@ -35,7 +35,6 @@ NUM_THREADS = 3
 
 # A list of URLs to shorten.
 BULK = [
-    "https://code.google.com/apis/buzz/",
     "https://code.google.com/apis/moderator/",
     "https://code.google.com/apis/latitude/",
     "https://code.google.com/apis/urlshortener/",

@@ -31,7 +31,7 @@ install_requires = [
 try:
   import json
   needs_json = False
-except ImportError
+except ImportError:
   needs_json = True
 
 if needs_json:
@@ -40,7 +40,7 @@ if needs_json:
 long_desc = """The oauth2client is a client library for OAuth 2.0."""
 
 setup(name="oauth2client",
-      version="1.0beta5prerelease",
+      version="1.0beta6",
       description="OAuth 2.0 client library",
       long_description=long_desc,
       author="Joe Gregorio",
@@ -48,7 +48,6 @@ setup(name="oauth2client",
       url="http://code.google.com/p/google-api-python-client/",
       install_requires=install_requires,
       packages=packages,
-      py_modules=py_modules,
       license="Apache 2.0",
       keywords="google oauth 2.0 http client",
       classifiers=['Development Status :: 4 - Beta',

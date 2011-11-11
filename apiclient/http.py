@@ -136,10 +136,10 @@ class RequestMockBuilder(object):
       response = '{"data": {"id": "tag:google.c...'
       requestBuilder = RequestMockBuilder(
         {
-          'chili.activities.get': (None, response),
+          'plus.activities.get': (None, response),
         }
       )
-      apiclient.discovery.build("buzz", "v1", requestBuilder=requestBuilder)
+      apiclient.discovery.build("plus", "v1", requestBuilder=requestBuilder)
 
     Methods that you do not supply a response for will return a
     200 OK with an empty string as the response content or raise an excpetion if

@@ -61,7 +61,7 @@ class DiscoveryErrors(unittest.TestCase):
   def test_failed_to_parse_discovery_json(self):
     self.http = HttpMock(datafile('malformed.json'), {'status': '200'})
     try:
-      buzz = build('buzz', 'v1', self.http)
+      plus = build('plus', 'v1', self.http)
       self.fail("should have raised an exception over malformed JSON.")
     except InvalidJsonError:
       pass
@@ -70,16 +70,16 @@ class DiscoveryErrors(unittest.TestCase):
 class DiscoveryFromDocument(unittest.TestCase):
 
   def test_can_build_from_local_document(self):
-    discovery = file(datafile('buzz.json')).read()
-    buzz = build_from_document(discovery, base="https://www.googleapis.com/")
-    self.assertTrue(buzz is not None)
+    discovery = file(datafile('plus.json')).read()
+    plus = build_from_document(discovery, base="https://www.googleapis.com/")
+    self.assertTrue(plus is not None)
 
   def test_building_with_base_remembers_base(self):
-    discovery = file(datafile('buzz.json')).read()
+    discovery = file(datafile('plus.json')).read()
 
     base = "https://www.example.com/"
-    buzz = build_from_document(discovery, base=base)
-    self.assertEquals(base + "buzz/v1/", buzz._baseUrl)
+    plus = build_from_document(discovery, base=base)
+    self.assertEquals(base + "plus/v1/", plus._baseUrl)
 
 
 class DiscoveryFromHttp(unittest.TestCase):
@@ -120,33 +120,26 @@ class DiscoveryFromHttp(unittest.TestCase):
 class Discovery(unittest.TestCase):
 
   def test_method_error_checking(self):
-    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
-    buzz = build('buzz', 'v1', self.http)
+    self.http = HttpMock(datafile('plus.json'), {'status': '200'})
+    plus = build('plus', 'v1', self.http)
 
     # Missing required parameters
     try:
-      buzz.activities().list()
+      plus.activities().list()
       self.fail()
     except TypeError, e:
       self.assertTrue('Missing' in str(e))
 
     # Parameter doesn't match regex
     try:
-      buzz.activities().list(scope='@myself', userId='me')
-      self.fail()
-    except TypeError, e:
-      self.assertTrue('not an allowed value' in str(e))
-
-    # Parameter doesn't match regex
-    try:
-      buzz.activities().list(scope='not@', userId='foo')
+      plus.activities().list(collection='not_a_collection_name', userId='me')
       self.fail()
     except TypeError, e:
       self.assertTrue('not an allowed value' in str(e))
 
     # Unexpected parameter
     try:
-      buzz.activities().list(flubber=12)
+      plus.activities().list(flubber=12)
       self.fail()
     except TypeError, e:
       self.assertTrue('unexpected' in str(e))
@@ -206,21 +199,11 @@ class Discovery(unittest.TestCase):
 
     self.assertTrue('x-http-method-override' in resp)
 
-  def test_buzz_resources(self):
-    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
-    buzz = build('buzz', 'v1', self.http)
-    self.assertTrue(getattr(buzz, 'activities'))
-    self.assertTrue(getattr(buzz, 'photos'))
-    self.assertTrue(getattr(buzz, 'people'))
-    self.assertTrue(getattr(buzz, 'groups'))
-    self.assertTrue(getattr(buzz, 'comments'))
-    self.assertTrue(getattr(buzz, 'related'))
-
-  def test_auth(self):
-    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
-    buzz = build('buzz', 'v1', self.http)
-    auth = buzz.auth_discovery()
-    self.assertTrue('request' in auth)
+  def test_plus_resources(self):
+    self.http = HttpMock(datafile('plus.json'), {'status': '200'})
+    plus = build('plus', 'v1', self.http)
+    self.assertTrue(getattr(plus, 'activities'))
+    self.assertTrue(getattr(plus, 'people'))
 
   def test_full_featured(self):
     # Zoo should exercise all discovery facets
@@ -331,15 +314,6 @@ class Discovery(unittest.TestCase):
     self.assertTrue(request.headers['content-type'], 'application/json')
 
 class Next(unittest.TestCase):
-  def test_next_for_people_liked(self):
-    """Legacy test for Buzz _next support."""
-    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
-    buzz = build('buzz', 'v1', self.http)
-    people = {'links':
-                  {'next':
-                   [{'href': 'http://www.googleapis.com/next-link'}]}}
-    request = buzz.people().liked_next(people)
-    self.assertEqual(request.uri, 'http://www.googleapis.com/next-link')
 
   def test_next_successful_none_on_no_next_page_token(self):
     self.http = HttpMock(datafile('tasks.json'), {'status': '200'})
@@ -361,30 +335,6 @@ class Next(unittest.TestCase):
     self.http = HttpMock(datafile('latitude.json'), {'status': '200'})
     service = build('latitude', 'v1', self.http)
     request = service.currentLocation().get()
-
-
-class DeveloperKey(unittest.TestCase):
-
-  def test_param(self):
-    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
-    buzz = build('buzz', 'v1', self.http, developerKey='foobie_bletch')
-    activities = {'links':
-                  {'next':
-                   [{'href': 'http://www.googleapis.com/next-link'}]}}
-    request = buzz.activities().list_next(activities)
-    parsed = urlparse.urlparse(request.uri)
-    q = parse_qs(parsed[4])
-    self.assertEqual(q['key'], ['foobie_bletch'])
-
-  def test_next_for_activities_list(self):
-    self.http = HttpMock(datafile('buzz.json'), {'status': '200'})
-    buzz = build('buzz', 'v1', self.http, developerKey='foobie_bletch')
-    activities = {'links':
-                  {'next':
-                   [{'href': 'http://www.googleapis.com/next-link'}]}}
-    request = buzz.activities().list_next(activities)
-    self.assertEqual(request.uri,
-                     'http://www.googleapis.com/next-link?key=foobie_bletch')
 
 
 if __name__ == '__main__':

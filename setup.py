@@ -24,7 +24,6 @@ packages = [
   'oauth2client',
   'apiclient.ext',
   'apiclient.contrib',
-  'apiclient.contrib.buzz',
   'apiclient.contrib.latitude',
   'apiclient.contrib.moderator',
   'uritemplate',
@@ -46,7 +45,7 @@ if needs_json:
   install_requires.append('simplejson')
 
 long_desc = """The Google API Client for Python is a client library for
-accessing the Buzz, Moderator, and Latitude APIs."""
+accessing the Plus, Moderator, and many other Google APIs."""
 
 setup(name="google-api-python-client",
       version="1.0beta6",

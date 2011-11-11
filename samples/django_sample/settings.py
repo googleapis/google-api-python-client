@@ -80,5 +80,5 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'django_sample.buzz'
+    'django_sample.plus'
 )

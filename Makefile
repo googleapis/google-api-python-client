@@ -42,7 +42,6 @@ oauth2_prerelease:
 	python expand-symlinks.py --source=samples/appengine_with_decorator2 --dest=snapshot/samples/appengine_with_decorator2
 	python expand-symlinks.py --source=samples/appengine --dest=snapshot/samples/appengine
 	cp setup_oauth2client.py snapshot/setup.py
-	cp setup_utils.py snapshot/setup_utils.py
 	cp MANIFEST_oauth2client.in snapshot/MANIFEST.in
 	cp README_oauth2client snapshot/README
 	cd snapshot; python setup.py clean
