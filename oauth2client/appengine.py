@@ -248,12 +248,15 @@ class StorageByKeyName(Storage):
       json = self._cache.get(self._key_name)
       if json:
         return Credentials.new_from_json(json)
-    entity = self._model.get_or_insert(self._key_name)
-    credential = getattr(entity, self._property_name)
-    if credential and hasattr(credential, 'set_store'):
-      credential.set_store(self)
-      if self._cache:
-        self._cache.set(self._key_name, credentials.to_json())
+
+    credential = None
+    entity = self._model.get_by_key_name(self._key_name)
+    if entity is not None:
+      credential = getattr(entity, self._property_name)
+      if credential and hasattr(credential, 'set_store'):
+        credential.set_store(self)
+        if self._cache:
+          self._cache.set(self._key_name, credentials.to_json())
 
     return credential
 
