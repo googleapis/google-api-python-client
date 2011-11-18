@@ -393,10 +393,15 @@ def createResource(http, baseUrl, model, requestBuilder,
 
       for name, regex in pattern_params.iteritems():
         if name in kwargs:
-          if re.match(regex, kwargs[name]) is None:
-            raise TypeError(
-                'Parameter "%s" value "%s" does not match the pattern "%s"' %
-                (name, kwargs[name], regex))
+          if isinstance(kwargs[name], basestring):
+            pvalues = [kwargs[name]]
+          else:
+            pvalues = kwargs[name]
+          for pvalue in pvalues:
+            if re.match(regex, pvalue) is None:
+              raise TypeError(
+                  'Parameter "%s" value "%s" does not match the pattern "%s"' %
+                  (name, pvalue, regex))
 
       for name, enums in enum_params.iteritems():
         if name in kwargs:

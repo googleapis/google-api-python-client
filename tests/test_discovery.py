@@ -168,6 +168,10 @@ class Discovery(unittest.TestCase):
 
     request = zoo.query(
         q="foo", i="1", n="1", b="", a=[1,2,3], o={'a':1}, e='bar')
+
+    request = zoo.query(
+        q="foo", i="1", n="1", b="", a=[1,2,3], o={'a':1}, e='bar', rr=['foo',
+                                                                        'bar'])
     self._check_query_types(request)
 
   def test_optional_stack_query_parameters(self):
