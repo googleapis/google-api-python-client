@@ -45,6 +45,7 @@ from errors import HttpError
 from errors import InvalidJsonError
 from errors import MediaUploadSizeError
 from errors import UnacceptableMimeTypeError
+from errors import UnknownApiOrApiVersion
 from errors import UnknownLinkType
 from http import HttpRequest
 from model import JsonModel
@@ -167,6 +168,9 @@ def build(serviceName, version,
 
   resp, content = http.request(requested_url)
 
+  if resp.status == 404:
+    raise UnknownApiOrApiVersion("name: %s  version: %s" % (serviceName,
+                                                            version))
   if resp.status >= 400:
     raise HttpError(resp, content, requested_url)
 

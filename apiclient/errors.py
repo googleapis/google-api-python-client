@@ -70,6 +70,10 @@ class UnknownLinkType(Error):
   """Link type unknown or unexpected."""
   pass
 
+class UnknownApiOrApiVersion(Error):
+  """No API with that name and version exists."""
+  pass
+
 
 class UnacceptableMimeTypeError(Error):
   """That is an unacceptable mimetype for this operation."""
