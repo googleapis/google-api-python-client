@@ -70,7 +70,7 @@ class UnknownLinkType(Error):
   """Link type unknown or unexpected."""
   pass
 
-class UnknownApiOrApiVersion(Error):
+class UnknownApiNameOrVersion(Error):
   """No API with that name and version exists."""
   pass
 
