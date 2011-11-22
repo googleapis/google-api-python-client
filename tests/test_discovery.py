@@ -34,13 +34,16 @@ except ImportError:
     from cgi import parse_qs
 
 from apiclient.discovery import build, build_from_document, key2param
-from apiclient.http import HttpMock
-from apiclient.http import tunnel_patch
-from apiclient.http import HttpMockSequence
 from apiclient.errors import HttpError
 from apiclient.errors import InvalidJsonError
 from apiclient.errors import MediaUploadSizeError
+from apiclient.errors import ResumableUploadError
 from apiclient.errors import UnacceptableMimeTypeError
+from apiclient.http import HttpMock
+from apiclient.http import HttpMockSequence
+from apiclient.http import MediaFileUpload
+from apiclient.http import MediaUploadProgress
+from apiclient.http import tunnel_patch
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -316,6 +319,169 @@ class Discovery(unittest.TestCase):
 
     request = zoo.animals().insert(body={})
     self.assertTrue(request.headers['content-type'], 'application/json')
+
+  def test_resumable_multipart_media_good_upload(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    media_upload = MediaFileUpload(datafile('small.png'), resumable=True)
+    request = zoo.animals().insert(media_body=media_upload, body={})
+    self.assertTrue(request.headers['content-type'].startswith(
+        'multipart/related'))
+    self.assertEquals('--==', request.body[0:4])
+    self.assertEquals(media_upload, request.resumable)
+
+    self.assertEquals('image/png', request.resumable.mimetype())
+
+    self.assertTrue(len(request.multipart_boundary) > 0)
+    self.assertNotEquals(request.body, None)
+    self.assertEquals(request.resumable_uri, None)
+
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '308',
+        'location': 'http://upload.example.com/2',
+        'range': '0-12'}, ''),
+      ({'status': '308',
+        'location': 'http://upload.example.com/3',
+        'range': '0-%d' % (request.total_size - 2)}, ''),
+      ({'status': '200'}, '{"foo": "bar"}'),
+      ])
+
+    status, body = request.next_chunk(http)
+    self.assertEquals(None, body)
+    self.assertTrue(isinstance(status, MediaUploadProgress))
+    self.assertEquals(13, status.resumable_progress)
+
+    # request.body is not None because the server only acknowledged 12 bytes,
+    # which is less than the size of the body, so we need to send it again.
+    self.assertNotEquals(request.body, None)
+
+    # Two requests should have been made and the resumable_uri should have been
+    # updated for each one.
+    self.assertEquals(request.resumable_uri, 'http://upload.example.com/2')
+
+    self.assertEquals(media_upload, request.resumable)
+    self.assertEquals(13, request.resumable_progress)
+
+    status, body = request.next_chunk(http)
+    self.assertEquals(request.resumable_uri, 'http://upload.example.com/3')
+    self.assertEquals(request.total_size-1, request.resumable_progress)
+    self.assertEquals(request.body, None)
+
+    # Final call to next_chunk should complete the upload.
+    status, body = request.next_chunk(http)
+    self.assertEquals(body, {"foo": "bar"})
+    self.assertEquals(status, None)
+
+
+  def test_resumable_media_good_upload(self):
+    """Not a multipart upload."""
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    media_upload = MediaFileUpload(datafile('small.png'), resumable=True)
+    request = zoo.animals().insert(media_body=media_upload, body=None)
+    self.assertTrue(request.headers['content-type'].startswith(
+        'image/png'))
+    self.assertEquals(media_upload, request.resumable)
+
+    self.assertEquals('image/png', request.resumable.mimetype())
+
+    self.assertEquals(request.multipart_boundary, '')
+    self.assertEquals(request.body, None)
+    self.assertEquals(request.resumable_uri, None)
+
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '308',
+        'location': 'http://upload.example.com/2',
+        'range': '0-12'}, ''),
+      ({'status': '308',
+        'location': 'http://upload.example.com/3',
+        'range': '0-%d' % (request.total_size - 2)}, ''),
+      ({'status': '200'}, '{"foo": "bar"}'),
+      ])
+
+    status, body = request.next_chunk(http)
+    self.assertEquals(None, body)
+    self.assertTrue(isinstance(status, MediaUploadProgress))
+    self.assertEquals(13, status.resumable_progress)
+
+    # Two requests should have been made and the resumable_uri should have been
+    # updated for each one.
+    self.assertEquals(request.resumable_uri, 'http://upload.example.com/2')
+
+    self.assertEquals(media_upload, request.resumable)
+    self.assertEquals(13, request.resumable_progress)
+
+    status, body = request.next_chunk(http)
+    self.assertEquals(request.resumable_uri, 'http://upload.example.com/3')
+    self.assertEquals(request.total_size-1, request.resumable_progress)
+    self.assertEquals(request.body, None)
+
+    # Final call to next_chunk should complete the upload.
+    status, body = request.next_chunk(http)
+    self.assertEquals(body, {"foo": "bar"})
+    self.assertEquals(status, None)
+
+
+  def test_resumable_media_good_upload_from_execute(self):
+    """Not a multipart upload."""
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    media_upload = MediaFileUpload(datafile('small.png'), resumable=True)
+    request = zoo.animals().insert(media_body=media_upload, body=None)
+
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '308',
+        'location': 'http://upload.example.com/2',
+        'range': '0-12'}, ''),
+      ({'status': '308',
+        'location': 'http://upload.example.com/3',
+        'range': '0-%d' % (request.total_size - 2)}, ''),
+      ({'status': '200'}, '{"foo": "bar"}'),
+      ])
+
+    body = request.execute(http)
+    self.assertEquals(body, {"foo": "bar"})
+
+  def test_resumable_media_fail_unknown_response_code_first_request(self):
+    """Not a multipart upload."""
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    media_upload = MediaFileUpload(datafile('small.png'), resumable=True)
+    request = zoo.animals().insert(media_body=media_upload, body=None)
+
+    http = HttpMockSequence([
+      ({'status': '400',
+        'location': 'http://upload.example.com'}, ''),
+      ])
+
+    self.assertRaises(ResumableUploadError, request.execute, http)
+
+  def test_resumable_media_fail_unknown_response_code_subsequent_request(self):
+    """Not a multipart upload."""
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    media_upload = MediaFileUpload(datafile('small.png'), resumable=True)
+    request = zoo.animals().insert(media_body=media_upload, body=None)
+
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '400'}, ''),
+      ])
+
+    self.assertRaises(HttpError, request.execute, http)
+
 
 class Next(unittest.TestCase):
 

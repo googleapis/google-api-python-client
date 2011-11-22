@@ -85,6 +85,11 @@ class MediaUploadSizeError(Error):
   pass
 
 
+class ResumableUploadError(Error):
+  """Error occured during resumable upload."""
+  pass
+
+
 class UnexpectedMethodError(Error):
   """Exception raised by RequestMockBuilder on unexpected calls."""
 

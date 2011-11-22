@@ -26,6 +26,7 @@ import copy
 import httplib2
 import logging
 import os
+import random
 import re
 import uritemplate
 import urllib
@@ -48,6 +49,8 @@ from errors import UnacceptableMimeTypeError
 from errors import UnknownApiNameOrVersion
 from errors import UnknownLinkType
 from http import HttpRequest
+from http import MediaUpload
+from http import MediaFileUpload
 from model import JsonModel
 
 URITEMPLATE = re.compile('{[^}]*}')
@@ -325,6 +328,7 @@ def createResource(http, baseUrl, model, requestBuilder,
     if 'mediaUpload' in methodDesc:
       mediaUpload = methodDesc['mediaUpload']
       mediaPathUrl = mediaUpload['protocols']['simple']['path']
+      mediaResumablePathUrl = mediaUpload['protocols']['resumable']['path']
       accept = mediaUpload['accept']
       maxSize = _media_size_to_long(mediaUpload.get('maxSize', ''))
 
@@ -440,28 +444,46 @@ def createResource(http, baseUrl, model, requestBuilder,
       expanded_url = uritemplate.expand(pathUrl, params)
       url = urlparse.urljoin(self._baseUrl, expanded_url + query)
 
+      resumable = None
+      multipart_boundary = ''
+
       if media_filename:
-        (media_mime_type, encoding) = mimetypes.guess_type(media_filename)
-        if media_mime_type is None:
-          raise UnknownFileType(media_filename)
-        if not mimeparse.best_match([media_mime_type], ','.join(accept)):
-          raise UnacceptableMimeTypeError(media_mime_type)
+        # Convert a simple filename into a MediaUpload object.
+        if isinstance(media_filename, basestring):
+          (media_mime_type, encoding) = mimetypes.guess_type(media_filename)
+          if media_mime_type is None:
+            raise UnknownFileType(media_filename)
+          if not mimeparse.best_match([media_mime_type], ','.join(accept)):
+            raise UnacceptableMimeTypeError(media_mime_type)
+          media_upload = MediaFileUpload(media_filename, media_mime_type)
+        elif isinstance(media_filename, MediaUpload):
+          media_upload = media_filename
+        else:
+          raise TypeError(
+              'media_filename must be str or MediaUpload. Got %s' % type(media_upload))
+
+        if media_upload.resumable():
+          resumable = media_upload
 
         # Check the maxSize
-        if maxSize > 0 and os.path.getsize(media_filename) > maxSize:
-          raise MediaUploadSizeError(media_filename)
+        if maxSize > 0 and media_upload.size() > maxSize:
+          raise MediaUploadSizeError("Media larger than: %s" % maxSize)
 
         # Use the media path uri for media uploads
-        expanded_url = uritemplate.expand(mediaPathUrl, params)
+        if media_upload.resumable():
+          expanded_url = uritemplate.expand(mediaResumablePathUrl, params)
+        else:
+          expanded_url = uritemplate.expand(mediaPathUrl, params)
         url = urlparse.urljoin(self._baseUrl, expanded_url + query)
 
         if body is None:
-          headers['content-type'] = media_mime_type
-          # make the body the contents of the file
-          f = file(media_filename, 'rb')
-          body = f.read()
-          f.close()
+          # This is a simple media upload
+          headers['content-type'] = media_upload.mimetype()
+          expanded_url = uritemplate.expand(mediaResumablePathUrl, params)
+          if not media_upload.resumable():
+            body = media_upload.getbytes(0, media_upload.size())
         else:
+          # This is a multipart/related upload.
           msgRoot = MIMEMultipart('related')
           # msgRoot should not write out it's own headers
           setattr(msgRoot, '_write_headers', lambda self: None)
@@ -472,19 +494,51 @@ def createResource(http, baseUrl, model, requestBuilder,
           msgRoot.attach(msg)
 
           # attach the media as the second part
-          msg = MIMENonMultipart(*media_mime_type.split('/'))
+          msg = MIMENonMultipart(*media_upload.mimetype().split('/'))
           msg['Content-Transfer-Encoding'] = 'binary'
 
-          f = file(media_filename, 'rb')
-          msg.set_payload(f.read())
-          f.close()
-          msgRoot.attach(msg)
+          if media_upload.resumable():
+            # This is a multipart resumable upload, where a multipart payload
+            # looks like this:
+            #
+            #  --===============1678050750164843052==
+            #  Content-Type: application/json
+            #  MIME-Version: 1.0
+            #
+            #  {'foo': 'bar'}
+            #  --===============1678050750164843052==
+            #  Content-Type: image/png
+            #  MIME-Version: 1.0
+            #  Content-Transfer-Encoding: binary
+            #
+            #  <BINARY STUFF>
+            #  --===============1678050750164843052==--
+            #
+            # In the case of resumable multipart media uploads, the <BINARY
+            # STUFF> is large and will be spread across multiple PUTs.  What we
+            # do here is compose the multipart message with a random payload in
+            # place of <BINARY STUFF> and then split the resulting content into
+            # two pieces, text before <BINARY STUFF> and text after <BINARY
+            # STUFF>. The text after <BINARY STUFF> is the multipart boundary.
+            # In apiclient.http the HttpRequest will send the text before
+            # <BINARY STUFF>, then send the actual binary media in chunks, and
+            # then will send the multipart delimeter.
 
-          body = msgRoot.as_string()
+            payload = hex(random.getrandbits(300))
+            msg.set_payload(payload)
+            msgRoot.attach(msg)
+            body = msgRoot.as_string()
+            body, _ = body.split(payload)
+            resumable = media_upload
+          else:
+            payload = media_upload.getbytes(0, media_upload.size())
+            msg.set_payload(payload)
+            msgRoot.attach(msg)
+            body = msgRoot.as_string()
 
-          # must appear after the call to as_string() to get the right boundary
+          multipart_boundary = msgRoot.get_boundary()
           headers['content-type'] = ('multipart/related; '
-                                     'boundary="%s"') % msgRoot.get_boundary()
+                                     'boundary="%s"') % multipart_boundary
 
       logging.info('URL being requested: %s' % url)
       return self._requestBuilder(self._http,
@@ -493,7 +547,8 @@ def createResource(http, baseUrl, model, requestBuilder,
                                   method=httpMethod,
                                   body=body,
                                   headers=headers,
-                                  methodId=methodId)
+                                  methodId=methodId,
+                                  resumable=resumable)
 
     docs = [methodDesc.get('description', DEFAULT_METHOD_DOC), '\n\n']
     if len(argmap) > 0:
