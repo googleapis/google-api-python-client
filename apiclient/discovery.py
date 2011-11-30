@@ -160,10 +160,10 @@ def build(serviceName, version,
 
   requested_url = uritemplate.expand(discoveryServiceUrl, params)
 
-  # REMOTE_ADDR is defined by the CGI spec [RFC3875] as the environment variable
-  # that contains the network address of the client sending the request. If it
-  # exists then add that to the request for the discovery document to avoid
-  # exceeding the quota on discovery requests.
+  # REMOTE_ADDR is defined by the CGI spec [RFC3875] as the environment
+  # variable that contains the network address of the client sending the
+  # request. If it exists then add that to the request for the discovery
+  # document to avoid exceeding the quota on discovery requests.
   if 'REMOTE_ADDR' in os.environ:
     requested_url = _add_query_parameter(requested_url, 'userIp',
                                          os.environ['REMOTE_ADDR'])
@@ -459,8 +459,7 @@ def createResource(http, baseUrl, model, requestBuilder,
         elif isinstance(media_filename, MediaUpload):
           media_upload = media_filename
         else:
-          raise TypeError(
-              'media_filename must be str or MediaUpload. Got %s' % type(media_upload))
+          raise TypeError('media_filename must be str or MediaUpload.')
 
         if media_upload.resumable():
           resumable = media_upload

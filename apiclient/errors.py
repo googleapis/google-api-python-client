@@ -70,6 +70,7 @@ class UnknownLinkType(Error):
   """Link type unknown or unexpected."""
   pass
 
+
 class UnknownApiNameOrVersion(Error):
   """No API with that name and version exists."""
   pass
@@ -87,6 +88,11 @@ class MediaUploadSizeError(Error):
 
 class ResumableUploadError(Error):
   """Error occured during resumable upload."""
+  pass
+
+
+class BatchError(Error):
+  """Error occured during batch operations."""
   pass
 
 

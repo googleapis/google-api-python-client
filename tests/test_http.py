@@ -26,11 +26,14 @@ import httplib2
 import os
 import unittest
 
-from apiclient.http import set_user_agent
+from apiclient.errors import BatchError
+from apiclient.http import BatchHttpRequest
 from apiclient.http import HttpMockSequence
 from apiclient.http import HttpRequest
-from apiclient.http import MediaUpload
 from apiclient.http import MediaFileUpload
+from apiclient.http import MediaUpload
+from apiclient.http import set_user_agent
+from apiclient.model import JsonModel
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -99,7 +102,7 @@ class TestUserAgent(unittest.TestCase):
     json = req.to_json()
     new_req = HttpRequest.from_json(json, http, _postproc)
 
-    self.assertEquals(new_req.headers, 
+    self.assertEquals(new_req.headers,
                       {'content-type':
                        'multipart/related; boundary="---flubber"'})
     self.assertEquals(new_req.uri, 'http://example.com')
@@ -108,6 +111,163 @@ class TestUserAgent(unittest.TestCase):
     self.assertEquals(new_req.resumable.to_json(), media_upload.to_json())
     self.assertEquals(new_req.multipart_boundary, '---flubber')
 
+EXPECTED = """POST /someapi/v1/collection/?foo=bar HTTP/1.1
+Content-Type: application/json
+MIME-Version: 1.0
+Host: www.googleapis.com\r\n\r\n{}"""
+
+
+RESPONSE = """HTTP/1.1 200 OK
+Content-Type application/json
+Content-Length: 14
+ETag: "etag/pony"\r\n\r\n{"answer": 42}"""
+
+
+BATCH_RESPONSE = """--batch_foobarbaz
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: <randomness+1>
+
+HTTP/1.1 200 OK
+Content-Type application/json
+Content-Length: 14
+ETag: "etag/pony"\r\n\r\n{"foo": 42}
+
+--batch_foobarbaz
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: <randomness+2>
+
+HTTP/1.1 200 OK
+Content-Type application/json
+Content-Length: 14
+ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
+--batch_foobarbaz--"""
+
+class TestBatch(unittest.TestCase):
+
+  def setUp(self):
+    model = JsonModel()
+    self.request1 = HttpRequest(
+        None,
+        model.response,
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
+        method='POST',
+        body='{}',
+        headers={'content-type': 'application/json'})
+
+    self.request2 = HttpRequest(
+        None,
+        model.response,
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
+        method='POST',
+        body='{}',
+        headers={'content-type': 'application/json'})
+
+
+  def test_id_to_from_content_id_header(self):
+    batch = BatchHttpRequest()
+    self.assertEquals('12', batch._header_to_id(batch._id_to_header('12')))
+
+  def test_invalid_content_id_header(self):
+    batch = BatchHttpRequest()
+    self.assertRaises(BatchError, batch._header_to_id, '[foo+x]')
+    self.assertRaises(BatchError, batch._header_to_id, 'foo+1')
+    self.assertRaises(BatchError, batch._header_to_id, '<foo>')
+
+  def test_serialize_request(self):
+    batch = BatchHttpRequest()
+    request = HttpRequest(
+        None,
+        None,
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
+        method='POST',
+        body='{}',
+        headers={'content-type': 'application/json'},
+        methodId=None,
+        resumable=None)
+    s = batch._serialize_request(request).splitlines()
+    self.assertEquals(s, EXPECTED.splitlines())
+
+  def test_deserialize_response(self):
+    batch = BatchHttpRequest()
+    resp, content = batch._deserialize_response(RESPONSE)
+
+    self.assertEquals(resp.status, 200)
+    self.assertEquals(resp.reason, 'OK')
+    self.assertEquals(resp.version, 11)
+    self.assertEquals(content, '{"answer": 42}')
+
+  def test_new_id(self):
+    batch = BatchHttpRequest()
+
+    id_ = batch._new_id()
+    self.assertEquals(id_, '1')
+
+    id_ = batch._new_id()
+    self.assertEquals(id_, '2')
+
+    batch.add(self.request1, request_id='3')
+
+    id_ = batch._new_id()
+    self.assertEquals(id_, '4')
+
+  def test_add(self):
+    batch = BatchHttpRequest()
+    batch.add(self.request1, request_id='1')
+    self.assertRaises(KeyError, batch.add, self.request1, request_id='1')
+
+  def test_add_fail_for_resumable(self):
+    batch = BatchHttpRequest()
+
+    upload = MediaFileUpload(
+        datafile('small.png'), chunksize=500, resumable=True)
+    self.request1.resumable = upload
+    self.assertRaises(BatchError, batch.add, self.request1, request_id='1')
+
+  def test_execute(self):
+    class Callbacks(object):
+      def __init__(self):
+        self.responses = {}
+
+      def f(self, request_id, response):
+        self.responses[request_id] = response
+
+    batch = BatchHttpRequest()
+    callbacks = Callbacks()
+
+    batch.add(self.request1, callback=callbacks.f)
+    batch.add(self.request2, callback=callbacks.f)
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_RESPONSE),
+      ])
+    batch.execute(http)
+    self.assertEqual(callbacks.responses['1'], {'foo': 42})
+    self.assertEqual(callbacks.responses['2'], {'baz': 'qux'})
+
+  def test_execute_global_callback(self):
+    class Callbacks(object):
+      def __init__(self):
+        self.responses = {}
+
+      def f(self, request_id, response):
+        self.responses[request_id] = response
+
+    callbacks = Callbacks()
+    batch = BatchHttpRequest(callback=callbacks.f)
+
+    batch.add(self.request1)
+    batch.add(self.request2)
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_RESPONSE),
+      ])
+    batch.execute(http)
+    self.assertEqual(callbacks.responses['1'], {'foo': 42})
+    self.assertEqual(callbacks.responses['2'], {'baz': 'qux'})
 
 if __name__ == '__main__':
   unittest.main()
