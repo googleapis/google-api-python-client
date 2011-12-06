@@ -251,7 +251,9 @@ class HttpRequest(object):
     # Pull the multipart boundary out of the content-type header.
     major, minor, params = mimeparse.parse_mime_type(
         headers.get('content-type', 'application/json'))
-    self.multipart_boundary = params.get('boundary', '').strip('"')
+
+    # Terminating multipart boundary get a trailing '--' appended.
+    self.multipart_boundary = params.get('boundary', '').strip('"') + '--'
 
     # If this was a multipart resumable, the size of the non-media part.
     self.multipart_size = 0

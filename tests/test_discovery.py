@@ -389,7 +389,7 @@ class Discovery(unittest.TestCase):
 
     self.assertEquals('image/png', request.resumable.mimetype())
 
-    self.assertEquals(request.multipart_boundary, '')
+    self.assertEquals(request.multipart_boundary, '--')
     self.assertEquals(request.body, None)
     self.assertEquals(request.resumable_uri, None)
 

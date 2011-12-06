@@ -280,7 +280,8 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
   def test_exchange_id_token_fail(self):
     body = {'foo': 'bar'}
     payload = base64.urlsafe_b64encode(simplejson.dumps(body)).strip('=')
-    jwt = 'stuff.' + payload + '.signature'
+    jwt = (base64.urlsafe_b64encode('stuff')+ '.' + payload + '.' +
+           base64.urlsafe_b64encode('signature'))
 
     http = HttpMockSequence([
       ({'status': '200'}, """{ "access_token":"SlAV32hkKG",
