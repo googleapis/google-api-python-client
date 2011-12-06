@@ -1,8 +1,23 @@
 pep8:
 	find apiclient samples -name "*.py" | xargs pep8 --ignore=E111,E202
 
+APP_ENGINE_PATH=../google_appengine
+
 test:
-	python runtests.py tests
+	python runtests.py tests/test_discovery.py
+	python runtests.py tests/test_errors.py
+	python runtests.py tests/test_http.py
+	python runtests.py tests/test_json_model.py
+	python runtests.py tests/test_mocks.py
+	python runtests.py tests/test_model.py
+	python runtests.py tests/test_oauth2client_clientsecrets.py
+	python runtests.py tests/test_oauth2client_django_orm.py
+	python runtests.py tests/test_oauth2client_file.py
+	python runtests.py tests/test_oauth2client_jwt.py
+	python runtests.py tests/test_oauth2client.py
+	python runtests.py tests/test_oauth.py
+	python runtests.py tests/test_protobuf_model.py
+	python runtests.py tests/test_oauth2client_appengine.py
 
 .PHONY: docs
 docs:

@@ -19,14 +19,27 @@ Tools for interacting with OAuth 2.0 protected resources.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import base64
 import clientsecrets
 import copy
 import datetime
 import httplib2
 import logging
+import os
 import sys
+import time
 import urllib
 import urlparse
+
+
+HAS_OPENSSL = False
+try:
+  from oauth2client.crypt import Signer
+  from oauth2client.crypt import make_signed_jwt
+  from oauth2client.crypt import verify_signed_jwt_with_certs
+  HAS_OPENSSL = True
+except ImportError:
+  pass
 
 try:  # pragma: no cover
   import simplejson
@@ -43,10 +56,21 @@ try:
 except ImportError:
   from cgi import parse_qsl
 
+# Determine if we can write to the file system, and if we can use a local file
+# cache behing httplib2.
+if hasattr(os, 'tempnam'):
+  # Put cache file in the director '.cache'.
+  CACHED_HTTP = httplib2.Http('.cache')
+else:
+  CACHED_HTTP = httplib2.Http()
+
 logger = logging.getLogger(__name__)
 
 # Expiry is stored in RFC3339 UTC format
-EXPIRY_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+EXPIRY_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+
+# Which certs to use to validate id_tokens received.
+ID_TOKEN_VERIFICATON_CERTS = 'https://www.googleapis.com/oauth2/v1/certs'
 
 
 class Error(Exception):
@@ -70,6 +94,11 @@ class UnknownClientSecretsFlowError(Error):
 
 class AccessTokenCredentialsError(Error):
   """Having only the access_token means no refresh is possible."""
+  pass
+
+
+class VerifyJwtTokenError(Error):
+  """Could on retrieve certificates for validation."""
   pass
 
 
@@ -229,14 +258,13 @@ class OAuth2Credentials(Credentials):
   """Credentials object for OAuth 2.0.
 
   Credentials can be applied to an httplib2.Http object using the authorize()
-  method, which then signs each request from that object with the OAuth 2.0
-  access token.
+  method, which then adds the OAuth 2.0 access token to each request.
 
   OAuth2Credentials objects may be safely pickled and unpickled.
   """
 
   def __init__(self, access_token, client_id, client_secret, refresh_token,
-               token_expiry, token_uri, user_agent):
+               token_expiry, token_uri, user_agent, id_token=None):
     """Create an instance of OAuth2Credentials.
 
     This constructor is not usually called by the user, instead
@@ -250,9 +278,10 @@ class OAuth2Credentials(Credentials):
       token_expiry: datetime, when the access_token expires.
       token_uri: string, URI of token endpoint.
       user_agent: string, The HTTP User-Agent to provide for this application.
+      id_token: object, The identity of the resource owner.
 
     Notes:
-      store: callable, a callable that when passed a Credential
+      store: callable, A callable that when passed a Credential
         will store the credential back to where it came from.
         This is needed to store the latest access_token if it
         has expired and been refreshed.
@@ -265,6 +294,7 @@ class OAuth2Credentials(Credentials):
     self.token_expiry = token_expiry
     self.token_uri = token_uri
     self.user_agent = user_agent
+    self.id_token = id_token
 
     # True if the credentials have been revoked or expired and can't be
     # refreshed.
@@ -299,7 +329,8 @@ class OAuth2Credentials(Credentials):
         data['refresh_token'],
         data['token_expiry'],
         data['token_uri'],
-        data['user_agent'])
+        data['user_agent'],
+        data.get('id_token', None))
     retval.invalid = data['invalid']
     return retval
 
@@ -607,6 +638,145 @@ class AssertionCredentials(OAuth2Credentials):
     """
     _abstract()
 
+if HAS_OPENSSL:
+  # PyOpenSSL is not a prerequisite for oauth2client, so if it is missing then
+  # don't create the SignedJwtAssertionCredentials or the verify_id_token()
+  # method.
+
+  class SignedJwtAssertionCredentials(AssertionCredentials):
+    """Credentials object used for OAuth 2.0 Signed JWT assertion grants.
+
+    This credential does not require a flow to instantiate because it
+    represents a two legged flow, and therefore has all of the required
+    information to generate and refresh its own access tokens.
+    """
+
+    MAX_TOKEN_LIFETIME_SECS = 3600 # 1 hour in seconds
+
+    def __init__(self,
+        service_account_name,
+        private_key,
+        scope,
+        private_key_password='notasecret',
+        user_agent=None,
+        token_uri='https://accounts.google.com/o/oauth2/token',
+        **kwargs):
+      """Constructor for SignedJwtAssertionCredentials.
+
+      Args:
+        service_account_name: string, id for account, usually an email address.
+        private_key: string, private key in P12 format.
+        scope: string or list of strings, scope(s) of the credentials being
+          requested.
+        private_key_password: string, password for private_key.
+        user_agent: string, HTTP User-Agent to provide for this application.
+        token_uri: string, URI for token endpoint. For convenience
+          defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+        kwargs: kwargs, Additional parameters to add to the JWT token, for
+          example prn=joe@xample.org."""
+
+      super(SignedJwtAssertionCredentials, self).__init__(
+          'http://oauth.net/grant_type/jwt/1.0/bearer',
+          user_agent,
+          token_uri=token_uri,
+          )
+
+      if type(scope) is list:
+        scope = ' '.join(scope)
+      self.scope = scope
+
+      self.private_key = private_key
+      self.private_key_password = private_key_password
+      self.service_account_name = service_account_name
+      self.kwargs = kwargs
+
+    @classmethod
+    def from_json(cls, s):
+      data = simplejson.loads(s)
+      retval = SignedJwtAssertionCredentials(
+          data['service_account_name'],
+          data['private_key'],
+          data['private_key_password'],
+          data['scope'],
+          data['user_agent'],
+          data['token_uri'],
+          data['kwargs']
+          )
+      retval.invalid = data['invalid']
+      return retval
+
+    def _generate_assertion(self):
+      """Generate the assertion that will be used in the request."""
+      now = long(time.time())
+      payload = {
+          'aud': self.token_uri,
+          'scope': self.scope,
+          'iat': now,
+          'exp': now + SignedJwtAssertionCredentials.MAX_TOKEN_LIFETIME_SECS,
+          'iss': self.service_account_name
+      }
+      payload.update(self.kwargs)
+      logging.debug(str(payload))
+
+      return make_signed_jwt(
+          Signer.from_string(self.private_key, self.private_key_password),
+          payload)
+
+
+  def verify_id_token(id_token, audience, http=None,
+      cert_uri=ID_TOKEN_VERIFICATON_CERTS):
+    """Verifies a signed JWT id_token.
+
+    Args:
+      id_token: string, A Signed JWT.
+      audience: string, The audience 'aud' that the token should be for.
+      http: httplib2.Http, instance to use to make the HTTP request. Callers
+        should supply an instance that has caching enabled.
+      cert_uri: string, URI of the certificates in JSON format to
+        verify the JWT against.
+
+    Returns:
+      The deserialized JSON in the JWT.
+
+    Raises:
+      oauth2client.crypt.AppIdentityError if the JWT fails to verify.
+    """
+    if http is None:
+      http = CACHED_HTTP
+
+    resp, content = http.request(cert_uri)
+
+    if resp.status == 200:
+      certs = simplejson.loads(content)
+      return verify_signed_jwt_with_certs(id_token, certs, audience)
+    else:
+      raise VerifyJwtTokenError('Status code: %d' % resp.status)
+
+
+def _urlsafe_b64decode(b64string):
+  padded = b64string + '=' * (4 - len(b64string) % 4)
+  return base64.urlsafe_b64decode(padded)
+
+
+def _extract_id_token(id_token):
+  """Extract the JSON payload from a JWT.
+
+  Does the extraction w/o checking the signature.
+
+  Args:
+    id_token: string, OAuth 2.0 id_token.
+
+  Returns:
+    object, The deserialized JSON payload.
+  """
+  segments = id_token.split('.')
+
+  if (len(segments) != 3):
+    raise VerifyJwtTokenError(
+      'Wrong number of segments in token: %s' % id_token)
+
+  return simplejson.loads(_urlsafe_b64decode(segments[1]))
+
 
 class OAuth2WebServerFlow(Flow):
   """Does the Web Server Flow for OAuth 2.0.
@@ -704,6 +874,7 @@ class OAuth2WebServerFlow(Flow):
 
     if http is None:
       http = httplib2.Http()
+
     resp, content = http.request(self.token_uri, method='POST', body=body,
                                  headers=headers)
     if resp.status == 200:
@@ -716,10 +887,14 @@ class OAuth2WebServerFlow(Flow):
         token_expiry = datetime.datetime.utcnow() + datetime.timedelta(
             seconds=int(d['expires_in']))
 
+      if 'id_token' in d:
+        d['id_token'] = _extract_id_token(d['id_token'])
+
       logger.info('Successfully retrieved access token: %s' % content)
       return OAuth2Credentials(access_token, self.client_id,
                                self.client_secret, refresh_token, token_expiry,
-                               self.token_uri, self.user_agent)
+                               self.token_uri, self.user_agent,
+                               id_token=d.get('id_token', None))
     else:
       logger.error('Failed to retrieve access token: %s' % content)
       error_msg = 'Invalid response %s.' % resp['status']

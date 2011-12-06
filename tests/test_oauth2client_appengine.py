@@ -32,6 +32,9 @@ try:
 except ImportError:
     from cgi import parse_qs
 
+import dev_appserver
+dev_appserver.fix_sys_path()
+
 from apiclient.anyjson import simplejson
 from apiclient.http import HttpMockSequence
 from google.appengine.api import apiproxy_stub

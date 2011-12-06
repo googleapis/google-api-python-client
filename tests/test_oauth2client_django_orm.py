@@ -73,3 +73,7 @@ class TestFlowField(unittest.TestCase):
   def test_field_pickled(self):
     prep_value = self.field.get_db_prep_value(self.flow, connection=None)
     self.assertEqual(prep_value, self.pickle)
+
+
+if __name__ == '__main__':
+  unittest.main()

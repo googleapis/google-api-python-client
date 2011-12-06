@@ -22,6 +22,7 @@ Unit tests for oauth2client.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import base64
 import datetime
 import httplib2
 import unittest
@@ -50,6 +51,8 @@ from oauth2client.client import AssertionCredentials
 from oauth2client.client import FlowExchangeError
 from oauth2client.client import OAuth2Credentials
 from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.client import VerifyJwtTokenError
+from oauth2client.client import _extract_id_token
 
 
 class OAuth2CredentialsTests(unittest.TestCase):
@@ -143,6 +146,7 @@ class AccessTokenCredentialsTests(unittest.TestCase):
     resp, content = http.request('http://example.com')
     self.assertEqual(content['authorization'], 'OAuth foo')
 
+
 class TestAssertionCredentials(unittest.TestCase):
   assertion_text = "This is the assertion"
   assertion_type = "http://www.google.com/assertionType"
@@ -171,6 +175,24 @@ class TestAssertionCredentials(unittest.TestCase):
     resp, content = http.request("http://example.com")
     self.assertEqual(content['authorization'], 'OAuth 1/3w')
 
+
+class ExtractIdTokenText(unittest.TestCase):
+  """Tests _extract_id_token()."""
+
+  def test_extract_success(self):
+    body = {'foo': 'bar'}
+    payload = base64.urlsafe_b64encode(simplejson.dumps(body)).strip('=')
+    jwt = 'stuff.' + payload + '.signature'
+
+    extracted = _extract_id_token(jwt)
+    self.assertEqual(body, extracted)
+
+  def test_extract_failure(self):
+    body = {'foo': 'bar'}
+    payload = base64.urlsafe_b64encode(simplejson.dumps(body)).strip('=')
+    jwt = 'stuff.' + payload
+
+    self.assertRaises(VerifyJwtTokenError, _extract_id_token, jwt)
 
 class OAuth2WebServerFlowTest(unittest.TestCase):
 
@@ -244,6 +266,30 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
 
     credentials = self.flow.step2_exchange('some random code', http)
     self.assertEqual(credentials.token_expiry, None)
+
+  def test_exchange_id_token_fail(self):
+    http = HttpMockSequence([
+      ({'status': '200'}, """{ "access_token":"SlAV32hkKG",
+       "refresh_token":"8xLOxBtZp8",
+       "id_token": "stuff.payload"}"""),
+      ])
+
+    self.assertRaises(VerifyJwtTokenError, self.flow.step2_exchange,
+      'some random code', http)
+
+  def test_exchange_id_token_fail(self):
+    body = {'foo': 'bar'}
+    payload = base64.urlsafe_b64encode(simplejson.dumps(body)).strip('=')
+    jwt = 'stuff.' + payload + '.signature'
+
+    http = HttpMockSequence([
+      ({'status': '200'}, """{ "access_token":"SlAV32hkKG",
+       "refresh_token":"8xLOxBtZp8",
+       "id_token": "%s"}""" % jwt),
+      ])
+
+    credentials = self.flow.step2_exchange('some random code', http)
+    self.assertEquals(body, credentials.id_token)
 
 
 if __name__ == '__main__':
