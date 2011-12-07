@@ -531,7 +531,7 @@ class OAuth2Handler(webapp.RequestHandler):
         credentials = flow.step2_exchange(self.request.params)
         StorageByKeyName(
             CredentialsModel, user.user_id(), 'credentials').put(credentials)
-        self.redirect(self.request.get('state'))
+        self.redirect(str(self.request.get('state')))
       else:
         # TODO Add error handling here.
         pass
