@@ -187,6 +187,26 @@ class Discovery(unittest.TestCase):
     self.assertEqual(q['trace'], ['html'])
     self.assertEqual(q['fields'], ['description'])
 
+  def test_model_added_query_parameters(self):
+    http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http)
+    request = zoo.animals().get(name='Lion')
+
+    parsed = urlparse.urlparse(request.uri)
+    q = parse_qs(parsed[4])
+    self.assertEqual(q['alt'], ['json'])
+    self.assertEqual(request.headers['accept'], 'application/json')
+
+  def test_fallback_to_raw_model(self):
+    http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http)
+    request = zoo.animals().getmedia(name='Lion')
+
+    parsed = urlparse.urlparse(request.uri)
+    q = parse_qs(parsed[4])
+    self.assertTrue('alt' not in q)
+    self.assertEqual(request.headers['accept'], '*/*')
+
   def test_patch(self):
     http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http)

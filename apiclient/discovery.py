@@ -52,6 +52,7 @@ from http import HttpRequest
 from http import MediaUpload
 from http import MediaFileUpload
 from model import JsonModel
+from model import RawModel
 
 URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
@@ -437,8 +438,13 @@ def createResource(http, baseUrl, model, requestBuilder,
       if self._developerKey:
         actual_query_params['key'] = self._developerKey
 
+      model = self._model
+      # If there is no schema for the response then presume a binary blob.
+      if 'response' not in methodDesc:
+        model = RawModel()
+
       headers = {}
-      headers, params, query, body = self._model.request(headers,
+      headers, params, query, body = model.request(headers,
           actual_path_params, actual_query_params, body_value)
 
       expanded_url = uritemplate.expand(pathUrl, params)
@@ -541,7 +547,7 @@ def createResource(http, baseUrl, model, requestBuilder,
 
       logging.info('URL being requested: %s' % url)
       return self._requestBuilder(self._http,
-                                  self._model.response,
+                                  model.response,
                                   url,
                                   method=httpMethod,
                                   body=body,

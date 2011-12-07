@@ -161,7 +161,8 @@ class BaseModel(Model):
     Returns:
       The query parameters properly encoded into an HTTP URI query string.
     """
-    params.update({'alt': self.alt_param})
+    if self.alt_param is not None:
+      params.update({'alt': self.alt_param})
     astuples = []
     for key, value in params.iteritems():
       if type(value) == type([]):
@@ -267,6 +268,25 @@ class JsonModel(BaseModel):
   @property
   def no_content_response(self):
     return {}
+
+
+class RawModel(JsonModel):
+  """Model class for requests that don't return JSON.
+
+  Serializes and de-serializes between JSON and the Python
+  object representation of HTTP request, and returns the raw bytes
+  of the response body.
+  """
+  accept = '*/*'
+  content_type = 'application/json'
+  alt_param = None
+
+  def deserialize(self, content):
+    return content
+
+  @property
+  def no_content_response(self):
+    return ''
 
 
 class ProtocolBufferModel(BaseModel):
