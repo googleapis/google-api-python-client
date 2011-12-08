@@ -32,6 +32,7 @@ import re
 
 from apiclient.anyjson import simplejson
 from apiclient import discovery
+from apiclient.errors import HttpError
 from google.appengine.api import memcache
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
@@ -97,13 +98,20 @@ class ResourceHandler(webapp.RequestHandler):
 
   def get(self, service_name, version, collection):
     http = httplib2.Http(memcache)
-    resource = discovery.build(service_name, version, http=http)
+    try:
+      resource = discovery.build(service_name, version, http=http)
+    except:
+      return self.error(404)
     # descend the object path
     if collection:
-      path = collection.split('/')
-      if path:
-        for method in path:
-          resource = getattr(resource, method)()
+      try:
+        path = collection.split('/')
+        if path:
+          for method in path:
+            resource = getattr(resource, method)()
+      except:
+        return self.error(404)
+
     page = _render(resource)
 
     collections = []
@@ -134,7 +142,7 @@ def main():
       (r'/_gadget/', GadgetHandler),
       (r'/([^\/]*)/([^\/]*)(?:/(.*))?', ResourceHandler),
       ],
-      debug=True)
+      debug=False)
   util.run_wsgi_app(application)
 
 
