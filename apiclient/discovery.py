@@ -39,20 +39,22 @@ try:
 except ImportError:
     from cgi import parse_qsl
 
-from anyjson import simplejson
+from apiclient.anyjson import simplejson
+from apiclient.errors import HttpError
+from apiclient.errors import InvalidJsonError
+from apiclient.errors import MediaUploadSizeError
+from apiclient.errors import UnacceptableMimeTypeError
+from apiclient.errors import UnknownApiNameOrVersion
+from apiclient.errors import UnknownLinkType
+from apiclient.http import HttpRequest
+from apiclient.http import MediaFileUpload
+from apiclient.http import MediaUpload
+from apiclient.model import JsonModel
+from apiclient.model import RawModel
+from apiclient.schema import Schemas
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
-from errors import HttpError
-from errors import InvalidJsonError
-from errors import MediaUploadSizeError
-from errors import UnacceptableMimeTypeError
-from errors import UnknownApiNameOrVersion
-from errors import UnknownLinkType
-from http import HttpRequest
-from http import MediaUpload
-from http import MediaFileUpload
-from model import JsonModel
-from model import RawModel
+
 
 URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
@@ -237,7 +239,7 @@ def build_from_document(
   else:
     future = {}
     auth_discovery = {}
-  schema = service.get('schemas', {})
+  schema = Schemas(service)
 
   if model is None:
     features = service.get('features', [])
@@ -347,6 +349,10 @@ def createResource(http, baseUrl, model, requestBuilder,
           'type': 'object',
           'required': True,
           }
+      if 'request' in methodDesc:
+        methodDesc['parameters']['body'].update(methodDesc['request'])
+      else:
+        methodDesc['parameters']['body']['type'] = 'object'
       if 'mediaUpload' in methodDesc:
         methodDesc['parameters']['media_body'] = {
             'description': 'The filename of the media request body.',
@@ -569,15 +575,24 @@ def createResource(http, baseUrl, model, requestBuilder,
         required = ' (required)'
       paramdesc = methodDesc['parameters'][argmap[arg]]
       paramdoc = paramdesc.get('description', 'A parameter')
-      paramtype = paramdesc.get('type', 'string')
-      docs.append('  %s: %s, %s%s%s\n' % (arg, paramtype, paramdoc, required,
-                                          repeated))
+      if '$ref' in paramdesc:
+        docs.append(
+            ('  %s: object, %s%s%s\n    The object takes the'
+            ' form of:\n\n%s\n\n') % (arg, paramdoc, required, repeated,
+              schema.prettyPrintByName(paramdesc['$ref'])))
+      else:
+        paramtype = paramdesc.get('type', 'string')
+        docs.append('  %s: %s, %s%s%s\n' % (arg, paramtype, paramdoc, required,
+                                            repeated))
       enum = paramdesc.get('enum', [])
       enumDesc = paramdesc.get('enumDescriptions', [])
       if enum and enumDesc:
         docs.append('    Allowed values\n')
         for (name, desc) in zip(enum, enumDesc):
           docs.append('      %s - %s\n' % (name, desc))
+    if 'response' in methodDesc:
+      docs.append('\nReturns:\n  An object of the form\n\n    ')
+      docs.append(schema.prettyPrintSchema(methodDesc['response']))
 
     setattr(method, '__doc__', ''.join(docs))
     setattr(theclass, methodName, method)
@@ -669,7 +684,6 @@ def createResource(http, baseUrl, model, requestBuilder,
 
     setattr(theclass, methodName, methodNext)
 
-
   # Add basic methods to Resource
   if 'methods' in resourceDesc:
     for methodName, methodDesc in resourceDesc['methods'].iteritems():
@@ -716,7 +730,7 @@ def createResource(http, baseUrl, model, requestBuilder,
       if 'response' in methodDesc:
         responseSchema = methodDesc['response']
         if '$ref' in responseSchema:
-          responseSchema = schema[responseSchema['$ref']]
+          responseSchema = schema.get(responseSchema['$ref'])
         hasNextPageToken = 'nextPageToken' in responseSchema.get('properties',
                                                                  {})
         hasPageToken = 'pageToken' in methodDesc.get('parameters', {})
