@@ -59,8 +59,8 @@ FLAGS = gflags.FLAGS
 # creating credentials for this application be sure to choose an Application
 # type of "Installed application".
 FLOW = OAuth2WebServerFlow(
-    client_id='433807057907.apps.googleusercontent.com',
-    client_secret='jigtZpMApkRxncxikFpR+SFg',
+    client_id='[[CLIENT ID GOES HERE]]',
+    client_secret='[[CLIENT SECRET GOES HERE]]',
     scope='https://www.googleapis.com/auth/urlshortener',
     user_agent='urlshortener-cmdline-sample/1.0')
 

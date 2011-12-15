@@ -48,7 +48,7 @@ long_desc = """The Google API Client for Python is a client library for
 accessing the Plus, Moderator, and many other Google APIs."""
 
 setup(name="google-api-python-client",
-      version="1.0beta6",
+      version="1.0beta7",
       description="Google API Client Library for Python",
       long_description=long_desc,
       author="Joe Gregorio",
