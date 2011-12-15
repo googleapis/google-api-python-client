@@ -52,10 +52,9 @@ oauth2_prerelease:
 	-sudo rm -rf snapshot/
 	mkdir snapshot
 	python expand-symlinks.py --source=oauth2client --dest=snapshot/oauth2client
-	python expand-symlinks.py --source=samples/oauth2/dailymotion --dest=snapshot/samples/dailymotion
-	python expand-symlinks.py --source=samples/appengine_with_decorator --dest=snapshot/samples/appengine_with_decorator
-	python expand-symlinks.py --source=samples/appengine_with_decorator2 --dest=snapshot/samples/appengine_with_decorator2
+	python expand-symlinks.py --source=samples/dailymotion --dest=snapshot/samples/dailymotion
 	python expand-symlinks.py --source=samples/appengine --dest=snapshot/samples/appengine
+	python expand-symlinks.py --source=samples/django_sample --dest=snapshot/django_sample
 	cp setup_oauth2client.py snapshot/setup.py
 	cp MANIFEST_oauth2client.in snapshot/MANIFEST.in
 	cp README_oauth2client snapshot/README
