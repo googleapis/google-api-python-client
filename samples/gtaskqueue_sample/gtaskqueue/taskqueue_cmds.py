@@ -33,10 +33,11 @@ class GetTaskQueueCommand(GoogleTaskQueueCommand):
     """Get properties of an existing task queue."""
 
     def __init__(self, name, flag_values):
-        super(GetTaskQueueCommand, self).__init__(name, flag_values)
         flags.DEFINE_boolean('get_stats',
                              False,
-                             'Whether to get Stats')
+                             'Whether to get Stats',
+                             flag_values=flag_values)
+        super(GetTaskQueueCommand, self).__init__(name, flag_values)
 
     def build_request(self, taskqueue_api, flag_values):
         """Build a request to get properties of a TaskQueue.
