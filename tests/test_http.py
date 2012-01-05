@@ -114,7 +114,15 @@ class TestUserAgent(unittest.TestCase):
 EXPECTED = """POST /someapi/v1/collection/?foo=bar HTTP/1.1
 Content-Type: application/json
 MIME-Version: 1.0
-Host: www.googleapis.com\r\n\r\n{}"""
+Host: www.googleapis.com
+content-length: 2\r\n\r\n{}"""
+
+
+NO_BODY_EXPECTED = """POST /someapi/v1/collection/?foo=bar HTTP/1.1
+Content-Type: application/json
+MIME-Version: 1.0
+Host: www.googleapis.com
+content-length: 0\r\n\r\n"""
 
 
 RESPONSE = """HTTP/1.1 200 OK
@@ -144,6 +152,7 @@ Content-Length: 14
 ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 --batch_foobarbaz--"""
 
+
 class TestBatch(unittest.TestCase):
 
   def setUp(self):
@@ -160,8 +169,8 @@ class TestBatch(unittest.TestCase):
         None,
         model.response,
         'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
-        method='POST',
-        body='{}',
+        method='GET',
+        body='',
         headers={'content-type': 'application/json'})
 
 
@@ -188,6 +197,20 @@ class TestBatch(unittest.TestCase):
         resumable=None)
     s = batch._serialize_request(request).splitlines()
     self.assertEquals(s, EXPECTED.splitlines())
+
+  def test_serialize_request_no_body(self):
+    batch = BatchHttpRequest()
+    request = HttpRequest(
+        None,
+        None,
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
+        method='POST',
+        body='',
+        headers={'content-type': 'application/json'},
+        methodId=None,
+        resumable=None)
+    s = batch._serialize_request(request).splitlines()
+    self.assertEquals(s, NO_BODY_EXPECTED.splitlines())
 
   def test_deserialize_response(self):
     batch = BatchHttpRequest()
@@ -246,6 +269,29 @@ class TestBatch(unittest.TestCase):
     batch.execute(http)
     self.assertEqual(callbacks.responses['1'], {'foo': 42})
     self.assertEqual(callbacks.responses['2'], {'baz': 'qux'})
+
+  def test_execute_request_body(self):
+    batch = BatchHttpRequest()
+
+    batch.add(self.request1)
+    batch.add(self.request2)
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+        'echo_request_body'),
+      ])
+    try:
+      batch.execute(http)
+      self.fail('Should raise exception')
+    except BatchError, e:
+      boundary, _ = e.content.split(None, 1)
+      self.assertEqual('--', boundary[:2])
+      parts = e.content.split(boundary)
+      self.assertEqual(4, len(parts))
+      self.assertEqual('', parts[0])
+      self.assertEqual('--', parts[3])
+      header = parts[1].splitlines()[1]
+      self.assertEqual('Content-Type: application/http', header)
 
   def test_execute_global_callback(self):
     class Callbacks(object):

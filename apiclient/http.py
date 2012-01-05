@@ -491,7 +491,7 @@ class BatchHttpRequest(object):
         (None, None, parsed.path, parsed.params, parsed.query, None)
         )
     status_line = request.method + ' ' + request_line + ' HTTP/1.1\n'
-    major, minor = request.headers.get('content-type', 'text/plain').split('/')
+    major, minor = request.headers.get('content-type', 'application/json').split('/')
     msg = MIMENonMultipart(major, minor)
     headers = request.headers.copy()
 
@@ -506,6 +506,7 @@ class BatchHttpRequest(object):
 
     if request.body is not None:
       msg.set_payload(request.body)
+      msg['content-length'] = str(len(request.body))
 
     body = msg.as_string(False)
     # Strip off the \n\n that the MIME lib tacks onto the end of the payload.
@@ -525,7 +526,7 @@ class BatchHttpRequest(object):
     """
     # Strip off the status line
     status_line, payload = payload.split('\n', 1)
-    protocol, status, reason = status_line.split(' ')
+    protocol, status, reason = status_line.split(' ', 2)
 
     # Parse the rest of the response
     parser = FeedParser()
@@ -604,6 +605,7 @@ class BatchHttpRequest(object):
     Raises:
       apiclient.errors.HttpError if the response was not a 2xx.
       httplib2.Error if a transport error has occured.
+      apiclient.errors.BatchError if the response is the wrong format.
     """
     if http is None:
       for request_id in self._order:
@@ -649,14 +651,15 @@ class BatchHttpRequest(object):
 
     # Prepend with a content-type header so FeedParser can handle it.
     header = 'Content-Type: %s\r\n\r\n' % resp['content-type']
-    content = header + content
+    for_parser = header + content
 
     parser = FeedParser()
-    parser.feed(content)
+    parser.feed(for_parser)
     respRoot = parser.close()
 
     if not respRoot.is_multipart():
-      raise BatchError("Response not in multipart/mixed format.")
+      raise BatchError("Response not in multipart/mixed format.", resp,
+          content)
 
     parts = respRoot.get_payload()
     for part in parts:

@@ -343,7 +343,7 @@ def createResource(http, baseUrl, model, requestBuilder,
           'location': 'query'
           }
 
-    if httpMethod in ['PUT', 'POST', 'PATCH']:
+    if httpMethod in ['PUT', 'POST', 'PATCH'] and 'request' in methodDesc:
       methodDesc['parameters']['body'] = {
           'description': 'The request body.',
           'type': 'object',
@@ -353,12 +353,13 @@ def createResource(http, baseUrl, model, requestBuilder,
         methodDesc['parameters']['body'].update(methodDesc['request'])
       else:
         methodDesc['parameters']['body']['type'] = 'object'
-      if 'mediaUpload' in methodDesc:
-        methodDesc['parameters']['media_body'] = {
-            'description': 'The filename of the media request body.',
-            'type': 'string',
-            'required': False,
-            }
+    if 'mediaUpload' in methodDesc:
+      methodDesc['parameters']['media_body'] = {
+          'description': 'The filename of the media request body.',
+          'type': 'string',
+          'required': False,
+          }
+      if 'body' in methodDesc['parameters']:
         methodDesc['parameters']['body']['required'] = False
 
     argmap = {} # Map from method parameter name to query parameter name

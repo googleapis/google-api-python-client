@@ -91,9 +91,18 @@ class ResumableUploadError(Error):
   pass
 
 
-class BatchError(Error):
+class BatchError(HttpError):
   """Error occured during batch operations."""
-  pass
+
+  def __init__(self, reason, resp=None, content=None):
+    self.resp = resp
+    self.content = content
+    self.reason = reason
+
+  def __repr__(self):
+      return '<BatchError %s "%s">' % (self.resp.status, self.reason)
+
+  __str__ = __repr__
 
 
 class UnexpectedMethodError(Error):
