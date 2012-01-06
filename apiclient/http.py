@@ -151,7 +151,7 @@ class MediaFileUpload(MediaUpload):
         media_body=media).execute()
   """
 
-  def __init__(self, filename, mimetype=None, chunksize=10000, resumable=False):
+  def __init__(self, filename, mimetype=None, chunksize=150000, resumable=False):
     """Constructor.
 
     Args:
