@@ -236,5 +236,16 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('foo_access_token',
                      self.decorator.credentials.access_token)
 
+
+  def test_kwargs_are_passed_to_underlying_flow(self):
+    decorator = OAuth2Decorator(client_id='foo_client_id',
+        client_secret='foo_client_secret',
+        scope=['foo_scope', 'bar_scope'],
+        access_type='offline',
+        approval_prompt='force')
+    self.assertEqual('offline', decorator.flow.params['access_type'])
+    self.assertEqual('force', decorator.flow.params['approval_prompt'])
+
+
 if __name__ == '__main__':
   unittest.main()
