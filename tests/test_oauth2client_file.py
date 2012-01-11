@@ -30,24 +30,13 @@ import pickle
 import tempfile
 import unittest
 
-
-try:  # pragma: no cover
-  import simplejson
-except ImportError:  # pragma: no cover
-  try:
-    # Try to import from django, should work on App Engine
-    from django.utils import simplejson
-  except ImportError:
-    # Should work for Python2.6 and higher.
-    import json as simplejson
-
 from apiclient.http import HttpMockSequence
-
-from oauth2client.client import OAuth2Credentials
+from oauth2client import multistore_file
+from oauth2client.anyjson import simplejson
 from oauth2client.client import AccessTokenCredentials
 from oauth2client.client import AssertionCredentials
+from oauth2client.client import OAuth2Credentials
 from oauth2client.file import Storage
-from oauth2client import multistore_file
 
 
 FILENAME = tempfile.mktemp('oauth2client_test.data')

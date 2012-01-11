@@ -22,18 +22,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import threading
 
-
-try:  # pragma: no cover
-  import simplejson
-except ImportError:  # pragma: no cover
-  try:
-    # Try to import from django, should work on App Engine
-    from django.utils import simplejson
-  except ImportError:
-    # Should work for Python2.6 and higher.
-    import json as simplejson
-
-
+from anyjson import simplejson
 from client import Storage as BaseStorage
 from client import Credentials
 

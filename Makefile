@@ -17,6 +17,7 @@ test:
 	python runtests.py tests/test_oauth2client.py
 	python runtests.py tests/test_oauth.py
 	python runtests.py tests/test_protobuf_model.py
+	python runtests.py tests/test_schema.py
 	python runtests.py tests/test_oauth2client_appengine.py
 
 .PHONY: docs

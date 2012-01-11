@@ -22,11 +22,11 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 
 try: # pragma: no cover
-  import simplejson
+  # Should work for Python2.6 and higher.
+  import json as simplejson
 except ImportError: # pragma: no cover
   try:
+    import simplejson
+  except ImportError:
     # Try to import from django, should work on App Engine
     from django.utils import simplejson
-  except ImportError:
-    # Should work for Python2.6 and higher.
-    import json as simplejson

@@ -34,21 +34,12 @@ try:
 except ImportError:
     from cgi import parse_qs
 
-try:  # pragma: no cover
-  import simplejson
-except ImportError:  # pragma: no cover
-  try:
-    # Try to import from django, should work on App Engine
-    from django.utils import simplejson
-  except ImportError:
-    # Should work for Python2.6 and higher.
-    import json as simplejson
-
 from apiclient.http import HttpMockSequence
 from oauth2client import crypt
+from oauth2client.anyjson import simplejson
 from oauth2client.client import SignedJwtAssertionCredentials
-from oauth2client.client import verify_id_token
 from oauth2client.client import VerifyJwtTokenError
+from oauth2client.client import verify_id_token
 
 
 def datafile(filename):

@@ -28,8 +28,8 @@ import gflags
 import logging
 import urllib
 
-from anyjson import simplejson
 from errors import HttpError
+from oauth2client.anyjson import simplejson
 
 FLAGS = gflags.FLAGS
 

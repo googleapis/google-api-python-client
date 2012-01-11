@@ -35,18 +35,18 @@ except ImportError:
 import dev_appserver
 dev_appserver.fix_sys_path()
 
-from apiclient.anyjson import simplejson
 from apiclient.http import HttpMockSequence
 from google.appengine.api import apiproxy_stub
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import users
 from google.appengine.ext import testbed
 from google.appengine.ext import webapp
-from oauth2client.client import AccessTokenRefreshError
-from oauth2client.client import FlowExchangeError
+from oauth2client.anyjson import simplejson
 from oauth2client.appengine import AppAssertionCredentials
 from oauth2client.appengine import OAuth2Decorator
 from oauth2client.appengine import OAuth2Handler
+from oauth2client.client import AccessTokenRefreshError
+from oauth2client.client import FlowExchangeError
 from webtest import TestApp
 
 

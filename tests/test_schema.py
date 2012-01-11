@@ -20,8 +20,8 @@ import os
 import unittest
 import StringIO
 
-from apiclient.anyjson import simplejson
 from apiclient.schema import Schemas
+from oauth2client.anyjson import simplejson
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -39,7 +39,7 @@ LOAD_FEED = """{
         "anyVal": "", # Anything will do.
         "nullVal": None,
         "stringVal": "A String",
-        "doubleVal": 3.140000,
+        "doubleVal": 3.14,
         "booleanVal": True or False, # True or False.
       },
     ],

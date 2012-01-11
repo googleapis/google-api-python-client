@@ -39,7 +39,6 @@ try:
 except ImportError:
     from cgi import parse_qsl
 
-from apiclient.anyjson import simplejson
 from apiclient.errors import HttpError
 from apiclient.errors import InvalidJsonError
 from apiclient.errors import MediaUploadSizeError
@@ -54,6 +53,7 @@ from apiclient.model import RawModel
 from apiclient.schema import Schemas
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
+from oauth2client.anyjson import simplejson
 
 
 URITEMPLATE = re.compile('{[^}]*}')

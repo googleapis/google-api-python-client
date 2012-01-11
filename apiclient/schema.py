@@ -62,7 +62,7 @@ The constructor takes a discovery document in which to look up named schema.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import copy
-from apiclient.anyjson import simplejson
+from oauth2client.anyjson import simplejson
 
 
 class Schemas(object):
@@ -262,13 +262,13 @@ class _SchemaToStruct(object):
       self.emitEnd('%s,' % str(value), schema.get('description', ''))
     elif stype == 'string':
       value = schema.get('default', 'A String')
-      self.emitEnd('"%s",' % value, schema.get('description', ''))
+      self.emitEnd('"%s",' % str(value), schema.get('description', ''))
     elif stype == 'integer':
-      value = schema.get('default', 42)
-      self.emitEnd('%d,' % value, schema.get('description', ''))
+      value = schema.get('default', '42')
+      self.emitEnd('%s,' % str(value), schema.get('description', ''))
     elif stype == 'number':
-      value = schema.get('default', 3.14)
-      self.emitEnd('%f,' % value, schema.get('description', ''))
+      value = schema.get('default', '3.14')
+      self.emitEnd('%s,' % str(value), schema.get('description', ''))
     elif stype == 'null':
       self.emitEnd('None,', schema.get('description', ''))
     elif stype == 'any':

@@ -28,9 +28,9 @@ import unittest
 import httplib2
 import apiclient.model
 
-from apiclient.anyjson import simplejson
 from apiclient.errors import HttpError
 from apiclient.model import JsonModel
+from oauth2client.anyjson import simplejson
 
 FLAGS = gflags.FLAGS
 

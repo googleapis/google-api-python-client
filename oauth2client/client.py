@@ -31,6 +31,7 @@ import time
 import urllib
 import urlparse
 
+from anyjson import simplejson
 
 HAS_OPENSSL = False
 try:
@@ -40,16 +41,6 @@ try:
   HAS_OPENSSL = True
 except ImportError:
   pass
-
-try:  # pragma: no cover
-  import simplejson
-except ImportError:  # pragma: no cover
-  try:
-    # Try to import from django, should work on App Engine
-    from django.utils import simplejson
-  except ImportError:
-    # Should work for Python2.6 and higher.
-    import json as simplejson
 
 try:
   from urlparse import parse_qsl
