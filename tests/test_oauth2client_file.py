@@ -27,6 +27,7 @@ import datetime
 import httplib2
 import os
 import pickle
+import stat
 import tempfile
 import unittest
 
@@ -134,6 +135,39 @@ class OAuth2ClientFileTests(unittest.TestCase):
 
     self.assertNotEquals(None, credentials)
     self.assertEquals('foo', credentials.access_token)
+    mode = os.stat(FILENAME).st_mode
+
+    if os.name == 'posix':
+      self.assertEquals('0600', oct(stat.S_IMODE(os.stat(FILENAME).st_mode)))
+
+  def test_read_only_file_fail_lock(self):
+    access_token = 'foo'
+    client_secret = 'cOuDdkfjxxnv+'
+    refresh_token = '1/0/a.df219fjls0'
+    token_expiry = datetime.datetime.utcnow()
+    token_uri = 'https://www.google.com/accounts/o8/oauth2/token'
+    user_agent = 'refresh_checker/1.0'
+    client_id = 'some_client_id'
+
+    credentials = OAuth2Credentials(
+        access_token, client_id, client_secret,
+        refresh_token, token_expiry, token_uri,
+        user_agent)
+
+    open(FILENAME, 'a+b').close()
+    os.chmod(FILENAME, 0400)
+
+    store = multistore_file.get_credential_storage(
+        FILENAME,
+        credentials.client_id,
+        credentials.user_agent,
+        ['some-scope', 'some-other-scope'])
+
+    store.put(credentials)
+    if os.name == 'posix':
+      self.assertTrue(store._multistore._read_only)
+    os.chmod(FILENAME, 0600)
+
 
   def test_multistore_non_existent_file(self):
     store = multistore_file.get_credential_storage(
@@ -170,6 +204,9 @@ class OAuth2ClientFileTests(unittest.TestCase):
 
     self.assertNotEquals(None, credentials)
     self.assertEquals('foo', credentials.access_token)
+
+    if os.name == 'posix':
+      self.assertEquals('0600', oct(stat.S_IMODE(os.stat(FILENAME).st_mode)))
 
 if __name__ == '__main__':
   unittest.main()

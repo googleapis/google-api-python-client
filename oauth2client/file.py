@@ -20,6 +20,8 @@ credentials.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import os
+import stat
 import threading
 
 from anyjson import simplejson
@@ -56,7 +58,7 @@ class Storage(BaseStorage):
     """
     credentials = None
     try:
-      f = open(self._filename, 'r')
+      f = open(self._filename, 'rb')
       content = f.read()
       f.close()
     except IOError:
@@ -70,12 +72,28 @@ class Storage(BaseStorage):
 
     return credentials
 
+  def _create_file_if_needed(self):
+    """Create an empty file if necessary.
+
+    This method will not initialize the file. Instead it implements a
+    simple version of "touch" to ensure the file has been created.
+    """
+    if not os.path.exists(self._filename):
+      old_umask = os.umask(0177)
+      try:
+        open(self._filename, 'a+b').close()
+      finally:
+        os.umask(old_umask)
+
+
   def locked_put(self, credentials):
     """Write Credentials to file.
 
     Args:
       credentials: Credentials, the credentials to store.
     """
-    f = open(self._filename, 'w')
+
+    self._create_file_if_needed()
+    f = open(self._filename, 'wb')
     f.write(credentials.to_json())
     f.close()

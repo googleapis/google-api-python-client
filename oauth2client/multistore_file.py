@@ -32,6 +32,7 @@ The format of the stored data is like so:
 __author__ = 'jbeda@google.com (Joe Beda)'
 
 import base64
+import errno
 import fcntl
 import logging
 import os
@@ -167,7 +168,7 @@ class _MultiStore(object):
     if not os.path.exists(self._filename):
       old_umask = os.umask(0177)
       try:
-        open(self._filename, 'a+').close()
+        open(self._filename, 'a+b').close()
       finally:
         os.umask(old_umask)
 
@@ -175,12 +176,13 @@ class _MultiStore(object):
     """Lock the entire multistore."""
     self._thread_lock.acquire()
     # Check to see if the file is writeable.
-    if os.access(self._filename, os.W_OK):
-      self._file_handle = open(self._filename, 'r+')
+    try:
+      self._file_handle = open(self._filename, 'r+b')
       fcntl.lockf(self._file_handle.fileno(), fcntl.LOCK_EX)
-    else:
-      # Cannot open in read/write mode. Open only in read mode.
-      self._file_handle = open(self._filename, 'r')
+    except IOError, e:
+      if e.errno != errno.EACCES:
+        raise e
+      self._file_handle = open(self._filename, 'rb')
       self._read_only = True
       if self._warn_on_readonly:
         logger.warn('The credentials file (%s) is not writable. Opening in '
