@@ -27,6 +27,7 @@ import BaseHTTPServer
 import gflags
 import socket
 import sys
+import webbrowser
 
 from client import FlowExchangeError
 
@@ -120,13 +121,21 @@ def run(flow, storage):
     oauth_callback = 'oob'
   authorize_url = flow.step1_get_authorize_url(oauth_callback)
 
-  print 'Go to the following link in your browser:'
-  print authorize_url
-  print
   if FLAGS.auth_local_webserver:
+    webbrowser.open(authorize_url, new=1, autoraise=True)
+    print 'Your browser has been opened to visit:'
+    print
+    print '    ' + authorize_url
+    print
     print 'If your browser is on a different machine then exit and re-run this'
     print 'application with the command-line parameter '
-    print '--noauth_local_webserver.'
+    print
+    print '  --noauth_local_webserver'
+    print
+  else:
+    print 'Go to the following link in your browser:'
+    print
+    print '    ' + authorize_url
     print
 
   code = None
