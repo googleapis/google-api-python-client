@@ -198,6 +198,24 @@ class TestBatch(unittest.TestCase):
     s = batch._serialize_request(request).splitlines()
     self.assertEquals(s, EXPECTED.splitlines())
 
+  def test_serialize_request_media_body(self):
+    batch = BatchHttpRequest()
+    f = open(datafile('small.png'))
+    body = f.read()
+    f.close()
+
+    request = HttpRequest(
+        None,
+        None,
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
+        method='POST',
+        body=body,
+        headers={'content-type': 'application/json'},
+        methodId=None,
+        resumable=None)
+    s = batch._serialize_request(request).splitlines()
+
+
   def test_serialize_request_no_body(self):
     batch = BatchHttpRequest()
     request = HttpRequest(
