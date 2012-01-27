@@ -151,7 +151,7 @@ class MediaFileUpload(MediaUpload):
         media_body=media).execute()
   """
 
-  def __init__(self, filename, mimetype=None, chunksize=150000, resumable=False):
+  def __init__(self, filename, mimetype=None, chunksize=256*1024, resumable=False):
     """Constructor.
 
     Args:
@@ -252,29 +252,14 @@ class HttpRequest(object):
     major, minor, params = mimeparse.parse_mime_type(
         headers.get('content-type', 'application/json'))
 
-    # Terminating multipart boundary get a trailing '--' appended.
-    self.multipart_boundary = params.get('boundary', '').strip('"') + '--'
-
-    # If this was a multipart resumable, the size of the non-media part.
-    self.multipart_size = 0
+    # The size of the non-media part of the request.
+    self.body_size = len(self.body or '')
 
     # The resumable URI to send chunks to.
     self.resumable_uri = None
 
     # The bytes that have been uploaded.
     self.resumable_progress = 0
-
-    self.total_size = 0
-
-    if resumable is not None:
-      if self.body is not None:
-        self.multipart_size = len(self.body)
-      else:
-        self.multipart_size = 0
-      self.total_size = (
-          self.resumable.size() +
-          self.multipart_size +
-          len(self.multipart_boundary))
 
   def execute(self, http=None):
     """Execute the request.
@@ -340,28 +325,23 @@ class HttpRequest(object):
       start_headers = copy.copy(self.headers)
       start_headers['X-Upload-Content-Type'] = self.resumable.mimetype()
       start_headers['X-Upload-Content-Length'] = str(self.resumable.size())
-      start_headers['Content-Length'] = '0'
+      start_headers['content-length'] = str(self.body_size)
+
       resp, content = http.request(self.uri, self.method,
-                                   body="",
+                                   body=self.body,
                                    headers=start_headers)
       if resp.status == 200 and 'location' in resp:
         self.resumable_uri = resp['location']
       else:
         raise ResumableUploadError("Failed to retrieve starting URI.")
-    if self.body:
-      begin = 0
-      data = self.body
-    else:
-      begin = self.resumable_progress - self.multipart_size
-      data = self.resumable.getbytes(begin, self.resumable.chunksize())
 
-    # Tack on the multipart/related boundary if we are at the end of the file.
-    if begin + self.resumable.chunksize() >= self.resumable.size():
-      data += self.multipart_boundary
+    data = self.resumable.getbytes(self.resumable_progress,
+                                   self.resumable.chunksize())
+
     headers = {
         'Content-Range': 'bytes %d-%d/%d' % (
             self.resumable_progress, self.resumable_progress + len(data) - 1,
-            self.total_size),
+            self.resumable.size()),
         }
     resp, content = http.request(self.resumable_uri, 'PUT',
                                  body=data,
@@ -371,14 +351,13 @@ class HttpRequest(object):
     elif resp.status == 308:
       # A "308 Resume Incomplete" indicates we are not done.
       self.resumable_progress = int(resp['range'].split('-')[1]) + 1
-      if self.resumable_progress >= self.multipart_size:
-        self.body = None
       if 'location' in resp:
         self.resumable_uri = resp['location']
     else:
       raise HttpError(resp, content, self.uri)
 
-    return MediaUploadProgress(self.resumable_progress, self.total_size), None
+    return (MediaUploadProgress(self.resumable_progress, self.resumable.size()),
+            None)
 
   def to_json(self):
     """Returns a JSON representation of the HttpRequest."""

@@ -109,7 +109,6 @@ class TestUserAgent(unittest.TestCase):
     self.assertEquals(new_req.body, '{}')
     self.assertEquals(new_req.http, http)
     self.assertEquals(new_req.resumable.to_json(), media_upload.to_json())
-    self.assertEquals(new_req.multipart_boundary, '---flubber--')
 
 EXPECTED = """POST /someapi/v1/collection/?foo=bar HTTP/1.1
 Content-Type: application/json

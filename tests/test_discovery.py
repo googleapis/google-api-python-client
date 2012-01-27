@@ -347,13 +347,12 @@ class Discovery(unittest.TestCase):
     media_upload = MediaFileUpload(datafile('small.png'), resumable=True)
     request = zoo.animals().insert(media_body=media_upload, body={})
     self.assertTrue(request.headers['content-type'].startswith(
-        'multipart/related'))
-    self.assertEquals('--==', request.body[0:4])
+        'application/json'))
+    self.assertEquals('{"data": {}}', request.body)
     self.assertEquals(media_upload, request.resumable)
 
     self.assertEquals('image/png', request.resumable.mimetype())
 
-    self.assertTrue(len(request.multipart_boundary) > 0)
     self.assertNotEquals(request.body, None)
     self.assertEquals(request.resumable_uri, None)
 
@@ -365,7 +364,7 @@ class Discovery(unittest.TestCase):
         'range': '0-12'}, ''),
       ({'status': '308',
         'location': 'http://upload.example.com/3',
-        'range': '0-%d' % (request.total_size - 2)}, ''),
+        'range': '0-%d' % (media_upload.size() - 2)}, ''),
       ({'status': '200'}, '{"foo": "bar"}'),
       ])
 
@@ -373,10 +372,6 @@ class Discovery(unittest.TestCase):
     self.assertEquals(None, body)
     self.assertTrue(isinstance(status, MediaUploadProgress))
     self.assertEquals(13, status.resumable_progress)
-
-    # request.body is not None because the server only acknowledged 12 bytes,
-    # which is less than the size of the body, so we need to send it again.
-    self.assertNotEquals(request.body, None)
 
     # Two requests should have been made and the resumable_uri should have been
     # updated for each one.
@@ -387,8 +382,8 @@ class Discovery(unittest.TestCase):
 
     status, body = request.next_chunk(http)
     self.assertEquals(request.resumable_uri, 'http://upload.example.com/3')
-    self.assertEquals(request.total_size-1, request.resumable_progress)
-    self.assertEquals(request.body, None)
+    self.assertEquals(media_upload.size()-1, request.resumable_progress)
+    self.assertEquals('{"data": {}}', request.body)
 
     # Final call to next_chunk should complete the upload.
     status, body = request.next_chunk(http)
@@ -403,13 +398,10 @@ class Discovery(unittest.TestCase):
 
     media_upload = MediaFileUpload(datafile('small.png'), resumable=True)
     request = zoo.animals().insert(media_body=media_upload, body=None)
-    self.assertTrue(request.headers['content-type'].startswith(
-        'image/png'))
     self.assertEquals(media_upload, request.resumable)
 
     self.assertEquals('image/png', request.resumable.mimetype())
 
-    self.assertEquals(request.multipart_boundary, '--')
     self.assertEquals(request.body, None)
     self.assertEquals(request.resumable_uri, None)
 
@@ -421,7 +413,7 @@ class Discovery(unittest.TestCase):
         'range': '0-12'}, ''),
       ({'status': '308',
         'location': 'http://upload.example.com/3',
-        'range': '0-%d' % (request.total_size - 2)}, ''),
+        'range': '0-%d' % (media_upload.size() - 2)}, ''),
       ({'status': '200'}, '{"foo": "bar"}'),
       ])
 
@@ -439,7 +431,7 @@ class Discovery(unittest.TestCase):
 
     status, body = request.next_chunk(http)
     self.assertEquals(request.resumable_uri, 'http://upload.example.com/3')
-    self.assertEquals(request.total_size-1, request.resumable_progress)
+    self.assertEquals(media_upload.size()-1, request.resumable_progress)
     self.assertEquals(request.body, None)
 
     # Final call to next_chunk should complete the upload.
@@ -464,7 +456,7 @@ class Discovery(unittest.TestCase):
         'range': '0-12'}, ''),
       ({'status': '308',
         'location': 'http://upload.example.com/3',
-        'range': '0-%d' % (request.total_size - 2)}, ''),
+        'range': '0-%d' % media_upload.size()}, ''),
       ({'status': '200'}, '{"foo": "bar"}'),
       ])
 
