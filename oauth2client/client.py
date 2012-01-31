@@ -47,14 +47,6 @@ try:
 except ImportError:
   from cgi import parse_qsl
 
-# Determine if we can write to the file system, and if we can use a local file
-# cache behing httplib2.
-if hasattr(os, 'tempnam'):
-  # Put cache file in the director '.cache'.
-  CACHED_HTTP = httplib2.Http('.cache')
-else:
-  CACHED_HTTP = httplib2.Http()
-
 logger = logging.getLogger(__name__)
 
 # Expiry is stored in RFC3339 UTC format
@@ -733,7 +725,7 @@ if HAS_OPENSSL:
       oauth2client.crypt.AppIdentityError if the JWT fails to verify.
     """
     if http is None:
-      http = CACHED_HTTP
+      http = httplib2.Http()
 
     resp, content = http.request(cert_uri)
 
