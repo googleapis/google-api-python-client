@@ -28,6 +28,9 @@ import urllib
 import urlparse
 
 from oauth2client.anyjson import simplejson
+from oauth2client.client import Credentials
+from oauth2client.client import Flow
+from oauth2client.client import Storage
 
 try:
   from urlparse import parse_qsl
@@ -78,50 +81,6 @@ def _oauth_uri(name, discovery, params):
       query[key] = params[key]
   return discovery[name]['url'] + '?' + urllib.urlencode(query)
 
-
-class Credentials(object):
-  """Base class for all Credentials objects.
-
-  Subclasses must define an authorize() method
-  that applies the credentials to an HTTP transport.
-  """
-
-  def authorize(self, http):
-    """Take an httplib2.Http instance (or equivalent) and
-    authorizes it for the set of credentials, usually by
-    replacing http.request() with a method that adds in
-    the appropriate headers and then delegates to the original
-    Http.request() method.
-    """
-    _abstract()
-
-
-class Flow(object):
-  """Base class for all Flow objects."""
-  pass
-
-
-class Storage(object):
-  """Base class for all Storage objects.
-
-  Store and retrieve a single credential.
-  """
-
-  def get(self):
-    """Retrieve credential.
-
-    Returns:
-      apiclient.oauth.Credentials
-    """
-    _abstract()
-
-  def put(self, credentials):
-    """Write a credential.
-
-    Args:
-      credentials: Credentials, the credentials to store.
-    """
-    _abstract()
 
 
 class OAuthCredentials(Credentials):
