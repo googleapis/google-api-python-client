@@ -98,7 +98,6 @@ class OAuth2ClientFileTests(unittest.TestCase):
     self.assertEquals(data['_module'], OAuth2Credentials.__module__)
 
   def test_token_refresh(self):
-    # Write a file with a pickled OAuth2Credentials.
     access_token = 'foo'
     client_id = 'some_client_id'
     client_secret = 'cOuDdkfjxxnv+'
@@ -122,6 +121,27 @@ class OAuth2ClientFileTests(unittest.TestCase):
     credentials._refresh(lambda x: x)
     self.assertEquals(credentials.access_token, 'bar')
 
+  def test_credentials_delete(self):
+    access_token = 'foo'
+    client_id = 'some_client_id'
+    client_secret = 'cOuDdkfjxxnv+'
+    refresh_token = '1/0/a.df219fjls0'
+    token_expiry = datetime.datetime.utcnow()
+    token_uri = 'https://www.google.com/accounts/o8/oauth2/token'
+    user_agent = 'refresh_checker/1.0'
+
+    credentials = OAuth2Credentials(
+        access_token, client_id, client_secret,
+        refresh_token, token_expiry, token_uri,
+        user_agent)
+
+    s = Storage(FILENAME)
+    s.put(credentials)
+    credentials = s.get()
+    self.assertNotEquals(None, credentials)
+    s.delete()
+    credentials = s.get()
+    self.assertEquals(None, credentials)
 
   def test_access_token_credentials(self):
     access_token = 'foo'
@@ -204,6 +224,11 @@ class OAuth2ClientFileTests(unittest.TestCase):
 
     self.assertNotEquals(None, credentials)
     self.assertEquals('foo', credentials.access_token)
+
+    store.delete()
+    credentials = store.get()
+
+    self.assertEquals(None, credentials)
 
     if os.name == 'posix':
       self.assertEquals('0600', oct(stat.S_IMODE(os.stat(FILENAME).st_mode)))

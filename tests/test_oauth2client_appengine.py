@@ -203,6 +203,30 @@ class DecoratorTests(unittest.TestCase):
     q = parse_qs(response.headers['Location'].split('?', 1)[1])
     self.assertEqual('http://localhost/oauth2callback', q['redirect_uri'][0])
 
+  def test_storage_delete(self):
+    # An initial request to an oauth_required decorated path should be a
+    # redirect to start the OAuth dance.
+    response = self.app.get('/foo_path')
+    self.assertTrue(response.status.startswith('302'))
+
+    # Now simulate the callback to /oauth2callback.
+    response = self.app.get('/oauth2callback', {
+        'code': 'foo_access_code',
+        'state': 'foo_path',
+        })
+    self.assertEqual('http://localhost/foo_path', response.headers['Location'])
+    self.assertEqual(None, self.decorator.credentials)
+
+    # Now requesting the decorated path should work.
+    response = self.app.get('/foo_path')
+
+    # Invalidate the stored Credentials.
+    self.decorator.credentials.store.delete()
+
+    # Invalid Credentials should start the OAuth dance again.
+    response = self.app.get('/foo_path')
+    self.assertTrue(response.status.startswith('302'))
+
   def test_aware(self):
     # An initial request to an oauth_aware decorated path should not redirect.
     response = self.app.get('/bar_path')

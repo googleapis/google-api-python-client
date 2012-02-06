@@ -263,6 +263,16 @@ class StorageByKeyName(Storage):
     if self._cache:
       self._cache.set(self._key_name, credentials.to_json())
 
+  def locked_delete(self):
+    """Delete Credential from datastore."""
+
+    if self._cache:
+      self._cache.delete(self._key_name)
+
+    entity = self._model.get_by_key_name(self._key_name)
+    if entity is not None:
+      entity.delete()
+
 
 class CredentialsModel(db.Model):
   """Storage for OAuth 2.0 Credentials

@@ -224,6 +224,13 @@ class Storage(object):
     """
     _abstract()
 
+  def locked_delete(self):
+    """Delete a credential.
+
+    The Storage lock must be held when this is called.
+    """
+    _abstract()
+
   def get(self):
     """Retrieve credential.
 
@@ -249,6 +256,21 @@ class Storage(object):
     self.acquire_lock()
     try:
       self.locked_put(credentials)
+    finally:
+      self.release_lock()
+
+  def delete(self):
+    """Delete credential.
+
+    Frees any resources associated with storing the credential.
+    The Storage lock must *not* be held when this is called.
+
+    Returns:
+      None
+    """
+    self.acquire_lock()
+    try:
+      return self.locked_delete()
     finally:
       self.release_lock()
 

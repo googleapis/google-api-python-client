@@ -159,6 +159,17 @@ class _MultiStore(object):
       """
       self._multistore._update_credential(credentials, self._scope)
 
+    def locked_delete(self):
+      """Delete a credential.
+
+      The Storage lock must be held when this is called.
+
+      Args:
+        credentials: Credentials, the credentials to store.
+      """
+      self._multistore._delete_credential(self._client_id, self._user_agent,
+          self._scope)
+
   def _create_file_if_needed(self):
     """Create an empty file if necessary.
 
@@ -342,6 +353,23 @@ class _MultiStore(object):
     """
     key = (cred.client_id, cred.user_agent, scope)
     self._data[key] = cred
+    self._write()
+
+  def _delete_credential(self, client_id, user_agent, scope):
+    """Delete a credential and write the multistore.
+
+    This must be called when the multistore is locked.
+
+    Args:
+      client_id: The client_id for the credential
+      user_agent: The user agent for the credential
+      scope: The scope(s) that this credential covers
+    """
+    key = (client_id, user_agent, scope)
+    try:
+      del self._data[key]
+    except KeyError:
+      pass
     self._write()
 
   def _get_storage(self, client_id, user_agent, scope):

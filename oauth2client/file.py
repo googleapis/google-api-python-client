@@ -85,7 +85,6 @@ class Storage(BaseStorage):
       finally:
         os.umask(old_umask)
 
-
   def locked_put(self, credentials):
     """Write Credentials to file.
 
@@ -97,3 +96,12 @@ class Storage(BaseStorage):
     f = open(self._filename, 'wb')
     f.write(credentials.to_json())
     f.close()
+
+  def locked_delete(self):
+    """Delete Credentials file.
+
+    Args:
+      credentials: Credentials, the credentials to store.
+    """
+
+    os.unlink(self._filename)
