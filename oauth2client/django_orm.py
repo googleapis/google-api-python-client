@@ -112,3 +112,9 @@ class Storage(BaseStorage):
     entity = self.model_class(**args)
     setattr(entity, self.property_name, credentials)
     entity.save()
+
+  def locked_delete(self):
+    """Delete Credentials from the datastore."""
+
+    query = {self.key_name: self.key_value}
+    entities = self.model_class.objects.filter(**query).delete()
