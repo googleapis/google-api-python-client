@@ -115,7 +115,6 @@ class CryptTests(unittest.TestCase):
     self.assertEquals('billy bob', contents['user'])
     self.assertEquals('data', contents['metadata']['meta'])
 
-
   def test_verify_id_token_with_certs_uri_fails(self):
     jwt = self._create_signed_jwt()
 

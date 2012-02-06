@@ -89,6 +89,22 @@ def _abstract():
   raise NotImplementedError('You need to override this function')
 
 
+class MemoryCache(object):
+  """httplib2 Cache implementation which only caches locally."""
+
+  def __init__(self):
+    self.cache = {}
+
+  def get(self, key):
+    return self.cache.get(key)
+
+  def set(self, key, value):
+    self.cache[key] = value
+
+  def delete(self, key):
+    self.cache.pop(key, None)
+
+
 class Credentials(object):
   """Base class for all Credentials objects.
 
@@ -705,6 +721,9 @@ if HAS_OPENSSL:
           Signer.from_string(self.private_key, self.private_key_password),
           payload)
 
+  # Only used in verify_id_token(), which is always calling to the same URI
+  # for the certs.
+  _cached_http = httplib2.Http(MemoryCache())
 
   def verify_id_token(id_token, audience, http=None,
       cert_uri=ID_TOKEN_VERIFICATON_CERTS):
@@ -725,7 +744,7 @@ if HAS_OPENSSL:
       oauth2client.crypt.AppIdentityError if the JWT fails to verify.
     """
     if http is None:
-      http = httplib2.Http()
+      http = _cached_http
 
     resp, content = http.request(cert_uri)
 
