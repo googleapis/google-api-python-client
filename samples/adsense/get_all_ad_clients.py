@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This example gets all ad clients for an account.
+"""This example gets all ad clients for the logged in user's default account.
 
 Tags: adclients.list
 """
@@ -38,7 +38,7 @@ def main(argv):
     # Retrieve ad client list in pages and display data as we receive it.
     request = service.adclients().list(maxResults=MAX_PAGE_SIZE)
 
-    while ( request != None ):
+    while request is not None:
       result = request.execute()
       ad_clients = result['items']
       for ad_client in ad_clients:

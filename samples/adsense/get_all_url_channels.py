@@ -17,32 +17,40 @@
 """This example gets all URL channels in an ad client.
 
 To get ad clients, run get_all_ad_clients.py.
+
 Tags: urlchannels.list
 """
 
 __author__ = 'sergio.gomes@google.com (Sergio Gomes)'
 
 import sys
+import gflags
 from oauth2client.client import AccessTokenRefreshError
 import sample_utils
 
 MAX_PAGE_SIZE = 50
 
+# Declare command-line flags, and set them as required.
+gflags.DEFINE_string('ad_client_id', None,
+                     'The ad client ID for which to get URL channels',
+                     short_name='c')
+gflags.MarkFlagAsRequired('ad_client_id')
+
 
 def main(argv):
+  # Process flags and read their values.
   sample_utils.process_flags(argv)
+  ad_client_id = gflags.FLAGS.ad_client_id
 
   # Authenticate and construct service.
   service = sample_utils.initialize_service()
-
-  ad_client_id = 'INSERT_AD_CLIENT_ID_HERE'
 
   try:
     # Retrieve URL channel list in pages and display data as we receive it.
     request = service.urlchannels().list(adClientId=ad_client_id,
         maxResults=MAX_PAGE_SIZE)
 
-    while ( request != None ):
+    while request is not None:
       result = request.execute()
       custom_channels = result['items']
 

@@ -17,23 +17,31 @@
 """This example retrieves a report for the specified ad client.
 
 To get ad clients, run get_all_ad_clients.py.
+
 Tags: reports.generate
 """
 
 __author__ = 'sergio.gomes@google.com (Sergio Gomes)'
 
 import sys
+import gflags
 from oauth2client.client import AccessTokenRefreshError
 import sample_utils
 
+# Declare command-line flags, and set them as required.
+gflags.DEFINE_string('ad_client_id', None,
+                     'The ID of the ad client for which to generate a report',
+                     short_name='c')
+gflags.MarkFlagAsRequired('ad_client_id')
+
 
 def main(argv):
+  # Process flags and read their values.
   sample_utils.process_flags(argv)
+  ad_client_id = gflags.FLAGS.ad_client_id
 
   # Authenticate and construct service.
   service = sample_utils.initialize_service()
-
-  ad_client_id = 'INSERT_AD_CLIENT_ID_HERE'
 
   try:
     # Retrieve report.

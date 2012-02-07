@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This example gets all custom channels in an ad client.
+"""This example gets all custom channels an ad unit has been added to.
 
-To get ad clients, run get_all_ad_clients.py.
+To get ad clients, run get_all_ad_clients.py. To get ad units, run
+get_all_ad_units.py.
 
 Tags: customchannels.list
 """
@@ -31,23 +32,36 @@ import sample_utils
 MAX_PAGE_SIZE = 50
 
 # Declare command-line flags, and set them as required.
+gflags.DEFINE_string('account_id', None,
+    'The ID of the account with the specified ad unit',
+    short_name='a')
+gflags.MarkFlagAsRequired('account_id')
+
 gflags.DEFINE_string('ad_client_id', None,
-                     'The ad client ID for which to get custom channels',
-                     short_name='c')
+    'The ID of the ad client with the specified ad unit',
+    short_name='c')
 gflags.MarkFlagAsRequired('ad_client_id')
+
+gflags.DEFINE_string('ad_unit_id', None,
+    'The ID of the ad unit for which to get custom channels',
+    short_name='u')
+gflags.MarkFlagAsRequired('ad_unit_id')
 
 
 def main(argv):
   # Process flags and read their values.
   sample_utils.process_flags(argv)
+  account_id = gflags.FLAGS.account_id
   ad_client_id = gflags.FLAGS.ad_client_id
+  ad_unit_id = gflags.FLAGS.ad_unit_id
 
   # Authenticate and construct service.
   service = sample_utils.initialize_service()
 
   try:
     # Retrieve custom channel list in pages and display data as we receive it.
-    request = service.customchannels().list(adClientId=ad_client_id,
+    request = service.accounts().adunits().customchannels().list(
+        accountId=account_id, adClientId=ad_client_id, adUnitId=ad_unit_id,
         maxResults=MAX_PAGE_SIZE)
 
     while request is not None:

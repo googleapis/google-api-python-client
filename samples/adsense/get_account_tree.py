@@ -14,11 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This example gets all ad units in an ad client.
+"""This example gets a specific account for the logged in user.
 
-To get ad clients, run get_all_ad_clients.py.
+This includes the full tree of sub-accounts.
 
-Tags: adunits.list
+Tags: accounts.get
 """
 
 __author__ = 'sergio.gomes@google.com (Sergio Gomes)'
@@ -28,40 +28,42 @@ import gflags
 from oauth2client.client import AccessTokenRefreshError
 import sample_utils
 
-MAX_PAGE_SIZE = 50
-
 # Declare command-line flags, and set them as required.
-gflags.DEFINE_string('ad_client_id', None,
-                     'The ad client ID for which to get ad units',
-                     short_name='c')
-gflags.MarkFlagAsRequired('ad_client_id')
+gflags.DEFINE_string('account_id', None,
+                     'The ID of the account to use as the root of the tree',
+                     short_name='a')
+gflags.MarkFlagAsRequired('account_id')
 
 
 def main(argv):
   # Process flags and read their values.
   sample_utils.process_flags(argv)
-  ad_client_id = gflags.FLAGS.ad_client_id
+  account_id = gflags.FLAGS.account_id
 
   # Authenticate and construct service.
   service = sample_utils.initialize_service()
 
   try:
-    # Retrieve ad unit list in pages and display data as we receive it.
-    request = service.adunits().list(adClientId=ad_client_id,
-        maxResults=MAX_PAGE_SIZE)
+    # Retrieve account.
+    request = service.accounts().get(accountId=account_id, tree=True)
+    account = request.execute()
 
-    while request is not None:
-      result = request.execute()
-      ad_units = result['items']
-      for ad_unit in ad_units:
-        print ('Ad unit with code "%s", name "%s" and status "%s" was found. ' %
-               (ad_unit['code'], ad_unit['name'], ad_unit['status']))
-
-      request = service.adunits().list_next(request, result)
+    if account:
+      display_tree(account)
 
   except AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')
+
+
+def display_tree(account, level=0):
+  print (' ' * level * 2 +
+         'Account with ID "%s" and name "%s" was found. ' %
+             (account['id'], account['name']))
+
+  if 'subAccounts' in account:
+    for sub_account in account['subAccounts']:
+      display_tree(sub_account, level + 1)
 
 if __name__ == '__main__':
   main(sys.argv)

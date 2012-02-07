@@ -14,50 +14,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This example gets all ad units in an ad client.
+"""This example gets all ad clients for an account.
 
-To get ad clients, run get_all_ad_clients.py.
-
-Tags: adunits.list
+Tags: accounts.adclients.list
 """
 
 __author__ = 'sergio.gomes@google.com (Sergio Gomes)'
 
 import sys
-import gflags
 from oauth2client.client import AccessTokenRefreshError
 import sample_utils
 
 MAX_PAGE_SIZE = 50
 
 # Declare command-line flags, and set them as required.
-gflags.DEFINE_string('ad_client_id', None,
-                     'The ad client ID for which to get ad units',
-                     short_name='c')
-gflags.MarkFlagAsRequired('ad_client_id')
+gflags.DEFINE_string('account_id', None,
+                     'The ID of the account for which to get ad clients',
+                     short_name='a')
+gflags.MarkFlagAsRequired('account_id')
 
 
 def main(argv):
   # Process flags and read their values.
   sample_utils.process_flags(argv)
-  ad_client_id = gflags.FLAGS.ad_client_id
+  account_id = gflags.FLAGS.account_id
 
   # Authenticate and construct service.
   service = sample_utils.initialize_service()
 
   try:
-    # Retrieve ad unit list in pages and display data as we receive it.
-    request = service.adunits().list(adClientId=ad_client_id,
-        maxResults=MAX_PAGE_SIZE)
+    # Retrieve ad client list in pages and display data as we receive it.
+    request = service.accounts().adclients().list(accountId=account_id,
+                                                  maxResults=MAX_PAGE_SIZE)
 
     while request is not None:
       result = request.execute()
-      ad_units = result['items']
-      for ad_unit in ad_units:
-        print ('Ad unit with code "%s", name "%s" and status "%s" was found. ' %
-               (ad_unit['code'], ad_unit['name'], ad_unit['status']))
+      ad_clients = result['items']
+      for ad_client in ad_clients:
+        print ('Ad client for product "%s" with ID "%s" was found. '
+               % (ad_client['productCode'], ad_client['id']))
 
-      request = service.adunits().list_next(request, result)
+        print ('\tSupports reporting: %s' %
+               (ad_client['supportsReporting'] and 'Yes' or 'No'))
+
+      request = service.adclients().list_next(request, result)
 
   except AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '

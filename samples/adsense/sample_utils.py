@@ -74,7 +74,7 @@ def process_flags(argv):
   try:
     argv = FLAGS(argv)
   except gflags.FlagsError, e:
-    print '%s\\nUsage: %s ARGS\\n%s' % (e, argv[0], FLAGS)
+    print '%s\nUsage: %s ARGS\n%s' % (e, argv[0], FLAGS)
     sys.exit(1)
 
   # Set the logging according to the command-line flag.
@@ -98,7 +98,7 @@ def retrieve_service(http):
   """Retrieves an AdSense Management API service via the discovery service."""
 
   # Construct a service object via the discovery service.
-  service = build("adsense", "v1", http=http)
+  service = build("adsense", "v1.1", http=http)
   return service
 
 
