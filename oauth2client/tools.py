@@ -90,12 +90,14 @@ class ClientRedirectHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     pass
 
 
-def run(flow, storage):
+def run(flow, storage, http=None):
   """Core code for a command-line application.
 
   Args:
     flow: Flow, an OAuth 2.0 Flow to step through.
     storage: Storage, a Storage to store the credential in.
+    http: An instance of httplib2.Http.request
+         or something that acts like it.
 
   Returns:
     Credentials, the obtained credential.
@@ -152,7 +154,7 @@ def run(flow, storage):
     code = raw_input('Enter verification code: ').strip()
 
   try:
-    credential = flow.step2_exchange(code)
+    credential = flow.step2_exchange(code, http)
   except FlowExchangeError, e:
     sys.exit('Authentication has failed: %s' % e)
 
