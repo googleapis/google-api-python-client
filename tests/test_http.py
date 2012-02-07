@@ -32,6 +32,7 @@ from apiclient.http import HttpMockSequence
 from apiclient.http import HttpRequest
 from apiclient.http import MediaFileUpload
 from apiclient.http import MediaUpload
+from apiclient.http import MediaInMemoryUpload
 from apiclient.http import set_user_agent
 from apiclient.model import JsonModel
 
@@ -331,6 +332,25 @@ class TestBatch(unittest.TestCase):
     batch.execute(http)
     self.assertEqual(callbacks.responses['1'], {'foo': 42})
     self.assertEqual(callbacks.responses['2'], {'baz': 'qux'})
+
+  def test_media_inmemory_upload(self):
+    media = MediaInMemoryUpload('abcdef', 'text/plain', chunksize=10,
+                                resumable=True)
+    self.assertEqual('text/plain', media.mimetype())
+    self.assertEqual(10, media.chunksize())
+    self.assertTrue(media.resumable())
+    self.assertEqual('bc', media.getbytes(1, 2))
+
+  def test_media_inmemory_upload_json_roundtrip(self):
+    media = MediaInMemoryUpload(os.urandom(64), 'text/plain', chunksize=10,
+                                resumable=True)
+    data = media.to_json()
+    newmedia = MediaInMemoryUpload.new_from_json(data)
+    self.assertEqual(media._body, newmedia._body)
+    self.assertEqual(media._chunksize, newmedia._chunksize)
+    self.assertEqual(media._resumable, newmedia._resumable)
+    self.assertEqual(media._mimetype, newmedia._mimetype)
+
 
 if __name__ == '__main__':
   unittest.main()

@@ -26,6 +26,7 @@ __all__ = [
     ]
 
 import StringIO
+import base64
 import copy
 import gzip
 import httplib2
@@ -214,6 +215,99 @@ class MediaFileUpload(MediaUpload):
     d = simplejson.loads(s)
     return MediaFileUpload(
         d['_filename'], d['_mimetype'], d['_chunksize'], d['_resumable'])
+
+
+class MediaInMemoryUpload(MediaUpload):
+  """MediaUpload for a chunk of bytes.
+
+  Construct a MediaFileUpload and pass as the media_body parameter of the
+  method. For example, if we had a service that allowed plain text:
+  """
+
+  def __init__(self, body, mimetype='application/octet-stream',
+               chunksize=256*1024, resumable=False):
+    """Create a new MediaBytesUpload.
+
+    Args:
+      body: string, Bytes of body content.
+      mimetype: string, Mime-type of the file or default of
+        'application/octet-stream'.
+      chunksize: int, File will be uploaded in chunks of this many bytes. Only
+        used if resumable=True.
+      resumable: bool, True if this is a resumable upload. False means upload
+        in a single request.
+    """
+    self._body = body
+    self._mimetype = mimetype
+    self._resumable = resumable
+    self._chunksize = chunksize
+
+  def chunksize(self):
+    """Chunk size for resumable uploads.
+
+    Returns:
+      Chunk size in bytes.
+    """
+    return self._chunksize
+
+  def mimetype(self):
+    """Mime type of the body.
+
+    Returns:
+      Mime type.
+    """
+    return self._mimetype
+
+  def size(self):
+    """Size of upload.
+
+    Returns:
+      Size of the body.
+    """
+    return len(self.body)
+
+  def resumable(self):
+    """Whether this upload is resumable.
+
+    Returns:
+      True if resumable upload or False.
+    """
+    return self._resumable
+
+  def getbytes(self, begin, length):
+    """Get bytes from the media.
+
+    Args:
+      begin: int, offset from beginning of file.
+      length: int, number of bytes to read, starting at begin.
+
+    Returns:
+      A string of bytes read. May be shorter than length if EOF was reached
+      first.
+    """
+    return self._body[begin:begin + length]
+
+  def to_json(self):
+    """Create a JSON representation of a MediaInMemoryUpload.
+
+    Returns:
+       string, a JSON representation of this instance, suitable to pass to
+       from_json().
+    """
+    t = type(self)
+    d = copy.copy(self.__dict__)
+    del d['_body']
+    d['_class'] = t.__name__
+    d['_module'] = t.__module__
+    d['_b64body'] = base64.b64encode(self._body)
+    return simplejson.dumps(d)
+
+  @staticmethod
+  def from_json(s):
+    d = simplejson.loads(s)
+    return MediaInMemoryUpload(base64.b64decode(d['_b64body']),
+                               d['_mimetype'], d['_chunksize'],
+                               d['_resumable'])
 
 
 class HttpRequest(object):
