@@ -42,6 +42,7 @@ from oauth2client.client import AssertionCredentials
 from oauth2client.client import FlowExchangeError
 from oauth2client.client import OAuth2Credentials
 from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.client import OOB_CALLBACK_URN
 from oauth2client.client import VerifyJwtTokenError
 from oauth2client.client import _extract_id_token
 
@@ -196,14 +197,14 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
         )
 
   def test_construct_authorize_url(self):
-    authorize_url = self.flow.step1_get_authorize_url('oob')
+    authorize_url = self.flow.step1_get_authorize_url('OOB_CALLBACK_URN')
 
     parsed = urlparse.urlparse(authorize_url)
     q = parse_qs(parsed[4])
     self.assertEqual(q['client_id'][0], 'client_id+1')
     self.assertEqual(q['response_type'][0], 'code')
     self.assertEqual(q['scope'][0], 'foo')
-    self.assertEqual(q['redirect_uri'][0], 'oob')
+    self.assertEqual(q['redirect_uri'][0], 'OOB_CALLBACK_URN')
     self.assertEqual(q['access_type'][0], 'offline')
 
   def test_override_flow_access_type(self):
@@ -215,14 +216,14 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
         user_agent='unittest-sample/1.0',
         access_type='online'
         )
-    authorize_url = flow.step1_get_authorize_url('oob')
+    authorize_url = flow.step1_get_authorize_url('OOB_CALLBACK_URN')
 
     parsed = urlparse.urlparse(authorize_url)
     q = parse_qs(parsed[4])
     self.assertEqual(q['client_id'][0], 'client_id+1')
     self.assertEqual(q['response_type'][0], 'code')
     self.assertEqual(q['scope'][0], 'foo')
-    self.assertEqual(q['redirect_uri'][0], 'oob')
+    self.assertEqual(q['redirect_uri'][0], 'OOB_CALLBACK_URN')
     self.assertEqual(q['access_type'][0], 'online')
 
   def test_exchange_failure(self):

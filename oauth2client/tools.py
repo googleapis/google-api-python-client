@@ -30,6 +30,7 @@ import sys
 import webbrowser
 
 from client import FlowExchangeError
+from client import OOB_CALLBACK_URN
 
 try:
   from urlparse import parse_qsl
@@ -120,7 +121,7 @@ def run(flow, storage, http=None):
   if FLAGS.auth_local_webserver:
     oauth_callback = 'http://%s:%s/' % (FLAGS.auth_host_name, port_number)
   else:
-    oauth_callback = 'oob'
+    oauth_callback = OOB_CALLBACK_URN
   authorize_url = flow.step1_get_authorize_url(oauth_callback)
 
   if FLAGS.auth_local_webserver:

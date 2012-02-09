@@ -55,6 +55,9 @@ EXPIRY_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 # Which certs to use to validate id_tokens received.
 ID_TOKEN_VERIFICATON_CERTS = 'https://www.googleapis.com/oauth2/v1/certs'
 
+# Constant to use for the out of band OAuth 2.0 flow.
+OOB_CALLBACK_URN = 'urn:ietf:wg:oauth:2.0:oob'
+
 
 class Error(Exception):
   """Base error for this module."""
@@ -843,15 +846,15 @@ class OAuth2WebServerFlow(Flow):
     self.params.update(kwargs)
     self.redirect_uri = None
 
-  def step1_get_authorize_url(self, redirect_uri='oob'):
+  def step1_get_authorize_url(self, redirect_uri=OOB_CALLBACK_URN):
     """Returns a URI to redirect to the provider.
 
     Args:
-      redirect_uri: string, Either the string 'oob' for a non-web-based
-                    application, or a URI that handles the callback from
-                    the authorization server.
+      redirect_uri: string, Either the string 'urn:ietf:wg:oauth:2.0:oob' for
+          a non-web-based application, or a URI that handles the callback from
+          the authorization server.
 
-    If redirect_uri is 'oob' then pass in the
+    If redirect_uri is 'urn:ietf:wg:oauth:2.0:oob' then pass in the
     generated verification code to step2_exchange,
     otherwise pass in the query parameters received
     at the callback uri to step2_exchange.
