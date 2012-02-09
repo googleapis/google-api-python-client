@@ -129,6 +129,23 @@ class Credentials(object):
     """
     _abstract()
 
+  def refresh(self, http):
+    """Forces a refresh of the access_token.
+
+    Args:
+      http: httplib2.Http, an http object to be used to make the refresh
+        request.
+    """
+    _abstract()
+
+  def apply(self, headers):
+    """Add the authorization to the headers.
+
+    Args:
+      headers: dict, the headers to add the Authorization header to.
+    """
+    _abstract()
+
   def _to_json(self, strip):
     """Utility function for creating a JSON representation of an instance of Credentials.
 
@@ -324,6 +341,92 @@ class OAuth2Credentials(Credentials):
     # refreshed.
     self.invalid = False
 
+  def authorize(self, http):
+    """Authorize an httplib2.Http instance with these credentials.
+
+    The modified http.request method will add authentication headers to each
+    request and will refresh access_tokens when a 401 is received on a
+    request. In addition the http.request method has a credentials property,
+    http.request.credentials, which is the Credentials object that authorized
+    it.
+
+    Args:
+       http: An instance of httplib2.Http
+           or something that acts like it.
+
+    Returns:
+       A modified instance of http that was passed in.
+
+    Example:
+
+      h = httplib2.Http()
+      h = credentials.authorize(h)
+
+    You can't create a new OAuth subclass of httplib2.Authenication
+    because it never gets passed the absolute URI, which is needed for
+    signing. So instead we have to overload 'request' with a closure
+    that adds in the Authorization header and then calls the original
+    version of 'request()'.
+    """
+    request_orig = http.request
+
+    # The closure that will replace 'httplib2.Http.request'.
+    def new_request(uri, method='GET', body=None, headers=None,
+                    redirections=httplib2.DEFAULT_MAX_REDIRECTS,
+                    connection_type=None):
+      if not self.access_token:
+        logger.info('Attempting refresh to obtain initial access_token')
+        self._refresh(request_orig)
+
+      # Modify the request headers to add the appropriate
+      # Authorization header.
+      if headers is None:
+        headers = {}
+      self.apply(headers)
+
+      if self.user_agent is not None:
+        if 'user-agent' in headers:
+          headers['user-agent'] = self.user_agent + ' ' + headers['user-agent']
+        else:
+          headers['user-agent'] = self.user_agent
+
+      resp, content = request_orig(uri, method, body, headers,
+                                   redirections, connection_type)
+
+      if resp.status == 401:
+        logger.info('Refreshing due to a 401')
+        self._refresh(request_orig)
+        self.apply(headers)
+        return request_orig(uri, method, body, headers,
+                            redirections, connection_type)
+      else:
+        return (resp, content)
+
+    # Replace the request method with our own closure.
+    http.request = new_request
+
+    # Set credentials as a property of the request method.
+    setattr(http.request, 'credentials', self)
+
+    return http
+
+  def refresh(self, http):
+    """Forces a refresh of the access_token.
+
+    Args:
+      http: httplib2.Http, an http object to be used to make the refresh
+        request.
+    """
+    self._refresh(http.request)
+
+  def apply(self, headers):
+    """Add the authorization to the headers.
+
+    Args:
+      headers: dict, the headers to add the Authorization header to.
+    """
+    headers['Authorization'] = 'Bearer ' + self.access_token
+
   def to_json(self):
     return self._to_json(Credentials.NON_SERIALIZED_MEMBERS)
 
@@ -431,6 +534,13 @@ class OAuth2Credentials(Credentials):
     This method first checks by reading the Storage object if available.
     If a refresh is still needed, it holds the Storage lock until the
     refresh is completed.
+
+    Args:
+      http_request: callable, a callable that matches the method signature of
+        httplib2.Http.request, used to make the refresh request.
+
+    Raises:
+      AccessTokenRefreshError: When the refresh fails.
     """
     if not self.store:
       self._do_refresh_request(http_request)
@@ -451,8 +561,8 @@ class OAuth2Credentials(Credentials):
     """Refresh the access_token using the refresh_token.
 
     Args:
-       http: An instance of httplib2.Http.request
-           or something that acts like it.
+      http_request: callable, a callable that matches the method signature of
+        httplib2.Http.request, used to make the refresh request.
 
     Raises:
       AccessTokenRefreshError: When the refresh fails.
@@ -490,64 +600,6 @@ class OAuth2Credentials(Credentials):
       except:
         pass
       raise AccessTokenRefreshError(error_msg)
-
-  def authorize(self, http):
-    """Authorize an httplib2.Http instance with these credentials.
-
-    Args:
-       http: An instance of httplib2.Http
-           or something that acts like it.
-
-    Returns:
-       A modified instance of http that was passed in.
-
-    Example:
-
-      h = httplib2.Http()
-      h = credentials.authorize(h)
-
-    You can't create a new OAuth subclass of httplib2.Authenication
-    because it never gets passed the absolute URI, which is needed for
-    signing. So instead we have to overload 'request' with a closure
-    that adds in the Authorization header and then calls the original
-    version of 'request()'.
-    """
-    request_orig = http.request
-
-    # The closure that will replace 'httplib2.Http.request'.
-    def new_request(uri, method='GET', body=None, headers=None,
-                    redirections=httplib2.DEFAULT_MAX_REDIRECTS,
-                    connection_type=None):
-      if not self.access_token:
-        logger.info('Attempting refresh to obtain initial access_token')
-        self._refresh(request_orig)
-
-      # Modify the request headers to add the appropriate
-      # Authorization header.
-      if headers is None:
-        headers = {}
-      headers['authorization'] = 'OAuth ' + self.access_token
-
-      if self.user_agent is not None:
-        if 'user-agent' in headers:
-          headers['user-agent'] = self.user_agent + ' ' + headers['user-agent']
-        else:
-          headers['user-agent'] = self.user_agent
-
-      resp, content = request_orig(uri, method, body, headers,
-                                   redirections, connection_type)
-
-      if resp.status == 401:
-        logger.info('Refreshing due to a 401')
-        self._refresh(request_orig)
-        headers['authorization'] = 'OAuth ' + self.access_token
-        return request_orig(uri, method, body, headers,
-                            redirections, connection_type)
-      else:
-        return (resp, content)
-
-    http.request = new_request
-    return http
 
 
 class AccessTokenCredentials(OAuth2Credentials):

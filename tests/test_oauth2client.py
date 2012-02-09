@@ -70,7 +70,7 @@ class OAuth2CredentialsTests(unittest.TestCase):
       ])
     http = self.credentials.authorize(http)
     resp, content = http.request("http://example.com")
-    self.assertEqual(content['authorization'], 'OAuth 1/3w')
+    self.assertEqual('Bearer 1/3w', content['Authorization'])
 
   def test_token_refresh_failure(self):
     http = HttpMockSequence([
@@ -95,11 +95,11 @@ class OAuth2CredentialsTests(unittest.TestCase):
   def test_to_from_json(self):
     json = self.credentials.to_json()
     instance = OAuth2Credentials.from_json(json)
-    self.assertEquals(type(instance), OAuth2Credentials)
+    self.assertEqual(OAuth2Credentials, type(instance))
     instance.token_expiry = None
     self.credentials.token_expiry = None
 
-    self.assertEquals(self.credentials.__dict__, instance.__dict__)
+    self.assertEqual(instance.__dict__, self.credentials.__dict__)
 
 
 class AccessTokenCredentialsTests(unittest.TestCase):
@@ -136,7 +136,7 @@ class AccessTokenCredentialsTests(unittest.TestCase):
       ])
     http = self.credentials.authorize(http)
     resp, content = http.request('http://example.com')
-    self.assertEqual(content['authorization'], 'OAuth foo')
+    self.assertEqual('Bearer foo', content['Authorization'])
 
 
 class TestAssertionCredentials(unittest.TestCase):
@@ -155,8 +155,8 @@ class TestAssertionCredentials(unittest.TestCase):
 
   def test_assertion_body(self):
     body = urlparse.parse_qs(self.credentials._generate_refresh_request_body())
-    self.assertEqual(body['assertion'][0], self.assertion_text)
-    self.assertEqual(body['assertion_type'][0], self.assertion_type)
+    self.assertEqual(self.assertion_text, body['assertion'][0])
+    self.assertEqual(self.assertion_type, body['assertion_type'][0])
 
   def test_assertion_refresh(self):
     http = HttpMockSequence([
@@ -165,7 +165,7 @@ class TestAssertionCredentials(unittest.TestCase):
       ])
     http = self.credentials.authorize(http)
     resp, content = http.request("http://example.com")
-    self.assertEqual(content['authorization'], 'OAuth 1/3w')
+    self.assertEqual('Bearer 1/3w', content['Authorization'])
 
 
 class ExtractIdTokenText(unittest.TestCase):
@@ -177,7 +177,7 @@ class ExtractIdTokenText(unittest.TestCase):
     jwt = 'stuff.' + payload + '.signature'
 
     extracted = _extract_id_token(jwt)
-    self.assertEqual(body, extracted)
+    self.assertEqual(extracted, body)
 
   def test_extract_failure(self):
     body = {'foo': 'bar'}
@@ -201,11 +201,11 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
 
     parsed = urlparse.urlparse(authorize_url)
     q = parse_qs(parsed[4])
-    self.assertEqual(q['client_id'][0], 'client_id+1')
-    self.assertEqual(q['response_type'][0], 'code')
-    self.assertEqual(q['scope'][0], 'foo')
-    self.assertEqual(q['redirect_uri'][0], 'OOB_CALLBACK_URN')
-    self.assertEqual(q['access_type'][0], 'offline')
+    self.assertEqual('client_id+1', q['client_id'][0])
+    self.assertEqual('code', q['response_type'][0])
+    self.assertEqual('foo', q['scope'][0])
+    self.assertEqual('OOB_CALLBACK_URN', q['redirect_uri'][0])
+    self.assertEqual('offline', q['access_type'][0])
 
   def test_override_flow_access_type(self):
     """Passing access_type overrides the default."""
@@ -220,11 +220,11 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
 
     parsed = urlparse.urlparse(authorize_url)
     q = parse_qs(parsed[4])
-    self.assertEqual(q['client_id'][0], 'client_id+1')
-    self.assertEqual(q['response_type'][0], 'code')
-    self.assertEqual(q['scope'][0], 'foo')
-    self.assertEqual(q['redirect_uri'][0], 'OOB_CALLBACK_URN')
-    self.assertEqual(q['access_type'][0], 'online')
+    self.assertEqual('client_id+1', q['client_id'][0])
+    self.assertEqual('code', q['response_type'][0])
+    self.assertEqual('foo', q['scope'][0])
+    self.assertEqual('OOB_CALLBACK_URN', q['redirect_uri'][0])
+    self.assertEqual('online', q['access_type'][0])
 
   def test_exchange_failure(self):
     http = HttpMockSequence([
@@ -246,9 +246,9 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
       ])
 
     credentials = self.flow.step2_exchange('some random code', http)
-    self.assertEqual(credentials.access_token, 'SlAV32hkKG')
-    self.assertNotEqual(credentials.token_expiry, None)
-    self.assertEqual(credentials.refresh_token, '8xLOxBtZp8')
+    self.assertEqual('SlAV32hkKG', credentials.access_token)
+    self.assertNotEqual(None, credentials.token_expiry)
+    self.assertEqual('8xLOxBtZp8', credentials.refresh_token)
 
   def test_exchange_no_expires_in(self):
     http = HttpMockSequence([
@@ -257,7 +257,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
       ])
 
     credentials = self.flow.step2_exchange('some random code', http)
-    self.assertEqual(credentials.token_expiry, None)
+    self.assertEqual(None, credentials.token_expiry)
 
   def test_exchange_id_token_fail(self):
     http = HttpMockSequence([
@@ -282,7 +282,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
       ])
 
     credentials = self.flow.step2_exchange('some random code', http)
-    self.assertEquals(body, credentials.id_token)
+    self.assertEqual(credentials.id_token, body)
 
 
 if __name__ == '__main__':

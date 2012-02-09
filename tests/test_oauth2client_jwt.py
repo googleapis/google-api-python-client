@@ -100,8 +100,8 @@ class CryptTests(unittest.TestCase):
     certs = {'foo': public_key }
     audience = 'some_audience_address@testing.gserviceaccount.com'
     contents = crypt.verify_signed_jwt_with_certs(jwt, certs, audience)
-    self.assertEquals('billy bob', contents['user'])
-    self.assertEquals('data', contents['metadata']['meta'])
+    self.assertEqual('billy bob', contents['user'])
+    self.assertEqual('data', contents['metadata']['meta'])
 
   def test_verify_id_token_with_certs_uri(self):
     jwt = self._create_signed_jwt()
@@ -112,8 +112,8 @@ class CryptTests(unittest.TestCase):
 
     contents = verify_id_token(jwt,
         'some_audience_address@testing.gserviceaccount.com', http)
-    self.assertEquals('billy bob', contents['user'])
-    self.assertEquals('data', contents['metadata']['meta'])
+    self.assertEqual('billy bob', contents['user'])
+    self.assertEqual('data', contents['metadata']['meta'])
 
   def test_verify_id_token_with_certs_uri_fails(self):
     jwt = self._create_signed_jwt()
@@ -195,7 +195,7 @@ class CryptTests(unittest.TestCase):
       ])
     http = credentials.authorize(http)
     resp, content = http.request('http://example.org')
-    self.assertEquals(content['authorization'], 'OAuth 1/3w')
+    self.assertEqual('Bearer 1/3w', content['Authorization'])
 
 if __name__ == '__main__':
   unittest.main()
