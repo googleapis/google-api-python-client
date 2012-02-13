@@ -134,7 +134,8 @@ class DecoratorTests(unittest.TestCase):
 
     decorator = OAuth2Decorator(client_id='foo_client_id',
                                 client_secret='foo_client_secret',
-                                scope=['foo_scope', 'bar_scope'])
+                                scope=['foo_scope', 'bar_scope'],
+                                user_agent='foo')
     self.decorator = decorator
 
     class TestRequiredHandler(webapp.RequestHandler):
@@ -264,11 +265,14 @@ class DecoratorTests(unittest.TestCase):
   def test_kwargs_are_passed_to_underlying_flow(self):
     decorator = OAuth2Decorator(client_id='foo_client_id',
         client_secret='foo_client_secret',
+        user_agent='foo_user_agent',
         scope=['foo_scope', 'bar_scope'],
         access_type='offline',
         approval_prompt='force')
     self.assertEqual('offline', decorator.flow.params['access_type'])
     self.assertEqual('force', decorator.flow.params['approval_prompt'])
+    self.assertEqual('foo_user_agent', decorator.flow.user_agent)
+    self.assertEqual(None, decorator.flow.params.get('user_agent', None))
 
 
 if __name__ == '__main__':

@@ -309,6 +309,7 @@ class OAuth2Decorator(object):
   def __init__(self, client_id, client_secret, scope,
                auth_uri='https://accounts.google.com/o/oauth2/auth',
                token_uri='https://accounts.google.com/o/oauth2/token',
+               user_agent=None,
                message=None, **kwargs):
 
     """Constructor for OAuth2Decorator
@@ -322,13 +323,14 @@ class OAuth2Decorator(object):
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
       token_uri: string, URI for token endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+      user_agent: string, User agent of your application, default to None.
       message: Message to display if there are problems with the OAuth 2.0
         configuration. The message may contain HTML and will be presented on the
         web interface for any method that uses the decorator.
       **kwargs: dict, Keyword arguments are be passed along as kwargs to the
         OAuth2WebServerFlow constructor.
     """
-    self.flow = OAuth2WebServerFlow(client_id, client_secret, scope, None,
+    self.flow = OAuth2WebServerFlow(client_id, client_secret, scope, user_agent,
         auth_uri, token_uri, **kwargs)
     self.credentials = None
     self._request_handler = None
