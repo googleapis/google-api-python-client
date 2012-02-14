@@ -30,13 +30,13 @@ import os
 import pydoc
 import re
 
-from apiclient.anyjson import simplejson
 from apiclient import discovery
 from apiclient.errors import HttpError
 from google.appengine.api import memcache
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
+from oauth2client.anyjson import simplejson
 
 
 DISCOVERY_URI = 'https://www.googleapis.com/discovery/v1/apis?preferred=true'
@@ -69,8 +69,7 @@ class MainHandler(webapp.RequestHandler):
 
 
 class GadgetHandler(webapp.RequestHandler):
-  """Handles serving the Google Gadget.
-  """
+  """Handles serving the Google Gadget."""
 
   def get(self):
     directory = get_directory_doc()
@@ -82,6 +81,20 @@ class GadgetHandler(webapp.RequestHandler):
             path, {'directory': directory,
                    }))
     self.response.headers.add_header('Content-Type', 'application/xml')
+
+
+class EmbedHandler(webapp.RequestHandler):
+  """Handles serving a front page suitable for embedding."""
+
+  def get(self):
+    directory = get_directory_doc()
+    for item in directory:
+      item['title'] = item.get('title', item.get('description', ''))
+    path = os.path.join(os.path.dirname(__file__), 'embed.html')
+    self.response.out.write(
+        template.render(
+            path, {'directory': directory,
+                   }))
 
 
 def _render(resource):
@@ -140,6 +153,7 @@ def main():
       [
       (r'/', MainHandler),
       (r'/_gadget/', GadgetHandler),
+      (r'/_embed/', EmbedHandler),
       (r'/([^\/]*)/([^\/]*)(?:/(.*))?', ResourceHandler),
       ],
       debug=False)
