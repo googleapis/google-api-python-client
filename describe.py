@@ -22,7 +22,7 @@ import re
 import sys
 import httplib2
 
-from apiclient.anyjson import simplejson
+from oauth2client.anyjson import simplejson
 from apiclient.discovery import build
 
 BASE = 'docs/dyn'
