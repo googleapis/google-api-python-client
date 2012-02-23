@@ -115,7 +115,7 @@ class Credentials(object):
   an HTTP transport.
 
   Subclasses must also specify a classmethod named 'from_json' that takes a JSON
-  string as input and returns an instaniated Crentials object.
+  string as input and returns an instaniated Credentials object.
   """
 
   NON_SERIALIZED_MEMBERS = ['store']
@@ -191,6 +191,13 @@ class Credentials(object):
     data = simplejson.loads(s)
     # Find and call the right classmethod from_json() to restore the object.
     module = data['_module']
+    try:
+      m = __import__(module)
+    except ImportError:
+      # In case there's an object from the old package structure, update it
+      module = module.replace('.apiclient', '')
+      m = __import__(module)
+
     m = __import__(module, fromlist=module.split('.')[:-1])
     kls = getattr(m, data['_class'])
     from_json = getattr(kls, 'from_json')
