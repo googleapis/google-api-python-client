@@ -86,8 +86,7 @@ class LeaseTaskCommand(GoogleTaskCommand):
         return task_api.lease(project=flag_values.project_name,
                               taskqueue=flag_values.taskqueue_name,
                               leaseSecs=flag_values.lease_secs,
-                              numTasks=flag_values.num_tasks,
-                              body={})
+                              numTasks=flag_values.num_tasks)
 
     def print_result(self, result):
         """Override to optionally strip the payload since it can be long."""

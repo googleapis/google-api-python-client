@@ -379,6 +379,8 @@ class HttpRequest(object):
         _, body = self.next_chunk(http)
       return body
     else:
+      if 'content-length' not in self.headers:
+        self.headers['content-length'] = str(self.body_size)
       resp, content = http.request(self.uri, self.method,
                                    body=self.body,
                                    headers=self.headers)
