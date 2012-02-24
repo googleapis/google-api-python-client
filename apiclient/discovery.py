@@ -123,7 +123,8 @@ def key2param(key):
   return ''.join(result)
 
 
-def build(serviceName, version,
+def build(serviceName,
+          version,
           http=None,
           discoveryServiceUrl=DISCOVERY_URI,
           developerKey=None,
@@ -138,6 +139,8 @@ def build(serviceName, version,
   Args:
     serviceName: string, name of the service
     version: string, the version of the service
+    http: httplib2.Http, An instance of httplib2.Http or something that acts
+      like it that HTTP requests will be made through.
     discoveryServiceUrl: string, a URI Template that points to
       the location of the discovery service. It should have two
       parameters {api} and {apiVersion} that when filled in
