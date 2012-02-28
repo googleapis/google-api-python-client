@@ -51,8 +51,10 @@ class MainHandler(webapp.RequestHandler):
   def get(self):
     path = os.path.join(os.path.dirname(__file__), 'welcome.html')
     shortened = service.url().list().execute()
-    short_and_long = [(item["id"], item["longUrl"]) for item in
-        shortened["items"]]
+    short_and_long = []
+    if 'items' in shortened:
+      short_and_long = [(item["id"], item["longUrl"]) for item in
+          shortened["items"]]
 
     variables = {
         'short_and_long': short_and_long,
@@ -61,6 +63,7 @@ class MainHandler(webapp.RequestHandler):
 
   def post(self):
     long_url = self.request.get("longUrl")
+    credentials.refresh(http)
     shortened = service.url().insert(body={"longUrl": long_url}).execute()
     self.redirect("/")
 

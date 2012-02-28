@@ -36,7 +36,7 @@ from client import OAuth2WebServerFlow
 from client import Storage
 from google.appengine.api import memcache
 from google.appengine.api import users
-from google.appengine.api.app_identity import app_identity
+from google.appengine.api import app_identity
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import login_required
@@ -56,75 +56,52 @@ class AppAssertionCredentials(AssertionCredentials):
   This object will allow an App Engine application to identify itself to Google
   and other OAuth 2.0 servers that can verify assertions. It can be used for
   the purpose of accessing data stored under an account assigned to the App
-  Engine application itself. The algorithm used for generating the assertion is
-  the Signed JSON Web Token (JWT) algorithm. Additional details can be found at
-  the following link:
-
-  http://self-issued.info/docs/draft-jones-json-web-token.html
+  Engine application itself.
 
   This credential does not require a flow to instantiate because it represents
   a two legged flow, and therefore has all of the required information to
   generate and refresh its own access tokens.
-
   """
 
-  def __init__(self, scope,
-      audience='https://accounts.google.com/o/oauth2/token',
-      assertion_type='http://oauth.net/grant_type/jwt/1.0/bearer',
-      token_uri='https://accounts.google.com/o/oauth2/token', **kwargs):
+  def __init__(self, scope, **kwargs):
     """Constructor for AppAssertionCredentials
 
     Args:
-      scope: string, scope of the credentials being requested.
-      audience: string, The audience, or verifier of the assertion.  For
-        convenience defaults to Google's audience.
-      assertion_type: string, Type name that will identify the format of the
-        assertion string.  For convience, defaults to the JSON Web Token (JWT)
-        assertion type string.
-      token_uri: string, URI for token endpoint. For convenience
-        defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+      scope: string or list of strings, scope(s) of the credentials being requested.
     """
+    if type(scope) is list:
+      scope = ' '.join(scope)
     self.scope = scope
-    self.audience = audience
-    self.app_name = app_identity.get_service_account_name()
 
     super(AppAssertionCredentials, self).__init__(
-        assertion_type,
         None,
-        token_uri)
+        None,
+        None)
 
   @classmethod
   def from_json(cls, json):
     data = simplejson.loads(json)
-    retval = AccessTokenCredentials(
-        data['scope'],
-        data['audience'],
-        data['assertion_type'],
-        data['token_uri'])
-    return retval
+    return AppAssertionCredentials(data['scope'])
 
-  def _generate_assertion(self):
-    header = {
-      'typ': 'JWT',
-      'alg': 'RS256',
-    }
+  def _refresh(self, http_request):
+    """Refreshes the access_token.
 
-    now = int(time.time())
-    claims = {
-      'aud': self.audience,
-      'scope': self.scope,
-      'iat': now,
-      'exp': now + 3600,
-      'iss': self.app_name,
-    }
+    Since the underlying App Engine app_identity implementation does its own
+    caching we can skip all the storage hoops and just to a refresh using the
+    API.
 
-    jwt_components = [base64.b64encode(simplejson.dumps(seg))
-        for seg in [header, claims]]
+    Args:
+      http_request: callable, a callable that matches the method signature of
+        httplib2.Http.request, used to make the refresh request.
 
-    base_str = ".".join(jwt_components)
-    key_name, signature = app_identity.sign_blob(base_str)
-    jwt_components.append(base64.b64encode(signature))
-    return ".".join(jwt_components)
+    Raises:
+      AccessTokenRefreshError: When the refresh fails.
+    """
+    try:
+      (token, _) = app_identity.get_access_token(self.scope)
+    except app_identity.Error, e:
+      raise AccessTokenRefreshError(str(e))
+    self.access_token = token
 
 
 class FlowProperty(db.Property):

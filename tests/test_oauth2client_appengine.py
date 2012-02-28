@@ -24,6 +24,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import base64
 import httplib2
+import time
 import unittest
 import urlparse
 
@@ -38,9 +39,12 @@ dev_appserver.fix_sys_path()
 from apiclient.http import HttpMockSequence
 from google.appengine.api import apiproxy_stub
 from google.appengine.api import apiproxy_stub_map
+from google.appengine.api import app_identity
 from google.appengine.api import users
+from google.appengine.api.memcache import memcache_stub
 from google.appengine.ext import testbed
 from google.appengine.ext import webapp
+from google.appengine.runtime import apiproxy_errors
 from oauth2client.anyjson import simplejson
 from oauth2client.appengine import AppAssertionCredentials
 from oauth2client.appengine import OAuth2Decorator
@@ -48,7 +52,6 @@ from oauth2client.appengine import OAuth2Handler
 from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import FlowExchangeError
 from webtest import TestApp
-
 
 class UserMock(object):
   """Mock the app engine user service"""
@@ -76,51 +79,57 @@ class TestAppAssertionCredentials(unittest.TestCase):
   account_name = "service_account_name@appspot.com"
   signature = "signature"
 
+
   class AppIdentityStubImpl(apiproxy_stub.APIProxyStub):
 
     def __init__(self):
       super(TestAppAssertionCredentials.AppIdentityStubImpl, self).__init__(
           'app_identity_service')
 
-    def _Dynamic_GetServiceAccountName(self, request, response):
-      return response.set_service_account_name(
-          TestAppAssertionCredentials.account_name)
+    def _Dynamic_GetAccessToken(self, request, response):
+      response.set_access_token('a_token_123')
+      response.set_expiration_time(time.time() + 1800)
 
-    def _Dynamic_SignForApp(self, request, response):
-      return response.set_signature_bytes(
-          TestAppAssertionCredentials.signature)
 
-  def setUp(self):
-    app_identity_stub = self.AppIdentityStubImpl()
+  class ErroringAppIdentityStubImpl(apiproxy_stub.APIProxyStub):
+
+    def __init__(self):
+      super(TestAppAssertionCredentials.ErroringAppIdentityStubImpl, self).__init__(
+          'app_identity_service')
+
+    def _Dynamic_GetAccessToken(self, request, response):
+      raise app_identity.BackendDeadlineExceeded()
+
+  def test_raise_correct_type_of_exception(self):
+    app_identity_stub = self.ErroringAppIdentityStubImpl()
+    apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
     apiproxy_stub_map.apiproxy.RegisterStub("app_identity_service",
                                             app_identity_stub)
+    apiproxy_stub_map.apiproxy.RegisterStub(
+      'memcache', memcache_stub.MemcacheServiceStub())
 
-    self.scope = "http://www.googleapis.com/scope"
-    self.credentials = AppAssertionCredentials(self.scope)
+    scope = "http://www.googleapis.com/scope"
+    try:
+      credentials = AppAssertionCredentials(scope)
+      http = httplib2.Http()
+      credentials.refresh(http)
+      self.fail('Should have raised an AccessTokenRefreshError')
+    except AccessTokenRefreshError:
+      pass
 
-  def test_assertion(self):
-    assertion = self.credentials._generate_assertion()
+  def test_get_access_token_on_refresh(self):
+    app_identity_stub = self.AppIdentityStubImpl()
+    apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
+    apiproxy_stub_map.apiproxy.RegisterStub("app_identity_service",
+                                            app_identity_stub)
+    apiproxy_stub_map.apiproxy.RegisterStub(
+      'memcache', memcache_stub.MemcacheServiceStub())
 
-    parts = assertion.split(".")
-    self.assertTrue(len(parts) == 3)
-
-    header, body, signature = [base64.b64decode(part) for part in parts]
-
-    header_dict = simplejson.loads(header)
-    self.assertEqual(header_dict['typ'], 'JWT')
-    self.assertEqual(header_dict['alg'], 'RS256')
-
-    body_dict = simplejson.loads(body)
-    self.assertEqual(body_dict['aud'],
-                     'https://accounts.google.com/o/oauth2/token')
-    self.assertEqual(body_dict['scope'], self.scope)
-    self.assertEqual(body_dict['iss'], self.account_name)
-
-    issuedAt = body_dict['iat']
-    self.assertTrue(issuedAt > 0)
-    self.assertEqual(body_dict['exp'], issuedAt + 3600)
-
-    self.assertEqual(signature, self.signature)
+    scope = "http://www.googleapis.com/scope"
+    credentials = AppAssertionCredentials(scope)
+    http = httplib2.Http()
+    credentials.refresh(http)
+    self.assertEqual('a_token_123', credentials.access_token)
 
 
 class DecoratorTests(unittest.TestCase):
