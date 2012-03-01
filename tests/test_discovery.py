@@ -170,12 +170,17 @@ class Discovery(unittest.TestCase):
     self._check_query_types(request)
 
     request = zoo.query(
-        q="foo", i="1", n="1", b="", a=[1,2,3], o={'a':1}, e='bar')
+        q="foo", i="1", n="1", b="", a=[1,2,3], o={'a':1}, e='bar', er='two')
 
     request = zoo.query(
-        q="foo", i="1", n="1", b="", a=[1,2,3], o={'a':1}, e='bar', rr=['foo',
-                                                                        'bar'])
+        q="foo", i="1", n="1", b="", a=[1,2,3], o={'a':1}, e='bar',
+        er=['one', 'three'], rr=['foo', 'bar'])
     self._check_query_types(request)
+
+    # Five is right out.
+    self.assertRaisesRegexp(
+      TypeError, '"five" is not an allowed value in',
+      zoo.query, er=['one', 'five'])
 
   def test_optional_stack_query_parameters(self):
     http = HttpMock(datafile('zoo.json'), {'status': '200'})

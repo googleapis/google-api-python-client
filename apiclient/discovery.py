@@ -424,10 +424,19 @@ def createResource(http, baseUrl, model, requestBuilder,
 
       for name, enums in enum_params.iteritems():
         if name in kwargs:
-          if kwargs[name] not in enums:
-            raise TypeError(
-                'Parameter "%s" value "%s" is not an allowed value in "%s"' %
-                (name, kwargs[name], str(enums)))
+          # We need to handle the case of a repeated enum
+          # name differently, since we want to handle both
+          # arg='value' and arg=['value1', 'value2']
+          if (name in repeated_params and
+              not isinstance(kwargs[name], basestring)):
+            values = kwargs[name]
+          else:
+            values = [kwargs[name]]
+          for value in values:
+            if value not in enums:
+              raise TypeError(
+                  'Parameter "%s" value "%s" is not an allowed value in "%s"' %
+                  (name, value, str(enums)))
 
       actual_query_params = {}
       actual_path_params = {}
