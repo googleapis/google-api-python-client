@@ -35,6 +35,7 @@ except ImportError:
 
 import dev_appserver
 dev_appserver.fix_sys_path()
+import webapp2
 
 from apiclient.http import HttpMockSequence
 from google.appengine.api import apiproxy_stub
@@ -43,7 +44,6 @@ from google.appengine.api import app_identity
 from google.appengine.api import users
 from google.appengine.api.memcache import memcache_stub
 from google.appengine.ext import testbed
-from google.appengine.ext import webapp
 from google.appengine.runtime import apiproxy_errors
 from oauth2client.anyjson import simplejson
 from oauth2client.appengine import AppAssertionCredentials
@@ -147,23 +147,27 @@ class DecoratorTests(unittest.TestCase):
                                 user_agent='foo')
     self.decorator = decorator
 
-    class TestRequiredHandler(webapp.RequestHandler):
+    class TestRequiredHandler(webapp2.RequestHandler):
 
       @decorator.oauth_required
       def get(self):
         pass
 
-    class TestAwareHandler(webapp.RequestHandler):
+    class TestAwareHandler(webapp2.RequestHandler):
 
       @decorator.oauth_aware
-      def get(self):
+      def get(self, *args, **kwargs):
         self.response.out.write('Hello World!')
+        assert(kwargs['year'] == '2012')
+        assert(kwargs['month'] == '01')
 
 
-    application = webapp.WSGIApplication([('/oauth2callback', OAuth2Handler),
-                                          ('/foo_path', TestRequiredHandler),
-                                          ('/bar_path', TestAwareHandler)],
-                                         debug=True)
+    application = webapp2.WSGIApplication([
+        ('/oauth2callback', OAuth2Handler),
+        ('/foo_path', TestRequiredHandler),
+        webapp2.Route(r'/bar_path/<year:\d{4}>/<month:\d{2}>',
+          handler=TestAwareHandler, name='bar')],
+      debug=True)
     self.app = TestApp(application)
     users.get_current_user = UserMock
     self.httplib2_orig = httplib2.Http
@@ -239,7 +243,7 @@ class DecoratorTests(unittest.TestCase):
 
   def test_aware(self):
     # An initial request to an oauth_aware decorated path should not redirect.
-    response = self.app.get('/bar_path')
+    response = self.app.get('/bar_path/2012/01')
     self.assertEqual('Hello World!', response.body)
     self.assertEqual('200 OK', response.status)
     self.assertEqual(False, self.decorator.has_credentials())
@@ -248,7 +252,7 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('http://localhost/oauth2callback', q['redirect_uri'][0])
     self.assertEqual('foo_client_id', q['client_id'][0])
     self.assertEqual('foo_scope bar_scope', q['scope'][0])
-    self.assertEqual('http://localhost/bar_path', q['state'][0])
+    self.assertEqual('http://localhost/bar_path/2012/01', q['state'][0])
     self.assertEqual('code', q['response_type'][0])
 
     # Now simulate the callback to /oauth2callback.
@@ -261,7 +265,7 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual(False, self.decorator.has_credentials())
 
     # Now requesting the decorated path will have credentials.
-    response = self.app.get('/bar_path')
+    response = self.app.get('/bar_path/2012/01')
     self.assertEqual('200 OK', response.status)
     self.assertEqual('Hello World!', response.body)
     self.assertEqual(True, self.decorator.has_credentials())

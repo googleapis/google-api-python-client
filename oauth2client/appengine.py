@@ -330,7 +330,7 @@ class OAuth2Decorator(object):
         instance.
     """
 
-    def check_oauth(request_handler, *args):
+    def check_oauth(request_handler, *args, **kwargs):
       if self._in_error:
         self._display_error_message(request_handler)
         return
@@ -350,7 +350,7 @@ class OAuth2Decorator(object):
       if not self.has_credentials():
         return request_handler.redirect(self.authorize_url())
       try:
-        method(request_handler, *args)
+        method(request_handler, *args, **kwargs)
       except AccessTokenRefreshError:
         return request_handler.redirect(self.authorize_url())
 
@@ -370,7 +370,7 @@ class OAuth2Decorator(object):
         instance.
     """
 
-    def setup_oauth(request_handler, *args):
+    def setup_oauth(request_handler, *args, **kwargs):
       if self._in_error:
         self._display_error_message(request_handler)
         return
@@ -387,7 +387,7 @@ class OAuth2Decorator(object):
       self._request_handler = request_handler
       self.credentials = StorageByKeyName(
           CredentialsModel, user.user_id(), 'credentials').get()
-      method(request_handler, *args)
+      method(request_handler, *args, **kwargs)
     return setup_oauth
 
   def has_credentials(self):
