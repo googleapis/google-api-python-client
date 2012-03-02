@@ -409,7 +409,7 @@ class OAuth2Decorator(object):
     user = users.get_current_user()
     memcache.set(user.user_id(), pickle.dumps(self.flow),
                  namespace=OAUTH2CLIENT_NAMESPACE)
-    return url
+    return str(url)
 
   def http(self):
     """Returns an authorized http instance.

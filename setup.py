@@ -30,7 +30,7 @@ packages = [
   ]
 
 install_requires = [
-    'httplib2>=0.7.2',
+    'httplib2>=0.7.4',
     'oauth2',
     'python-gflags',
     ]
