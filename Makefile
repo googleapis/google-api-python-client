@@ -39,7 +39,7 @@ prerelease:
 release: prerelease
 	@echo "This target will upload a new release to PyPi and code.google.com hosting."
 	@echo "Are you sure you want to proceed? (yes/no)"
-	@read yn; [ "yes" == $$yn ]
+	@read yn; if [ yes -ne $(yn) ]; then exit 1; fi
 	@echo "Here we go..."
 	cd snapshot; python setup.py sdist --formats=gztar,zip register upload
 	wget "http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py" -O googlecode_upload.py
@@ -66,7 +66,7 @@ oauth2_prerelease:
 oauth2_release: oauth2_prerelease
 	@echo "This target will upload a new release to PyPi and code.google.com hosting."
 	@echo "Are you sure you want to proceed? (yes/no)"
-	@read yn; [ "yes" == $$yn ]
+	@read yn; if [ yes -ne $(yn) ]; then exit 1; fi
 	@echo "Here we go..."
 	cd snapshot; python setup.py sdist --formats=gztar,zip register upload
 	wget "http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py" -O googlecode_upload.py
