@@ -178,9 +178,7 @@ class Discovery(unittest.TestCase):
     self._check_query_types(request)
 
     # Five is right out.
-    self.assertRaisesRegexp(
-      TypeError, '"five" is not an allowed value in',
-      zoo.query, er=['one', 'five'])
+    self.assertRaises(TypeError, zoo.query, er=['one', 'five'])
 
   def test_optional_stack_query_parameters(self):
     http = HttpMock(datafile('zoo.json'), {'status': '200'})
