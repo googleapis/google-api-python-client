@@ -24,7 +24,7 @@ packages = [
 ]
 
 install_requires = [
-    'httplib2>=0.7.2',
+    'httplib2>=0.7.4',
     'python-gflags',
     ]
 
@@ -40,7 +40,7 @@ if needs_json:
 long_desc = """The oauth2client is a client library for OAuth 2.0."""
 
 setup(name="oauth2client",
-      version="1.0beta7",
+      version="1.0beta8",
       description="OAuth 2.0 client library",
       long_description=long_desc,
       author="Joe Gregorio",
