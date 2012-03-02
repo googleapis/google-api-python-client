@@ -312,6 +312,9 @@ class Discovery(unittest.TestCase):
     request = zoo.animals().insert(media_body=datafile('small.png'))
     self.assertEquals('image/png', request.headers['content-type'])
     self.assertEquals('PNG', request.body[1:4])
+    self.assertEqual(
+        'https://www.googleapis.com/upload/zoo/animals?uploadType=media&alt=json',
+        request.uri)
 
   def test_multipart_media_raise_correct_exceptions(self):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
@@ -337,6 +340,9 @@ class Discovery(unittest.TestCase):
     self.assertTrue(request.headers['content-type'].startswith(
         'multipart/related'))
     self.assertEquals('--==', request.body[0:4])
+    self.assertEqual(
+        'https://www.googleapis.com/upload/zoo/animals?uploadType=multipart&alt=json',
+        request.uri)
 
   def test_media_capable_method_without_media(self):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
@@ -452,6 +458,9 @@ class Discovery(unittest.TestCase):
 
     media_upload = MediaFileUpload(datafile('small.png'), resumable=True)
     request = zoo.animals().insert(media_body=media_upload, body=None)
+    self.assertEqual(
+        'https://www.googleapis.com/upload/zoo/animals?uploadType=resumable&alt=json',
+        request.uri)
 
     http = HttpMockSequence([
       ({'status': '200',

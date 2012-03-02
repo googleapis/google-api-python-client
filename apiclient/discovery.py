@@ -85,7 +85,9 @@ def _write_headers(self):
 
 
 def _add_query_parameter(url, name, value):
-  """Adds a query parameter to a url
+  """Adds a query parameter to a url.
+
+  Replaces the current value if it already exists in the URL.
 
   Args:
     url: string, url to add the query parameter to.
@@ -99,8 +101,8 @@ def _add_query_parameter(url, name, value):
     return url
   else:
     parsed = list(urlparse.urlparse(url))
-    q = parse_qsl(parsed[4])
-    q.append((name, value))
+    q = dict(parse_qsl(parsed[4]))
+    q[name] = value
     parsed[4] = urllib.urlencode(q)
     return urlparse.urlunparse(parsed)
 
@@ -333,8 +335,10 @@ def createResource(http, baseUrl, model, requestBuilder,
     maxSize = 0
     if 'mediaUpload' in methodDesc:
       mediaUpload = methodDesc['mediaUpload']
-      mediaPathUrl = mediaUpload['protocols']['simple']['path']
-      mediaResumablePathUrl = mediaUpload['protocols']['resumable']['path']
+      # TODO(jcgregorio) Use URLs from discovery once it is updated.
+      parsed = list(urlparse.urlparse(baseUrl))
+      basePath = parsed[2]
+      mediaPathUrl = '/upload' + basePath + pathUrl
       accept = mediaUpload['accept']
       maxSize = _media_size_to_long(mediaUpload.get('maxSize', ''))
 
@@ -491,11 +495,10 @@ def createResource(http, baseUrl, model, requestBuilder,
           raise MediaUploadSizeError("Media larger than: %s" % maxSize)
 
         # Use the media path uri for media uploads
-        if media_upload.resumable():
-          expanded_url = uritemplate.expand(mediaResumablePathUrl, params)
-        else:
-          expanded_url = uritemplate.expand(mediaPathUrl, params)
+        expanded_url = uritemplate.expand(mediaPathUrl, params)
         url = urlparse.urljoin(self._baseUrl, expanded_url + query)
+        if media_upload.resumable():
+          url = _add_query_parameter(url, 'uploadType', 'resumable')
 
         if media_upload.resumable():
           # This is all we need to do for resumable, if the body exists it gets
@@ -507,6 +510,7 @@ def createResource(http, baseUrl, model, requestBuilder,
             # This is a simple media upload
             headers['content-type'] = media_upload.mimetype()
             body = media_upload.getbytes(0, media_upload.size())
+            url = _add_query_parameter(url, 'uploadType', 'media')
           else:
             # This is a multipart/related upload.
             msgRoot = MIMEMultipart('related')
@@ -530,6 +534,7 @@ def createResource(http, baseUrl, model, requestBuilder,
             multipart_boundary = msgRoot.get_boundary()
             headers['content-type'] = ('multipart/related; '
                                        'boundary="%s"') % multipart_boundary
+            url = _add_query_parameter(url, 'uploadType', 'multipart')
 
       logging.info('URL being requested: %s' % url)
       return self._requestBuilder(self._http,
