@@ -58,7 +58,7 @@ FLAGS = gflags.FLAGS
 # application, including client_id and client_secret, which are found
 # on the API Access tab on the Google APIs
 # Console <http://code.google.com/apis/console>
-CLIENT_SECRETS = 'client_secrets.json'
+CLIENT_SECRETS = 'samples/prediction/client_secrets.json'
 
 # Helpful message to display in the browser if the CLIENT_SECRETS file
 # is missing.
