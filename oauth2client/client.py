@@ -595,7 +595,7 @@ class OAuth2Credentials(Credentials):
     else:
       # An {'error':...} response body means the token is expired or revoked,
       # so we flag the credentials as such.
-      logger.error('Failed to retrieve access token: %s' % content)
+      logger.info('Failed to retrieve access token: %s' % content)
       error_msg = 'Invalid response %s.' % resp['status']
       try:
         d = simplejson.loads(content)
@@ -799,7 +799,7 @@ if HAS_OPENSSL:
           'iss': self.service_account_name
       }
       payload.update(self.kwargs)
-      logging.debug(str(payload))
+      logger.debug(str(payload))
 
       return make_signed_jwt(
           Signer.from_string(self.private_key, self.private_key_password),
@@ -984,7 +984,7 @@ class OAuth2WebServerFlow(Flow):
                                self.token_uri, self.user_agent,
                                id_token=d.get('id_token', None))
     else:
-      logger.error('Failed to retrieve access token: %s' % content)
+      logger.info('Failed to retrieve access token: %s' % content)
       error_msg = 'Invalid response %s.' % resp['status']
       try:
         d = simplejson.loads(content)
