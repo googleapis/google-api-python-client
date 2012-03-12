@@ -265,7 +265,7 @@ class MediaInMemoryUpload(MediaUpload):
     Returns:
       Size of the body.
     """
-    return len(self.body)
+    return len(self._body)
 
   def resumable(self):
     """Whether this upload is resumable.

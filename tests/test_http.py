@@ -128,6 +128,25 @@ class TestUserAgent(unittest.TestCase):
     self.assertEqual(500, new_upload.chunksize())
     self.assertEqual('PNG', new_upload.getbytes(1, 3))
 
+  def test_media_inmemory_upload(self):
+    media = MediaInMemoryUpload('abcdef', 'text/plain', chunksize=10,
+                                resumable=True)
+    self.assertEqual('text/plain', media.mimetype())
+    self.assertEqual(10, media.chunksize())
+    self.assertTrue(media.resumable())
+    self.assertEqual('bc', media.getbytes(1, 2))
+    self.assertEqual(6, media.size())
+
+  def test_media_inmemory_upload_json_roundtrip(self):
+    media = MediaInMemoryUpload(os.urandom(64), 'text/plain', chunksize=10,
+                                resumable=True)
+    data = media.to_json()
+    newmedia = MediaInMemoryUpload.new_from_json(data)
+    self.assertEqual(media._body, newmedia._body)
+    self.assertEqual(media._chunksize, newmedia._chunksize)
+    self.assertEqual(media._resumable, newmedia._resumable)
+    self.assertEqual(media._mimetype, newmedia._mimetype)
+
   def test_http_request_to_from_json(self):
 
     def _postproc(*kwargs):
@@ -486,23 +505,6 @@ class TestBatch(unittest.TestCase):
     self.assertEqual({'foo': 42}, callbacks.responses['1'])
     self.assertEqual({'baz': 'qux'}, callbacks.responses['2'])
 
-  def test_media_inmemory_upload(self):
-    media = MediaInMemoryUpload('abcdef', 'text/plain', chunksize=10,
-                                resumable=True)
-    self.assertEqual('text/plain', media.mimetype())
-    self.assertEqual(10, media.chunksize())
-    self.assertTrue(media.resumable())
-    self.assertEqual('bc', media.getbytes(1, 2))
-
-  def test_media_inmemory_upload_json_roundtrip(self):
-    media = MediaInMemoryUpload(os.urandom(64), 'text/plain', chunksize=10,
-                                resumable=True)
-    data = media.to_json()
-    newmedia = MediaInMemoryUpload.new_from_json(data)
-    self.assertEqual(media._body, newmedia._body)
-    self.assertEqual(media._chunksize, newmedia._chunksize)
-    self.assertEqual(media._resumable, newmedia._resumable)
-    self.assertEqual(media._mimetype, newmedia._mimetype)
 
 
 if __name__ == '__main__':
