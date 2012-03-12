@@ -224,7 +224,7 @@ class StorageByKeyName(Storage):
       if credential and hasattr(credential, 'set_store'):
         credential.set_store(self)
         if self._cache:
-          self._cache.set(self._key_name, credentials.to_json())
+          self._cache.set(self._key_name, credential.to_json())
 
     return credential
 

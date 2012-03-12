@@ -23,6 +23,7 @@ Unit tests for objects created from discovery documents.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import base64
+import datetime
 import httplib2
 import time
 import unittest
@@ -42,15 +43,20 @@ from google.appengine.api import apiproxy_stub
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import app_identity
 from google.appengine.api import users
+from google.appengine.api import memcache
 from google.appengine.api.memcache import memcache_stub
+from google.appengine.ext import db
 from google.appengine.ext import testbed
 from google.appengine.runtime import apiproxy_errors
 from oauth2client.anyjson import simplejson
 from oauth2client.appengine import AppAssertionCredentials
+from oauth2client.appengine import CredentialsModel
 from oauth2client.appengine import OAuth2Decorator
 from oauth2client.appengine import OAuth2Handler
+from oauth2client.appengine import StorageByKeyName
 from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import FlowExchangeError
+from oauth2client.client import OAuth2Credentials
 from webtest import TestApp
 
 class UserMock(object):
@@ -130,6 +136,75 @@ class TestAppAssertionCredentials(unittest.TestCase):
     http = httplib2.Http()
     credentials.refresh(http)
     self.assertEqual('a_token_123', credentials.access_token)
+
+
+def _http_request(*args, **kwargs):
+  resp = httplib2.Response({'status': '200'})
+  content = simplejson.dumps({'access_token': 'bar'})
+
+  return resp, content
+
+
+class StorageByKeyNameTest(unittest.TestCase):
+
+  def setUp(self):
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_datastore_v3_stub()
+    self.testbed.init_memcache_stub()
+    self.testbed.init_user_stub()
+
+    access_token = "foo"
+    client_id = "some_client_id"
+    client_secret = "cOuDdkfjxxnv+"
+    refresh_token = "1/0/a.df219fjls0"
+    token_expiry = datetime.datetime.utcnow()
+    token_uri = "https://www.google.com/accounts/o8/oauth2/token"
+    user_agent = "refresh_checker/1.0"
+    self.credentials = OAuth2Credentials(
+      access_token, client_id, client_secret,
+      refresh_token, token_expiry, token_uri,
+      user_agent)
+
+  def tearDown(self):
+    self.testbed.deactivate()
+
+  def test_get_and_put_simple(self):
+    storage = StorageByKeyName(
+      CredentialsModel, 'foo', 'credentials')
+
+    self.assertEqual(None, storage.get())
+    self.credentials.set_store(storage)
+
+    self.credentials._refresh(_http_request)
+    credmodel = CredentialsModel.get_by_key_name('foo')
+    self.assertEqual('bar', credmodel.credentials.access_token)
+
+  def test_get_and_put_cached(self):
+    storage = StorageByKeyName(
+      CredentialsModel, 'foo', 'credentials', cache=memcache)
+
+    self.assertEqual(None, storage.get())
+    self.credentials.set_store(storage)
+
+    self.credentials._refresh(_http_request)
+    credmodel = CredentialsModel.get_by_key_name('foo')
+    self.assertEqual('bar', credmodel.credentials.access_token)
+
+    # Now remove the item from the cache.
+    memcache.delete('foo')
+
+    # Check that getting refreshes the cache.
+    credentials = storage.get()
+    self.assertEqual('bar', credentials.access_token)
+    self.assertNotEqual(None, memcache.get('foo'))
+
+    # Deleting should clear the cache.
+    storage.delete()
+    credentials = storage.get()
+    self.assertEqual(None, credentials)
+    self.assertEqual(None, memcache.get('foo'))
+
 
 
 class DecoratorTests(unittest.TestCase):

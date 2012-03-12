@@ -55,6 +55,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from oauth2client.anyjson import simplejson
 
+logger = logging.getLogger(__name__)
 
 URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
@@ -175,7 +176,7 @@ def build(serviceName,
   if 'REMOTE_ADDR' in os.environ:
     requested_url = _add_query_parameter(requested_url, 'userIp',
                                          os.environ['REMOTE_ADDR'])
-  logging.info('URL being requested: %s' % requested_url)
+  logger.info('URL being requested: %s' % requested_url)
 
   resp, content = http.request(requested_url)
 
@@ -188,7 +189,7 @@ def build(serviceName,
   try:
     service = simplejson.loads(content)
   except ValueError, e:
-    logging.error('Failed to parse as JSON: ' + content)
+    logger.error('Failed to parse as JSON: ' + content)
     raise InvalidJsonError()
 
   filename = os.path.join(os.path.dirname(__file__), 'contrib',
@@ -536,7 +537,7 @@ def createResource(http, baseUrl, model, requestBuilder,
                                        'boundary="%s"') % multipart_boundary
             url = _add_query_parameter(url, 'uploadType', 'multipart')
 
-      logging.info('URL being requested: %s' % url)
+      logger.info('URL being requested: %s' % url)
       return self._requestBuilder(self._http,
                                   model.response,
                                   url,
@@ -616,7 +617,7 @@ def createResource(http, baseUrl, model, requestBuilder,
       headers = {}
       headers, params, query, body = self._model.request(headers, {}, {}, None)
 
-      logging.info('URL being requested: %s' % url)
+      logger.info('URL being requested: %s' % url)
       resp, content = self._http.request(url, method='GET', headers=headers)
 
       return self._requestBuilder(self._http,
@@ -663,7 +664,7 @@ def createResource(http, baseUrl, model, requestBuilder,
 
       request.uri = uri
 
-      logging.info('URL being requested: %s' % uri)
+      logger.info('URL being requested: %s' % uri)
 
       return request
 

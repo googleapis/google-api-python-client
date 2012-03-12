@@ -7,6 +7,8 @@ import sys
 import unittest
 from trace import fullmodname
 
+logging.basicConfig(level=logging.CRITICAL)
+
 APP_ENGINE_PATH='../google_appengine'
 
 # Conditional import of cleanup function
