@@ -159,7 +159,8 @@ class Credentials(object):
     t = type(self)
     d = copy.copy(self.__dict__)
     for member in strip:
-      del d[member]
+      if member in d:
+        del d[member]
     if 'token_expiry' in d and isinstance(d['token_expiry'], datetime.datetime):
       d['token_expiry'] = d['token_expiry'].strftime(EXPIRY_FORMAT)
     # Add in information we will need later to reconsistitue this instance.
@@ -202,6 +203,19 @@ class Credentials(object):
     kls = getattr(m, data['_class'])
     from_json = getattr(kls, 'from_json')
     return from_json(s)
+
+  @classmethod
+  def from_json(cls, s):
+    """Instantiate a Credentials object from a JSON description of it. The JSON
+    should have been produced by calling .to_json() on the object.
+
+    Args:
+      data: dict, A deserialized JSON object.
+
+    Returns:
+      An instance of a Credentials subclass.
+    """
+    return Credentials()
 
 
 class Flow(object):

@@ -20,6 +20,14 @@ test:
 	python runtests.py tests/test_schema.py
 	python runtests.py tests/test_oauth2client_appengine.py
 
+
+.PHONY: coverage
+coverage:
+	coverage erase
+	find tests -name "test_*.py" | xargs --max-args=1 coverage run -a runtests.py
+	coverage report
+	coverage html
+
 .PHONY: docs
 docs:
 	cd docs; ./build.sh

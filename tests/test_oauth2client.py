@@ -39,12 +39,22 @@ from oauth2client.client import AccessTokenCredentials
 from oauth2client.client import AccessTokenCredentialsError
 from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import AssertionCredentials
+from oauth2client.client import Credentials
 from oauth2client.client import FlowExchangeError
+from oauth2client.client import MemoryCache
 from oauth2client.client import OAuth2Credentials
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.client import OOB_CALLBACK_URN
 from oauth2client.client import VerifyJwtTokenError
 from oauth2client.client import _extract_id_token
+
+
+class CredentialsTests(unittest.TestCase):
+
+  def test_to_from_json(self):
+    credentials = Credentials()
+    json = credentials.to_json()
+    restored = Credentials.new_from_json(json)
 
 
 class OAuth2CredentialsTests(unittest.TestCase):
@@ -71,6 +81,7 @@ class OAuth2CredentialsTests(unittest.TestCase):
     http = self.credentials.authorize(http)
     resp, content = http.request("http://example.com")
     self.assertEqual('Bearer 1/3w', content['Authorization'])
+    self.assertFalse(self.credentials.access_token_expired)
 
   def test_token_refresh_failure(self):
     http = HttpMockSequence([
@@ -83,6 +94,7 @@ class OAuth2CredentialsTests(unittest.TestCase):
       self.fail("should raise AccessTokenRefreshError exception")
     except AccessTokenRefreshError:
       pass
+    self.assertTrue(self.credentials.access_token_expired)
 
   def test_non_401_error_response(self):
     http = HttpMockSequence([
@@ -283,6 +295,18 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
 
     credentials = self.flow.step2_exchange('some random code', http)
     self.assertEqual(credentials.id_token, body)
+
+
+class MemoryCacheTests(unittest.TestCase):
+
+  def test_get_set_delete(self):
+    m = MemoryCache()
+    self.assertEqual(None, m.get('foo'))
+    self.assertEqual(None, m.delete('foo'))
+    m.set('foo', 'bar')
+    self.assertEqual('bar', m.get('foo'))
+    m.delete('foo')
+    self.assertEqual(None, m.get('foo'))
 
 
 if __name__ == '__main__':

@@ -27,9 +27,10 @@ use_library('django', '1.2')
 
 
 def main():
-  module = imp.load_source('test', sys.argv[1])
-  test = unittest.TestLoader().loadTestsFromModule(module)
-  result = unittest.TextTestRunner(verbosity=1).run(test)
+  for t in sys.argv[1:]:
+    module = imp.load_source('test', t)
+    test = unittest.TestLoader().loadTestsFromModule(module)
+    result = unittest.TextTestRunner(verbosity=1).run(test)
 
 
 if __name__ == '__main__':

@@ -25,6 +25,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import base64
 import datetime
 import httplib2
+import os
 import time
 import unittest
 import urlparse
@@ -42,28 +43,49 @@ from apiclient.http import HttpMockSequence
 from google.appengine.api import apiproxy_stub
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import app_identity
-from google.appengine.api import users
 from google.appengine.api import memcache
+from google.appengine.api import users
 from google.appengine.api.memcache import memcache_stub
 from google.appengine.ext import db
 from google.appengine.ext import testbed
 from google.appengine.runtime import apiproxy_errors
 from oauth2client.anyjson import simplejson
 from oauth2client.appengine import AppAssertionCredentials
+from oauth2client.appengine import FlowProperty
 from oauth2client.appengine import CredentialsModel
 from oauth2client.appengine import OAuth2Decorator
 from oauth2client.appengine import OAuth2Handler
 from oauth2client.appengine import StorageByKeyName
+from oauth2client.appengine import oauth2decorator_from_clientsecrets
 from oauth2client.client import AccessTokenRefreshError
+from oauth2client.client import Credentials
 from oauth2client.client import FlowExchangeError
 from oauth2client.client import OAuth2Credentials
+from oauth2client.client import flow_from_clientsecrets
 from webtest import TestApp
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+
+
+def datafile(filename):
+  return os.path.join(DATA_DIR, filename)
+
 
 class UserMock(object):
   """Mock the app engine user service"""
 
+  def __call__(self):
+    return self
+
   def user_id(self):
     return 'foo_user'
+
+
+class UserNotLoggedInMock(object):
+  """Mock the app engine user service"""
+
+  def __call__(self):
+    return None
 
 
 class Http2Mock(object):
@@ -131,11 +153,40 @@ class TestAppAssertionCredentials(unittest.TestCase):
     apiproxy_stub_map.apiproxy.RegisterStub(
       'memcache', memcache_stub.MemcacheServiceStub())
 
-    scope = "http://www.googleapis.com/scope"
+    scope = ["http://www.googleapis.com/scope"]
     credentials = AppAssertionCredentials(scope)
     http = httplib2.Http()
     credentials.refresh(http)
     self.assertEqual('a_token_123', credentials.access_token)
+
+    json = credentials.to_json()
+    credentials = Credentials.new_from_json(json)
+    self.assertEqual(scope[0], credentials.scope)
+
+
+class TestFlowModel(db.Model):
+  flow = FlowProperty()
+
+
+class FlowPropertyTest(unittest.TestCase):
+
+  def setUp(self):
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_datastore_v3_stub()
+
+  def tearDown(self):
+    self.testbed.deactivate()
+
+  def test_flow_get_put(self):
+    instance = TestFlowModel(
+        flow=flow_from_clientsecrets(datafile('client_secrets.json'), 'foo'),
+        key_name='foo'
+        )
+    instance.put()
+    retrieved = TestFlowModel.get_by_key_name('foo')
+
+    self.assertEqual('foo_client_id', retrieved.flow.client_id)
 
 
 def _http_request(*args, **kwargs):
@@ -206,7 +257,6 @@ class StorageByKeyNameTest(unittest.TestCase):
     self.assertEqual(None, memcache.get('foo'))
 
 
-
 class DecoratorTests(unittest.TestCase):
 
   def setUp(self):
@@ -220,6 +270,10 @@ class DecoratorTests(unittest.TestCase):
                                 client_secret='foo_client_secret',
                                 scope=['foo_scope', 'bar_scope'],
                                 user_agent='foo')
+
+    self._finish_setup(decorator, user_mock=UserMock)
+
+  def _finish_setup(self, decorator, user_mock):
     self.decorator = decorator
 
     class TestRequiredHandler(webapp2.RequestHandler):
@@ -244,7 +298,7 @@ class DecoratorTests(unittest.TestCase):
           handler=TestAwareHandler, name='bar')],
       debug=True)
     self.app = TestApp(application)
-    users.get_current_user = UserMock
+    users.get_current_user = user_mock()
     self.httplib2_orig = httplib2.Http
     httplib2.Http = Http2Mock
 
@@ -350,6 +404,16 @@ class DecoratorTests(unittest.TestCase):
                      self.decorator.credentials.access_token)
 
 
+  def test_error_in_step2(self):
+    # An initial request to an oauth_aware decorated path should not redirect.
+    response = self.app.get('/bar_path/2012/01')
+    url = self.decorator.authorize_url()
+    response = self.app.get('/oauth2callback', {
+        'error': 'BadStuffHappened'
+        })
+    self.assertEqual('200 OK', response.status)
+    self.assertTrue('BadStuffHappened' in response.body)
+
   def test_kwargs_are_passed_to_underlying_flow(self):
     decorator = OAuth2Decorator(client_id='foo_client_id',
         client_secret='foo_client_secret',
@@ -361,6 +425,76 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('force', decorator.flow.params['approval_prompt'])
     self.assertEqual('foo_user_agent', decorator.flow.user_agent)
     self.assertEqual(None, decorator.flow.params.get('user_agent', None))
+
+  def test_decorator_from_client_secrets(self):
+    decorator = oauth2decorator_from_clientsecrets(
+        datafile('client_secrets.json'),
+        scope=['foo_scope', 'bar_scope'])
+    self._finish_setup(decorator, user_mock=UserMock)
+
+    self.assertFalse(decorator._in_error)
+    self.decorator = decorator
+    self.test_required()
+    http = self.decorator.http()
+    self.assertEquals('foo_access_token', http.request.credentials.access_token)
+
+  def test_decorator_from_client_secrets_not_logged_in_required(self):
+    decorator = oauth2decorator_from_clientsecrets(
+        datafile('client_secrets.json'),
+        scope=['foo_scope', 'bar_scope'], message='NotLoggedInMessage')
+    self.decorator = decorator
+    self._finish_setup(decorator, user_mock=UserNotLoggedInMock)
+
+    self.assertFalse(decorator._in_error)
+
+    # An initial request to an oauth_required decorated path should be a
+    # redirect to login.
+    response = self.app.get('/foo_path')
+    self.assertTrue(response.status.startswith('302'))
+    self.assertTrue('Login' in str(response))
+
+  def test_decorator_from_client_secrets_not_logged_in_aware(self):
+    decorator = oauth2decorator_from_clientsecrets(
+        datafile('client_secrets.json'),
+        scope=['foo_scope', 'bar_scope'], message='NotLoggedInMessage')
+    self.decorator = decorator
+    self._finish_setup(decorator, user_mock=UserNotLoggedInMock)
+
+    # An initial request to an oauth_aware decorated path should be a
+    # redirect to login.
+    response = self.app.get('/bar_path/2012/03')
+    self.assertTrue(response.status.startswith('302'))
+    self.assertTrue('Login' in str(response))
+
+  def test_decorator_from_unfilled_client_secrets_required(self):
+    MESSAGE = 'File is missing'
+    decorator = oauth2decorator_from_clientsecrets(
+        datafile('unfilled_client_secrets.json'),
+        scope=['foo_scope', 'bar_scope'], message=MESSAGE)
+    self._finish_setup(decorator, user_mock=UserNotLoggedInMock)
+    self.assertTrue(decorator._in_error)
+    self.assertEqual(MESSAGE, decorator._message)
+
+    # An initial request to an oauth_required decorated path should be an
+    # error message.
+    response = self.app.get('/foo_path')
+    self.assertTrue(response.status.startswith('200'))
+    self.assertTrue(MESSAGE in str(response))
+
+  def test_decorator_from_unfilled_client_secrets_aware(self):
+    MESSAGE = 'File is missing'
+    decorator = oauth2decorator_from_clientsecrets(
+        datafile('unfilled_client_secrets.json'),
+        scope=['foo_scope', 'bar_scope'], message=MESSAGE)
+    self._finish_setup(decorator, user_mock=UserNotLoggedInMock)
+    self.assertTrue(decorator._in_error)
+    self.assertEqual(MESSAGE, decorator._message)
+
+    # An initial request to an oauth_aware decorated path should be an
+    # error message.
+    response = self.app.get('/bar_path/2012/03')
+    self.assertTrue(response.status.startswith('200'))
+    self.assertTrue(MESSAGE in str(response))
 
 
 if __name__ == '__main__':
