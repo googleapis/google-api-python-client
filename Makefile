@@ -4,21 +4,8 @@ pep8:
 APP_ENGINE_PATH=../google_appengine
 
 test:
-	python runtests.py tests/test_discovery.py
-	python runtests.py tests/test_errors.py
-	python runtests.py tests/test_http.py
-	python runtests.py tests/test_json_model.py
-	python runtests.py tests/test_mocks.py
-	python runtests.py tests/test_model.py
-	python runtests.py tests/test_oauth2client_clientsecrets.py
-	python runtests.py tests/test_oauth2client_django_orm.py
-	python runtests.py tests/test_oauth2client_file.py
-	python runtests.py tests/test_oauth2client_jwt.py
-	python runtests.py tests/test_oauth2client.py
-	python runtests.py tests/test_oauth.py
-	python runtests.py tests/test_protobuf_model.py
-	python runtests.py tests/test_schema.py
-	python runtests.py tests/test_oauth2client_appengine.py
+	./runtests.sh python2.6
+	./runtests.sh python2.7
 
 
 .PHONY: coverage
@@ -35,8 +22,8 @@ docs:
 
 .PHONY: prerelease
 prerelease:
-	python2.6 runtests.py tests --exit_on_failure
-	python2.7 runtests.py tests --exit_on_failure
+	./runtests.sh python2.6
+	./runtests.sh python2.7
 	-sudo rm -rf dist/
 	-sudo rm -rf snapshot/
 	python expand-symlinks.py

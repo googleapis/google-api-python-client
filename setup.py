@@ -47,8 +47,11 @@ if needs_json:
 long_desc = """The Google API Client for Python is a client library for
 accessing the Plus, Moderator, and many other Google APIs."""
 
+import apiclient
+version = apiclient.__version__
+
 setup(name="google-api-python-client",
-      version="1.0beta8",
+      version=version,
       description="Google API Client Library for Python",
       long_description=long_desc,
       author="Joe Gregorio",
