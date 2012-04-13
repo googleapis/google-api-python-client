@@ -20,10 +20,6 @@ actuall HTTP request.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
-__all__ = [
-    'HttpRequest', 'RequestMockBuilder', 'HttpMock'
-    'set_user_agent', 'tunnel_patch'
-    ]
 
 import StringIO
 import base64
