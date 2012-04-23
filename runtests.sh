@@ -15,7 +15,6 @@ $1 runtests.py tests/test_oauth2client_django_orm.py
 $1 runtests.py tests/test_oauth2client_file.py
 $1 runtests.py tests/test_oauth2client_jwt.py
 $1 runtests.py tests/test_oauth2client.py
-$1 runtests.py tests/test_oauth.py
 $1 runtests.py tests/test_protobuf_model.py
 $1 runtests.py tests/test_schema.py
 $1 runtests.py tests/test_oauth2client_appengine.py

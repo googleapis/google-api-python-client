@@ -19,7 +19,7 @@ coverage:
 docs:
 	cd docs; ./build.sh
 	python describe.py
-	python samples-index.py ../google-api-python-client.wiki/SampleApps.wiki
+	python samples-index.py > ../google-api-python-client.wiki/SampleApps.wiki
 
 .PHONY: wiki
 wiki:
