@@ -206,8 +206,9 @@ class Credentials(object):
 
   @classmethod
   def from_json(cls, s):
-    """Instantiate a Credentials object from a JSON description of it. The JSON
-    should have been produced by calling .to_json() on the object.
+    """Instantiate a Credentials object from a JSON description of it.
+
+    The JSON should have been produced by calling .to_json() on the object.
 
     Args:
       data: dict, A deserialized JSON object.
@@ -234,7 +235,8 @@ class Storage(object):
   def acquire_lock(self):
     """Acquires any lock necessary to access this Storage.
 
-    This lock is not reentrant."""
+    This lock is not reentrant.
+    """
     pass
 
   def release_lock(self):
