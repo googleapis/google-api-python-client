@@ -19,7 +19,10 @@ A client library for Google's discovery based APIs.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 __all__ = [
-    'build', 'build_from_document'
+    'build',
+    'build_from_document'
+    'fix_method_name',
+    'key2param'
     ]
 
 import copy
@@ -73,7 +76,7 @@ RESERVED_WORDS = ['and', 'assert', 'break', 'class', 'continue', 'def', 'del',
                   'pass', 'print', 'raise', 'return', 'try', 'while' ]
 
 
-def _fix_method_name(name):
+def fix_method_name(name):
   """Fix method names to avoid reserved word conflicts.
 
   Args:
@@ -349,7 +352,7 @@ def createResource(http, baseUrl, model, requestBuilder,
         describes the method.
       rootDesc: object, the entire deserialized discovery document.
     """
-    methodName = _fix_method_name(methodName)
+    methodName = fix_method_name(methodName)
     pathUrl = methodDesc['path']
     httpMethod = methodDesc['httpMethod']
     methodId = methodDesc['id']
@@ -631,7 +634,7 @@ def createResource(http, baseUrl, model, requestBuilder,
         describes the method.
       rootDesc: object, the entire deserialized discovery document.
     """
-    methodName = _fix_method_name(methodName)
+    methodName = fix_method_name(methodName)
     methodId = methodDesc['id'] + '.next'
 
     def methodNext(self, previous_request, previous_response):
@@ -689,7 +692,7 @@ def createResource(http, baseUrl, model, requestBuilder,
           describes the method.
         rootDesc: object, the entire deserialized discovery document.
       """
-      methodName = _fix_method_name(methodName)
+      methodName = fix_method_name(methodName)
 
       def methodResource(self):
         return createResource(self._http, self._baseUrl, self._model,
