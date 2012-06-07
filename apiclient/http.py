@@ -1,4 +1,4 @@
-# Copyright (C) 2010 Google Inc.
+# Copyright (C) 2012 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,6 +68,13 @@ class MediaUpload(object):
   """Describes a media object to upload.
 
   Base class that defines the interface of MediaUpload subclasses.
+
+  Note that subclasses of MediaUpload may allow you to control the chunksize
+  when upload a media object. It is important to keep the size of the chunk as
+  large as possible to keep the upload efficient. Other factors may influence
+  the size of the chunk you use, particularly if you are working in an
+  environment where individual HTTP requests may have a hardcoded time limit,
+  such as under certain classes of requests under Google App Engine.
   """
 
   def getbytes(self, begin, end):
