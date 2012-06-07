@@ -117,6 +117,14 @@ def run(flow, storage, http=None):
         success = True
         break
     FLAGS.auth_local_webserver = success
+    if not success:
+      print 'Failed to start a local webserver listening on either port 8080'
+      print 'or port 9090. Please check your firewall settings and locally'
+      print 'running programs that may be blocking or using those ports.'
+      print
+      print 'Falling back to --noauth_local_webserver and continuing with',
+      print 'authorization.'
+      print
 
   if FLAGS.auth_local_webserver:
     oauth_callback = 'http://%s:%s/' % (FLAGS.auth_host_name, port_number)
