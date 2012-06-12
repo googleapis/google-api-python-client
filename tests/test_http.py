@@ -25,6 +25,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import httplib2
 import os
 import unittest
+import StringIO
 
 from apiclient.errors import BatchError
 from apiclient.http import BatchHttpRequest
@@ -33,6 +34,7 @@ from apiclient.http import HttpRequest
 from apiclient.http import MediaFileUpload
 from apiclient.http import MediaUpload
 from apiclient.http import MediaInMemoryUpload
+from apiclient.http import MediaIoBaseUpload
 from apiclient.http import set_user_agent
 from apiclient.model import JsonModel
 from oauth2client.client import Credentials
@@ -110,6 +112,9 @@ class TestUserAgent(unittest.TestCase):
     resp, content = http.request("http://example.com")
     self.assertEqual('my_app/5.5 my_library/0.1', content['user-agent'])
 
+
+class TestMediaUpload(unittest.TestCase):
+
   def test_media_file_upload_to_from_json(self):
     upload = MediaFileUpload(
         datafile('small.png'), chunksize=500, resumable=True)
@@ -175,6 +180,76 @@ class TestUserAgent(unittest.TestCase):
     self.assertEqual('{}', new_req.body)
     self.assertEqual(http, new_req.http)
     self.assertEqual(media_upload.to_json(), new_req.resumable.to_json())
+
+
+class TestMediaIoBaseUpload(unittest.TestCase):
+
+  def test_media_io_base_upload_from_file_io(self):
+    try:
+      import io
+
+      fh = io.FileIO(datafile('small.png'), 'r')
+      upload = MediaIoBaseUpload(
+          fh=fh, mimetype='image/png', chunksize=500, resumable=True)
+      self.assertEqual('image/png', upload.mimetype())
+      self.assertEqual(190, upload.size())
+      self.assertEqual(True, upload.resumable())
+      self.assertEqual(500, upload.chunksize())
+      self.assertEqual('PNG', upload.getbytes(1, 3))
+    except ImportError:
+      pass
+
+  def test_media_io_base_upload_from_file_object(self):
+    f = open(datafile('small.png'), 'r')
+    upload = MediaIoBaseUpload(
+        fh=f, mimetype='image/png', chunksize=500, resumable=True)
+    self.assertEqual('image/png', upload.mimetype())
+    self.assertEqual(190, upload.size())
+    self.assertEqual(True, upload.resumable())
+    self.assertEqual(500, upload.chunksize())
+    self.assertEqual('PNG', upload.getbytes(1, 3))
+    f.close()
+
+  def test_media_io_base_upload_serializable(self):
+    f = open(datafile('small.png'), 'r')
+    upload = MediaIoBaseUpload(fh=f, mimetype='image/png')
+
+    try:
+      json = upload.to_json()
+      self.fail('MediaIoBaseUpload should not be serializable.')
+    except NotImplementedError:
+      pass
+
+  def test_media_io_base_upload_from_string_io(self):
+    f = open(datafile('small.png'), 'r')
+    fh = StringIO.StringIO(f.read())
+    f.close()
+
+    upload = MediaIoBaseUpload(
+        fh=fh, mimetype='image/png', chunksize=500, resumable=True)
+    self.assertEqual('image/png', upload.mimetype())
+    self.assertEqual(None, upload.size())
+    self.assertEqual(True, upload.resumable())
+    self.assertEqual(500, upload.chunksize())
+    self.assertEqual('PNG', upload.getbytes(1, 3))
+    f.close()
+
+  def test_media_io_base_upload_from_bytes(self):
+    try:
+      import io
+
+      f = open(datafile('small.png'), 'r')
+      fh = io.BytesIO(f.read())
+      upload = MediaIoBaseUpload(
+          fh=fh, mimetype='image/png', chunksize=500, resumable=True)
+      self.assertEqual('image/png', upload.mimetype())
+      self.assertEqual(None, upload.size())
+      self.assertEqual(True, upload.resumable())
+      self.assertEqual(500, upload.chunksize())
+      self.assertEqual('PNG', upload.getbytes(1, 3))
+    except ImportError:
+      pass
+
 
 EXPECTED = """POST /someapi/v1/collection/?foo=bar HTTP/1.1
 Content-Type: application/json

@@ -27,6 +27,8 @@ import httplib2
 import os
 import unittest
 import urlparse
+import StringIO
+
 
 try:
     from urlparse import parse_qs
@@ -42,9 +44,10 @@ from apiclient.errors import UnacceptableMimeTypeError
 from apiclient.http import HttpMock
 from apiclient.http import HttpMockSequence
 from apiclient.http import MediaFileUpload
+from apiclient.http import MediaIoBaseUpload
 from apiclient.http import MediaUploadProgress
 from apiclient.http import tunnel_patch
-
+from oauth2client.anyjson import simplejson
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -505,7 +508,90 @@ class Discovery(unittest.TestCase):
       ])
 
     self.assertRaises(HttpError, request.execute, http)
+    self.assertTrue(request._in_error_state)
 
+    http = HttpMockSequence([
+      ({'status': '308',
+        'range': '0-5'}, ''),
+      ({'status': '308',
+        'range': '0-6'}, ''),
+      ])
+
+    status, body = request.next_chunk(http)
+    self.assertEquals(status.resumable_progress, 7,
+      'Should have first checked length and then tried to PUT more.')
+    self.assertFalse(request._in_error_state)
+
+    # Put it back in an error state.
+    http = HttpMockSequence([
+      ({'status': '400'}, ''),
+      ])
+    self.assertRaises(HttpError, request.execute, http)
+    self.assertTrue(request._in_error_state)
+
+    # Pretend the last request that 400'd actually succeeded.
+    http = HttpMockSequence([
+      ({'status': '200'}, '{"foo": "bar"}'),
+      ])
+    status, body = request.next_chunk(http)
+    self.assertEqual(body, {'foo': 'bar'})
+
+  def test_resumable_media_handle_uploads_of_unknown_size(self):
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '200'}, 'echo_request_headers_as_json'),
+      ])
+
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    fh = StringIO.StringIO('data goes here')
+
+    # Create an upload that doesn't know the full size of the media.
+    upload = MediaIoBaseUpload(
+        fh=fh, mimetype='image/png', chunksize=500, resumable=True)
+
+    request = zoo.animals().insert(media_body=upload, body=None)
+    status, body = request.next_chunk(http)
+    self.assertEqual(body, {'Content-Range': 'bytes 0-13/*'},
+      'Should be 14 out of * bytes.')
+
+  def test_resumable_media_handle_resume_of_upload_of_unknown_size(self):
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '400'}, ''),
+      ])
+
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    # Create an upload that doesn't know the full size of the media.
+    fh = StringIO.StringIO('data goes here')
+
+    upload = MediaIoBaseUpload(
+        fh=fh, mimetype='image/png', chunksize=500, resumable=True)
+
+    request = zoo.animals().insert(media_body=upload, body=None)
+
+    # Put it in an error state.
+    self.assertRaises(HttpError, request.next_chunk, http)
+
+    http = HttpMockSequence([
+      ({'status': '400',
+        'range': '0-5'}, 'echo_request_headers_as_json'),
+      ])
+    try:
+      # Should resume the upload by first querying the status of the upload.
+      request.next_chunk(http)
+    except HttpError, e:
+      expected = {
+          'Content-Range': 'bytes */*',
+          'content-length': '0'
+          }
+      self.assertEqual(expected, simplejson.loads(e.content),
+        'Should send an empty body when requesting the current upload status.')
 
 class Next(unittest.TestCase):
 
