@@ -33,7 +33,6 @@ __author__ = 'jbeda@google.com (Joe Beda)'
 
 import base64
 import errno
-import fcntl
 import logging
 import os
 import threading
@@ -41,6 +40,7 @@ import threading
 from anyjson import simplejson
 from client import Storage as BaseStorage
 from client import Credentials
+from locked_file import LockedFile
 
 logger = logging.getLogger(__name__)
 
@@ -94,9 +94,8 @@ class _MultiStore(object):
 
     This will create the file if necessary.
     """
-    self._filename = filename
+    self._file = LockedFile(filename, 'r+b', 'rb')
     self._thread_lock = threading.Lock()
-    self._file_handle = None
     self._read_only = False
     self._warn_on_readonly = warn_on_readonly
 
@@ -176,30 +175,24 @@ class _MultiStore(object):
     This method will not initialize the file. Instead it implements a
     simple version of "touch" to ensure the file has been created.
     """
-    if not os.path.exists(self._filename):
+    if not os.path.exists(self._file.filename()):
       old_umask = os.umask(0177)
       try:
-        open(self._filename, 'a+b').close()
+        open(self._file.filename(), 'a+b').close()
       finally:
         os.umask(old_umask)
 
   def _lock(self):
     """Lock the entire multistore."""
     self._thread_lock.acquire()
-    # Check to see if the file is writeable.
-    try:
-      self._file_handle = open(self._filename, 'r+b')
-      fcntl.lockf(self._file_handle.fileno(), fcntl.LOCK_EX)
-    except IOError, e:
-      if e.errno != errno.EACCES:
-        raise e
-      self._file_handle = open(self._filename, 'rb')
+    self._file.open_and_lock()
+    if not self._file.is_locked():
       self._read_only = True
       if self._warn_on_readonly:
         logger.warn('The credentials file (%s) is not writable. Opening in '
                     'read-only mode. Any refreshed credentials will only be '
-                    'valid for this run.' % self._filename)
-    if os.path.getsize(self._filename) == 0:
+                    'valid for this run.' % self._file.filename())
+    if os.path.getsize(self._file.filename()) == 0:
       logger.debug('Initializing empty multistore file')
       # The multistore is empty so write out an empty file.
       self._data = {}
@@ -214,9 +207,7 @@ class _MultiStore(object):
 
   def _unlock(self):
     """Release the lock on the multistore."""
-    if not self._read_only:
-      fcntl.lockf(self._file_handle.fileno(), fcntl.LOCK_UN)
-    self._file_handle.close()
+    self._file.unlock_and_close()
     self._thread_lock.release()
 
   def _locked_json_read(self):
@@ -228,8 +219,8 @@ class _MultiStore(object):
       The contents of the multistore decoded as JSON.
     """
     assert self._thread_lock.locked()
-    self._file_handle.seek(0)
-    return simplejson.load(self._file_handle)
+    self._file.file_handle().seek(0)
+    return simplejson.load(self._file.file_handle())
 
   def _locked_json_write(self, data):
     """Write a JSON serializable data structure to the multistore.
@@ -242,9 +233,9 @@ class _MultiStore(object):
     assert self._thread_lock.locked()
     if self._read_only:
       return
-    self._file_handle.seek(0)
-    simplejson.dump(data, self._file_handle, sort_keys=True, indent=2)
-    self._file_handle.truncate()
+    self._file.file_handle().seek(0)
+    simplejson.dump(data, self._file.file_handle(), sort_keys=True, indent=2)
+    self._file.file_handle().truncate()
 
   def _refresh_data_cache(self):
     """Refresh the contents of the multistore.
