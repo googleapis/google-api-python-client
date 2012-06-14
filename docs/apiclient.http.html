@@ -8,7 +8,7 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="apiclient.html"><font color="#ffffff">apiclient</font></a>.http</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/jcgregorio/projects/apiclient-release/apiclient/http.py">/home/jcgregorio/projects/apiclient-release/apiclient/http.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/jcgregorio/projects/clean/apiclient/http.py">/home/jcgregorio/projects/clean/apiclient/http.py</a></font></td></tr></table>
     <p><tt>Classes&nbsp;to&nbsp;encapsulate&nbsp;a&nbsp;single&nbsp;HTTP&nbsp;request.<br>
 &nbsp;<br>
 The&nbsp;classes&nbsp;implement&nbsp;a&nbsp;command&nbsp;pattern,&nbsp;with&nbsp;every<br>
@@ -54,6 +54,7 @@ actuall&nbsp;HTTP&nbsp;request.</tt></p>
 <dl>
 <dt><font face="helvetica, arial"><a href="apiclient.http.html#MediaFileUpload">MediaFileUpload</a>
 </font></dt><dt><font face="helvetica, arial"><a href="apiclient.http.html#MediaInMemoryUpload">MediaInMemoryUpload</a>
+</font></dt><dt><font face="helvetica, arial"><a href="apiclient.http.html#MediaIoBaseUpload">MediaIoBaseUpload</a>
 </font></dt></dl>
 </dd>
 <dt><font face="helvetica, arial"><a href="apiclient.http.html#MediaUploadProgress">MediaUploadProgress</a>
@@ -254,7 +255,11 @@ Example:<br>
 &nbsp;<br>
 Returns:<br>
 &nbsp;&nbsp;(status,&nbsp;body):&nbsp;(ResumableMediaStatus,&nbsp;<a href="__builtin__.html#object">object</a>)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;body&nbsp;will&nbsp;be&nbsp;None&nbsp;until&nbsp;the&nbsp;resumable&nbsp;media&nbsp;is&nbsp;fully&nbsp;uploaded.</tt></dd></dl>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The&nbsp;body&nbsp;will&nbsp;be&nbsp;None&nbsp;until&nbsp;the&nbsp;resumable&nbsp;media&nbsp;is&nbsp;fully&nbsp;uploaded.<br>
+&nbsp;<br>
+Raises:<br>
+&nbsp;&nbsp;apiclient.errors.HttpError&nbsp;if&nbsp;the&nbsp;response&nbsp;was&nbsp;not&nbsp;a&nbsp;2xx.<br>
+&nbsp;&nbsp;httplib2.Error&nbsp;if&nbsp;a&nbsp;transport&nbsp;error&nbsp;has&nbsp;occured.</tt></dd></dl>
 
 <dl><dt><a name="HttpRequest-to_json"><strong>to_json</strong></a>(self)</dt><dd><tt>Returns&nbsp;a&nbsp;JSON&nbsp;representation&nbsp;of&nbsp;the&nbsp;<a href="#HttpRequest">HttpRequest</a>.</tt></dd></dl>
 
@@ -316,8 +321,8 @@ Construct&nbsp;a&nbsp;<a href="#MediaFileUpload">MediaFileUpload</a>&nbsp;and&nb
 method.&nbsp;For&nbsp;example,&nbsp;if&nbsp;we&nbsp;had&nbsp;a&nbsp;service&nbsp;that&nbsp;allowed&nbsp;uploading&nbsp;images:<br>
 &nbsp;<br>
 &nbsp;<br>
-&nbsp;&nbsp;media&nbsp;=&nbsp;<a href="#MediaFileUpload">MediaFileUpload</a>('smiley.png',&nbsp;mimetype='image/png',&nbsp;chunksize=1000,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;resumable=True)<br>
+&nbsp;&nbsp;media&nbsp;=&nbsp;<a href="#MediaFileUpload">MediaFileUpload</a>('smiley.png',&nbsp;mimetype='image/png',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;chunksize=1024*1024,&nbsp;resumable=True)<br>
 &nbsp;&nbsp;service.objects().insert(<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bucket=buckets['items'][0]['id'],<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name='smiley.png',<br>
@@ -330,7 +335,7 @@ method.&nbsp;For&nbsp;example,&nbsp;if&nbsp;we&nbsp;had&nbsp;a&nbsp;service&nbsp
 </dl>
 <hr>
 Methods defined here:<br>
-<dl><dt><a name="MediaFileUpload-__init__"><strong>__init__</strong></a>(self, filename, mimetype<font color="#909090">=None</font>, chunksize<font color="#909090">=262144</font>, resumable<font color="#909090">=False</font>)</dt><dd><tt>Constructor.<br>
+<dl><dt><a name="MediaFileUpload-__init__"><strong>__init__</strong></a>(self, filename, mimetype<font color="#909090">=None</font>, chunksize<font color="#909090">=524288</font>, resumable<font color="#909090">=False</font>)</dt><dd><tt>Constructor.<br>
 &nbsp;<br>
 Args:<br>
 &nbsp;&nbsp;filename:&nbsp;string,&nbsp;Name&nbsp;of&nbsp;the&nbsp;file.<br>
@@ -341,7 +346,10 @@ Args:<br>
 &nbsp;&nbsp;resumable:&nbsp;bool,&nbsp;True&nbsp;if&nbsp;this&nbsp;is&nbsp;a&nbsp;resumable&nbsp;upload.&nbsp;False&nbsp;means&nbsp;upload<br>
 &nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;a&nbsp;single&nbsp;request.</tt></dd></dl>
 
-<dl><dt><a name="MediaFileUpload-chunksize"><strong>chunksize</strong></a>(self)</dt></dl>
+<dl><dt><a name="MediaFileUpload-chunksize"><strong>chunksize</strong></a>(self)</dt><dd><tt>Chunk&nbsp;size&nbsp;for&nbsp;resumable&nbsp;uploads.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;Chunk&nbsp;size&nbsp;in&nbsp;bytes.</tt></dd></dl>
 
 <dl><dt><a name="MediaFileUpload-getbytes"><strong>getbytes</strong></a>(self, begin, length)</dt><dd><tt>Get&nbsp;bytes&nbsp;from&nbsp;the&nbsp;media.<br>
 &nbsp;<br>
@@ -353,11 +361,20 @@ Returns:<br>
 &nbsp;&nbsp;A&nbsp;string&nbsp;of&nbsp;bytes&nbsp;read.&nbsp;May&nbsp;be&nbsp;shorted&nbsp;than&nbsp;length&nbsp;if&nbsp;EOF&nbsp;was&nbsp;reached<br>
 &nbsp;&nbsp;first.</tt></dd></dl>
 
-<dl><dt><a name="MediaFileUpload-mimetype"><strong>mimetype</strong></a>(self)</dt></dl>
+<dl><dt><a name="MediaFileUpload-mimetype"><strong>mimetype</strong></a>(self)</dt><dd><tt>Mime&nbsp;type&nbsp;of&nbsp;the&nbsp;body.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;Mime&nbsp;type.</tt></dd></dl>
 
-<dl><dt><a name="MediaFileUpload-resumable"><strong>resumable</strong></a>(self)</dt></dl>
+<dl><dt><a name="MediaFileUpload-resumable"><strong>resumable</strong></a>(self)</dt><dd><tt>Whether&nbsp;this&nbsp;upload&nbsp;is&nbsp;resumable.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;True&nbsp;if&nbsp;resumable&nbsp;upload&nbsp;or&nbsp;False.</tt></dd></dl>
 
-<dl><dt><a name="MediaFileUpload-size"><strong>size</strong></a>(self)</dt></dl>
+<dl><dt><a name="MediaFileUpload-size"><strong>size</strong></a>(self)</dt><dd><tt>Size&nbsp;of&nbsp;upload.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;Size&nbsp;of&nbsp;the&nbsp;body,&nbsp;or&nbsp;None&nbsp;of&nbsp;the&nbsp;size&nbsp;is&nbsp;unknown.</tt></dd></dl>
 
 <dl><dt><a name="MediaFileUpload-to_json"><strong>to_json</strong></a>(self)</dt><dd><tt>Creating&nbsp;a&nbsp;JSON&nbsp;representation&nbsp;of&nbsp;an&nbsp;instance&nbsp;of&nbsp;Credentials.<br>
 &nbsp;<br>
@@ -408,7 +425,7 @@ method.&nbsp;For&nbsp;example,&nbsp;if&nbsp;we&nbsp;had&nbsp;a&nbsp;service&nbsp
 </dl>
 <hr>
 Methods defined here:<br>
-<dl><dt><a name="MediaInMemoryUpload-__init__"><strong>__init__</strong></a>(self, body, mimetype<font color="#909090">='application/octet-stream'</font>, chunksize<font color="#909090">=262144</font>, resumable<font color="#909090">=False</font>)</dt><dd><tt>Create&nbsp;a&nbsp;new&nbsp;MediaBytesUpload.<br>
+<dl><dt><a name="MediaInMemoryUpload-__init__"><strong>__init__</strong></a>(self, body, mimetype<font color="#909090">='application/octet-stream'</font>, chunksize<font color="#909090">=524288</font>, resumable<font color="#909090">=False</font>)</dt><dd><tt>Create&nbsp;a&nbsp;new&nbsp;MediaBytesUpload.<br>
 &nbsp;<br>
 Args:<br>
 &nbsp;&nbsp;body:&nbsp;string,&nbsp;Bytes&nbsp;of&nbsp;body&nbsp;content.<br>
@@ -447,7 +464,7 @@ Returns:<br>
 <dl><dt><a name="MediaInMemoryUpload-size"><strong>size</strong></a>(self)</dt><dd><tt>Size&nbsp;of&nbsp;upload.<br>
 &nbsp;<br>
 Returns:<br>
-&nbsp;&nbsp;Size&nbsp;of&nbsp;the&nbsp;body.</tt></dd></dl>
+&nbsp;&nbsp;Size&nbsp;of&nbsp;the&nbsp;body,&nbsp;or&nbsp;None&nbsp;of&nbsp;the&nbsp;size&nbsp;is&nbsp;unknown.</tt></dd></dl>
 
 <dl><dt><a name="MediaInMemoryUpload-to_json"><strong>to_json</strong></a>(self)</dt><dd><tt>Create&nbsp;a&nbsp;JSON&nbsp;representation&nbsp;of&nbsp;a&nbsp;<a href="#MediaInMemoryUpload">MediaInMemoryUpload</a>.<br>
 &nbsp;<br>
@@ -483,23 +500,141 @@ Data descriptors inherited from <a href="apiclient.http.html#MediaUpload">MediaU
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ffc8d8">
 <td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="MediaIoBaseUpload">class <strong>MediaIoBaseUpload</strong></a>(<a href="apiclient.http.html#MediaUpload">MediaUpload</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>A&nbsp;<a href="#MediaUpload">MediaUpload</a>&nbsp;for&nbsp;a&nbsp;io.Base&nbsp;objects.<br>
+&nbsp;<br>
+Note&nbsp;that&nbsp;the&nbsp;Python&nbsp;file&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;is&nbsp;compatible&nbsp;with&nbsp;io.Base&nbsp;and&nbsp;can&nbsp;be&nbsp;used<br>
+with&nbsp;this&nbsp;class&nbsp;also.<br>
+&nbsp;<br>
+&nbsp;<br>
+&nbsp;&nbsp;fh&nbsp;=&nbsp;io.BytesIO('...Some&nbsp;data&nbsp;to&nbsp;upload...')<br>
+&nbsp;&nbsp;media&nbsp;=&nbsp;<a href="#MediaIoBaseUpload">MediaIoBaseUpload</a>(fh,&nbsp;mimetype='image/png',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;chunksize=1024*1024,&nbsp;resumable=True)<br>
+&nbsp;&nbsp;service.objects().insert(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bucket='a_bucket_id',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;name='smiley.png',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;media_body=media).execute()<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="apiclient.http.html#MediaIoBaseUpload">MediaIoBaseUpload</a></dd>
+<dd><a href="apiclient.http.html#MediaUpload">MediaUpload</a></dd>
+<dd><a href="__builtin__.html#object">__builtin__.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="MediaIoBaseUpload-__init__"><strong>__init__</strong></a>(self, fh, mimetype, chunksize<font color="#909090">=524288</font>, resumable<font color="#909090">=False</font>)</dt><dd><tt>Constructor.<br>
+&nbsp;<br>
+Args:<br>
+&nbsp;&nbsp;fh:&nbsp;io.Base&nbsp;or&nbsp;file&nbsp;<a href="__builtin__.html#object">object</a>,&nbsp;The&nbsp;source&nbsp;of&nbsp;the&nbsp;bytes&nbsp;to&nbsp;upload.<br>
+&nbsp;&nbsp;mimetype:&nbsp;string,&nbsp;Mime-type&nbsp;of&nbsp;the&nbsp;file.&nbsp;If&nbsp;None&nbsp;then&nbsp;a&nbsp;mime-type&nbsp;will&nbsp;be<br>
+&nbsp;&nbsp;&nbsp;&nbsp;guessed&nbsp;from&nbsp;the&nbsp;file&nbsp;extension.<br>
+&nbsp;&nbsp;chunksize:&nbsp;int,&nbsp;File&nbsp;will&nbsp;be&nbsp;uploaded&nbsp;in&nbsp;chunks&nbsp;of&nbsp;this&nbsp;many&nbsp;bytes.&nbsp;Only<br>
+&nbsp;&nbsp;&nbsp;&nbsp;used&nbsp;if&nbsp;resumable=True.<br>
+&nbsp;&nbsp;resumable:&nbsp;bool,&nbsp;True&nbsp;if&nbsp;this&nbsp;is&nbsp;a&nbsp;resumable&nbsp;upload.&nbsp;False&nbsp;means&nbsp;upload<br>
+&nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;a&nbsp;single&nbsp;request.</tt></dd></dl>
+
+<dl><dt><a name="MediaIoBaseUpload-chunksize"><strong>chunksize</strong></a>(self)</dt><dd><tt>Chunk&nbsp;size&nbsp;for&nbsp;resumable&nbsp;uploads.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;Chunk&nbsp;size&nbsp;in&nbsp;bytes.</tt></dd></dl>
+
+<dl><dt><a name="MediaIoBaseUpload-getbytes"><strong>getbytes</strong></a>(self, begin, length)</dt><dd><tt>Get&nbsp;bytes&nbsp;from&nbsp;the&nbsp;media.<br>
+&nbsp;<br>
+Args:<br>
+&nbsp;&nbsp;begin:&nbsp;int,&nbsp;offset&nbsp;from&nbsp;beginning&nbsp;of&nbsp;file.<br>
+&nbsp;&nbsp;length:&nbsp;int,&nbsp;number&nbsp;of&nbsp;bytes&nbsp;to&nbsp;read,&nbsp;starting&nbsp;at&nbsp;begin.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;A&nbsp;string&nbsp;of&nbsp;bytes&nbsp;read.&nbsp;May&nbsp;be&nbsp;shorted&nbsp;than&nbsp;length&nbsp;if&nbsp;EOF&nbsp;was&nbsp;reached<br>
+&nbsp;&nbsp;first.</tt></dd></dl>
+
+<dl><dt><a name="MediaIoBaseUpload-mimetype"><strong>mimetype</strong></a>(self)</dt><dd><tt>Mime&nbsp;type&nbsp;of&nbsp;the&nbsp;body.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;Mime&nbsp;type.</tt></dd></dl>
+
+<dl><dt><a name="MediaIoBaseUpload-resumable"><strong>resumable</strong></a>(self)</dt><dd><tt>Whether&nbsp;this&nbsp;upload&nbsp;is&nbsp;resumable.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;True&nbsp;if&nbsp;resumable&nbsp;upload&nbsp;or&nbsp;False.</tt></dd></dl>
+
+<dl><dt><a name="MediaIoBaseUpload-size"><strong>size</strong></a>(self)</dt><dd><tt>Size&nbsp;of&nbsp;upload.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;Size&nbsp;of&nbsp;the&nbsp;body,&nbsp;or&nbsp;None&nbsp;of&nbsp;the&nbsp;size&nbsp;is&nbsp;unknown.</tt></dd></dl>
+
+<dl><dt><a name="MediaIoBaseUpload-to_json"><strong>to_json</strong></a>(self)</dt><dd><tt>This&nbsp;upload&nbsp;type&nbsp;is&nbsp;not&nbsp;serializable.</tt></dd></dl>
+
+<hr>
+Class methods inherited from <a href="apiclient.http.html#MediaUpload">MediaUpload</a>:<br>
+<dl><dt><a name="MediaIoBaseUpload-new_from_json"><strong>new_from_json</strong></a>(cls, s)<font color="#909090"><font face="helvetica, arial"> from <a href="__builtin__.html#type">__builtin__.type</a></font></font></dt><dd><tt>Utility&nbsp;class&nbsp;method&nbsp;to&nbsp;instantiate&nbsp;a&nbsp;<a href="#MediaUpload">MediaUpload</a>&nbsp;subclass&nbsp;from&nbsp;a&nbsp;JSON<br>
+representation&nbsp;produced&nbsp;by&nbsp;<a href="#MediaIoBaseUpload-to_json">to_json</a>().<br>
+&nbsp;<br>
+Args:<br>
+&nbsp;&nbsp;s:&nbsp;string,&nbsp;JSON&nbsp;from&nbsp;<a href="#MediaIoBaseUpload-to_json">to_json</a>().<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;An&nbsp;instance&nbsp;of&nbsp;the&nbsp;subclass&nbsp;of&nbsp;<a href="#MediaUpload">MediaUpload</a>&nbsp;that&nbsp;was&nbsp;serialized&nbsp;with<br>
+&nbsp;&nbsp;<a href="#MediaIoBaseUpload-to_json">to_json</a>().</tt></dd></dl>
+
+<hr>
+Data descriptors inherited from <a href="apiclient.http.html#MediaUpload">MediaUpload</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
 <font color="#000000" face="helvetica, arial"><a name="MediaUpload">class <strong>MediaUpload</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
     
 <tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
 <td colspan=2><tt>Describes&nbsp;a&nbsp;media&nbsp;<a href="__builtin__.html#object">object</a>&nbsp;to&nbsp;upload.<br>
 &nbsp;<br>
-Base&nbsp;class&nbsp;that&nbsp;defines&nbsp;the&nbsp;interface&nbsp;of&nbsp;<a href="#MediaUpload">MediaUpload</a>&nbsp;subclasses.<br>&nbsp;</tt></td></tr>
+Base&nbsp;class&nbsp;that&nbsp;defines&nbsp;the&nbsp;interface&nbsp;of&nbsp;<a href="#MediaUpload">MediaUpload</a>&nbsp;subclasses.<br>
+&nbsp;<br>
+Note&nbsp;that&nbsp;subclasses&nbsp;of&nbsp;<a href="#MediaUpload">MediaUpload</a>&nbsp;may&nbsp;allow&nbsp;you&nbsp;to&nbsp;control&nbsp;the&nbsp;chunksize<br>
+when&nbsp;upload&nbsp;a&nbsp;media&nbsp;<a href="__builtin__.html#object">object</a>.&nbsp;It&nbsp;is&nbsp;important&nbsp;to&nbsp;keep&nbsp;the&nbsp;size&nbsp;of&nbsp;the&nbsp;chunk&nbsp;as<br>
+large&nbsp;as&nbsp;possible&nbsp;to&nbsp;keep&nbsp;the&nbsp;upload&nbsp;efficient.&nbsp;Other&nbsp;factors&nbsp;may&nbsp;influence<br>
+the&nbsp;size&nbsp;of&nbsp;the&nbsp;chunk&nbsp;you&nbsp;use,&nbsp;particularly&nbsp;if&nbsp;you&nbsp;are&nbsp;working&nbsp;in&nbsp;an<br>
+environment&nbsp;where&nbsp;individual&nbsp;HTTP&nbsp;requests&nbsp;may&nbsp;have&nbsp;a&nbsp;hardcoded&nbsp;time&nbsp;limit,<br>
+such&nbsp;as&nbsp;under&nbsp;certain&nbsp;classes&nbsp;of&nbsp;requests&nbsp;under&nbsp;Google&nbsp;App&nbsp;Engine.<br>&nbsp;</tt></td></tr>
 <tr><td>&nbsp;</td>
 <td width="100%">Methods defined here:<br>
-<dl><dt><a name="MediaUpload-chunksize"><strong>chunksize</strong></a>(self)</dt></dl>
+<dl><dt><a name="MediaUpload-chunksize"><strong>chunksize</strong></a>(self)</dt><dd><tt>Chunk&nbsp;size&nbsp;for&nbsp;resumable&nbsp;uploads.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;Chunk&nbsp;size&nbsp;in&nbsp;bytes.</tt></dd></dl>
 
-<dl><dt><a name="MediaUpload-getbytes"><strong>getbytes</strong></a>(self, begin, end)</dt></dl>
+<dl><dt><a name="MediaUpload-getbytes"><strong>getbytes</strong></a>(self, begin, end)</dt><dd><tt>Get&nbsp;bytes&nbsp;from&nbsp;the&nbsp;media.<br>
+&nbsp;<br>
+Args:<br>
+&nbsp;&nbsp;begin:&nbsp;int,&nbsp;offset&nbsp;from&nbsp;beginning&nbsp;of&nbsp;file.<br>
+&nbsp;&nbsp;length:&nbsp;int,&nbsp;number&nbsp;of&nbsp;bytes&nbsp;to&nbsp;read,&nbsp;starting&nbsp;at&nbsp;begin.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;A&nbsp;string&nbsp;of&nbsp;bytes&nbsp;read.&nbsp;May&nbsp;be&nbsp;shorter&nbsp;than&nbsp;length&nbsp;if&nbsp;EOF&nbsp;was&nbsp;reached<br>
+&nbsp;&nbsp;first.</tt></dd></dl>
 
-<dl><dt><a name="MediaUpload-mimetype"><strong>mimetype</strong></a>(self)</dt></dl>
+<dl><dt><a name="MediaUpload-mimetype"><strong>mimetype</strong></a>(self)</dt><dd><tt>Mime&nbsp;type&nbsp;of&nbsp;the&nbsp;body.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;Mime&nbsp;type.</tt></dd></dl>
 
-<dl><dt><a name="MediaUpload-resumable"><strong>resumable</strong></a>(self)</dt></dl>
+<dl><dt><a name="MediaUpload-resumable"><strong>resumable</strong></a>(self)</dt><dd><tt>Whether&nbsp;this&nbsp;upload&nbsp;is&nbsp;resumable.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;True&nbsp;if&nbsp;resumable&nbsp;upload&nbsp;or&nbsp;False.</tt></dd></dl>
 
-<dl><dt><a name="MediaUpload-size"><strong>size</strong></a>(self)</dt></dl>
+<dl><dt><a name="MediaUpload-size"><strong>size</strong></a>(self)</dt><dd><tt>Size&nbsp;of&nbsp;upload.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;Size&nbsp;of&nbsp;the&nbsp;body,&nbsp;or&nbsp;None&nbsp;of&nbsp;the&nbsp;size&nbsp;is&nbsp;unknown.</tt></dd></dl>
 
 <dl><dt><a name="MediaUpload-to_json"><strong>to_json</strong></a>(self)</dt><dd><tt>Create&nbsp;a&nbsp;JSON&nbsp;representation&nbsp;of&nbsp;an&nbsp;instance&nbsp;of&nbsp;<a href="#MediaUpload">MediaUpload</a>.<br>
 &nbsp;<br>
@@ -541,9 +676,14 @@ Data descriptors defined here:<br>
 &nbsp;<br>
 Args:<br>
 &nbsp;&nbsp;resumable_progress:&nbsp;int,&nbsp;bytes&nbsp;sent&nbsp;so&nbsp;far.<br>
-&nbsp;&nbsp;total_size:&nbsp;int,&nbsp;total&nbsp;bytes&nbsp;in&nbsp;complete&nbsp;upload.</tt></dd></dl>
+&nbsp;&nbsp;total_size:&nbsp;int,&nbsp;total&nbsp;bytes&nbsp;in&nbsp;complete&nbsp;upload,&nbsp;or&nbsp;None&nbsp;if&nbsp;the&nbsp;total<br>
+&nbsp;&nbsp;&nbsp;&nbsp;upload&nbsp;size&nbsp;isn't&nbsp;known&nbsp;ahead&nbsp;of&nbsp;time.</tt></dd></dl>
 
-<dl><dt><a name="MediaUploadProgress-progress"><strong>progress</strong></a>(self)</dt><dd><tt>Percent&nbsp;of&nbsp;upload&nbsp;completed,&nbsp;as&nbsp;a&nbsp;float.</tt></dd></dl>
+<dl><dt><a name="MediaUploadProgress-progress"><strong>progress</strong></a>(self)</dt><dd><tt>Percent&nbsp;of&nbsp;upload&nbsp;completed,&nbsp;as&nbsp;a&nbsp;float.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;the&nbsp;percentage&nbsp;complete&nbsp;as&nbsp;a&nbsp;float,&nbsp;returning&nbsp;0.0&nbsp;if&nbsp;the&nbsp;total&nbsp;size&nbsp;of<br>
+&nbsp;&nbsp;the&nbsp;upload&nbsp;is&nbsp;unknown.</tt></dd></dl>
 
 <hr>
 Data descriptors defined here:<br>
@@ -658,7 +798,8 @@ will&nbsp;result&nbsp;in&nbsp;a&nbsp;different&nbsp;signature.</tt></dd></dl>
 <font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
     
 <tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><strong>__author__</strong> = 'jcgregorio@google.com (Joe Gregorio)'</td></tr></table><p>
+<td width="100%"><strong>DEFAULT_CHUNK_SIZE</strong> = 524288<br>
+<strong>__author__</strong> = 'jcgregorio@google.com (Joe Gregorio)'</td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#7799ee">
 <td colspan=3 valign=bottom>&nbsp;<br>
