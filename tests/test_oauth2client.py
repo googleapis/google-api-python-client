@@ -25,6 +25,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import base64
 import datetime
 import httplib2
+import os
 import unittest
 import urlparse
 
@@ -47,6 +48,13 @@ from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.client import OOB_CALLBACK_URN
 from oauth2client.client import VerifyJwtTokenError
 from oauth2client.client import _extract_id_token
+from oauth2client.client import credentials_from_code
+from oauth2client.client import credentials_from_clientsecrets_and_code
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+
+def datafile(filename):
+  return os.path.join(DATA_DIR, filename)
 
 
 class CredentialsTests(unittest.TestCase):
@@ -295,6 +303,66 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
 
     credentials = self.flow.step2_exchange('some random code', http)
     self.assertEqual(credentials.id_token, body)
+
+class CredentialsFromCodeTests(unittest.TestCase):
+  def setUp(self):
+    self.client_id = 'client_id_abc'
+    self.client_secret = 'secret_use_code'
+    self.scope = 'foo'
+    self.code = '12345abcde'
+    self.redirect_uri = 'postmessage'
+
+  def test_exchange_code_for_token(self):
+    http = HttpMockSequence([
+      ({'status': '200'},
+      """{ "access_token":"asdfghjkl",
+       "expires_in":3600 }"""),
+    ])
+    credentials = credentials_from_code(self.client_id, self.client_secret,
+                                    self.scope, self.code, self.redirect_uri,
+                                    http)
+    self.assertEquals(credentials.access_token, 'asdfghjkl')
+    self.assertNotEqual(None, credentials.token_expiry)
+
+  def test_exchange_code_for_token_fail(self):
+    http = HttpMockSequence([
+      ({'status': '400'}, '{"error":"invalid_request"}'),
+      ])
+
+    try:
+      credentials = credentials_from_code(self.client_id, self.client_secret,
+                                      self.scope, self.code, self.redirect_uri,
+                                      http)
+      self.fail("should raise exception if exchange doesn't get 200")
+    except FlowExchangeError:
+      pass
+
+
+  def test_exchange_code_and_file_for_token(self):
+    http = HttpMockSequence([
+      ({'status': '200'},
+      """{ "access_token":"asdfghjkl",
+       "expires_in":3600 }"""),
+    ])
+    credentials = credentials_from_clientsecrets_and_code(
+                            datafile('client_secrets.json'), self.scope,
+                            self.code, http=http)
+    self.assertEquals(credentials.access_token, 'asdfghjkl')
+    self.assertNotEqual(None, credentials.token_expiry)
+
+  def test_exchange_code_and_file_for_token_fail(self):
+    http = HttpMockSequence([
+      ({'status': '400'}, '{"error":"invalid_request"}'),
+      ])
+
+    try:
+      credentials = credentials_from_clientsecrets_and_code(
+                            datafile('client_secrets.json'), self.scope,
+                            self.code, http=http)
+      self.fail("should raise exception if exchange doesn't get 200")
+    except FlowExchangeError:
+      pass
+
 
 
 class MemoryCacheTests(unittest.TestCase):

@@ -881,6 +881,78 @@ def _extract_id_token(id_token):
 
   return simplejson.loads(_urlsafe_b64decode(segments[1]))
 
+def credentials_from_code(client_id, client_secret, scope, code,
+                        redirect_uri = 'postmessage',
+                        http=None, user_agent=None,
+                        token_uri='https://accounts.google.com/o/oauth2/token'):
+  """Exchanges an authorization code for an OAuth2Credentials object.
+
+  Args:
+    client_id: string, client identifier.
+    client_secret: string, client secret.
+    scope: string or list of strings, scope(s) to request.
+    code: string, An authroization code, most likely passed down from
+      the client
+    redirect_uri: string, this is generally set to 'postmessage' to match the
+      redirect_uri that the client specified
+    http: httplib2.Http, optional http instance to use to do the fetch
+    token_uri: string, URI for token endpoint. For convenience
+      defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+  Returns:
+    An OAuth2Credentials object.
+
+  Raises:
+    FlowExchangeError if the authorization code cannot be exchanged for an
+     access token
+  """
+  flow = OAuth2WebServerFlow(client_id, client_secret, scope, user_agent,
+                             'https://accounts.google.com/o/oauth2/auth',
+                             token_uri)
+
+  # We primarily make this call to set up the redirect_uri in the flow object
+  uriThatWeDontReallyUse = flow.step1_get_authorize_url(redirect_uri)
+  credentials = flow.step2_exchange(code, http)
+  return credentials
+
+
+def credentials_from_clientsecrets_and_code(filename, scope, code,
+                                            message = None,
+                                            redirect_uri = 'postmessage',
+                                            http=None):
+  """Returns OAuth2Credentials from a clientsecrets file and an auth code.
+
+  Will create the right kind of Flow based on the contents of the clientsecrets
+  file or will raise InvalidClientSecretsError for unknown types of Flows.
+
+  Args:
+    filename: string, File name of clientsecrets.
+    scope: string or list of strings, scope(s) to request.
+    code: string, An authroization code, most likely passed down from
+      the client
+    message: string, A friendly string to display to the user if the
+      clientsecrets file is missing or invalid. If message is provided then
+      sys.exit will be called in the case of an error. If message in not
+      provided then clientsecrets.InvalidClientSecretsError will be raised.
+    redirect_uri: string, this is generally set to 'postmessage' to match the
+      redirect_uri that the client specified
+    http: httplib2.Http, optional http instance to use to do the fetch
+
+  Returns:
+    An OAuth2Credentials object.
+
+  Raises:
+    FlowExchangeError if the authorization code cannot be exchanged for an
+     access token
+    UnknownClientSecretsFlowError if the file describes an unknown kind of Flow.
+    clientsecrets.InvalidClientSecretsError if the clientsecrets file is
+      invalid.
+  """
+  flow = flow_from_clientsecrets(filename, scope, message)
+  # We primarily make this call to set up the redirect_uri in the flow object
+  uriThatWeDontReallyUse = flow.step1_get_authorize_url(redirect_uri)
+  credentials = flow.step2_exchange(code, http)
+  return credentials
+
 
 class OAuth2WebServerFlow(Flow):
   """Does the Web Server Flow for OAuth 2.0.
