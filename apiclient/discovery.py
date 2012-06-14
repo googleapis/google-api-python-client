@@ -267,6 +267,8 @@ def _cast(value, schema_type):
     if type(value) == type('') or type(value) == type(u''):
       return value
     else:
+      if value is None:
+        raise ValueError('String parameters can not be None.')
       return str(value)
   elif schema_type == 'integer':
     return str(int(value))

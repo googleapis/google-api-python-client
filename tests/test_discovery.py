@@ -193,6 +193,16 @@ class Discovery(unittest.TestCase):
     self.assertEqual(q['trace'], ['html'])
     self.assertEqual(q['fields'], ['description'])
 
+  def test_string_params_none_is_invalid(self):
+    http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http)
+    # String isn't None
+    try:
+      request = zoo.query(trace=None, fields='description')
+      self.fail()
+    except ValueError, e:
+      self.assertTrue('None' in str(e))
+
   def test_model_added_query_parameters(self):
     http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http)

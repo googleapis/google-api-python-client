@@ -279,6 +279,19 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
     credentials = self.flow.step2_exchange('some random code', http)
     self.assertEqual(None, credentials.token_expiry)
 
+  def test_exchange_fails_if_no_code(self):
+    http = HttpMockSequence([
+      ({'status': '200'}, """{ "access_token":"SlAV32hkKG",
+       "refresh_token":"8xLOxBtZp8" }"""),
+      ])
+
+    code = {'error': 'thou shall not pass'}
+    try:
+      credentials = self.flow.step2_exchange(code, http)
+      self.fail('should raise exception if no code in dictionary.')
+    except FlowExchangeError, e:
+      self.assertTrue('shall not pass' in str(e))
+
   def test_exchange_id_token_fail(self):
     http = HttpMockSequence([
       ({'status': '200'}, """{ "access_token":"SlAV32hkKG",

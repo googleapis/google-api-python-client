@@ -593,7 +593,7 @@ class OAuth2Credentials(Credentials):
     body = self._generate_refresh_request_body()
     headers = self._generate_refresh_request_headers()
 
-    logger.info('Refresing access_token')
+    logger.info('Refreshing access_token')
     resp, content = http_request(
         self.token_uri, method='POST', body=body, headers=headers)
     if resp.status == 200:
@@ -1028,10 +1028,24 @@ class OAuth2WebServerFlow(Flow):
         of the query parameters to the redirect_uri, which contains
         the code.
       http: httplib2.Http, optional http instance to use to do the fetch
+
+    Returns:
+      An OAuth2Credentials object that can be used to authorize requests.
+
+    Raises:
+      FlowExchangeError if a problem occured exchanging the code for a
+      refresh_token.
     """
 
     if not (isinstance(code, str) or isinstance(code, unicode)):
-      code = code['code']
+      if 'code' not in code:
+        if 'error' in code:
+          error_msg = code['error']
+        else:
+          error_msg = 'No code was supplied in the query parameters.'
+        raise FlowExchangeError(error_msg)
+      else:
+        code = code['code']
 
     body = urllib.urlencode({
         'grant_type': 'authorization_code',
