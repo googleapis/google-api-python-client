@@ -560,12 +560,32 @@ class Discovery(unittest.TestCase):
 
     # Create an upload that doesn't know the full size of the media.
     upload = MediaIoBaseUpload(
-        fh=fh, mimetype='image/png', chunksize=500, resumable=True)
+        fh=fh, mimetype='image/png', chunksize=10, resumable=True)
 
     request = zoo.animals().insert(media_body=upload, body=None)
     status, body = request.next_chunk(http)
-    self.assertEqual(body, {'Content-Range': 'bytes 0-13/*'},
-      'Should be 14 out of * bytes.')
+    self.assertEqual(body, {'Content-Range': 'bytes 0-9/*'},
+      'Should be 10 out of * bytes.')
+
+  def test_resumable_media_handle_uploads_of_unknown_size_eof(self):
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '200'}, 'echo_request_headers_as_json'),
+      ])
+
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', self.http)
+
+    fh = StringIO.StringIO('data goes here')
+
+    # Create an upload that doesn't know the full size of the media.
+    upload = MediaIoBaseUpload(
+        fh=fh, mimetype='image/png', chunksize=15, resumable=True)
+
+    request = zoo.animals().insert(media_body=upload, body=None)
+    status, body = request.next_chunk(http)
+    self.assertEqual(body, {'Content-Range': 'bytes 0-13/14'})
 
   def test_resumable_media_handle_resume_of_upload_of_unknown_size(self):
     http = HttpMockSequence([

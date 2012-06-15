@@ -289,7 +289,6 @@ class MediaIoBaseUpload(MediaUpload):
   Note that the Python file object is compatible with io.Base and can be used
   with this class also.
 
-
     fh = io.BytesIO('...Some data to upload...')
     media = MediaIoBaseUpload(fh, mimetype='image/png',
       chunksize=1024*1024, resumable=True)
@@ -304,7 +303,8 @@ class MediaIoBaseUpload(MediaUpload):
     """Constructor.
 
     Args:
-      fh: io.Base or file object, The source of the bytes to upload.
+      fh: io.Base or file object, The source of the bytes to upload. MUST be
+        opened in blocking mode, do not use streams opened in non-blocking mode.
       mimetype: string, Mime-type of the file. If None then a mime-type will be
         guessed from the file extension.
       chunksize: int, File will be uploaded in chunks of this many bytes. Only
@@ -320,7 +320,11 @@ class MediaIoBaseUpload(MediaUpload):
     try:
       if hasattr(self._fh, 'fileno'):
         fileno = self._fh.fileno()
-        self._size = os.fstat(fileno).st_size
+
+        # Pipes and such show up as 0 length files.
+        size = os.fstat(fileno).st_size
+        if size:
+          self._size = os.fstat(fileno).st_size
     except IOError:
       pass
 
@@ -616,6 +620,11 @@ class HttpRequest(object):
 
     data = self.resumable.getbytes(
         self.resumable_progress, self.resumable.chunksize())
+
+    # A short read implies that we are at EOF, so finish the upload.
+    if len(data) < self.resumable.chunksize():
+      size = str(self.resumable_progress + len(data))
+
     headers = {
         'Content-Range': 'bytes %d-%d/%s' % (
             self.resumable_progress, self.resumable_progress + len(data) - 1,
