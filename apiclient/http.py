@@ -216,11 +216,11 @@ class MediaFileUpload(MediaUpload):
   method. For example, if we had a service that allowed uploading images:
 
 
-    media = MediaFileUpload('smiley.png', mimetype='image/png',
+    media = MediaFileUpload('cow.png', mimetype='image/png',
       chunksize=1024*1024, resumable=True)
-    service.objects().insert(
-        bucket=buckets['items'][0]['id'],
-        name='smiley.png',
+    farm.animals()..insert(
+        id='cow',
+        name='cow.png',
         media_body=media).execute()
   """
 
@@ -318,9 +318,9 @@ class MediaIoBaseUpload(MediaUpload):
     fh = io.BytesIO('...Some data to upload...')
     media = MediaIoBaseUpload(fh, mimetype='image/png',
       chunksize=1024*1024, resumable=True)
-    service.objects().insert(
-        bucket='a_bucket_id',
-        name='smiley.png',
+    farm.animals().insert(
+        id='cow',
+        name='cow.png',
         media_body=media).execute()
   """
 
@@ -409,7 +409,7 @@ class MediaInMemoryUpload(MediaUpload):
   """MediaUpload for a chunk of bytes.
 
   Construct a MediaFileUpload and pass as the media_body parameter of the
-  method. For example, if we had a service that allowed plain text:
+  method.
   """
 
   def __init__(self, body, mimetype='application/octet-stream',
@@ -506,11 +506,8 @@ class MediaIoBaseDownload(object):
 
 
   Example:
-    request = service.objects().get_media(
-        bucket='a_bucket_id',
-        name='smiley.png')
-
-    fh = io.FileIO('image.png', mode='wb')
+    request = farms.animals().get_media(id='cow')
+    fh = io.FileIO('cow.png', mode='wb')
     downloader = MediaIoBaseDownload(fh, request, chunksize=1024*1024)
 
     done = False
@@ -665,11 +662,11 @@ class HttpRequest(object):
 
     Example:
 
-      media = MediaFileUpload('smiley.png', mimetype='image/png',
+      media = MediaFileUpload('cow.png', mimetype='image/png',
                               chunksize=1000, resumable=True)
-      request = service.objects().insert(
-          bucket=buckets['items'][0]['id'],
-          name='smiley.png',
+      request = farm.animals().insert(
+          id='cow',
+          name='cow.png',
           media_body=media)
 
       response = None
