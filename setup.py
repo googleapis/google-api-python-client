@@ -22,10 +22,6 @@ from setuptools import setup
 packages = [
   'apiclient',
   'oauth2client',
-  'apiclient.ext',
-  'apiclient.contrib',
-  'apiclient.contrib.latitude',
-  'apiclient.contrib.moderator',
   'uritemplate',
   ]
 
@@ -34,11 +30,16 @@ install_requires = [
     'python-gflags',
     ]
 
+needs_json = True
 try:
   import json
   needs_json = False
 except ImportError:
-  needs_json = True
+  try:
+    import simplejson
+    needs_json = False
+  except ImportError:
+    needs_json = True
 
 if needs_json:
   install_requires.append('simplejson')
@@ -59,7 +60,6 @@ setup(name="google-api-python-client",
       install_requires=install_requires,
       packages=packages,
       package_data={
-        'apiclient': ['contrib/*/*.json']
         },
       scripts=['bin/enable-app-engine-project'],
       license="Apache 2.0",

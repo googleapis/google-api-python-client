@@ -46,7 +46,6 @@ release: prerelease
 	python googlecode_upload.py --summary="google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.tar.gz
 	python googlecode_upload.py --summary="google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.zip
 
-
 .PHONY: oauth2_prerelease
 oauth2_prerelease:
 	-sudo rm -rf dist/

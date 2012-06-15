@@ -28,11 +28,16 @@ install_requires = [
     'python-gflags',
     ]
 
+needs_json = True
 try:
   import json
   needs_json = False
 except ImportError:
-  needs_json = True
+  try:
+    import simplejson
+    needs_json = False
+  except ImportError:
+    needs_json = True
 
 if needs_json:
   install_requires.append('simplejson')
