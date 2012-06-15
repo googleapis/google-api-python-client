@@ -801,7 +801,27 @@ class HttpRequest(object):
 
 
 class BatchHttpRequest(object):
-  """Batches multiple HttpRequest objects into a single HTTP request."""
+  """Batches multiple HttpRequest objects into a single HTTP request.
+
+  Example:
+    from apiclient.http import BatchHttpRequest
+
+    def list_animals(request_id, response):
+      \"\"\"Do something with the animals list response.\"\"\"
+      pass
+
+    def list_farmers(request_id, response):
+      \"\"\"Do something with the farmers list response.\"\"\"
+      pass
+
+    service = build('farm', 'v2')
+
+    batch = BatchHttpRequest()
+
+    batch.add(service.animals().list(), list_animals)
+    batch.add(service.farmers().list(), list_farmers)
+    batch.execute(http)
+  """
 
   def __init__(self, callback=None, batch_uri=None):
     """Constructor for a BatchHttpRequest.
@@ -1019,13 +1039,13 @@ class BatchHttpRequest(object):
       None
 
     Raises:
-      BatchError if a resumable request is added to a batch.
+      BatchError if a media request is added to a batch.
       KeyError is the request_id is not unique.
     """
     if request_id is None:
       request_id = self._new_id()
     if request.resumable is not None:
-      raise BatchError("Resumable requests cannot be used in a batch request.")
+      raise BatchError("Media requests cannot be used in a batch request.")
     if request_id in self._requests:
       raise KeyError("A request with this ID already exists: %s" % request_id)
     self._requests[request_id] = request

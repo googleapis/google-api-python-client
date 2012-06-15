@@ -245,7 +245,7 @@ def build_from_document(
   if model is None:
     features = service.get('features', [])
     model = JsonModel('dataWrapper' in features)
-  resource = createResource(http, base, model, requestBuilder, developerKey,
+  resource = _createResource(http, base, model, requestBuilder, developerKey,
                        service, service, schema)
 
   return resource
@@ -311,7 +311,7 @@ def _media_size_to_long(maxSize):
     return int(maxSize)
 
 
-def createResource(http, baseUrl, model, requestBuilder,
+def _createResource(http, baseUrl, model, requestBuilder,
                    developerKey, resourceDesc, rootDesc, schema):
   """Build a Resource from the API description.
 
@@ -707,7 +707,7 @@ def createResource(http, baseUrl, model, requestBuilder,
       methodName = fix_method_name(methodName)
 
       def methodResource(self):
-        return createResource(self._http, self._baseUrl, self._model,
+        return _createResource(self._http, self._baseUrl, self._model,
                               self._requestBuilder, self._developerKey,
                               methodDesc, rootDesc, schema)
 
