@@ -76,6 +76,32 @@ class MediaUploadProgress(object):
       return 0.0
 
 
+class MediaDownloadProgress(object):
+  """Status of a resumable download."""
+
+  def __init__(self, resumable_progress, total_size):
+    """Constructor.
+
+    Args:
+      resumable_progress: int, bytes received so far.
+      total_size: int, total bytes in complete download.
+    """
+    self.resumable_progress = resumable_progress
+    self.total_size = total_size
+
+  def progress(self):
+    """Percent of download completed, as a float.
+
+    Returns:
+      the percentage complete as a float, returning 0.0 if the total size of
+      the download is unknown.
+    """
+    if self.total_size is not None:
+      return float(self.resumable_progress) / float(self.total_size)
+    else:
+      return 0.0
+
+
 class MediaUpload(object):
   """Describes a media object to upload.
 
@@ -268,7 +294,7 @@ class MediaFileUpload(MediaUpload):
     return self._fd.read(length)
 
   def to_json(self):
-    """Creating a JSON representation of an instance of Credentials.
+    """Creating a JSON representation of an instance of MediaFileUpload.
 
     Returns:
        string, a JSON representation of this instance, suitable to pass to
@@ -470,6 +496,86 @@ class MediaInMemoryUpload(MediaUpload):
     return MediaInMemoryUpload(base64.b64decode(d['_b64body']),
                                d['_mimetype'], d['_chunksize'],
                                d['_resumable'])
+
+
+class MediaIoBaseDownload(object):
+  """"Download media resources.
+
+  Note that the Python file object is compatible with io.Base and can be used
+  with this class also.
+
+
+  Example:
+    request = service.objects().get_media(
+        bucket='a_bucket_id',
+        name='smiley.png')
+
+    fh = io.FileIO('image.png', mode='wb')
+    downloader = MediaIoBaseDownload(fh, request, chunksize=1024*1024)
+
+    done = False
+    while done is False:
+      status, done = downloader.next_chunk()
+      if status:
+        print "Download %d%%." % int(status.progress() * 100)
+    print "Download Complete!"
+  """
+
+  def __init__(self, fh, request, chunksize=DEFAULT_CHUNK_SIZE):
+    """Constructor.
+
+    Args:
+      fh: io.Base or file object, The stream in which to write the downloaded
+        bytes.
+      request: apiclient.http.HttpRequest, the media request to perform in
+        chunks.
+      chunksize: int, File will be downloaded in chunks of this many bytes.
+    """
+    self.fh_ = fh
+    self.request_ = request
+    self.uri_ = request.uri
+    self.chunksize_ = chunksize
+    self.progress_ = 0
+    self.total_size_ = None
+    self.done_ = False
+
+  def next_chunk(self):
+    """Get the next chunk of the download.
+
+    Returns:
+      (status, done): (MediaDownloadStatus, boolean)
+         The value of 'done' will be True when the media has been fully
+         downloaded.
+
+    Raises:
+      apiclient.errors.HttpError if the response was not a 2xx.
+      httplib2.Error if a transport error has occured.
+    """
+    headers = {
+        'range': 'bytes=%d-%d' % (
+            self.progress_, self.progress_ + self.chunksize_)
+        }
+    http = self.request_.http
+    http.follow_redirects = False
+
+    resp, content = http.request(self.uri_, headers=headers)
+    if resp.status in [301, 302, 303, 307, 308] and 'location' in resp:
+        self.uri_ = resp['location']
+        resp, content = http.request(self.uri_, headers=headers)
+    if resp.status in [200, 206]:
+      self.progress_ += len(content)
+      self.fh_.write(content)
+
+      if 'content-range' in resp:
+        content_range = resp['content-range']
+        length = content_range.rsplit('/', 1)[1]
+        self.total_size_ = int(length)
+
+      if self.progress_ == self.total_size_:
+        self.done_ = True
+      return MediaDownloadProgress(self.progress_, self.total_size_), self.done_
+    else:
+      raise HttpError(resp, content, self.uri_)
 
 
 class HttpRequest(object):
@@ -1219,6 +1325,7 @@ class HttpMockSequence(object):
       iterable: iterable, a sequence of pairs of (headers, body)
     """
     self._iterable = iterable
+    self.follow_redirects = True
 
   def request(self, uri,
               method='GET',

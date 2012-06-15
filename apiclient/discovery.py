@@ -52,6 +52,7 @@ from apiclient.http import HttpRequest
 from apiclient.http import MediaFileUpload
 from apiclient.http import MediaUpload
 from apiclient.model import JsonModel
+from apiclient.model import MediaModel
 from apiclient.model import RawModel
 from apiclient.schema import Schemas
 from email.mime.multipart import MIMEMultipart
@@ -499,7 +500,9 @@ def createResource(http, baseUrl, model, requestBuilder,
 
       model = self._model
       # If there is no schema for the response then presume a binary blob.
-      if 'response' not in methodDesc:
+      if methodName.endswith('_media'):
+        model = MediaModel()
+      elif 'response' not in methodDesc:
         model = RawModel()
 
       headers = {}
@@ -618,8 +621,11 @@ def createResource(http, baseUrl, model, requestBuilder,
         for (name, desc) in zip(enum, enumDesc):
           docs.append('      %s - %s\n' % (name, desc))
     if 'response' in methodDesc:
-      docs.append('\nReturns:\n  An object of the form\n\n    ')
-      docs.append(schema.prettyPrintSchema(methodDesc['response']))
+      if methodName.endswith('_media'):
+        docs.append('\nReturns:\n  The media object as a string.\n\n    ')
+      else:
+        docs.append('\nReturns:\n  An object of the form:\n\n    ')
+        docs.append(schema.prettyPrintSchema(methodDesc['response']))
 
     setattr(method, '__doc__', ''.join(docs))
     setattr(theclass, methodName, method)
@@ -680,6 +686,10 @@ def createResource(http, baseUrl, model, requestBuilder,
   if 'methods' in resourceDesc:
     for methodName, methodDesc in resourceDesc['methods'].iteritems():
       createMethod(Resource, methodName, methodDesc, rootDesc)
+      # Add in _media methods. The functionality of the attached method will
+      # change when it sees that the method name ends in _media.
+      if methodDesc.get('supportsMediaDownload', False):
+        createMethod(Resource, methodName + '_media', methodDesc, rootDesc)
 
   # Add in nested resources
   if 'resources' in resourceDesc:

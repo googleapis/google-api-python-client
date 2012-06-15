@@ -623,6 +623,7 @@ class Discovery(unittest.TestCase):
       self.assertEqual(expected, simplejson.loads(e.content),
         'Should send an empty body when requesting the current upload status.')
 
+
 class Next(unittest.TestCase):
 
   def test_next_successful_none_on_no_next_page_token(self):
@@ -645,6 +646,25 @@ class Next(unittest.TestCase):
     self.http = HttpMock(datafile('latitude.json'), {'status': '200'})
     service = build('latitude', 'v1', self.http)
     request = service.currentLocation().get()
+
+
+class MediaGet(unittest.TestCase):
+
+  def test_get_media(self):
+    http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http)
+    request = zoo.animals().get_media(name='Lion')
+
+    parsed = urlparse.urlparse(request.uri)
+    q = parse_qs(parsed[4])
+    self.assertEqual(q['alt'], ['media'])
+    self.assertEqual(request.headers['accept'], '*/*')
+
+    http = HttpMockSequence([
+      ({'status': '200'}, 'standing in for media'),
+      ])
+    response = request.execute(http)
+    self.assertEqual('standing in for media', response)
 
 
 if __name__ == '__main__':

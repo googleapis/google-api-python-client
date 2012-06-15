@@ -27,14 +27,18 @@ import os
 import unittest
 import StringIO
 
+from apiclient.discovery import build
 from apiclient.errors import BatchError
+from apiclient.errors import HttpError
 from apiclient.http import BatchHttpRequest
+from apiclient.http import HttpMock
 from apiclient.http import HttpMockSequence
 from apiclient.http import HttpRequest
 from apiclient.http import MediaFileUpload
 from apiclient.http import MediaUpload
 from apiclient.http import MediaInMemoryUpload
 from apiclient.http import MediaIoBaseUpload
+from apiclient.http import MediaIoBaseDownload
 from apiclient.http import set_user_agent
 from apiclient.model import JsonModel
 from oauth2client.client import Credentials
@@ -250,6 +254,90 @@ class TestMediaIoBaseUpload(unittest.TestCase):
     except ImportError:
       pass
 
+
+class TestMediaIoBaseDownload(unittest.TestCase):
+
+  def setUp(self):
+    http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http)
+    self.request = zoo.animals().get_media(name='Lion')
+    self.fh = StringIO.StringIO()
+
+  def test_media_io_base_download(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '200',
+        'content-range': '0-2/5'}, '123'),
+      ({'status': '200',
+        'content-range': '3-4/5'}, '45'),
+    ])
+
+    download = MediaIoBaseDownload(
+        fh=self.fh, request=self.request, chunksize=3)
+
+    self.assertEqual(self.fh, download.fh_)
+    self.assertEqual(3, download.chunksize_)
+    self.assertEqual(0, download.progress_)
+    self.assertEqual(None, download.total_size_)
+    self.assertEqual(False, download.done_)
+    self.assertEqual(self.request.uri, download.uri_)
+
+    status, done = download.next_chunk()
+
+    self.assertEqual(self.fh.getvalue(), '123')
+    self.assertEqual(False, done)
+    self.assertEqual(3, download.progress_)
+    self.assertEqual(5, download.total_size_)
+    self.assertEqual(3, status.resumable_progress)
+
+    status, done = download.next_chunk()
+
+    self.assertEqual(self.fh.getvalue(), '12345')
+    self.assertEqual(True, done)
+    self.assertEqual(5, download.progress_)
+    self.assertEqual(5, download.total_size_)
+
+  def test_media_io_base_download_handle_redirects(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '307',
+        'location': 'https://secure.example.net/lion'}, ''),
+      ({'status': '200',
+        'content-range': '0-2/5'}, 'abc'),
+    ])
+
+    download = MediaIoBaseDownload(
+        fh=self.fh, request=self.request, chunksize=3)
+
+    status, done = download.next_chunk()
+
+    self.assertEqual('https://secure.example.net/lion', download.uri_)
+    self.assertEqual(self.fh.getvalue(), 'abc')
+    self.assertEqual(False, done)
+    self.assertEqual(3, download.progress_)
+    self.assertEqual(5, download.total_size_)
+
+  def test_media_io_base_download_handle_4xx(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '400'}, ''),
+    ])
+
+    download = MediaIoBaseDownload(
+        fh=self.fh, request=self.request, chunksize=3)
+
+    try:
+      status, done = download.next_chunk()
+      self.fail('Should raise an exception')
+    except HttpError:
+      pass
+
+    # Even after raising an exception we can pick up where we left off.
+    self.request.http = HttpMockSequence([
+      ({'status': '200',
+        'content-range': '0-2/5'}, '123'),
+    ])
+
+    status, done = download.next_chunk()
+
+    self.assertEqual(self.fh.getvalue(), '123')
 
 EXPECTED = """POST /someapi/v1/collection/?foo=bar HTTP/1.1
 Content-Type: application/json
@@ -579,7 +667,6 @@ class TestBatch(unittest.TestCase):
     batch.execute(http)
     self.assertEqual({'foo': 42}, callbacks.responses['1'])
     self.assertEqual({'baz': 'qux'}, callbacks.responses['2'])
-
 
 
 if __name__ == '__main__':
