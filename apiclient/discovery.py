@@ -268,8 +268,6 @@ def _cast(value, schema_type):
     if type(value) == type('') or type(value) == type(u''):
       return value
     else:
-      if value is None:
-        raise ValueError('String parameters can not be None.')
       return str(value)
   elif schema_type == 'integer':
     return str(int(value))
@@ -443,9 +441,16 @@ def _createResource(http, baseUrl, model, requestBuilder,
 
     def method(self, **kwargs):
       # Don't bother with doc string, it will be over-written by createMethod.
+
       for name in kwargs.iterkeys():
         if name not in argmap:
           raise TypeError('Got an unexpected keyword argument "%s"' % name)
+
+      # Remove args that have a value of None.
+      keys = kwargs.keys()
+      for name in keys:
+        if kwargs[name] is None:
+          del kwargs[name]
 
       for name in required_params:
         if name not in kwargs:

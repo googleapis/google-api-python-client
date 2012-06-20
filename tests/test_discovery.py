@@ -136,6 +136,13 @@ class Discovery(unittest.TestCase):
     except TypeError, e:
       self.assertTrue('Missing' in str(e))
 
+    # Missing required parameters even if supplied as None.
+    try:
+      plus.activities().list(collection=None, userId=None)
+      self.fail()
+    except TypeError, e:
+      self.assertTrue('Missing' in str(e))
+
     # Parameter doesn't match regex
     try:
       plus.activities().list(collection='not_a_collection_name', userId='me')
@@ -193,15 +200,14 @@ class Discovery(unittest.TestCase):
     self.assertEqual(q['trace'], ['html'])
     self.assertEqual(q['fields'], ['description'])
 
-  def test_string_params_none_is_invalid(self):
+  def test_string_params_value_of_none_get_dropped(self):
     http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http)
-    # String isn't None
-    try:
-      request = zoo.query(trace=None, fields='description')
-      self.fail()
-    except ValueError, e:
-      self.assertTrue('None' in str(e))
+    request = zoo.query(trace=None, fields='description')
+
+    parsed = urlparse.urlparse(request.uri)
+    q = parse_qs(parsed[4])
+    self.assertFalse('trace' in q)
 
   def test_model_added_query_parameters(self):
     http = HttpMock(datafile('zoo.json'), {'status': '200'})
