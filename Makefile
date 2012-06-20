@@ -34,6 +34,9 @@ prerelease:
 	python expand-symlinks.py
 	cd snapshot; python setup.py clean
 	cd snapshot; python setup.py sdist --formats=gztar,zip
+	cd snapshot; tar czf google-api-python-client-samples-$(shell python setup.py --version).tar.gz samples
+	cd snapshot; zip -r google-api-python-client-samples-$(shell python setup.py --version).zip samples
+
 
 .PHONY: release
 release: prerelease
@@ -45,6 +48,8 @@ release: prerelease
 	wget "http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py" -O googlecode_upload.py
 	python googlecode_upload.py --summary="google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.tar.gz
 	python googlecode_upload.py --summary="google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.zip
+	python googlecode_upload.py --summary="Samples for google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/google-api-python-client-samples-*.tar.gz
+	python googlecode_upload.py --summary="Samples for google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/google-api-python-client-samples-*.zip
 
 .PHONY: oauth2_prerelease
 oauth2_prerelease:
