@@ -38,31 +38,44 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import gflags
 import httplib2
 import logging
+import os
 import pprint
 import sys
 
 from apiclient.discovery import build
-from oauth2client.file import Storage
 from oauth2client.client import AccessTokenRefreshError
-from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.client import flow_from_clientsecrets
+from oauth2client.file import Storage
 from oauth2client.tools import run
+
 
 FLAGS = gflags.FLAGS
 
-# Set up a Flow object to be used if we need to authenticate. This
-# sample uses OAuth 2.0, and we set up the OAuth2WebServerFlow with
-# the information it needs to authenticate. Note that it is called
-# the Web Server Flow, but it can also handle the flow for native
-# applications <http://code.google.com/apis/accounts/docs/OAuth2.html#IA>
-# The client_id client_secret are copied from the API Access tab on
-# the Google APIs Console <http://code.google.com/apis/console>. When
-# creating credentials for this application be sure to choose an Application
-# type of "Installed application".
-FLOW = OAuth2WebServerFlow(
-    client_id='[[CLIENT ID GOES HERE]]',
-    client_secret='[[CLIENT SECRET GOES HERE]]',
+# CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
+# application, including client_id and client_secret, which are found
+# on the API Access tab on the Google APIs
+# Console <http://code.google.com/apis/console>
+CLIENT_SECRETS = 'client_secrets.json'
+
+# Helpful message to display in the browser if the CLIENT_SECRETS file
+# is missing.
+MISSING_CLIENT_SECRETS_MESSAGE = """
+WARNING: Please configure OAuth 2.0
+
+To make this sample run you will need to populate the client_secrets.json file
+found at:
+
+   %s
+
+with information from the APIs Console <https://code.google.com/apis/console>.
+
+""" % os.path.join(os.path.dirname(__file__), CLIENT_SECRETS)
+
+# Set up a Flow object to be used if we need to authenticate.
+FLOW = flow_from_clientsecrets(CLIENT_SECRETS,
     scope='https://www.googleapis.com/auth/urlshortener',
-    user_agent='urlshortener-cmdline-sample/1.0')
+    message=MISSING_CLIENT_SECRETS_MESSAGE)
+
 
 # The gflags module makes defining command-line options easy for
 # applications. Run this program with the '--help' argument to see
@@ -86,8 +99,9 @@ def main(argv):
   # If the Credentials don't exist or are invalid run through the native client
   # flow. The Storage object will ensure that if successful the good
   # Credentials will get written back to a file.
-  storage = Storage('urlshortener.dat')
+  storage = Storage('plus.dat')
   credentials = storage.get()
+
   if credentials is None or credentials.invalid:
     credentials = run(FLOW, storage)
 
@@ -96,14 +110,14 @@ def main(argv):
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  service = build("urlshortener", "v1", http=http)
+  service = build('urlshortener', 'v1', http=http)
 
   try:
 
     url = service.url()
 
     # Create a shortened URL by inserting the URL into the url collection.
-    body = {"longUrl": "http://code.google.com/apis/urlshortener/" }
+    body = {'longUrl': 'http://code.google.com/apis/urlshortener/' }
     resp = url.insert(body=body).execute()
     pprint.pprint(resp)
 
@@ -113,10 +127,9 @@ def main(argv):
     resp = url.get(shortUrl=short_url).execute()
     pprint.pprint(resp)
 
-
   except AccessTokenRefreshError:
-    print ("The credentials have been revoked or expired, please re-run"
-      "the application to re-authorize")
+    print ('The credentials have been revoked or expired, please re-run'
+      'the application to re-authorize')
 
 if __name__ == '__main__':
   main(sys.argv)

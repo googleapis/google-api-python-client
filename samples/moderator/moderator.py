@@ -37,31 +37,44 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import gflags
 import httplib2
 import logging
+import os
 import pprint
 import sys
 
 from apiclient.discovery import build
-from oauth2client.file import Storage
 from oauth2client.client import AccessTokenRefreshError
-from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.client import flow_from_clientsecrets
+from oauth2client.file import Storage
 from oauth2client.tools import run
+
 
 FLAGS = gflags.FLAGS
 
-# Set up a Flow object to be used if we need to authenticate. This
-# sample uses OAuth 2.0, and we set up the OAuth2WebServerFlow with
-# the information it needs to authenticate. Note that it is called
-# the Web Server Flow, but it can also handle the flow for native
-# applications <http://code.google.com/apis/accounts/docs/OAuth2.html#IA>
-# The client_id client_secret are copied from the API Access tab on
-# the Google APIs Console <http://code.google.com/apis/console>. When
-# creating credentials for this application be sure to choose an Application
-# type of "Installed application".
-FLOW = OAuth2WebServerFlow(
-    client_id='433807057907.apps.googleusercontent.com',
-    client_secret='jigtZpMApkRxncxikFpR+SFg',
+# CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
+# application, including client_id and client_secret, which are found
+# on the API Access tab on the Google APIs
+# Console <http://code.google.com/apis/console>
+CLIENT_SECRETS = 'client_secrets.json'
+
+# Helpful message to display in the browser if the CLIENT_SECRETS file
+# is missing.
+MISSING_CLIENT_SECRETS_MESSAGE = """
+WARNING: Please configure OAuth 2.0
+
+To make this sample run you will need to populate the client_secrets.json file
+found at:
+
+   %s
+
+with information from the APIs Console <https://code.google.com/apis/console>.
+
+""" % os.path.join(os.path.dirname(__file__), CLIENT_SECRETS)
+
+# Set up a Flow object to be used if we need to authenticate.
+FLOW = flow_from_clientsecrets(CLIENT_SECRETS,
     scope='https://www.googleapis.com/auth/moderator',
-    user_agent='moderator-cmdline-sample/1.0')
+    message=MISSING_CLIENT_SECRETS_MESSAGE)
+
 
 # The gflags module makes defining command-line options easy for
 # applications. Run this program with the '--help' argument to see
@@ -85,8 +98,9 @@ def main(argv):
   # If the Credentials don't exist or are invalid run through the native client
   # flow. The Storage object will ensure that if successful the good
   # Credentials will get written back to a file.
-  storage = Storage('moderator.dat')
+  storage = Storage('plus.dat')
   credentials = storage.get()
+
   if credentials is None or credentials.invalid:
     credentials = run(FLOW, storage)
 
@@ -95,54 +109,55 @@ def main(argv):
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  service = build("moderator", "v1", http=http)
+  service = build('moderator', 'v1', http=http)
 
   try:
 
     # Create a new Moderator series.
     series_body = {
-          "description": "Share and rank tips for eating healthy and cheap!",
-          "name": "Eating Healthy & Cheap",
-          "videoSubmissionAllowed": False
+          'description': 'Share and rank tips for eating healthy and cheap!',
+          'name': 'Eating Healthy & Cheap',
+          'videoSubmissionAllowed': False
           }
     series = service.series().insert(body=series_body).execute()
-    print "Created a new series"
+    print 'Created a new series'
 
     # Create a new Moderator topic in that series.
     topic_body = {
-          "description": "Share your ideas on eating healthy!",
-          "name": "Ideas",
-          "presenter": "liz"
+          'description': 'Share your ideas on eating healthy!',
+          'name': 'Ideas',
+          'presenter': 'liz'
           }
     topic = service.topics().insert(seriesId=series['id']['seriesId'],
                               body=topic_body).execute()
-    print "Created a new topic"
+    print 'Created a new topic'
 
     # Create a new Submission in that topic.
     submission_body = {
-          "attachmentUrl": "http://www.youtube.com/watch?v=1a1wyc5Xxpg",
-          "attribution": {
-            "displayName": "Bashan",
-            "location": "Bainbridge Island, WA"
+          'attachmentUrl': 'http://www.youtube.com/watch?v=1a1wyc5Xxpg',
+          'attribution': {
+            'displayName': 'Bashan',
+            'location': 'Bainbridge Island, WA'
             },
-          "text": "Charlie Ayers @ Google"
+          'text': 'Charlie Ayers @ Google'
           }
     submission = service.submissions().insert(seriesId=topic['id']['seriesId'],
         topicId=topic['id']['topicId'], body=submission_body).execute()
-    print "Inserted a new submisson on the topic"
+    print 'Inserted a new submisson on the topic'
 
     # Vote on that newly added Submission.
     vote_body = {
-          "vote": "PLUS"
+          'vote': 'PLUS'
           }
     service.votes().insert(seriesId=topic['id']['seriesId'],
                      submissionId=submission['id']['submissionId'],
                      body=vote_body)
-    print "Voted on the submission"
+    print 'Voted on the submission'
 
   except AccessTokenRefreshError:
-    print ("The credentials have been revoked or expired, please re-run"
-      "the application to re-authorize")
+    print ('The credentials have been revoked or expired, please re-run'
+      'the application to re-authorize')
 
 if __name__ == '__main__':
   main(sys.argv)
+

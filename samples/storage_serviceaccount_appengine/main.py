@@ -17,17 +17,17 @@
 """This application produces formatted listings for Google Cloud
    Storage buckets.
 
-It takes a bucket name in the URL path and does an HTTP GET on the 
-corresponding Google Cloud Storage URL to obtain a listing of the 
-bucket contents. For example, if this app is invoked with the URI 
-http://bucket-list.appspot.com/foo, it would remove the bucket name 
-'foo', append it to the Google Cloud Storage service URI and send 
-a GET request to the resulting URI. The bucket listing is returned 
-in an XML document, which is prepended with a reference to an XSLT 
-style sheet for human readable presentation.
+It takes a bucket name in the URL path and does an HTTP GET on the
+corresponding Google Cloud Storage URL to obtain a listing of the bucket
+contents. For example, if this app is invoked with the URI
+http://bucket-list.appspot.com/foo, it would remove the bucket name 'foo',
+append it to the Google Cloud Storage service URI and send a GET request to
+the resulting URI. The bucket listing is returned in an XML document, which is
+prepended with a reference to an XSLT style sheet for human readable
+presentation.
 
-More information about using Google App Engine apps and service accounts
-to call Google APIs can be found here:
+More information about using Google App Engine apps and service accounts to
+call Google APIs can be found here:
 
 <https://developers.google.com/accounts/docs/OAuth2ServiceAccount>
 <http://code.google.com/appengine/docs/python/appidentity/overview.html>
@@ -73,7 +73,7 @@ class MainHandler(webapp.RequestHandler):
         err = 'Error: ' + str(resp.status) + ', bucket: ' + bucket + \
               ', response: ' + str(content)
         raise Exception(err)
-      # Edit returned bucket listing XML to insert a reference to our style 
+      # Edit returned bucket listing XML to insert a reference to our style
       # sheet for nice formatting and send results to client.
       content = re.sub('(<ListBucketResult)', XSL + '\\1', content)
       self.response.headers['Content-Type'] = 'text/xml'
