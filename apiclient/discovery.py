@@ -74,7 +74,7 @@ STACK_QUERY_PARAMETERS = ['trace', 'pp', 'userip', 'strict']
 RESERVED_WORDS = ['and', 'assert', 'break', 'class', 'continue', 'def', 'del',
                   'elif', 'else', 'except', 'exec', 'finally', 'for', 'from',
                   'global', 'if', 'import', 'in', 'is', 'lambda', 'not', 'or',
-                  'pass', 'print', 'raise', 'return', 'try', 'while' ]
+                  'pass', 'print', 'raise', 'return', 'try', 'while', 'body']
 
 
 def fix_method_name(name):
@@ -396,7 +396,9 @@ def _createResource(http, baseUrl, model, requestBuilder,
         methodDesc['parameters']['body']['type'] = 'object'
     if 'mediaUpload' in methodDesc:
       methodDesc['parameters']['media_body'] = {
-          'description': 'The filename of the media request body.',
+          'description':
+            'The filename of the media request body, or an instance of a '
+            'MediaUpload object.',
           'type': 'string',
           'required': False,
           }
@@ -596,9 +598,20 @@ def _createResource(http, baseUrl, model, requestBuilder,
 
     # Skip undocumented params and params common to all methods.
     skip_parameters = rootDesc.get('parameters', {}).keys()
-    skip_parameters.append(STACK_QUERY_PARAMETERS)
+    skip_parameters.extend(STACK_QUERY_PARAMETERS)
 
-    for arg in argmap.iterkeys():
+    all_args = argmap.keys()
+    args_ordered = [key2param(s) for s in methodDesc.get('parameterOrder', [])]
+
+    # Move body to the front of the line.
+    if 'body' in all_args:
+      args_ordered.append('body')
+
+    for name in all_args:
+      if name not in args_ordered:
+        args_ordered.append(name)
+
+    for arg in args_ordered:
       if arg in skip_parameters:
         continue
 
@@ -653,13 +666,13 @@ def _createResource(http, baseUrl, model, requestBuilder,
     def methodNext(self, previous_request, previous_response):
       """Retrieves the next page of results.
 
-      Args:
-        previous_request: The request for the previous page.
-        previous_response: The response from the request for the previous page.
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-      Returns:
-        A request object that you can call 'execute()' on to request the next
-        page. Returns None if there are no more items in the collection.
+Returns:
+  A request object that you can call 'execute()' on to request the next
+  page. Returns None if there are no more items in the collection.
       """
       # Retrieve nextPageToken from previous_response
       # Use as pageToken in previous_request to create new request.

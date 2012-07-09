@@ -26,9 +26,13 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import httplib2
 import inspect
+import logging
 import os
 import pydoc
 import re
+
+import describe
+import uritemplate
 
 from apiclient import discovery
 from apiclient.errors import HttpError
@@ -50,6 +54,9 @@ def get_directory_doc():
     uri += ('&userIp=' + ip)
   resp, content = http.request(uri)
   directory = simplejson.loads(content)['items']
+  for item in directory:
+    item['title'] = item.get('title', item.get('description', ''))
+    item['safe_version'] = describe.safe_version(item['version'])
   return directory
 
 
@@ -59,8 +66,6 @@ class MainHandler(webapp.RequestHandler):
 
   def get(self):
     directory = get_directory_doc()
-    for item in directory:
-      item['title'] = item.get('title', item.get('description', ''))
     path = os.path.join(os.path.dirname(__file__), 'index.html')
     self.response.out.write(
         template.render(
@@ -73,8 +78,6 @@ class GadgetHandler(webapp.RequestHandler):
 
   def get(self):
     directory = get_directory_doc()
-    for item in directory:
-      item['title'] = item.get('title', item.get('description', ''))
     path = os.path.join(os.path.dirname(__file__), 'gadget.html')
     self.response.out.write(
         template.render(
@@ -88,8 +91,6 @@ class EmbedHandler(webapp.RequestHandler):
 
   def get(self):
     directory = get_directory_doc()
-    for item in directory:
-      item['title'] = item.get('title', item.get('description', ''))
     path = os.path.join(os.path.dirname(__file__), 'embed.html')
     self.response.out.write(
         template.render(
@@ -97,54 +98,54 @@ class EmbedHandler(webapp.RequestHandler):
                    }))
 
 
-def _render(resource):
-  """Use pydoc helpers on an instance to generate the help documentation.
-  """
-  obj, name = pydoc.resolve(type(resource))
-  return pydoc.html.page(
-      pydoc.describe(obj), pydoc.html.document(obj, name))
-
-
 class ResourceHandler(webapp.RequestHandler):
   """Handles serving the PyDoc for a given collection.
   """
 
   def get(self, service_name, version, collection):
+
+    real_version = describe.unsafe_version(version)
+
+    logging.info('%s %s %s', service_name, version, collection)
     http = httplib2.Http(memcache)
     try:
-      resource = discovery.build(service_name, version, http=http)
+      resource = discovery.build(service_name, real_version, http=http)
     except:
+      logging.error('Failed to build service.')
       return self.error(404)
+
+    DISCOVERY_URI = ('https://www.googleapis.com/discovery/v1/apis/'
+      '{api}/{apiVersion}/rest')
+    response, content = http.request(
+        uritemplate.expand(
+            DISCOVERY_URI, {
+                'api': service_name,
+                'apiVersion': real_version})
+            )
+    root_discovery = simplejson.loads(content)
+    collection_discovery = root_discovery
+
     # descend the object path
     if collection:
       try:
-        path = collection.split('/')
+        path = collection.split('.')
         if path:
           for method in path:
             resource = getattr(resource, method)()
+            collection_discovery = collection_discovery['resources'][method]
       except:
+        logging.error('Failed to parse the collections.')
         return self.error(404)
+    logging.info('Built everything successfully so far.')
 
-    page = _render(resource)
+    path = '%s_%s.' % (service_name, version)
+    if collection:
+      path += '.'.join(collection.split('/'))
+      path += '.'
 
-    collections = []
-    for name in dir(resource):
-      if not "_" in name and callable(getattr(resource, name)) and hasattr(
-          getattr(resource, name), '__is_resource__'):
-        collections.append(name)
+    page = describe.document_collection(
+        resource, path, root_discovery, collection_discovery)
 
-    if collection is None:
-      collection_path = ''
-    else:
-      collection_path = collection + '/'
-    for name in collections:
-      page = re.sub('strong>(%s)<' % name,
-          r'strong><a href="/%s/%s/%s">\1</a><' % (
-          service_name, version, collection_path + name), page)
-
-    # TODO(jcgregorio) breadcrumbs
-    # TODO(jcgregorio) sample code?
-    page = re.sub('<p>', r'<a href="/">Home</a><p>', page, 1)
     self.response.out.write(page)
 
 
@@ -154,9 +155,9 @@ def main():
       (r'/', MainHandler),
       (r'/_gadget/', GadgetHandler),
       (r'/_embed/', EmbedHandler),
-      (r'/([^\/]*)/([^\/]*)(?:/(.*))?', ResourceHandler),
+      (r'/([^_]+)_([^\.]+)(?:\.(.*))?\.html$', ResourceHandler),
       ],
-      debug=False)
+      debug=True)
   util.run_wsgi_app(application)
 
 
