@@ -339,7 +339,8 @@ def document_api(name, version):
 if __name__ == '__main__':
   http = httplib2.Http()
   resp, content = http.request(
-      'https://www.googleapis.com/discovery/v1/apis?preferred=true')
+      'https://www.googleapis.com/discovery/v1/apis?preferred=true',
+      headers={'X-User-IP': '0.0.0.0'})
   if resp.status == 200:
     directory = simplejson.loads(content)['items']
     for api in directory:
