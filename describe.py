@@ -23,7 +23,6 @@ the generated API surface itself.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-import json
 import os
 import re
 import sys
@@ -328,7 +327,7 @@ def document_api(name, version):
               'api': name,
               'apiVersion': version})
           )
-  discovery = json.loads(content)
+  discovery = simplejson.loads(content)
 
   version = safe_version(version)
 
