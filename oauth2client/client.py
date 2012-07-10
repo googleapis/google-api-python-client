@@ -745,9 +745,13 @@ if HAS_OPENSSL:
   class SignedJwtAssertionCredentials(AssertionCredentials):
     """Credentials object used for OAuth 2.0 Signed JWT assertion grants.
 
-    This credential does not require a flow to instantiate because it
-    represents a two legged flow, and therefore has all of the required
-    information to generate and refresh its own access tokens.
+    This credential does not require a flow to instantiate because it represents
+    a two legged flow, and therefore has all of the required information to
+    generate and refresh its own access tokens.
+
+    SignedJwtAssertionCredentials requires PyOpenSSL and because of that it does
+    not work on App Engine. For App Engine you may consider using
+    AppAssertionCredentials.
     """
 
     MAX_TOKEN_LIFETIME_SECS = 3600 # 1 hour in seconds
@@ -828,6 +832,9 @@ if HAS_OPENSSL:
   def verify_id_token(id_token, audience, http=None,
       cert_uri=ID_TOKEN_VERIFICATON_CERTS):
     """Verifies a signed JWT id_token.
+
+    This function requires PyOpenSSL and because of that it does not work on
+    App Engine. For App Engine you may consider using AppAssertionCredentials.
 
     Args:
       id_token: string, A Signed JWT.

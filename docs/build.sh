@@ -25,7 +25,4 @@
 export GOOGLE_APPENGINE=$HOME/projects/google_appengine/
 export DJANGO_SETTINGS_MODULE=fakesettings
 export PYTHONPATH=`pwd`/..:$GOOGLE_APPENGINE
-find ../apiclient/ -name "*.py" | sed "s/\/__init__.py//" | sed "s/\.py//" | sed "s/^\.\.\///" | sed "s#/#.#g" | xargs python `which pydoc` -w
-find ../oauth2client/ -name "*.py" | sed "s/\/__init__.py//" | sed "s/\.py//" | sed "s/^\.\.\///" | sed "s#/#.#g" | xargs python `which pydoc` -w
-find ../uritemplate/ -name "*.py" | sed "s/\/__init__.py//" | sed "s/\.py//" | sed "s/^\.\.\///" | sed "s#/#.#g" | xargs python `which pydoc` -w
 epydoc --output epy --graph classtree --docformat plaintext apiclient oauth2client
