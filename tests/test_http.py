@@ -386,7 +386,7 @@ Content-Type: application/http
 Content-Transfer-Encoding: binary
 Content-ID: <randomness+1>
 
-HTTP/1.1 401 Authoration Required
+HTTP/1.1 401 Authorization Required
 Content-Type application/json
 Content-Length: 14
 ETag: "etag/pony"\r\n\r\n{"error": {"message":
@@ -650,6 +650,8 @@ class TestBatch(unittest.TestCase):
 
     self.assertEqual(None, callbacks.responses['1'])
     self.assertEqual(401, callbacks.exceptions['1'].resp.status)
+    self.assertEqual(
+        'Authorization Required', callbacks.exceptions['1'].resp.reason)
     self.assertEqual({u'baz': u'qux'}, callbacks.responses['2'])
     self.assertEqual(None, callbacks.exceptions['2'])
 

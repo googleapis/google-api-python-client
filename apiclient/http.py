@@ -854,7 +854,7 @@ class BatchHttpRequest(object):
     # Unique ID on which to base the Content-ID headers.
     self._base_id = None
 
-    # A map from request id to (headers, content) response pairs
+    # A map from request id to (httplib2.Response, content) response pairs
     self._responses = {}
 
     # A map of id(Credentials) that have been refreshed.
@@ -982,7 +982,7 @@ class BatchHttpRequest(object):
       payload: string, headers and body as a string.
 
     Returns:
-      A pair (resp, content) like would be returned from httplib2.request.
+      A pair (resp, content), such as would be returned from httplib2.request.
     """
     # Strip off the status line
     status_line, payload = payload.split('\n', 1)
@@ -1110,8 +1110,8 @@ class BatchHttpRequest(object):
 
     for part in mime_response.get_payload():
       request_id = self._header_to_id(part['Content-ID'])
-      headers, content = self._deserialize_response(part.get_payload())
-      self._responses[request_id] = (headers, content)
+      response, content = self._deserialize_response(part.get_payload())
+      self._responses[request_id] = (response, content)
 
   def execute(self, http=None):
     """Execute all the requests as a single batched HTTP request.
@@ -1148,8 +1148,8 @@ class BatchHttpRequest(object):
     redo_order = []
 
     for request_id in self._order:
-      headers, content = self._responses[request_id]
-      if headers['status'] == '401':
+      resp, content = self._responses[request_id]
+      if resp['status'] == '401':
         redo_order.append(request_id)
         request = self._requests[request_id]
         self._refresh_and_apply_credentials(request, http)
@@ -1163,7 +1163,7 @@ class BatchHttpRequest(object):
     # that contains an HttpError?
 
     for request_id in self._order:
-      headers, content = self._responses[request_id]
+      resp, content = self._responses[request_id]
 
       request = self._requests[request_id]
       callback = self._callbacks[request_id]
@@ -1171,8 +1171,7 @@ class BatchHttpRequest(object):
       response = None
       exception = None
       try:
-        r = httplib2.Response(headers)
-        response = request.postproc(r, content)
+        response = request.postproc(resp, content)
       except HttpError, e:
         exception = e
 
