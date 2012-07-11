@@ -828,8 +828,10 @@ class BatchHttpRequest(object):
 
     Args:
       callback: callable, A callback to be called for each response, of the
-        form callback(id, response). The first parameter is the request id, and
-        the second is the deserialized response object.
+        form callback(id, response, exception). The first parameter is the
+        request id, and the second is the deserialized response object. The
+        third is an apiclient.errors.HttpError exception object if an HTTP error
+        occurred while processing the request, or None if no error occurred.
       batch_uri: string, URI to send batch requests to.
     """
     if batch_uri is None:
@@ -1030,8 +1032,10 @@ class BatchHttpRequest(object):
     Args:
       request: HttpRequest, Request to add to the batch.
       callback: callable, A callback to be called for this response, of the
-        form callback(id, response). The first parameter is the request id, and
-        the second is the deserialized response object.
+        form callback(id, response, exception). The first parameter is the
+        request id, and the second is the deserialized response object. The
+        third is an apiclient.errors.HttpError exception object if an HTTP error
+        occurred while processing the request, or None if no errors occurred.
       request_id: string, A unique id for the request. The id will be passed to
         the callback with the response.
 

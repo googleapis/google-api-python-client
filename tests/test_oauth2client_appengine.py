@@ -51,8 +51,8 @@ from google.appengine.ext import testbed
 from google.appengine.runtime import apiproxy_errors
 from oauth2client.anyjson import simplejson
 from oauth2client.appengine import AppAssertionCredentials
-from oauth2client.appengine import FlowProperty
 from oauth2client.appengine import CredentialsModel
+from oauth2client.appengine import FlowProperty
 from oauth2client.appengine import OAuth2Decorator
 from oauth2client.appengine import OAuth2Handler
 from oauth2client.appengine import StorageByKeyName
@@ -63,6 +63,7 @@ from oauth2client.client import FlowExchangeError
 from oauth2client.client import OAuth2Credentials
 from oauth2client.client import flow_from_clientsecrets
 from webtest import TestApp
+
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
