@@ -24,6 +24,8 @@ from OpenSSL import crypto
 from anyjson import simplejson
 
 
+logger = logging.getLogger(__name__)
+
 CLOCK_SKEW_SECS = 300  # 5 minutes in seconds
 AUTH_TOKEN_LIFETIME_SECS = 300  # 5 minutes in seconds
 MAX_TOKEN_LIFETIME_SECS = 86400  # 1 day in seconds
@@ -161,7 +163,7 @@ def make_signed_jwt(signer, payload):
   signature = signer.sign(signing_input)
   segments.append(_urlsafe_b64encode(signature))
 
-  logging.debug(str(segments))
+  logger.debug(str(segments))
 
   return '.'.join(segments)
 

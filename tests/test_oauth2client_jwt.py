@@ -25,6 +25,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import httplib2
 import os
 import sys
+import tempfile
 import time
 import unittest
 import urlparse
@@ -37,9 +38,11 @@ except ImportError:
 from apiclient.http import HttpMockSequence
 from oauth2client import crypt
 from oauth2client.anyjson import simplejson
+from oauth2client.client import Credentials
 from oauth2client.client import SignedJwtAssertionCredentials
 from oauth2client.client import VerifyJwtTokenError
 from oauth2client.client import verify_id_token
+from oauth2client.file import Storage
 
 
 def datafile(filename):
@@ -182,7 +185,10 @@ class CryptTests(unittest.TestCase):
     })
     self._check_jwt_failure(jwt, 'Wrong recipient')
 
-  def test_signed_jwt_assertion_credentials(self):
+
+class SignedJwtAssertionCredentialsTests(unittest.TestCase):
+
+  def test_credentials_good(self):
     private_key = datafile('privatekey.p12')
     credentials = SignedJwtAssertionCredentials(
         'some_account@example.com',
@@ -196,6 +202,63 @@ class CryptTests(unittest.TestCase):
     http = credentials.authorize(http)
     resp, content = http.request('http://example.org')
     self.assertEqual('Bearer 1/3w', content['Authorization'])
+
+  def test_credentials_to_from_json(self):
+    private_key = datafile('privatekey.p12')
+    credentials = SignedJwtAssertionCredentials(
+        'some_account@example.com',
+        private_key,
+        scope='read+write',
+        prn='joe@example.org')
+    json = credentials.to_json()
+    restored = Credentials.new_from_json(json)
+    self.assertEqual(credentials.private_key, restored.private_key)
+    self.assertEqual(credentials.private_key_password,
+                     restored.private_key_password)
+    self.assertEqual(credentials.kwargs, restored.kwargs)
+
+  def _credentials_refresh(self, credentials):
+    http = HttpMockSequence([
+      ({'status': '200'}, '{"access_token":"1/3w","expires_in":3600}'),
+      ({'status': '401'}, ''),
+      ({'status': '200'}, '{"access_token":"3/3w","expires_in":3600}'),
+      ({'status': '200'}, 'echo_request_headers'),
+      ])
+    http = credentials.authorize(http)
+    resp, content = http.request('http://example.org')
+    return content
+
+  def test_credentials_refresh_without_storage(self):
+    private_key = datafile('privatekey.p12')
+    credentials = SignedJwtAssertionCredentials(
+        'some_account@example.com',
+        private_key,
+        scope='read+write',
+        prn='joe@example.org')
+
+    content = self._credentials_refresh(credentials)
+
+    self.assertEqual('Bearer 3/3w', content['Authorization'])
+
+  def test_credentials_refresh_with_storage(self):
+    private_key = datafile('privatekey.p12')
+    credentials = SignedJwtAssertionCredentials(
+        'some_account@example.com',
+        private_key,
+        scope='read+write',
+        prn='joe@example.org')
+
+    (filehandle, filename) = tempfile.mkstemp()
+    os.close(filehandle)
+    store = Storage(filename)
+    store.put(credentials)
+    credentials.set_store(store)
+
+    content = self._credentials_refresh(credentials)
+
+    self.assertEqual('Bearer 3/3w', content['Authorization'])
+    os.unlink(filename)
+
 
 if __name__ == '__main__':
   unittest.main()

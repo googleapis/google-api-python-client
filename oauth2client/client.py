@@ -788,7 +788,9 @@ if HAS_OPENSSL:
         scope = ' '.join(scope)
       self.scope = scope
 
-      self.private_key = private_key
+      # Keep base64 encoded so it can be stored in JSON.
+      self.private_key = base64.b64encode(private_key)
+
       self.private_key_password = private_key_password
       self.service_account_name = service_account_name
       self.kwargs = kwargs
@@ -798,14 +800,15 @@ if HAS_OPENSSL:
       data = simplejson.loads(s)
       retval = SignedJwtAssertionCredentials(
           data['service_account_name'],
-          data['private_key'],
-          data['private_key_password'],
+          base64.b64decode(data['private_key']),
           data['scope'],
-          data['user_agent'],
-          data['token_uri'],
-          data['kwargs']
+          private_key_password=data['private_key_password'],
+          user_agent=data['user_agent'],
+          token_uri=data['token_uri'],
+          **data['kwargs']
           )
       retval.invalid = data['invalid']
+      retval.access_token = data['access_token']
       return retval
 
     def _generate_assertion(self):
@@ -821,9 +824,9 @@ if HAS_OPENSSL:
       payload.update(self.kwargs)
       logger.debug(str(payload))
 
+      private_key = base64.b64decode(self.private_key)
       return make_signed_jwt(
-          Signer.from_string(self.private_key, self.private_key_password),
-          payload)
+          Signer.from_string(private_key, self.private_key_password), payload)
 
   # Only used in verify_id_token(), which is always calling to the same URI
   # for the certs.
