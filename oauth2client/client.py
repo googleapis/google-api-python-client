@@ -888,6 +888,33 @@ def _extract_id_token(id_token):
 
   return simplejson.loads(_urlsafe_b64decode(segments[1]))
 
+def _parse_exchange_token_response(content):
+  """Parses response of an exchange token request.
+
+  Most providers return JSON but some (e.g. Facebook) return a
+  url-encoded string.
+
+  Args:
+    content: The body of a response
+
+  Returns:
+    Content as a dictionary object. Note that the dict could be empty,
+    i.e. {}. That basically indicates a failure.
+  """
+  resp = {}
+  try:
+    resp = simplejson.loads(content)
+  except StandardError:
+    # different JSON libs raise different exceptions,
+    # so we just do a catch-all here
+    resp = dict(parse_qsl(content))
+
+  # some providers respond with 'expires', others with 'expires_in'
+  if resp and 'expires' in resp:
+    resp['expires_in'] = resp.pop('expires')
+
+  return resp
+
 def credentials_from_code(client_id, client_secret, scope, code,
                         redirect_uri = 'postmessage',
                         http=None, user_agent=None,
@@ -1074,9 +1101,8 @@ class OAuth2WebServerFlow(Flow):
 
     resp, content = http.request(self.token_uri, method='POST', body=body,
                                  headers=headers)
-    if resp.status == 200:
-      # TODO(jcgregorio) Raise an error if simplejson.loads fails?
-      d = simplejson.loads(content)
+    d = _parse_exchange_token_response(content)
+    if resp.status == 200 and 'access_token' in d:
       access_token = d['access_token']
       refresh_token = d.get('refresh_token', None)
       token_expiry = None
@@ -1094,14 +1120,11 @@ class OAuth2WebServerFlow(Flow):
                                id_token=d.get('id_token', None))
     else:
       logger.info('Failed to retrieve access token: %s' % content)
-      error_msg = 'Invalid response %s.' % resp['status']
-      try:
-        d = simplejson.loads(content)
-        if 'error' in d:
-          error_msg = d['error']
-      except:
-        pass
-
+      if 'error' in d:
+        # you never know what those providers got to say
+        error_msg = unicode(d['error'])
+      else:
+        error_msg = 'Invalid response: %s.' % str(resp.status)
       raise FlowExchangeError(error_msg)
 
 def flow_from_clientsecrets(filename, scope, message=None):

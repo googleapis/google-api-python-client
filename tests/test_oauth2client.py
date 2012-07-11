@@ -257,6 +257,35 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
     except FlowExchangeError:
       pass
 
+  def test_urlencoded_exchange_failure(self):
+    http = HttpMockSequence([
+      ({'status': '400'}, "error=invalid_request"),
+    ])
+
+    try:
+      credentials = self.flow.step2_exchange('some random code', http)
+      self.fail("should raise exception if exchange doesn't get 200")
+    except FlowExchangeError, e:
+      self.assertEquals('invalid_request', str(e))
+
+  def test_exchange_failure_with_json_error(self):
+    # Some providers have "error" attribute as a JSON object
+    # in place of regular string.
+    # This test makes sure no strange object-to-string coversion
+    # exceptions are being raised instead of FlowExchangeError.
+    http = HttpMockSequence([
+      ({'status': '400'},
+      """ {"error": {
+              "type": "OAuthException",
+              "message": "Error validating verification code."} }"""),
+      ])
+
+    try:
+      credentials = self.flow.step2_exchange('some random code', http)
+      self.fail("should raise exception if exchange doesn't get 200")
+    except FlowExchangeError, e:
+      pass
+
   def test_exchange_success(self):
     http = HttpMockSequence([
       ({'status': '200'},
@@ -270,11 +299,40 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
     self.assertNotEqual(None, credentials.token_expiry)
     self.assertEqual('8xLOxBtZp8', credentials.refresh_token)
 
+  def test_urlencoded_exchange_success(self):
+    http = HttpMockSequence([
+      ({'status': '200'}, "access_token=SlAV32hkKG&expires_in=3600"),
+    ])
+
+    credentials = self.flow.step2_exchange('some random code', http)
+    self.assertEqual('SlAV32hkKG', credentials.access_token)
+    self.assertNotEqual(None, credentials.token_expiry)
+
+  def test_urlencoded_expires_param(self):
+    http = HttpMockSequence([
+      # Note the "expires=3600" where you'd normally
+      # have if named "expires_in"
+      ({'status': '200'}, "access_token=SlAV32hkKG&expires=3600"),
+    ])
+
+    credentials = self.flow.step2_exchange('some random code', http)
+    self.assertNotEqual(None, credentials.token_expiry)
+
   def test_exchange_no_expires_in(self):
     http = HttpMockSequence([
       ({'status': '200'}, """{ "access_token":"SlAV32hkKG",
        "refresh_token":"8xLOxBtZp8" }"""),
       ])
+
+    credentials = self.flow.step2_exchange('some random code', http)
+    self.assertEqual(None, credentials.token_expiry)
+
+  def test_urlencoded_exchange_no_expires_in(self):
+    http = HttpMockSequence([
+      # This might be redundant but just to make sure
+      # urlencoded access_token gets parsed correctly
+      ({'status': '200'}, "access_token=SlAV32hkKG"),
+    ])
 
     credentials = self.flow.step2_exchange('some random code', http)
     self.assertEqual(None, credentials.token_expiry)
