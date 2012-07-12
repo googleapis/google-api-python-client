@@ -324,12 +324,12 @@ class MediaIoBaseUpload(MediaUpload):
         media_body=media).execute()
   """
 
-  def __init__(self, fh, mimetype, chunksize=DEFAULT_CHUNK_SIZE,
+  def __init__(self, fd, mimetype, chunksize=DEFAULT_CHUNK_SIZE,
       resumable=False):
     """Constructor.
 
     Args:
-      fh: io.Base or file object, The source of the bytes to upload. MUST be
+      fd: io.Base or file object, The source of the bytes to upload. MUST be
         opened in blocking mode, do not use streams opened in non-blocking mode.
       mimetype: string, Mime-type of the file. If None then a mime-type will be
         guessed from the file extension.
@@ -338,14 +338,14 @@ class MediaIoBaseUpload(MediaUpload):
       resumable: bool, True if this is a resumable upload. False means upload
         in a single request.
     """
-    self._fh = fh
+    self._fd = fd
     self._mimetype = mimetype
     self._chunksize = chunksize
     self._resumable = resumable
     self._size = None
     try:
-      if hasattr(self._fh, 'fileno'):
-        fileno = self._fh.fileno()
+      if hasattr(self._fd, 'fileno'):
+        fileno = self._fd.fileno()
 
         # Pipes and such show up as 0 length files.
         size = os.fstat(fileno).st_size
@@ -397,8 +397,8 @@ class MediaIoBaseUpload(MediaUpload):
       A string of bytes read. May be shorted than length if EOF was reached
       first.
     """
-    self._fh.seek(begin)
-    return self._fh.read(length)
+    self._fd.seek(begin)
+    return self._fd.read(length)
 
   def to_json(self):
     """This upload type is not serializable."""
@@ -518,23 +518,23 @@ class MediaIoBaseDownload(object):
     print "Download Complete!"
   """
 
-  def __init__(self, fh, request, chunksize=DEFAULT_CHUNK_SIZE):
+  def __init__(self, fd, request, chunksize=DEFAULT_CHUNK_SIZE):
     """Constructor.
 
     Args:
-      fh: io.Base or file object, The stream in which to write the downloaded
+      fd: io.Base or file object, The stream in which to write the downloaded
         bytes.
       request: apiclient.http.HttpRequest, the media request to perform in
         chunks.
       chunksize: int, File will be downloaded in chunks of this many bytes.
     """
-    self.fh_ = fh
-    self.request_ = request
-    self.uri_ = request.uri
-    self.chunksize_ = chunksize
-    self.progress_ = 0
-    self.total_size_ = None
-    self.done_ = False
+    self._fd = fd
+    self._request = request
+    self._uri = request.uri
+    self._chunksize = chunksize
+    self._progress = 0
+    self._total_size = None
+    self._done = False
 
   def next_chunk(self):
     """Get the next chunk of the download.
@@ -550,29 +550,29 @@ class MediaIoBaseDownload(object):
     """
     headers = {
         'range': 'bytes=%d-%d' % (
-            self.progress_, self.progress_ + self.chunksize_)
+            self._progress, self._progress + self._chunksize)
         }
-    http = self.request_.http
+    http = self._request.http
     http.follow_redirects = False
 
-    resp, content = http.request(self.uri_, headers=headers)
+    resp, content = http.request(self._uri, headers=headers)
     if resp.status in [301, 302, 303, 307, 308] and 'location' in resp:
-        self.uri_ = resp['location']
-        resp, content = http.request(self.uri_, headers=headers)
+        self._uri = resp['location']
+        resp, content = http.request(self._uri, headers=headers)
     if resp.status in [200, 206]:
-      self.progress_ += len(content)
-      self.fh_.write(content)
+      self._progress += len(content)
+      self._fd.write(content)
 
       if 'content-range' in resp:
         content_range = resp['content-range']
         length = content_range.rsplit('/', 1)[1]
-        self.total_size_ = int(length)
+        self._total_size = int(length)
 
-      if self.progress_ == self.total_size_:
-        self.done_ = True
-      return MediaDownloadProgress(self.progress_, self.total_size_), self.done_
+      if self._progress == self._total_size:
+        self._done = True
+      return MediaDownloadProgress(self._progress, self._total_size), self._done
     else:
-      raise HttpError(resp, content, self.uri_)
+      raise HttpError(resp, content, self._uri)
 
 
 class HttpRequest(object):

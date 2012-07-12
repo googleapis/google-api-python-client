@@ -506,7 +506,6 @@ def _createResource(http, baseUrl, model, requestBuilder,
         actual_query_params['key'] = self._developerKey
 
       model = self._model
-      # If there is no schema for the response then presume a binary blob.
       if methodName.endswith('_media'):
         model = MediaModel()
       elif 'response' not in methodDesc:

@@ -192,9 +192,9 @@ class TestMediaIoBaseUpload(unittest.TestCase):
     try:
       import io
 
-      fh = io.FileIO(datafile('small.png'), 'r')
+      fd = io.FileIO(datafile('small.png'), 'r')
       upload = MediaIoBaseUpload(
-          fh=fh, mimetype='image/png', chunksize=500, resumable=True)
+          fd=fd, mimetype='image/png', chunksize=500, resumable=True)
       self.assertEqual('image/png', upload.mimetype())
       self.assertEqual(190, upload.size())
       self.assertEqual(True, upload.resumable())
@@ -206,7 +206,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
   def test_media_io_base_upload_from_file_object(self):
     f = open(datafile('small.png'), 'r')
     upload = MediaIoBaseUpload(
-        fh=f, mimetype='image/png', chunksize=500, resumable=True)
+        fd=f, mimetype='image/png', chunksize=500, resumable=True)
     self.assertEqual('image/png', upload.mimetype())
     self.assertEqual(190, upload.size())
     self.assertEqual(True, upload.resumable())
@@ -216,7 +216,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
 
   def test_media_io_base_upload_serializable(self):
     f = open(datafile('small.png'), 'r')
-    upload = MediaIoBaseUpload(fh=f, mimetype='image/png')
+    upload = MediaIoBaseUpload(fd=f, mimetype='image/png')
 
     try:
       json = upload.to_json()
@@ -226,11 +226,11 @@ class TestMediaIoBaseUpload(unittest.TestCase):
 
   def test_media_io_base_upload_from_string_io(self):
     f = open(datafile('small.png'), 'r')
-    fh = StringIO.StringIO(f.read())
+    fd = StringIO.StringIO(f.read())
     f.close()
 
     upload = MediaIoBaseUpload(
-        fh=fh, mimetype='image/png', chunksize=500, resumable=True)
+        fd=fd, mimetype='image/png', chunksize=500, resumable=True)
     self.assertEqual('image/png', upload.mimetype())
     self.assertEqual(None, upload.size())
     self.assertEqual(True, upload.resumable())
@@ -243,9 +243,9 @@ class TestMediaIoBaseUpload(unittest.TestCase):
       import io
 
       f = open(datafile('small.png'), 'r')
-      fh = io.BytesIO(f.read())
+      fd = io.BytesIO(f.read())
       upload = MediaIoBaseUpload(
-          fh=fh, mimetype='image/png', chunksize=500, resumable=True)
+          fd=fd, mimetype='image/png', chunksize=500, resumable=True)
       self.assertEqual('image/png', upload.mimetype())
       self.assertEqual(None, upload.size())
       self.assertEqual(True, upload.resumable())
@@ -261,7 +261,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http)
     self.request = zoo.animals().get_media(name='Lion')
-    self.fh = StringIO.StringIO()
+    self.fd = StringIO.StringIO()
 
   def test_media_io_base_download(self):
     self.request.http = HttpMockSequence([
@@ -272,29 +272,29 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     ])
 
     download = MediaIoBaseDownload(
-        fh=self.fh, request=self.request, chunksize=3)
+        fd=self.fd, request=self.request, chunksize=3)
 
-    self.assertEqual(self.fh, download.fh_)
-    self.assertEqual(3, download.chunksize_)
-    self.assertEqual(0, download.progress_)
-    self.assertEqual(None, download.total_size_)
-    self.assertEqual(False, download.done_)
-    self.assertEqual(self.request.uri, download.uri_)
+    self.assertEqual(self.fd, download._fd)
+    self.assertEqual(3, download._chunksize)
+    self.assertEqual(0, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(False, download._done)
+    self.assertEqual(self.request.uri, download._uri)
 
     status, done = download.next_chunk()
 
-    self.assertEqual(self.fh.getvalue(), '123')
+    self.assertEqual(self.fd.getvalue(), '123')
     self.assertEqual(False, done)
-    self.assertEqual(3, download.progress_)
-    self.assertEqual(5, download.total_size_)
+    self.assertEqual(3, download._progress)
+    self.assertEqual(5, download._total_size)
     self.assertEqual(3, status.resumable_progress)
 
     status, done = download.next_chunk()
 
-    self.assertEqual(self.fh.getvalue(), '12345')
+    self.assertEqual(self.fd.getvalue(), '12345')
     self.assertEqual(True, done)
-    self.assertEqual(5, download.progress_)
-    self.assertEqual(5, download.total_size_)
+    self.assertEqual(5, download._progress)
+    self.assertEqual(5, download._total_size)
 
   def test_media_io_base_download_handle_redirects(self):
     self.request.http = HttpMockSequence([
@@ -305,15 +305,15 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     ])
 
     download = MediaIoBaseDownload(
-        fh=self.fh, request=self.request, chunksize=3)
+        fd=self.fd, request=self.request, chunksize=3)
 
     status, done = download.next_chunk()
 
-    self.assertEqual('https://secure.example.net/lion', download.uri_)
-    self.assertEqual(self.fh.getvalue(), 'abc')
+    self.assertEqual('https://secure.example.net/lion', download._uri)
+    self.assertEqual(self.fd.getvalue(), 'abc')
     self.assertEqual(False, done)
-    self.assertEqual(3, download.progress_)
-    self.assertEqual(5, download.total_size_)
+    self.assertEqual(3, download._progress)
+    self.assertEqual(5, download._total_size)
 
   def test_media_io_base_download_handle_4xx(self):
     self.request.http = HttpMockSequence([
@@ -321,7 +321,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     ])
 
     download = MediaIoBaseDownload(
-        fh=self.fh, request=self.request, chunksize=3)
+        fd=self.fd, request=self.request, chunksize=3)
 
     try:
       status, done = download.next_chunk()
@@ -337,7 +337,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
     status, done = download.next_chunk()
 
-    self.assertEqual(self.fh.getvalue(), '123')
+    self.assertEqual(self.fd.getvalue(), '123')
 
 EXPECTED = """POST /someapi/v1/collection/?foo=bar HTTP/1.1
 Content-Type: application/json
