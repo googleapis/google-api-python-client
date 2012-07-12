@@ -126,6 +126,28 @@ class SchemasTest(unittest.TestCase):
 
     self.assertEqual(feed, eval(self.sc.prettyPrintByName('AnimalFeed')))
 
+  def test_additional_properties(self):
+    items = {
+        'animals': {
+          'a_key': {
+            'photo': {
+              'hash': 'A String',
+              'hashAlgorithm': 'A String',
+              'filename': 'A String',
+              'type': 'A String',
+              'size': 42
+              },
+            'kind': 'zoo#animal',
+            'etag': 'A String',
+            'name': 'A String'
+          }
+        },
+        'kind': 'zoo#animalMap',
+        'etag': 'A String'
+      }
+
+    self.assertEqual(items, eval(self.sc.prettyPrintByName('AnimalMap')))
+
   def test_unknown_name(self):
     self.assertRaises(KeyError,
         self.sc.prettyPrintByName, 'UknownSchemaThing')
@@ -133,4 +155,3 @@ class SchemasTest(unittest.TestCase):
 
 if __name__ == '__main__':
   unittest.main()
-
