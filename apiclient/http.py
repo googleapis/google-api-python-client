@@ -806,13 +806,23 @@ class BatchHttpRequest(object):
   Example:
     from apiclient.http import BatchHttpRequest
 
-    def list_animals(request_id, response):
+    def list_animals(request_id, response, exception):
       \"\"\"Do something with the animals list response.\"\"\"
-      pass
+      if exception is not None:
+        # Do something with the exception.
+        pass
+      else:
+        # Do something with the response.
+        pass
 
-    def list_farmers(request_id, response):
+    def list_farmers(request_id, response, exception):
       \"\"\"Do something with the farmers list response.\"\"\"
-      pass
+      if exception is not None:
+        # Do something with the exception.
+        pass
+      else:
+        # Do something with the response.
+        pass
 
     service = build('farm', 'v2')
 
