@@ -416,8 +416,9 @@ class OAuth2Credentials(Credentials):
       resp, content = request_orig(uri, method, body, headers,
                                    redirections, connection_type)
 
-      if resp.status == 401:
-        logger.info('Refreshing due to a 401')
+      # Older API (GData) respond with 403
+      if resp.status in [401, 403]:
+        logger.info('Refreshing due to a %s' % str(resp.status))
         self._refresh(request_orig)
         self.apply(headers)
         return request_orig(uri, method, body, headers,

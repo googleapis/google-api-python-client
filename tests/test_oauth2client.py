@@ -99,28 +99,32 @@ class OAuth2CredentialsTests(unittest.TestCase):
       user_agent)
 
   def test_token_refresh_success(self):
-    http = HttpMockSequence([
-      ({'status': '401'}, ''),
-      ({'status': '200'}, '{"access_token":"1/3w","expires_in":3600}'),
-      ({'status': '200'}, 'echo_request_headers'),
-      ])
-    http = self.credentials.authorize(http)
-    resp, content = http.request("http://example.com")
-    self.assertEqual('Bearer 1/3w', content['Authorization'])
-    self.assertFalse(self.credentials.access_token_expired)
+    # Older API (GData) respond with 403
+    for status_code in ['401', '403']:
+      http = HttpMockSequence([
+        ({'status': status_code}, ''),
+        ({'status': '200'}, '{"access_token":"1/3w","expires_in":3600}'),
+        ({'status': '200'}, 'echo_request_headers'),
+        ])
+      http = self.credentials.authorize(http)
+      resp, content = http.request("http://example.com")
+      self.assertEqual('Bearer 1/3w', content['Authorization'])
+      self.assertFalse(self.credentials.access_token_expired)
 
   def test_token_refresh_failure(self):
-    http = HttpMockSequence([
-      ({'status': '401'}, ''),
-      ({'status': '400'}, '{"error":"access_denied"}'),
-      ])
-    http = self.credentials.authorize(http)
-    try:
-      http.request("http://example.com")
-      self.fail("should raise AccessTokenRefreshError exception")
-    except AccessTokenRefreshError:
-      pass
-    self.assertTrue(self.credentials.access_token_expired)
+    # Older API (GData) respond with 403
+    for status_code in ['401', '403']:
+      http = HttpMockSequence([
+        ({'status': status_code}, ''),
+        ({'status': '400'}, '{"error":"access_denied"}'),
+        ])
+      http = self.credentials.authorize(http)
+      try:
+        http.request("http://example.com")
+        self.fail("should raise AccessTokenRefreshError exception")
+      except AccessTokenRefreshError:
+        pass
+      self.assertTrue(self.credentials.access_token_expired)
 
   def test_non_401_error_response(self):
     http = HttpMockSequence([
@@ -148,17 +152,19 @@ class AccessTokenCredentialsTests(unittest.TestCase):
     self.credentials = AccessTokenCredentials(access_token, user_agent)
 
   def test_token_refresh_success(self):
-    http = HttpMockSequence([
-      ({'status': '401'}, ''),
-      ])
-    http = self.credentials.authorize(http)
-    try:
-      resp, content = http.request("http://example.com")
-      self.fail("should throw exception if token expires")
-    except AccessTokenCredentialsError:
-      pass
-    except Exception:
-      self.fail("should only throw AccessTokenCredentialsError")
+    # Older API (GData) respond with 403
+    for status_code in ['401', '403']:
+      http = HttpMockSequence([
+        ({'status': status_code}, ''),
+        ])
+      http = self.credentials.authorize(http)
+      try:
+        resp, content = http.request("http://example.com")
+        self.fail("should throw exception if token expires")
+      except AccessTokenCredentialsError:
+        pass
+      except Exception:
+        self.fail("should only throw AccessTokenCredentialsError")
 
   def test_non_401_error_response(self):
     http = HttpMockSequence([
