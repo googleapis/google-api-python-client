@@ -208,7 +208,7 @@ def build(serviceName,
 
 def build_from_document(
     service,
-    base,
+    base=None,
     future=None,
     http=None,
     developerKey=None,
@@ -222,6 +222,8 @@ def build_from_document(
   Args:
     service: string, discovery document.
     base: string, base URI for all HTTP requests, usually the discovery URI.
+      This parameter is no longer used as rootUrl and servicePath are included
+      within the discovery document. (deprecated)
     future: string, discovery document with future capabilities (deprecated).
     http: httplib2.Http, An instance of httplib2.Http or something that acts
       like it that HTTP requests will be made through.
@@ -239,7 +241,7 @@ def build_from_document(
   future = {}
 
   service = simplejson.loads(service)
-  base = urlparse.urljoin(base, service['basePath'])
+  base = urlparse.urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
 
   if model is None:
@@ -363,10 +365,8 @@ def _createResource(http, baseUrl, model, requestBuilder,
     maxSize = 0
     if 'mediaUpload' in methodDesc:
       mediaUpload = methodDesc['mediaUpload']
-      # TODO(jcgregorio) Use URLs from discovery once it is updated.
-      parsed = list(urlparse.urlparse(baseUrl))
-      basePath = parsed[2]
-      mediaPathUrl = '/upload' + basePath + pathUrl
+      mediaPathUrl = (rootDesc['rootUrl'] + 'upload/' + rootDesc['servicePath']
+                      + pathUrl)
       accept = mediaUpload['accept']
       maxSize = _media_size_to_long(mediaUpload.get('maxSize', ''))
 

@@ -85,7 +85,7 @@ class DiscoveryFromDocument(unittest.TestCase):
 
     base = "https://www.example.com/"
     plus = build_from_document(discovery, base=base)
-    self.assertEquals(base + "plus/v1/", plus._baseUrl)
+    self.assertEquals("https://www.googleapis.com/plus/v1/", plus._baseUrl)
 
 
 class DiscoveryFromHttp(unittest.TestCase):
@@ -282,7 +282,7 @@ class Discovery(unittest.TestCase):
     self.assertTrue(getattr(zoo, 'animals'))
     request = zoo.global_().print_().assert_(max_results="5")
     parsed = urlparse.urlparse(request.uri)
-    self.assertEqual(parsed[2], '/zoo/global/print/assert')
+    self.assertEqual(parsed[2], '/zoo/v1/global/print/assert')
 
   def test_top_level_functions(self):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
@@ -330,7 +330,7 @@ class Discovery(unittest.TestCase):
     self.assertEquals('image/png', request.headers['content-type'])
     self.assertEquals('PNG', request.body[1:4])
     self.assertEqual(
-        'https://www.googleapis.com/upload/zoo/animals?uploadType=media&alt=json',
+        'https://www.googleapis.com/upload/zoo/v1/animals?uploadType=media&alt=json',
         request.uri)
 
   def test_multipart_media_raise_correct_exceptions(self):
@@ -358,7 +358,7 @@ class Discovery(unittest.TestCase):
         'multipart/related'))
     self.assertEquals('--==', request.body[0:4])
     self.assertEqual(
-        'https://www.googleapis.com/upload/zoo/animals?uploadType=multipart&alt=json',
+        'https://www.googleapis.com/upload/zoo/v1/animals?uploadType=multipart&alt=json',
         request.uri)
 
   def test_media_capable_method_without_media(self):
@@ -476,7 +476,7 @@ class Discovery(unittest.TestCase):
     media_upload = MediaFileUpload(datafile('small.png'), resumable=True)
     request = zoo.animals().insert(media_body=media_upload, body=None)
     self.assertEqual(
-        'https://www.googleapis.com/upload/zoo/animals?uploadType=resumable&alt=json',
+        'https://www.googleapis.com/upload/zoo/v1/animals?uploadType=resumable&alt=json',
         request.uri)
 
     http = HttpMockSequence([
