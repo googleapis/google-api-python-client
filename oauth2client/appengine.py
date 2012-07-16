@@ -446,7 +446,7 @@ class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
         # in API calls
   """
 
-  def __init__(self, filename, scope, message=None):
+  def __init__(self, filename, scope, message=None, cache=None):
     """Constructor
 
     Args:
@@ -457,9 +457,11 @@ class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
         clientsecrets file is missing or invalid. The message may contain HTML and
         will be presented on the web interface for any method that uses the
         decorator.
+      cache: An optional cache service client that implements get() and set() 
+        methods. See clientsecrets.loadfile() for details.
     """
     try:
-      client_type, client_info = clientsecrets.loadfile(filename)
+      client_type, client_info = clientsecrets.loadfile(filename, cache=cache)
       if client_type not in [clientsecrets.TYPE_WEB, clientsecrets.TYPE_INSTALLED]:
         raise InvalidClientSecretsError('OAuth2Decorator doesn\'t support this OAuth 2.0 flow.')
       super(OAuth2DecoratorFromClientSecrets,
@@ -478,7 +480,8 @@ class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
       self._message = "Please configure your application for OAuth 2.0"
 
 
-def oauth2decorator_from_clientsecrets(filename, scope, message=None):
+def oauth2decorator_from_clientsecrets(filename, scope, 
+                                       message=None, cache=None):
   """Creates an OAuth2Decorator populated from a clientsecrets file.
 
   Args:
@@ -489,11 +492,14 @@ def oauth2decorator_from_clientsecrets(filename, scope, message=None):
       clientsecrets file is missing or invalid. The message may contain HTML and
       will be presented on the web interface for any method that uses the
       decorator.
+    cache: An optional cache service client that implements get() and set() 
+      methods. See clientsecrets.loadfile() for details.
 
   Returns: An OAuth2Decorator
 
   """
-  return OAuth2DecoratorFromClientSecrets(filename, scope, message)
+  return OAuth2DecoratorFromClientSecrets(filename, scope, 
+    message=message, cache=cache)
 
 
 class OAuth2Handler(webapp.RequestHandler):

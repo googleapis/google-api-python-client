@@ -36,6 +36,7 @@ except ImportError:
 
 from apiclient.http import HttpMockSequence
 from oauth2client.anyjson import simplejson
+from oauth2client.clientsecrets import _loadfile
 from oauth2client.client import AccessTokenCredentials
 from oauth2client.client import AccessTokenCredentialsError
 from oauth2client.client import AccessTokenRefreshError
@@ -50,11 +51,28 @@ from oauth2client.client import VerifyJwtTokenError
 from oauth2client.client import _extract_id_token
 from oauth2client.client import credentials_from_code
 from oauth2client.client import credentials_from_clientsecrets_and_code
+from oauth2client.client import flow_from_clientsecrets
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 def datafile(filename):
   return os.path.join(DATA_DIR, filename)
+
+def load_and_cache(existing_file, fakename, cache_mock):
+  client_type, client_info = _loadfile(datafile(existing_file))
+  cache_mock.cache[fakename] = {client_type: client_info}
+
+class CacheMock(object):
+    def __init__(self):
+      self.cache = {}
+
+    def get(self, key, namespace=''):
+      # ignoring namespace for easier testing
+      return self.cache.get(key, None)
+
+    def set(self, key, value, namespace=''):
+      # ignoring namespace for easier testing
+      self.cache[key] = value
 
 
 class CredentialsTests(unittest.TestCase):
@@ -375,6 +393,16 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
     credentials = self.flow.step2_exchange('some random code', http)
     self.assertEqual(credentials.id_token, body)
 
+class FlowFromCachedClientsecrets(unittest.TestCase):  
+
+  def test_flow_from_clientsecrets_cached(self):
+    cache_mock = CacheMock()
+    load_and_cache('client_secrets.json', 'some_secrets', cache_mock)
+    
+    # flow_from_clientsecrets(filename, scope, message=None, cache=None)
+    flow = flow_from_clientsecrets('some_secrets', '', cache=cache_mock)
+    self.assertEquals('foo_client_secret', flow.client_secret)
+
 class CredentialsFromCodeTests(unittest.TestCase):
   def setUp(self):
     self.client_id = 'client_id_abc'
@@ -420,6 +448,18 @@ class CredentialsFromCodeTests(unittest.TestCase):
                             self.code, http=http)
     self.assertEquals(credentials.access_token, 'asdfghjkl')
     self.assertNotEqual(None, credentials.token_expiry)
+
+  def test_exchange_code_and_cached_file_for_token(self):
+    http = HttpMockSequence([
+      ({'status': '200'}, '{ "access_token":"asdfghjkl"}'),
+      ])
+    cache_mock = CacheMock()
+    load_and_cache('client_secrets.json', 'some_secrets', cache_mock)
+
+    credentials = credentials_from_clientsecrets_and_code(
+                            'some_secrets', self.scope,
+                            self.code, http=http, cache=cache_mock)
+    self.assertEquals(credentials.access_token, 'asdfghjkl')
 
   def test_exchange_code_and_file_for_token_fail(self):
     http = HttpMockSequence([

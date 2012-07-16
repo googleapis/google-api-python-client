@@ -50,6 +50,7 @@ from google.appengine.ext import db
 from google.appengine.ext import testbed
 from google.appengine.runtime import apiproxy_errors
 from oauth2client.anyjson import simplejson
+from oauth2client.clientsecrets import _loadfile
 from oauth2client.appengine import AppAssertionCredentials
 from oauth2client.appengine import CredentialsModel
 from oauth2client.appengine import FlowProperty
@@ -70,6 +71,24 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 def datafile(filename):
   return os.path.join(DATA_DIR, filename)
+
+
+def load_and_cache(existing_file, fakename, cache_mock):
+  client_type, client_info = _loadfile(datafile(existing_file))
+  cache_mock.cache[fakename] = {client_type: client_info}
+
+
+class CacheMock(object):
+    def __init__(self):
+      self.cache = {}
+
+    def get(self, key, namespace=''):
+      # ignoring namespace for easier testing
+      return self.cache.get(key, None)
+
+    def set(self, key, value, namespace=''):
+      # ignoring namespace for easier testing
+      self.cache[key] = value
 
 
 class UserMock(object):
@@ -438,6 +457,14 @@ class DecoratorTests(unittest.TestCase):
     self.test_required()
     http = self.decorator.http()
     self.assertEquals('foo_access_token', http.request.credentials.access_token)
+
+  def test_decorator_from_cached_client_secrets(self):
+    cache_mock = CacheMock()
+    load_and_cache('client_secrets.json', 'secret', cache_mock)
+    decorator = oauth2decorator_from_clientsecrets(
+      # filename, scope, message=None, cache=None
+      'secret', '', cache=cache_mock)
+    self.assertFalse(decorator._in_error)
 
   def test_decorator_from_client_secrets_not_logged_in_required(self):
     decorator = oauth2decorator_from_clientsecrets(

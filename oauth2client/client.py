@@ -955,7 +955,8 @@ def credentials_from_code(client_id, client_secret, scope, code,
 def credentials_from_clientsecrets_and_code(filename, scope, code,
                                             message = None,
                                             redirect_uri = 'postmessage',
-                                            http=None):
+                                            http=None,
+                                            cache=None):
   """Returns OAuth2Credentials from a clientsecrets file and an auth code.
 
   Will create the right kind of Flow based on the contents of the clientsecrets
@@ -973,6 +974,8 @@ def credentials_from_clientsecrets_and_code(filename, scope, code,
     redirect_uri: string, this is generally set to 'postmessage' to match the
       redirect_uri that the client specified
     http: httplib2.Http, optional http instance to use to do the fetch
+    cache: An optional cache service client that implements get() and set() 
+      methods. See clientsecrets.loadfile() for details.
 
   Returns:
     An OAuth2Credentials object.
@@ -984,7 +987,7 @@ def credentials_from_clientsecrets_and_code(filename, scope, code,
     clientsecrets.InvalidClientSecretsError if the clientsecrets file is
       invalid.
   """
-  flow = flow_from_clientsecrets(filename, scope, message)
+  flow = flow_from_clientsecrets(filename, scope, message=message, cache=cache)
   # We primarily make this call to set up the redirect_uri in the flow object
   uriThatWeDontReallyUse = flow.step1_get_authorize_url(redirect_uri)
   credentials = flow.step2_exchange(code, http)
@@ -1130,7 +1133,7 @@ class OAuth2WebServerFlow(Flow):
         error_msg = 'Invalid response: %s.' % str(resp.status)
       raise FlowExchangeError(error_msg)
 
-def flow_from_clientsecrets(filename, scope, message=None):
+def flow_from_clientsecrets(filename, scope, message=None, cache=None):
   """Create a Flow from a clientsecrets file.
 
   Will create the right kind of Flow based on the contents of the clientsecrets
@@ -1143,6 +1146,8 @@ def flow_from_clientsecrets(filename, scope, message=None):
       clientsecrets file is missing or invalid. If message is provided then
       sys.exit will be called in the case of an error. If message in not
       provided then clientsecrets.InvalidClientSecretsError will be raised.
+    cache: An optional cache service client that implements get() and set() 
+      methods. See clientsecrets.loadfile() for details.
 
   Returns:
     A Flow object.
@@ -1153,7 +1158,7 @@ def flow_from_clientsecrets(filename, scope, message=None):
       invalid.
   """
   try:
-    client_type, client_info = clientsecrets.loadfile(filename)
+    client_type, client_info = clientsecrets.loadfile(filename, cache=cache)
     if client_type in [clientsecrets.TYPE_WEB, clientsecrets.TYPE_INSTALLED]:
         return OAuth2WebServerFlow(
             client_info['client_id'],
