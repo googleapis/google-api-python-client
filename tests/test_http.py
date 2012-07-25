@@ -381,6 +381,44 @@ ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 --batch_foobarbaz--"""
 
 
+BATCH_ERROR_RESPONSE = """--batch_foobarbaz
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: <randomness+1>
+
+HTTP/1.1 200 OK
+Content-Type application/json
+Content-Length: 14
+ETag: "etag/pony"\r\n\r\n{"foo": 42}
+
+--batch_foobarbaz
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: <randomness+2>
+
+HTTP/1.1 403 Access Not Configured
+Content-Type application/json
+Content-Length: 14
+ETag: "etag/sheep"\r\n\r\nContent-Length: 245
+
+{
+ "error": {
+  "errors": [
+   {
+    "domain": "usageLimits",
+    "reason": "accessNotConfigured",
+    "message": "Access Not Configured",
+    "debugInfo": "QuotaState: BLOCKED"
+   }
+  ],
+  "code": 403,
+  "message": "Access Not Configured"
+ }
+}
+
+--batch_foobarbaz--"""
+
+
 BATCH_RESPONSE_WITH_401 = """--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
@@ -670,6 +708,23 @@ class TestBatch(unittest.TestCase):
     self.assertEqual({'foo': 42}, callbacks.responses['1'])
     self.assertEqual({'baz': 'qux'}, callbacks.responses['2'])
 
+  def test_execute_http_error(self):
+    callbacks = Callbacks()
+    batch = BatchHttpRequest(callback=callbacks.f)
+
+    batch.add(self.request1)
+    batch.add(self.request2)
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_ERROR_RESPONSE),
+      ])
+    batch.execute(http)
+    self.assertEqual({'foo': 42}, callbacks.responses['1'])
+    expected = ('<HttpError 403 when requesting '
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar returned '
+        '"Access Not Configured">')
+    self.assertEqual(expected, str(callbacks.exceptions['2']))
 
 if __name__ == '__main__':
   unittest.main()

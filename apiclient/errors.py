@@ -54,7 +54,7 @@ class HttpError(Error):
   def __repr__(self):
     if self.uri:
       return '<HttpError %s when requesting %s returned "%s">' % (
-          self.resp.status, self.uri, self._get_reason())
+          self.resp.status, self.uri, self._get_reason().strip())
     else:
       return '<HttpError %s "%s">' % (self.resp.status, self._get_reason())
 

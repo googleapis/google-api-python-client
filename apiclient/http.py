@@ -649,7 +649,6 @@ class HttpRequest(object):
       resp, content = http.request(self.uri, self.method,
                                    body=self.body,
                                    headers=self.headers)
-
       if resp.status >= 300:
         raise HttpError(resp, content, self.uri)
     return self.postproc(resp, content)
@@ -1185,6 +1184,8 @@ class BatchHttpRequest(object):
       response = None
       exception = None
       try:
+        if resp.status >= 300:
+          raise HttpError(resp, content, request.uri)
         response = request.postproc(resp, content)
       except HttpError, e:
         exception = e
