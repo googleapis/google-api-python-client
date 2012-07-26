@@ -354,7 +354,7 @@ content-length: 0\r\n\r\n"""
 
 
 RESPONSE = """HTTP/1.1 200 OK
-Content-Type application/json
+Content-Type: application/json
 Content-Length: 14
 ETag: "etag/pony"\r\n\r\n{"answer": 42}"""
 
@@ -365,7 +365,7 @@ Content-Transfer-Encoding: binary
 Content-ID: <randomness+1>
 
 HTTP/1.1 200 OK
-Content-Type application/json
+Content-Type: application/json
 Content-Length: 14
 ETag: "etag/pony"\r\n\r\n{"foo": 42}
 
@@ -375,7 +375,7 @@ Content-Transfer-Encoding: binary
 Content-ID: <randomness+2>
 
 HTTP/1.1 200 OK
-Content-Type application/json
+Content-Type: application/json
 Content-Length: 14
 ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 --batch_foobarbaz--"""
@@ -387,7 +387,7 @@ Content-Transfer-Encoding: binary
 Content-ID: <randomness+1>
 
 HTTP/1.1 200 OK
-Content-Type application/json
+Content-Type: application/json
 Content-Length: 14
 ETag: "etag/pony"\r\n\r\n{"foo": 42}
 
@@ -397,11 +397,9 @@ Content-Transfer-Encoding: binary
 Content-ID: <randomness+2>
 
 HTTP/1.1 403 Access Not Configured
-Content-Type application/json
-Content-Length: 14
-ETag: "etag/sheep"\r\n\r\nContent-Length: 245
-
-{
+Content-Type: application/json
+Content-Length: 245
+ETag: "etag/sheep"\r\n\r\n{
  "error": {
   "errors": [
    {
@@ -425,7 +423,7 @@ Content-Transfer-Encoding: binary
 Content-ID: <randomness+1>
 
 HTTP/1.1 401 Authorization Required
-Content-Type application/json
+Content-Type: application/json
 Content-Length: 14
 ETag: "etag/pony"\r\n\r\n{"error": {"message":
   "Authorizaton failed."}}
@@ -436,7 +434,7 @@ Content-Transfer-Encoding: binary
 Content-ID: <randomness+2>
 
 HTTP/1.1 200 OK
-Content-Type application/json
+Content-Type: application/json
 Content-Length: 14
 ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 --batch_foobarbaz--"""
@@ -448,7 +446,7 @@ Content-Transfer-Encoding: binary
 Content-ID: <randomness+1>
 
 HTTP/1.1 200 OK
-Content-Type application/json
+Content-Type: application/json
 Content-Length: 14
 ETag: "etag/pony"\r\n\r\n{"foo": 42}
 --batch_foobarbaz--"""
@@ -708,7 +706,7 @@ class TestBatch(unittest.TestCase):
     self.assertEqual({'foo': 42}, callbacks.responses['1'])
     self.assertEqual({'baz': 'qux'}, callbacks.responses['2'])
 
-  def test_execute_http_error(self):
+  def test_execute_batch_http_error(self):
     callbacks = Callbacks()
     batch = BatchHttpRequest(callback=callbacks.f)
 

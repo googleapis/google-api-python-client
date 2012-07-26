@@ -45,8 +45,10 @@ JSON_ERROR_CONTENT = """
 }
 """
 
-def fake_response(data, headers):
-  return httplib2.Response(headers), data
+def fake_response(data, headers, reason='Ok'):
+  response = httplib2.Response(headers)
+  response.reason = reason
+  return response, data
 
 
 class Error(unittest.TestCase):
@@ -55,33 +57,37 @@ class Error(unittest.TestCase):
   def test_json_body(self):
     """Test a nicely formed, expected error response."""
     resp, content = fake_response(JSON_ERROR_CONTENT,
-        {'status':'400', 'content-type': 'application/json'})
-    error = HttpError(resp, content)
-    self.assertEqual(str(error), '<HttpError 400 "country is required">')
+        {'status':'400', 'content-type': 'application/json'},
+        reason='Failed')
+    error = HttpError(resp, content, 'http://example.org')
+    self.assertEqual(str(error), '<HttpError 400 when requesting http://example.org returned "country is required">')
 
   def test_bad_json_body(self):
     """Test handling of bodies with invalid json."""
     resp, content = fake_response('{',
-        {'status':'400', 'content-type': 'application/json'})
+        { 'status':'400', 'content-type': 'application/json'},
+        reason='Failed')
     error = HttpError(resp, content)
-    self.assertEqual(str(error), '<HttpError 400 "{">')
+    self.assertEqual(str(error), '<HttpError 400 "Failed">')
 
   def test_with_uri(self):
     """Test handling of passing in the request uri."""
     resp, content = fake_response('{',
-        {'status':'400', 'content-type': 'application/json'})
+        {'status':'400', 'content-type': 'application/json'},
+        reason='Failure')
     error = HttpError(resp, content, 'http://example.org')
-    self.assertEqual(str(error), '<HttpError 400 when requesting http://example.org returned "{">')
+    self.assertEqual(str(error), '<HttpError 400 when requesting http://example.org returned "Failure">')
 
   def test_missing_message_json_body(self):
     """Test handling of bodies with missing expected 'message' element."""
     resp, content = fake_response('{}',
-        {'status':'400', 'content-type': 'application/json'})
+        {'status':'400', 'content-type': 'application/json'},
+        reason='Failed')
     error = HttpError(resp, content)
-    self.assertEqual(str(error), '<HttpError 400 "{}">')
+    self.assertEqual(str(error), '<HttpError 400 "Failed">')
 
   def test_non_json(self):
     """Test handling of non-JSON bodies"""
-    resp, content = fake_response('NOT OK', {'status':'400'})
+    resp, content = fake_response('}NOT OK', {'status':'400'})
     error = HttpError(resp, content)
     self.assertEqual(str(error), '<HttpError 400 "Ok">')
