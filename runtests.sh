@@ -18,3 +18,4 @@ $1 runtests.py tests/test_oauth2client.py
 $1 runtests.py tests/test_protobuf_model.py
 $1 runtests.py tests/test_schema.py
 $1 runtests.py tests/test_oauth2client_appengine.py
+$1 runtests.py tests/test_oauth2client_keyring.py
