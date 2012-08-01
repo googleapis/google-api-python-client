@@ -546,7 +546,7 @@ class MediaIoBaseDownload(object):
 
     Raises:
       apiclient.errors.HttpError if the response was not a 2xx.
-      httplib2.Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occured.
     """
     headers = {
         'range': 'bytes=%d-%d' % (
@@ -634,7 +634,7 @@ class HttpRequest(object):
 
     Raises:
       apiclient.errors.HttpError if the response was not a 2xx.
-      httplib2.Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occured.
     """
     if http is None:
       http = self.http
@@ -681,7 +681,7 @@ class HttpRequest(object):
 
     Raises:
       apiclient.errors.HttpError if the response was not a 2xx.
-      httplib2.Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occured.
     """
     if http is None:
       http = self.http
@@ -1075,7 +1075,7 @@ class BatchHttpRequest(object):
       request: list, list of request objects to send.
 
     Raises:
-      httplib2.Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occured.
       apiclient.errors.BatchError if the response is the wrong format.
     """
     message = MIMEMultipart('mixed')
@@ -1138,7 +1138,7 @@ class BatchHttpRequest(object):
       None
 
     Raises:
-      httplib2.Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occured.
       apiclient.errors.BatchError if the response is the wrong format.
     """
 
