@@ -31,6 +31,11 @@ class CredentialsField(models.Field):
 
   __metaclass__ = models.SubfieldBase
 
+  def __init__(self, *args, **kwargs):
+    if 'null' not in kwargs:
+      kwargs['null'] = True
+    super(CredentialsField, self).__init__(*args, **kwargs)
+
   def get_internal_type(self):
     return "TextField"
 
@@ -50,6 +55,11 @@ class CredentialsField(models.Field):
 class FlowField(models.Field):
 
   __metaclass__ = models.SubfieldBase
+
+  def __init__(self, *args, **kwargs):
+    if 'null' not in kwargs:
+      kwargs['null'] = True
+    super(FlowField, self).__init__(*args, **kwargs)
 
   def get_internal_type(self):
     return "TextField"
