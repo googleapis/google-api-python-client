@@ -28,6 +28,7 @@ from apiclient.discovery import build
 import gflags
 import httplib2
 from oauth2client.client import flow_from_clientsecrets
+from oauth2client.client import OOB_CALLBACK_URN
 from oauth2client.file import Storage
 from oauth2client.tools import run
 
@@ -58,6 +59,7 @@ with information from the APIs Console <https://code.google.com/apis/console>.
 FLOW = flow_from_clientsecrets(
     CLIENT_SECRETS,
     scope='https://www.googleapis.com/auth/adexchange.buyer',
+    redirect_uri=OOB_CALLBACK_URN,
     message=MISSING_CLIENT_SECRETS_MESSAGE
     )
 
@@ -108,4 +110,3 @@ def initialize_service():
   # Construct a service object via the discovery service.
   service = build('adexchangebuyer', 'v1', http=http)
   return service
- 

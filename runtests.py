@@ -1,13 +1,20 @@
 #!/usr/bin/env python
+import gflags
 import glob
 import imp
 import logging
 import os
 import sys
 import unittest
+
+# import oauth2client.util for its gflags.
+import oauth2client.util
+
 from trace import fullmodname
 
 logging.basicConfig(level=logging.CRITICAL)
+
+FLAGS = gflags.FLAGS
 
 APP_ENGINE_PATH='../google_appengine'
 
@@ -26,12 +33,13 @@ from google.appengine.dist import use_library
 use_library('django', '1.2')
 
 
-def main():
-  for t in sys.argv[1:]:
+def main(argv):
+  argv = FLAGS(argv)
+  for t in argv[1:]:
     module = imp.load_source('test', t)
     test = unittest.TestLoader().loadTestsFromModule(module)
     result = unittest.TextTestRunner(verbosity=1).run(test)
 
 
 if __name__ == '__main__':
-  main()
+  main(sys.argv)

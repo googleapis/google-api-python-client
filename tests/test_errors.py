@@ -59,7 +59,7 @@ class Error(unittest.TestCase):
     resp, content = fake_response(JSON_ERROR_CONTENT,
         {'status':'400', 'content-type': 'application/json'},
         reason='Failed')
-    error = HttpError(resp, content, 'http://example.org')
+    error = HttpError(resp, content, uri='http://example.org')
     self.assertEqual(str(error), '<HttpError 400 when requesting http://example.org returned "country is required">')
 
   def test_bad_json_body(self):
@@ -75,7 +75,7 @@ class Error(unittest.TestCase):
     resp, content = fake_response('{',
         {'status':'400', 'content-type': 'application/json'},
         reason='Failure')
-    error = HttpError(resp, content, 'http://example.org')
+    error = HttpError(resp, content, uri='http://example.org')
     self.assertEqual(str(error), '<HttpError 400 when requesting http://example.org returned "Failure">')
 
   def test_missing_message_json_body(self):

@@ -140,7 +140,7 @@ class TestMediaUpload(unittest.TestCase):
     self.assertEqual('PNG', new_upload.getbytes(1, 3))
 
   def test_media_inmemory_upload(self):
-    media = MediaInMemoryUpload('abcdef', 'text/plain', chunksize=10,
+    media = MediaInMemoryUpload('abcdef', mimetype='text/plain', chunksize=10,
                                 resumable=True)
     self.assertEqual('text/plain', media.mimetype())
     self.assertEqual(10, media.chunksize())
@@ -149,7 +149,7 @@ class TestMediaUpload(unittest.TestCase):
     self.assertEqual(6, media.size())
 
   def test_media_inmemory_upload_json_roundtrip(self):
-    media = MediaInMemoryUpload(os.urandom(64), 'text/plain', chunksize=10,
+    media = MediaInMemoryUpload(os.urandom(64), mimetype='text/plain', chunksize=10,
                                 resumable=True)
     data = media.to_json()
     newmedia = MediaInMemoryUpload.new_from_json(data)
@@ -261,7 +261,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
   def setUp(self):
     http = HttpMock(datafile('zoo.json'), {'status': '200'})
-    zoo = build('zoo', 'v1', http)
+    zoo = build('zoo', 'v1', http=http)
     self.request = zoo.animals().get_media(name='Lion')
     self.fd = StringIO.StringIO()
 
@@ -587,7 +587,7 @@ class TestBatch(unittest.TestCase):
         'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
        BATCH_RESPONSE),
       ])
-    batch.execute(http)
+    batch.execute(http=http)
     self.assertEqual({'foo': 42}, callbacks.responses['1'])
     self.assertEqual(None, callbacks.exceptions['1'])
     self.assertEqual({'baz': 'qux'}, callbacks.responses['2'])
@@ -604,7 +604,7 @@ class TestBatch(unittest.TestCase):
         'echo_request_body'),
       ])
     try:
-      batch.execute(http)
+      batch.execute(http=http)
       self.fail('Should raise exception')
     except BatchError, e:
       boundary, _ = e.content.split(None, 1)
@@ -642,7 +642,7 @@ class TestBatch(unittest.TestCase):
 
     batch.add(self.request1, callback=callbacks.f)
     batch.add(self.request2, callback=callbacks.f)
-    batch.execute(http)
+    batch.execute(http=http)
 
     self.assertEqual({'foo': 42}, callbacks.responses['1'])
     self.assertEqual(None, callbacks.exceptions['1'])
@@ -684,7 +684,7 @@ class TestBatch(unittest.TestCase):
 
     batch.add(self.request1, callback=callbacks.f)
     batch.add(self.request2, callback=callbacks.f)
-    batch.execute(http)
+    batch.execute(http=http)
 
     self.assertEqual(None, callbacks.responses['1'])
     self.assertEqual(401, callbacks.exceptions['1'].resp.status)
@@ -704,7 +704,7 @@ class TestBatch(unittest.TestCase):
         'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
        BATCH_RESPONSE),
       ])
-    batch.execute(http)
+    batch.execute(http=http)
     self.assertEqual({'foo': 42}, callbacks.responses['1'])
     self.assertEqual({'baz': 'qux'}, callbacks.responses['2'])
 
@@ -719,7 +719,7 @@ class TestBatch(unittest.TestCase):
         'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
        BATCH_ERROR_RESPONSE),
       ])
-    batch.execute(http)
+    batch.execute(http=http)
     self.assertEqual({'foo': 42}, callbacks.responses['1'])
     expected = ('<HttpError 403 when requesting '
         'https://www.googleapis.com/someapi/v1/collection/?foo=bar returned '

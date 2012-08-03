@@ -66,8 +66,8 @@ http = httplib2.Http(memcache)
 service = build("plus", "v1", http=http)
 decorator = oauth2decorator_from_clientsecrets(
     CLIENT_SECRETS,
-    'https://www.googleapis.com/auth/plus.me',
-    MISSING_CLIENT_SECRETS_MESSAGE)
+    scope='https://www.googleapis.com/auth/plus.me',
+    message=MISSING_CLIENT_SECRETS_MESSAGE)
 
 class MainHandler(webapp.RequestHandler):
 
@@ -87,7 +87,7 @@ class AboutHandler(webapp.RequestHandler):
   def get(self):
     try:
       http = decorator.http()
-      user = service.people().get(userId='me').execute(http)
+      user = service.people().get(userId='me').execute(http=http)
       text = 'Hello, %s!' % user['displayName']
 
       path = os.path.join(os.path.dirname(__file__), 'welcome.html')
@@ -101,6 +101,7 @@ def main():
       [
        ('/', MainHandler),
        ('/about', AboutHandler),
+       (decorator.callback_path, decorator.callback_handler()),
       ],
       debug=True)
   run_wsgi_app(application)

@@ -128,7 +128,7 @@ def main(argv):
 
   try:
     # List all the jobs for a team
-    jobs_result = service.jobs().list(teamId=FLAGS.teamId).execute(http)
+    jobs_result = service.jobs().list(teamId=FLAGS.teamId).execute(http=http)
 
     print('List of Jobs:')
     pprint.pprint(jobs_result)

@@ -113,7 +113,7 @@ def main(argv):
   service = build("plus", "v1", http=http)
 
   try:
-    person = service.people().get(userId='me').execute(http)
+    person = service.people().get(userId='me').execute(http=http)
 
     print "Got your ID: %s" % person['displayName']
     print

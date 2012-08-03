@@ -23,6 +23,8 @@ import logging
 import os
 import time
 
+from oauth2client import util
+
 logger = logging.getLogger(__name__)
 
 
@@ -292,6 +294,7 @@ except ImportError:
 class LockedFile(object):
   """Represent a file that has exclusive access."""
 
+  @util.positional(4)
   def __init__(self, filename, mode, fallback_mode, use_native_locking=True):
     """Construct a LockedFile.
 

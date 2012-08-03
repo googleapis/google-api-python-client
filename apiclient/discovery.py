@@ -57,6 +57,7 @@ from apiclient.model import RawModel
 from apiclient.schema import Schemas
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
+from oauth2client import util
 from oauth2client.anyjson import simplejson
 
 logger = logging.getLogger(__name__)
@@ -139,6 +140,7 @@ def key2param(key):
   return ''.join(result)
 
 
+@util.positional(2)
 def build(serviceName,
           version,
           http=None,
@@ -194,7 +196,7 @@ def build(serviceName,
     raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName,
                                                             version))
   if resp.status >= 400:
-    raise HttpError(resp, content, requested_url)
+    raise HttpError(resp, content, uri=requested_url)
 
   try:
     service = simplejson.loads(content)
@@ -202,10 +204,11 @@ def build(serviceName,
     logger.error('Failed to parse as JSON: ' + content)
     raise InvalidJsonError()
 
-  return build_from_document(content, discoveryServiceUrl, http=http,
+  return build_from_document(content, base=discoveryServiceUrl, http=http,
       developerKey=developerKey, model=model, requestBuilder=requestBuilder)
 
 
+@util.positional(1)
 def build_from_document(
     service,
     base=None,
@@ -529,7 +532,8 @@ def _createResource(http, baseUrl, model, requestBuilder,
             raise UnknownFileType(media_filename)
           if not mimeparse.best_match([media_mime_type], ','.join(accept)):
             raise UnacceptableMimeTypeError(media_mime_type)
-          media_upload = MediaFileUpload(media_filename, media_mime_type)
+          media_upload = MediaFileUpload(media_filename,
+                                         mimetype=media_mime_type)
         elif isinstance(media_filename, MediaUpload):
           media_upload = media_filename
         else:

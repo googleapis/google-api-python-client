@@ -113,7 +113,7 @@ def main(argv):
       users = service.users()
 
       # Retrieve this user's profile information
-      thisuser = users.get(userId="self").execute(http)
+      thisuser = users.get(userId="self").execute(http=http)
       print "This user's display name is: %s" % thisuser['displayName']
 
       # Retrieve the list of Blogs this user has write privileges on
@@ -128,7 +128,7 @@ def main(argv):
         print "The posts for %s:" % blog['name']
         request = posts.list(blogId=blog['id'])
         while request != None:
-          posts_doc = request.execute(http)
+          posts_doc = request.execute(http=http)
           if 'items' in posts_doc and not (posts_doc['items'] is None):
             for post in posts_doc['items']:
               print "  %s (%s)" % (post['title'], post['url'])

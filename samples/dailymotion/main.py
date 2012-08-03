@@ -26,7 +26,6 @@ import pickle
 from oauth2client.appengine import CredentialsProperty
 from oauth2client.appengine import StorageByKeyName
 from oauth2client.client import OAuth2WebServerFlow
-from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
@@ -39,6 +38,7 @@ FLOW = OAuth2WebServerFlow(
     client_id='2ad565600216d25d9cde',
     client_secret='03b56df2949a520be6049ff98b89813f17b467dc',
     scope='read',
+    redirect_uri='https://dailymotoauth2test.appspot.com/auth_return',
     user_agent='oauth2client-sample/1.0',
     auth_uri='https://api.dailymotion.com/oauth/authorize',
     token_uri='https://api.dailymotion.com/oauth/token'
@@ -58,9 +58,7 @@ class MainHandler(webapp.RequestHandler):
         Credentials, user.user_id(), 'credentials').get()
 
     if credentials is None or credentials.invalid == True:
-      callback = self.request.relative_url('/auth_return')
-      authorize_url = FLOW.step1_get_authorize_url(callback)
-      memcache.set(user.user_id(), pickle.dumps(FLOW))
+      authorize_url = FLOW.step1_get_authorize_url()
       self.redirect(authorize_url)
     else:
       http = httplib2.Http()
@@ -82,14 +80,10 @@ class OAuthHandler(webapp.RequestHandler):
   @login_required
   def get(self):
     user = users.get_current_user()
-    flow = pickle.loads(memcache.get(user.user_id()))
-    if flow:
-      credentials = flow.step2_exchange(self.request.params)
-      StorageByKeyName(
-          Credentials, user.user_id(), 'credentials').put(credentials)
-      self.redirect("/")
-    else:
-      pass
+    credentials = FLOW.step2_exchange(self.request.params)
+    StorageByKeyName(
+        Credentials, user.user_id(), 'credentials').put(credentials)
+    self.redirect("/")
 
 
 def main():

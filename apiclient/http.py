@@ -43,6 +43,7 @@ from errors import ResumableUploadError
 from errors import UnexpectedBodyError
 from errors import UnexpectedMethodError
 from model import JsonModel
+from oauth2client import util
 from oauth2client.anyjson import simplejson
 
 
@@ -162,6 +163,7 @@ class MediaUpload(object):
     """
     raise NotImplementedError()
 
+  @util.positional(1)
   def _to_json(self, strip=None):
     """Utility function for creating a JSON representation of a MediaUpload.
 
@@ -226,6 +228,7 @@ class MediaFileUpload(MediaUpload):
         media_body=media).execute()
   """
 
+  @util.positional(2)
   def __init__(self, filename, mimetype=None, chunksize=DEFAULT_CHUNK_SIZE, resumable=False):
     """Constructor.
 
@@ -302,13 +305,13 @@ class MediaFileUpload(MediaUpload):
        string, a JSON representation of this instance, suitable to pass to
        from_json().
     """
-    return self._to_json(['_fd'])
+    return self._to_json(strip=['_fd'])
 
   @staticmethod
   def from_json(s):
     d = simplejson.loads(s)
-    return MediaFileUpload(
-        d['_filename'], d['_mimetype'], d['_chunksize'], d['_resumable'])
+    return MediaFileUpload(d['_filename'], mimetype=d['_mimetype'],
+                           chunksize=d['_chunksize'], resumable=d['_resumable'])
 
 
 class MediaIoBaseUpload(MediaUpload):
@@ -326,6 +329,7 @@ class MediaIoBaseUpload(MediaUpload):
         media_body=media).execute()
   """
 
+  @util.positional(3)
   def __init__(self, fd, mimetype, chunksize=DEFAULT_CHUNK_SIZE,
       resumable=False):
     """Constructor.
@@ -414,6 +418,7 @@ class MediaInMemoryUpload(MediaUpload):
   method.
   """
 
+  @util.positional(2)
   def __init__(self, body, mimetype='application/octet-stream',
                chunksize=DEFAULT_CHUNK_SIZE, resumable=False):
     """Create a new MediaBytesUpload.
@@ -496,8 +501,9 @@ class MediaInMemoryUpload(MediaUpload):
   def from_json(s):
     d = simplejson.loads(s)
     return MediaInMemoryUpload(base64.b64decode(d['_b64body']),
-                               d['_mimetype'], d['_chunksize'],
-                               d['_resumable'])
+                               mimetype=d['_mimetype'],
+                               chunksize=d['_chunksize'],
+                               resumable=d['_resumable'])
 
 
 class MediaIoBaseDownload(object):
@@ -520,6 +526,7 @@ class MediaIoBaseDownload(object):
     print "Download Complete!"
   """
 
+  @util.positional(3)
   def __init__(self, fd, request, chunksize=DEFAULT_CHUNK_SIZE):
     """Constructor.
 
@@ -574,12 +581,13 @@ class MediaIoBaseDownload(object):
         self._done = True
       return MediaDownloadProgress(self._progress, self._total_size), self._done
     else:
-      raise HttpError(resp, content, self._uri)
+      raise HttpError(resp, content, uri=self._uri)
 
 
 class HttpRequest(object):
   """Encapsulates a single HTTP request."""
 
+  @util.positional(4)
   def __init__(self, http, postproc, uri,
                method='GET',
                body=None,
@@ -623,6 +631,7 @@ class HttpRequest(object):
     # The bytes that have been uploaded.
     self.resumable_progress = 0
 
+  @util.positional(1)
   def execute(self, http=None):
     """Execute the request.
 
@@ -643,7 +652,7 @@ class HttpRequest(object):
     if self.resumable:
       body = None
       while body is None:
-        _, body = self.next_chunk(http)
+        _, body = self.next_chunk(http=http)
       return body
     else:
       if 'content-length' not in self.headers:
@@ -661,13 +670,14 @@ class HttpRequest(object):
         self.body = parsed.query
         self.headers['content-length'] = str(len(self.body))
 
-      resp, content = http.request(self.uri, self.method,
+      resp, content = http.request(self.uri, method=self.method,
                                    body=self.body,
                                    headers=self.headers)
       if resp.status >= 300:
-        raise HttpError(resp, content, self.uri)
+        raise HttpError(resp, content, uri=self.uri)
     return self.postproc(resp, content)
 
+  @util.positional(1)
   def next_chunk(self, http=None):
     """Execute the next step of a resumable upload.
 
@@ -782,7 +792,7 @@ class HttpRequest(object):
         self.resumable_uri = resp['location']
     else:
       self._in_error_state = True
-      raise HttpError(resp, content, self.uri)
+      raise HttpError(resp, content, uri=self.uri)
 
     return (MediaUploadProgress(self.resumable_progress, self.resumable.size()),
             None)
@@ -844,9 +854,10 @@ class BatchHttpRequest(object):
 
     batch.add(service.animals().list(), list_animals)
     batch.add(service.farmers().list(), list_farmers)
-    batch.execute(http)
+    batch.execute(http=http)
   """
 
+  @util.positional(1)
   def __init__(self, callback=None, batch_uri=None):
     """Constructor for a BatchHttpRequest.
 
@@ -1042,6 +1053,7 @@ class BatchHttpRequest(object):
       self._last_auto_id += 1
     return str(self._last_auto_id)
 
+  @util.positional(2)
   def add(self, request, callback=None, request_id=None):
     """Add a new request.
 
@@ -1119,7 +1131,7 @@ class BatchHttpRequest(object):
                                  headers=headers)
 
     if resp.status >= 300:
-      raise HttpError(resp, content, self._batch_uri)
+      raise HttpError(resp, content, uri=self._batch_uri)
 
     # Now break out the individual responses and store each one.
     boundary, _ = content.split(None, 1)
@@ -1133,14 +1145,15 @@ class BatchHttpRequest(object):
     mime_response = parser.close()
 
     if not mime_response.is_multipart():
-      raise BatchError("Response not in multipart/mixed format.", resp,
-          content)
+      raise BatchError("Response not in multipart/mixed format.", resp=resp,
+                       content=content)
 
     for part in mime_response.get_payload():
       request_id = self._header_to_id(part['Content-ID'])
       response, content = self._deserialize_response(part.get_payload())
       self._responses[request_id] = (response, content)
 
+  @util.positional(1)
   def execute(self, http=None):
     """Execute all the requests as a single batched HTTP request.
 
@@ -1200,7 +1213,7 @@ class BatchHttpRequest(object):
       exception = None
       try:
         if resp.status >= 300:
-          raise HttpError(resp, content, request.uri)
+          raise HttpError(resp, content, uri=request.uri)
         response = request.postproc(resp, content)
       except HttpError, e:
         exception = e
@@ -1310,7 +1323,7 @@ class RequestMockBuilder(object):
           raise UnexpectedBodyError(expected_body, body)
       return HttpRequestMock(resp, content, postproc)
     elif self.check_unexpected:
-      raise UnexpectedMethodError(methodId)
+      raise UnexpectedMethodError(methodId=methodId)
     else:
       model = JsonModel(False)
       return HttpRequestMock(None, '{}', model.response)

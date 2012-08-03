@@ -27,21 +27,20 @@ import time
 
 import clientsecrets
 
-from anyjson import simplejson
-from client import AccessTokenRefreshError
-from client import AssertionCredentials
-from client import Credentials
-from client import Flow
-from client import OAuth2WebServerFlow
-from client import Storage
-from google.appengine.api import memcache
-from google.appengine.api import users
 from google.appengine.api import app_identity
+from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext.webapp.util import run_wsgi_app
-
+from oauth2client import util
+from oauth2client.anyjson import simplejson
+from oauth2client.client import AccessTokenRefreshError
+from oauth2client.client import AssertionCredentials
+from oauth2client.client import Credentials
+from oauth2client.client import Flow
+from oauth2client.client import OAuth2WebServerFlow
+from oauth2client.client import Storage
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +65,7 @@ class AppAssertionCredentials(AssertionCredentials):
   generate and refresh its own access tokens.
   """
 
+  @util.positional(2)
   def __init__(self, scope, **kwargs):
     """Constructor for AppAssertionCredentials
 
@@ -77,9 +77,8 @@ class AppAssertionCredentials(AssertionCredentials):
     self.scope = scope
 
     super(AppAssertionCredentials, self).__init__(
-        None,
-        None,
-        None)
+        'ignored' # assertion_type is ignore in this subclass.
+        )
 
   @classmethod
   def from_json(cls, json):
@@ -195,6 +194,7 @@ class StorageByKeyName(Storage):
   are stored by key_name.
   """
 
+  @util.positional(4)
   def __init__(self, model, key_name, property_name, cache=None):
     """Constructor for Storage.
 
@@ -286,11 +286,14 @@ class OAuth2Decorator(object):
 
   """
 
+  @util.positional(4)
   def __init__(self, client_id, client_secret, scope,
                auth_uri='https://accounts.google.com/o/oauth2/auth',
                token_uri='https://accounts.google.com/o/oauth2/token',
                user_agent=None,
-               message=None, **kwargs):
+               message=None,
+               callback_path='/oauth2callback',
+               **kwargs):
 
     """Constructor for OAuth2Decorator
 
@@ -307,15 +310,24 @@ class OAuth2Decorator(object):
       message: Message to display if there are problems with the OAuth 2.0
         configuration. The message may contain HTML and will be presented on the
         web interface for any method that uses the decorator.
+      callback_path: string, The absolute path to use as the callback URI. Note
+        that this must match up with the URI given when registering the
+        application in the APIs Console.
       **kwargs: dict, Keyword arguments are be passed along as kwargs to the
         OAuth2WebServerFlow constructor.
     """
-    self.flow = OAuth2WebServerFlow(client_id, client_secret, scope, user_agent,
-        auth_uri, token_uri, **kwargs)
+    self.flow = None
     self.credentials = None
-    self._request_handler = None
+    self._client_id = client_id
+    self._client_secret = client_secret
+    self._scope = scope
+    self._auth_uri = auth_uri
+    self._token_uri = token_uri
+    self._user_agent = user_agent
+    self._kwargs = kwargs
     self._message = message
     self._in_error = False
+    self._callback_path = callback_path
 
   def _display_error_message(self, request_handler):
     request_handler.response.out.write('<html><body>')
@@ -344,9 +356,11 @@ class OAuth2Decorator(object):
         request_handler.redirect(users.create_login_url(
             request_handler.request.uri))
         return
+
+      self._create_flow(request_handler)
+
       # Store the request URI in 'state' so we can use it later
       self.flow.params['state'] = request_handler.request.url
-      self._request_handler = request_handler
       self.credentials = StorageByKeyName(
           CredentialsModel, user.user_id(), 'credentials').get()
 
@@ -358,6 +372,26 @@ class OAuth2Decorator(object):
         return request_handler.redirect(self.authorize_url())
 
     return check_oauth
+
+  def _create_flow(self, request_handler):
+    """Create the Flow object.
+
+    The Flow is calculated lazily since we don't know where this app is
+    running until it receives a request, at which point redirect_uri can be
+    calculated and then the Flow object can be constructed.
+
+    Args:
+      request_handler: webapp.RequestHandler, the request handler.
+    """
+    if self.flow is None:
+      redirect_uri = request_handler.request.relative_url(
+          self._callback_path) # Usually /oauth2callback
+      self.flow = OAuth2WebServerFlow(self._client_id, self._client_secret,
+                                      self._scope, redirect_uri=redirect_uri,
+                                      user_agent=self._user_agent,
+                                      auth_uri=self._auth_uri,
+                                      token_uri=self._token_uri, **self._kwargs)
+
 
   def oauth_aware(self, method):
     """Decorator that sets up for OAuth 2.0 dance, but doesn't do it.
@@ -385,9 +419,9 @@ class OAuth2Decorator(object):
             request_handler.request.uri))
         return
 
+      self._create_flow(request_handler)
 
       self.flow.params['state'] = request_handler.request.url
-      self._request_handler = request_handler
       self.credentials = StorageByKeyName(
           CredentialsModel, user.user_id(), 'credentials').get()
       method(request_handler, *args, **kwargs)
@@ -407,11 +441,7 @@ class OAuth2Decorator(object):
     Must only be called from with a webapp.RequestHandler subclassed method
     that had been decorated with either @oauth_required or @oauth_aware.
     """
-    callback = self._request_handler.request.relative_url('/oauth2callback')
-    url = self.flow.step1_get_authorize_url(callback)
-    user = users.get_current_user()
-    memcache.set(user.user_id(), pickle.dumps(self.flow),
-                 namespace=OAUTH2CLIENT_NAMESPACE)
+    url = self.flow.step1_get_authorize_url()
     return str(url)
 
   def http(self):
@@ -422,6 +452,70 @@ class OAuth2Decorator(object):
     returns True.
     """
     return self.credentials.authorize(httplib2.Http())
+
+  @property
+  def callback_path(self):
+    """The absolute path where the callback will occur.
+
+    Note this is the absolute path, not the absolute URI, that will be
+    calculated by the decorator at runtime. See callback_handler() for how this
+    should be used.
+
+    Returns:
+      The callback path as a string.
+    """
+    return self._callback_path
+
+
+  def callback_handler(self):
+    """RequestHandler for the OAuth 2.0 redirect callback.
+
+    Usage:
+       app = webapp.WSGIApplication([
+         ('/index', MyIndexHandler),
+         ...,
+         (decorator.callback_path, decorator.callback_handler())
+       ])
+
+    Returns:
+      A webapp.RequestHandler that handles the redirect back from the
+      server during the OAuth 2.0 dance.
+    """
+    decorator = self
+
+    class OAuth2Handler(webapp.RequestHandler):
+      """Handler for the redirect_uri of the OAuth 2.0 dance."""
+
+      @login_required
+      def get(self):
+        error = self.request.get('error')
+        if error:
+          errormsg = self.request.get('error_description', error)
+          self.response.out.write(
+              'The authorization request failed: %s' % errormsg)
+        else:
+          user = users.get_current_user()
+          decorator._create_flow(self)
+          credentials = decorator.flow.step2_exchange(self.request.params)
+          StorageByKeyName(
+              CredentialsModel, user.user_id(), 'credentials').put(credentials)
+          self.redirect(str(self.request.get('state')))
+
+    return OAuth2Handler
+
+  def callback_application(self):
+    """WSGI application for handling the OAuth 2.0 redirect callback.
+
+    If you need finer grained control use `callback_handler` which returns just
+    the webapp.RequestHandler.
+
+    Returns:
+      A webapp.WSGIApplication that handles the redirect back from the
+      server during the OAuth 2.0 dance.
+    """
+    return webapp.WSGIApplication([
+        (self.callback_path, self.callback_handler())
+        ])
 
 
 class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
@@ -446,6 +540,7 @@ class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
         # in API calls
   """
 
+  @util.positional(3)
   def __init__(self, filename, scope, message=None, cache=None):
     """Constructor
 
@@ -457,7 +552,7 @@ class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
         clientsecrets file is missing or invalid. The message may contain HTML and
         will be presented on the web interface for any method that uses the
         decorator.
-      cache: An optional cache service client that implements get() and set() 
+      cache: An optional cache service client that implements get() and set()
         methods. See clientsecrets.loadfile() for details.
     """
     try:
@@ -469,9 +564,9 @@ class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
                 client_info['client_id'],
                 client_info['client_secret'],
                 scope,
-                client_info['auth_uri'],
-                client_info['token_uri'],
-                message)
+                auth_uri=client_info['auth_uri'],
+                token_uri=client_info['token_uri'],
+                message=message)
     except clientsecrets.InvalidClientSecretsError:
       self._in_error = True
     if message is not None:
@@ -480,7 +575,8 @@ class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
       self._message = "Please configure your application for OAuth 2.0"
 
 
-def oauth2decorator_from_clientsecrets(filename, scope, 
+@util.positional(2)
+def oauth2decorator_from_clientsecrets(filename, scope,
                                        message=None, cache=None):
   """Creates an OAuth2Decorator populated from a clientsecrets file.
 
@@ -492,46 +588,11 @@ def oauth2decorator_from_clientsecrets(filename, scope,
       clientsecrets file is missing or invalid. The message may contain HTML and
       will be presented on the web interface for any method that uses the
       decorator.
-    cache: An optional cache service client that implements get() and set() 
+    cache: An optional cache service client that implements get() and set()
       methods. See clientsecrets.loadfile() for details.
 
   Returns: An OAuth2Decorator
 
   """
-  return OAuth2DecoratorFromClientSecrets(filename, scope, 
+  return OAuth2DecoratorFromClientSecrets(filename, scope,
     message=message, cache=cache)
-
-
-class OAuth2Handler(webapp.RequestHandler):
-  """Handler for the redirect_uri of the OAuth 2.0 dance."""
-
-  @login_required
-  def get(self):
-    error = self.request.get('error')
-    if error:
-      errormsg = self.request.get('error_description', error)
-      self.response.out.write(
-          'The authorization request failed: %s' % errormsg)
-    else:
-      user = users.get_current_user()
-      flow = pickle.loads(memcache.get(user.user_id(),
-                                       namespace=OAUTH2CLIENT_NAMESPACE))
-      # This code should be ammended with application specific error
-      # handling. The following cases should be considered:
-      # 1. What if the flow doesn't exist in memcache? Or is corrupt?
-      # 2. What if the step2_exchange fails?
-      if flow:
-        credentials = flow.step2_exchange(self.request.params)
-        StorageByKeyName(
-            CredentialsModel, user.user_id(), 'credentials').put(credentials)
-        self.redirect(str(self.request.get('state')))
-      else:
-        # TODO Add error handling here.
-        pass
-
-
-application = webapp.WSGIApplication([('/oauth2callback', OAuth2Handler)])
-
-
-def main():
-  run_wsgi_app(application)

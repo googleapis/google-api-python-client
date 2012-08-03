@@ -62,6 +62,8 @@ The constructor takes a discovery document in which to look up named schema.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import copy
+
+from oauth2client import util
 from oauth2client.anyjson import simplejson
 
 
@@ -80,6 +82,7 @@ class Schemas(object):
     # Cache of pretty printed schemas.
     self.pretty = {}
 
+  @util.positional(2)
   def _prettyPrintByName(self, name, seen=None, dent=0):
     """Get pretty printed object prototype from the schema name.
 
@@ -102,7 +105,7 @@ class Schemas(object):
 
     if name not in self.pretty:
       self.pretty[name] = _SchemaToStruct(self.schemas[name],
-          seen, dent).to_str(self._prettyPrintByName)
+          seen, dent=dent).to_str(self._prettyPrintByName)
 
     seen.pop()
 
@@ -121,6 +124,7 @@ class Schemas(object):
     # Return with trailing comma and newline removed.
     return self._prettyPrintByName(name, seen=[], dent=1)[:-2]
 
+  @util.positional(2)
   def _prettyPrintSchema(self, schema, seen=None, dent=0):
     """Get pretty printed object prototype of schema.
 
@@ -136,7 +140,7 @@ class Schemas(object):
     if seen is None:
       seen = []
 
-    return _SchemaToStruct(schema, seen, dent).to_str(self._prettyPrintByName)
+    return _SchemaToStruct(schema, seen, dent=dent).to_str(self._prettyPrintByName)
 
   def prettyPrintSchema(self, schema):
     """Get pretty printed object prototype of schema.
@@ -163,6 +167,7 @@ class Schemas(object):
 class _SchemaToStruct(object):
   """Convert schema to a prototype object."""
 
+  @util.positional(3)
   def __init__(self, schema, seen, dent=0):
     """Constructor.
 
@@ -256,7 +261,7 @@ class _SchemaToStruct(object):
     elif '$ref' in schema:
       schemaName = schema['$ref']
       description = schema.get('description', '')
-      s = self.from_cache(schemaName, self.seen)
+      s = self.from_cache(schemaName, seen=self.seen)
       parts = s.splitlines()
       self.emitEnd(parts[0], description)
       for line in parts[1:]:

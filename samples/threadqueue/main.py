@@ -100,7 +100,7 @@ def start_threads(credentials):
       backoff = Backoff()
       while backoff.loop():
         try:
-          response = request.execute(http)
+          response = request.execute(http=http)
           print "Processed: %s in thread %d" % (response['id'], n)
           break
         except HttpError, e:

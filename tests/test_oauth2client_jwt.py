@@ -114,7 +114,7 @@ class CryptTests(unittest.TestCase):
       ])
 
     contents = verify_id_token(jwt,
-        'some_audience_address@testing.gserviceaccount.com', http)
+        'some_audience_address@testing.gserviceaccount.com', http=http)
     self.assertEqual('billy bob', contents['user'])
     self.assertEqual('data', contents['metadata']['meta'])
 
@@ -126,7 +126,7 @@ class CryptTests(unittest.TestCase):
       ])
 
     self.assertRaises(VerifyJwtTokenError, verify_id_token, jwt,
-        'some_audience_address@testing.gserviceaccount.com', http)
+        'some_audience_address@testing.gserviceaccount.com', http=http)
 
   def test_verify_id_token_bad_tokens(self):
     private_key = datafile('privatekey.p12')

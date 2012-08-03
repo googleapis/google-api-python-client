@@ -40,6 +40,7 @@ from apiclient.discovery import build
 import gflags
 import httplib2
 from oauth2client.client import flow_from_clientsecrets
+from oauth2client.client import OOB_CALLBACK_URN
 from oauth2client.file import Storage
 from oauth2client.tools import run
 
@@ -70,6 +71,7 @@ with information from the APIs Console <https://code.google.com/apis/console>.
 # Set up a Flow object to be used if we need to authenticate.
 FLOW = flow_from_clientsecrets(CLIENT_SECRETS,
     scope='https://www.googleapis.com/auth/analytics.readonly',
+    redirect_uri=OOB_CALLBACK_URN,
     message=MISSING_CLIENT_SECRETS_MESSAGE)
 
 # The gflags module makes defining command-line options easy for applications.

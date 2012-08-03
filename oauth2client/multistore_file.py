@@ -38,8 +38,9 @@ import os
 import threading
 
 from anyjson import simplejson
-from client import Storage as BaseStorage
-from client import Credentials
+from oauth2client.client import Storage as BaseStorage
+from oauth2client.client import Credentials
+from oauth2client import util
 from locked_file import LockedFile
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,7 @@ class NewerCredentialStoreError(Error):
   pass
 
 
+@util.positional(4)
 def get_credential_storage(filename, client_id, user_agent, scope,
                            warn_on_readonly=True):
   """Get a Storage instance for a credential.
@@ -78,7 +80,7 @@ def get_credential_storage(filename, client_id, user_agent, scope,
   _multistores_lock.acquire()
   try:
     multistore = _multistores.setdefault(
-        filename, _MultiStore(filename, warn_on_readonly))
+        filename, _MultiStore(filename, warn_on_readonly=warn_on_readonly))
   finally:
     _multistores_lock.release()
   if type(scope) is list:
@@ -89,6 +91,7 @@ def get_credential_storage(filename, client_id, user_agent, scope,
 class _MultiStore(object):
   """A file backed store for multiple credentials."""
 
+  @util.positional(2)
   def __init__(self, filename, warn_on_readonly=True):
     """Initialize the class.
 

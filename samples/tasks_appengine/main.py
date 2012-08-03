@@ -50,7 +50,10 @@ class MainHandler(webapp.RequestHandler):
 def truncate(s, l):
   return s[:l] + '...' if len(s) > l else s
 
-application = webapp.WSGIApplication([('/', MainHandler)], debug=True)
+application = webapp.WSGIApplication([
+    ('/', MainHandler),
+    (decorator.callback_path, decorator.callback_handler()),
+    ], debug=True)
 
 
 def main():

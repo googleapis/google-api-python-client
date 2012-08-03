@@ -57,7 +57,7 @@ def main(argv):
   service = build("tasks", "v1", http=http)
 
   # List all the tasklists for the account.
-  lists = service.tasklists().list().execute(http)
+  lists = service.tasklists().list().execute(http=http)
   pprint.pprint(lists)
 
 

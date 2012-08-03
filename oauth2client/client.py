@@ -31,7 +31,8 @@ import time
 import urllib
 import urlparse
 
-from anyjson import simplejson
+from oauth2client import util
+from oauth2client.anyjson import simplejson
 
 HAS_OPENSSL = False
 try:
@@ -327,6 +328,7 @@ class OAuth2Credentials(Credentials):
   OAuth2Credentials objects may be safely pickled and unpickled.
   """
 
+  @util.positional(8)
   def __init__(self, access_token, client_id, client_secret, refresh_token,
                token_expiry, token_uri, user_agent, id_token=None):
     """Create an instance of OAuth2Credentials.
@@ -394,6 +396,7 @@ class OAuth2Credentials(Credentials):
     request_orig = http.request
 
     # The closure that will replace 'httplib2.Http.request'.
+    @util.positional(1)
     def new_request(uri, method='GET', body=None, headers=None,
                     redirections=httplib2.DEFAULT_MAX_REDIRECTS,
                     connection_type=None):
@@ -481,7 +484,7 @@ class OAuth2Credentials(Credentials):
         data['token_expiry'],
         data['token_uri'],
         data['user_agent'],
-        data.get('id_token', None))
+        id_token=data.get('id_token', None))
     retval.invalid = data['invalid']
     return retval
 
@@ -699,7 +702,8 @@ class AssertionCredentials(OAuth2Credentials):
   AssertionCredentials objects may be safely pickled and unpickled.
   """
 
-  def __init__(self, assertion_type, user_agent,
+  @util.positional(2)
+  def __init__(self, assertion_type, user_agent=None,
                token_uri='https://accounts.google.com/o/oauth2/token',
                **unused_kwargs):
     """Constructor for AssertionFlowCredentials.
@@ -757,6 +761,7 @@ if HAS_OPENSSL:
 
     MAX_TOKEN_LIFETIME_SECS = 3600 # 1 hour in seconds
 
+    @util.positional(4)
     def __init__(self,
         service_account_name,
         private_key,
@@ -781,7 +786,7 @@ if HAS_OPENSSL:
 
       super(SignedJwtAssertionCredentials, self).__init__(
           'http://oauth.net/grant_type/jwt/1.0/bearer',
-          user_agent,
+          user_agent=user_agent,
           token_uri=token_uri,
           )
 
@@ -833,6 +838,7 @@ if HAS_OPENSSL:
   # for the certs.
   _cached_http = httplib2.Http(MemoryCache())
 
+  @util.positional(2)
   def verify_id_token(id_token, audience, http=None,
       cert_uri=ID_TOKEN_VERIFICATON_CERTS):
     """Verifies a signed JWT id_token.
@@ -892,6 +898,7 @@ def _extract_id_token(id_token):
 
   return simplejson.loads(_urlsafe_b64decode(segments[1]))
 
+
 def _parse_exchange_token_response(content):
   """Parses response of an exchange token request.
 
@@ -919,10 +926,11 @@ def _parse_exchange_token_response(content):
 
   return resp
 
+
+@util.positional(4)
 def credentials_from_code(client_id, client_secret, scope, code,
-                        redirect_uri = 'postmessage',
-                        http=None, user_agent=None,
-                        token_uri='https://accounts.google.com/o/oauth2/token'):
+    redirect_uri='postmessage', http=None, user_agent=None,
+    token_uri='https://accounts.google.com/o/oauth2/token'):
   """Exchanges an authorization code for an OAuth2Credentials object.
 
   Args:
@@ -943,19 +951,19 @@ def credentials_from_code(client_id, client_secret, scope, code,
     FlowExchangeError if the authorization code cannot be exchanged for an
      access token
   """
-  flow = OAuth2WebServerFlow(client_id, client_secret, scope, user_agent,
-                             'https://accounts.google.com/o/oauth2/auth',
-                             token_uri)
+  flow = OAuth2WebServerFlow(client_id, client_secret, scope,
+                             redirect_uri=redirect_uri, user_agent=user_agent,
+                             auth_uri='https://accounts.google.com/o/oauth2/auth',
+                             token_uri=token_uri)
 
-  # We primarily make this call to set up the redirect_uri in the flow object
-  uriThatWeDontReallyUse = flow.step1_get_authorize_url(redirect_uri)
-  credentials = flow.step2_exchange(code, http)
+  credentials = flow.step2_exchange(code, http=http)
   return credentials
 
 
+@util.positional(3)
 def credentials_from_clientsecrets_and_code(filename, scope, code,
                                             message = None,
-                                            redirect_uri = 'postmessage',
+                                            redirect_uri='postmessage',
                                             http=None,
                                             cache=None):
   """Returns OAuth2Credentials from a clientsecrets file and an auth code.
@@ -966,7 +974,7 @@ def credentials_from_clientsecrets_and_code(filename, scope, code,
   Args:
     filename: string, File name of clientsecrets.
     scope: string or list of strings, scope(s) to request.
-    code: string, An authroization code, most likely passed down from
+    code: string, An authorization code, most likely passed down from
       the client
     message: string, A friendly string to display to the user if the
       clientsecrets file is missing or invalid. If message is provided then
@@ -975,7 +983,7 @@ def credentials_from_clientsecrets_and_code(filename, scope, code,
     redirect_uri: string, this is generally set to 'postmessage' to match the
       redirect_uri that the client specified
     http: httplib2.Http, optional http instance to use to do the fetch
-    cache: An optional cache service client that implements get() and set() 
+    cache: An optional cache service client that implements get() and set()
       methods. See clientsecrets.loadfile() for details.
 
   Returns:
@@ -988,20 +996,22 @@ def credentials_from_clientsecrets_and_code(filename, scope, code,
     clientsecrets.InvalidClientSecretsError if the clientsecrets file is
       invalid.
   """
-  flow = flow_from_clientsecrets(filename, scope, message=message, cache=cache)
-  # We primarily make this call to set up the redirect_uri in the flow object
-  uriThatWeDontReallyUse = flow.step1_get_authorize_url(redirect_uri)
-  credentials = flow.step2_exchange(code, http)
+  flow = flow_from_clientsecrets(filename, scope, message=message, cache=cache,
+                                 redirect_uri=redirect_uri)
+  credentials = flow.step2_exchange(code, http=http)
   return credentials
 
 
 class OAuth2WebServerFlow(Flow):
   """Does the Web Server Flow for OAuth 2.0.
 
-  OAuth2Credentials objects may be safely pickled and unpickled.
+  OAuth2WebServerFlow objects may be safely pickled and unpickled.
   """
 
-  def __init__(self, client_id, client_secret, scope, user_agent=None,
+  @util.positional(4)
+  def __init__(self, client_id, client_secret, scope,
+               redirect_uri=None,
+               user_agent=None,
                auth_uri='https://accounts.google.com/o/oauth2/auth',
                token_uri='https://accounts.google.com/o/oauth2/token',
                **kwargs):
@@ -1012,6 +1022,9 @@ class OAuth2WebServerFlow(Flow):
       client_secret: string client secret.
       scope: string or list of strings, scope(s) of the credentials being
         requested.
+      redirect_uri: string, Either the string 'urn:ietf:wg:oauth:2.0:oob' for
+          a non-web-based application, or a URI that handles the callback from
+          the authorization server.
       user_agent: string, HTTP User-Agent to provide for this application.
       auth_uri: string, URI for authorization endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
@@ -1025,6 +1038,7 @@ class OAuth2WebServerFlow(Flow):
     if type(scope) is list:
       scope = ' '.join(scope)
     self.scope = scope
+    self.redirect_uri = redirect_uri
     self.user_agent = user_agent
     self.auth_uri = auth_uri
     self.token_uri = token_uri
@@ -1032,27 +1046,33 @@ class OAuth2WebServerFlow(Flow):
         'access_type': 'offline',
         }
     self.params.update(kwargs)
-    self.redirect_uri = None
 
-  def step1_get_authorize_url(self, redirect_uri=OOB_CALLBACK_URN):
+  @util.positional(1)
+  def step1_get_authorize_url(self, redirect_uri=None):
     """Returns a URI to redirect to the provider.
 
     Args:
       redirect_uri: string, Either the string 'urn:ietf:wg:oauth:2.0:oob' for
           a non-web-based application, or a URI that handles the callback from
-          the authorization server.
+          the authorization server. This parameter is deprecated, please move to
+          passing the redirect_uri in via the constructor.
 
-    If redirect_uri is 'urn:ietf:wg:oauth:2.0:oob' then pass in the
-    generated verification code to step2_exchange,
-    otherwise pass in the query parameters received
-    at the callback uri to step2_exchange.
+    Returns:
+      A URI as a string to redirect the user to begin the authorization flow.
     """
+    if redirect_uri is not None:
+      logger.warning(('The redirect_uri parameter for'
+          'OAuth2WebServerFlow.step1_get_authorize_url is deprecated. Please'
+          'move to passing the redirect_uri in via the constructor.'))
+      self.redirect_uri = redirect_uri
 
-    self.redirect_uri = redirect_uri
+    if self.redirect_uri is None:
+      raise ValueError('The value of redirect_uri must not be None.')
+
     query = {
         'response_type': 'code',
         'client_id': self.client_id,
-        'redirect_uri': redirect_uri,
+        'redirect_uri': self.redirect_uri,
         'scope': self.scope,
         }
     query.update(self.params)
@@ -1061,6 +1081,7 @@ class OAuth2WebServerFlow(Flow):
     parts[4] = urllib.urlencode(query)
     return urlparse.urlunparse(parts)
 
+  @util.positional(2)
   def step2_exchange(self, code, http=None):
     """Exhanges a code for OAuth2Credentials.
 
@@ -1134,7 +1155,9 @@ class OAuth2WebServerFlow(Flow):
         error_msg = 'Invalid response: %s.' % str(resp.status)
       raise FlowExchangeError(error_msg)
 
-def flow_from_clientsecrets(filename, scope, message=None, cache=None):
+
+@util.positional(2)
+def flow_from_clientsecrets(filename, scope, redirect_uri=None, message=None, cache=None):
   """Create a Flow from a clientsecrets file.
 
   Will create the right kind of Flow based on the contents of the clientsecrets
@@ -1143,11 +1166,14 @@ def flow_from_clientsecrets(filename, scope, message=None, cache=None):
   Args:
     filename: string, File name of client secrets.
     scope: string or list of strings, scope(s) to request.
+    redirect_uri: string, Either the string 'urn:ietf:wg:oauth:2.0:oob' for
+        a non-web-based application, or a URI that handles the callback from
+        the authorization server.
     message: string, A friendly string to display to the user if the
       clientsecrets file is missing or invalid. If message is provided then
       sys.exit will be called in the case of an error. If message in not
       provided then clientsecrets.InvalidClientSecretsError will be raised.
-    cache: An optional cache service client that implements get() and set() 
+    cache: An optional cache service client that implements get() and set()
       methods. See clientsecrets.loadfile() for details.
 
   Returns:
@@ -1165,9 +1191,11 @@ def flow_from_clientsecrets(filename, scope, message=None, cache=None):
             client_info['client_id'],
             client_info['client_secret'],
             scope,
-            None, # user_agent
-            client_info['auth_uri'],
-            client_info['token_uri'])
+            redirect_uri=redirect_uri,
+            user_agent=None,
+            auth_uri=client_info['auth_uri'],
+            token_uri=client_info['token_uri'])
+
   except clientsecrets.InvalidClientSecretsError:
     if message:
       sys.exit(message)

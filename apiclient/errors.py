@@ -23,6 +23,7 @@ should be defined in this file.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 
+from oauth2client import util
 from oauth2client.anyjson import simplejson
 
 
@@ -34,6 +35,7 @@ class Error(Exception):
 class HttpError(Error):
   """HTTP data was invalid or unexpected."""
 
+  @util.positional(3)
   def __init__(self, resp, content, uri=None):
     self.resp = resp
     self.content = content
@@ -92,6 +94,7 @@ class ResumableUploadError(Error):
 class BatchError(HttpError):
   """Error occured during batch operations."""
 
+  @util.positional(2)
   def __init__(self, reason, resp=None, content=None):
     self.resp = resp
     self.content = content
@@ -106,6 +109,7 @@ class BatchError(HttpError):
 class UnexpectedMethodError(Error):
   """Exception raised by RequestMockBuilder on unexpected calls."""
 
+  @util.positional(1)
   def __init__(self, methodId=None):
     """Constructor for an UnexpectedMethodError."""
     super(UnexpectedMethodError, self).__init__(

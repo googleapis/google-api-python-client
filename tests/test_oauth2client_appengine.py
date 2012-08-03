@@ -55,7 +55,6 @@ from oauth2client.appengine import AppAssertionCredentials
 from oauth2client.appengine import CredentialsModel
 from oauth2client.appengine import FlowProperty
 from oauth2client.appengine import OAuth2Decorator
-from oauth2client.appengine import OAuth2Handler
 from oauth2client.appengine import StorageByKeyName
 from oauth2client.appengine import oauth2decorator_from_clientsecrets
 from oauth2client.client import AccessTokenRefreshError
@@ -200,7 +199,8 @@ class FlowPropertyTest(unittest.TestCase):
 
   def test_flow_get_put(self):
     instance = TestFlowModel(
-        flow=flow_from_clientsecrets(datafile('client_secrets.json'), 'foo'),
+        flow=flow_from_clientsecrets(datafile('client_secrets.json'), 'foo',
+                                     redirect_uri='oob'),
         key_name='foo'
         )
     instance.put()
@@ -276,6 +276,14 @@ class StorageByKeyNameTest(unittest.TestCase):
     self.assertEqual(None, credentials)
     self.assertEqual(None, memcache.get('foo'))
 
+class MockRequest(object):
+  url = 'https://example.org'
+
+  def relative_url(self, rel):
+    return self.url + rel
+
+class MockRequestHandler(object):
+  request = MockRequest()
 
 class DecoratorTests(unittest.TestCase):
 
@@ -312,7 +320,7 @@ class DecoratorTests(unittest.TestCase):
 
 
     application = webapp2.WSGIApplication([
-        ('/oauth2callback', OAuth2Handler),
+        ('/oauth2callback', self.decorator.callback_handler()),
         ('/foo_path', TestRequiredHandler),
         webapp2.Route(r'/bar_path/<year:\d{4}>/<month:\d{2}>',
           handler=TestAwareHandler, name='bar')],
@@ -441,6 +449,11 @@ class DecoratorTests(unittest.TestCase):
         scope=['foo_scope', 'bar_scope'],
         access_type='offline',
         approval_prompt='force')
+    request_handler = MockRequestHandler()
+    decorator._create_flow(request_handler)
+
+    self.assertEqual('https://example.org/oauth2callback',
+                     decorator.flow.redirect_uri)
     self.assertEqual('offline', decorator.flow.params['access_type'])
     self.assertEqual('force', decorator.flow.params['approval_prompt'])
     self.assertEqual('foo_user_agent', decorator.flow.user_agent)

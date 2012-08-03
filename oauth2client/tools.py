@@ -29,8 +29,9 @@ import socket
 import sys
 import webbrowser
 
-from client import FlowExchangeError
-from client import OOB_CALLBACK_URN
+from oauth2client.client import FlowExchangeError
+from oauth2client.client import OOB_CALLBACK_URN
+from oauth2client import util
 
 try:
   from urlparse import parse_qsl
@@ -91,6 +92,7 @@ class ClientRedirectHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     pass
 
 
+@util.positional(2)
 def run(flow, storage, http=None):
   """Core code for a command-line application.
 
@@ -130,7 +132,8 @@ def run(flow, storage, http=None):
     oauth_callback = 'http://%s:%s/' % (FLAGS.auth_host_name, port_number)
   else:
     oauth_callback = OOB_CALLBACK_URN
-  authorize_url = flow.step1_get_authorize_url(oauth_callback)
+  flow.redirect_uri = oauth_callback
+  authorize_url = flow.step1_get_authorize_url()
 
   if FLAGS.auth_local_webserver:
     webbrowser.open(authorize_url, new=1, autoraise=True)
@@ -163,7 +166,7 @@ def run(flow, storage, http=None):
     code = raw_input('Enter verification code: ').strip()
 
   try:
-    credential = flow.step2_exchange(code, http)
+    credential = flow.step2_exchange(code, http=http)
   except FlowExchangeError, e:
     sys.exit('Authentication has failed: %s' % e)
 

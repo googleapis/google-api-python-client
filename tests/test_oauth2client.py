@@ -55,12 +55,15 @@ from oauth2client.client import flow_from_clientsecrets
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
+
 def datafile(filename):
   return os.path.join(DATA_DIR, filename)
+
 
 def load_and_cache(existing_file, fakename, cache_mock):
   client_type, client_info = _loadfile(datafile(existing_file))
   cache_mock.cache[fakename] = {client_type: client_info}
+
 
 class CacheMock(object):
     def __init__(self):
@@ -195,7 +198,7 @@ class TestAssertionCredentials(unittest.TestCase):
   def setUp(self):
     user_agent = "fun/2.0"
     self.credentials = self.AssertionCredentialsTestImpl(self.assertion_type,
-        user_agent)
+        user_agent=user_agent)
 
   def test_assertion_body(self):
     body = urlparse.parse_qs(self.credentials._generate_refresh_request_body())
@@ -230,6 +233,7 @@ class ExtractIdTokenText(unittest.TestCase):
 
     self.assertRaises(VerifyJwtTokenError, _extract_id_token, jwt)
 
+
 class OAuth2WebServerFlowTest(unittest.TestCase):
 
   def setUp(self):
@@ -237,18 +241,19 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
         client_id='client_id+1',
         client_secret='secret+1',
         scope='foo',
+        redirect_uri=OOB_CALLBACK_URN,
         user_agent='unittest-sample/1.0',
         )
 
   def test_construct_authorize_url(self):
-    authorize_url = self.flow.step1_get_authorize_url('OOB_CALLBACK_URN')
+    authorize_url = self.flow.step1_get_authorize_url()
 
     parsed = urlparse.urlparse(authorize_url)
     q = parse_qs(parsed[4])
     self.assertEqual('client_id+1', q['client_id'][0])
     self.assertEqual('code', q['response_type'][0])
     self.assertEqual('foo', q['scope'][0])
-    self.assertEqual('OOB_CALLBACK_URN', q['redirect_uri'][0])
+    self.assertEqual(OOB_CALLBACK_URN, q['redirect_uri'][0])
     self.assertEqual('offline', q['access_type'][0])
 
   def test_override_flow_access_type(self):
@@ -257,17 +262,18 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
         client_id='client_id+1',
         client_secret='secret+1',
         scope='foo',
+        redirect_uri=OOB_CALLBACK_URN,
         user_agent='unittest-sample/1.0',
         access_type='online'
         )
-    authorize_url = flow.step1_get_authorize_url('OOB_CALLBACK_URN')
+    authorize_url = flow.step1_get_authorize_url()
 
     parsed = urlparse.urlparse(authorize_url)
     q = parse_qs(parsed[4])
     self.assertEqual('client_id+1', q['client_id'][0])
     self.assertEqual('code', q['response_type'][0])
     self.assertEqual('foo', q['scope'][0])
-    self.assertEqual('OOB_CALLBACK_URN', q['redirect_uri'][0])
+    self.assertEqual(OOB_CALLBACK_URN, q['redirect_uri'][0])
     self.assertEqual('online', q['access_type'][0])
 
   def test_exchange_failure(self):
@@ -276,7 +282,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
       ])
 
     try:
-      credentials = self.flow.step2_exchange('some random code', http)
+      credentials = self.flow.step2_exchange('some random code', http=http)
       self.fail("should raise exception if exchange doesn't get 200")
     except FlowExchangeError:
       pass
@@ -287,7 +293,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
     ])
 
     try:
-      credentials = self.flow.step2_exchange('some random code', http)
+      credentials = self.flow.step2_exchange('some random code', http=http)
       self.fail("should raise exception if exchange doesn't get 200")
     except FlowExchangeError, e:
       self.assertEquals('invalid_request', str(e))
@@ -305,7 +311,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
       ])
 
     try:
-      credentials = self.flow.step2_exchange('some random code', http)
+      credentials = self.flow.step2_exchange('some random code', http=http)
       self.fail("should raise exception if exchange doesn't get 200")
     except FlowExchangeError, e:
       pass
@@ -318,7 +324,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
        "refresh_token":"8xLOxBtZp8" }"""),
       ])
 
-    credentials = self.flow.step2_exchange('some random code', http)
+    credentials = self.flow.step2_exchange('some random code', http=http)
     self.assertEqual('SlAV32hkKG', credentials.access_token)
     self.assertNotEqual(None, credentials.token_expiry)
     self.assertEqual('8xLOxBtZp8', credentials.refresh_token)
@@ -328,7 +334,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
       ({'status': '200'}, "access_token=SlAV32hkKG&expires_in=3600"),
     ])
 
-    credentials = self.flow.step2_exchange('some random code', http)
+    credentials = self.flow.step2_exchange('some random code', http=http)
     self.assertEqual('SlAV32hkKG', credentials.access_token)
     self.assertNotEqual(None, credentials.token_expiry)
 
@@ -339,7 +345,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
       ({'status': '200'}, "access_token=SlAV32hkKG&expires=3600"),
     ])
 
-    credentials = self.flow.step2_exchange('some random code', http)
+    credentials = self.flow.step2_exchange('some random code', http=http)
     self.assertNotEqual(None, credentials.token_expiry)
 
   def test_exchange_no_expires_in(self):
@@ -348,7 +354,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
        "refresh_token":"8xLOxBtZp8" }"""),
       ])
 
-    credentials = self.flow.step2_exchange('some random code', http)
+    credentials = self.flow.step2_exchange('some random code', http=http)
     self.assertEqual(None, credentials.token_expiry)
 
   def test_urlencoded_exchange_no_expires_in(self):
@@ -358,7 +364,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
       ({'status': '200'}, "access_token=SlAV32hkKG"),
     ])
 
-    credentials = self.flow.step2_exchange('some random code', http)
+    credentials = self.flow.step2_exchange('some random code', http=http)
     self.assertEqual(None, credentials.token_expiry)
 
   def test_exchange_fails_if_no_code(self):
@@ -369,7 +375,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
 
     code = {'error': 'thou shall not pass'}
     try:
-      credentials = self.flow.step2_exchange(code, http)
+      credentials = self.flow.step2_exchange(code, http=http)
       self.fail('should raise exception if no code in dictionary.')
     except FlowExchangeError, e:
       self.assertTrue('shall not pass' in str(e))
@@ -382,7 +388,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
       ])
 
     self.assertRaises(VerifyJwtTokenError, self.flow.step2_exchange,
-      'some random code', http)
+      'some random code', http=http)
 
   def test_exchange_id_token_fail(self):
     body = {'foo': 'bar'}
@@ -396,18 +402,20 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
        "id_token": "%s"}""" % jwt),
       ])
 
-    credentials = self.flow.step2_exchange('some random code', http)
+    credentials = self.flow.step2_exchange('some random code', http=http)
     self.assertEqual(credentials.id_token, body)
 
-class FlowFromCachedClientsecrets(unittest.TestCase):  
+
+class FlowFromCachedClientsecrets(unittest.TestCase):
 
   def test_flow_from_clientsecrets_cached(self):
     cache_mock = CacheMock()
     load_and_cache('client_secrets.json', 'some_secrets', cache_mock)
-    
-    # flow_from_clientsecrets(filename, scope, message=None, cache=None)
-    flow = flow_from_clientsecrets('some_secrets', '', cache=cache_mock)
+
+    flow = flow_from_clientsecrets(
+        'some_secrets', '', redirect_uri='oob', cache=cache_mock)
     self.assertEquals('foo_client_secret', flow.client_secret)
+
 
 class CredentialsFromCodeTests(unittest.TestCase):
   def setUp(self):
@@ -424,8 +432,8 @@ class CredentialsFromCodeTests(unittest.TestCase):
        "expires_in":3600 }"""),
     ])
     credentials = credentials_from_code(self.client_id, self.client_secret,
-                                    self.scope, self.code, self.redirect_uri,
-                                    http)
+        self.scope, self.code, redirect_uri=self.redirect_uri,
+        http=http)
     self.assertEquals(credentials.access_token, 'asdfghjkl')
     self.assertNotEqual(None, credentials.token_expiry)
 
@@ -436,12 +444,11 @@ class CredentialsFromCodeTests(unittest.TestCase):
 
     try:
       credentials = credentials_from_code(self.client_id, self.client_secret,
-                                      self.scope, self.code, self.redirect_uri,
-                                      http)
+          self.scope, self.code, redirect_uri=self.redirect_uri,
+          http=http)
       self.fail("should raise exception if exchange doesn't get 200")
     except FlowExchangeError:
       pass
-
 
   def test_exchange_code_and_file_for_token(self):
     http = HttpMockSequence([
@@ -479,7 +486,6 @@ class CredentialsFromCodeTests(unittest.TestCase):
       self.fail("should raise exception if exchange doesn't get 200")
     except FlowExchangeError:
       pass
-
 
 
 class MemoryCacheTests(unittest.TestCase):
