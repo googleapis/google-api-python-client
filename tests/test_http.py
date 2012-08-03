@@ -25,6 +25,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import httplib2
 import os
 import unittest
+import urllib
 import StringIO
 
 from apiclient.discovery import build
@@ -40,6 +41,7 @@ from apiclient.http import MediaInMemoryUpload
 from apiclient.http import MediaIoBaseUpload
 from apiclient.http import MediaIoBaseDownload
 from apiclient.http import set_user_agent
+from apiclient.http import MAX_URI_LENGTH 
 from apiclient.model import JsonModel
 from oauth2client.client import Credentials
 
@@ -723,6 +725,45 @@ class TestBatch(unittest.TestCase):
         'https://www.googleapis.com/someapi/v1/collection/?foo=bar returned '
         '"Access Not Configured">')
     self.assertEqual(expected, str(callbacks.exceptions['2']))
+
+class TestRequestUriTooLong(unittest.TestCase):
+
+  def test_turn_get_into_post(self):
+
+    def _postproc(resp, content):
+      return content
+
+    http = HttpMockSequence([
+      ({'status': '200'},
+        'echo_request_body'),
+      ({'status': '200'},
+        'echo_request_headers'),
+      ])
+
+    # Send a long query parameter.
+    query = {
+        'q': 'a' * MAX_URI_LENGTH + '?&'
+        }
+    req = HttpRequest(
+        http,
+        _postproc,
+        'http://example.com?' + urllib.urlencode(query),
+        method='GET',
+        body=None,
+        headers={},
+        methodId='foo',
+        resumable=None)
+
+    # Query parameters should be sent in the body.
+    response = req.execute()
+    self.assertEqual('q=' + 'a' * MAX_URI_LENGTH + '%3F%26', response)
+
+    # Extra headers should be set.
+    response = req.execute()
+    self.assertEqual('GET', response['x-http-method-override'])
+    self.assertEqual(str(MAX_URI_LENGTH + 8), response['content-length'])
+    self.assertEqual(
+        'application/x-www-form-urlencoded', response['content-type'])
 
 if __name__ == '__main__':
   unittest.main()

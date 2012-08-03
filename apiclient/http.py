@@ -48,6 +48,8 @@ from oauth2client.anyjson import simplejson
 
 DEFAULT_CHUNK_SIZE = 512*1024
 
+MAX_URI_LENGTH = 4000
+
 
 class MediaUploadProgress(object):
   """Status of a resumable upload."""
@@ -646,6 +648,19 @@ class HttpRequest(object):
     else:
       if 'content-length' not in self.headers:
         self.headers['content-length'] = str(self.body_size)
+      # If the request URI is too long then turn it into a POST request.
+      if len(self.uri) > MAX_URI_LENGTH and self.method == 'GET':
+        self.method = 'POST'
+        self.headers['x-http-method-override'] = 'GET'
+        self.headers['content-type'] = 'application/x-www-form-urlencoded'
+        parsed = urlparse.urlparse(self.uri)
+        self.uri = urlparse.urlunparse(
+            (parsed.scheme, parsed.netloc, parsed.path, parsed.params, None,
+             None)
+            )
+        self.body = parsed.query
+        self.headers['content-length'] = str(len(self.body))
+
       resp, content = http.request(self.uri, self.method,
                                    body=self.body,
                                    headers=self.headers)
