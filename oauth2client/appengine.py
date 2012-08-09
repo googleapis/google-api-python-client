@@ -70,7 +70,8 @@ class AppAssertionCredentials(AssertionCredentials):
     """Constructor for AppAssertionCredentials
 
     Args:
-      scope: string or list of strings, scope(s) of the credentials being requested.
+      scope: string or list of strings, scope(s) of the credentials being
+        requested.
     """
     if type(scope) is list:
       scope = ' '.join(scope)

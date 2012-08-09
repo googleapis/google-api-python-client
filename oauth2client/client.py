@@ -624,7 +624,7 @@ class OAuth2Credentials(Credentials):
           self.invalid = True
           if self.store:
             self.store.locked_put(self)
-      except:
+      except StandardError:
         pass
       raise AccessTokenRefreshError(error_msg)
 

@@ -20,3 +20,4 @@ $1 runtests.py $FLAGS tests/test_protobuf_model.py
 $1 runtests.py $FLAGS tests/test_schema.py
 $1 runtests.py $FLAGS tests/test_oauth2client_appengine.py
 $1 runtests.py $FLAGS tests/test_oauth2client_keyring.py
+$1 runtests.py $FLAGS tests/test_oauth2client_gce.py
