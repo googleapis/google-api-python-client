@@ -55,7 +55,8 @@ class SchemasTest(unittest.TestCase):
     self.sc = Schemas(discovery)
 
   def test_basic_formatting(self):
-    self.assertEqual(LOAD_FEED, self.sc.prettyPrintByName('LoadFeed'))
+    self.assertEqual(sorted(LOAD_FEED.splitlines()),
+                     sorted(self.sc.prettyPrintByName('LoadFeed').splitlines()))
 
   def test_empty_edge_case(self):
     self.assertTrue('Unknown type' in self.sc.prettyPrintSchema({}))
