@@ -29,6 +29,7 @@ import httplib2
 import mimeparse
 import mimetypes
 import os
+import sys
 import urllib
 import urlparse
 import uuid
@@ -39,6 +40,7 @@ from email.mime.nonmultipart import MIMENonMultipart
 from email.parser import FeedParser
 from errors import BatchError
 from errors import HttpError
+from errors import InvalidChunkSizeError
 from errors import ResumableUploadError
 from errors import UnexpectedBodyError
 from errors import UnexpectedMethodError
@@ -111,11 +113,25 @@ class MediaUpload(object):
   Base class that defines the interface of MediaUpload subclasses.
 
   Note that subclasses of MediaUpload may allow you to control the chunksize
-  when upload a media object. It is important to keep the size of the chunk as
-  large as possible to keep the upload efficient. Other factors may influence
+  when uploading a media object. It is important to keep the size of the chunk
+  as large as possible to keep the upload efficient. Other factors may influence
   the size of the chunk you use, particularly if you are working in an
   environment where individual HTTP requests may have a hardcoded time limit,
   such as under certain classes of requests under Google App Engine.
+
+  Streams are io.Base compatible objects that support seek(). Some MediaUpload
+  subclasses support using streams directly to upload data. Support for
+  streaming may be indicated by a MediaUpload sub-class and if appropriate for a
+  platform that stream will be used for uploading the media object. The support
+  for streaming is indicated by has_stream() returning True. The stream() method
+  should return an io.Base object that supports seek(). On platforms where the
+  underlying httplib module supports streaming, for example Python 2.6 and
+  later, the stream will be passed into the http library which will result in
+  less memory being used and possibly faster uploads.
+
+  If you need to upload media that can't be uploaded using any of the existing
+  MediaUpload sub-class then you can sub-class MediaUpload for your particular
+  needs.
   """
 
   def chunksize(self):
@@ -160,6 +176,27 @@ class MediaUpload(object):
     Returns:
       A string of bytes read. May be shorter than length if EOF was reached
       first.
+    """
+    raise NotImplementedError()
+
+  def has_stream(self):
+    """Does the underlying upload support a streaming interface.
+
+    Streaming means it is an io.IOBase subclass that supports seek, i.e.
+    seekable() returns True.
+
+    Returns:
+      True if the call to stream() will return an instance of a seekable io.Base
+      subclass.
+    """
+    return False
+
+  def stream(self):
+    """A stream interface to the data being uploaded.
+
+    Returns:
+      The returned value is an io.IOBase subclass that supports seek, i.e.
+      seekable() returns True.
     """
     raise NotImplementedError()
 
@@ -213,42 +250,58 @@ class MediaUpload(object):
     return from_json(s)
 
 
-class MediaFileUpload(MediaUpload):
-  """A MediaUpload for a file.
+class MediaIoBaseUpload(MediaUpload):
+  """A MediaUpload for a io.Base objects.
 
-  Construct a MediaFileUpload and pass as the media_body parameter of the
-  method. For example, if we had a service that allowed uploading images:
+  Note that the Python file object is compatible with io.Base and can be used
+  with this class also.
 
-
-    media = MediaFileUpload('cow.png', mimetype='image/png',
+    fh = io.BytesIO('...Some data to upload...')
+    media = MediaIoBaseUpload(fh, mimetype='image/png',
       chunksize=1024*1024, resumable=True)
-    farm.animals()..insert(
+    farm.animals().insert(
         id='cow',
         name='cow.png',
         media_body=media).execute()
+
+  Depending on the platform you are working on, you may pass -1 as the
+  chunksize, which indicates that the entire file should be uploaded in a single
+  request. If the underlying platform supports streams, such as Python 2.6 or
+  later, then this can be very efficient as it avoids multiple connections, and
+  also avoids loading the entire file into memory before sending it. Note that
+  Google App Engine has a 5MB limit on request size, so you should never set
+  your chunksize larger than 5MB, or to -1.
   """
 
-  @util.positional(2)
-  def __init__(self, filename, mimetype=None, chunksize=DEFAULT_CHUNK_SIZE, resumable=False):
+  @util.positional(3)
+  def __init__(self, fd, mimetype, chunksize=DEFAULT_CHUNK_SIZE,
+      resumable=False):
     """Constructor.
 
     Args:
-      filename: string, Name of the file.
-      mimetype: string, Mime-type of the file. If None then a mime-type will be
-        guessed from the file extension.
+      fd: io.Base or file object, The source of the bytes to upload. MUST be
+        opened in blocking mode, do not use streams opened in non-blocking mode.
+        The given stream must be seekable, that is, it must be able to call
+        seek() on fd.
+      mimetype: string, Mime-type of the file.
       chunksize: int, File will be uploaded in chunks of this many bytes. Only
-        used if resumable=True.
+        used if resumable=True. Pass in a value of -1 if the file is to be
+        uploaded as a single chunk. Note that Google App Engine has a 5MB limit
+        on request size, so you should never set your chunksize larger than 5MB,
+        or to -1.
       resumable: bool, True if this is a resumable upload. False means upload
         in a single request.
     """
-    self._filename = filename
-    self._size = os.path.getsize(filename)
-    self._fd = None
-    if mimetype is None:
-      (mimetype, encoding) = mimetypes.guess_type(filename)
+    super(MediaIoBaseUpload, self).__init__()
+    self._fd = fd
     self._mimetype = mimetype
+    if not (chunksize == -1 or chunksize > 0):
+      raise InvalidChunkSizeError()
     self._chunksize = chunksize
     self._resumable = resumable
+
+    self._fd.seek(0, os.SEEK_END)
+    self._size = self._fd.tell()
 
   def chunksize(self):
     """Chunk size for resumable uploads.
@@ -293,10 +346,81 @@ class MediaFileUpload(MediaUpload):
       A string of bytes read. May be shorted than length if EOF was reached
       first.
     """
-    if self._fd is None:
-      self._fd = open(self._filename, 'rb')
     self._fd.seek(begin)
     return self._fd.read(length)
+
+  def has_stream(self):
+    """Does the underlying upload support a streaming interface.
+
+    Streaming means it is an io.IOBase subclass that supports seek, i.e.
+    seekable() returns True.
+
+    Returns:
+      True if the call to stream() will return an instance of a seekable io.Base
+      subclass.
+    """
+    return True
+
+  def stream(self):
+    """A stream interface to the data being uploaded.
+
+    Returns:
+      The returned value is an io.IOBase subclass that supports seek, i.e.
+      seekable() returns True.
+    """
+    return self._fd
+
+  def to_json(self):
+    """This upload type is not serializable."""
+    raise NotImplementedError('MediaIoBaseUpload is not serializable.')
+
+
+class MediaFileUpload(MediaIoBaseUpload):
+  """A MediaUpload for a file.
+
+  Construct a MediaFileUpload and pass as the media_body parameter of the
+  method. For example, if we had a service that allowed uploading images:
+
+
+    media = MediaFileUpload('cow.png', mimetype='image/png',
+      chunksize=1024*1024, resumable=True)
+    farm.animals().insert(
+        id='cow',
+        name='cow.png',
+        media_body=media).execute()
+
+  Depending on the platform you are working on, you may pass -1 as the
+  chunksize, which indicates that the entire file should be uploaded in a single
+  request. If the underlying platform supports streams, such as Python 2.6 or
+  later, then this can be very efficient as it avoids multiple connections, and
+  also avoids loading the entire file into memory before sending it. Note that
+  Google App Engine has a 5MB limit on request size, so you should never set
+  your chunksize larger than 5MB, or to -1.
+  """
+
+  @util.positional(2)
+  def __init__(self, filename, mimetype=None, chunksize=DEFAULT_CHUNK_SIZE,
+               resumable=False):
+    """Constructor.
+
+    Args:
+      filename: string, Name of the file.
+      mimetype: string, Mime-type of the file. If None then a mime-type will be
+        guessed from the file extension.
+      chunksize: int, File will be uploaded in chunks of this many bytes. Only
+        used if resumable=True. Pass in a value of -1 if the file is to be
+        uploaded in a single chunk. Note that Google App Engine has a 5MB limit
+        on request size, so you should never set your chunksize larger than 5MB,
+        or to -1.
+      resumable: bool, True if this is a resumable upload. False means upload
+        in a single request.
+    """
+    self._filename = filename
+    fd = open(self._filename, 'rb')
+    if mimetype is None:
+      (mimetype, encoding) = mimetypes.guess_type(filename)
+    super(MediaFileUpload, self).__init__(fd, mimetype, chunksize=chunksize,
+                                          resumable=resumable)
 
   def to_json(self):
     """Creating a JSON representation of an instance of MediaFileUpload.
@@ -314,196 +438,33 @@ class MediaFileUpload(MediaUpload):
                            chunksize=d['_chunksize'], resumable=d['_resumable'])
 
 
-class MediaIoBaseUpload(MediaUpload):
-  """A MediaUpload for a io.Base objects.
-
-  Note that the Python file object is compatible with io.Base and can be used
-  with this class also.
-
-    fh = io.BytesIO('...Some data to upload...')
-    media = MediaIoBaseUpload(fh, mimetype='image/png',
-      chunksize=1024*1024, resumable=True)
-    farm.animals().insert(
-        id='cow',
-        name='cow.png',
-        media_body=media).execute()
-  """
-
-  @util.positional(3)
-  def __init__(self, fd, mimetype, chunksize=DEFAULT_CHUNK_SIZE,
-      resumable=False):
-    """Constructor.
-
-    Args:
-      fd: io.Base or file object, The source of the bytes to upload. MUST be
-        opened in blocking mode, do not use streams opened in non-blocking mode.
-      mimetype: string, Mime-type of the file. If None then a mime-type will be
-        guessed from the file extension.
-      chunksize: int, File will be uploaded in chunks of this many bytes. Only
-        used if resumable=True.
-      resumable: bool, True if this is a resumable upload. False means upload
-        in a single request.
-    """
-    self._fd = fd
-    self._mimetype = mimetype
-    self._chunksize = chunksize
-    self._resumable = resumable
-    self._size = None
-    try:
-      if hasattr(self._fd, 'fileno'):
-        fileno = self._fd.fileno()
-
-        # Pipes and such show up as 0 length files.
-        size = os.fstat(fileno).st_size
-        if size:
-          self._size = os.fstat(fileno).st_size
-    except IOError:
-      pass
-
-  def chunksize(self):
-    """Chunk size for resumable uploads.
-
-    Returns:
-      Chunk size in bytes.
-    """
-    return self._chunksize
-
-  def mimetype(self):
-    """Mime type of the body.
-
-    Returns:
-      Mime type.
-    """
-    return self._mimetype
-
-  def size(self):
-    """Size of upload.
-
-    Returns:
-      Size of the body, or None of the size is unknown.
-    """
-    return self._size
-
-  def resumable(self):
-    """Whether this upload is resumable.
-
-    Returns:
-      True if resumable upload or False.
-    """
-    return self._resumable
-
-  def getbytes(self, begin, length):
-    """Get bytes from the media.
-
-    Args:
-      begin: int, offset from beginning of file.
-      length: int, number of bytes to read, starting at begin.
-
-    Returns:
-      A string of bytes read. May be shorted than length if EOF was reached
-      first.
-    """
-    self._fd.seek(begin)
-    return self._fd.read(length)
-
-  def to_json(self):
-    """This upload type is not serializable."""
-    raise NotImplementedError('MediaIoBaseUpload is not serializable.')
-
-
-class MediaInMemoryUpload(MediaUpload):
+class MediaInMemoryUpload(MediaIoBaseUpload):
   """MediaUpload for a chunk of bytes.
 
-  Construct a MediaFileUpload and pass as the media_body parameter of the
-  method.
+  DEPRECATED: Use MediaIoBaseUpload with either io.TextIOBase or StringIO for
+  the stream.
   """
 
   @util.positional(2)
   def __init__(self, body, mimetype='application/octet-stream',
                chunksize=DEFAULT_CHUNK_SIZE, resumable=False):
-    """Create a new MediaBytesUpload.
+    """Create a new MediaInMemoryUpload.
 
-    Args:
-      body: string, Bytes of body content.
-      mimetype: string, Mime-type of the file or default of
-        'application/octet-stream'.
-      chunksize: int, File will be uploaded in chunks of this many bytes. Only
-        used if resumable=True.
-      resumable: bool, True if this is a resumable upload. False means upload
-        in a single request.
+  DEPRECATED: Use MediaIoBaseUpload with either io.TextIOBase or StringIO for
+  the stream.
+
+  Args:
+    body: string, Bytes of body content.
+    mimetype: string, Mime-type of the file or default of
+      'application/octet-stream'.
+    chunksize: int, File will be uploaded in chunks of this many bytes. Only
+      used if resumable=True.
+    resumable: bool, True if this is a resumable upload. False means upload
+      in a single request.
     """
-    self._body = body
-    self._mimetype = mimetype
-    self._resumable = resumable
-    self._chunksize = chunksize
-
-  def chunksize(self):
-    """Chunk size for resumable uploads.
-
-    Returns:
-      Chunk size in bytes.
-    """
-    return self._chunksize
-
-  def mimetype(self):
-    """Mime type of the body.
-
-    Returns:
-      Mime type.
-    """
-    return self._mimetype
-
-  def size(self):
-    """Size of upload.
-
-    Returns:
-      Size of the body, or None of the size is unknown.
-    """
-    return len(self._body)
-
-  def resumable(self):
-    """Whether this upload is resumable.
-
-    Returns:
-      True if resumable upload or False.
-    """
-    return self._resumable
-
-  def getbytes(self, begin, length):
-    """Get bytes from the media.
-
-    Args:
-      begin: int, offset from beginning of file.
-      length: int, number of bytes to read, starting at begin.
-
-    Returns:
-      A string of bytes read. May be shorter than length if EOF was reached
-      first.
-    """
-    return self._body[begin:begin + length]
-
-  def to_json(self):
-    """Create a JSON representation of a MediaInMemoryUpload.
-
-    Returns:
-       string, a JSON representation of this instance, suitable to pass to
-       from_json().
-    """
-    t = type(self)
-    d = copy.copy(self.__dict__)
-    del d['_body']
-    d['_class'] = t.__name__
-    d['_module'] = t.__module__
-    d['_b64body'] = base64.b64encode(self._body)
-    return simplejson.dumps(d)
-
-  @staticmethod
-  def from_json(s):
-    d = simplejson.loads(s)
-    return MediaInMemoryUpload(base64.b64decode(d['_b64body']),
-                               mimetype=d['_mimetype'],
-                               chunksize=d['_chunksize'],
-                               resumable=d['_resumable'])
+    fd = StringIO.StringIO(body)
+    super(MediaInMemoryUpload, self).__init__(fd, mimetype, chunksize=chunksize,
+                                              resumable=resumable)
 
 
 class MediaIoBaseDownload(object):
@@ -745,17 +706,32 @@ class HttpRequest(object):
         # The upload was complete.
         return (status, body)
 
-    data = self.resumable.getbytes(
-        self.resumable_progress, self.resumable.chunksize())
+    # The httplib.request method can take streams for the body parameter, but
+    # only in Python 2.6 or later. If a stream is available under those
+    # conditions then use it as the body argument.
+    if self.resumable.has_stream() and sys.version_info[1] >= 6:
+      data = self.resumable.stream()
+      data.seek(self.resumable_progress)
+      if self.resumable.chunksize() == -1:
+        # Upload everything in a single chunk.
+        chunk_end = self.resumable.size() - 1
+      else:
+        chunk_end = min(
+            self.resumable_progress + self.resumable.chunksize() - 1,
+            self.resumable.size() - 1)
+    else:
+      data = self.resumable.getbytes(
+          self.resumable_progress, self.resumable.chunksize())
 
-    # A short read implies that we are at EOF, so finish the upload.
-    if len(data) < self.resumable.chunksize():
-      size = str(self.resumable_progress + len(data))
+      # A short read implies that we are at EOF, so finish the upload.
+      if len(data) < self.resumable.chunksize():
+        size = str(self.resumable_progress + len(data))
+
+      chunk_end = self.resumable_progress + len(data) - 1
 
     headers = {
         'Content-Range': 'bytes %d-%d/%s' % (
-            self.resumable_progress, self.resumable_progress + len(data) - 1,
-            size)
+            self.resumable_progress, chunk_end, size)
         }
     try:
       resp, content = http.request(self.resumable_uri, 'PUT',
@@ -1398,7 +1374,10 @@ class HttpMockSequence(object):
     elif content == 'echo_request_headers_as_json':
       content = simplejson.dumps(headers)
     elif content == 'echo_request_body':
-      content = body
+      if hasattr(body, 'read'):
+        content = body.read()
+      else:
+        content = body
     elif content == 'echo_request_uri':
       content = uri
     return httplib2.Response(resp), content

@@ -31,6 +31,7 @@ import StringIO
 from apiclient.discovery import build
 from apiclient.errors import BatchError
 from apiclient.errors import HttpError
+from apiclient.errors import InvalidChunkSizeError
 from apiclient.http import BatchHttpRequest
 from apiclient.http import HttpMock
 from apiclient.http import HttpMockSequence
@@ -41,7 +42,7 @@ from apiclient.http import MediaInMemoryUpload
 from apiclient.http import MediaIoBaseUpload
 from apiclient.http import MediaIoBaseDownload
 from apiclient.http import set_user_agent
-from apiclient.http import MAX_URI_LENGTH 
+from apiclient.http import MAX_URI_LENGTH
 from apiclient.model import JsonModel
 from oauth2client.client import Credentials
 
@@ -139,6 +140,11 @@ class TestMediaUpload(unittest.TestCase):
     self.assertEqual(500, new_upload.chunksize())
     self.assertEqual('PNG', new_upload.getbytes(1, 3))
 
+  def test_media_file_upload_raises_on_invalid_chunksize(self):
+    self.assertRaises(InvalidChunkSizeError, MediaFileUpload,
+        datafile('small.png'), mimetype='image/png', chunksize=-2,
+        resumable=True)
+
   def test_media_inmemory_upload(self):
     media = MediaInMemoryUpload('abcdef', mimetype='text/plain', chunksize=10,
                                 resumable=True)
@@ -147,16 +153,6 @@ class TestMediaUpload(unittest.TestCase):
     self.assertTrue(media.resumable())
     self.assertEqual('bc', media.getbytes(1, 2))
     self.assertEqual(6, media.size())
-
-  def test_media_inmemory_upload_json_roundtrip(self):
-    media = MediaInMemoryUpload(os.urandom(64), mimetype='text/plain', chunksize=10,
-                                resumable=True)
-    data = media.to_json()
-    newmedia = MediaInMemoryUpload.new_from_json(data)
-    self.assertEqual(media._body, newmedia._body)
-    self.assertEqual(media._chunksize, newmedia._chunksize)
-    self.assertEqual(media._resumable, newmedia._resumable)
-    self.assertEqual(media._mimetype, newmedia._mimetype)
 
   def test_http_request_to_from_json(self):
 
@@ -234,7 +230,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
     upload = MediaIoBaseUpload(
         fd=fd, mimetype='image/png', chunksize=500, resumable=True)
     self.assertEqual('image/png', upload.mimetype())
-    self.assertEqual(None, upload.size())
+    self.assertEqual(190, upload.size())
     self.assertEqual(True, upload.resumable())
     self.assertEqual(500, upload.chunksize())
     self.assertEqual('PNG', upload.getbytes(1, 3))
@@ -249,10 +245,33 @@ class TestMediaIoBaseUpload(unittest.TestCase):
       upload = MediaIoBaseUpload(
           fd=fd, mimetype='image/png', chunksize=500, resumable=True)
       self.assertEqual('image/png', upload.mimetype())
-      self.assertEqual(None, upload.size())
+      self.assertEqual(190, upload.size())
       self.assertEqual(True, upload.resumable())
       self.assertEqual(500, upload.chunksize())
       self.assertEqual('PNG', upload.getbytes(1, 3))
+    except ImportError:
+      pass
+
+  def test_media_io_base_upload_raises_on_invalid_chunksize(self):
+    try:
+      import io
+
+      f = open(datafile('small.png'), 'r')
+      fd = io.BytesIO(f.read())
+      self.assertRaises(InvalidChunkSizeError, MediaIoBaseUpload,
+          fd, 'image/png', chunksize=-2, resumable=True)
+    except ImportError:
+      pass
+
+  def test_media_io_base_upload_streamable(self):
+    try:
+      import io
+
+      fd = io.BytesIO('stuff')
+      upload = MediaIoBaseUpload(
+          fd=fd, mimetype='image/png', chunksize=500, resumable=True)
+      self.assertEqual(True, upload.has_stream())
+      self.assertEqual(fd, upload.stream())
     except ImportError:
       pass
 

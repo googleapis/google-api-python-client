@@ -25,6 +25,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import httplib2
 import os
+import sys
 import unittest
 import urlparse
 import StringIO
@@ -45,6 +46,7 @@ from apiclient.http import HttpMock
 from apiclient.http import HttpMockSequence
 from apiclient.http import MediaFileUpload
 from apiclient.http import MediaIoBaseUpload
+from apiclient.http import MediaUpload
 from apiclient.http import MediaUploadProgress
 from apiclient.http import tunnel_patch
 from oauth2client.anyjson import simplejson
@@ -474,7 +476,6 @@ class Discovery(unittest.TestCase):
     self.assertEquals(body, {"foo": "bar"})
     self.assertEquals(status, None)
 
-
   def test_resumable_media_good_upload_from_execute(self):
     """Not a multipart upload."""
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
@@ -559,6 +560,36 @@ class Discovery(unittest.TestCase):
     status, body = request.next_chunk(http=http)
     self.assertEqual(body, {'foo': 'bar'})
 
+  def test_media_io_base_stream_unlimited_chunksize_resume(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http=self.http)
+
+    try:
+      import io
+
+      # Set up a seekable stream and try to upload in single chunk.
+      fd = io.BytesIO('01234"56789"')
+      media_upload = MediaIoBaseUpload(
+          fd=fd, mimetype='text/plain', chunksize=-1, resumable=True)
+
+      request = zoo.animals().insert(media_body=media_upload, body=None)
+
+      # The single chunk fails, restart at the right point.
+      http = HttpMockSequence([
+        ({'status': '200',
+          'location': 'http://upload.example.com'}, ''),
+        ({'status': '308',
+          'location': 'http://upload.example.com/2',
+          'range': '0-4'}, ''),
+        ({'status': '200'}, 'echo_request_body'),
+        ])
+
+      body = request.execute(http=http)
+      self.assertEqual('56789', body)
+
+    except ImportError:
+      pass
+
   def test_resumable_media_handle_uploads_of_unknown_size(self):
     http = HttpMockSequence([
       ({'status': '200',
@@ -569,16 +600,88 @@ class Discovery(unittest.TestCase):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http=self.http)
 
-    fd = StringIO.StringIO('data goes here')
-
     # Create an upload that doesn't know the full size of the media.
-    upload = MediaIoBaseUpload(
-        fd=fd, mimetype='image/png', chunksize=10, resumable=True)
+    class IoBaseUnknownLength(MediaUpload):
+      def chunksize(self):
+        return 10
+
+      def mimetype(self):
+        return 'image/png'
+
+      def size(self):
+        return None
+
+      def resumable(self):
+        return True
+
+      def getbytes(self, begin, length):
+        return '0123456789'
+
+    upload = IoBaseUnknownLength()
 
     request = zoo.animals().insert(media_body=upload, body=None)
     status, body = request.next_chunk(http=http)
     self.assertEqual(body, {'Content-Range': 'bytes 0-9/*'},
       'Should be 10 out of * bytes.')
+
+  def test_resumable_media_no_streaming_on_unsupported_platforms(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http=self.http)
+
+    class IoBaseHasStream(MediaUpload):
+      def chunksize(self):
+        return 10
+
+      def mimetype(self):
+        return 'image/png'
+
+      def size(self):
+        return None
+
+      def resumable(self):
+        return True
+
+      def getbytes(self, begin, length):
+        return '0123456789'
+
+      def has_stream(self):
+        return True
+
+      def stream(self):
+        raise NotImplementedError()
+
+    upload = IoBaseHasStream()
+
+    orig_version = sys.version_info
+    sys.version_info = (2, 5, 5, 'final', 0)
+
+    request = zoo.animals().insert(media_body=upload, body=None)
+
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '200'}, 'echo_request_headers_as_json'),
+      ])
+
+    # This should not raise an exception because stream() shouldn't be called.
+    status, body = request.next_chunk(http=http)
+    self.assertEqual(body, {'Content-Range': 'bytes 0-9/*'},
+      'Should be 10 out of * bytes.')
+
+    sys.version_info = (2, 6, 5, 'final', 0)
+
+    request = zoo.animals().insert(media_body=upload, body=None)
+
+    # This should raise an exception because stream() will be called.
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '200'}, 'echo_request_headers_as_json'),
+      ])
+
+    self.assertRaises(NotImplementedError, request.next_chunk, http=http)
+
+    sys.version_info = orig_version
 
   def test_resumable_media_handle_uploads_of_unknown_size_eof(self):
     http = HttpMockSequence([
@@ -630,7 +733,7 @@ class Discovery(unittest.TestCase):
       request.next_chunk(http=http)
     except HttpError, e:
       expected = {
-          'Content-Range': 'bytes */*',
+          'Content-Range': 'bytes */14',
           'content-length': '0'
           }
       self.assertEqual(expected, simplejson.loads(e.content),

@@ -91,6 +91,11 @@ class ResumableUploadError(Error):
   pass
 
 
+class InvalidChunkSizeError(Error):
+  """The given chunksize is not valid."""
+  pass
+
+
 class BatchError(HttpError):
   """Error occured during batch operations."""
 
