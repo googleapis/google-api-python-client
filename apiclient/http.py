@@ -545,6 +545,46 @@ class MediaIoBaseDownload(object):
       raise HttpError(resp, content, uri=self._uri)
 
 
+class _StreamSlice(object):
+  """Truncated stream.
+
+  Takes a stream and presents a stream that is a slice of the original stream.
+  This is used when uploading media in chunks. In later versions of Python a
+  stream can be passed to httplib in place of the string of data to send. The
+  problem is that httplib just blindly reads to the end of the stream. This
+  wrapper presents a virtual stream that only reads to the end of the chunk.
+  """
+
+  def __init__(self, stream, begin, chunksize):
+    """Constructor.
+
+    Args:
+      stream: (io.Base, file object), the stream to wrap.
+      begin: int, the seek position the chunk begins at.
+      chunksize: int, the size of the chunk.
+    """
+    self._stream = stream
+    self._begin = begin
+    self._chunksize = chunksize
+    self._stream.seek(begin)
+
+  def read(self, n=-1):
+    """Read n bytes.
+
+    Args:
+      n, int, the number of bytes to read.
+
+    Returns:
+      A string of length 'n', or less if EOF is reached.
+    """
+    # The data left available to read sits in [cur, end)
+    cur = self._stream.tell()
+    end = self._begin + self._chunksize
+    if n == -1 or cur + n > end:
+      n = end - cur
+    return self._stream.read(n)
+
+
 class HttpRequest(object):
   """Encapsulates a single HTTP request."""
 
@@ -711,11 +751,13 @@ class HttpRequest(object):
     # conditions then use it as the body argument.
     if self.resumable.has_stream() and sys.version_info[1] >= 6:
       data = self.resumable.stream()
-      data.seek(self.resumable_progress)
       if self.resumable.chunksize() == -1:
-        # Upload everything in a single chunk.
-        chunk_end = self.resumable.size() - 1
+        data.seek(self.resumable_progress)
+        chunk_end = self.resumable.size() - self.resumable_progress - 1
       else:
+        # Doing chunking with a stream, so wrap a slice of the stream.
+        data = _StreamSlice(data, self.resumable_progress,
+                            self.resumable.chunksize())
         chunk_end = min(
             self.resumable_progress + self.resumable.chunksize() - 1,
             self.resumable.size() - 1)
@@ -731,7 +773,10 @@ class HttpRequest(object):
 
     headers = {
         'Content-Range': 'bytes %d-%d/%s' % (
-            self.resumable_progress, chunk_end, size)
+            self.resumable_progress, chunk_end, size),
+        # Must set the content-length header here because httplib can't
+        # calculate the size when working with _StreamSlice.
+        'Content-Length': str(chunk_end - self.resumable_progress + 1)
         }
     try:
       resp, content = http.request(self.resumable_uri, 'PUT',

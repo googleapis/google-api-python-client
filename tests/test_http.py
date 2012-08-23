@@ -36,13 +36,14 @@ from apiclient.http import BatchHttpRequest
 from apiclient.http import HttpMock
 from apiclient.http import HttpMockSequence
 from apiclient.http import HttpRequest
-from apiclient.http import MediaFileUpload
-from apiclient.http import MediaUpload
-from apiclient.http import MediaInMemoryUpload
-from apiclient.http import MediaIoBaseUpload
-from apiclient.http import MediaIoBaseDownload
-from apiclient.http import set_user_agent
 from apiclient.http import MAX_URI_LENGTH
+from apiclient.http import MediaFileUpload
+from apiclient.http import MediaInMemoryUpload
+from apiclient.http import MediaIoBaseDownload
+from apiclient.http import MediaIoBaseUpload
+from apiclient.http import MediaUpload
+from apiclient.http import _StreamSlice
+from apiclient.http import set_user_agent
 from apiclient.model import JsonModel
 from oauth2client.client import Credentials
 
@@ -745,6 +746,7 @@ class TestBatch(unittest.TestCase):
         '"Access Not Configured">')
     self.assertEqual(expected, str(callbacks.exceptions['2']))
 
+
 class TestRequestUriTooLong(unittest.TestCase):
 
   def test_turn_get_into_post(self):
@@ -783,6 +785,27 @@ class TestRequestUriTooLong(unittest.TestCase):
     self.assertEqual(str(MAX_URI_LENGTH + 8), response['content-length'])
     self.assertEqual(
         'application/x-www-form-urlencoded', response['content-type'])
+
+
+class TestStreamSlice(unittest.TestCase):
+  """Test _StreamSlice."""
+
+  def setUp(self):
+    self.stream = StringIO.StringIO('0123456789')
+
+  def test_read(self):
+    s =  _StreamSlice(self.stream, 0, 4)
+    self.assertEqual('', s.read(0))
+    self.assertEqual('0', s.read(1))
+    self.assertEqual('123', s.read())
+
+  def test_read_too_much(self):
+    s =  _StreamSlice(self.stream, 1, 4)
+    self.assertEqual('1234', s.read(6))
+
+  def test_read_all(self):
+    s =  _StreamSlice(self.stream, 2, 1)
+    self.assertEqual('2', s.read(-1))
 
 if __name__ == '__main__':
   unittest.main()

@@ -590,6 +590,37 @@ class Discovery(unittest.TestCase):
     except ImportError:
       pass
 
+
+  def test_media_io_base_stream_chunksize_resume(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http=self.http)
+
+    try:
+      import io
+
+      # Set up a seekable stream and try to upload in chunks.
+      fd = io.BytesIO('0123456789')
+      media_upload = MediaIoBaseUpload(
+          fd=fd, mimetype='text/plain', chunksize=5, resumable=True)
+
+      request = zoo.animals().insert(media_body=media_upload, body=None)
+
+      # The single chunk fails, pull the content sent out of the exception.
+      http = HttpMockSequence([
+        ({'status': '200',
+          'location': 'http://upload.example.com'}, ''),
+        ({'status': '400'}, 'echo_request_body'),
+        ])
+
+      try:
+        body = request.execute(http=http)
+      except HttpError, e:
+        self.assertEqual('01234', e.content)
+
+    except ImportError:
+      pass
+
+
   def test_resumable_media_handle_uploads_of_unknown_size(self):
     http = HttpMockSequence([
       ({'status': '200',
@@ -621,8 +652,10 @@ class Discovery(unittest.TestCase):
 
     request = zoo.animals().insert(media_body=upload, body=None)
     status, body = request.next_chunk(http=http)
-    self.assertEqual(body, {'Content-Range': 'bytes 0-9/*'},
-      'Should be 10 out of * bytes.')
+    self.assertEqual(body, {
+        'Content-Range': 'bytes 0-9/*',
+        'Content-Length': '10',
+        })
 
   def test_resumable_media_no_streaming_on_unsupported_platforms(self):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
@@ -665,8 +698,10 @@ class Discovery(unittest.TestCase):
 
     # This should not raise an exception because stream() shouldn't be called.
     status, body = request.next_chunk(http=http)
-    self.assertEqual(body, {'Content-Range': 'bytes 0-9/*'},
-      'Should be 10 out of * bytes.')
+    self.assertEqual(body, {
+        'Content-Range': 'bytes 0-9/*',
+        'Content-Length': '10'
+        })
 
     sys.version_info = (2, 6, 5, 'final', 0)
 
@@ -701,7 +736,10 @@ class Discovery(unittest.TestCase):
 
     request = zoo.animals().insert(media_body=upload, body=None)
     status, body = request.next_chunk(http=http)
-    self.assertEqual(body, {'Content-Range': 'bytes 0-13/14'})
+    self.assertEqual(body, {
+        'Content-Range': 'bytes 0-13/14',
+        'Content-Length': '14',
+        })
 
   def test_resumable_media_handle_resume_of_upload_of_unknown_size(self):
     http = HttpMockSequence([
