@@ -1141,7 +1141,7 @@ class OAuth2WebServerFlow(Flow):
       if 'id_token' in d:
         d['id_token'] = _extract_id_token(d['id_token'])
 
-      logger.info('Successfully retrieved access token: %s' % content)
+      logger.info('Successfully retrieved access token')
       return OAuth2Credentials(access_token, self.client_id,
                                self.client_secret, refresh_token, token_expiry,
                                self.token_uri, self.user_agent,

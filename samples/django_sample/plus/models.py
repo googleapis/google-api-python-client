@@ -18,8 +18,4 @@ class CredentialsAdmin(admin.ModelAdmin):
     pass
 
 
-class FlowAdmin(admin.ModelAdmin):
-    pass
-
-
 admin.site.register(CredentialsModel, CredentialsAdmin)

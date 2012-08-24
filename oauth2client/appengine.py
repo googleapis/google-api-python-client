@@ -22,18 +22,20 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import base64
 import httplib2
 import logging
+import os
 import pickle
 import time
 
-import clientsecrets
-
 from google.appengine.api import app_identity
+from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext.webapp.util import run_wsgi_app
+from oauth2client import clientsecrets
 from oauth2client import util
+from oauth2client import xsrfutil
 from oauth2client.anyjson import simplejson
 from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import AssertionCredentials
@@ -46,19 +48,60 @@ logger = logging.getLogger(__name__)
 
 OAUTH2CLIENT_NAMESPACE = 'oauth2client#ns'
 
+XSRF_MEMCACHE_ID = 'xsrf_secret_key'
+
 
 class InvalidClientSecretsError(Exception):
   """The client_secrets.json file is malformed or missing required fields."""
-  pass
+
+
+class InvalidXsrfTokenError(Exception):
+  """The XSRF token is invalid or expired."""
+
+
+class SiteXsrfSecretKey(db.Model):
+  """Storage for the sites XSRF secret key.
+
+  There will only be one instance stored of this model, the one used for the
+  site.  """
+  secret = db.StringProperty()
+
+
+def _generate_new_xsrf_secret_key():
+  """Returns a random XSRF secret key.
+  """
+  return os.urandom(16).encode("hex")
+
+
+def xsrf_secret_key():
+  """Return the secret key for use for XSRF protection.
+
+  If the Site entity does not have a secret key, this method will also create
+  one and persist it.
+
+  Returns:
+    The secret key.
+  """
+  secret = memcache.get(XSRF_MEMCACHE_ID, namespace=OAUTH2CLIENT_NAMESPACE)
+  if not secret:
+    # Load the one and only instance of SiteXsrfSecretKey.
+    model = SiteXsrfSecretKey.get_or_insert(key_name='site')
+    if not model.secret:
+      model.secret = _generate_new_xsrf_secret_key()
+      model.put()
+    secret = model.secret
+    memcache.add(XSRF_MEMCACHE_ID, secret, namespace=OAUTH2CLIENT_NAMESPACE)
+
+  return str(secret)
 
 
 class AppAssertionCredentials(AssertionCredentials):
   """Credentials object for App Engine Assertion Grants
 
   This object will allow an App Engine application to identify itself to Google
-  and other OAuth 2.0 servers that can verify assertions. It can be used for
-  the purpose of accessing data stored under an account assigned to the App
-  Engine application itself.
+  and other OAuth 2.0 servers that can verify assertions. It can be used for the
+  purpose of accessing data stored under an account assigned to the App Engine
+  application itself.
 
   This credential does not require a flow to instantiate because it represents
   a two legged flow, and therefore has all of the required information to
@@ -263,6 +306,48 @@ class CredentialsModel(db.Model):
   credentials = CredentialsProperty()
 
 
+def _build_state_value(request_handler, user):
+  """Composes the value for the 'state' parameter.
+
+  Packs the current request URI and an XSRF token into an opaque string that
+  can be passed to the authentication server via the 'state' parameter.
+
+  Args:
+    request_handler: webapp.RequestHandler, The request.
+    user: google.appengine.api.users.User, The current user.
+
+  Returns:
+    The state value as a string.
+  """
+  uri = request_handler.request.url
+  token = xsrfutil.generate_token(xsrf_secret_key(), user.user_id(),
+                                  action_id=str(uri))
+  return  uri + ':' + token
+
+
+def _parse_state_value(state, user):
+  """Parse the value of the 'state' parameter.
+
+  Parses the value and validates the XSRF token in the state parameter.
+
+  Args:
+    state: string, The value of the state parameter.
+    user: google.appengine.api.users.User, The current user.
+
+  Raises:
+    InvalidXsrfTokenError: if the XSRF token is invalid.
+
+  Returns:
+    The redirect URI.
+  """
+  uri, token = state.rsplit(':', 1)
+  if not xsrfutil.validate_token(xsrf_secret_key(), token, user.user_id(),
+                                 action_id=uri):
+    raise InvalidXsrfTokenError()
+
+  return uri
+
+
 class OAuth2Decorator(object):
   """Utility for making OAuth 2.0 easier.
 
@@ -361,14 +446,14 @@ class OAuth2Decorator(object):
       self._create_flow(request_handler)
 
       # Store the request URI in 'state' so we can use it later
-      self.flow.params['state'] = request_handler.request.url
+      self.flow.params['state'] = _build_state_value(request_handler, user)
       self.credentials = StorageByKeyName(
           CredentialsModel, user.user_id(), 'credentials').get()
 
       if not self.has_credentials():
         return request_handler.redirect(self.authorize_url())
       try:
-        method(request_handler, *args, **kwargs)
+        return method(request_handler, *args, **kwargs)
       except AccessTokenRefreshError:
         return request_handler.redirect(self.authorize_url())
 
@@ -422,10 +507,10 @@ class OAuth2Decorator(object):
 
       self._create_flow(request_handler)
 
-      self.flow.params['state'] = request_handler.request.url
+      self.flow.params['state'] = _build_state_value(request_handler, user)
       self.credentials = StorageByKeyName(
           CredentialsModel, user.user_id(), 'credentials').get()
-      method(request_handler, *args, **kwargs)
+      return method(request_handler, *args, **kwargs)
     return setup_oauth
 
   def has_credentials(self):
@@ -500,7 +585,9 @@ class OAuth2Decorator(object):
           credentials = decorator.flow.step2_exchange(self.request.params)
           StorageByKeyName(
               CredentialsModel, user.user_id(), 'credentials').put(credentials)
-          self.redirect(str(self.request.get('state')))
+          redirect_uri = _parse_state_value(str(self.request.get('state')),
+                                            user)
+          self.redirect(redirect_uri)
 
     return OAuth2Handler
 
@@ -550,26 +637,24 @@ class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
       scope: string or list of strings, scope(s) of the credentials being
         requested.
       message: string, A friendly string to display to the user if the
-        clientsecrets file is missing or invalid. The message may contain HTML and
-        will be presented on the web interface for any method that uses the
+        clientsecrets file is missing or invalid. The message may contain HTML
+        and will be presented on the web interface for any method that uses the
         decorator.
       cache: An optional cache service client that implements get() and set()
         methods. See clientsecrets.loadfile() for details.
     """
-    try:
-      client_type, client_info = clientsecrets.loadfile(filename, cache=cache)
-      if client_type not in [clientsecrets.TYPE_WEB, clientsecrets.TYPE_INSTALLED]:
-        raise InvalidClientSecretsError('OAuth2Decorator doesn\'t support this OAuth 2.0 flow.')
-      super(OAuth2DecoratorFromClientSecrets,
-            self).__init__(
-                client_info['client_id'],
-                client_info['client_secret'],
-                scope,
-                auth_uri=client_info['auth_uri'],
-                token_uri=client_info['token_uri'],
-                message=message)
-    except clientsecrets.InvalidClientSecretsError:
-      self._in_error = True
+    client_type, client_info = clientsecrets.loadfile(filename, cache=cache)
+    if client_type not in [
+        clientsecrets.TYPE_WEB, clientsecrets.TYPE_INSTALLED]:
+      raise InvalidClientSecretsError(
+          'OAuth2Decorator doesn\'t support this OAuth 2.0 flow.')
+    super(OAuth2DecoratorFromClientSecrets, self).__init__(
+              client_info['client_id'],
+              client_info['client_secret'],
+              scope,
+              auth_uri=client_info['auth_uri'],
+              token_uri=client_info['token_uri'],
+              message=message)
     if message is not None:
       self._message = message
     else:
