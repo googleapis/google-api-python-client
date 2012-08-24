@@ -35,10 +35,13 @@ import json
 import os
 import re
 
+BASE_HG_URI = ('http://code.google.com/p/google-api-python-client/source/'
+               'browse/#hg')
+
 http = httplib2.Http('.cache')
 r, c =  http.request('https://www.googleapis.com/discovery/v1/apis')
 if r.status != 200:
-  raise ValueError('Received non-200 response when retrieving Discovery document.')
+  raise ValueError('Received non-200 response when retrieving Discovery.')
 
 # Dictionary mapping api names to their discovery description.
 DIRECTORY = {}
@@ -54,7 +57,8 @@ KEYWORDS = {
     'cmdline': 'Command-line',
     'django': 'Django',
     'threading': 'Threading',
-    'pagination': 'Pagination'
+    'pagination': 'Pagination',
+    'media': 'Media Upload and Download'
     }
 
 
@@ -89,7 +93,7 @@ def wiki_escape(s):
   return ' '.join(ret)
 
 
-def context_from_sample(api, keywords, dirname, desc):
+def context_from_sample(api, keywords, dirname, desc, uri):
   """Return info for expanding a sample into a template.
 
   Args:
@@ -97,10 +101,15 @@ def context_from_sample(api, keywords, dirname, desc):
     keywords: list of string, list of keywords for the given api.
     dirname: string, directory name of the sample.
     desc: string, long description of the sample.
+    uri: string, uri of the sample code if provided in the README.
 
   Returns:
     A dictionary of values useful for template expansion.
   """
+  if uri is None:
+    uri = BASE_HG_URI + dirname.replace('/', '%2F')
+  else:
+    uri = ''.join(uri)
   if api is None:
     return None
   else:
@@ -113,29 +122,34 @@ def context_from_sample(api, keywords, dirname, desc):
         'api_icon': entry['icons']['x32'],
         'keywords': keywords,
         'dir': dirname,
-        'dir_escaped': dirname.replace('/', '%2F'),
+        'uri': uri,
         'desc': wiki_escape(desc),
         }
     return context
 
 
-def keyword_context_from_sample(keywords, dirname, desc):
+def keyword_context_from_sample(keywords, dirname, desc, uri):
   """Return info for expanding a sample into a template.
 
-  Sample may not be about a specific sample.
+  Sample may not be about a specific api.
 
   Args:
     keywords: list of string, list of keywords for the given api.
     dirname: string, directory name of the sample.
     desc: string, long description of the sample.
+    uri: string, uri of the sample code if provided in the README.
 
   Returns:
     A dictionary of values useful for template expansion.
   """
+  if uri is None:
+    uri = BASE_HG_URI + dirname.replace('/', '%2F')
+  else:
+    uri = ''.join(uri)
   context = {
       'keywords': keywords,
       'dir': dirname,
-      'dir_escaped': dirname.replace('/', '%2F'),
+      'uri': uri,
       'desc': wiki_escape(desc),
       }
   return context
@@ -163,6 +177,9 @@ def scan_readme_files(dirname):
         desc = ' '.join(itertools.takewhile(lambda x: x, lines))
         api = get_lines('api', lines)
         keywords = get_lines('keywords', lines)
+        uri = get_lines('uri', lines)
+        if not uri:
+          uri = None
 
         for k in keywords:
           if k not in KEYWORDS:
@@ -171,7 +188,7 @@ def scan_readme_files(dirname):
         keyword_set.update(keywords)
         if not api:
           api = [None]
-        samples.append((api[0], keywords, root[1:], desc))
+        samples.append((api[0], keywords, root[1:], desc, uri))
 
   samples.sort()
 
@@ -188,8 +205,8 @@ def main():
 
   # All the samples, grouped by API.
   current_api = None
-  for api, keywords, dirname, desc in samples:
-    context = context_from_sample(api, keywords, dirname, desc)
+  for api, keywords, dirname, desc, uri in samples:
+    context = context_from_sample(api, keywords, dirname, desc, uri)
     if context is None:
       continue
     if current_api != api:
@@ -198,12 +215,12 @@ def main():
 
 %(api_desc)s
 
-Documentation for the %(api_name)s in [http://api-python-client-doc.appspot.com/%(api)s/%(version)s  PyDoc] 
+Documentation for the %(api_name)s in [http://api-python-client-doc.appspot.com/%(api)s_%(version)s.html  PyDoc]
 
 """ % context)
       current_api = api
 
-    page.append('|| [http://code.google.com/p/google-api-python-client/source/browse/#hg%(dir_escaped)s %(dir)s] || %(desc)s ||\n' % context)
+    page.append('|| [%(uri)s %(dir)s] || %(desc)s ||\n' % context)
 
   # Now group the samples by keywords.
   for keyword, keyword_name in KEYWORDS.iteritems():
@@ -211,13 +228,13 @@ Documentation for the %(api_name)s in [http://api-python-client-doc.appspot.com/
       continue
     page.append('\n= %s Samples =\n\n' % keyword_name)
     page.append('<table border=1 cellspacing=0 cellpadding=8px>\n')
-    for _, keywords, dirname, desc in samples:
-      context = keyword_context_from_sample(keywords, dirname, desc)
+    for _, keywords, dirname, desc, uri in samples:
+      context = keyword_context_from_sample(keywords, dirname, desc, uri)
       if keyword not in keywords:
         continue
       page.append("""
 <tr>
-  <td>[http://code.google.com/p/google-api-python-client/source/browse/#hg%(dir_escaped)s %(dir)s] </td>
+  <td>[%(uri)s %(dir)s] </td>
   <td> %(desc)s </td>
 </tr>""" % context)
     page.append('</table>\n')
