@@ -76,7 +76,7 @@ def get_credential_storage(filename, client_id, user_agent, scope,
     An object derived from client.Storage for getting/setting the
     credential.
   """
-  filename = os.path.realpath(os.path.expanduser(filename))
+  filename = os.path.expanduser(filename)
   _multistores_lock.acquire()
   try:
     multistore = _multistores.setdefault(

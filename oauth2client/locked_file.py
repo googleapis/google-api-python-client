@@ -28,10 +28,19 @@ from oauth2client import util
 logger = logging.getLogger(__name__)
 
 
+class CredentialsFileSymbolicLinkError(Exception):
+  """Credentials files must not be symbolic links."""
+
+
 class AlreadyLockedException(Exception):
   """Trying to lock a file that has already been locked by the LockedFile."""
   pass
 
+
+def validate_file(filename):
+  if os.path.islink(filename):
+    raise CredentialsFileSymbolicLinkError(
+        'File: %s is a symbolic link.' % filename)
 
 class _Opener(object):
   """Base class for different locking primitives."""
@@ -91,12 +100,14 @@ class _PosixOpener(_Opener):
     Raises:
       AlreadyLockedException: if the lock is already acquired.
       IOError: if the open fails.
+      CredentialsFileSymbolicLinkError if the file is a symbolic link.
     """
     if self._locked:
       raise AlreadyLockedException('File %s is already locked' %
                                    self._filename)
     self._locked = False
 
+    validate_file(self._filename)
     try:
       self._fh = open(self._filename, self._mode)
     except IOError, e:
@@ -159,12 +170,14 @@ try:
       Raises:
         AlreadyLockedException: if the lock is already acquired.
         IOError: if the open fails.
+        CredentialsFileSymbolicLinkError if the file is a symbolic link.
       """
       if self._locked:
         raise AlreadyLockedException('File %s is already locked' %
                                      self._filename)
       start_time = time.time()
 
+      validate_file(self._filename)
       try:
         self._fh = open(self._filename, self._mode)
       except IOError, e:
@@ -232,12 +245,14 @@ try:
       Raises:
         AlreadyLockedException: if the lock is already acquired.
         IOError: if the open fails.
+        CredentialsFileSymbolicLinkError if the file is a symbolic link.
       """
       if self._locked:
         raise AlreadyLockedException('File %s is already locked' %
                                      self._filename)
       start_time = time.time()
 
+      validate_file(self._filename)
       try:
         self._fh = open(self._filename, self._mode)
       except IOError, e:
