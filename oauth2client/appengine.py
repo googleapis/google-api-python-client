@@ -20,6 +20,7 @@ Utilities for making it easier to use OAuth 2.0 on Google App Engine.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import base64
+import cgi
 import httplib2
 import logging
 import os
@@ -49,6 +50,18 @@ logger = logging.getLogger(__name__)
 OAUTH2CLIENT_NAMESPACE = 'oauth2client#ns'
 
 XSRF_MEMCACHE_ID = 'xsrf_secret_key'
+
+
+def _safe_html(s):
+  """Escape text to make it safe to display.
+
+  Args:
+    s: string, The text to escape.
+
+  Returns:
+    The escaped text as a string.
+  """
+  return cgi.escape(s, quote=1).replace("'", '&#39;')
 
 
 class InvalidClientSecretsError(Exception):
@@ -417,7 +430,7 @@ class OAuth2Decorator(object):
 
   def _display_error_message(self, request_handler):
     request_handler.response.out.write('<html><body>')
-    request_handler.response.out.write(self._message)
+    request_handler.response.out.write(_safe_html(self._message))
     request_handler.response.out.write('</body></html>')
 
   def oauth_required(self, method):
@@ -578,7 +591,7 @@ class OAuth2Decorator(object):
         if error:
           errormsg = self.request.get('error_description', error)
           self.response.out.write(
-              'The authorization request failed: %s' % errormsg)
+              'The authorization request failed: %s' % _safe_html(errormsg))
         else:
           user = users.get_current_user()
           decorator._create_flow(self)

@@ -331,7 +331,10 @@ class DecoratorTests(unittest.TestCase):
         webapp2.Route(r'/bar_path/<year:\d{4}>/<month:\d{2}>',
           handler=TestAwareHandler, name='bar')],
       debug=True)
-    self.app = TestApp(application)
+    self.app = TestApp(application, extra_environ={
+        'wsgi.url_scheme': 'http',
+        'HTTP_HOST': 'localhost',
+        })
     users.get_current_user = user_mock()
     self.httplib2_orig = httplib2.Http
     httplib2.Http = Http2Mock
@@ -343,7 +346,7 @@ class DecoratorTests(unittest.TestCase):
   def test_required(self):
     # An initial request to an oauth_required decorated path should be a
     # redirect to start the OAuth dance.
-    response = self.app.get('/foo_path')
+    response = self.app.get('http://localhost/foo_path')
     self.assertTrue(response.status.startswith('302'))
     q = parse_qs(response.headers['Location'].split('?', 1)[1])
     self.assertEqual('http://localhost/oauth2callback', q['redirect_uri'][0])
@@ -425,7 +428,7 @@ class DecoratorTests(unittest.TestCase):
 
   def test_aware(self):
     # An initial request to an oauth_aware decorated path should not redirect.
-    response = self.app.get('/bar_path/2012/01')
+    response = self.app.get('http://localhost/bar_path/2012/01')
     self.assertEqual('Hello World!', response.body)
     self.assertEqual('200 OK', response.status)
     self.assertEqual(False, self.decorator.has_credentials())
@@ -471,10 +474,10 @@ class DecoratorTests(unittest.TestCase):
     response = self.app.get('/bar_path/2012/01')
     url = self.decorator.authorize_url()
     response = self.app.get('/oauth2callback', {
-        'error': 'BadStuffHappened'
+        'error': 'Bad<Stuff>Happened\''
         })
     self.assertEqual('200 OK', response.status)
-    self.assertTrue('BadStuffHappened' in response.body)
+    self.assertTrue('Bad&lt;Stuff&gt;Happened&#39;' in response.body)
 
   def test_kwargs_are_passed_to_underlying_flow(self):
     decorator = OAuth2Decorator(client_id='foo_client_id',
