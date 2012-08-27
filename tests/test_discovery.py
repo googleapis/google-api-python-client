@@ -23,6 +23,7 @@ Unit tests for objects created from discovery documents.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import gflags
 import httplib2
 import os
 import sys
@@ -52,6 +53,9 @@ from apiclient.http import tunnel_patch
 from oauth2client.anyjson import simplejson
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+
+FLAGS = gflags.FLAGS
+FLAGS.positional_parameters_enforcement = 'EXCEPTION'
 
 
 def datafile(filename):
