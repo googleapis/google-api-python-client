@@ -41,8 +41,8 @@ ${ENV_PATH}/bin/pip install -b ${BUILD_PATH} -t ${LIB_PATH} . >> ${LOG_PATH}
 
 # Prune the things we don't want.
 echo "Pruning target library"
-find ${TARGET_PATH} -name "*.pyc" -exec rm {} \; >> ${LOG_PATH}
-rm -rf ${TARGET_PATH}/*.egg-info >> ${LOG_PATH}
+find ${LIB_PATH} -name "*.pyc" -exec rm {} \; >> ${LOG_PATH}
+rm -rf ${LIB_PATH}/*.egg-info >> ${LOG_PATH}
 
 # Create the zip.
 echo "Creating zip"
