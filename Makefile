@@ -29,8 +29,11 @@ wiki:
 prerelease:
 	./runtests.sh python2.6
 	./runtests.sh python2.7
+	-rm -rf dist/
 	-sudo rm -rf dist/
+	-rm -rf snapshot/
 	-sudo rm -rf snapshot/
+	./tools/gae-zip-creator.sh
 	python expand-symlinks.py
 	cd snapshot; python setup.py clean
 	cd snapshot; python setup.py sdist --formats=gztar,zip
@@ -48,18 +51,18 @@ release: prerelease
 	wget "http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py" -O googlecode_upload.py
 	python googlecode_upload.py --summary="google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.tar.gz
 	python googlecode_upload.py --summary="google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/*.zip
+	python googlecode_upload.py --summary="Full Dependecies Build for Google App Engine Projects Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/dist/gae/*.zip
 	python googlecode_upload.py --summary="Samples for google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/google-api-python-client-samples-*.tar.gz
 	python googlecode_upload.py --summary="Samples for google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/google-api-python-client-samples-*.zip
 
 .PHONY: oauth2_prerelease
 oauth2_prerelease:
+	-rm -rf dist/
 	-sudo rm -rf dist/
+	-rm -rf snapshot/
 	-sudo rm -rf snapshot/
 	mkdir snapshot
 	python expand-symlinks.py --source=oauth2client --dest=snapshot/oauth2client
-	python expand-symlinks.py --source=samples/dailymotion --dest=snapshot/samples/dailymotion
-	python expand-symlinks.py --source=samples/appengine --dest=snapshot/samples/appengine
-	python expand-symlinks.py --source=samples/django_sample --dest=snapshot/django_sample
 	cp setup_oauth2client.py snapshot/setup.py
 	cp MANIFEST_oauth2client.in snapshot/MANIFEST.in
 	cp README_oauth2client snapshot/README
