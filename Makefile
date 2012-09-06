@@ -4,9 +4,7 @@ pep8:
 APP_ENGINE_PATH=../google_appengine
 
 test:
-	./runtests.sh python2.6
-	./runtests.sh python2.7
-
+	tox
 
 .PHONY: coverage
 coverage:
