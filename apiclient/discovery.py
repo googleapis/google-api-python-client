@@ -57,7 +57,7 @@ from apiclient.model import RawModel
 from apiclient.schema import Schemas
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
-from oauth2client import util
+from oauth2client.util import positional
 from oauth2client.anyjson import simplejson
 
 logger = logging.getLogger(__name__)
@@ -140,7 +140,7 @@ def key2param(key):
   return ''.join(result)
 
 
-@util.positional(2)
+@positional(2)
 def build(serviceName,
           version,
           http=None,
@@ -208,7 +208,7 @@ def build(serviceName,
       developerKey=developerKey, model=model, requestBuilder=requestBuilder)
 
 
-@util.positional(1)
+@positional(1)
 def build_from_document(
     service,
     base=None,

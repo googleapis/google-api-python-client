@@ -25,4 +25,4 @@
 export GOOGLE_APPENGINE=$HOME/projects/google_appengine/
 export DJANGO_SETTINGS_MODULE=fakesettings
 export PYTHONPATH=`pwd`/..:$GOOGLE_APPENGINE
-epydoc --output epy --graph classtree --docformat plaintext apiclient oauth2client
+epydoc --output epy --graph classtree --parse-only --docformat plaintext apiclient oauth2client
