@@ -24,7 +24,7 @@ packages = [
 ]
 
 install_requires = [
-    'httplib2>=0.7.4',
+    'httplib2>=0.7.6',
     'python-gflags',
     ]
 

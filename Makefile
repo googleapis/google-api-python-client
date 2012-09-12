@@ -24,9 +24,7 @@ wiki:
 	python samples-index.py > ../google-api-python-client.wiki/SampleApps.wiki
 
 .PHONY: prerelease
-prerelease:
-	./runtests.sh python2.6
-	./runtests.sh python2.7
+prerelease: test
 	-rm -rf dist/
 	-sudo rm -rf dist/
 	-rm -rf snapshot/
@@ -54,7 +52,7 @@ release: prerelease
 	python googlecode_upload.py --summary="Samples for google-api-python-client Version $(shell python setup.py --version)" --project=google-api-python-client snapshot/google-api-python-client-samples-*.zip
 
 .PHONY: oauth2_prerelease
-oauth2_prerelease:
+oauth2_prerelease: test
 	-rm -rf dist/
 	-sudo rm -rf dist/
 	-rm -rf snapshot/
