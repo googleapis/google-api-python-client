@@ -1017,6 +1017,10 @@ class OAuth2WebServerFlow(Flow):
                **kwargs):
     """Constructor for OAuth2WebServerFlow.
 
+    The kwargs argument is used to set extra query parameters on the
+    auth_uri. For example, the access_type and approval_prompt
+    query parameters can be set via kwargs.
+
     Args:
       client_id: string, client identifier.
       client_secret: string client secret.
@@ -1044,6 +1048,7 @@ class OAuth2WebServerFlow(Flow):
     self.token_uri = token_uri
     self.params = {
         'access_type': 'offline',
+        'response_type': 'code',
         }
     self.params.update(kwargs)
 
@@ -1070,7 +1075,6 @@ class OAuth2WebServerFlow(Flow):
       raise ValueError('The value of redirect_uri must not be None.')
 
     query = {
-        'response_type': 'code',
         'client_id': self.client_id,
         'redirect_uri': self.redirect_uri,
         'scope': self.scope,

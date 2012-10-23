@@ -256,22 +256,23 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
     self.assertEqual(OOB_CALLBACK_URN, q['redirect_uri'][0])
     self.assertEqual('offline', q['access_type'][0])
 
-  def test_override_flow_access_type(self):
-    """Passing access_type overrides the default."""
+  def test_override_flow_via_kwargs(self):
+    """Passing kwargs to override defaults."""
     flow = OAuth2WebServerFlow(
         client_id='client_id+1',
         client_secret='secret+1',
         scope='foo',
         redirect_uri=OOB_CALLBACK_URN,
         user_agent='unittest-sample/1.0',
-        access_type='online'
+        access_type='online',
+        response_type='token'
         )
     authorize_url = flow.step1_get_authorize_url()
 
     parsed = urlparse.urlparse(authorize_url)
     q = parse_qs(parsed[4])
     self.assertEqual('client_id+1', q['client_id'][0])
-    self.assertEqual('code', q['response_type'][0])
+    self.assertEqual('token', q['response_type'][0])
     self.assertEqual('foo', q['scope'][0])
     self.assertEqual(OOB_CALLBACK_URN, q['redirect_uri'][0])
     self.assertEqual('online', q['access_type'][0])
