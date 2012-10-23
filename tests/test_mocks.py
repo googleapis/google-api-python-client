@@ -52,7 +52,7 @@ class Mocks(unittest.TestCase):
 
   def test_simple_response(self):
     requestBuilder = RequestMockBuilder({
-        'plus.activities.get': (None, '{"data": {"foo": "bar"}}')
+        'plus.activities.get': (None, '{"foo": "bar"}')
         })
     plus = build('plus', 'v1', http=self.http, requestBuilder=requestBuilder)
 

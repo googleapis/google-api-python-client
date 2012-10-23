@@ -261,7 +261,7 @@ class JsonModel(BaseModel):
 
   def deserialize(self, content):
     body = simplejson.loads(content)
-    if isinstance(body, dict) and 'data' in body:
+    if self._data_wrapper and isinstance(body, dict) and 'data' in body:
       body = body['data']
     return body
 

@@ -157,7 +157,6 @@ class Model(unittest.TestCase):
     except HttpError, e:
       self.assertTrue('not authorized' in str(e))
 
-
   def test_good_response(self):
     model = JsonModel(data_wrapper=True)
     resp = httplib2.Response({'status': '200'})
@@ -241,6 +240,31 @@ class Model(unittest.TestCase):
     self.assertEqual(apiclient.model.logging.info_record[-1],
                      '--response-end--')
     apiclient.model.logging = old_logging
+
+  def test_no_data_wrapper_deserialize(self):
+    model = JsonModel(data_wrapper=False)
+    resp = httplib2.Response({'status': '200'})
+    resp.reason = 'OK'
+    content = '{"data": "is good"}'
+    content = model.response(resp, content)
+    self.assertEqual(content, {'data': 'is good'})
+
+  def test_data_wrapper_deserialize(self):
+    model = JsonModel(data_wrapper=True)
+    resp = httplib2.Response({'status': '200'})
+    resp.reason = 'OK'
+    content = '{"data": "is good"}'
+    content = model.response(resp, content)
+    self.assertEqual(content, 'is good')
+
+  def test_data_wrapper_deserialize_nodata(self):
+    model = JsonModel(data_wrapper=True)
+    resp = httplib2.Response({'status': '200'})
+    resp.reason = 'OK'
+    content = '{"atad": "is good"}'
+    content = model.response(resp, content)
+    self.assertEqual(content, {'atad': 'is good'})
+
 
 
 if __name__ == '__main__':
