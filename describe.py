@@ -301,7 +301,7 @@ def document_collection_recursive(resource, path, root_discovery, discovery):
   html = document_collection(resource, path, root_discovery, discovery)
 
   f = open(os.path.join(BASE, path + 'html'), 'w')
-  f.write(html)
+  f.write(html.encode('utf-8'))
   f.close()
 
   for name in dir(resource):
