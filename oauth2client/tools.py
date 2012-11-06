@@ -107,19 +107,19 @@ def run(flow, storage, http=None):
   It presumes it is run from a command-line application and supports the
   following flags:
 
-    --[no]auth_local_webserver
+    --auth_host_name: Host name to use when running a local web server
+      to handle redirects during OAuth authorization.
+      (default: 'localhost')
 
-      Run a local web server to handle redirects during OAuth authorization.
+    --auth_host_port: Port to use when running a local web server to handle
+      redirects during OAuth authorization.;
+      repeat this option to specify a list of values
+      (default: '[8080, 8090]')
+      (an integer)
 
-    --auth_host_name
-
-      Host name to use when running a local web server to handle redirects
+    --[no]auth_local_webserver: Run a local web server to handle redirects
       during OAuth authorization.
-
-    --auth_host_port
-
-      Port to use when running a local web server to handle redirects during
-      OAuth authorization.
+      (default: 'true')
 
   Since it uses flags make sure to initialize the gflags module before calling
   run().
