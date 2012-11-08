@@ -215,7 +215,7 @@ def main():
 
 %(api_desc)s
 
-Documentation for the %(api_name)s in [http://api-python-client-doc.appspot.com/%(api)s_%(version)s.html  PyDoc]
+Documentation for the %(api_name)s in [https://google-api-client-libraries.appspot.com/documentation/%(api)s/%(version)s/python/latest/ PyDoc]
 
 """ % context)
       current_api = api
