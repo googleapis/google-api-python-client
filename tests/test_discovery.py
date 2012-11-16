@@ -58,6 +58,23 @@ FLAGS = gflags.FLAGS
 FLAGS.positional_parameters_enforcement = 'EXCEPTION'
 
 
+def assertUrisEqual(testcase, expected, actual):
+  """Test that URIs are the same, up to reordering of query parameters."""
+  expected = urlparse.urlparse(expected)
+  actual = urlparse.urlparse(actual)
+  testcase.assertEqual(expected.scheme, actual.scheme)
+  testcase.assertEqual(expected.netloc, actual.netloc)
+  testcase.assertEqual(expected.path, actual.path)
+  testcase.assertEqual(expected.params, actual.params)
+  testcase.assertEqual(expected.fragment, actual.fragment)
+  expected_query = parse_qs(expected.query)
+  actual_query = parse_qs(actual.query)
+  for name in expected_query.keys():
+    testcase.assertEqual(expected_query[name], actual_query[name])
+  for name in actual_query.keys():
+    testcase.assertEqual(expected_query[name], actual_query[name])
+
+
 def datafile(filename):
   return os.path.join(DATA_DIR, filename)
 
@@ -342,7 +359,7 @@ class Discovery(unittest.TestCase):
     request = zoo.animals().insert(media_body=datafile('small.png'))
     self.assertEquals('image/png', request.headers['content-type'])
     self.assertEquals('PNG', request.body[1:4])
-    self.assertEqual(
+    assertUrisEqual(self,
         'https://www.googleapis.com/upload/zoo/v1/animals?uploadType=media&alt=json',
         request.uri)
 
@@ -370,7 +387,7 @@ class Discovery(unittest.TestCase):
     self.assertTrue(request.headers['content-type'].startswith(
         'multipart/related'))
     self.assertEquals('--==', request.body[0:4])
-    self.assertEqual(
+    assertUrisEqual(self,
         'https://www.googleapis.com/upload/zoo/v1/animals?uploadType=multipart&alt=json',
         request.uri)
 
@@ -487,7 +504,7 @@ class Discovery(unittest.TestCase):
 
     media_upload = MediaFileUpload(datafile('small.png'), resumable=True)
     request = zoo.animals().insert(media_body=media_upload, body=None)
-    self.assertEqual(
+    assertUrisEqual(self,
         'https://www.googleapis.com/upload/zoo/v1/animals?uploadType=resumable&alt=json',
         request.uri)
 
