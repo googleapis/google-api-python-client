@@ -175,7 +175,9 @@ class TestAppAssertionCredentials(unittest.TestCase):
     apiproxy_stub_map.apiproxy.RegisterStub(
       'memcache', memcache_stub.MemcacheServiceStub())
 
-    scope = ["http://www.googleapis.com/scope"]
+    scope = [
+     "http://www.googleapis.com/scope",
+     "http://www.googleapis.com/scope2"]
     credentials = AppAssertionCredentials(scope)
     http = httplib2.Http()
     credentials.refresh(http)
@@ -183,8 +185,18 @@ class TestAppAssertionCredentials(unittest.TestCase):
 
     json = credentials.to_json()
     credentials = Credentials.new_from_json(json)
-    self.assertEqual(scope[0], credentials.scope)
+    self.assertEqual(
+      'http://www.googleapis.com/scope http://www.googleapis.com/scope2',
+      credentials.scope)
 
+    scope = "http://www.googleapis.com/scope http://www.googleapis.com/scope2"
+    credentials = AppAssertionCredentials(scope)
+    http = httplib2.Http()
+    credentials.refresh(http)
+    self.assertEqual('a_token_123', credentials.access_token)
+    self.assertEqual(
+      'http://www.googleapis.com/scope http://www.googleapis.com/scope2',
+      credentials.scope)
 
 class TestFlowModel(db.Model):
   flow = FlowProperty()

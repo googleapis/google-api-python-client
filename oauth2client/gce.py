@@ -53,12 +53,10 @@ class AppAssertionCredentials(AssertionCredentials):
     """Constructor for AppAssertionCredentials
 
     Args:
-      scope: string or list of strings, scope(s) of the credentials being
+      scope: string or iterable of strings, scope(s) of the credentials being
         requested.
     """
-    if type(scope) is list:
-      scope = ' '.join(scope)
-    self.scope = scope
+    self.scope = util.scopes_to_string(scope)
 
     super(AppAssertionCredentials, self).__init__(
         'ignored' # assertion_type is ignore in this subclass.

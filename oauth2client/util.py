@@ -27,6 +27,7 @@ __all__ = [
 import gflags
 import inspect
 import logging
+import types
 
 logger = logging.getLogger(__name__)
 
@@ -125,3 +126,22 @@ def positional(max_positional_args):
   else:
     args, _, _, defaults = inspect.getargspec(max_positional_args)
     return positional(len(args) - len(defaults))(max_positional_args)
+
+
+def scopes_to_string(scopes):
+  """Converts scope value to a string.
+
+  If scopes is a string then it is simply passed through. If scopes is an
+  iterable then a string is returned that is all the individual scopes
+  concatenated with spaces.
+
+  Args:
+    scopes: string or iterable of strings, the scopes.
+
+  Returns:
+    The scopes formatted as a single string.
+  """
+  if isinstance(scopes, types.StringTypes):
+    return scopes
+  else:
+    return ' '.join(scopes)

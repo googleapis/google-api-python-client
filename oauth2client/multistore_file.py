@@ -69,7 +69,7 @@ def get_credential_storage(filename, client_id, user_agent, scope,
     filename: The JSON file storing a set of credentials
     client_id: The client_id for the credential
     user_agent: The user agent for the credential
-    scope: string or list of strings, Scope(s) being requested
+    scope: string or iterable of strings, Scope(s) being requested
     warn_on_readonly: if True, log a warning if the store is readonly
 
   Returns:
@@ -83,8 +83,7 @@ def get_credential_storage(filename, client_id, user_agent, scope,
         filename, _MultiStore(filename, warn_on_readonly=warn_on_readonly))
   finally:
     _multistores_lock.release()
-  if type(scope) is list:
-    scope = ' '.join(scope)
+  scope = util.scopes_to_string(scope)
   return multistore._get_storage(client_id, user_agent, scope)
 
 

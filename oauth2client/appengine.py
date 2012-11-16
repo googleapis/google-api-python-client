@@ -126,12 +126,10 @@ class AppAssertionCredentials(AssertionCredentials):
     """Constructor for AppAssertionCredentials
 
     Args:
-      scope: string or list of strings, scope(s) of the credentials being
+      scope: string or iterable of strings, scope(s) of the credentials being
         requested.
     """
-    if type(scope) is list:
-      scope = ' '.join(scope)
-    self.scope = scope
+    self.scope = util.scopes_to_string(scope)
 
     super(AppAssertionCredentials, self).__init__(
         'ignored' # assertion_type is ignore in this subclass.
@@ -157,7 +155,8 @@ class AppAssertionCredentials(AssertionCredentials):
       AccessTokenRefreshError: When the refresh fails.
     """
     try:
-      (token, _) = app_identity.get_access_token(self.scope)
+      scopes = self.scope.split()
+      (token, _) = app_identity.get_access_token(scopes)
     except app_identity.Error, e:
       raise AccessTokenRefreshError(str(e))
     self.access_token = token
@@ -399,7 +398,7 @@ class OAuth2Decorator(object):
     Args:
       client_id: string, client identifier.
       client_secret: string client secret.
-      scope: string or list of strings, scope(s) of the credentials being
+      scope: string or iterable of strings, scope(s) of the credentials being
         requested.
       auth_uri: string, URI for authorization endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
@@ -419,7 +418,7 @@ class OAuth2Decorator(object):
     self.credentials = None
     self._client_id = client_id
     self._client_secret = client_secret
-    self._scope = scope
+    self._scope = util.scopes_to_string(scope)
     self._auth_uri = auth_uri
     self._token_uri = token_uri
     self._user_agent = user_agent
@@ -647,7 +646,7 @@ class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
 
     Args:
       filename: string, File name of client secrets.
-      scope: string or list of strings, scope(s) of the credentials being
+      scope: string or iterable of strings, scope(s) of the credentials being
         requested.
       message: string, A friendly string to display to the user if the
         clientsecrets file is missing or invalid. The message may contain HTML

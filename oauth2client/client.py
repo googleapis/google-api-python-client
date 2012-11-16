@@ -775,7 +775,7 @@ if HAS_OPENSSL:
       Args:
         service_account_name: string, id for account, usually an email address.
         private_key: string, private key in P12 format.
-        scope: string or list of strings, scope(s) of the credentials being
+        scope: string or iterable of strings, scope(s) of the credentials being
           requested.
         private_key_password: string, password for private_key.
         user_agent: string, HTTP User-Agent to provide for this application.
@@ -790,9 +790,7 @@ if HAS_OPENSSL:
           token_uri=token_uri,
           )
 
-      if type(scope) is list:
-        scope = ' '.join(scope)
-      self.scope = scope
+      self.scope = util.scopes_to_string(scope)
 
       # Keep base64 encoded so it can be stored in JSON.
       self.private_key = base64.b64encode(private_key)
@@ -936,7 +934,7 @@ def credentials_from_code(client_id, client_secret, scope, code,
   Args:
     client_id: string, client identifier.
     client_secret: string, client secret.
-    scope: string or list of strings, scope(s) to request.
+    scope: string or iterable of strings, scope(s) to request.
     code: string, An authroization code, most likely passed down from
       the client
     redirect_uri: string, this is generally set to 'postmessage' to match the
@@ -973,7 +971,7 @@ def credentials_from_clientsecrets_and_code(filename, scope, code,
 
   Args:
     filename: string, File name of clientsecrets.
-    scope: string or list of strings, scope(s) to request.
+    scope: string or iterable of strings, scope(s) to request.
     code: string, An authorization code, most likely passed down from
       the client
     message: string, A friendly string to display to the user if the
@@ -1024,7 +1022,7 @@ class OAuth2WebServerFlow(Flow):
     Args:
       client_id: string, client identifier.
       client_secret: string client secret.
-      scope: string or list of strings, scope(s) of the credentials being
+      scope: string or iterable of strings, scope(s) of the credentials being
         requested.
       redirect_uri: string, Either the string 'urn:ietf:wg:oauth:2.0:oob' for
           a non-web-based application, or a URI that handles the callback from
@@ -1039,9 +1037,7 @@ class OAuth2WebServerFlow(Flow):
     """
     self.client_id = client_id
     self.client_secret = client_secret
-    if type(scope) is list:
-      scope = ' '.join(scope)
-    self.scope = scope
+    self.scope = util.scopes_to_string(scope)
     self.redirect_uri = redirect_uri
     self.user_agent = user_agent
     self.auth_uri = auth_uri
@@ -1169,7 +1165,7 @@ def flow_from_clientsecrets(filename, scope, redirect_uri=None, message=None, ca
 
   Args:
     filename: string, File name of client secrets.
-    scope: string or list of strings, scope(s) to request.
+    scope: string or iterable of strings, scope(s) to request.
     redirect_uri: string, Either the string 'urn:ietf:wg:oauth:2.0:oob' for
         a non-web-based application, or a URI that handles the callback from
         the authorization server.
