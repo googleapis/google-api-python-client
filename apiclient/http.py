@@ -51,7 +51,7 @@ from oauth2client.anyjson import simplejson
 
 DEFAULT_CHUNK_SIZE = 512*1024
 
-MAX_URI_LENGTH = 4000
+MAX_URI_LENGTH = 2048
 
 
 class MediaUploadProgress(object):
