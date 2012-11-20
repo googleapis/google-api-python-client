@@ -23,9 +23,11 @@ Unit tests for objects created from discovery documents.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import datetime
 import gflags
 import httplib2
 import os
+import pickle
 import sys
 import unittest
 import urlparse
@@ -37,7 +39,12 @@ try:
 except ImportError:
     from cgi import parse_qs
 
-from apiclient.discovery import build, build_from_document, key2param
+
+from apiclient.discovery import _add_query_parameter
+from apiclient.discovery import build
+from apiclient.discovery import build_from_document
+from apiclient.discovery import DISCOVERY_URI
+from apiclient.discovery import key2param
 from apiclient.errors import HttpError
 from apiclient.errors import InvalidJsonError
 from apiclient.errors import MediaUploadSizeError
@@ -51,6 +58,9 @@ from apiclient.http import MediaUpload
 from apiclient.http import MediaUploadProgress
 from apiclient.http import tunnel_patch
 from oauth2client.anyjson import simplejson
+from oauth2client.client import OAuth2Credentials
+import uritemplate
+
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -797,6 +807,102 @@ class Discovery(unittest.TestCase):
           }
       self.assertEqual(expected, simplejson.loads(e.content),
         'Should send an empty body when requesting the current upload status.')
+
+  def test_pickle(self):
+    sorted_resource_keys = ['_baseUrl',
+                            '_developerKey',
+                            '_dynamic_attrs',
+                            '_http',
+                            '_model',
+                            '_requestBuilder',
+                            '_resourceDesc',
+                            '_rootDesc',
+                            '_schema',
+                            'animals',
+                            'global_',
+                            'load',
+                            'loadNoTemplate',
+                            'my',
+                            'query',
+                            'scopedAnimals']
+
+    http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http=http)
+    self.assertEqual(sorted(zoo.__dict__.keys()), sorted_resource_keys)
+
+    pickled_zoo = pickle.dumps(zoo)
+    new_zoo = pickle.loads(pickled_zoo)
+    self.assertEqual(sorted(new_zoo.__dict__.keys()), sorted_resource_keys)
+    self.assertTrue(hasattr(new_zoo, 'animals'))
+    self.assertTrue(callable(new_zoo.animals))
+    self.assertTrue(hasattr(new_zoo, 'global_'))
+    self.assertTrue(callable(new_zoo.global_))
+    self.assertTrue(hasattr(new_zoo, 'load'))
+    self.assertTrue(callable(new_zoo.load))
+    self.assertTrue(hasattr(new_zoo, 'loadNoTemplate'))
+    self.assertTrue(callable(new_zoo.loadNoTemplate))
+    self.assertTrue(hasattr(new_zoo, 'my'))
+    self.assertTrue(callable(new_zoo.my))
+    self.assertTrue(hasattr(new_zoo, 'query'))
+    self.assertTrue(callable(new_zoo.query))
+    self.assertTrue(hasattr(new_zoo, 'scopedAnimals'))
+    self.assertTrue(callable(new_zoo.scopedAnimals))
+
+    self.assertEqual(zoo._dynamic_attrs, new_zoo._dynamic_attrs)
+    self.assertEqual(zoo._baseUrl, new_zoo._baseUrl)
+    self.assertEqual(zoo._developerKey, new_zoo._developerKey)
+    self.assertEqual(zoo._requestBuilder, new_zoo._requestBuilder)
+    self.assertEqual(zoo._resourceDesc, new_zoo._resourceDesc)
+    self.assertEqual(zoo._rootDesc, new_zoo._rootDesc)
+    # _http, _model and _schema won't be equal since we will get new
+    # instances upon un-pickling
+
+  def _dummy_zoo_request(self):
+    with open(os.path.join(DATA_DIR, 'zoo.json'), 'rU') as fh:
+      zoo_contents = fh.read()
+
+    zoo_uri = uritemplate.expand(DISCOVERY_URI,
+                                 {'api': 'zoo', 'apiVersion': 'v1'})
+    if 'REMOTE_ADDR' in os.environ:
+        zoo_uri = _add_query_parameter(zoo_uri, 'userIp',
+                                       os.environ['REMOTE_ADDR'])
+
+    http = httplib2.Http()
+    original_request = http.request
+    def wrapped_request(uri, method='GET', *args, **kwargs):
+        if uri == zoo_uri:
+          return httplib2.Response({'status': '200'}), zoo_contents
+        return original_request(uri, method=method, *args, **kwargs)
+    http.request = wrapped_request
+    return http
+
+  def _dummy_token(self):
+    access_token = 'foo'
+    client_id = 'some_client_id'
+    client_secret = 'cOuDdkfjxxnv+'
+    refresh_token = '1/0/a.df219fjls0'
+    token_expiry = datetime.datetime.utcnow()
+    token_uri = 'https://www.google.com/accounts/o8/oauth2/token'
+    user_agent = 'refresh_checker/1.0'
+    return OAuth2Credentials(
+        access_token, client_id, client_secret,
+        refresh_token, token_expiry, token_uri,
+        user_agent)
+
+
+  def test_pickle_with_credentials(self):
+    credentials = self._dummy_token()
+    http = self._dummy_zoo_request()
+    http = credentials.authorize(http)
+    self.assertTrue(hasattr(http.request, 'credentials'))
+
+    zoo = build('zoo', 'v1', http=http)
+    pickled_zoo = pickle.dumps(zoo)
+    new_zoo = pickle.loads(pickled_zoo)
+    self.assertEqual(sorted(zoo.__dict__.keys()),
+                     sorted(new_zoo.__dict__.keys()))
+    new_http = new_zoo._http
+    self.assertFalse(hasattr(new_http.request, 'credentials'))
 
 
 class Next(unittest.TestCase):

@@ -66,6 +66,11 @@ class InvalidJsonError(Error):
   pass
 
 
+class UnknownFileType(Error):
+  """File type unknown or unexpected."""
+  pass
+
+
 class UnknownLinkType(Error):
   """Link type unknown or unexpected."""
   pass
