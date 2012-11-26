@@ -48,6 +48,7 @@ from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.api.memcache import memcache_stub
 from google.appengine.ext import db
+from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from google.appengine.runtime import apiproxy_errors
 from oauth2client import appengine
@@ -56,6 +57,8 @@ from oauth2client.clientsecrets import _loadfile
 from oauth2client.clientsecrets import InvalidClientSecretsError
 from oauth2client.appengine import AppAssertionCredentials
 from oauth2client.appengine import CredentialsModel
+from oauth2client.appengine import CredentialsNDBModel
+from oauth2client.appengine import FlowNDBProperty
 from oauth2client.appengine import FlowProperty
 from oauth2client.appengine import OAuth2Decorator
 from oauth2client.appengine import StorageByKeyName
@@ -198,6 +201,7 @@ class TestAppAssertionCredentials(unittest.TestCase):
       'http://www.googleapis.com/scope http://www.googleapis.com/scope2',
       credentials.scope)
 
+
 class TestFlowModel(db.Model):
   flow = FlowProperty()
 
@@ -220,6 +224,33 @@ class FlowPropertyTest(unittest.TestCase):
         )
     instance.put()
     retrieved = TestFlowModel.get_by_key_name('foo')
+
+    self.assertEqual('foo_client_id', retrieved.flow.client_id)
+
+
+class TestFlowNDBModel(ndb.Model):
+  flow = FlowNDBProperty()
+
+
+class FlowNDBPropertyTest(unittest.TestCase):
+
+  def setUp(self):
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_datastore_v3_stub()
+    self.testbed.init_memcache_stub()
+
+  def tearDown(self):
+    self.testbed.deactivate()
+
+  def test_flow_get_put(self):
+    instance = TestFlowNDBModel(
+        flow=flow_from_clientsecrets(datafile('client_secrets.json'), 'foo',
+                                     redirect_uri='oob'),
+        id='foo'
+        )
+    instance.put()
+    retrieved = TestFlowNDBModel.get_by_id('foo')
 
     self.assertEqual('foo_client_id', retrieved.flow.client_id)
 
@@ -290,6 +321,94 @@ class StorageByKeyNameTest(unittest.TestCase):
     credentials = storage.get()
     self.assertEqual(None, credentials)
     self.assertEqual(None, memcache.get('foo'))
+
+  def test_get_and_put_ndb(self):
+    # Start empty
+    storage = StorageByKeyName(
+      CredentialsNDBModel, 'foo', 'credentials')
+    self.assertEqual(None, storage.get())
+
+    # Refresh storage and retrieve without using storage
+    self.credentials.set_store(storage)
+    self.credentials._refresh(_http_request)
+    credmodel = CredentialsNDBModel.get_by_id('foo')
+    self.assertEqual('bar', credmodel.credentials.access_token)
+    self.assertEqual(credmodel.credentials.to_json(),
+                     self.credentials.to_json())
+
+  def test_delete_ndb(self):
+    # Start empty
+    storage = StorageByKeyName(
+      CredentialsNDBModel, 'foo', 'credentials')
+    self.assertEqual(None, storage.get())
+
+    # Add credentials to model with storage, and check equivalent w/o storage
+    storage.put(self.credentials)
+    credmodel = CredentialsNDBModel.get_by_id('foo')
+    self.assertEqual(credmodel.credentials.to_json(),
+                     self.credentials.to_json())
+
+    # Delete and make sure empty
+    storage.delete()
+    self.assertEqual(None, storage.get())
+
+  def test_get_and_put_mixed_ndb_storage_db_get(self):
+    # Start empty
+    storage = StorageByKeyName(
+      CredentialsNDBModel, 'foo', 'credentials')
+    self.assertEqual(None, storage.get())
+
+    # Set NDB store and refresh to add to storage
+    self.credentials.set_store(storage)
+    self.credentials._refresh(_http_request)
+
+    # Retrieve same key from DB model to confirm mixing works
+    credmodel = CredentialsModel.get_by_key_name('foo')
+    self.assertEqual('bar', credmodel.credentials.access_token)
+    self.assertEqual(self.credentials.to_json(),
+                     credmodel.credentials.to_json())
+
+  def test_get_and_put_mixed_db_storage_ndb_get(self):
+    # Start empty
+    storage = StorageByKeyName(
+      CredentialsModel, 'foo', 'credentials')
+    self.assertEqual(None, storage.get())
+
+    # Set DB store and refresh to add to storage
+    self.credentials.set_store(storage)
+    self.credentials._refresh(_http_request)
+
+    # Retrieve same key from NDB model to confirm mixing works
+    credmodel = CredentialsNDBModel.get_by_id('foo')
+    self.assertEqual('bar', credmodel.credentials.access_token)
+    self.assertEqual(self.credentials.to_json(),
+                     credmodel.credentials.to_json())
+
+  def test_delete_db_ndb_mixed(self):
+    # Start empty
+    storage_ndb = StorageByKeyName(
+      CredentialsNDBModel, 'foo', 'credentials')
+    storage = StorageByKeyName(
+      CredentialsModel, 'foo', 'credentials')
+
+    # First DB, then NDB
+    self.assertEqual(None, storage.get())
+    storage.put(self.credentials)
+    self.assertNotEqual(None, storage.get())
+
+    storage_ndb.delete()
+    self.assertEqual(None, storage.get())
+
+    # First NDB, then DB
+    self.assertEqual(None, storage_ndb.get())
+    storage_ndb.put(self.credentials)
+
+    storage.delete()
+    self.assertNotEqual(None, storage_ndb.get())
+    # NDB uses memcache and an instance cache (Context)
+    ndb.get_context().clear_cache()
+    memcache.flush_all()
+    self.assertEqual(None, storage_ndb.get())
 
 
 class MockRequest(object):
@@ -596,18 +715,32 @@ class DecoratorXsrfSecretTests(unittest.TestCase):
 
     # Secret shouldn't change if memcache goes away.
     memcache.delete(appengine.XSRF_MEMCACHE_ID,
-                             namespace=appengine.OAUTH2CLIENT_NAMESPACE)
+                    namespace=appengine.OAUTH2CLIENT_NAMESPACE)
     secret3 = appengine.xsrf_secret_key()
     self.assertEqual(secret2, secret3)
 
     # Secret should change if both memcache and the model goes away.
     memcache.delete(appengine.XSRF_MEMCACHE_ID,
-                             namespace=appengine.OAUTH2CLIENT_NAMESPACE)
+                    namespace=appengine.OAUTH2CLIENT_NAMESPACE)
     model = appengine.SiteXsrfSecretKey.get_or_insert('site')
     model.delete()
 
     secret4 = appengine.xsrf_secret_key()
     self.assertNotEqual(secret3, secret4)
+
+  def test_ndb_insert_db_get(self):
+    secret = appengine._generate_new_xsrf_secret_key()
+    appengine.SiteXsrfSecretKeyNDB(id='site', secret=secret).put()
+
+    site_key = appengine.SiteXsrfSecretKey.get_by_key_name('site')
+    self.assertEqual(site_key.secret, secret)
+
+  def test_db_insert_ndb_get(self):
+    secret = appengine._generate_new_xsrf_secret_key()
+    appengine.SiteXsrfSecretKey(key_name='site', secret=secret).put()
+
+    site_key = appengine.SiteXsrfSecretKeyNDB.get_by_id('site')
+    self.assertEqual(site_key.secret, secret)
 
 
 class DecoratorXsrfProtectionTests(unittest.TestCase):

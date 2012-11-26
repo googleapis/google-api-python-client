@@ -31,6 +31,7 @@ from google.appengine.api import app_identity
 from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db
+from google.appengine.ext import ndb
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext.webapp.util import run_wsgi_app
@@ -76,8 +77,27 @@ class SiteXsrfSecretKey(db.Model):
   """Storage for the sites XSRF secret key.
 
   There will only be one instance stored of this model, the one used for the
-  site.  """
+  site.
+  """
   secret = db.StringProperty()
+
+
+class SiteXsrfSecretKeyNDB(ndb.Model):
+  """NDB Model for storage for the sites XSRF secret key.
+
+  Since this model uses the same kind as SiteXsrfSecretKey, it can be used
+  interchangeably. This simply provides an NDB model for interacting with the
+  same data the DB model interacts with.
+
+  There should only be one instance stored of this model, the one used for the
+  site.
+  """
+  secret = ndb.StringProperty()
+
+  @classmethod
+  def _get_kind(cls):
+    """Return the kind name for this class."""
+    return 'SiteXsrfSecretKey'
 
 
 def _generate_new_xsrf_secret_key():
@@ -165,7 +185,7 @@ class AppAssertionCredentials(AssertionCredentials):
 class FlowProperty(db.Property):
   """App Engine datastore Property for Flow.
 
-  Utility property that allows easy storage and retreival of an
+  Utility property that allows easy storage and retrieval of an
   oauth2client.Flow"""
 
   # Tell what the user type is.
@@ -192,6 +212,32 @@ class FlowProperty(db.Property):
 
   def empty(self, value):
     return not value
+
+
+class FlowNDBProperty(ndb.PickleProperty):
+  """App Engine NDB datastore Property for Flow.
+
+  Serves the same purpose as the DB FlowProperty, but for NDB models. Since
+  PickleProperty inherits from BlobProperty, the underlying representation of
+  the data in the datastore will be the same as in the DB case.
+
+  Utility property that allows easy storage and retrieval of an
+  oauth2client.Flow
+  """
+
+  def _validate(self, value):
+    """Validates a value as a proper Flow object.
+
+    Args:
+      value: A value to be set on the property.
+
+    Raises:
+      TypeError if the value is not an instance of Flow.
+    """
+    logger.info('validate: Got type %s', type(value))
+    if value is not None and not isinstance(value, Flow):
+      raise TypeError('Property %s must be convertible to a flow '
+                      'instance; received: %s.' % (self._name, value))
 
 
 class CredentialsProperty(db.Property):
@@ -240,14 +286,73 @@ class CredentialsProperty(db.Property):
     return value
 
 
-class StorageByKeyName(Storage):
-  """Store and retrieve a single credential to and from
-  the App Engine datastore.
+# TODO(dhermes): Turn this into a JsonProperty and overhaul the Credentials
+#                and subclass mechanics to use new_from_dict, to_dict,
+#                from_dict, etc.
+class CredentialsNDBProperty(ndb.BlobProperty):
+  """App Engine NDB datastore Property for Credentials.
 
-  This Storage helper presumes the Credentials
-  have been stored as a CredenialsProperty
-  on a datastore model class, and that entities
-  are stored by key_name.
+  Serves the same purpose as the DB CredentialsProperty, but for NDB models.
+  Since CredentialsProperty stores data as a blob and this inherits from
+  BlobProperty, the data in the datastore will be the same as in the DB case.
+
+  Utility property that allows easy storage and retrieval of Credentials and
+  subclasses.
+  """
+  def _validate(self, value):
+    """Validates a value as a proper credentials object.
+
+    Args:
+      value: A value to be set on the property.
+
+    Raises:
+      TypeError if the value is not an instance of Credentials.
+    """
+    logger.info('validate: Got type %s', type(value))
+    if value is not None and not isinstance(value, Credentials):
+      raise TypeError('Property %s must be convertible to a credentials '
+                      'instance; received: %s.' % (self._name, value))
+
+  def _to_base_type(self, value):
+    """Converts our validated value to a JSON serialized string.
+
+    Args:
+      value: A value to be set in the datastore.
+
+    Returns:
+      A JSON serialized version of the credential, else '' if value is None.
+    """
+    if value is None:
+      return ''
+    else:
+      return value.to_json()
+
+  def _from_base_type(self, value):
+    """Converts our stored JSON string back to the desired type.
+
+    Args:
+      value: A value from the datastore to be converted to the desired type.
+
+    Returns:
+      A deserialized Credentials (or subclass) object, else None if the
+          value can't be parsed.
+    """
+    if not value:
+      return None
+    try:
+      # Uses the from_json method of the implied class of value
+      credentials = Credentials.new_from_json(value)
+    except ValueError:
+      credentials = None
+    return credentials
+
+
+class StorageByKeyName(Storage):
+  """Store and retrieve a credential to and from the App Engine datastore.
+
+  This Storage helper presumes the Credentials have been stored as a
+  CredentialsProperty or CredentialsNDBProperty on a datastore model class, and
+  that entities are stored by key_name.
   """
 
   @util.positional(4)
@@ -255,15 +360,60 @@ class StorageByKeyName(Storage):
     """Constructor for Storage.
 
     Args:
-      model: db.Model, model class
+      model: db.Model or ndb.Model, model class
       key_name: string, key name for the entity that has the credentials
       property_name: string, name of the property that is a CredentialsProperty
-      cache: memcache, a write-through cache to put in front of the datastore
+        or CredentialsNDBProperty.
+      cache: memcache, a write-through cache to put in front of the datastore.
+        If the model you are using is an NDB model, using a cache will be
+        redundant since the model uses an instance cache and memcache for you.
     """
     self._model = model
     self._key_name = key_name
     self._property_name = property_name
     self._cache = cache
+
+  def _is_ndb(self):
+    """Determine whether the model of the instance is an NDB model.
+
+    Returns:
+      Boolean indicating whether or not the model is an NDB or DB model.
+    """
+    # issubclass will fail if one of the arguments is not a class, only need
+    # worry about new-style classes since ndb and db models are new-style
+    if isinstance(self._model, type):
+      if issubclass(self._model, ndb.Model):
+        return True
+      elif issubclass(self._model, db.Model):
+        return False
+
+    raise TypeError('Model class not an NDB or DB model: %s.' % (self._model,))
+
+  def _get_entity(self):
+    """Retrieve entity from datastore.
+
+    Uses a different model method for db or ndb models.
+
+    Returns:
+      Instance of the model corresponding to the current storage object
+          and stored using the key name of the storage object.
+    """
+    if self._is_ndb():
+      return self._model.get_by_id(self._key_name)
+    else:
+      return self._model.get_by_key_name(self._key_name)
+
+  def _delete_entity(self):
+    """Delete entity from datastore.
+
+    Attempts to delete using the key_name stored on the object, whether or not
+    the given key is in the datastore.
+    """
+    if self._is_ndb():
+      ndb.Key(self._model, self._key_name).delete()
+    else:
+      entity_key = db.Key.from_path(self._model.kind(), self._key_name)
+      db.delete(entity_key)
 
   def locked_get(self):
     """Retrieve Credential from datastore.
@@ -276,16 +426,16 @@ class StorageByKeyName(Storage):
       if json:
         return Credentials.new_from_json(json)
 
-    credential = None
-    entity = self._model.get_by_key_name(self._key_name)
+    credentials = None
+    entity = self._get_entity()
     if entity is not None:
-      credential = getattr(entity, self._property_name)
-      if credential and hasattr(credential, 'set_store'):
-        credential.set_store(self)
+      credentials = getattr(entity, self._property_name)
+      if credentials and hasattr(credentials, 'set_store'):
+        credentials.set_store(self)
         if self._cache:
-          self._cache.set(self._key_name, credential.to_json())
+          self._cache.set(self._key_name, credentials.to_json())
 
-    return credential
+    return credentials
 
   def locked_put(self, credentials):
     """Write a Credentials to the datastore.
@@ -305,9 +455,7 @@ class StorageByKeyName(Storage):
     if self._cache:
       self._cache.delete(self._key_name)
 
-    entity = self._model.get_by_key_name(self._key_name)
-    if entity is not None:
-      entity.delete()
+    self._delete_entity()
 
 
 class CredentialsModel(db.Model):
@@ -316,6 +464,25 @@ class CredentialsModel(db.Model):
   Storage of the model is keyed by the user.user_id().
   """
   credentials = CredentialsProperty()
+
+
+class CredentialsNDBModel(ndb.Model):
+  """NDB Model for storage of OAuth 2.0 Credentials
+
+  Since this model uses the same kind as CredentialsModel and has a property
+  which can serialize and deserialize Credentials correctly, it can be used
+  interchangeably with a CredentialsModel to access, insert and delete the same
+  entities. This simply provides an NDB model for interacting with the
+  same data the DB model interacts with.
+
+  Storage of the model is keyed by the user.user_id().
+  """
+  credentials = CredentialsNDBProperty()
+
+  @classmethod
+  def _get_kind(cls):
+    """Return the kind name for this class."""
+    return 'CredentialsModel'
 
 
 def _build_state_value(request_handler, user):
