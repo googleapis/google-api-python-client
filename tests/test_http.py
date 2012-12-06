@@ -483,6 +483,26 @@ class Callbacks(object):
     self.exceptions[request_id] = exception
 
 
+class TestHttpRequest(unittest.TestCase):
+  def test_unicode(self):
+    http = HttpMock(datafile('zoo.json'), headers={'status': '200'})
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/collection/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        body=u'{}',
+        headers={'content-type': 'application/json'})
+    request.execute()
+    self.assertEqual(uri, http.uri)
+    self.assertEqual(str, type(http.uri))
+    self.assertEqual(method, http.method)
+    self.assertEqual(str, type(http.method))
+
+
 class TestBatch(unittest.TestCase):
 
   def setUp(self):

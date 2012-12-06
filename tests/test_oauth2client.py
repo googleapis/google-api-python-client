@@ -34,6 +34,7 @@ try:
 except ImportError:
     from cgi import parse_qs
 
+from apiclient.http import HttpMock
 from apiclient.http import HttpMockSequence
 from oauth2client.anyjson import simplejson
 from oauth2client.clientsecrets import _loadfile
@@ -44,13 +45,14 @@ from oauth2client.client import AssertionCredentials
 from oauth2client.client import Credentials
 from oauth2client.client import FlowExchangeError
 from oauth2client.client import MemoryCache
+from oauth2client.client import NonAsciiHeaderError
 from oauth2client.client import OAuth2Credentials
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.client import OOB_CALLBACK_URN
 from oauth2client.client import VerifyJwtTokenError
 from oauth2client.client import _extract_id_token
-from oauth2client.client import credentials_from_code
 from oauth2client.client import credentials_from_clientsecrets_and_code
+from oauth2client.client import credentials_from_code
 from oauth2client.client import flow_from_clientsecrets
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -86,7 +88,7 @@ class CredentialsTests(unittest.TestCase):
     restored = Credentials.new_from_json(json)
 
 
-class OAuth2CredentialsTests(unittest.TestCase):
+class BasicCredentialsTests(unittest.TestCase):
 
   def setUp(self):
     access_token = "foo"
@@ -145,6 +147,35 @@ class OAuth2CredentialsTests(unittest.TestCase):
     self.credentials.token_expiry = None
 
     self.assertEqual(instance.__dict__, self.credentials.__dict__)
+
+  def test_no_unicode_in_request_params(self):
+    access_token = u'foo'
+    client_id = u'some_client_id'
+    client_secret = u'cOuDdkfjxxnv+'
+    refresh_token = u'1/0/a.df219fjls0'
+    token_expiry = unicode(datetime.datetime.utcnow())
+    token_uri = u'https://www.google.com/accounts/o8/oauth2/token'
+    user_agent = u'refresh_checker/1.0'
+    credentials = OAuth2Credentials(access_token, client_id, client_secret,
+                                    refresh_token, token_expiry, token_uri,
+                                    user_agent)
+
+    http = HttpMock(headers={'status': '200'})
+    http = credentials.authorize(http)
+    http.request(u'http://example.com', method=u'GET', headers={
+        u'foo': u'bar'
+        })
+    for k, v in http.headers.iteritems():
+      self.assertEqual(str, type(k))
+      self.assertEqual(str, type(v))
+
+    # Test again with unicode strings that can't simple be converted to ASCII.
+    try:
+      http.request(
+          u'http://example.com', method=u'GET', headers={u'foo': u'\N{COMET}'})
+      self.fail('Expected exception to be raised.')
+    except NonAsciiHeaderError:
+      pass
 
 
 class AccessTokenCredentialsTests(unittest.TestCase):

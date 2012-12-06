@@ -89,6 +89,11 @@ class VerifyJwtTokenError(Error):
   pass
 
 
+class NonAsciiHeaderError(Error):
+  """Header names and values must be ASCII strings."""
+  pass
+
+
 def _abstract():
   raise NotImplementedError('You need to override this function')
 
@@ -319,6 +324,28 @@ class Storage(object):
       self.release_lock()
 
 
+def clean_headers(headers):
+  """Forces header keys and values to be strings, i.e not unicode.
+
+  The httplib module just concats the header keys and values in a way that may
+  make the message header a unicode string, which, if it then tries to
+  contatenate to a binary request body may result in a unicode decode error.
+
+  Args:
+    headers: dict, A dictionary of headers.
+
+  Returns:
+    The same dictionary but with all the keys converted to strings.
+  """
+  clean = {}
+  try:
+    for k, v in headers.iteritems():
+      clean[str(k)] = str(v)
+  except UnicodeEncodeError:
+    raise NonAsciiHeaderError(k + ': ' + v)
+  return clean
+
+
 class OAuth2Credentials(Credentials):
   """Credentials object for OAuth 2.0.
 
@@ -416,7 +443,7 @@ class OAuth2Credentials(Credentials):
         else:
           headers['user-agent'] = self.user_agent
 
-      resp, content = request_orig(uri, method, body, headers,
+      resp, content = request_orig(uri, method, body, clean_headers(headers),
                                    redirections, connection_type)
 
       # Older API (GData) respond with 403
@@ -424,7 +451,7 @@ class OAuth2Credentials(Credentials):
         logger.info('Refreshing due to a %s' % str(resp.status))
         self._refresh(request_orig)
         self.apply(headers)
-        return request_orig(uri, method, body, headers,
+        return request_orig(uri, method, body, clean_headers(headers),
                             redirections, connection_type)
       else:
         return (resp, content)

@@ -671,9 +671,8 @@ class HttpRequest(object):
         self.body = parsed.query
         self.headers['content-length'] = str(len(self.body))
 
-      resp, content = http.request(self.uri, method=self.method,
-                                   body=self.body,
-                                   headers=self.headers)
+      resp, content = http.request(str(self.uri), method=str(self.method),
+                                   body=self.body, headers=self.headers)
       if resp.status >= 300:
         raise HttpError(resp, content, uri=self.uri)
     return self.postproc(resp, content)
@@ -1353,7 +1352,7 @@ class RequestMockBuilder(object):
 class HttpMock(object):
   """Mock of httplib2.Http"""
 
-  def __init__(self, filename, headers=None):
+  def __init__(self, filename=None, headers=None):
     """
     Args:
       filename: string, absolute filename to read response from
@@ -1361,10 +1360,19 @@ class HttpMock(object):
     """
     if headers is None:
       headers = {'status': '200 OK'}
-    f = file(filename, 'r')
-    self.data = f.read()
-    f.close()
-    self.headers = headers
+    if filename:
+      f = file(filename, 'r')
+      self.data = f.read()
+      f.close()
+    else:
+      self.data = None
+    self.response_headers = headers
+    self.headers = None
+    self.uri = None
+    self.method = None
+    self.body = None
+    self.headers = None
+
 
   def request(self, uri,
               method='GET',
@@ -1372,7 +1380,11 @@ class HttpMock(object):
               headers=None,
               redirections=1,
               connection_type=None):
-    return httplib2.Response(self.headers), self.data
+    self.uri = uri
+    self.method = method
+    self.body = body
+    self.headers = headers
+    return httplib2.Response(self.response_headers), self.data
 
 
 class HttpMockSequence(object):
