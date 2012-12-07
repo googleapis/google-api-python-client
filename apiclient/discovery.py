@@ -59,6 +59,9 @@ from email.mime.nonmultipart import MIMENonMultipart
 from oauth2client.util import positional
 from oauth2client.anyjson import simplejson
 
+# The client library requires a version of httplib2 that supports RETRIES.
+httplib2.RETRIES = 1
+
 logger = logging.getLogger(__name__)
 
 URITEMPLATE = re.compile('{[^}]*}')

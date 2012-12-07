@@ -89,6 +89,12 @@ def datafile(filename):
   return os.path.join(DATA_DIR, filename)
 
 
+class SetupHttplib2(unittest.TestCase):
+  def test_retries(self):
+    # Merely loading apiclient.discovery should set the RETRIES to 1.
+    self.assertEqual(1, httplib2.RETRIES)
+
+
 class Utilities(unittest.TestCase):
   def test_key2param(self):
     self.assertEqual('max_results', key2param('max-results'))
