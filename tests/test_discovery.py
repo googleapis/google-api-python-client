@@ -125,6 +125,14 @@ class DiscoveryFromDocument(unittest.TestCase):
     discovery = file(datafile('plus.json')).read()
     plus = build_from_document(discovery, base="https://www.googleapis.com/")
     self.assertTrue(plus is not None)
+    self.assertTrue(hasattr(plus, 'activities'))
+
+  def test_can_build_from_local_deserialized_document(self):
+    discovery = file(datafile('plus.json')).read()
+    discovery = simplejson.loads(discovery)
+    plus = build_from_document(discovery, base="https://www.googleapis.com/")
+    self.assertTrue(plus is not None)
+    self.assertTrue(hasattr(plus, 'activities'))
 
   def test_building_with_base_remembers_base(self):
     discovery = file(datafile('plus.json')).read()

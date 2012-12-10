@@ -225,7 +225,9 @@ def build_from_document(
   document that is it given, as opposed to retrieving one over HTTP.
 
   Args:
-    service: string, discovery document.
+    service: string or object, the JSON discovery document describing the API.
+      The value passed in may either be the JSON string or the deserialized
+      JSON.
     base: string, base URI for all HTTP requests, usually the discovery URI.
       This parameter is no longer used as rootUrl and servicePath are included
       within the discovery document. (deprecated)
@@ -245,7 +247,8 @@ def build_from_document(
   # future is no longer used.
   future = {}
 
-  service = simplejson.loads(service)
+  if isinstance(service, basestring):
+    service = simplejson.loads(service)
   base = urlparse.urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
 
