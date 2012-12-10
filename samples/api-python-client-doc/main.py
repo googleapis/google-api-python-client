@@ -105,48 +105,8 @@ class ResourceHandler(webapp.RequestHandler):
   def get(self, service_name, version, collection):
 
     real_version = describe.unsafe_version(version)
-
-    logging.info('%s %s %s', service_name, version, collection)
-    http = httplib2.Http(memcache)
-    try:
-      resource = discovery.build(service_name, real_version, http=http)
-    except:
-      logging.error('Failed to build service.')
-      return self.error(404)
-
-    DISCOVERY_URI = ('https://www.googleapis.com/discovery/v1/apis/'
-      '{api}/{apiVersion}/rest')
-    response, content = http.request(
-        uritemplate.expand(
-            DISCOVERY_URI, {
-                'api': service_name,
-                'apiVersion': real_version})
-            )
-    root_discovery = simplejson.loads(content)
-    collection_discovery = root_discovery
-
-    # descend the object path
-    if collection:
-      try:
-        path = collection.split('.')
-        if path:
-          for method in path:
-            resource = getattr(resource, method)()
-            collection_discovery = collection_discovery['resources'][method]
-      except:
-        logging.error('Failed to parse the collections.')
-        return self.error(404)
-    logging.info('Built everything successfully so far.')
-
-    path = '%s_%s.' % (service_name, version)
-    if collection:
-      path += '.'.join(collection.split('/'))
-      path += '.'
-
-    page = describe.document_collection(
-        resource, path, root_discovery, collection_discovery)
-
-    self.response.out.write(page)
+    return self.redirect('https://google-api-client-libraries.appspot.com/documentation/%s/%s/python/latest/%s_%s.%s.html'
+        % (service_name, real_version, service_name, real_version, collection))
 
 
 def main():
