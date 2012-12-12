@@ -104,9 +104,8 @@ class ResourceHandler(webapp.RequestHandler):
 
   def get(self, service_name, version, collection):
 
-    real_version = describe.unsafe_version(version)
     return self.redirect('https://google-api-client-libraries.appspot.com/documentation/%s/%s/python/latest/%s_%s.%s.html'
-        % (service_name, real_version, service_name, real_version, collection))
+        % (service_name, version, service_name, version, collection))
 
 
 def main():
