@@ -12,49 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from google.appengine.dist import use_library
-use_library('django', '1.2')
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
-from google.appengine.ext.webapp.util import run_wsgi_app
+import webapp2
+from webapp2_extras import jinja2
+
 from apiclient.discovery import build
-import httplib2
 from oauth2client.appengine import OAuth2Decorator
+
 import settings
 
 decorator = OAuth2Decorator(client_id=settings.CLIENT_ID,
                             client_secret=settings.CLIENT_SECRET,
-                            scope=settings.SCOPE,
-                            user_agent='mytasks')
+                            scope=settings.SCOPE)
+service = build('tasks', 'v1')
 
 
-class MainHandler(webapp.RequestHandler):
+class MainHandler(webapp2.RequestHandler):
+
+  def render_response(self, template, **context):
+    renderer = jinja2.get_jinja2(app=self.app)
+    rendered_value = renderer.render_template(template, **context)
+    self.response.write(rendered_value)
 
   @decorator.oauth_aware
   def get(self):
     if decorator.has_credentials():
-      service = build('tasks', 'v1', http=decorator.http())
-      result = service.tasks().list(tasklist='@default').execute()
+      result = service.tasks().list(tasklist='@default').execute(
+          http=decorator.http())
       tasks = result.get('items', [])
       for task in tasks:
         task['title_short'] = truncate(task['title'], 26)
-      self.response.out.write(template.render('templates/index.html',
-                                              {'tasks': tasks}))
+      self.render_response('index.html', tasks=tasks)
     else:
       url = decorator.authorize_url()
-      self.response.out.write(template.render('templates/index.html',
-                                              {'tasks': [],
-                                               'authorize_url': url}))
+      self.render_response('index.html', tasks=[], authorize_url=url)
 
 
 def truncate(s, l):
   return s[:l] + '...' if len(s) > l else s
 
-application = webapp.WSGIApplication([
+
+application = webapp2.WSGIApplication([
     ('/', MainHandler),
     (decorator.callback_path, decorator.callback_handler()),
     ], debug=True)
-
-
-def main():
-  run_wsgi_app(application)
