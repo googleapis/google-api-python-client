@@ -34,12 +34,10 @@ import urlparse
 from oauth2client import util
 from oauth2client.anyjson import simplejson
 
-HAS_OPENSSL = False
+HAS_CRYPTO = False
 try:
-  from oauth2client.crypt import Signer
-  from oauth2client.crypt import make_signed_jwt
-  from oauth2client.crypt import verify_signed_jwt_with_certs
-  HAS_OPENSSL = True
+  from oauth2client import crypt
+  HAS_CRYPTO = True
 except ImportError:
   pass
 
@@ -769,10 +767,10 @@ class AssertionCredentials(OAuth2Credentials):
     """
     _abstract()
 
-if HAS_OPENSSL:
-  # PyOpenSSL is not a prerequisite for oauth2client, so if it is missing then
-  # don't create the SignedJwtAssertionCredentials or the verify_id_token()
-  # method.
+if HAS_CRYPTO:
+  # PyOpenSSL and PyCrypto are not prerequisites for oauth2client, so if it is
+  # missing then don't create the SignedJwtAssertionCredentials or the
+  # verify_id_token() method.
 
   class SignedJwtAssertionCredentials(AssertionCredentials):
     """Credentials object used for OAuth 2.0 Signed JWT assertion grants.
@@ -781,9 +779,8 @@ if HAS_OPENSSL:
     a two legged flow, and therefore has all of the required information to
     generate and refresh its own access tokens.
 
-    SignedJwtAssertionCredentials requires PyOpenSSL and because of that it does
-    not work on App Engine. For App Engine you may consider using
-    AppAssertionCredentials.
+    SignedJwtAssertionCredentials requires either PyOpenSSL, or PyCrypto 2.6 or
+    later. For App Engine you may also consider using AppAssertionCredentials.
     """
 
     MAX_TOKEN_LIFETIME_SECS = 3600 # 1 hour in seconds
@@ -801,10 +798,11 @@ if HAS_OPENSSL:
 
       Args:
         service_account_name: string, id for account, usually an email address.
-        private_key: string, private key in P12 format.
+        private_key: string, private key in PKCS12 or PEM format.
         scope: string or iterable of strings, scope(s) of the credentials being
           requested.
-        private_key_password: string, password for private_key.
+        private_key_password: string, password for private_key, unused if
+          private_key is in PEM format.
         user_agent: string, HTTP User-Agent to provide for this application.
         token_uri: string, URI for token endpoint. For convenience
           defaults to Google's endpoints but any OAuth 2.0 provider can be used.
@@ -856,8 +854,8 @@ if HAS_OPENSSL:
       logger.debug(str(payload))
 
       private_key = base64.b64decode(self.private_key)
-      return make_signed_jwt(
-          Signer.from_string(private_key, self.private_key_password), payload)
+      return crypt.make_signed_jwt(crypt.Signer.from_string(
+          private_key, self.private_key_password), payload)
 
   # Only used in verify_id_token(), which is always calling to the same URI
   # for the certs.
@@ -869,7 +867,7 @@ if HAS_OPENSSL:
     """Verifies a signed JWT id_token.
 
     This function requires PyOpenSSL and because of that it does not work on
-    App Engine. For App Engine you may consider using AppAssertionCredentials.
+    App Engine.
 
     Args:
       id_token: string, A Signed JWT.
@@ -892,7 +890,7 @@ if HAS_OPENSSL:
 
     if resp.status == 200:
       certs = simplejson.loads(content)
-      return verify_signed_jwt_with_certs(id_token, certs, audience)
+      return crypt.verify_signed_jwt_with_certs(id_token, certs, audience)
     else:
       raise VerifyJwtTokenError('Status code: %d' % resp.status)
 
