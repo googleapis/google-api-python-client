@@ -57,6 +57,9 @@ ID_TOKEN_VERIFICATON_CERTS = 'https://www.googleapis.com/oauth2/v1/certs'
 # Constant to use for the out of band OAuth 2.0 flow.
 OOB_CALLBACK_URN = 'urn:ietf:wg:oauth:2.0:oob'
 
+# Google Data client libraries may need to set this to [401, 403].
+REFRESH_STATUS_CODES = [401]
+
 
 class Error(Exception):
   """Base error for this module."""
@@ -444,8 +447,7 @@ class OAuth2Credentials(Credentials):
       resp, content = request_orig(uri, method, body, clean_headers(headers),
                                    redirections, connection_type)
 
-      # Older API (GData) respond with 403
-      if resp.status in [401, 403]:
+      if resp.status in REFRESH_STATUS_CODES:
         logger.info('Refreshing due to a %s' % str(resp.status))
         self._refresh(request_orig)
         self.apply(headers)

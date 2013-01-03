@@ -37,7 +37,6 @@ except ImportError:
 from apiclient.http import HttpMock
 from apiclient.http import HttpMockSequence
 from oauth2client.anyjson import simplejson
-from oauth2client.clientsecrets import _loadfile
 from oauth2client.client import AccessTokenCredentials
 from oauth2client.client import AccessTokenCredentialsError
 from oauth2client.client import AccessTokenRefreshError
@@ -49,11 +48,13 @@ from oauth2client.client import NonAsciiHeaderError
 from oauth2client.client import OAuth2Credentials
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.client import OOB_CALLBACK_URN
+from oauth2client.client import REFRESH_STATUS_CODES
 from oauth2client.client import VerifyJwtTokenError
 from oauth2client.client import _extract_id_token
 from oauth2client.client import credentials_from_clientsecrets_and_code
 from oauth2client.client import credentials_from_code
 from oauth2client.client import flow_from_clientsecrets
+from oauth2client.clientsecrets import _loadfile
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -104,8 +105,7 @@ class BasicCredentialsTests(unittest.TestCase):
       user_agent)
 
   def test_token_refresh_success(self):
-    # Older API (GData) respond with 403
-    for status_code in ['401', '403']:
+    for status_code in REFRESH_STATUS_CODES:
       http = HttpMockSequence([
         ({'status': status_code}, ''),
         ({'status': '200'}, '{"access_token":"1/3w","expires_in":3600}'),
@@ -117,8 +117,7 @@ class BasicCredentialsTests(unittest.TestCase):
       self.assertFalse(self.credentials.access_token_expired)
 
   def test_token_refresh_failure(self):
-    # Older API (GData) respond with 403
-    for status_code in ['401', '403']:
+    for status_code in REFRESH_STATUS_CODES:
       http = HttpMockSequence([
         ({'status': status_code}, ''),
         ({'status': '400'}, '{"error":"access_denied"}'),
@@ -186,8 +185,7 @@ class AccessTokenCredentialsTests(unittest.TestCase):
     self.credentials = AccessTokenCredentials(access_token, user_agent)
 
   def test_token_refresh_success(self):
-    # Older API (GData) respond with 403
-    for status_code in ['401', '403']:
+    for status_code in REFRESH_STATUS_CODES:
       http = HttpMockSequence([
         ({'status': status_code}, ''),
         ])
