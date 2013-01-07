@@ -617,6 +617,7 @@ class HttpRequest(object):
     self.http = http
     self.postproc = postproc
     self.resumable = resumable
+    self.response_callbacks = []
     self._in_error_state = False
 
     # Pull the multipart boundary out of the content-type header.
@@ -673,9 +674,23 @@ class HttpRequest(object):
 
       resp, content = http.request(str(self.uri), method=str(self.method),
                                    body=self.body, headers=self.headers)
+      for callback in self.response_callbacks:
+        callback(resp)
       if resp.status >= 300:
         raise HttpError(resp, content, uri=self.uri)
     return self.postproc(resp, content)
+
+  @util.positional(2)
+  def add_response_callback(self, cb):
+    """add_response_headers_callback
+
+    Args:
+      cb: Callback to be called on receiving the response headers, of signature:
+
+      def cb(resp):
+        # Where resp is an instance of httplib2.Response
+    """
+    self.response_callbacks.append(cb)
 
   @util.positional(1)
   def next_chunk(self, http=None):

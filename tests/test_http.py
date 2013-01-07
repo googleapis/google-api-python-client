@@ -827,5 +827,27 @@ class TestStreamSlice(unittest.TestCase):
     s =  _StreamSlice(self.stream, 2, 1)
     self.assertEqual('2', s.read(-1))
 
+
+class TestResponseCallback(unittest.TestCase):
+  """Test adding callbacks to responses."""
+
+  def test_ensure_response_callback(self):
+    m = JsonModel()
+    request = HttpRequest(
+        None,
+        m.response,
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
+        method='POST',
+        body='{}',
+        headers={'content-type': 'application/json'})
+    h = HttpMockSequence([ ({'status': 200}, '{}')])
+    responses = []
+    def _on_response(resp, responses=responses):
+      responses.append(resp)
+    request.add_response_callback(_on_response)
+    request.execute(http=h)
+    self.assertEqual(1, len(responses))
+
+
 if __name__ == '__main__':
   unittest.main()
