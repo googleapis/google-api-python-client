@@ -42,7 +42,7 @@ def positional(max_positional_args):
   """A decorator to declare that only the first N arguments my be positional.
 
   This decorator makes it easy to support Python 3 style key-word only
-  parameters.  For example, in Python 3 it is possible to write:
+  parameters. For example, in Python 3 it is possible to write:
 
     def fn(pos1, *, kwonly1=None, kwonly1=None):
       ...
@@ -92,7 +92,7 @@ def positional(max_positional_args):
   respectively, if a declaration is violated.
 
   Args:
-    max_positional_arguments: Maximum number of positional arguments.  All
+    max_positional_arguments: Maximum number of positional arguments. All
       parameters after the this index must be keyword only.
 
   Returns:
@@ -145,3 +145,18 @@ def scopes_to_string(scopes):
     return scopes
   else:
     return ' '.join(scopes)
+
+
+def dict_to_tuple_key(dictionary):
+  """Converts a dictionary to a tuple that can be used as an immutable key.
+
+  The resulting key is always sorted so that logically equivalent dictionaries
+  always produce an identical tuple for a key.
+
+  Args:
+    dictionary: the dictionary to use as the key.
+
+  Returns:
+    A tuple representing the dictionary in it's naturally sorted ordering.
+  """
+  return tuple(sorted(dictionary.items()))

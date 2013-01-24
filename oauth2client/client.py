@@ -234,7 +234,7 @@ class Flow(object):
 class Storage(object):
   """Base class for all Storage objects.
 
-  Store and retrieve a single credential.  This class supports locking
+  Store and retrieve a single credential. This class supports locking
   such that multiple processes and threads can operate on a single
   store.
   """
@@ -540,7 +540,7 @@ class OAuth2Credentials(Credentials):
     Args:
       store: Storage, an implementation of Stroage object.
         This is needed to store the latest access_token if it
-        has expired and been refreshed.  This implementation uses
+        has expired and been refreshed. This implementation uses
         locking to check for updates before updating the
         access_token.
     """
@@ -661,7 +661,7 @@ class AccessTokenCredentials(OAuth2Credentials):
 
   Credentials can be applied to an httplib2.Http object using the
   authorize() method, which then signs each request from that object
-  with the OAuth 2.0 access token.  This set of credentials is for the
+  with the OAuth 2.0 access token. This set of credentials is for the
   use case where you have acquired an OAuth 2.0 access_token from
   another place such as a JavaScript client or another web
   application, and wish to use it from Python. Because only the
@@ -723,7 +723,7 @@ class AssertionCredentials(OAuth2Credentials):
 
   This credential does not require a flow to instantiate because it
   represents a two legged flow, and therefore has all of the required
-  information to generate and refresh its own access tokens.  It must
+  information to generate and refresh its own access tokens. It must
   be subclassed to generate the appropriate assertion string.
 
   AssertionCredentials objects may be safely pickled and unpickled.

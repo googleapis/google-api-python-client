@@ -3,7 +3,7 @@
 """Multi-credential file store with lock support.
 
 This module implements a JSON credential store where multiple
-credentials can be stored in one file.  That file supports locking
+credentials can be stored in one file. That file supports locking
 both in a single process and across processes.
 
 The credential themselves are keyed off of:
@@ -76,6 +76,55 @@ def get_credential_storage(filename, client_id, user_agent, scope,
     An object derived from client.Storage for getting/setting the
     credential.
   """
+  # Recreate the legacy key with these specific parameters
+  key = {'clientId': client_id, 'userAgent': user_agent,
+         'scope': util.scopes_to_string(scope)}
+  return get_credential_storage_custom_key(
+      filename, key, warn_on_readonly=warn_on_readonly)
+
+
+@util.positional(2)
+def get_credential_storage_custom_string_key(
+    filename, key_string, warn_on_readonly=True):
+  """Get a Storage instance for a credential using a single string as a key.
+
+  Allows you to provide a string as a custom key that will be used for
+  credential storage and retrieval.
+
+  Args:
+    filename: The JSON file storing a set of credentials
+    key_string: A string to use as the key for storing this credential.
+    warn_on_readonly: if True, log a warning if the store is readonly
+
+  Returns:
+    An object derived from client.Storage for getting/setting the
+    credential.
+  """
+  # Create a key dictionary that can be used
+  key_dict = {'key': key_string}
+  return get_credential_storage_custom_key(
+      filename, key_dict, warn_on_readonly=warn_on_readonly)
+
+
+@util.positional(2)
+def get_credential_storage_custom_key(
+    filename, key_dict, warn_on_readonly=True):
+  """Get a Storage instance for a credential using a dictionary as a key.
+
+  Allows you to provide a dictionary as a custom key that will be used for
+  credential storage and retrieval.
+
+  Args:
+    filename: The JSON file storing a set of credentials
+    key_dict: A dictionary to use as the key for storing this credential. There
+      is no ordering of the keys in the dictionary. Logically equivalent
+      dictionaries will produce equivalent storage keys.
+    warn_on_readonly: if True, log a warning if the store is readonly
+
+  Returns:
+    An object derived from client.Storage for getting/setting the
+    credential.
+  """
   filename = os.path.expanduser(filename)
   _multistores_lock.acquire()
   try:
@@ -83,8 +132,8 @@ def get_credential_storage(filename, client_id, user_agent, scope,
         filename, _MultiStore(filename, warn_on_readonly=warn_on_readonly))
   finally:
     _multistores_lock.release()
-  scope = util.scopes_to_string(scope)
-  return multistore._get_storage(client_id, user_agent, scope)
+  key = util.dict_to_tuple_key(key_dict)
+  return multistore._get_storage(key)
 
 
 class _MultiStore(object):
@@ -103,11 +152,11 @@ class _MultiStore(object):
 
     self._create_file_if_needed()
 
-    # Cache of deserialized store.  This is only valid after the
-    # _MultiStore is locked or _refresh_data_cache is called.  This is
+    # Cache of deserialized store. This is only valid after the
+    # _MultiStore is locked or _refresh_data_cache is called. This is
     # of the form of:
     #
-    # (client_id, user_agent, scope) -> OAuth2Credential
+    # ((key, value), (key, value)...) -> OAuth2Credential
     #
     # If this is None, then the store hasn't been read yet.
     self._data = None
@@ -115,11 +164,9 @@ class _MultiStore(object):
   class _Storage(BaseStorage):
     """A Storage object that knows how to read/write a single credential."""
 
-    def __init__(self, multistore, client_id, user_agent, scope):
+    def __init__(self, multistore, key):
       self._multistore = multistore
-      self._client_id = client_id
-      self._user_agent = user_agent
-      self._scope = scope
+      self._key = key
 
     def acquire_lock(self):
       """Acquires any lock necessary to access this Storage.
@@ -144,8 +191,7 @@ class _MultiStore(object):
       Returns:
         oauth2client.client.Credentials
       """
-      credential = self._multistore._get_credential(
-          self._client_id, self._user_agent, self._scope)
+      credential = self._multistore._get_credential(self._key)
       if credential:
         credential.set_store(self)
       return credential
@@ -158,7 +204,7 @@ class _MultiStore(object):
       Args:
         credentials: Credentials, the credentials to store.
       """
-      self._multistore._update_credential(credentials, self._scope)
+      self._multistore._update_credential(self._key, credentials)
 
     def locked_delete(self):
       """Delete a credential.
@@ -168,8 +214,7 @@ class _MultiStore(object):
       Args:
         credentials: Credentials, the credentials to store.
       """
-      self._multistore._delete_credential(self._client_id, self._user_agent,
-          self._scope)
+      self._multistore._delete_credential(self._key)
 
   def _create_file_if_needed(self):
     """Create an empty file if necessary.
@@ -201,9 +246,9 @@ class _MultiStore(object):
       self._write()
     elif not self._read_only or self._data is None:
       # Only refresh the data if we are read/write or we haven't
-      # cached the data yet.  If we are readonly, we assume is isn't
+      # cached the data yet. If we are readonly, we assume is isn't
       # changing out from under us and that we only have to read it
-      # once.  This prevents us from whacking any new access keys that
+      # once. This prevents us from whacking any new access keys that
       # we have cached in memory but were unable to write out.
       self._refresh_data_cache()
 
@@ -292,10 +337,7 @@ class _MultiStore(object):
         OAuth2Credential object.
     """
     raw_key = cred_entry['key']
-    client_id = raw_key['clientId']
-    user_agent = raw_key['userAgent']
-    scope = raw_key['scope']
-    key = (client_id, user_agent, scope)
+    key = util.dict_to_tuple_key(raw_key)
     credential = None
     credential = Credentials.new_from_json(simplejson.dumps(cred_entry['credential']))
     return (key, credential)
@@ -309,73 +351,59 @@ class _MultiStore(object):
     raw_creds = []
     raw_data['data'] = raw_creds
     for (cred_key, cred) in self._data.items():
-      raw_key = {
-          'clientId': cred_key[0],
-          'userAgent': cred_key[1],
-          'scope': cred_key[2]
-          }
+      raw_key = dict(cred_key)
       raw_cred = simplejson.loads(cred.to_json())
       raw_creds.append({'key': raw_key, 'credential': raw_cred})
     self._locked_json_write(raw_data)
 
-  def _get_credential(self, client_id, user_agent, scope):
+  def _get_credential(self, key):
     """Get a credential from the multistore.
 
     The multistore must be locked.
 
     Args:
-      client_id: The client_id for the credential
-      user_agent: The user agent for the credential
-      scope: A string for the scope(s) being requested
+      key: The key used to retrieve the credential
 
     Returns:
       The credential specified or None if not present
     """
-    key = (client_id, user_agent, scope)
-
     return self._data.get(key, None)
 
-  def _update_credential(self, cred, scope):
+  def _update_credential(self, key, cred):
     """Update a credential and write the multistore.
 
     This must be called when the multistore is locked.
 
     Args:
+      key: The key used to retrieve the credential
       cred: The OAuth2Credential to update/set
-      scope: The scope(s) that this credential covers
     """
-    key = (cred.client_id, cred.user_agent, scope)
     self._data[key] = cred
     self._write()
 
-  def _delete_credential(self, client_id, user_agent, scope):
+  def _delete_credential(self, key):
     """Delete a credential and write the multistore.
 
     This must be called when the multistore is locked.
 
     Args:
-      client_id: The client_id for the credential
-      user_agent: The user agent for the credential
-      scope: The scope(s) that this credential covers
+      key: The key used to retrieve the credential
     """
-    key = (client_id, user_agent, scope)
     try:
       del self._data[key]
     except KeyError:
       pass
     self._write()
 
-  def _get_storage(self, client_id, user_agent, scope):
+  def _get_storage(self, key):
     """Get a Storage object to get/set a credential.
 
     This Storage is a 'view' into the multistore.
 
     Args:
-      client_id: The client_id for the credential
-      user_agent: The user agent for the credential
-      scope: A string for the scope(s) being requested
+      key: The key used to retrieve the credential
 
     Returns:
       A Storage object that can be used to get/set this cred
     """
-    return self._Storage(self, client_id, user_agent, scope)
+    return self._Storage(self, key)

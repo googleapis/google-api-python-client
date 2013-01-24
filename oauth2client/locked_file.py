@@ -64,7 +64,7 @@ class _Opener(object):
     return self._locked
 
   def file_handle(self):
-    """The file handle to the file.  Valid only after opened."""
+    """The file handle to the file. Valid only after opened."""
     return self._fh
 
   def filename(self):
@@ -198,7 +198,7 @@ try:
             raise e
           if e.errno != errno.EACCES:
             raise e
-          # We could not acquire the lock.  Try again.
+          # We could not acquire the lock. Try again.
           if (time.time() - start_time) >= timeout:
             logger.warn('Could not lock %s in %s seconds' % (
                 self._filename, timeout))
@@ -280,7 +280,7 @@ try:
           if e[0] != _Win32Opener.FILE_IN_USE_ERROR:
             raise
 
-          # We could not acquire the lock.  Try again.
+          # We could not acquire the lock. Try again.
           if (time.time() - start_time) >= timeout:
             logger.warn('Could not lock %s in %s seconds' % (
                 self._filename, timeout))

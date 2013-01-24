@@ -1194,7 +1194,7 @@ class BatchHttpRequest(object):
 
     Args:
       http: httplib2.Http, an http object to be used in place of the one the
-        HttpRequest request object was constructed with.  If one isn't supplied
+        HttpRequest request object was constructed with. If one isn't supplied
         then use a http object from the requests in this batch.
 
     Returns:
