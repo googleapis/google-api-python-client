@@ -35,6 +35,9 @@ from google.appengine.ext import ndb
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext.webapp.util import run_wsgi_app
+from oauth2client import GOOGLE_AUTH_URI
+from oauth2client import GOOGLE_REVOKE_URI
+from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client import clientsecrets
 from oauth2client import util
 from oauth2client import xsrfutil
@@ -553,8 +556,9 @@ class OAuth2Decorator(object):
 
   @util.positional(4)
   def __init__(self, client_id, client_secret, scope,
-               auth_uri='https://accounts.google.com/o/oauth2/auth',
-               token_uri='https://accounts.google.com/o/oauth2/token',
+               auth_uri=GOOGLE_AUTH_URI,
+               token_uri=GOOGLE_TOKEN_URI,
+               revoke_uri=GOOGLE_REVOKE_URI,
                user_agent=None,
                message=None,
                callback_path='/oauth2callback',
@@ -570,6 +574,8 @@ class OAuth2Decorator(object):
       auth_uri: string, URI for authorization endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
       token_uri: string, URI for token endpoint. For convenience
+        defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+      revoke_uri: string, URI for revoke endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
       user_agent: string, User agent of your application, default to None.
       message: Message to display if there are problems with the OAuth 2.0
@@ -588,6 +594,7 @@ class OAuth2Decorator(object):
     self._scope = util.scopes_to_string(scope)
     self._auth_uri = auth_uri
     self._token_uri = token_uri
+    self._revoke_uri = revoke_uri
     self._user_agent = user_agent
     self._kwargs = kwargs
     self._message = message
@@ -655,8 +662,9 @@ class OAuth2Decorator(object):
                                       self._scope, redirect_uri=redirect_uri,
                                       user_agent=self._user_agent,
                                       auth_uri=self._auth_uri,
-                                      token_uri=self._token_uri, **self._kwargs)
-
+                                      token_uri=self._token_uri,
+                                      revoke_uri=self._revoke_uri,
+                                      **self._kwargs)
 
   def oauth_aware(self, method):
     """Decorator that sets up for OAuth 2.0 dance, but doesn't do it.
@@ -827,17 +835,21 @@ class OAuth2DecoratorFromClientSecrets(OAuth2Decorator):
         clientsecrets.TYPE_WEB, clientsecrets.TYPE_INSTALLED]:
       raise InvalidClientSecretsError(
           'OAuth2Decorator doesn\'t support this OAuth 2.0 flow.')
+    constructor_kwargs = {
+      'auth_uri': client_info['auth_uri'],
+      'token_uri': client_info['token_uri'],
+      'message': message,
+    }
+    revoke_uri = client_info.get('revoke_uri')
+    if revoke_uri is not None:
+      constructor_kwargs['revoke_uri'] = revoke_uri
     super(OAuth2DecoratorFromClientSecrets, self).__init__(
-              client_info['client_id'],
-              client_info['client_secret'],
-              scope,
-              auth_uri=client_info['auth_uri'],
-              token_uri=client_info['token_uri'],
-              message=message)
+        client_info['client_id'], client_info['client_secret'],
+        scope, **constructor_kwargs)
     if message is not None:
       self._message = message
     else:
-      self._message = "Please configure your application for OAuth 2.0"
+      self._message = 'Please configure your application for OAuth 2.0.'
 
 
 @util.positional(2)
@@ -860,4 +872,4 @@ def oauth2decorator_from_clientsecrets(filename, scope,
 
   """
   return OAuth2DecoratorFromClientSecrets(filename, scope,
-    message=message, cache=cache)
+                                          message=message, cache=cache)

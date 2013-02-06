@@ -32,6 +32,7 @@ import tempfile
 import unittest
 
 from apiclient.http import HttpMockSequence
+from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client import file
 from oauth2client import locked_file
 from oauth2client import multistore_file

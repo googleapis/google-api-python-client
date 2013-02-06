@@ -52,6 +52,7 @@ from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 from google.appengine.runtime import apiproxy_errors
 from oauth2client import appengine
+from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.anyjson import simplejson
 from oauth2client.clientsecrets import _loadfile
 from oauth2client.clientsecrets import InvalidClientSecretsError
@@ -156,12 +157,12 @@ class TestAppAssertionCredentials(unittest.TestCase):
   def test_raise_correct_type_of_exception(self):
     app_identity_stub = self.ErroringAppIdentityStubImpl()
     apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
-    apiproxy_stub_map.apiproxy.RegisterStub("app_identity_service",
+    apiproxy_stub_map.apiproxy.RegisterStub('app_identity_service',
                                             app_identity_stub)
     apiproxy_stub_map.apiproxy.RegisterStub(
       'memcache', memcache_stub.MemcacheServiceStub())
 
-    scope = "http://www.googleapis.com/scope"
+    scope = 'http://www.googleapis.com/scope'
     try:
       credentials = AppAssertionCredentials(scope)
       http = httplib2.Http()
@@ -271,16 +272,15 @@ class StorageByKeyNameTest(unittest.TestCase):
     self.testbed.init_memcache_stub()
     self.testbed.init_user_stub()
 
-    access_token = "foo"
-    client_id = "some_client_id"
-    client_secret = "cOuDdkfjxxnv+"
-    refresh_token = "1/0/a.df219fjls0"
+    access_token = 'foo'
+    client_id = 'some_client_id'
+    client_secret = 'cOuDdkfjxxnv+'
+    refresh_token = '1/0/a.df219fjls0'
     token_expiry = datetime.datetime.utcnow()
-    token_uri = "https://www.google.com/accounts/o8/oauth2/token"
-    user_agent = "refresh_checker/1.0"
+    user_agent = 'refresh_checker/1.0'
     self.credentials = OAuth2Credentials(
       access_token, client_id, client_secret,
-      refresh_token, token_expiry, token_uri,
+      refresh_token, token_expiry, GOOGLE_TOKEN_URI,
       user_agent)
 
   def tearDown(self):
@@ -489,7 +489,7 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual(False, self.decorator.has_credentials())
 
     m = mox.Mox()
-    m.StubOutWithMock(appengine, "_parse_state_value")
+    m.StubOutWithMock(appengine, '_parse_state_value')
     appengine._parse_state_value('foo_path:xsrfkey123',
                        mox.IgnoreArg()).AndReturn('foo_path')
     m.ReplayAll()
@@ -531,7 +531,7 @@ class DecoratorTests(unittest.TestCase):
     self.assertTrue(response.status.startswith('302'))
 
     m = mox.Mox()
-    m.StubOutWithMock(appengine, "_parse_state_value")
+    m.StubOutWithMock(appengine, '_parse_state_value')
     appengine._parse_state_value('foo_path:xsrfkey123',
                        mox.IgnoreArg()).AndReturn('foo_path')
     m.ReplayAll()
@@ -573,7 +573,7 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('code', q['response_type'][0])
 
     m = mox.Mox()
-    m.StubOutWithMock(appengine, "_parse_state_value")
+    m.StubOutWithMock(appengine, '_parse_state_value')
     appengine._parse_state_value('bar_path:xsrfkey456',
                        mox.IgnoreArg()).AndReturn('bar_path')
     m.ReplayAll()
@@ -616,7 +616,8 @@ class DecoratorTests(unittest.TestCase):
         user_agent='foo_user_agent',
         scope=['foo_scope', 'bar_scope'],
         access_type='offline',
-        approval_prompt='force')
+        approval_prompt='force',
+        revoke_uri='dummy_revoke_uri')
     request_handler = MockRequestHandler()
     decorator._create_flow(request_handler)
 
@@ -625,6 +626,7 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('offline', decorator.flow.params['access_type'])
     self.assertEqual('force', decorator.flow.params['approval_prompt'])
     self.assertEqual('foo_user_agent', decorator.flow.user_agent)
+    self.assertEqual('dummy_revoke_uri', decorator.flow.revoke_uri)
     self.assertEqual(None, decorator.flow.params.get('user_agent', None))
 
   def test_decorator_from_client_secrets(self):
@@ -638,6 +640,12 @@ class DecoratorTests(unittest.TestCase):
     self.test_required()
     http = self.decorator.http()
     self.assertEquals('foo_access_token', http.request.credentials.access_token)
+
+    # revoke_uri is not required
+    self.assertEqual(self.decorator._revoke_uri,
+                     'https://accounts.google.com/o/oauth2/revoke')
+    self.assertEqual(self.decorator._revoke_uri,
+                     self.decorator.credentials.revoke_uri)
 
   def test_decorator_from_cached_client_secrets(self):
     cache_mock = CacheMock()

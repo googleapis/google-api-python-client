@@ -31,6 +31,9 @@ import time
 import urllib
 import urlparse
 
+from oauth2client import GOOGLE_AUTH_URI
+from oauth2client import GOOGLE_REVOKE_URI
+from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client import util
 from oauth2client.anyjson import simplejson
 
@@ -63,36 +66,34 @@ REFRESH_STATUS_CODES = [401]
 
 class Error(Exception):
   """Base error for this module."""
-  pass
 
 
 class FlowExchangeError(Error):
   """Error trying to exchange an authorization grant for an access token."""
-  pass
 
 
 class AccessTokenRefreshError(Error):
   """Error trying to refresh an expired access token."""
-  pass
+
+
+class TokenRevokeError(Error):
+  """Error trying to revoke a token."""
+
 
 class UnknownClientSecretsFlowError(Error):
   """The client secrets file called for an unknown type of OAuth 2.0 flow. """
-  pass
 
 
 class AccessTokenCredentialsError(Error):
   """Having only the access_token means no refresh is possible."""
-  pass
 
 
 class VerifyJwtTokenError(Error):
   """Could on retrieve certificates for validation."""
-  pass
 
 
 class NonAsciiHeaderError(Error):
   """Header names and values must be ASCII strings."""
-  pass
 
 
 def _abstract():
@@ -128,11 +129,15 @@ class Credentials(object):
   NON_SERIALIZED_MEMBERS = ['store']
 
   def authorize(self, http):
-    """Take an httplib2.Http instance (or equivalent) and
-    authorizes it for the set of credentials, usually by
-    replacing http.request() with a method that adds in
-    the appropriate headers and then delegates to the original
-    Http.request() method.
+    """Take an httplib2.Http instance (or equivalent) and authorizes it.
+
+    Authorizes it for the set of credentials, usually by replacing
+    http.request() with a method that adds in the appropriate headers and then
+    delegates to the original Http.request() method.
+
+    Args:
+      http: httplib2.Http, an http object to be used to make the refresh
+        request.
     """
     _abstract()
 
@@ -141,6 +146,15 @@ class Credentials(object):
 
     Args:
       http: httplib2.Http, an http object to be used to make the refresh
+        request.
+    """
+    _abstract()
+
+  def revoke(self, http):
+    """Revokes a refresh_token and makes the credentials void.
+
+    Args:
+      http: httplib2.Http, an http object to be used to make the revoke
         request.
     """
     _abstract()
@@ -154,7 +168,7 @@ class Credentials(object):
     _abstract()
 
   def _to_json(self, strip):
-    """Utility function for creating a JSON representation of an instance of Credentials.
+    """Utility function that creates JSON repr. of a Credentials object.
 
     Args:
       strip: array, An array of names of members to not include in the JSON.
@@ -347,6 +361,23 @@ def clean_headers(headers):
   return clean
 
 
+def _update_query_params(uri, params):
+  """Updates a URI with new query parameters.
+
+  Args:
+    uri: string, A valid URI, with potential existing query parameters.
+    params: dict, A dictionary of query parameters.
+
+  Returns:
+    The same URI but with the new query parameters added.
+  """
+  parts = list(urlparse.urlparse(uri))
+  query_params = dict(parse_qsl(parts[4])) # 4 is the index of the query part
+  query_params.update(params)
+  parts[4] = urllib.urlencode(query_params)
+  return urlparse.urlunparse(parts)
+
+
 class OAuth2Credentials(Credentials):
   """Credentials object for OAuth 2.0.
 
@@ -358,7 +389,8 @@ class OAuth2Credentials(Credentials):
 
   @util.positional(8)
   def __init__(self, access_token, client_id, client_secret, refresh_token,
-               token_expiry, token_uri, user_agent, id_token=None):
+               token_expiry, token_uri, user_agent, revoke_uri=None,
+               id_token=None):
     """Create an instance of OAuth2Credentials.
 
     This constructor is not usually called by the user, instead
@@ -372,6 +404,8 @@ class OAuth2Credentials(Credentials):
       token_expiry: datetime, when the access_token expires.
       token_uri: string, URI of token endpoint.
       user_agent: string, The HTTP User-Agent to provide for this application.
+      revoke_uri: string, URI for revoke endpoint. Defaults to None; a token
+        can't be revoked if this is None.
       id_token: object, The identity of the resource owner.
 
     Notes:
@@ -388,6 +422,7 @@ class OAuth2Credentials(Credentials):
     self.token_expiry = token_expiry
     self.token_uri = token_uri
     self.user_agent = user_agent
+    self.revoke_uri = revoke_uri
     self.id_token = id_token
 
     # True if the credentials have been revoked or expired and can't be
@@ -405,7 +440,7 @@ class OAuth2Credentials(Credentials):
 
     Args:
        http: An instance of httplib2.Http
-           or something that acts like it.
+         or something that acts like it.
 
     Returns:
        A modified instance of http that was passed in.
@@ -473,6 +508,15 @@ class OAuth2Credentials(Credentials):
     """
     self._refresh(http.request)
 
+  def revoke(self, http):
+    """Revokes a refresh_token and makes the credentials void.
+
+    Args:
+      http: httplib2.Http, an http object to be used to make the revoke
+        request.
+    """
+    self._revoke(http.request)
+
   def apply(self, headers):
     """Add the authorization to the headers.
 
@@ -511,6 +555,7 @@ class OAuth2Credentials(Credentials):
         data['token_expiry'],
         data['token_uri'],
         data['user_agent'],
+        revoke_uri=data.get('revoke_uri', None),
         id_token=data.get('id_token', None))
     retval.invalid = data['invalid']
     return retval
@@ -655,6 +700,46 @@ class OAuth2Credentials(Credentials):
         pass
       raise AccessTokenRefreshError(error_msg)
 
+  def _revoke(self, http_request):
+    """Revokes the refresh_token and deletes the store if available.
+
+    Args:
+      http_request: callable, a callable that matches the method signature of
+        httplib2.Http.request, used to make the revoke request.
+    """
+    self._do_revoke(http_request, self.refresh_token)
+
+  def _do_revoke(self, http_request, token):
+    """Revokes the credentials and deletes the store if available.
+
+    Args:
+      http_request: callable, a callable that matches the method signature of
+        httplib2.Http.request, used to make the refresh request.
+      token: A string used as the token to be revoked. Can be either an
+        access_token or refresh_token.
+
+    Raises:
+      TokenRevokeError: If the revoke request does not return with a 200 OK.
+    """
+    logger.info('Revoking token')
+    query_params = {'token': token}
+    token_revoke_uri = _update_query_params(self.revoke_uri, query_params)
+    resp, content = http_request(token_revoke_uri)
+    if resp.status == 200:
+      self.invalid = True
+    else:
+      error_msg = 'Invalid response %s.' % resp.status
+      try:
+        d = simplejson.loads(content)
+        if 'error' in d:
+          error_msg = d['error']
+      except StandardError:
+        pass
+      raise TokenRevokeError(error_msg)
+
+    if self.store:
+      self.store.delete()
+
 
 class AccessTokenCredentials(OAuth2Credentials):
   """Credentials object for OAuth 2.0.
@@ -681,7 +766,7 @@ class AccessTokenCredentials(OAuth2Credentials):
       revoked.
   """
 
-  def __init__(self, access_token, user_agent):
+  def __init__(self, access_token, user_agent, revoke_uri=None):
     """Create an instance of OAuth2Credentials
 
     This is one of the few types if Credentials that you should contrust,
@@ -690,10 +775,8 @@ class AccessTokenCredentials(OAuth2Credentials):
     Args:
       access_token: string, access token.
       user_agent: string, The HTTP User-Agent to provide for this application.
-
-    Notes:
-      store: callable, a callable that when passed a Credential
-        will store the credential back to where it came from.
+      revoke_uri: string, URI for revoke endpoint. Defaults to None; a token
+        can't be revoked if this is None.
     """
     super(AccessTokenCredentials, self).__init__(
         access_token,
@@ -702,7 +785,8 @@ class AccessTokenCredentials(OAuth2Credentials):
         None,
         None,
         None,
-        user_agent)
+        user_agent,
+        revoke_uri=revoke_uri)
 
 
   @classmethod
@@ -715,7 +799,16 @@ class AccessTokenCredentials(OAuth2Credentials):
 
   def _refresh(self, http_request):
     raise AccessTokenCredentialsError(
-        "The access_token is expired or invalid and can't be refreshed.")
+        'The access_token is expired or invalid and can\'t be refreshed.')
+
+  def _revoke(self, http_request):
+    """Revokes the access_token and deletes the store if available.
+
+    Args:
+      http_request: callable, a callable that matches the method signature of
+        httplib2.Http.request, used to make the revoke request.
+    """
+    self._do_revoke(http_request, self.access_token)
 
 
 class AssertionCredentials(OAuth2Credentials):
@@ -731,16 +824,18 @@ class AssertionCredentials(OAuth2Credentials):
 
   @util.positional(2)
   def __init__(self, assertion_type, user_agent=None,
-               token_uri='https://accounts.google.com/o/oauth2/token',
+               token_uri=GOOGLE_TOKEN_URI,
+               revoke_uri=GOOGLE_REVOKE_URI,
                **unused_kwargs):
     """Constructor for AssertionFlowCredentials.
 
     Args:
       assertion_type: string, assertion type that will be declared to the auth
-          server
+        server
       user_agent: string, The HTTP User-Agent to provide for this application.
       token_uri: string, URI for token endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+      revoke_uri: string, URI for revoke endpoint.
     """
     super(AssertionCredentials, self).__init__(
         None,
@@ -749,7 +844,8 @@ class AssertionCredentials(OAuth2Credentials):
         None,
         None,
         token_uri,
-        user_agent)
+        user_agent,
+        revoke_uri=revoke_uri)
     self.assertion_type = assertion_type
 
   def _generate_refresh_request_body(self):
@@ -768,6 +864,16 @@ class AssertionCredentials(OAuth2Credentials):
     request.
     """
     _abstract()
+
+  def _revoke(self, http_request):
+    """Revokes the access_token and deletes the store if available.
+
+    Args:
+      http_request: callable, a callable that matches the method signature of
+        httplib2.Http.request, used to make the revoke request.
+    """
+    self._do_revoke(http_request, self.access_token)
+
 
 if HAS_CRYPTO:
   # PyOpenSSL and PyCrypto are not prerequisites for oauth2client, so if it is
@@ -794,7 +900,8 @@ if HAS_CRYPTO:
         scope,
         private_key_password='notasecret',
         user_agent=None,
-        token_uri='https://accounts.google.com/o/oauth2/token',
+        token_uri=GOOGLE_TOKEN_URI,
+        revoke_uri=GOOGLE_REVOKE_URI,
         **kwargs):
       """Constructor for SignedJwtAssertionCredentials.
 
@@ -808,6 +915,7 @@ if HAS_CRYPTO:
         user_agent: string, HTTP User-Agent to provide for this application.
         token_uri: string, URI for token endpoint. For convenience
           defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+        revoke_uri: string, URI for revoke endpoint.
         kwargs: kwargs, Additional parameters to add to the JWT token, for
           example prn=joe@xample.org."""
 
@@ -815,6 +923,7 @@ if HAS_CRYPTO:
           'http://oauth.net/grant_type/jwt/1.0/bearer',
           user_agent=user_agent,
           token_uri=token_uri,
+          revoke_uri=revoke_uri,
           )
 
       self.scope = util.scopes_to_string(scope)
@@ -954,8 +1063,10 @@ def _parse_exchange_token_response(content):
 
 @util.positional(4)
 def credentials_from_code(client_id, client_secret, scope, code,
-    redirect_uri='postmessage', http=None, user_agent=None,
-    token_uri='https://accounts.google.com/o/oauth2/token'):
+                          redirect_uri='postmessage', http=None,
+                          user_agent=None, token_uri=GOOGLE_TOKEN_URI,
+                          auth_uri=GOOGLE_AUTH_URI,
+                          revoke_uri=GOOGLE_REVOKE_URI):
   """Exchanges an authorization code for an OAuth2Credentials object.
 
   Args:
@@ -969,6 +1080,11 @@ def credentials_from_code(client_id, client_secret, scope, code,
     http: httplib2.Http, optional http instance to use to do the fetch
     token_uri: string, URI for token endpoint. For convenience
       defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+    auth_uri: string, URI for authorization endpoint. For convenience
+      defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+    revoke_uri: string, URI for revoke endpoint. For convenience
+      defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+
   Returns:
     An OAuth2Credentials object.
 
@@ -978,8 +1094,8 @@ def credentials_from_code(client_id, client_secret, scope, code,
   """
   flow = OAuth2WebServerFlow(client_id, client_secret, scope,
                              redirect_uri=redirect_uri, user_agent=user_agent,
-                             auth_uri='https://accounts.google.com/o/oauth2/auth',
-                             token_uri=token_uri)
+                             auth_uri=auth_uri, token_uri=token_uri,
+                             revoke_uri=revoke_uri)
 
   credentials = flow.step2_exchange(code, http=http)
   return credentials
@@ -1037,8 +1153,9 @@ class OAuth2WebServerFlow(Flow):
   def __init__(self, client_id, client_secret, scope,
                redirect_uri=None,
                user_agent=None,
-               auth_uri='https://accounts.google.com/o/oauth2/auth',
-               token_uri='https://accounts.google.com/o/oauth2/token',
+               auth_uri=GOOGLE_AUTH_URI,
+               token_uri=GOOGLE_TOKEN_URI,
+               revoke_uri=GOOGLE_REVOKE_URI,
                **kwargs):
     """Constructor for OAuth2WebServerFlow.
 
@@ -1052,12 +1169,14 @@ class OAuth2WebServerFlow(Flow):
       scope: string or iterable of strings, scope(s) of the credentials being
         requested.
       redirect_uri: string, Either the string 'urn:ietf:wg:oauth:2.0:oob' for
-          a non-web-based application, or a URI that handles the callback from
-          the authorization server.
+        a non-web-based application, or a URI that handles the callback from
+        the authorization server.
       user_agent: string, HTTP User-Agent to provide for this application.
       auth_uri: string, URI for authorization endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
       token_uri: string, URI for token endpoint. For convenience
+        defaults to Google's endpoints but any OAuth 2.0 provider can be used.
+      revoke_uri: string, URI for revoke endpoint. For convenience
         defaults to Google's endpoints but any OAuth 2.0 provider can be used.
       **kwargs: dict, The keyword arguments are all optional and required
                         parameters for the OAuth calls.
@@ -1069,10 +1188,11 @@ class OAuth2WebServerFlow(Flow):
     self.user_agent = user_agent
     self.auth_uri = auth_uri
     self.token_uri = token_uri
+    self.revoke_uri = revoke_uri
     self.params = {
         'access_type': 'offline',
         'response_type': 'code',
-        }
+    }
     self.params.update(kwargs)
 
   @util.positional(1)
@@ -1081,9 +1201,9 @@ class OAuth2WebServerFlow(Flow):
 
     Args:
       redirect_uri: string, Either the string 'urn:ietf:wg:oauth:2.0:oob' for
-          a non-web-based application, or a URI that handles the callback from
-          the authorization server. This parameter is deprecated, please move to
-          passing the redirect_uri in via the constructor.
+        a non-web-based application, or a URI that handles the callback from
+        the authorization server. This parameter is deprecated, please move to
+        passing the redirect_uri in via the constructor.
 
     Returns:
       A URI as a string to redirect the user to begin the authorization flow.
@@ -1097,16 +1217,13 @@ class OAuth2WebServerFlow(Flow):
     if self.redirect_uri is None:
       raise ValueError('The value of redirect_uri must not be None.')
 
-    query = {
+    query_params = {
         'client_id': self.client_id,
         'redirect_uri': self.redirect_uri,
         'scope': self.scope,
-        }
-    query.update(self.params)
-    parts = list(urlparse.urlparse(self.auth_uri))
-    query.update(dict(parse_qsl(parts[4]))) # 4 is the index of the query part
-    parts[4] = urllib.urlencode(query)
-    return urlparse.urlunparse(parts)
+    }
+    query_params.update(self.params)
+    return _update_query_params(self.auth_uri, query_params)
 
   @util.positional(2)
   def step2_exchange(self, code, http=None):
@@ -1172,6 +1289,7 @@ class OAuth2WebServerFlow(Flow):
       return OAuth2Credentials(access_token, self.client_id,
                                self.client_secret, refresh_token, token_expiry,
                                self.token_uri, self.user_agent,
+                               revoke_uri=self.revoke_uri,
                                id_token=d.get('id_token', None))
     else:
       logger.info('Failed to retrieve access token: %s' % content)
@@ -1184,7 +1302,8 @@ class OAuth2WebServerFlow(Flow):
 
 
 @util.positional(2)
-def flow_from_clientsecrets(filename, scope, redirect_uri=None, message=None, cache=None):
+def flow_from_clientsecrets(filename, scope, redirect_uri=None,
+                            message=None, cache=None):
   """Create a Flow from a clientsecrets file.
 
   Will create the right kind of Flow based on the contents of the clientsecrets
@@ -1194,8 +1313,8 @@ def flow_from_clientsecrets(filename, scope, redirect_uri=None, message=None, ca
     filename: string, File name of client secrets.
     scope: string or iterable of strings, scope(s) to request.
     redirect_uri: string, Either the string 'urn:ietf:wg:oauth:2.0:oob' for
-        a non-web-based application, or a URI that handles the callback from
-        the authorization server.
+      a non-web-based application, or a URI that handles the callback from
+      the authorization server.
     message: string, A friendly string to display to the user if the
       clientsecrets file is missing or invalid. If message is provided then
       sys.exit will be called in the case of an error. If message in not
@@ -1213,15 +1332,18 @@ def flow_from_clientsecrets(filename, scope, redirect_uri=None, message=None, ca
   """
   try:
     client_type, client_info = clientsecrets.loadfile(filename, cache=cache)
-    if client_type in [clientsecrets.TYPE_WEB, clientsecrets.TYPE_INSTALLED]:
-        return OAuth2WebServerFlow(
-            client_info['client_id'],
-            client_info['client_secret'],
-            scope,
-            redirect_uri=redirect_uri,
-            user_agent=None,
-            auth_uri=client_info['auth_uri'],
-            token_uri=client_info['token_uri'])
+    if client_type in (clientsecrets.TYPE_WEB, clientsecrets.TYPE_INSTALLED):
+      constructor_kwargs = {
+          'redirect_uri': redirect_uri,
+          'auth_uri': client_info['auth_uri'],
+          'token_uri': client_info['token_uri'],
+      }
+      revoke_uri = client_info.get('revoke_uri')
+      if revoke_uri is not None:
+        constructor_kwargs['revoke_uri'] = revoke_uri
+      return OAuth2WebServerFlow(
+          client_info['client_id'], client_info['client_secret'],
+          scope, **constructor_kwargs)
 
   except clientsecrets.InvalidClientSecretsError:
     if message:
@@ -1230,4 +1352,4 @@ def flow_from_clientsecrets(filename, scope, redirect_uri=None, message=None, ca
       raise
   else:
     raise UnknownClientSecretsFlowError(
-        'This OAuth 2.0 flow is unsupported: "%s"' * client_type)
+        'This OAuth 2.0 flow is unsupported: %r' % client_type)

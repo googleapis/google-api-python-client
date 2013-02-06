@@ -25,6 +25,7 @@ import keyring
 import unittest
 import mox
 
+from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.client import OAuth2Credentials
 from oauth2client.keyring_storage import Storage
 
@@ -65,12 +66,11 @@ class OAuth2ClientKeyringTests(unittest.TestCase):
     client_secret = 'cOuDdkfjxxnv+'
     refresh_token = '1/0/a.df219fjls0'
     token_expiry = datetime.datetime.utcnow()
-    token_uri = 'https://www.google.com/accounts/o8/oauth2/token'
     user_agent = 'refresh_checker/1.0'
 
     credentials = OAuth2Credentials(
         access_token, client_id, client_secret,
-        refresh_token, token_expiry, token_uri,
+        refresh_token, token_expiry, GOOGLE_TOKEN_URI,
         user_agent)
 
     m = mox.Mox()

@@ -29,13 +29,10 @@ import os
 import unittest
 import urlparse
 
-try:
-    from urlparse import parse_qs
-except ImportError:
-    from cgi import parse_qs
-
 from apiclient.http import HttpMock
 from apiclient.http import HttpMockSequence
+from oauth2client import GOOGLE_REVOKE_URI
+from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.anyjson import simplejson
 from oauth2client.client import AccessTokenCredentials
 from oauth2client.client import AccessTokenCredentialsError
@@ -49,12 +46,17 @@ from oauth2client.client import OAuth2Credentials
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.client import OOB_CALLBACK_URN
 from oauth2client.client import REFRESH_STATUS_CODES
+from oauth2client.client import Storage
+from oauth2client.client import TokenRevokeError
 from oauth2client.client import VerifyJwtTokenError
 from oauth2client.client import _extract_id_token
+from oauth2client.client import _update_query_params
 from oauth2client.client import credentials_from_clientsecrets_and_code
 from oauth2client.client import credentials_from_code
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.clientsecrets import _loadfile
+from test_discovery import assertUrisEqual
+
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -89,20 +91,54 @@ class CredentialsTests(unittest.TestCase):
     restored = Credentials.new_from_json(json)
 
 
+class DummyDeleteStorage(Storage):
+  delete_called = False
+
+  def locked_delete(self):
+    self.delete_called = True
+
+
+def _token_revoke_test_helper(testcase, status, revoke_raise,
+                              valid_bool_value, token_attr):
+  current_store = getattr(testcase.credentials, 'store', None)
+
+  dummy_store = DummyDeleteStorage()
+  testcase.credentials.set_store(dummy_store)
+
+  actual_do_revoke = testcase.credentials._do_revoke
+  testcase.token_from_revoke = None
+  def do_revoke_stub(http_request, token):
+    testcase.token_from_revoke = token
+    return actual_do_revoke(http_request, token)
+  testcase.credentials._do_revoke = do_revoke_stub
+
+  http = HttpMock(headers={'status': status})
+  if revoke_raise:
+    testcase.assertRaises(TokenRevokeError, testcase.credentials.revoke, http)
+  else:
+    testcase.credentials.revoke(http)
+
+  testcase.assertEqual(getattr(testcase.credentials, token_attr),
+                       testcase.token_from_revoke)
+  testcase.assertEqual(valid_bool_value, testcase.credentials.invalid)
+  testcase.assertEqual(valid_bool_value, dummy_store.delete_called)
+
+  testcase.credentials.set_store(current_store)
+
+
 class BasicCredentialsTests(unittest.TestCase):
 
   def setUp(self):
-    access_token = "foo"
-    client_id = "some_client_id"
-    client_secret = "cOuDdkfjxxnv+"
-    refresh_token = "1/0/a.df219fjls0"
+    access_token = 'foo'
+    client_id = 'some_client_id'
+    client_secret = 'cOuDdkfjxxnv+'
+    refresh_token = '1/0/a.df219fjls0'
     token_expiry = datetime.datetime.utcnow()
-    token_uri = "https://www.google.com/accounts/o8/oauth2/token"
-    user_agent = "refresh_checker/1.0"
+    user_agent = 'refresh_checker/1.0'
     self.credentials = OAuth2Credentials(
-      access_token, client_id, client_secret,
-      refresh_token, token_expiry, token_uri,
-      user_agent)
+        access_token, client_id, client_secret,
+        refresh_token, token_expiry, GOOGLE_TOKEN_URI,
+        user_agent, revoke_uri=GOOGLE_REVOKE_URI)
 
   def test_token_refresh_success(self):
     for status_code in REFRESH_STATUS_CODES:
@@ -112,7 +148,7 @@ class BasicCredentialsTests(unittest.TestCase):
         ({'status': '200'}, 'echo_request_headers'),
         ])
       http = self.credentials.authorize(http)
-      resp, content = http.request("http://example.com")
+      resp, content = http.request('http://example.com')
       self.assertEqual('Bearer 1/3w', content['Authorization'])
       self.assertFalse(self.credentials.access_token_expired)
 
@@ -124,18 +160,28 @@ class BasicCredentialsTests(unittest.TestCase):
         ])
       http = self.credentials.authorize(http)
       try:
-        http.request("http://example.com")
-        self.fail("should raise AccessTokenRefreshError exception")
+        http.request('http://example.com')
+        self.fail('should raise AccessTokenRefreshError exception')
       except AccessTokenRefreshError:
         pass
       self.assertTrue(self.credentials.access_token_expired)
+
+  def test_token_revoke_success(self):
+    _token_revoke_test_helper(
+        self, '200', revoke_raise=False,
+        valid_bool_value=True, token_attr='refresh_token')
+
+  def test_token_revoke_failure(self):
+    _token_revoke_test_helper(
+        self, '400', revoke_raise=True,
+        valid_bool_value=False, token_attr='refresh_token')
 
   def test_non_401_error_response(self):
     http = HttpMockSequence([
       ({'status': '400'}, ''),
       ])
     http = self.credentials.authorize(http)
-    resp, content = http.request("http://example.com")
+    resp, content = http.request('http://example.com')
     self.assertEqual(400, resp.status)
 
   def test_to_from_json(self):
@@ -153,17 +199,16 @@ class BasicCredentialsTests(unittest.TestCase):
     client_secret = u'cOuDdkfjxxnv+'
     refresh_token = u'1/0/a.df219fjls0'
     token_expiry = unicode(datetime.datetime.utcnow())
-    token_uri = u'https://www.google.com/accounts/o8/oauth2/token'
+    token_uri = unicode(GOOGLE_TOKEN_URI)
+    revoke_uri = unicode(GOOGLE_REVOKE_URI)
     user_agent = u'refresh_checker/1.0'
     credentials = OAuth2Credentials(access_token, client_id, client_secret,
                                     refresh_token, token_expiry, token_uri,
-                                    user_agent)
+                                    user_agent, revoke_uri=revoke_uri)
 
     http = HttpMock(headers={'status': '200'})
     http = credentials.authorize(http)
-    http.request(u'http://example.com', method=u'GET', headers={
-        u'foo': u'bar'
-        })
+    http.request(u'http://example.com', method=u'GET', headers={u'foo': u'bar'})
     for k, v in http.headers.iteritems():
       self.assertEqual(str, type(k))
       self.assertEqual(str, type(v))
@@ -180,9 +225,10 @@ class BasicCredentialsTests(unittest.TestCase):
 class AccessTokenCredentialsTests(unittest.TestCase):
 
   def setUp(self):
-    access_token = "foo"
-    user_agent = "refresh_checker/1.0"
-    self.credentials = AccessTokenCredentials(access_token, user_agent)
+    access_token = 'foo'
+    user_agent = 'refresh_checker/1.0'
+    self.credentials = AccessTokenCredentials(access_token, user_agent,
+                                              revoke_uri=GOOGLE_REVOKE_URI)
 
   def test_token_refresh_success(self):
     for status_code in REFRESH_STATUS_CODES:
@@ -191,12 +237,22 @@ class AccessTokenCredentialsTests(unittest.TestCase):
         ])
       http = self.credentials.authorize(http)
       try:
-        resp, content = http.request("http://example.com")
-        self.fail("should throw exception if token expires")
+        resp, content = http.request('http://example.com')
+        self.fail('should throw exception if token expires')
       except AccessTokenCredentialsError:
         pass
       except Exception:
-        self.fail("should only throw AccessTokenCredentialsError")
+        self.fail('should only throw AccessTokenCredentialsError')
+
+  def test_token_revoke_success(self):
+    _token_revoke_test_helper(
+        self, '200', revoke_raise=False,
+        valid_bool_value=True, token_attr='access_token')
+
+  def test_token_revoke_failure(self):
+    _token_revoke_test_helper(
+        self, '400', revoke_raise=True,
+        valid_bool_value=False, token_attr='access_token')
 
   def test_non_401_error_response(self):
     http = HttpMockSequence([
@@ -216,8 +272,8 @@ class AccessTokenCredentialsTests(unittest.TestCase):
 
 
 class TestAssertionCredentials(unittest.TestCase):
-  assertion_text = "This is the assertion"
-  assertion_type = "http://www.google.com/assertionType"
+  assertion_text = 'This is the assertion'
+  assertion_type = 'http://www.google.com/assertionType'
 
   class AssertionCredentialsTestImpl(AssertionCredentials):
 
@@ -225,7 +281,7 @@ class TestAssertionCredentials(unittest.TestCase):
       return TestAssertionCredentials.assertion_text
 
   def setUp(self):
-    user_agent = "fun/2.0"
+    user_agent = 'fun/2.0'
     self.credentials = self.AssertionCredentialsTestImpl(self.assertion_type,
         user_agent=user_agent)
 
@@ -240,11 +296,34 @@ class TestAssertionCredentials(unittest.TestCase):
       ({'status': '200'}, 'echo_request_headers'),
       ])
     http = self.credentials.authorize(http)
-    resp, content = http.request("http://example.com")
+    resp, content = http.request('http://example.com')
     self.assertEqual('Bearer 1/3w', content['Authorization'])
 
+  def test_token_revoke_success(self):
+    _token_revoke_test_helper(
+        self, '200', revoke_raise=False,
+        valid_bool_value=True, token_attr='access_token')
 
-class ExtractIdTokenText(unittest.TestCase):
+  def test_token_revoke_failure(self):
+    _token_revoke_test_helper(
+        self, '400', revoke_raise=True,
+        valid_bool_value=False, token_attr='access_token')
+
+
+class UpdateQueryParamsTest(unittest.TestCase):
+  def test_update_query_params_no_params(self):
+    uri = 'http://www.google.com'
+    updated = _update_query_params(uri, {'a': 'b'})
+    self.assertEqual(updated, uri + '?a=b')
+
+  def test_update_query_params_existing_params(self):
+    uri = 'http://www.google.com?x=y'
+    updated = _update_query_params(uri, {'a': 'b', 'c': 'd&'})
+    hardcoded_update = uri + '&a=b&c=d%26'
+    assertUrisEqual(self, updated, hardcoded_update)
+
+
+class ExtractIdTokenTest(unittest.TestCase):
   """Tests _extract_id_token()."""
 
   def test_extract_success(self):
@@ -272,13 +351,14 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
         scope='foo',
         redirect_uri=OOB_CALLBACK_URN,
         user_agent='unittest-sample/1.0',
+        revoke_uri='dummy_revoke_uri',
         )
 
   def test_construct_authorize_url(self):
     authorize_url = self.flow.step1_get_authorize_url()
 
     parsed = urlparse.urlparse(authorize_url)
-    q = parse_qs(parsed[4])
+    q = urlparse.parse_qs(parsed[4])
     self.assertEqual('client_id+1', q['client_id'][0])
     self.assertEqual('code', q['response_type'][0])
     self.assertEqual('foo', q['scope'][0])
@@ -299,7 +379,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
     authorize_url = flow.step1_get_authorize_url()
 
     parsed = urlparse.urlparse(authorize_url)
-    q = parse_qs(parsed[4])
+    q = urlparse.parse_qs(parsed[4])
     self.assertEqual('client_id+1', q['client_id'][0])
     self.assertEqual('token', q['response_type'][0])
     self.assertEqual('foo', q['scope'][0])
@@ -313,23 +393,23 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
 
     try:
       credentials = self.flow.step2_exchange('some random code', http=http)
-      self.fail("should raise exception if exchange doesn't get 200")
+      self.fail('should raise exception if exchange doesn\'t get 200')
     except FlowExchangeError:
       pass
 
   def test_urlencoded_exchange_failure(self):
     http = HttpMockSequence([
-      ({'status': '400'}, "error=invalid_request"),
+      ({'status': '400'}, 'error=invalid_request'),
     ])
 
     try:
       credentials = self.flow.step2_exchange('some random code', http=http)
-      self.fail("should raise exception if exchange doesn't get 200")
+      self.fail('should raise exception if exchange doesn\'t get 200')
     except FlowExchangeError, e:
       self.assertEquals('invalid_request', str(e))
 
   def test_exchange_failure_with_json_error(self):
-    # Some providers have "error" attribute as a JSON object
+    # Some providers have 'error' attribute as a JSON object
     # in place of regular string.
     # This test makes sure no strange object-to-string coversion
     # exceptions are being raised instead of FlowExchangeError.
@@ -342,7 +422,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
 
     try:
       credentials = self.flow.step2_exchange('some random code', http=http)
-      self.fail("should raise exception if exchange doesn't get 200")
+      self.fail('should raise exception if exchange doesn\'t get 200')
     except FlowExchangeError, e:
       pass
 
@@ -358,10 +438,11 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
     self.assertEqual('SlAV32hkKG', credentials.access_token)
     self.assertNotEqual(None, credentials.token_expiry)
     self.assertEqual('8xLOxBtZp8', credentials.refresh_token)
+    self.assertEqual('dummy_revoke_uri', credentials.revoke_uri)
 
   def test_urlencoded_exchange_success(self):
     http = HttpMockSequence([
-      ({'status': '200'}, "access_token=SlAV32hkKG&expires_in=3600"),
+      ({'status': '200'}, 'access_token=SlAV32hkKG&expires_in=3600'),
     ])
 
     credentials = self.flow.step2_exchange('some random code', http=http)
@@ -370,9 +451,9 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
 
   def test_urlencoded_expires_param(self):
     http = HttpMockSequence([
-      # Note the "expires=3600" where you'd normally
-      # have if named "expires_in"
-      ({'status': '200'}, "access_token=SlAV32hkKG&expires=3600"),
+      # Note the 'expires=3600' where you'd normally
+      # have if named 'expires_in'
+      ({'status': '200'}, 'access_token=SlAV32hkKG&expires=3600'),
     ])
 
     credentials = self.flow.step2_exchange('some random code', http=http)
@@ -391,7 +472,7 @@ class OAuth2WebServerFlowTest(unittest.TestCase):
     http = HttpMockSequence([
       # This might be redundant but just to make sure
       # urlencoded access_token gets parsed correctly
-      ({'status': '200'}, "access_token=SlAV32hkKG"),
+      ({'status': '200'}, 'access_token=SlAV32hkKG'),
     ])
 
     credentials = self.flow.step2_exchange('some random code', http=http)
@@ -456,15 +537,15 @@ class CredentialsFromCodeTests(unittest.TestCase):
     self.redirect_uri = 'postmessage'
 
   def test_exchange_code_for_token(self):
+    token = 'asdfghjkl'
+    payload =simplejson.dumps({'access_token': token, 'expires_in': 3600})
     http = HttpMockSequence([
-      ({'status': '200'},
-      """{ "access_token":"asdfghjkl",
-       "expires_in":3600 }"""),
+      ({'status': '200'}, payload),
     ])
     credentials = credentials_from_code(self.client_id, self.client_secret,
         self.scope, self.code, redirect_uri=self.redirect_uri,
         http=http)
-    self.assertEquals(credentials.access_token, 'asdfghjkl')
+    self.assertEquals(credentials.access_token, token)
     self.assertNotEqual(None, credentials.token_expiry)
 
   def test_exchange_code_for_token_fail(self):
@@ -476,7 +557,7 @@ class CredentialsFromCodeTests(unittest.TestCase):
       credentials = credentials_from_code(self.client_id, self.client_secret,
           self.scope, self.code, redirect_uri=self.redirect_uri,
           http=http)
-      self.fail("should raise exception if exchange doesn't get 200")
+      self.fail('should raise exception if exchange doesn\'t get 200')
     except FlowExchangeError:
       pass
 
@@ -500,8 +581,8 @@ class CredentialsFromCodeTests(unittest.TestCase):
     load_and_cache('client_secrets.json', 'some_secrets', cache_mock)
 
     credentials = credentials_from_clientsecrets_and_code(
-                            'some_secrets', self.scope,
-                            self.code, http=http, cache=cache_mock)
+        'some_secrets', self.scope,
+        self.code, http=http, cache=cache_mock)
     self.assertEquals(credentials.access_token, 'asdfghjkl')
 
   def test_exchange_code_and_file_for_token_fail(self):
@@ -513,7 +594,7 @@ class CredentialsFromCodeTests(unittest.TestCase):
       credentials = credentials_from_clientsecrets_and_code(
                             datafile('client_secrets.json'), self.scope,
                             self.code, http=http)
-      self.fail("should raise exception if exchange doesn't get 200")
+      self.fail('should raise exception if exchange doesn\'t get 200')
     except FlowExchangeError:
       pass
 

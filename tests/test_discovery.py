@@ -57,6 +57,7 @@ from apiclient.http import MediaIoBaseUpload
 from apiclient.http import MediaUpload
 from apiclient.http import MediaUploadProgress
 from apiclient.http import tunnel_patch
+from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.anyjson import simplejson
 from oauth2client.client import OAuth2Credentials
 import uritemplate
@@ -896,13 +897,11 @@ class Discovery(unittest.TestCase):
     client_secret = 'cOuDdkfjxxnv+'
     refresh_token = '1/0/a.df219fjls0'
     token_expiry = datetime.datetime.utcnow()
-    token_uri = 'https://www.google.com/accounts/o8/oauth2/token'
     user_agent = 'refresh_checker/1.0'
     return OAuth2Credentials(
         access_token, client_id, client_secret,
-        refresh_token, token_expiry, token_uri,
+        refresh_token, token_expiry, GOOGLE_TOKEN_URI,
         user_agent)
-
 
   def test_pickle_with_credentials(self):
     credentials = self._dummy_token()

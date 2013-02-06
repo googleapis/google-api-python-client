@@ -34,25 +34,28 @@ VALID_CLIENT = {
             'client_secret',
             'redirect_uris',
             'auth_uri',
-            'token_uri'],
+            'token_uri',
+        ],
         'string': [
             'client_id',
-            'client_secret'
-            ]
-        },
+            'client_secret',
+        ],
+    },
     TYPE_INSTALLED: {
         'required': [
             'client_id',
             'client_secret',
             'redirect_uris',
             'auth_uri',
-            'token_uri'],
+            'token_uri',
+        ],
         'string': [
             'client_id',
-            'client_secret'
-            ]
-      }
-    }
+            'client_secret',
+        ],
+    },
+}
+
 
 class Error(Exception):
   """Base error for this module."""
@@ -123,16 +126,16 @@ def loadfile(filename, cache=None):
 
   Args:
     filename: string, Path to a client_secrets.json file on a filesystem.
-    cache: An optional cache service client that implements get() and set() 
+    cache: An optional cache service client that implements get() and set()
       methods. If not specified, the file is always being loaded from
       a filesystem.
 
   Raises:
-    InvalidClientSecretsError: In case of a validation error or some 
+    InvalidClientSecretsError: In case of a validation error or some
       I/O failure. Can happen only on cache miss.
 
   Returns:
-    (client_type, client_info) tuple, as _loadfile() normally would. 
+    (client_type, client_info) tuple, as _loadfile() normally would.
     JSON contents is validated only during first load. Cache hits are not
     validated.
   """
@@ -144,7 +147,7 @@ def loadfile(filename, cache=None):
   obj = cache.get(filename, namespace=_SECRET_NAMESPACE)
   if obj is None:
     client_type, client_info = _loadfile(filename)
-    obj = { client_type: client_info }
+    obj = {client_type: client_info}
     cache.set(filename, obj, namespace=_SECRET_NAMESPACE)
 
   return obj.iteritems().next()
