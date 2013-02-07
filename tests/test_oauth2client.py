@@ -289,6 +289,8 @@ class TestAssertionCredentials(unittest.TestCase):
     body = urlparse.parse_qs(self.credentials._generate_refresh_request_body())
     self.assertEqual(self.assertion_text, body['assertion'][0])
     self.assertEqual(self.assertion_type, body['assertion_type'][0])
+    self.assertEqual('urn:ietf:params:oauth:grant-type:jwt-bearer',
+                     body['grant_type'][0])
 
   def test_assertion_refresh(self):
     http = HttpMockSequence([

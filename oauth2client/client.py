@@ -854,7 +854,7 @@ class AssertionCredentials(OAuth2Credentials):
     body = urllib.urlencode({
         'assertion_type': self.assertion_type,
         'assertion': assertion,
-        'grant_type': 'assertion',
+        'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
         })
 
     return body
