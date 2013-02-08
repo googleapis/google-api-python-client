@@ -142,8 +142,8 @@ class _PosixOpener(_Opener):
     """Unlock a file by removing the .lock file, and close the handle."""
     if self._locked:
       lock_filename = self._posix_lockfile(self._filename)
-      os.unlink(lock_filename)
       os.close(self._lock_fd)
+      os.unlink(lock_filename)
       self._locked = False
       self._lock_fd = None
     if self._fh:
