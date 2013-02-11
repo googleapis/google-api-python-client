@@ -852,7 +852,6 @@ class AssertionCredentials(OAuth2Credentials):
     assertion = self._generate_assertion()
 
     body = urllib.urlencode({
-        'assertion_type': self.assertion_type,
         'assertion': assertion,
         'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
         })
@@ -920,7 +919,7 @@ if HAS_CRYPTO:
           example prn=joe@xample.org."""
 
       super(SignedJwtAssertionCredentials, self).__init__(
-          'http://oauth.net/grant_type/jwt/1.0/bearer',
+          None,
           user_agent=user_agent,
           token_uri=token_uri,
           revoke_uri=revoke_uri,

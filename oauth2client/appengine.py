@@ -160,9 +160,8 @@ class AppAssertionCredentials(AssertionCredentials):
     """
     self.scope = util.scopes_to_string(scope)
 
-    super(AppAssertionCredentials, self).__init__(
-        'ignored' # assertion_type is ignore in this subclass.
-        )
+    # Assertion type is no longer used, but still in the parent class signature.
+    super(AppAssertionCredentials, self).__init__(None)
 
   @classmethod
   def from_json(cls, json):
