@@ -37,10 +37,13 @@ from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client import util
 from oauth2client.anyjson import simplejson
 
+HAS_OPENSSL = False
 HAS_CRYPTO = False
 try:
   from oauth2client import crypt
   HAS_CRYPTO = True
+  if crypt.OpenSSLVerifier is not None:
+    HAS_OPENSSL = True
 except ImportError:
   pass
 
