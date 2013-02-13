@@ -32,28 +32,38 @@ import sample_utils
 gflags.DEFINE_string('ad_client_id', None,
                      'The ID of the ad client for which to generate a report',
                      short_name='c')
-gflags.MarkFlagAsRequired('ad_client_id')
+gflags.DEFINE_string('report_id', None,
+                     'The ID of the saved report to generate',
+                     short_name='r')
 
 
 def main(argv):
   # Process flags and read their values.
   sample_utils.process_flags(argv)
   ad_client_id = gflags.FLAGS.ad_client_id
+  saved_report_id = gflags.FLAGS.report_id
 
   # Authenticate and construct service.
   service = sample_utils.initialize_service()
 
   try:
     # Retrieve report.
-    result = service.reports().generate(
-        startDate='2011-01-01', endDate='2011-08-31',
-        filter=['AD_CLIENT_ID==' + ad_client_id],
-        metric=['PAGE_VIEWS', 'AD_REQUESTS', 'AD_REQUESTS_COVERAGE',
-                'CLICKS', 'AD_REQUESTS_CTR', 'COST_PER_CLICK',
-                'AD_REQUESTS_RPM', 'EARNINGS'],
-        dimension=['DATE'],
-        sort=['+DATE']).execute()
-
+    if saved_report_id:
+      result = service.reports().saved().generate(
+        savedReportId=saved_report_id).execute()
+    elif ad_client_id:
+      result = service.reports().generate(
+          startDate='2011-01-01', endDate='2011-08-31',
+          filter=['AD_CLIENT_ID==' + ad_client_id],
+          metric=['PAGE_VIEWS', 'AD_REQUESTS', 'AD_REQUESTS_COVERAGE',
+                  'CLICKS', 'AD_REQUESTS_CTR', 'COST_PER_CLICK',
+                  'AD_REQUESTS_RPM', 'EARNINGS'],
+          dimension=['DATE'],
+          sort=['+DATE']).execute()
+    else:
+      print ('Specify ad client id or saved report id!\nUsage: %s ARGS\\n%s'
+             % (sys.argv[0], gflags.FLAGS))
+      sys.exit(1)
     # Display headers.
     for header in result['headers']:
       print '%25s' % header['name'],

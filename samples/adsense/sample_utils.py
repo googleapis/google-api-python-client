@@ -100,7 +100,7 @@ def retrieve_service(http):
   """Retrieves an AdSense Management API service via the discovery service."""
 
   # Construct a service object via the discovery service.
-  service = build("adsense", "v1.1", http=http)
+  service = build("adsense", "v1.2", http=http)
   return service
 
 
