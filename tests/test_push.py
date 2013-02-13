@@ -19,6 +19,7 @@ import unittest
 from apiclient import push
 from apiclient import model
 from apiclient import http
+from test_discovery import assertUrisEqual
 
 
 class ClientTokenGeneratorTest(unittest.TestCase):
@@ -92,13 +93,15 @@ class WebhookChannelTest(unittest.TestCase):
 
   def test_creation_no_appengine(self):
     c = push.WebhookChannel('http://example.org')
-    self.assertEqual('web_hook?url=http%3A%2F%2Fexample.org&app_engine=false',
-                     c.as_header_value())
+    assertUrisEqual(self,
+                    'web_hook?url=http%3A%2F%2Fexample.org&app_engine=false',
+                    c.as_header_value())
 
   def test_creation_appengine(self):
     c = push.WebhookChannel('http://example.org', app_engine=True)
-    self.assertEqual('web_hook?url=http%3A%2F%2Fexample.org&app_engine=true',
-                     c.as_header_value())
+    assertUrisEqual(self,
+                    'web_hook?url=http%3A%2F%2Fexample.org&app_engine=true',
+                    c.as_header_value())
 
 
 class HeadersTest(unittest.TestCase):
@@ -146,15 +149,17 @@ class SubscriptionTest(unittest.TestCase):
     c = push.WebhookChannel('http://example.org')
     s = push.Subscription.for_channel(c)
     self.assertTrue(s.client_token)
-    self.assertEqual('web_hook?url=http%3A%2F%2Fexample.org&app_engine=false',
-                     s.subscribe)
+    assertUrisEqual(self,
+                    'web_hook?url=http%3A%2F%2Fexample.org&app_engine=false',
+                    s.subscribe)
 
   def test_create_for_channel_client_token(self):
     c = push.WebhookChannel('http://example.org')
     s = push.Subscription.for_channel(c, client_token='my_token')
     self.assertEqual('my_token', s.client_token)
-    self.assertEqual('web_hook?url=http%3A%2F%2Fexample.org&app_engine=false',
-                     s.subscribe)
+    assertUrisEqual(self,
+                    'web_hook?url=http%3A%2F%2Fexample.org&app_engine=false',
+                    s.subscribe)
 
   def test_subscribe(self):
     s = push.Subscription()

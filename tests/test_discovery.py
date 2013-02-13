@@ -863,7 +863,7 @@ class Discovery(unittest.TestCase):
     self.assertTrue(hasattr(new_zoo, 'scopedAnimals'))
     self.assertTrue(callable(new_zoo.scopedAnimals))
 
-    self.assertEqual(zoo._dynamic_attrs, new_zoo._dynamic_attrs)
+    self.assertEqual(sorted(zoo._dynamic_attrs), sorted(new_zoo._dynamic_attrs))
     self.assertEqual(zoo._baseUrl, new_zoo._baseUrl)
     self.assertEqual(zoo._developerKey, new_zoo._developerKey)
     self.assertEqual(zoo._requestBuilder, new_zoo._requestBuilder)
