@@ -49,6 +49,8 @@ class HttpError(Error):
       reason = data['error']['message']
     except (ValueError, KeyError):
       pass
+    if reason is None:
+      reason = ''
     return reason
 
   def __repr__(self):

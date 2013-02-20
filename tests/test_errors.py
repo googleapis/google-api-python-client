@@ -91,3 +91,9 @@ class Error(unittest.TestCase):
     resp, content = fake_response('}NOT OK', {'status':'400'})
     error = HttpError(resp, content)
     self.assertEqual(str(error), '<HttpError 400 "Ok">')
+
+  def test_missing_reason(self):
+    """Test an empty dict with a missing resp.reason."""
+    resp, content = fake_response('}NOT OK', {'status':'400'}, reason=None)
+    error = HttpError(resp, content)
+    self.assertEqual(str(error), '<HttpError 400 "">')
