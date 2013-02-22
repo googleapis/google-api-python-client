@@ -393,7 +393,7 @@ class OAuth2Credentials(Credentials):
   @util.positional(8)
   def __init__(self, access_token, client_id, client_secret, refresh_token,
                token_expiry, token_uri, user_agent, revoke_uri=None,
-               id_token=None):
+               id_token=None, token_response=None):
     """Create an instance of OAuth2Credentials.
 
     This constructor is not usually called by the user, instead
@@ -410,6 +410,9 @@ class OAuth2Credentials(Credentials):
       revoke_uri: string, URI for revoke endpoint. Defaults to None; a token
         can't be revoked if this is None.
       id_token: object, The identity of the resource owner.
+      token_response: dict, the decoded response to the token request. None
+        if a token hasn't been requested yet. Stored because some providers
+        (e.g. wordpress.com) include extra fields that clients may want.
 
     Notes:
       store: callable, A callable that when passed a Credential
@@ -427,6 +430,7 @@ class OAuth2Credentials(Credentials):
     self.user_agent = user_agent
     self.revoke_uri = revoke_uri
     self.id_token = id_token
+    self.token_response = token_response
 
     # True if the credentials have been revoked or expired and can't be
     # refreshed.
@@ -559,7 +563,8 @@ class OAuth2Credentials(Credentials):
         data['token_uri'],
         data['user_agent'],
         revoke_uri=data.get('revoke_uri', None),
-        id_token=data.get('id_token', None))
+        id_token=data.get('id_token', None),
+        token_response=data.get('token_response', None))
     retval.invalid = data['invalid']
     return retval
 
@@ -678,6 +683,7 @@ class OAuth2Credentials(Credentials):
     if resp.status == 200:
       # TODO(jcgregorio) Raise an error if loads fails?
       d = simplejson.loads(content)
+      self.token_response = d
       self.access_token = d['access_token']
       self.refresh_token = d.get('refresh_token', self.refresh_token)
       if 'expires_in' in d:
@@ -1292,7 +1298,8 @@ class OAuth2WebServerFlow(Flow):
                                self.client_secret, refresh_token, token_expiry,
                                self.token_uri, self.user_agent,
                                revoke_uri=self.revoke_uri,
-                               id_token=d.get('id_token', None))
+                               id_token=d.get('id_token', None),
+                               token_response=d)
     else:
       logger.info('Failed to retrieve access token: %s' % content)
       if 'error' in d:

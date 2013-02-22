@@ -142,15 +142,17 @@ class BasicCredentialsTests(unittest.TestCase):
 
   def test_token_refresh_success(self):
     for status_code in REFRESH_STATUS_CODES:
+      token_response = {'access_token': '1/3w', 'expires_in': 3600}
       http = HttpMockSequence([
         ({'status': status_code}, ''),
-        ({'status': '200'}, '{"access_token":"1/3w","expires_in":3600}'),
+        ({'status': '200'}, simplejson.dumps(token_response)),
         ({'status': '200'}, 'echo_request_headers'),
         ])
       http = self.credentials.authorize(http)
       resp, content = http.request('http://example.com')
       self.assertEqual('Bearer 1/3w', content['Authorization'])
       self.assertFalse(self.credentials.access_token_expired)
+      self.assertEqual(token_response, self.credentials.token_response)
 
   def test_token_refresh_failure(self):
     for status_code in REFRESH_STATUS_CODES:
@@ -165,6 +167,7 @@ class BasicCredentialsTests(unittest.TestCase):
       except AccessTokenRefreshError:
         pass
       self.assertTrue(self.credentials.access_token_expired)
+      self.assertEqual(None, self.credentials.token_response)
 
   def test_token_revoke_success(self):
     _token_revoke_test_helper(
@@ -183,6 +186,7 @@ class BasicCredentialsTests(unittest.TestCase):
     http = self.credentials.authorize(http)
     resp, content = http.request('http://example.com')
     self.assertEqual(400, resp.status)
+    self.assertEqual(None, self.credentials.token_response)
 
   def test_to_from_json(self):
     json = self.credentials.to_json()
@@ -220,6 +224,10 @@ class BasicCredentialsTests(unittest.TestCase):
       self.fail('Expected exception to be raised.')
     except NonAsciiHeaderError:
       pass
+
+    self.credentials.token_response = 'foobar'
+    instance = OAuth2Credentials.from_json(self.credentials.to_json())
+    self.assertEqual('foobar', instance.token_response)
 
 
 class AccessTokenCredentialsTests(unittest.TestCase):

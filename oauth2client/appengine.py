@@ -26,6 +26,8 @@ import logging
 import os
 import pickle
 import time
+import urllib
+import urlparse
 
 from google.appengine.api import app_identity
 from google.appengine.api import memcache
@@ -34,6 +36,7 @@ from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext.webapp.util import run_wsgi_app
+from apiclient import discovery
 from oauth2client import GOOGLE_AUTH_URI
 from oauth2client import GOOGLE_REVOKE_URI
 from oauth2client import GOOGLE_TOKEN_URI
@@ -54,6 +57,11 @@ try:
   from google.appengine.ext import ndb
 except ImportError:
   ndb = None
+
+try:
+  from urlparse import parse_qsl
+except ImportError:
+  from cgi import parse_qsl
 
 logger = logging.getLogger(__name__)
 
@@ -570,6 +578,7 @@ class OAuth2Decorator(object):
                user_agent=None,
                message=None,
                callback_path='/oauth2callback',
+               token_response_param=None,
                **kwargs):
 
     """Constructor for OAuth2Decorator
@@ -592,6 +601,10 @@ class OAuth2Decorator(object):
       callback_path: string, The absolute path to use as the callback URI. Note
         that this must match up with the URI given when registering the
         application in the APIs Console.
+      token_response_param: string. If provided, the full JSON response
+        to the access token request will be encoded and included in this query
+        parameter in the callback URI. This is useful with providers (e.g.
+        wordpress.com) that include extra fields that the client may want.
       **kwargs: dict, Keyword arguments are be passed along as kwargs to the
         OAuth2WebServerFlow constructor.
     """
@@ -608,6 +621,7 @@ class OAuth2Decorator(object):
     self._message = message
     self._in_error = False
     self._callback_path = callback_path
+    self._token_response_param = token_response_param
 
   def _display_error_message(self, request_handler):
     request_handler.response.out.write('<html><body>')
@@ -782,6 +796,12 @@ class OAuth2Decorator(object):
               CredentialsModel, user.user_id(), 'credentials').put(credentials)
           redirect_uri = _parse_state_value(str(self.request.get('state')),
                                             user)
+
+          if decorator._token_response_param and credentials.token_response:
+            resp_json = simplejson.dumps(credentials.token_response)
+            redirect_uri = discovery._add_query_parameter(
+              redirect_uri, decorator._token_response_param, resp_json)
+
           self.redirect(redirect_uri)
 
     return OAuth2Handler

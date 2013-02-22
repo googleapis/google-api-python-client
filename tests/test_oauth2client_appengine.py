@@ -29,7 +29,7 @@ import mox
 import os
 import time
 import unittest
-import urlparse
+import urllib
 
 try:
     from urlparse import parse_qs
@@ -121,6 +121,7 @@ class Http2Mock(object):
       'access_token': 'foo_access_token',
       'refresh_token': 'foo_refresh_token',
       'expires_in': 3600,
+      'extra': 'value',
     }
 
   def request(self, token_uri, method, body, headers, *args, **kwargs):
@@ -499,8 +500,13 @@ class DecoratorTests(unittest.TestCase):
         'code': 'foo_access_code',
         'state': 'foo_path:xsrfkey123',
         })
-    self.assertEqual('http://localhost/foo_path', response.headers['Location'])
+    parts = response.headers['Location'].split('?', 1)
+    self.assertEqual('http://localhost/foo_path', parts[0])
     self.assertEqual(None, self.decorator.credentials)
+    if self.decorator._token_response_param:
+        response = parse_qs(parts[1])[self.decorator._token_response_param][0]
+        self.assertEqual(Http2Mock.content,
+                         simplejson.loads(urllib.unquote(response)))
 
     m.UnsetStubs()
     m.VerifyAll()
@@ -628,6 +634,10 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('foo_user_agent', decorator.flow.user_agent)
     self.assertEqual('dummy_revoke_uri', decorator.flow.revoke_uri)
     self.assertEqual(None, decorator.flow.params.get('user_agent', None))
+
+  def test_token_response_param(self):
+    self.decorator._token_response_param = 'foobar'
+    self.test_required()
 
   def test_decorator_from_client_secrets(self):
     decorator = oauth2decorator_from_clientsecrets(
