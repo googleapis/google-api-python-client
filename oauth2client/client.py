@@ -554,7 +554,7 @@ class OAuth2Credentials(Credentials):
             data['token_expiry'], EXPIRY_FORMAT)
       except:
         data['token_expiry'] = None
-    retval = OAuth2Credentials(
+    retval = cls(
         data['access_token'],
         data['client_id'],
         data['client_secret'],
