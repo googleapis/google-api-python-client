@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Client for discovery based APIs
+"""Client for discovery based APIs.
 
 A client library for Google's discovery based APIs.
 """
@@ -27,6 +27,7 @@ __all__ = [
 
 import copy
 import httplib2
+import keyword
 import logging
 import os
 import re
@@ -67,17 +68,29 @@ logger = logging.getLogger(__name__)
 URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
 DISCOVERY_URI = ('https://www.googleapis.com/discovery/v1/apis/'
-  '{api}/{apiVersion}/rest')
+                 '{api}/{apiVersion}/rest')
 DEFAULT_METHOD_DOC = 'A description of how to use this function'
+HTTP_PAYLOAD_METHODS = frozenset(['PUT', 'POST', 'PATCH'])
+_MEDIA_SIZE_BIT_SHIFTS = {'KB': 10, 'MB': 20, 'GB': 30, 'TB': 40}
+BODY_PARAMETER_DEFAULT_VALUE = {
+    'description': 'The request body.',
+    'type': 'object',
+    'required': True,
+}
+MEDIA_BODY_PARAMETER_DEFAULT_VALUE = {
+  'description': ('The filename of the media request body, or an instance '
+                  'of a MediaUpload object.'),
+  'type': 'string',
+  'required': False,
+}
 
 # Parameters accepted by the stack, but not visible via discovery.
-STACK_QUERY_PARAMETERS = ['trace', 'pp', 'userip', 'strict']
+# TODO(dhermes): Remove 'userip' in 'v2'.
+STACK_QUERY_PARAMETERS = frozenset(['trace', 'pp', 'userip', 'strict'])
+STACK_QUERY_PARAMETER_DEFAULT_VALUE = {'type': 'string', 'location': 'query'}
 
-# Python reserved words.
-RESERVED_WORDS = ['and', 'assert', 'break', 'class', 'continue', 'def', 'del',
-                  'elif', 'else', 'except', 'exec', 'finally', 'for', 'from',
-                  'global', 'if', 'import', 'in', 'is', 'lambda', 'not', 'or',
-                  'pass', 'print', 'raise', 'return', 'try', 'while', 'body']
+# Library-specific reserved words beyond Python keywords.
+RESERVED_WORDS = frozenset(['body'])
 
 
 def fix_method_name(name):
@@ -89,7 +102,7 @@ def fix_method_name(name):
   Returns:
     The name with a '_' prefixed if the name is a reserved word.
   """
-  if name in RESERVED_WORDS:
+  if keyword.iskeyword(name) or name in RESERVED_WORDS:
     return name + '_'
   else:
     return name
@@ -291,14 +304,6 @@ def _cast(value, schema_type):
       return str(value)
 
 
-MULTIPLIERS = {
-    "KB": 2 ** 10,
-    "MB": 2 ** 20,
-    "GB": 2 ** 30,
-    "TB": 2 ** 40,
-    }
-
-
 def _media_size_to_long(maxSize):
   """Convert a string media size, such as 10GB or 3TB into an integer.
 
@@ -309,13 +314,166 @@ def _media_size_to_long(maxSize):
     The size as an integer value.
   """
   if len(maxSize) < 2:
-    return 0
+    return 0L
   units = maxSize[-2:].upper()
-  multiplier = MULTIPLIERS.get(units, 0)
-  if multiplier:
-    return int(maxSize[:-2]) * multiplier
+  bit_shift = _MEDIA_SIZE_BIT_SHIFTS.get(units)
+  if bit_shift is not None:
+    return long(maxSize[:-2]) << bit_shift
   else:
-    return int(maxSize)
+    return long(maxSize)
+
+
+def _media_path_url_from_info(root_desc, path_url):
+  """Creates an absolute media path URL.
+
+  Constructed using the API root URI and service path from the discovery
+  document and the relative path for the API method.
+
+  Args:
+    root_desc: Dictionary; the entire original deserialized discovery document.
+    path_url: String; the relative URL for the API method. Relative to the API
+        root, which is specified in the discovery document.
+
+  Returns:
+    String; the absolute URI for media upload for the API method.
+  """
+  return '%(root)supload/%(service_path)s%(path)s' % {
+      'root': root_desc['rootUrl'],
+      'service_path': root_desc['servicePath'],
+      'path': path_url,
+  }
+
+
+def _fix_up_parameters(method_desc, root_desc, http_method):
+  """Updates parameters of an API method with values specific to this library.
+
+  Specifically, adds whatever global parameters are specified by the API to the
+  parameters for the individual method. Also adds parameters which don't
+  appear in the discovery document, but are available to all discovery based
+  APIs (these are listed in STACK_QUERY_PARAMETERS).
+
+  SIDE EFFECTS: This updates the parameters dictionary object in the method
+  description.
+
+  Args:
+    method_desc: Dictionary with metadata describing an API method. Value comes
+        from the dictionary of methods stored in the 'methods' key in the
+        deserialized discovery document.
+    root_desc: Dictionary; the entire original deserialized discovery document.
+    http_method: String; the HTTP method used to call the API method described
+        in method_desc.
+
+  Returns:
+    The updated Dictionary stored in the 'parameters' key of the method
+        description dictionary.
+  """
+  parameters = method_desc.setdefault('parameters', {})
+
+  # Add in the parameters common to all methods.
+  for name, description in root_desc.get('parameters', {}).iteritems():
+    parameters[name] = description
+
+  # Add in undocumented query parameters.
+  for name in STACK_QUERY_PARAMETERS:
+    parameters[name] = STACK_QUERY_PARAMETER_DEFAULT_VALUE.copy()
+
+  # Add 'body' (our own reserved word) to parameters if the method supports
+  # a request payload.
+  if http_method in HTTP_PAYLOAD_METHODS and 'request' in method_desc:
+    body = BODY_PARAMETER_DEFAULT_VALUE.copy()
+    body.update(method_desc['request'])
+    parameters['body'] = body
+
+  return parameters
+
+
+def _fix_up_media_upload(method_desc, root_desc, path_url, parameters):
+  """Updates parameters of API by adding 'media_body' if supported by method.
+
+  SIDE EFFECTS: If the method supports media upload and has a required body,
+  sets body to be optional (required=False) instead. Also, if there is a
+  'mediaUpload' in the method description, adds 'media_upload' key to
+  parameters.
+
+  Args:
+    method_desc: Dictionary with metadata describing an API method. Value comes
+        from the dictionary of methods stored in the 'methods' key in the
+        deserialized discovery document.
+    root_desc: Dictionary; the entire original deserialized discovery document.
+    path_url: String; the relative URL for the API method. Relative to the API
+        root, which is specified in the discovery document.
+    parameters: A dictionary describing method parameters for method described
+        in method_desc.
+
+  Returns:
+    Triple (accept, max_size, media_path_url) where:
+      - accept is a list of strings representing what content types are
+        accepted for media upload. Defaults to empty list if not in the
+        discovery document.
+      - max_size is a long representing the max size in bytes allowed for a
+        media upload. Defaults to 0L if not in the discovery document.
+      - media_path_url is a String; the absolute URI for media upload for the
+        API method. Constructed using the API root URI and service path from
+        the discovery document and the relative path for the API method. If
+        media upload is not supported, this is None.
+  """
+  media_upload = method_desc.get('mediaUpload', {})
+  accept = media_upload.get('accept', [])
+  max_size = _media_size_to_long(media_upload.get('maxSize', ''))
+  media_path_url = None
+
+  if media_upload:
+    media_path_url = _media_path_url_from_info(root_desc, path_url)
+    parameters['media_body'] = MEDIA_BODY_PARAMETER_DEFAULT_VALUE.copy()
+    if 'body' in parameters:
+      parameters['body']['required'] = False
+
+  return accept, max_size, media_path_url
+
+
+def _fix_up_method_description(method_desc, root_desc):
+  """Updates a method description in a discovery document.
+
+  SIDE EFFECTS: Changes the parameters dictionary in the method description with
+  extra parameters which are used locally.
+
+  Args:
+    method_desc: Dictionary with metadata describing an API method. Value comes
+        from the dictionary of methods stored in the 'methods' key in the
+        deserialized discovery document.
+    root_desc: Dictionary; the entire original deserialized discovery document.
+
+  Returns:
+    Tuple (path_url, http_method, method_id, accept, max_size, media_path_url)
+    where:
+      - path_url is a String; the relative URL for the API method. Relative to
+        the API root, which is specified in the discovery document.
+      - http_method is a String; the HTTP method used to call the API method
+        described in the method description.
+      - method_id is a String; the name of the RPC method associated with the
+        API method, and is in the method description in the 'id' key.
+      - accept is a list of strings representing what content types are
+        accepted for media upload. Defaults to empty list if not in the
+        discovery document.
+      - max_size is a long representing the max size in bytes allowed for a
+        media upload. Defaults to 0L if not in the discovery document.
+      - media_path_url is a String; the absolute URI for media upload for the
+        API method. Constructed using the API root URI and service path from
+        the discovery document and the relative path for the API method. If
+        media upload is not supported, this is None.
+  """
+  path_url = method_desc['path']
+  http_method = method_desc['httpMethod']
+  method_id = method_desc['id']
+
+  parameters = _fix_up_parameters(method_desc, root_desc, http_method)
+  # Order is important. `_fix_up_media_upload` needs `method_desc` to have a
+  # 'parameters' key and needs to know if there is a 'body' parameter because it
+  # also sets a 'media_body' parameter.
+  accept, max_size, media_path_url = _fix_up_media_upload(
+      method_desc, root_desc, path_url, parameters)
+
+  return path_url, http_method, method_id, accept, max_size, media_path_url
 
 
 def createMethod(methodName, methodDesc, rootDesc, schema):
@@ -329,54 +487,8 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     schema: object, mapping of schema names to schema descriptions.
   """
   methodName = fix_method_name(methodName)
-  pathUrl = methodDesc['path']
-  httpMethod = methodDesc['httpMethod']
-  methodId = methodDesc['id']
-
-  mediaPathUrl = None
-  accept = []
-  maxSize = 0
-  if 'mediaUpload' in methodDesc:
-    mediaUpload = methodDesc['mediaUpload']
-    mediaPathUrl = (rootDesc['rootUrl'] + 'upload/' + rootDesc['servicePath']
-                    + pathUrl)
-    accept = mediaUpload['accept']
-    maxSize = _media_size_to_long(mediaUpload.get('maxSize', ''))
-
-  if 'parameters' not in methodDesc:
-    methodDesc['parameters'] = {}
-
-  # Add in the parameters common to all methods.
-  for name, desc in rootDesc.get('parameters', {}).iteritems():
-    methodDesc['parameters'][name] = desc
-
-  # Add in undocumented query parameters.
-  for name in STACK_QUERY_PARAMETERS:
-    methodDesc['parameters'][name] = {
-        'type': 'string',
-        'location': 'query'
-        }
-
-  if httpMethod in ['PUT', 'POST', 'PATCH'] and 'request' in methodDesc:
-    methodDesc['parameters']['body'] = {
-        'description': 'The request body.',
-        'type': 'object',
-        'required': True,
-        }
-    if 'request' in methodDesc:
-      methodDesc['parameters']['body'].update(methodDesc['request'])
-    else:
-      methodDesc['parameters']['body']['type'] = 'object'
-  if 'mediaUpload' in methodDesc:
-    methodDesc['parameters']['media_body'] = {
-        'description':
-          'The filename of the media request body, or an instance of a '
-          'MediaUpload object.',
-        'type': 'string',
-        'required': False,
-        }
-    if 'body' in methodDesc['parameters']:
-      methodDesc['parameters']['body']['required'] = False
+  (pathUrl, httpMethod, methodId, accept,
+   maxSize, mediaPathUrl) = _fix_up_method_description(methodDesc, rootDesc)
 
   argmap = {} # Map from method parameter name to query parameter name
   required_params = [] # Required parameters

@@ -23,6 +23,7 @@ Unit tests for objects created from discovery documents.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import copy
 import datetime
 import gflags
 import httplib2
@@ -35,16 +36,22 @@ import StringIO
 
 
 try:
-    from urlparse import parse_qs
+  from urlparse import parse_qs
 except ImportError:
-    from cgi import parse_qs
+  from cgi import parse_qs
 
 
 from apiclient.discovery import _add_query_parameter
+from apiclient.discovery import _fix_up_media_upload
+from apiclient.discovery import _fix_up_method_description
+from apiclient.discovery import _fix_up_parameters
 from apiclient.discovery import build
 from apiclient.discovery import build_from_document
 from apiclient.discovery import DISCOVERY_URI
 from apiclient.discovery import key2param
+from apiclient.discovery import MEDIA_BODY_PARAMETER_DEFAULT_VALUE
+from apiclient.discovery import STACK_QUERY_PARAMETERS
+from apiclient.discovery import STACK_QUERY_PARAMETER_DEFAULT_VALUE
 from apiclient.errors import HttpError
 from apiclient.errors import InvalidJsonError
 from apiclient.errors import MediaUploadSizeError
@@ -91,15 +98,175 @@ def datafile(filename):
 
 
 class SetupHttplib2(unittest.TestCase):
+
   def test_retries(self):
     # Merely loading apiclient.discovery should set the RETRIES to 1.
     self.assertEqual(1, httplib2.RETRIES)
 
 
 class Utilities(unittest.TestCase):
+
+  def setUp(self):
+    with open(datafile('zoo.json'), 'r') as fh:
+      self.zoo_root_desc = simplejson.loads(fh.read())
+    self.zoo_get_method_desc = self.zoo_root_desc['methods']['query']
+    zoo_animals_resource = self.zoo_root_desc['resources']['animals']
+    self.zoo_insert_method_desc = zoo_animals_resource['methods']['insert']
+
   def test_key2param(self):
     self.assertEqual('max_results', key2param('max-results'))
     self.assertEqual('x007_bond', key2param('007-bond'))
+
+  def _base_fix_up_parameters_test(self, method_desc, http_method, root_desc):
+    self.assertEqual(method_desc['httpMethod'], http_method)
+
+    method_desc_copy = copy.deepcopy(method_desc)
+    self.assertEqual(method_desc, method_desc_copy)
+
+    parameters = _fix_up_parameters(method_desc_copy, root_desc, http_method)
+
+    self.assertNotEqual(method_desc, method_desc_copy)
+
+    for param_name in STACK_QUERY_PARAMETERS:
+      self.assertEqual(STACK_QUERY_PARAMETER_DEFAULT_VALUE,
+                       parameters[param_name])
+
+    for param_name, value in root_desc.get('parameters', {}).iteritems():
+      self.assertEqual(value, parameters[param_name])
+
+    return parameters
+
+  def test_fix_up_parameters_get(self):
+    parameters = self._base_fix_up_parameters_test(self.zoo_get_method_desc,
+                                                   'GET', self.zoo_root_desc)
+    # Since http_method is 'GET'
+    self.assertFalse(parameters.has_key('body'))
+
+  def test_fix_up_parameters_insert(self):
+    parameters = self._base_fix_up_parameters_test(self.zoo_insert_method_desc,
+                                                   'POST', self.zoo_root_desc)
+    body = {
+        'description': 'The request body.',
+        'type': 'object',
+        'required': True,
+        '$ref': 'Animal',
+    }
+    self.assertEqual(parameters['body'], body)
+
+  def test_fix_up_parameters_check_body(self):
+    dummy_root_desc = {}
+    no_payload_http_method = 'DELETE'
+    with_payload_http_method = 'PUT'
+
+    invalid_method_desc = {'response': 'Who cares'}
+    valid_method_desc = {'request': {'key1': 'value1', 'key2': 'value2'}}
+
+    parameters = _fix_up_parameters(invalid_method_desc, dummy_root_desc,
+                                    no_payload_http_method)
+    self.assertFalse(parameters.has_key('body'))
+
+    parameters = _fix_up_parameters(valid_method_desc, dummy_root_desc,
+                                    no_payload_http_method)
+    self.assertFalse(parameters.has_key('body'))
+
+    parameters = _fix_up_parameters(invalid_method_desc, dummy_root_desc,
+                                    with_payload_http_method)
+    self.assertFalse(parameters.has_key('body'))
+
+    parameters = _fix_up_parameters(valid_method_desc, dummy_root_desc,
+                                    with_payload_http_method)
+    body = {
+        'description': 'The request body.',
+        'type': 'object',
+        'required': True,
+        'key1': 'value1',
+        'key2': 'value2',
+    }
+    self.assertEqual(parameters['body'], body)
+
+  def _base_fix_up_method_description_test(
+      self, method_desc, initial_parameters, final_parameters,
+      final_accept, final_max_size, final_media_path_url):
+    fake_root_desc = {'rootUrl': 'http://root/',
+                      'servicePath': 'fake/'}
+    fake_path_url = 'fake-path/'
+
+    accept, max_size, media_path_url = _fix_up_media_upload(
+        method_desc, fake_root_desc, fake_path_url, initial_parameters)
+    self.assertEqual(accept, final_accept)
+    self.assertEqual(max_size, final_max_size)
+    self.assertEqual(media_path_url, final_media_path_url)
+    self.assertEqual(initial_parameters, final_parameters)
+
+  def test_fix_up_media_upload_no_initial_invalid(self):
+    invalid_method_desc = {'response': 'Who cares'}
+    self._base_fix_up_method_description_test(invalid_method_desc, {}, {},
+                                              [], 0, None)
+
+  def test_fix_up_media_upload_no_initial_valid_minimal(self):
+    valid_method_desc = {'mediaUpload': {'accept': []}}
+    final_parameters = {'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE}
+    self._base_fix_up_method_description_test(
+        valid_method_desc, {}, final_parameters, [], 0,
+        'http://root/upload/fake/fake-path/')
+
+  def test_fix_up_media_upload_no_initial_valid_full(self):
+    valid_method_desc = {'mediaUpload': {'accept': ['*/*'], 'maxSize': '10GB'}}
+    final_parameters = {'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE}
+    ten_gb = 10 * 2**30
+    self._base_fix_up_method_description_test(
+        valid_method_desc, {}, final_parameters, ['*/*'],
+        ten_gb, 'http://root/upload/fake/fake-path/')
+
+  def test_fix_up_media_upload_with_initial_invalid(self):
+    invalid_method_desc = {'response': 'Who cares'}
+    initial_parameters = {'body': {}}
+    self._base_fix_up_method_description_test(
+        invalid_method_desc, initial_parameters,
+        initial_parameters, [], 0, None)
+
+  def test_fix_up_media_upload_with_initial_valid_minimal(self):
+    valid_method_desc = {'mediaUpload': {'accept': []}}
+    initial_parameters = {'body': {}}
+    final_parameters = {'body': {'required': False},
+                        'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE}
+    self._base_fix_up_method_description_test(
+        valid_method_desc, initial_parameters, final_parameters, [], 0,
+        'http://root/upload/fake/fake-path/')
+
+  def test_fix_up_media_upload_with_initial_valid_full(self):
+    valid_method_desc = {'mediaUpload': {'accept': ['*/*'], 'maxSize': '10GB'}}
+    initial_parameters = {'body': {}}
+    final_parameters = {'body': {'required': False},
+                        'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE}
+    ten_gb = 10 * 2**30
+    self._base_fix_up_method_description_test(
+        valid_method_desc, initial_parameters, final_parameters, ['*/*'],
+        ten_gb, 'http://root/upload/fake/fake-path/')
+
+  def test_fix_up_method_description_get(self):
+    result = _fix_up_method_description(self.zoo_get_method_desc,
+                                        self.zoo_root_desc)
+    path_url = 'query'
+    http_method = 'GET'
+    method_id = 'bigquery.query'
+    accept = []
+    max_size = 0L
+    media_path_url = None
+    self.assertEqual(result, (path_url, http_method, method_id, accept,
+                              max_size, media_path_url))
+
+  def test_fix_up_method_description_insert(self):
+    result = _fix_up_method_description(self.zoo_insert_method_desc,
+                                        self.zoo_root_desc)
+    path_url = 'animals'
+    http_method = 'POST'
+    method_id = 'zoo.animals.insert'
+    accept = ['image/png']
+    max_size = 1024L
+    media_path_url = 'https://www.googleapis.com/upload/zoo/v1/animals'
+    self.assertEqual(result, (path_url, http_method, method_id, accept,
+                              max_size, media_path_url))
 
 
 class DiscoveryErrors(unittest.TestCase):
