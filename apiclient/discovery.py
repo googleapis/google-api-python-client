@@ -476,6 +476,95 @@ def _fix_up_method_description(method_desc, root_desc):
   return path_url, http_method, method_id, accept, max_size, media_path_url
 
 
+# TODO(dhermes): Convert this class to ResourceMethod and make it callable
+class ResourceMethodParameters(object):
+  """Represents the parameters associated with a method.
+
+  Attributes:
+    argmap: Map from method parameter name (string) to query parameter name
+        (string).
+    required_params: List of required parameters (represented by parameter
+        name as string).
+    repeated_params: List of repeated parameters (represented by parameter
+        name as string).
+    pattern_params: Map from method parameter name (string) to regular
+        expression (as a string). If the pattern is set for a parameter, the
+        value for that parameter must match the regular expression.
+    query_params: List of parameters (represented by parameter name as string)
+        that will be used in the query string.
+    path_params: Set of parameters (represented by parameter name as string)
+        that will be used in the base URL path.
+    param_types: Map from method parameter name (string) to parameter type. Type
+        can be any valid JSON schema type; valid values are 'any', 'array',
+        'boolean', 'integer', 'number', 'object', or 'string'. Reference:
+        http://tools.ietf.org/html/draft-zyp-json-schema-03#section-5.1
+    enum_params: Map from method parameter name (string) to list of strings,
+       where each list of strings is the list of acceptable enum values.
+  """
+
+  def __init__(self, method_desc):
+    """Constructor for ResourceMethodParameters.
+
+    Sets default values and defers to set_parameters to populate.
+
+    Args:
+      method_desc: Dictionary with metadata describing an API method. Value
+          comes from the dictionary of methods stored in the 'methods' key in
+          the deserialized discovery document.
+    """
+    self.argmap = {}
+    self.required_params = []
+    self.repeated_params = []
+    self.pattern_params = {}
+    self.query_params = []
+    # TODO(dhermes): Change path_params to a list if the extra URITEMPLATE
+    #                parsing is gotten rid of.
+    self.path_params = set()
+    self.param_types = {}
+    self.enum_params = {}
+
+    self.set_parameters(method_desc)
+
+  def set_parameters(self, method_desc):
+    """Populates maps and lists based on method description.
+
+    Iterates through each parameter for the method and parses the values from
+    the parameter dictionary.
+
+    Args:
+      method_desc: Dictionary with metadata describing an API method. Value
+          comes from the dictionary of methods stored in the 'methods' key in
+          the deserialized discovery document.
+    """
+    for arg, desc in method_desc.get('parameters', {}).iteritems():
+      param = key2param(arg)
+      self.argmap[param] = arg
+
+      if desc.get('pattern'):
+        self.pattern_params[param] = desc['pattern']
+      if desc.get('enum'):
+        self.enum_params[param] = desc['enum']
+      if desc.get('required'):
+        self.required_params.append(param)
+      if desc.get('repeated'):
+        self.repeated_params.append(param)
+      if desc.get('location') == 'query':
+        self.query_params.append(param)
+      if desc.get('location') == 'path':
+        self.path_params.add(param)
+      self.param_types[param] = desc.get('type', 'string')
+
+    # TODO(dhermes): Determine if this is still necessary. Discovery based APIs
+    #                should have all path parameters already marked with
+    #                'location: path'.
+    for match in URITEMPLATE.finditer(method_desc['path']):
+      for namematch in VARNAME.finditer(match.group(0)):
+        name = key2param(namematch.group(0))
+        self.path_params.add(name)
+        if name in self.query_params:
+          self.query_params.remove(name)
+
+
 def createMethod(methodName, methodDesc, rootDesc, schema):
   """Creates a method for attaching to a Resource.
 
@@ -490,46 +579,13 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
   (pathUrl, httpMethod, methodId, accept,
    maxSize, mediaPathUrl) = _fix_up_method_description(methodDesc, rootDesc)
 
-  argmap = {} # Map from method parameter name to query parameter name
-  required_params = [] # Required parameters
-  repeated_params = [] # Repeated parameters
-  pattern_params = {}  # Parameters that must match a regex
-  query_params = [] # Parameters that will be used in the query string
-  path_params = {} # Parameters that will be used in the base URL
-  param_type = {} # The type of the parameter
-  enum_params = {} # Allowable enumeration values for each parameter
-
-  if 'parameters' in methodDesc:
-    for arg, desc in methodDesc['parameters'].iteritems():
-      param = key2param(arg)
-      argmap[param] = arg
-
-      if desc.get('pattern', ''):
-        pattern_params[param] = desc['pattern']
-      if desc.get('enum', ''):
-        enum_params[param] = desc['enum']
-      if desc.get('required', False):
-        required_params.append(param)
-      if desc.get('repeated', False):
-        repeated_params.append(param)
-      if desc.get('location') == 'query':
-        query_params.append(param)
-      if desc.get('location') == 'path':
-        path_params[param] = param
-      param_type[param] = desc.get('type', 'string')
-
-  for match in URITEMPLATE.finditer(pathUrl):
-    for namematch in VARNAME.finditer(match.group(0)):
-      name = key2param(namematch.group(0))
-      path_params[name] = name
-      if name in query_params:
-        query_params.remove(name)
+  parameters = ResourceMethodParameters(methodDesc)
 
   def method(self, **kwargs):
     # Don't bother with doc string, it will be over-written by createMethod.
 
     for name in kwargs.iterkeys():
-      if name not in argmap:
+      if name not in parameters.argmap:
         raise TypeError('Got an unexpected keyword argument "%s"' % name)
 
     # Remove args that have a value of None.
@@ -538,11 +594,11 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
       if kwargs[name] is None:
         del kwargs[name]
 
-    for name in required_params:
+    for name in parameters.required_params:
       if name not in kwargs:
         raise TypeError('Missing required parameter "%s"' % name)
 
-    for name, regex in pattern_params.iteritems():
+    for name, regex in parameters.pattern_params.iteritems():
       if name in kwargs:
         if isinstance(kwargs[name], basestring):
           pvalues = [kwargs[name]]
@@ -554,12 +610,12 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                 'Parameter "%s" value "%s" does not match the pattern "%s"' %
                 (name, pvalue, regex))
 
-    for name, enums in enum_params.iteritems():
+    for name, enums in parameters.enum_params.iteritems():
       if name in kwargs:
         # We need to handle the case of a repeated enum
         # name differently, since we want to handle both
         # arg='value' and arg=['value1', 'value2']
-        if (name in repeated_params and
+        if (name in parameters.repeated_params and
             not isinstance(kwargs[name], basestring)):
           values = kwargs[name]
         else:
@@ -573,16 +629,16 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     actual_query_params = {}
     actual_path_params = {}
     for key, value in kwargs.iteritems():
-      to_type = param_type.get(key, 'string')
+      to_type = parameters.param_types.get(key, 'string')
       # For repeated parameters we cast each member of the list.
-      if key in repeated_params and type(value) == type([]):
+      if key in parameters.repeated_params and type(value) == type([]):
         cast_value = [_cast(x, to_type) for x in value]
       else:
         cast_value = _cast(value, to_type)
-      if key in query_params:
-        actual_query_params[argmap[key]] = cast_value
-      if key in path_params:
-        actual_path_params[argmap[key]] = cast_value
+      if key in parameters.query_params:
+        actual_query_params[parameters.argmap[key]] = cast_value
+      if key in parameters.path_params:
+        actual_path_params[parameters.argmap[key]] = cast_value
     body_value = kwargs.get('body', None)
     media_filename = kwargs.get('media_body', None)
 
@@ -677,14 +733,14 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                                 resumable=resumable)
 
   docs = [methodDesc.get('description', DEFAULT_METHOD_DOC), '\n\n']
-  if len(argmap) > 0:
+  if len(parameters.argmap) > 0:
     docs.append('Args:\n')
 
   # Skip undocumented params and params common to all methods.
   skip_parameters = rootDesc.get('parameters', {}).keys()
   skip_parameters.extend(STACK_QUERY_PARAMETERS)
 
-  all_args = argmap.keys()
+  all_args = parameters.argmap.keys()
   args_ordered = [key2param(s) for s in methodDesc.get('parameterOrder', [])]
 
   # Move body to the front of the line.
@@ -700,12 +756,12 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
       continue
 
     repeated = ''
-    if arg in repeated_params:
+    if arg in parameters.repeated_params:
       repeated = ' (repeated)'
     required = ''
-    if arg in required_params:
+    if arg in parameters.required_params:
       required = ' (required)'
-    paramdesc = methodDesc['parameters'][argmap[arg]]
+    paramdesc = methodDesc['parameters'][parameters.argmap[arg]]
     paramdoc = paramdesc.get('description', 'A parameter')
     if '$ref' in paramdesc:
       docs.append(

@@ -50,6 +50,7 @@ from apiclient.discovery import build_from_document
 from apiclient.discovery import DISCOVERY_URI
 from apiclient.discovery import key2param
 from apiclient.discovery import MEDIA_BODY_PARAMETER_DEFAULT_VALUE
+from apiclient.discovery import ResourceMethodParameters
 from apiclient.discovery import STACK_QUERY_PARAMETERS
 from apiclient.discovery import STACK_QUERY_PARAMETER_DEFAULT_VALUE
 from apiclient.errors import HttpError
@@ -110,8 +111,8 @@ class Utilities(unittest.TestCase):
     with open(datafile('zoo.json'), 'r') as fh:
       self.zoo_root_desc = simplejson.loads(fh.read())
     self.zoo_get_method_desc = self.zoo_root_desc['methods']['query']
-    zoo_animals_resource = self.zoo_root_desc['resources']['animals']
-    self.zoo_insert_method_desc = zoo_animals_resource['methods']['insert']
+    self.zoo_animals_resource = self.zoo_root_desc['resources']['animals']
+    self.zoo_insert_method_desc = self.zoo_animals_resource['methods']['insert']
 
   def test_key2param(self):
     self.assertEqual('max_results', key2param('max-results'))
@@ -267,6 +268,46 @@ class Utilities(unittest.TestCase):
     media_path_url = 'https://www.googleapis.com/upload/zoo/v1/animals'
     self.assertEqual(result, (path_url, http_method, method_id, accept,
                               max_size, media_path_url))
+
+  def test_ResourceMethodParameters_zoo_get(self):
+    parameters = ResourceMethodParameters(self.zoo_get_method_desc)
+
+    param_types = {'a': 'any',
+                   'b': 'boolean',
+                   'e': 'string',
+                   'er': 'string',
+                   'i': 'integer',
+                   'n': 'number',
+                   'o': 'object',
+                   'q': 'string',
+                   'rr': 'string'}
+    keys = param_types.keys()
+    self.assertEqual(parameters.argmap, dict((key, key) for key in keys))
+    self.assertEqual(parameters.required_params, [])
+    self.assertEqual(sorted(parameters.repeated_params), ['er', 'rr'])
+    self.assertEqual(parameters.pattern_params, {'rr': '[a-z]+'})
+    self.assertEqual(sorted(parameters.query_params),
+                     ['a', 'b', 'e', 'er', 'i', 'n', 'o', 'q', 'rr'])
+    self.assertEqual(parameters.path_params, set())
+    self.assertEqual(parameters.param_types, param_types)
+    enum_params = {'e': ['foo', 'bar'],
+                   'er': ['one', 'two', 'three']}
+    self.assertEqual(parameters.enum_params, enum_params)
+
+  def test_ResourceMethodParameters_zoo_animals_patch(self):
+    method_desc = self.zoo_animals_resource['methods']['patch']
+    parameters = ResourceMethodParameters(method_desc)
+
+    param_types = {'name': 'string'}
+    keys = param_types.keys()
+    self.assertEqual(parameters.argmap, dict((key, key) for key in keys))
+    self.assertEqual(parameters.required_params, ['name'])
+    self.assertEqual(parameters.repeated_params, [])
+    self.assertEqual(parameters.pattern_params, {})
+    self.assertEqual(parameters.query_params, [])
+    self.assertEqual(parameters.path_params, set(['name']))
+    self.assertEqual(parameters.param_types, param_types)
+    self.assertEqual(parameters.enum_params, {})
 
 
 class DiscoveryErrors(unittest.TestCase):
