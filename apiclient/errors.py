@@ -93,7 +93,7 @@ class MediaUploadSizeError(Error):
   pass
 
 
-class ResumableUploadError(Error):
+class ResumableUploadError(HttpError):
   """Error occured during resumable upload."""
   pass
 

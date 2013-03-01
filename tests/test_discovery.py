@@ -769,7 +769,11 @@ class Discovery(unittest.TestCase):
         'location': 'http://upload.example.com'}, ''),
       ])
 
-    self.assertRaises(ResumableUploadError, request.execute, http=http)
+    try:
+      request.execute(http=http)
+      self.fail('Should have raised ResumableUploadError.')
+    except ResumableUploadError, e:
+      self.assertEqual(400, e.resp.status)
 
   def test_resumable_media_fail_unknown_response_code_subsequent_request(self):
     """Not a multipart upload."""

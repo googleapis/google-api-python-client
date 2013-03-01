@@ -744,7 +744,7 @@ class HttpRequest(object):
       if resp.status == 200 and 'location' in resp:
         self.resumable_uri = resp['location']
       else:
-        raise ResumableUploadError("Failed to retrieve starting URI.")
+        raise ResumableUploadError(resp, content)
     elif self._in_error_state:
       # If we are in an error state then query the server for current state of
       # the upload by sending an empty PUT and reading the 'range' header in
