@@ -37,6 +37,12 @@ except ImportError:
     from cgi import parse_qs
 
 import dev_appserver
+_EXTRA_PATHS = dev_appserver.EXTRA_PATHS
+_DIR_PATH = _EXTRA_PATHS[0]
+_OLD_WEBOB = os.path.join(_DIR_PATH, 'lib', 'webob_0_9')
+_WEBOB_INDEX = _EXTRA_PATHS.index(_OLD_WEBOB)
+_NEW_WEBOB = os.path.join(_DIR_PATH, 'lib', 'webob-1.2.3')
+_EXTRA_PATHS[_WEBOB_INDEX] = _NEW_WEBOB
 dev_appserver.fix_sys_path()
 import webapp2
 
