@@ -31,11 +31,12 @@ import httplib2
 from string import Template
 
 from apiclient.discovery import build
+from apiclient.discovery import build_from_document
+from apiclient.discovery import DISCOVERY_URI
 from oauth2client.anyjson import simplejson
+import gflags
 import uritemplate
 
-
-BASE = 'docs/dyn'
 
 CSS = """<style>
 
@@ -111,9 +112,6 @@ h1, h2, h3 {
 </style>
 """
 
-DISCOVERY_URI = ('https://www.googleapis.com/discovery/v1/apis/'
-                 '{api}/{apiVersion}/rest')
-
 METHOD_TEMPLATE = """<div class="method">
     <code class="details" id="$name">$name($params)</code>
   <pre>$doc</pre>
@@ -129,6 +127,24 @@ COLLECTION_LINK = """<p class="toc_element">
 METHOD_LINK = """<p class="toc_element">
   <code><a href="#$name">$name($params)</a></code></p>
 <p class="firstline">$firstline</p>"""
+
+BASE = 'docs/dyn'
+
+DIRECTORY_URI = 'https://www.googleapis.com/discovery/v1/apis?preferred=true',
+
+FLAGS = gflags.FLAGS
+
+gflags.DEFINE_string('discovery_uri_template', DISCOVERY_URI,
+                     'URI Template for discovery.')
+
+gflags.DEFINE_string('discovery_uri', '', 'URI of discovery document. '
+                     'If supplied then only this API will be documented.')
+
+gflags.DEFINE_string('directory_uri', DIRECTORY_URI,
+                     'URI of directory document. '
+                     'Unused if --discovery_uri is supplied.')
+
+gflags.DEFINE_string('dest', BASE, 'Directory name to write documents into.')
 
 
 def safe_version(version):
@@ -300,7 +316,7 @@ def document_collection_recursive(resource, path, root_discovery, discovery):
 
   html = document_collection(resource, path, root_discovery, discovery)
 
-  f = open(os.path.join(BASE, path + 'html'), 'w')
+  f = open(os.path.join(FLAGS.dest, path + 'html'), 'w')
   f.write(html.encode('utf-8'))
   f.close()
 
@@ -323,7 +339,7 @@ def document_api(name, version):
   service = build(name, version)
   response, content = http.request(
       uritemplate.expand(
-          DISCOVERY_URI, {
+          FLAGS.discovery_uri_template, {
               'api': name,
               'apiVersion': version})
           )
@@ -335,14 +351,43 @@ def document_api(name, version):
       service, '%s_%s.' % (name, version), discovery, discovery)
 
 
-if __name__ == '__main__':
+def document_api_from_discovery_document(uri):
+  """Document the given API.
+
+  Args:
+    uri: string, URI of discovery document.
+  """
   http = httplib2.Http()
-  resp, content = http.request(
-      'https://www.googleapis.com/discovery/v1/apis?preferred=true',
-      headers={'X-User-IP': '0.0.0.0'})
-  if resp.status == 200:
-    directory = simplejson.loads(content)['items']
-    for api in directory:
-      document_api(api['name'], api['version'])
+  response, content = http.request(FLAGS.discovery_uri)
+  discovery = simplejson.loads(content)
+
+  service = build_from_document(discovery)
+
+  name = discovery['version']
+  version = safe_version(discovery['version'])
+
+  document_collection_recursive(
+      service, '%s_%s.' % (name, version), discovery, discovery)
+
+
+if __name__ == '__main__':
+  # Let the gflags module process the command-line arguments
+  try:
+    argv = FLAGS(sys.argv)
+  except gflags.FlagsError, e:
+    print '%s\\nUsage: %s ARGS\\n%s' % (e, argv[0], FLAGS)
+    sys.exit(1)
+
+  if FLAGS.discovery_uri:
+    document_api_from_discovery_document(FLAGS.discovery_uri)
   else:
-    sys.exit("Failed to load the discovery document.")
+    http = httplib2.Http()
+    resp, content = http.request(
+        FLAGS.directory_uri,
+        headers={'X-User-IP': '0.0.0.0'})
+    if resp.status == 200:
+      directory = simplejson.loads(content)['items']
+      for api in directory:
+        document_api(api['name'], api['version'])
+    else:
+      sys.exit("Failed to load the discovery document.")
