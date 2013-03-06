@@ -41,7 +41,6 @@ except ImportError:
   from cgi import parse_qs
 
 
-from apiclient.discovery import _add_query_parameter
 from apiclient.discovery import _fix_up_media_upload
 from apiclient.discovery import _fix_up_method_description
 from apiclient.discovery import _fix_up_parameters
@@ -68,6 +67,7 @@ from apiclient.http import tunnel_patch
 from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.anyjson import simplejson
 from oauth2client.client import OAuth2Credentials
+from oauth2client.util import _add_query_parameter
 import uritemplate
 
 

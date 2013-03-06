@@ -36,7 +36,6 @@ from google.appengine.ext import db
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import login_required
 from google.appengine.ext.webapp.util import run_wsgi_app
-from apiclient import discovery
 from oauth2client import GOOGLE_AUTH_URI
 from oauth2client import GOOGLE_REVOKE_URI
 from oauth2client import GOOGLE_TOKEN_URI
@@ -799,7 +798,7 @@ class OAuth2Decorator(object):
 
           if decorator._token_response_param and credentials.token_response:
             resp_json = simplejson.dumps(credentials.token_response)
-            redirect_uri = discovery._add_query_parameter(
+            redirect_uri = util._add_query_parameter(
               redirect_uri, decorator._token_response_param, resp_json)
 
           self.redirect(redirect_uri)

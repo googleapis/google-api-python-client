@@ -58,6 +58,7 @@ from apiclient.schema import Schemas
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from oauth2client.util import positional
+from oauth2client.util import _add_query_parameter
 from oauth2client.anyjson import simplejson
 
 # The client library requires a version of httplib2 that supports RETRIES.
@@ -106,29 +107,6 @@ def fix_method_name(name):
     return name + '_'
   else:
     return name
-
-
-def _add_query_parameter(url, name, value):
-  """Adds a query parameter to a url.
-
-  Replaces the current value if it already exists in the URL.
-
-  Args:
-    url: string, url to add the query parameter to.
-    name: string, query parameter name.
-    value: string, query parameter value.
-
-  Returns:
-    Updated query parameter. Does not update the url if value is None.
-  """
-  if value is None:
-    return url
-  else:
-    parsed = list(urlparse.urlparse(url))
-    q = dict(parse_qsl(parsed[4]))
-    q[name] = value
-    parsed[4] = urllib.urlencode(q)
-    return urlparse.urlunparse(parsed)
 
 
 def key2param(key):

@@ -28,6 +28,13 @@ import gflags
 import inspect
 import logging
 import types
+import urllib
+import urlparse
+
+try:
+  from urlparse import parse_qsl
+except ImportError:
+  from cgi import parse_qsl
 
 logger = logging.getLogger(__name__)
 
@@ -160,3 +167,26 @@ def dict_to_tuple_key(dictionary):
     A tuple representing the dictionary in it's naturally sorted ordering.
   """
   return tuple(sorted(dictionary.items()))
+
+
+def _add_query_parameter(url, name, value):
+  """Adds a query parameter to a url.
+
+  Replaces the current value if it already exists in the URL.
+
+  Args:
+    url: string, url to add the query parameter to.
+    name: string, query parameter name.
+    value: string, query parameter value.
+
+  Returns:
+    Updated query parameter. Does not update the url if value is None.
+  """
+  if value is None:
+    return url
+  else:
+    parsed = list(urlparse.urlparse(url))
+    q = dict(parse_qsl(parsed[4]))
+    q[name] = value
+    parsed[4] = urllib.urlencode(q)
+    return urlparse.urlunparse(parsed)
