@@ -26,8 +26,6 @@ import logging
 import os
 import pickle
 import time
-import urllib
-import urlparse
 
 from google.appengine.api import app_identity
 from google.appengine.api import memcache
@@ -57,10 +55,6 @@ try:
 except ImportError:
   ndb = None
 
-try:
-  from urlparse import parse_qsl
-except ImportError:
-  from cgi import parse_qsl
 
 logger = logging.getLogger(__name__)
 
@@ -799,7 +793,7 @@ class OAuth2Decorator(object):
           if decorator._token_response_param and credentials.token_response:
             resp_json = simplejson.dumps(credentials.token_response)
             redirect_uri = util._add_query_parameter(
-              redirect_uri, decorator._token_response_param, resp_json)
+                redirect_uri, decorator._token_response_param, resp_json)
 
           self.redirect(redirect_uri)
 

@@ -25,23 +25,30 @@ __all__ = [
     'key2param',
     ]
 
+
+# Standard library imports
 import copy
-import httplib2
+from email.mime.multipart import MIMEMultipart
+from email.mime.nonmultipart import MIMENonMultipart
 import keyword
 import logging
+import mimetypes
 import os
 import re
-import uritemplate
 import urllib
 import urlparse
-import mimeparse
-import mimetypes
 
 try:
   from urlparse import parse_qsl
 except ImportError:
   from cgi import parse_qsl
 
+# Third-party imports
+import httplib2
+import mimeparse
+import uritemplate
+
+# Local imports
 from apiclient.errors import HttpError
 from apiclient.errors import InvalidJsonError
 from apiclient.errors import MediaUploadSizeError
@@ -55,11 +62,10 @@ from apiclient.model import JsonModel
 from apiclient.model import MediaModel
 from apiclient.model import RawModel
 from apiclient.schema import Schemas
-from email.mime.multipart import MIMEMultipart
-from email.mime.nonmultipart import MIMENonMultipart
-from oauth2client.util import positional
-from oauth2client.util import _add_query_parameter
 from oauth2client.anyjson import simplejson
+from oauth2client.util import _add_query_parameter
+from oauth2client.util import positional
+
 
 # The client library requires a version of httplib2 that supports RETRIES.
 httplib2.RETRIES = 1
@@ -79,10 +85,10 @@ BODY_PARAMETER_DEFAULT_VALUE = {
     'required': True,
 }
 MEDIA_BODY_PARAMETER_DEFAULT_VALUE = {
-  'description': ('The filename of the media request body, or an instance '
-                  'of a MediaUpload object.'),
-  'type': 'string',
-  'required': False,
+    'description': ('The filename of the media request body, or an instance '
+                    'of a MediaUpload object.'),
+    'type': 'string',
+    'required': False,
 }
 
 # Parameters accepted by the stack, but not visible via discovery.

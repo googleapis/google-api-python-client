@@ -510,9 +510,9 @@ class DecoratorTests(unittest.TestCase):
     self.assertEqual('http://localhost/foo_path', parts[0])
     self.assertEqual(None, self.decorator.credentials)
     if self.decorator._token_response_param:
-        response = parse_qs(parts[1])[self.decorator._token_response_param][0]
-        self.assertEqual(Http2Mock.content,
-                         simplejson.loads(urllib.unquote(response)))
+      response = parse_qs(parts[1])[self.decorator._token_response_param][0]
+      self.assertEqual(Http2Mock.content,
+                       simplejson.loads(urllib.unquote(response)))
 
     m.UnsetStubs()
     m.VerifyAll()

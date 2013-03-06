@@ -144,10 +144,10 @@ class BasicCredentialsTests(unittest.TestCase):
     for status_code in REFRESH_STATUS_CODES:
       token_response = {'access_token': '1/3w', 'expires_in': 3600}
       http = HttpMockSequence([
-        ({'status': status_code}, ''),
-        ({'status': '200'}, simplejson.dumps(token_response)),
-        ({'status': '200'}, 'echo_request_headers'),
-        ])
+          ({'status': status_code}, ''),
+          ({'status': '200'}, simplejson.dumps(token_response)),
+          ({'status': '200'}, 'echo_request_headers'),
+      ])
       http = self.credentials.authorize(http)
       resp, content = http.request('http://example.com')
       self.assertEqual('Bearer 1/3w', content['Authorization'])
