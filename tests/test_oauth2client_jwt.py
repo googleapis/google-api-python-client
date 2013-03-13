@@ -217,7 +217,7 @@ class SignedJwtAssertionCredentialsTests(unittest.TestCase):
         'some_account@example.com',
         private_key,
         scope='read+write',
-        prn='joe@example.org')
+        sub='joe@example.org')
     http = HttpMockSequence([
       ({'status': '200'}, '{"access_token":"1/3w","expires_in":3600}'),
       ({'status': '200'}, 'echo_request_headers'),
@@ -232,7 +232,7 @@ class SignedJwtAssertionCredentialsTests(unittest.TestCase):
         'some_account@example.com',
         private_key,
         scope='read+write',
-        prn='joe@example.org')
+        sub='joe@example.org')
     json = credentials.to_json()
     restored = Credentials.new_from_json(json)
     self.assertEqual(credentials.private_key, restored.private_key)
@@ -257,7 +257,7 @@ class SignedJwtAssertionCredentialsTests(unittest.TestCase):
         'some_account@example.com',
         private_key,
         scope='read+write',
-        prn='joe@example.org')
+        sub='joe@example.org')
 
     content = self._credentials_refresh(credentials)
 
@@ -269,7 +269,7 @@ class SignedJwtAssertionCredentialsTests(unittest.TestCase):
         'some_account@example.com',
         private_key,
         scope='read+write',
-        prn='joe@example.org')
+        sub='joe@example.org')
 
     (filehandle, filename) = tempfile.mkstemp()
     os.close(filehandle)
@@ -305,7 +305,7 @@ class PKCSSignedJwtAssertionCredentialsPyCryptoTests(unittest.TestCase):
         'some_account@example.com',
         private_key,
         scope='read+write',
-        prn='joe@example.org')
+        sub='joe@example.org')
     try:
       credentials._generate_assertion()
       self.fail()

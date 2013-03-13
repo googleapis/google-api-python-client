@@ -925,7 +925,7 @@ if HAS_CRYPTO:
           defaults to Google's endpoints but any OAuth 2.0 provider can be used.
         revoke_uri: string, URI for revoke endpoint.
         kwargs: kwargs, Additional parameters to add to the JWT token, for
-          example prn=joe@xample.org."""
+          example sub=joe@xample.org."""
 
       super(SignedJwtAssertionCredentials, self).__init__(
           None,
