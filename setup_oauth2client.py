@@ -21,6 +21,7 @@ from setuptools import setup
 
 packages = [
   'oauth2client',
+  'uritemplate',
 ]
 
 install_requires = [
@@ -28,14 +29,12 @@ install_requires = [
     'python-gflags',
     ]
 
-needs_json = True
+needs_json = False
 try:
   import json
-  needs_json = False
 except ImportError:
   try:
     import simplejson
-    needs_json = False
   except ImportError:
     needs_json = True
 
