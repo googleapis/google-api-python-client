@@ -19,7 +19,8 @@
 Tags: creatives.insert
 """
 
-__author__ = 'david.t@google.com (David Torres)'
+__author__ = ('david.t@google.com (David Torres)',
+              'jdilallo@google.com (Joseph DiLallo)')
 
 import pprint
 import sys
@@ -32,22 +33,20 @@ gflags.DEFINE_string('account_id', None,
                      'The ID of the account to which submit the creative',
                      short_name='a')
 gflags.MarkFlagAsRequired('account_id')
-gflags.DEFINE_string('adgroup_id', None,
-                     'The pretargeting adgroup id that this creative will be '
-                     'associated with',
-                     short_name='g')
-gflags.MarkFlagAsRequired('adgroup_id')
 gflags.DEFINE_string('buyer_creative_id', None,
                      'A buyer-specific id identifying the creative in this ad',
                      short_name='c')
 gflags.MarkFlagAsRequired('buyer_creative_id')
+gflags.DEFINE_string('agency_id', None,
+                     'The id of the agency who created this ad',
+                     short_name='g')
 
 
 def main(argv):
   sample_utils.process_flags(argv)
   account_id = gflags.FLAGS.account_id
-  adgroup_id = gflags.FLAGS.adgroup_id
   buyer_creative_id = gflags.FLAGS.buyer_creative_id
+  agency_id = gflags.FLAGS.agency_id
   pretty_printer = pprint.PrettyPrinter()
 
   # Authenticate and construct service.
@@ -57,7 +56,6 @@ def main(argv):
     # Create a new creative to submit.
     creative_body = {
         'accountId': account_id,
-        'adgroupId': adgroup_id,
         'buyerCreativeId': buyer_creative_id,
         'HTMLSnippet': ('<html><body><a href="http://www.google.com">'
                         'Hi there!</a></body></html>'),
@@ -66,6 +64,8 @@ def main(argv):
         'height': 250,
         'advertiserName': 'google'
         }
+    if agency_id:
+      creative_body['agencyId'] = agency_id
     creative = service.creatives().insert(body=creative_body).execute()
     # Print the response. If the creative has been already reviewed, its status
     # and categories will be included in the response.

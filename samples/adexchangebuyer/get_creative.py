@@ -19,7 +19,8 @@
 Tags: creatives.insert
 """
 
-__author__ = 'david.t@google.com (David Torres)'
+__author__ = ('david.t@google.com (David Torres)',
+              'jdilallo@google.com (Joseph DiLallo)')
 
 import pprint
 import sys
@@ -32,11 +33,6 @@ gflags.DEFINE_string('account_id', None,
                      'The ID of the account that contains the creative',
                      short_name='a')
 gflags.MarkFlagAsRequired('account_id')
-gflags.DEFINE_string('adgroup_id', None,
-                     'The pretargeting adgroup id to which the creative is '
-                     'associated with',
-                     short_name='g')
-gflags.MarkFlagAsRequired('adgroup_id')
 gflags.DEFINE_string('buyer_creative_id', None,
                      'A buyer-specific id that identifies this creative',
                      short_name='c')
@@ -46,7 +42,6 @@ gflags.MarkFlagAsRequired('buyer_creative_id')
 def main(argv):
   sample_utils.process_flags(argv)
   account_id = gflags.FLAGS.account_id
-  adgroup_id = gflags.FLAGS.adgroup_id
   buyer_creative_id = gflags.FLAGS.buyer_creative_id
   pretty_printer = pprint.PrettyPrinter()
 
@@ -56,7 +51,6 @@ def main(argv):
   try:
     # Construct the request.
     request = service.creatives().get(accountId=account_id,
-                                      adgroupId=adgroup_id,
                                       buyerCreativeId=buyer_creative_id)
 
     # Execute request and print response.

@@ -108,5 +108,5 @@ def initialize_service():
   http = credentials.authorize(http)
 
   # Construct a service object via the discovery service.
-  service = build('adexchangebuyer', 'v1', http=http)
+  service = build('adexchangebuyer', 'v1.2', http=http)
   return service
