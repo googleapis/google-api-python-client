@@ -26,7 +26,6 @@ packages = [
 
 install_requires = [
     'httplib2>=0.8',
-    'python-gflags',
     ]
 
 needs_json = False
@@ -56,9 +55,7 @@ setup(name="google-api-python-client",
       url="http://code.google.com/p/google-api-python-client/",
       install_requires=install_requires,
       packages=packages,
-      package_data={
-        },
-      scripts=['bin/enable-app-engine-project'],
+      package_data={},
       license="Apache 2.0",
       keywords="google api client",
       classifiers=['Development Status :: 5 - Production/Stable',

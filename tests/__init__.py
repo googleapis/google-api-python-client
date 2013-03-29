@@ -14,9 +14,8 @@
 
 __author__ = 'afshar@google.com (Ali Afshar)'
 
-import gflags
+import oauth2client.util
 
 def setup_package():
   """Run on testing package."""
-  FLAGS = gflags.FLAGS
-  FLAGS.positional_parameters_enforcement = 'EXCEPTION'
+  oauth2client.util.positional_parameters_enforcement = 'EXCEPTION'

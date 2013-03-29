@@ -25,7 +25,6 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import copy
 import datetime
-import gflags
 import httplib2
 import os
 import pickle
@@ -65,16 +64,16 @@ from apiclient.http import MediaUpload
 from apiclient.http import MediaUploadProgress
 from apiclient.http import tunnel_patch
 from oauth2client import GOOGLE_TOKEN_URI
+from oauth2client import util
 from oauth2client.anyjson import simplejson
 from oauth2client.client import OAuth2Credentials
-from oauth2client.util import _add_query_parameter
+
 import uritemplate
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
-FLAGS = gflags.FLAGS
-FLAGS.positional_parameters_enforcement = 'EXCEPTION'
+util.positional_parameters_enforcement = util.POSITIONAL_EXCEPTION
 
 
 def assertUrisEqual(testcase, expected, actual):
@@ -331,20 +330,20 @@ class DiscoveryErrors(unittest.TestCase):
 class DiscoveryFromDocument(unittest.TestCase):
 
   def test_can_build_from_local_document(self):
-    discovery = file(datafile('plus.json')).read()
+    discovery = open(datafile('plus.json')).read()
     plus = build_from_document(discovery, base="https://www.googleapis.com/")
     self.assertTrue(plus is not None)
     self.assertTrue(hasattr(plus, 'activities'))
 
   def test_can_build_from_local_deserialized_document(self):
-    discovery = file(datafile('plus.json')).read()
+    discovery = open(datafile('plus.json')).read()
     discovery = simplejson.loads(discovery)
     plus = build_from_document(discovery, base="https://www.googleapis.com/")
     self.assertTrue(plus is not None)
     self.assertTrue(hasattr(plus, 'activities'))
 
   def test_building_with_base_remembers_base(self):
-    discovery = file(datafile('plus.json')).read()
+    discovery = open(datafile('plus.json')).read()
 
     base = "https://www.example.com/"
     plus = build_from_document(discovery, base=base)
@@ -364,7 +363,7 @@ class DiscoveryFromHttp(unittest.TestCase):
     os.environ['REMOTE_ADDR'] = '10.0.0.1'
     try:
       http = HttpMockSequence([
-        ({'status': '400'}, file(datafile('zoo.json'), 'r').read()),
+        ({'status': '400'}, open(datafile('zoo.json'), 'rb').read()),
         ])
       zoo = build('zoo', 'v1', http=http, developerKey='foo',
                   discoveryServiceUrl='http://example.com')
@@ -377,7 +376,7 @@ class DiscoveryFromHttp(unittest.TestCase):
     # out of the raised exception.
     try:
       http = HttpMockSequence([
-        ({'status': '400'}, file(datafile('zoo.json'), 'r').read()),
+        ({'status': '400'}, open(datafile('zoo.json'), 'rb').read()),
         ])
       zoo = build('zoo', 'v1', http=http, developerKey=None,
                   discoveryServiceUrl='http://example.com')
@@ -501,7 +500,7 @@ class Discovery(unittest.TestCase):
 
   def test_tunnel_patch(self):
     http = HttpMockSequence([
-      ({'status': '200'}, file(datafile('zoo.json'), 'r').read()),
+      ({'status': '200'}, open(datafile('zoo.json'), 'rb').read()),
       ({'status': '200'}, 'echo_request_headers_as_json'),
       ])
     http = tunnel_patch(http)
@@ -1091,8 +1090,8 @@ class Discovery(unittest.TestCase):
     zoo_uri = uritemplate.expand(DISCOVERY_URI,
                                  {'api': 'zoo', 'apiVersion': 'v1'})
     if 'REMOTE_ADDR' in os.environ:
-        zoo_uri = _add_query_parameter(zoo_uri, 'userIp',
-                                       os.environ['REMOTE_ADDR'])
+        zoo_uri = util._add_query_parameter(zoo_uri, 'userIp',
+                                            os.environ['REMOTE_ADDR'])
 
     http = httplib2.Http()
     original_request = http.request

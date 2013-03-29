@@ -21,15 +21,12 @@ Unit tests for the Protocol Buffer model.
 
 __author__ = 'mmcdonald@google.com (Matt McDonald)'
 
-import gflags
 import unittest
 import httplib2
 import apiclient.model
 
 from apiclient.errors import HttpError
 from apiclient.model import ProtocolBufferModel
-
-FLAGS = gflags.FLAGS
 
 # Python 2.5 requires different modules
 try:

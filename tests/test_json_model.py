@@ -22,7 +22,6 @@ Unit tests for the JSON model.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import copy
-import gflags
 import os
 import unittest
 import httplib2
@@ -31,8 +30,6 @@ import apiclient.model
 from apiclient.errors import HttpError
 from apiclient.model import JsonModel
 from oauth2client.anyjson import simplejson
-
-FLAGS = gflags.FLAGS
 
 # Python 2.5 requires different modules
 try:
@@ -212,8 +209,7 @@ class Model(unittest.TestCase):
           self[key] = value
     old_logging = apiclient.model.logging
     apiclient.model.logging = MockLogging()
-    apiclient.model.FLAGS = copy.deepcopy(FLAGS)
-    apiclient.model.FLAGS.dump_request_response = True
+    apiclient.model.dump_request_response = True
     model = JsonModel()
     request_body = {
         'field1': 'value1',

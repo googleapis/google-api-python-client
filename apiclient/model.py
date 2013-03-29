@@ -24,18 +24,14 @@ object representation.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-import gflags
 import logging
 import urllib
 
 from errors import HttpError
 from oauth2client.anyjson import simplejson
 
-FLAGS = gflags.FLAGS
 
-gflags.DEFINE_boolean('dump_request_response', False,
-                      'Dump all http server requests and responses. '
-                     )
+dump_request_response = False
 
 
 def _abstract():
@@ -106,7 +102,7 @@ class BaseModel(Model):
 
   def _log_request(self, headers, path_params, query, body):
     """Logs debugging information about the request if requested."""
-    if FLAGS.dump_request_response:
+    if dump_request_response:
       logging.info('--request-start--')
       logging.info('-headers-start-')
       for h, v in headers.iteritems():
@@ -177,7 +173,7 @@ class BaseModel(Model):
 
   def _log_response(self, resp, content):
     """Logs debugging information about the response if requested."""
-    if FLAGS.dump_request_response:
+    if dump_request_response:
       logging.info('--response-start--')
       for h, v in resp.iteritems():
         logging.info('%s: %s', h, v)
@@ -198,6 +194,7 @@ class BaseModel(Model):
     Raises:
       apiclient.errors.HttpError if a non 2xx response is received.
     """
+    content = content.decode('utf-8')
     self._log_response(resp, content)
     # Error handling is TBD, for example, do we retry
     # for some operation/error combinations?

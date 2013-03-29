@@ -20,23 +20,24 @@
 
 from shutil import copytree
 
-import gflags
+import argparse
 import sys
 
 
-FLAGS = gflags.FLAGS
-
 # Ignore these files and directories when copying over files into the snapshot.
-IGNORE = set(['.hg', 'httplib2', 'oauth2', 'simplejson', 'static', 'gflags.py',
-                      'gflags_validators.py'])
+IGNORE = set(['.hg', 'httplib2', 'oauth2', 'simplejson', 'static'])
 
 # In addition to the above files also ignore these files and directories when
 # copying over samples into the snapshot.
 IGNORE_IN_SAMPLES = set(['apiclient', 'oauth2client', 'uritemplate'])
 
+parser = argparse.ArgumentParser(description=__doc__)
 
-gflags.DEFINE_string('source', '.', 'Directory name to copy from.')
-gflags.DEFINE_string('dest', 'snapshot', 'Directory name to copy to.')
+parser.add_argument('--source', default='.',
+                    help='Directory name to copy from.')
+
+parser.add_argument('--dest', default='snapshot',
+                    help='Directory name to copy to.')
 
 
 def _ignore(path, names):
@@ -47,17 +48,11 @@ def _ignore(path, names):
   return retval
 
 
-def main(argv):
-  # Let the gflags module process the command-line arguments
-  try:
-    argv = FLAGS(argv)
-  except gflags.FlagsError, e:
-    print '%s\\nUsage: %s ARGS\\n%s' % (e, argv[0], FLAGS)
-    sys.exit(1)
-
+def main():
   copytree(FLAGS.source, FLAGS.dest, symlinks=True,
             ignore=_ignore)
 
 
 if __name__ == '__main__':
-  main(sys.argv)
+  FLAGS = parser.parse_args(sys.argv[1:])
+  main()

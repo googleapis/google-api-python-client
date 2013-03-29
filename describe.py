@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 #
 # Copyright 2012 Google Inc.
 #
@@ -23,20 +23,18 @@ the generated API surface itself.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import argparse
 import os
 import re
+import string
 import sys
-import httplib2
 
-from string import Template
-
+from apiclient.discovery import DISCOVERY_URI
 from apiclient.discovery import build
 from apiclient.discovery import build_from_document
-from apiclient.discovery import DISCOVERY_URI
 from oauth2client.anyjson import simplejson
-import gflags
+import httplib2
 import uritemplate
-
 
 CSS = """<style>
 
@@ -132,19 +130,22 @@ BASE = 'docs/dyn'
 
 DIRECTORY_URI = 'https://www.googleapis.com/discovery/v1/apis?preferred=true'
 
-FLAGS = gflags.FLAGS
+parser = argparse.ArgumentParser(description=__doc__)
 
-gflags.DEFINE_string('discovery_uri_template', DISCOVERY_URI,
-                     'URI Template for discovery.')
+parser.add_argument('--discovery_uri_template', default=DISCOVERY_URI,
+                    help='URI Template for discovery.')
 
-gflags.DEFINE_string('discovery_uri', '', 'URI of discovery document. '
-                     'If supplied then only this API will be documented.')
+parser.add_argument('--discovery_uri', default='',
+                    help=('URI of discovery document. If supplied then only '
+                          'this API will be documented.'))
 
-gflags.DEFINE_string('directory_uri', DIRECTORY_URI,
-                     'URI of directory document. '
-                     'Unused if --discovery_uri is supplied.')
+parser.add_argument('--directory_uri', default=DIRECTORY_URI,
+                    help=('URI of directory document. Unused if --discovery_uri'
+                          ' is supplied.'))
 
-gflags.DEFINE_string('dest', BASE, 'Directory name to write documents into.')
+parser.add_argument('--dest', default=BASE,
+                    help='Directory name to write documents into.')
+
 
 
 def safe_version(version):
@@ -222,7 +223,8 @@ def method(name, doc):
   """
 
   params = method_params(doc)
-  return Template(METHOD_TEMPLATE).substitute(name=name, params=params, doc=doc)
+  return string.Template(METHOD_TEMPLATE).substitute(
+      name=name, params=params, doc=doc)
 
 
 def breadcrumbs(path, root_discovery):
@@ -290,7 +292,8 @@ def document_collection(resource, path, root_discovery, discovery, css=CSS):
     for name in collections:
       if not name.startswith('_') and callable(getattr(resource, name)):
         href = path + name + '.html'
-        html.append(Template(COLLECTION_LINK).substitute(href=href, name=name))
+        html.append(string.Template(COLLECTION_LINK).substitute(
+            href=href, name=name))
 
   if methods:
     for name in methods:
@@ -298,7 +301,7 @@ def document_collection(resource, path, root_discovery, discovery, css=CSS):
         doc = getattr(resource, name).__doc__
         params = method_params(doc)
         firstline = doc.splitlines()[0]
-        html.append(Template(METHOD_LINK).substitute(
+        html.append(string.Template(METHOD_LINK).substitute(
             name=name, params=params, firstline=firstline))
 
   if methods:
@@ -371,13 +374,7 @@ def document_api_from_discovery_document(uri):
 
 
 if __name__ == '__main__':
-  # Let the gflags module process the command-line arguments
-  try:
-    argv = FLAGS(sys.argv)
-  except gflags.FlagsError, e:
-    print '%s\\nUsage: %s ARGS\\n%s' % (e, argv[0], FLAGS)
-    sys.exit(1)
-
+  FLAGS = parser.parse_args(sys.argv[1:])
   if FLAGS.discovery_uri:
     document_api_from_discovery_document(FLAGS.discovery_uri)
   else:

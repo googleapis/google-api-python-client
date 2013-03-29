@@ -57,7 +57,7 @@ echo "Built zip in ${ZIP_PATH}"
 # Sanity test the zip.
 # TODO (afshar): Run the complete test suite.
 echo "Sanity testing the zip:"
-export SANITY_MODS="gflags httplib2 apiclient uritemplate oauth2client"
+export SANITY_MODS="httplib2 apiclient uritemplate oauth2client"
 export SANITY_ZIP=${ZIP_PATH}
 export PYTHONPATH=${ZIP_PATH}
 ${ENV_PATH}/bin/python -c "import sys, os

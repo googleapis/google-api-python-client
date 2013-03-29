@@ -26,7 +26,6 @@ packages = [
 
 install_requires = [
     'httplib2>=0.8',
-    'python-gflags',
     ]
 
 needs_json = False

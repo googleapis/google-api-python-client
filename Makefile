@@ -30,7 +30,7 @@ prerelease: test
 	-rm -rf snapshot/
 	-sudo rm -rf snapshot/
 	./tools/gae-zip-creator.sh
-	python expand-symlinks.py
+	python expandsymlinks.py
 	cd snapshot; python setup.py clean
 	cd snapshot; python setup.py sdist --formats=gztar,zip
 	cd snapshot; tar czf google-api-python-client-samples-$(shell python setup.py --version).tar.gz samples
@@ -58,7 +58,7 @@ oauth2_prerelease: test
 	-rm -rf snapshot/
 	-sudo rm -rf snapshot/
 	mkdir snapshot
-	python expand-symlinks.py --source=oauth2client --dest=snapshot/oauth2client
+	python expandsymlinks.py --source=oauth2client --dest=snapshot/oauth2client
 	cp setup_oauth2client.py snapshot/setup.py
 	cp MANIFEST_oauth2client.in snapshot/MANIFEST.in
 	cp README_oauth2client snapshot/README
