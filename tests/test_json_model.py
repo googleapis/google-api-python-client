@@ -27,6 +27,7 @@ import unittest
 import httplib2
 import apiclient.model
 
+from apiclient import __version__
 from apiclient.errors import HttpError
 from apiclient.model import JsonModel
 from oauth2client.anyjson import simplejson
@@ -47,7 +48,8 @@ class Model(unittest.TestCase):
     query_params = {}
     body = None
 
-    headers, params, query, body = model.request(headers, path_params, query_params, body)
+    headers, params, query, body = model.request(
+        headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
     self.assertTrue('content-type' not in headers)
@@ -62,7 +64,8 @@ class Model(unittest.TestCase):
     query_params = {}
     body = {}
 
-    headers, params, query, body = model.request(headers, path_params, query_params, body)
+    headers, params, query, body = model.request(
+        headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
     self.assertEqual(headers['content-type'], 'application/json')
@@ -77,7 +80,8 @@ class Model(unittest.TestCase):
     query_params = {}
     body = {}
 
-    headers, params, query, body = model.request(headers, path_params, query_params, body)
+    headers, params, query, body = model.request(
+        headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
     self.assertEqual(headers['content-type'], 'application/json')
@@ -93,7 +97,8 @@ class Model(unittest.TestCase):
     query_params = {}
     body = {'data': 'foo'}
 
-    headers, params, query, body = model.request(headers, path_params, query_params, body)
+    headers, params, query, body = model.request(
+        headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
     self.assertEqual(headers['content-type'], 'application/json')
@@ -110,7 +115,8 @@ class Model(unittest.TestCase):
         'qux': []}
     body = {}
 
-    headers, params, query, body = model.request(headers, path_params, query_params, body)
+    headers, params, query, body = model.request(
+        headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
     self.assertEqual(headers['content-type'], 'application/json')
@@ -130,9 +136,11 @@ class Model(unittest.TestCase):
     query_params = {}
     body = {}
 
-    headers, params, query, body = model.request(headers, path_params, query_params, body)
+    headers, params, query, body = model.request(
+        headers, path_params, query_params, body)
 
-    self.assertEqual(headers['user-agent'], 'my-test-app/1.23.4 google-api-python-client/1.0')
+    self.assertEqual(headers['user-agent'],
+        'my-test-app/1.23.4 google-api-python-client/' + __version__)
 
   def test_bad_response(self):
     model = JsonModel(data_wrapper=False)

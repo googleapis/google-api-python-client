@@ -27,6 +27,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import logging
 import urllib
 
+from apiclient import __version__
 from errors import HttpError
 from oauth2client.anyjson import simplejson
 
@@ -140,7 +141,7 @@ class BaseModel(Model):
       headers['user-agent'] += ' '
     else:
       headers['user-agent'] = ''
-    headers['user-agent'] += 'google-api-python-client/1.0'
+    headers['user-agent'] += 'google-api-python-client/' + __version__
 
     if body_value is not None:
       headers['content-type'] = self.content_type
