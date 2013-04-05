@@ -32,17 +32,11 @@ import unittest
 import urllib
 
 try:
-    from urlparse import parse_qs
+  from urlparse import parse_qs
 except ImportError:
-    from cgi import parse_qs
+  from cgi import parse_qs
 
 import dev_appserver
-_EXTRA_PATHS = dev_appserver.EXTRA_PATHS
-_DIR_PATH = _EXTRA_PATHS[0]
-_OLD_WEBOB = os.path.join(_DIR_PATH, 'lib', 'webob_0_9')
-_WEBOB_INDEX = _EXTRA_PATHS.index(_OLD_WEBOB)
-_NEW_WEBOB = os.path.join(_DIR_PATH, 'lib', 'webob-1.2.3')
-_EXTRA_PATHS[_WEBOB_INDEX] = _NEW_WEBOB
 dev_appserver.fix_sys_path()
 import webapp2
 
@@ -91,16 +85,16 @@ def load_and_cache(existing_file, fakename, cache_mock):
 
 
 class CacheMock(object):
-    def __init__(self):
-      self.cache = {}
+  def __init__(self):
+    self.cache = {}
 
-    def get(self, key, namespace=''):
-      # ignoring namespace for easier testing
-      return self.cache.get(key, None)
+  def get(self, key, namespace=''):
+    # ignoring namespace for easier testing
+    return self.cache.get(key, None)
 
-    def set(self, key, value, namespace=''):
-      # ignoring namespace for easier testing
-      self.cache[key] = value
+  def set(self, key, value, namespace=''):
+    # ignoring namespace for easier testing
+    self.cache[key] = value
 
 
 class UserMock(object):
