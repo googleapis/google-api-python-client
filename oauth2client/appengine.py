@@ -367,7 +367,7 @@ class StorageByKeyName(Storage):
   """
 
   @util.positional(4)
-  def __init__(self, model, key_name, property_name, cache=None):
+  def __init__(self, model, key_name, property_name, cache=None, user=None):
     """Constructor for Storage.
 
     Args:
@@ -378,7 +378,14 @@ class StorageByKeyName(Storage):
       cache: memcache, a write-through cache to put in front of the datastore.
         If the model you are using is an NDB model, using a cache will be
         redundant since the model uses an instance cache and memcache for you.
+      user: users.User object, optional. Can be used to grab user ID as a
+        key_name if no key name is specified.
     """
+    if key_name is None:
+      if user is None:
+        raise ValueError('StorageByKeyName called with no key name or user.')
+      key_name = user.user_id()
+
     self._model = model
     self._key_name = key_name
     self._property_name = property_name
@@ -572,6 +579,9 @@ class OAuth2Decorator(object):
                message=None,
                callback_path='/oauth2callback',
                token_response_param=None,
+               _storage_class=StorageByKeyName,
+               _credentials_class=CredentialsModel,
+               _credentials_property_name='credentials',
                **kwargs):
 
     """Constructor for OAuth2Decorator
@@ -598,6 +608,16 @@ class OAuth2Decorator(object):
         to the access token request will be encoded and included in this query
         parameter in the callback URI. This is useful with providers (e.g.
         wordpress.com) that include extra fields that the client may want.
+      _storage_class: "Protected" keyword argument not typically provided to
+        this constructor. A storage class to aid in storing a Credentials object
+        for a user in the datastore. Defaults to StorageByKeyName.
+      _credentials_class: "Protected" keyword argument not typically provided to
+        this constructor. A db or ndb Model class to hold credentials. Defaults
+        to CredentialsModel.
+      _credentials_property_name: "Protected" keyword argument not typically
+        provided to this constructor. A string indicating the name of the field
+        on the _credentials_class where a Credentials object will be stored.
+        Defaults to 'credentials'.
       **kwargs: dict, Keyword arguments are be passed along as kwargs to the
         OAuth2WebServerFlow constructor.
     """
@@ -615,6 +635,9 @@ class OAuth2Decorator(object):
     self._in_error = False
     self._callback_path = callback_path
     self._token_response_param = token_response_param
+    self._storage_class = _storage_class
+    self._credentials_class = _credentials_class
+    self._credentials_property_name = _credentials_property_name
 
   def _display_error_message(self, request_handler):
     request_handler.response.out.write('<html><body>')
@@ -648,8 +671,9 @@ class OAuth2Decorator(object):
 
       # Store the request URI in 'state' so we can use it later
       self.flow.params['state'] = _build_state_value(request_handler, user)
-      self.credentials = StorageByKeyName(
-          CredentialsModel, user.user_id(), 'credentials').get()
+      self.credentials = self._storage_class(
+          self._credentials_class, None,
+          self._credentials_property_name, user=user).get()
 
       if not self.has_credentials():
         return request_handler.redirect(self.authorize_url())
@@ -710,8 +734,9 @@ class OAuth2Decorator(object):
       self._create_flow(request_handler)
 
       self.flow.params['state'] = _build_state_value(request_handler, user)
-      self.credentials = StorageByKeyName(
-          CredentialsModel, user.user_id(), 'credentials').get()
+      self.credentials = self._storage_class(
+          self._credentials_class, None,
+          self._credentials_property_name, user=user).get()
       return method(request_handler, *args, **kwargs)
     return setup_oauth
 
@@ -785,8 +810,9 @@ class OAuth2Decorator(object):
           user = users.get_current_user()
           decorator._create_flow(self)
           credentials = decorator.flow.step2_exchange(self.request.params)
-          StorageByKeyName(
-              CredentialsModel, user.user_id(), 'credentials').put(credentials)
+          decorator._storage_class(
+              decorator._credentials_class, None,
+              decorator._credentials_property_name, user=user).put(credentials)
           redirect_uri = _parse_state_value(str(self.request.get('state')),
                                             user)
 
