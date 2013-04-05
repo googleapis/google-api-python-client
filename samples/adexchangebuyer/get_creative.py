@@ -22,31 +22,29 @@ Tags: creatives.insert
 __author__ = ('david.t@google.com (David Torres)',
               'jdilallo@google.com (Joseph DiLallo)')
 
+import argparse
 import pprint
 import sys
-import gflags
-from oauth2client.client import AccessTokenRefreshError
-import sample_utils
 
-# Declare command-line flags, and set them as required.
-gflags.DEFINE_string('account_id', None,
-                     'The ID of the account that contains the creative',
-                     short_name='a')
-gflags.MarkFlagAsRequired('account_id')
-gflags.DEFINE_string('buyer_creative_id', None,
-                     'A buyer-specific id that identifies this creative',
-                     short_name='c')
-gflags.MarkFlagAsRequired('buyer_creative_id')
+from apiclient import sample_tools
+from oauth2client import client
+
+# Declare command-line flags.
+argparser = argparse.ArgumentParser(add_help=False)
+argparser.add_argument('account_id', type=int,
+                     help='The ID of the account that contains the creative')
+argparser.add_argument('buyer_creative_id',
+                     help='A buyer-specific id that identifies this creative')
 
 
 def main(argv):
-  sample_utils.process_flags(argv)
-  account_id = gflags.FLAGS.account_id
-  buyer_creative_id = gflags.FLAGS.buyer_creative_id
-  pretty_printer = pprint.PrettyPrinter()
-
   # Authenticate and construct service.
-  service = sample_utils.initialize_service()
+  service, flags = sample_tools.init(
+      argv, 'adexchangebuyer', 'v1.2', __doc__, __file__, parents=[argparser],
+      scope='https://www.googleapis.com/auth/adexchange.buyer')
+
+  account_id = flags.account_id
+  buyer_creative_id = flags.buyer_creative_id
 
   try:
     # Construct the request.
@@ -54,8 +52,8 @@ def main(argv):
                                       buyerCreativeId=buyer_creative_id)
 
     # Execute request and print response.
-    pretty_printer.pprint(request.execute())
-  except AccessTokenRefreshError:
+    pprint.pprint(request.execute())
+  except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')
 

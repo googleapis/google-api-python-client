@@ -21,31 +21,29 @@ Tags: accounts.patch
 
 __author__ = 'david.t@google.com (David Torres)'
 
+import argparse
 import pprint
 import sys
-import gflags
-from oauth2client.client import AccessTokenRefreshError
-import sample_utils
 
-# Declare command-line flags, and set them as required.
-gflags.DEFINE_string('account_id', None,
-                     'The ID of the account to which submit the creative',
-                     short_name='a')
-gflags.MarkFlagAsRequired('account_id')
-gflags.DEFINE_string('cookie_matching_url', None,
-                     'New cookie matching URL to set for the account ',
-                     short_name='u')
-gflags.MarkFlagAsRequired('cookie_matching_url')
+from apiclient import sample_tools
+from oauth2client import client
+
+# Declare command-line flags.
+argparser = argparse.ArgumentParser(add_help=False)
+argparser.add_argument('account_id', type=int,
+                     help='The ID of the account to which submit the creative')
+argparser.add_argument('cookie_matching_url',
+                     help='New cookie matching URL to set for the account ')
 
 
 def main(argv):
-  sample_utils.process_flags(argv)
-  account_id = gflags.FLAGS.account_id
-  cookie_matching_url = gflags.FLAGS.cookie_matching_url
-  pretty_printer = pprint.PrettyPrinter()
-
   # Authenticate and construct service.
-  service = sample_utils.initialize_service()
+  service, flags = sample_tools.init(
+      argv, 'adexchangebuyer', 'v1.2', __doc__, __file__, parents=[argparser],
+      scope='https://www.googleapis.com/auth/adexchange.buyer')
+
+  account_id = flags.account_id
+  cookie_matching_url = flags.cookie_matching_url
 
   try:
     # Account information to be updated.
@@ -55,8 +53,8 @@ def main(argv):
         }
     account = service.accounts().patch(id=account_id,
                                        body=account_body).execute()
-    pretty_printer.pprint(account)
-  except AccessTokenRefreshError:
+    pprint.pprint(account)
+  except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')
 

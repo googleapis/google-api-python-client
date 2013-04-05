@@ -23,22 +23,22 @@ __author__ = 'david.t@google.com (David Torres)'
 
 import pprint
 import sys
-from oauth2client.client import AccessTokenRefreshError
-import sample_utils
+
+from apiclient import sample_tools
+from oauth2client import client
 
 
 def main(argv):
-  sample_utils.process_flags(argv)
-  pretty_printer = pprint.PrettyPrinter()
-
-  # Authenticate and construct service
-  service = sample_utils.initialize_service()
+  # Authenticate and construct service.
+  service, flags = sample_tools.init(
+      argv, 'adexchangebuyer', 'v1.2', __doc__, __file__,
+      scope='https://www.googleapis.com/auth/adexchange.buyer')
 
   try:
     # Retrieve account list and display data as received
     result = service.accounts().list().execute()
-    pretty_printer.pprint(result)
-  except AccessTokenRefreshError:
+    pprint.pprint(result)
+  except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')
 
