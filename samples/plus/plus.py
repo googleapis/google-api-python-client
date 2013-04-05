@@ -21,53 +21,17 @@ Command-line application that retrieves the list of the user's posts."""
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-import argparse
-import logging
-import os
 import sys
 
-import httplib2
-
-from apiclient import discovery
-from oauth2client import file
 from oauth2client import client
-from oauth2client import tools
-
-
-# CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
-# application, including client_id and client_secret, which are found
-# on the API Access tab on the Google APIs
-# Console <http://code.google.com/apis/console>.
-CLIENT_SECRETS = os.path.join(os.path.dirname(__file__), 'client_secrets.json')
-
-# Set up a Flow object to be used if we need to authenticate.
-FLOW = client.flow_from_clientsecrets(CLIENT_SECRETS,
-    scope='https://www.googleapis.com/auth/plus.me',
-    message=tools.message_if_missing(CLIENT_SECRETS))
+from apiclient import sample_tools
 
 
 def main(argv):
-  # Parse command-line options.
-  parser = argparse.ArgumentParser(
-      description=__doc__,
-      formatter_class=argparse.RawDescriptionHelpFormatter,
-      parents=[tools.argparser])
-  flags = parser.parse_args(argv[1:])
-
-  # If the Credentials don't exist or are invalid run through the native client
-  # flow. The Storage object will ensure that if successful the good
-  # Credentials will get written back to a file.
-  storage = file.Storage('plus.dat')
-  credentials = storage.get()
-
-  if credentials is None or credentials.invalid:
-    credentials = tools.run(FLOW, storage, flags)
-
-  # Create an httplib2.Http object to handle our HTTP requests and authorize it
-  # with our good Credentials.
-  http = credentials.authorize(httplib2.Http())
-
-  service = discovery.build('plus', 'v1', http=http)
+  # Authenticate and construct service.
+  service, flags = sample_tools.init(
+      argv, 'plus', 'v1', __doc__, __file__,
+      scope='https://www.googleapis.com/auth/plus.me')
 
   try:
     person = service.people().get(userId='me').execute()

@@ -1,4 +1,4 @@
-# Copyright (C) 2010 Google Inc.
+# Copyright (C) 2013 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,19 +20,20 @@ the same directory.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
-__all__ = ['run']
+__all__ = ['argparser', 'run', 'message_if_missing']
 
 
 import BaseHTTPServer
 import argparse
+import httplib2
 import logging
 import os
 import socket
 import sys
 import webbrowser
 
-from oauth2client.client import FlowExchangeError
-from oauth2client.client import OOB_CALLBACK_URN
+from oauth2client import client
+from oauth2client import file
 from oauth2client import util
 
 try:
@@ -180,7 +181,7 @@ def run(flow, storage, flags, http=None):
   if not flags.noauth_local_webserver:
     oauth_callback = 'http://%s:%s/' % (flags.auth_host_name, port_number)
   else:
-    oauth_callback = OOB_CALLBACK_URN
+    oauth_callback = client.OOB_CALLBACK_URN
   flow.redirect_uri = oauth_callback
   authorize_url = flow.step1_get_authorize_url()
 
@@ -216,7 +217,7 @@ def run(flow, storage, flags, http=None):
 
   try:
     credential = flow.step2_exchange(code, http=http)
-  except FlowExchangeError, e:
+  except client.FlowExchangeError, e:
     sys.exit('Authentication has failed: %s' % e)
 
   storage.put(credential)
