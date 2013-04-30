@@ -738,7 +738,7 @@ class HttpRequest(object):
         start_headers['X-Upload-Content-Length'] = size
       start_headers['content-length'] = str(self.body_size)
 
-      resp, content = http.request(self.uri, self.method,
+      resp, content = http.request(self.uri, method=self.method,
                                    body=self.body,
                                    headers=start_headers)
       if resp.status == 200 and 'location' in resp:
@@ -793,7 +793,7 @@ class HttpRequest(object):
         'Content-Length': str(chunk_end - self.resumable_progress + 1)
         }
     try:
-      resp, content = http.request(self.resumable_uri, 'PUT',
+      resp, content = http.request(self.resumable_uri, method='PUT',
                                    body=data,
                                    headers=headers)
     except:
@@ -1162,7 +1162,7 @@ class BatchHttpRequest(object):
     headers['content-type'] = ('multipart/mixed; '
                                'boundary="%s"') % message.get_boundary()
 
-    resp, content = http.request(self._batch_uri, 'POST', body=body,
+    resp, content = http.request(self._batch_uri, method='POST', body=body,
                                  headers=headers)
 
     if resp.status >= 300:
