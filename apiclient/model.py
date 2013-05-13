@@ -141,7 +141,7 @@ class BaseModel(Model):
       headers['user-agent'] += ' '
     else:
       headers['user-agent'] = ''
-    headers['user-agent'] += 'google-api-python-client/' + __version__
+    headers['user-agent'] += 'google-api-python-client/%s (gzip)' % __version__
 
     if body_value is not None:
       headers['content-type'] = self.content_type

@@ -140,7 +140,8 @@ class Model(unittest.TestCase):
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['user-agent'],
-        'my-test-app/1.23.4 google-api-python-client/' + __version__)
+        'my-test-app/1.23.4 google-api-python-client/' + __version__ +
+        ' (gzip)')
 
   def test_bad_response(self):
     model = JsonModel(data_wrapper=False)
