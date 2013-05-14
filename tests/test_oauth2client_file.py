@@ -60,14 +60,13 @@ class OAuth2ClientFileTests(unittest.TestCase):
     except OSError:
       pass
 
-  def create_test_credentials(self):
+  def create_test_credentials(self, client_id='some_client_id'):
     access_token = 'foo'
     client_secret = 'cOuDdkfjxxnv+'
     refresh_token = '1/0/a.df219fjls0'
     token_expiry = datetime.datetime.utcnow()
     token_uri = 'https://www.google.com/accounts/o8/oauth2/token'
     user_agent = 'refresh_checker/1.0'
-    client_id = 'some_client_id'
 
     credentials = OAuth2Credentials(
         access_token, client_id, client_secret,
@@ -284,6 +283,41 @@ class OAuth2ClientFileTests(unittest.TestCase):
     stored_credentials = store.get()
 
     self.assertEqual(credentials.access_token, stored_credentials.access_token)
+
+
+  def test_multistore_file_get_all_keys(self):
+    # start with no keys
+    keys = multistore_file.get_all_credential_keys(FILENAME)
+    self.assertEquals([], keys)
+
+    # store credentials
+    credentials = self.create_test_credentials(client_id='client1')
+    custom_key = {'myapp': 'testing', 'clientid': 'client1'}
+    store1 = multistore_file.get_credential_storage_custom_key(
+        FILENAME, custom_key)
+    store1.put(credentials)
+
+    keys = multistore_file.get_all_credential_keys(FILENAME)
+    self.assertEquals([custom_key], keys)
+
+    # store more credentials
+    credentials = self.create_test_credentials(client_id='client2')
+    string_key = 'string_key'
+    store2 = multistore_file.get_credential_storage_custom_string_key(
+        FILENAME, string_key)
+    store2.put(credentials)
+
+    keys = multistore_file.get_all_credential_keys(FILENAME)
+    self.assertEquals(2, len(keys))
+    self.assertTrue(custom_key in keys)
+    self.assertTrue({'key': string_key} in keys)
+
+    # back to no keys
+    store1.delete()
+    store2.delete()
+    keys = multistore_file.get_all_credential_keys(FILENAME)
+    self.assertEquals([], keys)
+
 
 if __name__ == '__main__':
   unittest.main()
