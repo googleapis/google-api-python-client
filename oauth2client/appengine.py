@@ -25,6 +25,7 @@ import httplib2
 import logging
 import os
 import pickle
+import threading
 import time
 
 from google.appengine.api import app_identity
@@ -570,6 +571,22 @@ class OAuth2Decorator(object):
 
   """
 
+  def set_credentials(self, credentials):
+    self._tls.credentials = credentials
+
+  def get_credentials(self):
+    return self._tls.credentials
+
+  def set_flow(self, flow):
+    self._tls.flow = flow
+
+  def get_flow(self):
+    return self._tls.flow
+
+  flow = property(get_flow, set_flow)
+  credentials = property(get_credentials, set_credentials)
+
+
   @util.positional(4)
   def __init__(self, client_id, client_secret, scope,
                auth_uri=GOOGLE_AUTH_URI,
@@ -621,6 +638,7 @@ class OAuth2Decorator(object):
       **kwargs: dict, Keyword arguments are be passed along as kwargs to the
         OAuth2WebServerFlow constructor.
     """
+    self._tls = threading.local()
     self.flow = None
     self.credentials = None
     self._client_id = client_id
@@ -678,9 +696,12 @@ class OAuth2Decorator(object):
       if not self.has_credentials():
         return request_handler.redirect(self.authorize_url())
       try:
-        return method(request_handler, *args, **kwargs)
+        resp = method(request_handler, *args, **kwargs)
       except AccessTokenRefreshError:
         return request_handler.redirect(self.authorize_url())
+      finally:
+        self.credentials = None
+      return resp
 
     return check_oauth
 
@@ -737,8 +758,13 @@ class OAuth2Decorator(object):
       self.credentials = self._storage_class(
           self._credentials_class, None,
           self._credentials_property_name, user=user).get()
-      return method(request_handler, *args, **kwargs)
+      try:
+        resp = method(request_handler, *args, **kwargs)
+      finally:
+        self.credentials = None
+      return resp
     return setup_oauth
+
 
   def has_credentials(self):
     """True if for the logged in user there are valid access Credentials.
