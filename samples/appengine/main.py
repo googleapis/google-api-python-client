@@ -30,14 +30,19 @@ import logging
 import os
 import pickle
 
-from apiclient.discovery import build
-from oauth2client.appengine import oauth2decorator_from_clientsecrets
-from oauth2client.client import AccessTokenRefreshError
+from apiclient import discovery
+from oauth2client import appengine
+from oauth2client import client
 from google.appengine.api import memcache
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
-from google.appengine.ext.webapp.util import run_wsgi_app
 
+import webapp2
+import jinja2
+
+
+JINJA_ENVIRONMENT = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+    autoescape=True,
+    extensions=['jinja2.ext.autoescape'])
 
 # CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
 # application, including client_id and client_secret, which are found
@@ -63,25 +68,25 @@ href="https://code.google.com/apis/console">APIs Console</a>.
 
 
 http = httplib2.Http(memcache)
-service = build("plus", "v1", http=http)
-decorator = oauth2decorator_from_clientsecrets(
+service = discovery.build("plus", "v1", http=http)
+decorator = appengine.oauth2decorator_from_clientsecrets(
     CLIENT_SECRETS,
     scope='https://www.googleapis.com/auth/plus.me',
     message=MISSING_CLIENT_SECRETS_MESSAGE)
 
-class MainHandler(webapp.RequestHandler):
+class MainHandler(webapp2.RequestHandler):
 
   @decorator.oauth_aware
   def get(self):
-    path = os.path.join(os.path.dirname(__file__), 'grant.html')
     variables = {
         'url': decorator.authorize_url(),
         'has_credentials': decorator.has_credentials()
         }
-    self.response.out.write(template.render(path, variables))
+    template = JINJA_ENVIRONMENT.get_template('grant.html')
+    self.response.write(template.render(variables))
 
 
-class AboutHandler(webapp.RequestHandler):
+class AboutHandler(webapp2.RequestHandler):
 
   @decorator.oauth_required
   def get(self):
@@ -90,22 +95,16 @@ class AboutHandler(webapp.RequestHandler):
       user = service.people().get(userId='me').execute(http=http)
       text = 'Hello, %s!' % user['displayName']
 
-      path = os.path.join(os.path.dirname(__file__), 'welcome.html')
-      self.response.out.write(template.render(path, {'text': text }))
-    except AccessTokenRefreshError:
+      template = JINJA_ENVIRONMENT.get_template('welcome.html')
+      self.response.write(template.render({'text': text }))
+    except client.AccessTokenRefreshError:
       self.redirect('/')
 
 
-def main():
-  application = webapp.WSGIApplication(
-      [
-       ('/', MainHandler),
-       ('/about', AboutHandler),
-       (decorator.callback_path, decorator.callback_handler()),
-      ],
-      debug=True)
-  run_wsgi_app(application)
-
-
-if __name__ == '__main__':
-  main()
+app = webapp2.WSGIApplication(
+    [
+     ('/', MainHandler),
+     ('/about', AboutHandler),
+     (decorator.callback_path, decorator.callback_handler()),
+    ],
+    debug=True)
