@@ -23,17 +23,18 @@ Tags: savedadstyles.list
 __author__ = 'jalc@google.com (Jose Alcerreca)'
 
 import sys
-from oauth2client.client import AccessTokenRefreshError
-import sample_utils
+
+from apiclient import sample_tools
+from oauth2client import client
 
 MAX_PAGE_SIZE = 50
 
 
 def main(argv):
-  sample_utils.process_flags(argv)
-
   # Authenticate and construct service.
-  service = sample_utils.initialize_service()
+  service, flags = sample_tools.init(
+      argv, 'adsense', 'v1.2', __doc__, __file__, parents=[],
+      scope='https://www.googleapis.com/auth/adsense.readonly')
 
   try:
     # Retrieve ad client list in pages and display data as we receive it.
@@ -55,7 +56,7 @@ def main(argv):
 
       request = service.savedadstyles().list_next(request, result)
 
-  except AccessTokenRefreshError:
+  except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')
 

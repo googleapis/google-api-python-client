@@ -23,27 +23,27 @@ Tags: adunits.list
 
 __author__ = 'sergio.gomes@google.com (Sergio Gomes)'
 
+import argparse
 import sys
-import gflags
-from oauth2client.client import AccessTokenRefreshError
-import sample_utils
+
+from apiclient import sample_tools
+from oauth2client import client
+
+# Declare command-line flags.
+argparser = argparse.ArgumentParser(add_help=False)
+argparser.add_argument('ad_client_id',
+    help='The ID of the ad client for which to generate a report')
 
 MAX_PAGE_SIZE = 50
 
-# Declare command-line flags, and set them as required.
-gflags.DEFINE_string('ad_client_id', None,
-                     'The ad client ID for which to get ad units',
-                     short_name='c')
-gflags.MarkFlagAsRequired('ad_client_id')
-
 
 def main(argv):
-  # Process flags and read their values.
-  sample_utils.process_flags(argv)
-  ad_client_id = gflags.FLAGS.ad_client_id
-
   # Authenticate and construct service.
-  service = sample_utils.initialize_service()
+  service, flags = sample_tools.init(
+      argv, 'adsense', 'v1.2', __doc__, __file__, parents=[argparser],
+      scope='https://www.googleapis.com/auth/adsense.readonly')
+
+  ad_client_id = flags.ad_client_id
 
   try:
     # Retrieve ad unit list in pages and display data as we receive it.
@@ -59,7 +59,7 @@ def main(argv):
 
       request = service.adunits().list_next(request, result)
 
-  except AccessTokenRefreshError:
+  except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')
 

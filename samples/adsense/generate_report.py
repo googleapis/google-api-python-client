@@ -23,28 +23,29 @@ Tags: reports.generate
 
 __author__ = 'sergio.gomes@google.com (Sergio Gomes)'
 
+import argparse
 import sys
-import gflags
-from oauth2client.client import AccessTokenRefreshError
-import sample_utils
 
-# Declare command-line flags, and set them as required.
-gflags.DEFINE_string('ad_client_id', None,
-                     'The ID of the ad client for which to generate a report',
-                     short_name='c')
-gflags.DEFINE_string('report_id', None,
-                     'The ID of the saved report to generate',
-                     short_name='r')
+from apiclient import sample_tools
+from oauth2client import client
+
+# Declare command-line flags.
+argparser = argparse.ArgumentParser(add_help=False)
+argparser.add_argument('ad_client_id',
+    help='The ID of the ad client for which to generate a report')
+argparser.add_argument('report_id',
+    help='The ID of the saved report to generate')
 
 
 def main(argv):
-  # Process flags and read their values.
-  sample_utils.process_flags(argv)
-  ad_client_id = gflags.FLAGS.ad_client_id
-  saved_report_id = gflags.FLAGS.report_id
-
   # Authenticate and construct service.
-  service = sample_utils.initialize_service()
+  service, flags = sample_tools.init(
+      argv, 'adsense', 'v1.2', __doc__, __file__, parents=[argparser],
+      scope='https://www.googleapis.com/auth/adsense.readonly')
+
+  # Process flags and read their values.
+  ad_client_id = flags.ad_client_id
+  saved_report_id = flags.report_id
 
   try:
     # Retrieve report.
@@ -75,7 +76,7 @@ def main(argv):
         print '%25s' % column,
       print
 
-  except AccessTokenRefreshError:
+  except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')
 

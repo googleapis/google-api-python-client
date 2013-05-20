@@ -21,26 +21,27 @@ Tags: accounts.adclients.list
 
 __author__ = 'sergio.gomes@google.com (Sergio Gomes)'
 
+import argparse
 import sys
-from oauth2client.client import AccessTokenRefreshError
-import sample_utils
+
+from apiclient import sample_tools
+from oauth2client import client
 
 MAX_PAGE_SIZE = 50
 
-# Declare command-line flags, and set them as required.
-gflags.DEFINE_string('account_id', None,
-                     'The ID of the account for which to get ad clients',
-                     short_name='a')
-gflags.MarkFlagAsRequired('account_id')
+# Declare command-line flags.
+argparser = argparse.ArgumentParser(add_help=False)
+argparser.add_argument('account_id',
+                     help='The ID of the account for which to get ad clients')
 
 
 def main(argv):
-  # Process flags and read their values.
-  sample_utils.process_flags(argv)
-  account_id = gflags.FLAGS.account_id
-
   # Authenticate and construct service.
-  service = sample_utils.initialize_service()
+  service, flags = sample_tools.init(
+      argv, 'adsense', 'v1.2', __doc__, __file__, parents=[argparser],
+      scope='https://www.googleapis.com/auth/adsense.readonly')
+
+  account_id = flags.account_id
 
   try:
     # Retrieve ad client list in pages and display data as we receive it.
@@ -59,7 +60,7 @@ def main(argv):
 
       request = service.adclients().list_next(request, result)
 
-  except AccessTokenRefreshError:
+  except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')
 

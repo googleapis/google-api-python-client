@@ -24,39 +24,38 @@ Tags: customchannels.list
 
 __author__ = 'sergio.gomes@google.com (Sergio Gomes)'
 
+
+import argparse
+import sys
+
+from apiclient import sample_tools
+from oauth2client import client
+
 import sys
 import gflags
-from oauth2client.client import AccessTokenRefreshError
-import sample_utils
+
+# Declare command-line flags.
+argparser = argparse.ArgumentParser(add_help=False)
+argparser.add_argument('account_id',
+    help='The ID of the account with the specified ad unit')
+argparser.add_argument('ad_client_id',
+    help='The ID of the ad client with the specified ad unit')
+argparser.add_argument('ad_unit_id',
+    help='The ID of the ad unit for which to get custom channels')
 
 MAX_PAGE_SIZE = 50
 
-# Declare command-line flags, and set them as required.
-gflags.DEFINE_string('account_id', None,
-    'The ID of the account with the specified ad unit',
-    short_name='a')
-gflags.MarkFlagAsRequired('account_id')
-
-gflags.DEFINE_string('ad_client_id', None,
-    'The ID of the ad client with the specified ad unit',
-    short_name='c')
-gflags.MarkFlagAsRequired('ad_client_id')
-
-gflags.DEFINE_string('ad_unit_id', None,
-    'The ID of the ad unit for which to get custom channels',
-    short_name='u')
-gflags.MarkFlagAsRequired('ad_unit_id')
-
 
 def main(argv):
-  # Process flags and read their values.
-  sample_utils.process_flags(argv)
-  account_id = gflags.FLAGS.account_id
-  ad_client_id = gflags.FLAGS.ad_client_id
-  ad_unit_id = gflags.FLAGS.ad_unit_id
-
   # Authenticate and construct service.
-  service = sample_utils.initialize_service()
+  service, flags = sample_tools.init(
+      argv, 'adsense', 'v1.2', __doc__, __file__, parents=[argparser],
+      scope='https://www.googleapis.com/auth/adsense.readonly')
+
+  # Process flags and read their values.
+  account_id = flags.account_id
+  ad_client_id = flags.ad_client_id
+  ad_unit_id = flags.ad_unit_id
 
   try:
     # Retrieve custom channel list in pages and display data as we receive it.
@@ -85,7 +84,8 @@ def main(argv):
 
       request = service.customchannels().list_next(request, result)
 
-  except AccessTokenRefreshError:
+  except client.AccessTokenRefreshError:
+
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')
 
