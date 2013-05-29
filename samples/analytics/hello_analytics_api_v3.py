@@ -43,18 +43,19 @@ understands by running:
 
 __author__ = 'api.nickm@gmail.com (Nick Mihailovski)'
 
+import argparse
 import sys
-import sample_utils
 
 from apiclient.errors import HttpError
+from apiclient import sample_tools
 from oauth2client.client import AccessTokenRefreshError
 
 
 def main(argv):
-  sample_utils.process_flags(argv)
-
   # Authenticate and construct service.
-  service = sample_utils.initialize_service()
+  service, flags = sample_tools.init(
+      argv, 'analytics', 'v3', __doc__, __file__,
+      scope='https://www.googleapis.com/auth/analytics.readonly')
 
   # Try to make a request to the API. Print the results or handle errors.
   try:

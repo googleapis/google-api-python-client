@@ -33,7 +33,7 @@ Update the client_secrets.json file
   applications: https://code.google.com/apis/console
 
   Learn more about registering your analytics application here:
-  http://code.google.com/apis/analytics/docs/gdata/v3/gdataAuthorization.html
+  http://developers.google.com/analytics/devguides/reporting/core/v3/gdataAuthorization
 
 Supply your TABLE_ID
 
@@ -45,7 +45,11 @@ Supply your TABLE_ID
 
 Sample Usage:
 
-  $ python core_reporting_v3_reference.py
+  $ python core_reporting_v3_reference.py ga:xxxx
+
+Where the table ID is used to identify from which Google Anlaytics profile
+to retrieve data. This ID is in the format ga:xxxx where xxxx is the
+profile ID.
 
 Also you can also get help on all the command-line flags the program
 understands by running:
@@ -55,28 +59,29 @@ understands by running:
 
 __author__ = 'api.nickm@gmail.com (Nick Mihailovski)'
 
+import argparse
 import sys
-import sample_utils
 
 from apiclient.errors import HttpError
+from apiclient import sample_tools
 from oauth2client.client import AccessTokenRefreshError
 
-
-# The table ID is used to identify from which Google Anlaytics profile
-# to retrieve data. This ID is in the format ga:xxxx where xxxx is the
-# profile ID.
-TABLE_ID = 'INSERT_YOUR_TABLE_ID_HERE'
+# Declare command-line flags.
+argparser = argparse.ArgumentParser(add_help=False)
+argparser.add_argument('table_id', type=str,
+                     help=('The table ID of the profile you wish to access. '
+                           'Format is ga:xxx where xxx is your profile ID.'))
 
 
 def main(argv):
-  sample_utils.process_flags(argv)
-
   # Authenticate and construct service.
-  service = sample_utils.initialize_service()
+  service, flags = sample_tools.init(
+      argv, 'analytics', 'v3', __doc__, __file__, parents=[argparser],
+      scope='https://www.googleapis.com/auth/analytics.readonly')
 
   # Try to make a request to the API. Print the results or handle errors.
   try:
-    results = get_api_query(service).execute()
+    results = get_api_query(service, flags.table_id).execute()
     print_results(results)
 
   except TypeError, error:
@@ -94,15 +99,16 @@ def main(argv):
            'the application to re-authorize')
 
 
-def get_api_query(service):
+def get_api_query(service, table_id):
   """Returns a query object to retrieve data from the Core Reporting API.
 
   Args:
     service: The service object built by the Google API Python client library.
+    table_id: str The table ID form which to retrieve data.
   """
 
   return service.data().ga().get(
-      ids=TABLE_ID,
+      ids=table_id,
       start_date='2012-01-01',
       end_date='2012-01-15',
       metrics='ga:visits',

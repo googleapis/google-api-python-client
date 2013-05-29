@@ -28,9 +28,6 @@ first account, then all the profiles for the first web property and finally
 all the goals for the first profile. The sample then prints all the
 user's advanced segments.
 
-To read an indepth discussion on how this file works, check out the Management
-API Python Getting Started guide here:
-http://code.google.com/apis/analytics/docs/mgmt/v3/mgmtPython.html
 
 Before You Begin:
 
@@ -42,7 +39,7 @@ Update the client_secrets.json file
   applications: https://code.google.com/apis/console
 
   Learn more about registering your analytics application here:
-  http://code.google.com/apis/analytics/docs/gdata/v3/gdataAuthorization.html
+  https://developers.google.com/analytics/devguides/config/mgmt/v3/mgmtAuthorization
 
 Sample Usage:
 
@@ -56,18 +53,19 @@ understands by running:
 
 __author__ = 'api.nickm@gmail.com (Nick Mihailovski)'
 
+import argparse
 import sys
-import sample_utils
 
 from apiclient.errors import HttpError
+from apiclient import sample_tools
 from oauth2client.client import AccessTokenRefreshError
 
 
 def main(argv):
-  sample_utils.process_flags(argv)
-
   # Authenticate and construct service.
-  service = sample_utils.initialize_service()
+  service, flags = sample_tools.init(
+      argv, 'analytics', 'v3', __doc__, __file__,
+      scope='https://www.googleapis.com/auth/analytics.readonly')
 
   # Traverse the Management hiearchy and print results or handle errors.
   try:
@@ -157,7 +155,8 @@ def print_accounts(accounts_response):
     print 'Child link href = %s' % child_link.get('href')
     print 'Child link type = %s' % child_link.get('type')
     print
-  else:
+
+  if not accounts_response.get('items'):
     print 'No accounts found.\n'
 
 
@@ -192,7 +191,8 @@ def print_webproperties(webproperties_response):
     print 'Child link href    = %s' % child_link.get('href')
     print 'Child link type    = %s' % child_link.get('type')
     print
-  else:
+
+  if not webproperties_response.get('items'):
     print 'No webproperties found.\n'
 
 
@@ -239,7 +239,8 @@ def print_profiles(profiles_response):
     print 'Child link href  = %s' % child_link.get('href')
     print 'Child link type  = %s' % child_link.get('type')
     print
-  else:
+
+  if not profiles_response.get('items'):
     print 'No profiles found.\n'
 
 
@@ -295,7 +296,8 @@ def print_goals(goals_response):
       print_event_goal_details(goal.get('eventDetails'))
 
     print
-  else:
+
+  if not goals_response.get('items'):
     print 'No goals found.\n'
 
 
@@ -317,7 +319,8 @@ def print_url_destination_goal_details(goal_details):
     print 'Step Number  = %s' % goal_step.get('number')
     print 'Step Name    = %s' % goal_step.get('name')
     print 'Step URL     = %s' % goal_step.get('url')
-  else:
+
+  if not goal_details.get('steps'):
     print 'No Steps Configured'
 
 
