@@ -292,6 +292,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
       ({'status': '200',
         'content-range': '3-4/5'}, '45'),
     ])
+    self.assertEqual(True, self.request.http.follow_redirects)
 
     download = MediaIoBaseDownload(
         fd=self.fd, request=self.request, chunksize=3)
@@ -301,20 +302,25 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     self.assertEqual(0, download._progress)
     self.assertEqual(None, download._total_size)
     self.assertEqual(False, download._done)
+    self.assertEqual(True, download._original_follow_redirects)
     self.assertEqual(self.request.uri, download._uri)
 
     status, done = download.next_chunk()
 
     self.assertEqual(self.fd.getvalue(), '123')
     self.assertEqual(False, done)
+    self.assertEqual(False, self.request.http.follow_redirects)
     self.assertEqual(3, download._progress)
     self.assertEqual(5, download._total_size)
     self.assertEqual(3, status.resumable_progress)
+    self.assertEqual(True, download._original_follow_redirects)
 
     status, done = download.next_chunk()
 
+    self.assertEqual(True, download._original_follow_redirects)
     self.assertEqual(self.fd.getvalue(), '12345')
     self.assertEqual(True, done)
+    self.assertEqual(True, self.request.http.follow_redirects)
     self.assertEqual(5, download._progress)
     self.assertEqual(5, download._total_size)
 

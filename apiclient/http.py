@@ -505,6 +505,8 @@ class MediaIoBaseDownload(object):
     self._progress = 0
     self._total_size = None
     self._done = False
+    self._original_follow_redirects = request.http.follow_redirects
+    request.http.follow_redirects = False
 
   def next_chunk(self):
     """Get the next chunk of the download.
@@ -523,7 +525,6 @@ class MediaIoBaseDownload(object):
             self._progress, self._progress + self._chunksize)
         }
     http = self._request.http
-    http.follow_redirects = False
 
     resp, content = http.request(self._uri, headers=headers)
     if resp.status in [301, 302, 303, 307, 308] and 'location' in resp:
@@ -540,6 +541,7 @@ class MediaIoBaseDownload(object):
 
       if self._progress == self._total_size:
         self._done = True
+        self._request.http.follow_redirects = self._original_follow_redirects
       return MediaDownloadProgress(self._progress, self._total_size), self._done
     else:
       raise HttpError(resp, content, uri=self._uri)
