@@ -23,10 +23,13 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 # Do not remove the httplib2 import
 import httplib2
+import logging
 import os
 import unittest
 import urllib
+import random
 import StringIO
+import time
 
 from apiclient.discovery import build
 from apiclient.errors import BatchError
@@ -184,6 +187,9 @@ class TestMediaUpload(unittest.TestCase):
     self.assertEqual(http, new_req.http)
     self.assertEqual(media_upload.to_json(), new_req.resumable.to_json())
 
+    self.assertEqual(random.random, new_req._rand)
+    self.assertEqual(time.sleep, new_req._sleep)
+
 
 class TestMediaIoBaseUpload(unittest.TestCase):
 
@@ -276,6 +282,48 @@ class TestMediaIoBaseUpload(unittest.TestCase):
     except ImportError:
       pass
 
+  def test_media_io_base_next_chunk_retries(self):
+    try:
+      import io
+    except ImportError:
+      return
+
+    f = open(datafile('small.png'), 'r')
+    fd = io.BytesIO(f.read())
+    upload = MediaIoBaseUpload(
+        fd=fd, mimetype='image/png', chunksize=500, resumable=True)
+
+    # Simulate 5XXs for both the request that creates the resumable upload and
+    # the upload itself.
+    http = HttpMockSequence([
+      ({'status': '500'}, ''),
+      ({'status': '500'}, ''),
+      ({'status': '503'}, ''),
+      ({'status': '200', 'location': 'location'}, ''),
+      ({'status': '500'}, ''),
+      ({'status': '500'}, ''),
+      ({'status': '503'}, ''),
+      ({'status': '200'}, '{}'),
+    ])
+
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/upload/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        headers={},
+        resumable=upload)
+
+    sleeptimes = []
+    request._sleep = lambda x: sleeptimes.append(x)
+    request._rand = lambda: 10
+
+    request.execute(num_retries=3)
+    self.assertEqual([20, 40, 80, 20, 40, 80], sleeptimes)
+
 
 class TestMediaIoBaseDownload(unittest.TestCase):
 
@@ -366,6 +414,59 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     status, done = download.next_chunk()
 
     self.assertEqual(self.fd.getvalue(), '123')
+
+  def test_media_io_base_download_retries_5xx(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '500'}, ''),
+      ({'status': '500'}, ''),
+      ({'status': '500'}, ''),
+      ({'status': '200',
+        'content-range': '0-2/5'}, '123'),
+      ({'status': '503'}, ''),
+      ({'status': '503'}, ''),
+      ({'status': '503'}, ''),
+      ({'status': '200',
+        'content-range': '3-4/5'}, '45'),
+    ])
+
+    download = MediaIoBaseDownload(
+        fd=self.fd, request=self.request, chunksize=3)
+
+    self.assertEqual(self.fd, download._fd)
+    self.assertEqual(3, download._chunksize)
+    self.assertEqual(0, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(False, download._done)
+    self.assertEqual(self.request.uri, download._uri)
+
+    # Set time.sleep and random.random stubs.
+    sleeptimes = []
+    download._sleep = lambda x: sleeptimes.append(x)
+    download._rand = lambda: 10
+
+    status, done = download.next_chunk(num_retries=3)
+
+    # Check for exponential backoff using the rand function above.
+    self.assertEqual([20, 40, 80], sleeptimes)
+
+    self.assertEqual(self.fd.getvalue(), '123')
+    self.assertEqual(False, done)
+    self.assertEqual(3, download._progress)
+    self.assertEqual(5, download._total_size)
+    self.assertEqual(3, status.resumable_progress)
+
+    # Reset time.sleep stub.
+    del sleeptimes[0:len(sleeptimes)]
+
+    status, done = download.next_chunk(num_retries=3)
+
+    # Check for exponential backoff using the rand function above.
+    self.assertEqual([20, 40, 80], sleeptimes)
+
+    self.assertEqual(self.fd.getvalue(), '12345')
+    self.assertEqual(True, done)
+    self.assertEqual(5, download._progress)
+    self.assertEqual(5, download._total_size)
 
 EXPECTED = """POST /someapi/v1/collection/?foo=bar HTTP/1.1
 Content-Type: application/json
@@ -507,6 +608,58 @@ class TestHttpRequest(unittest.TestCase):
     self.assertEqual(str, type(http.uri))
     self.assertEqual(method, http.method)
     self.assertEqual(str, type(http.method))
+
+  def test_retry(self):
+    num_retries = 5
+    resp_seq = [({'status': '500'}, '')] * num_retries
+    resp_seq.append(({'status': '200'}, '{}'))
+
+    http = HttpMockSequence(resp_seq)
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/collection/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        body=u'{}',
+        headers={'content-type': 'application/json'})
+
+    sleeptimes = []
+    request._sleep = lambda x: sleeptimes.append(x)
+    request._rand = lambda: 10
+
+    request.execute(num_retries=num_retries)
+
+    self.assertEqual(num_retries, len(sleeptimes))
+    for retry_num in xrange(num_retries):
+      self.assertEqual(10 * 2**(retry_num + 1), sleeptimes[retry_num])
+
+  def test_no_retry_fails_fast(self):
+    http = HttpMockSequence([
+        ({'status': '500'}, ''),
+        ({'status': '200'}, '{}')
+        ])
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/collection/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        body=u'{}',
+        headers={'content-type': 'application/json'})
+
+    request._rand = lambda: 1.0
+    request._sleep = lambda _: self.fail('sleep should not have been called.')
+
+    try:
+      request.execute()
+      self.fail('Should have raised an exception.')
+    except HttpError:
+      pass
 
 
 class TestBatch(unittest.TestCase):
@@ -856,4 +1009,5 @@ class TestResponseCallback(unittest.TestCase):
 
 
 if __name__ == '__main__':
+  logging.getLogger().setLevel(logging.ERROR)
   unittest.main()
