@@ -350,32 +350,27 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     self.assertEqual(0, download._progress)
     self.assertEqual(None, download._total_size)
     self.assertEqual(False, download._done)
-    self.assertEqual(True, download._original_follow_redirects)
     self.assertEqual(self.request.uri, download._uri)
 
     status, done = download.next_chunk()
 
     self.assertEqual(self.fd.getvalue(), '123')
     self.assertEqual(False, done)
-    self.assertEqual(False, self.request.http.follow_redirects)
     self.assertEqual(3, download._progress)
     self.assertEqual(5, download._total_size)
     self.assertEqual(3, status.resumable_progress)
-    self.assertEqual(True, download._original_follow_redirects)
 
     status, done = download.next_chunk()
 
-    self.assertEqual(True, download._original_follow_redirects)
     self.assertEqual(self.fd.getvalue(), '12345')
     self.assertEqual(True, done)
-    self.assertEqual(True, self.request.http.follow_redirects)
     self.assertEqual(5, download._progress)
     self.assertEqual(5, download._total_size)
 
   def test_media_io_base_download_handle_redirects(self):
     self.request.http = HttpMockSequence([
-      ({'status': '307',
-        'location': 'https://secure.example.net/lion'}, ''),
+      ({'status': '200',
+        'content-location': 'https://secure.example.net/lion'}, ''),
       ({'status': '200',
         'content-range': '0-2/5'}, 'abc'),
     ])
@@ -386,10 +381,6 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     status, done = download.next_chunk()
 
     self.assertEqual('https://secure.example.net/lion', download._uri)
-    self.assertEqual(self.fd.getvalue(), 'abc')
-    self.assertEqual(False, done)
-    self.assertEqual(3, download._progress)
-    self.assertEqual(5, download._total_size)
 
   def test_media_io_base_download_handle_4xx(self):
     self.request.http = HttpMockSequence([
