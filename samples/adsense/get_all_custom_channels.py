@@ -21,7 +21,7 @@ To get ad clients, run get_all_ad_clients.py.
 Tags: customchannels.list
 """
 
-__author__ = 'sergio.gomes@google.com (Sergio Gomes)'
+__author__ = 'jalc@google.com (Jose Alcerreca)'
 
 import argparse
 import sys
@@ -40,7 +40,7 @@ MAX_PAGE_SIZE = 50
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.2', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   ad_client_id = flags.ad_client_id
@@ -54,8 +54,8 @@ def main(argv):
       result = request.execute()
       custom_channels = result['items']
       for custom_channel in custom_channels:
-        print ('Custom channel with code "%s" and name "%s" was found. '
-               % (custom_channel['code'], custom_channel['name']))
+        print ('Custom channel with id "%s" and name "%s" was found. '
+               % (custom_channel['id'], custom_channel['name']))
 
         if 'targetingInfo' in custom_channel:
           print '  Targeting info:'

@@ -21,7 +21,7 @@ To get ad clients, run get_all_ad_clients.py.
 Tags: adunits.list
 """
 
-__author__ = 'sergio.gomes@google.com (Sergio Gomes)'
+__author__ = 'jalc@google.com (Jose Alcerreca)'
 
 import argparse
 import sys
@@ -40,7 +40,7 @@ MAX_PAGE_SIZE = 50
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.2', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   ad_client_id = flags.ad_client_id

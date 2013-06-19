@@ -21,7 +21,7 @@ To get custom channels, run get_all_custom_channels.py.
 Tags: accounts.customchannels.adunits.list
 """
 
-__author__ = 'sergio.gomes@google.com (Sergio Gomes)'
+__author__ = 'jalc@google.com (Jose Alcerreca)'
 
 import argparse
 import sys
@@ -34,7 +34,7 @@ argparser = argparse.ArgumentParser(add_help=False)
 argparser.add_argument('account_id',
     help='The ID of the account with the specified custom channel')
 argparser.add_argument('ad_client_id',
-    help='The ID of the ad client for which to generate a report')
+    help='The ID of the ad client with the specified custom channel')
 argparser.add_argument('custom_channel_id',
     help='The ID of the custom channel for which to get ad units')
 
@@ -44,7 +44,7 @@ MAX_PAGE_SIZE = 50
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.2', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   # Process flags and read their values.

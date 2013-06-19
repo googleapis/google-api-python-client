@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2011 Google Inc. All Rights Reserved.
+# Copyright 2013 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This example gets all URL channels in an ad client.
+"""Gets all metrics available for the logged in user's default account.
 
-To get ad clients, run get_all_ad_clients.py.
-
-Tags: urlchannels.list
+Tags: metadata.metrics.list
 """
 
 __author__ = 'jalc@google.com (Jose Alcerreca)'
@@ -29,37 +27,26 @@ import sys
 from apiclient import sample_tools
 from oauth2client import client
 
-MAX_PAGE_SIZE = 50
-
-# Declare command-line flags.
-argparser = argparse.ArgumentParser(add_help=False)
-argparser.add_argument('ad_client_id',
-    help='The ad client ID for which to get URL channels')
-
 
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
-  ad_client_id = flags.ad_client_id
-
   try:
-    # Retrieve URL channel list in pages and display data as we receive it.
-    request = service.urlchannels().list(adClientId=ad_client_id,
-        maxResults=MAX_PAGE_SIZE)
+    # Retrieve metrics list in pages and display data as we receive it.
+    request = service.metadata().metrics().list()
 
-    while request is not None:
+    if request is not None:
       result = request.execute()
-
-      url_channels = result['items']
-      for url_channel in url_channels:
-        print ('URL channel with URL pattern "%s" was found.'
-               % url_channel['urlPattern'])
-
-      request = service.customchannels().list_next(request, result)
-
+      if 'items' in result:
+        metrics = result['items']
+        for metric in metrics:
+          print ('Metric id "%s" for product(s): [%s] was found. '
+                 % (metric['id'], ', '.join(metric['supportedProducts'])))
+      else:
+        print 'No metrics found!'
   except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')

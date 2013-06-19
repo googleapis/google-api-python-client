@@ -19,7 +19,7 @@
 Tags: accounts.adclients.list
 """
 
-__author__ = 'sergio.gomes@google.com (Sergio Gomes)'
+__author__ = 'jalc@google.com (Jose Alcerreca)'
 
 import argparse
 import sys
@@ -38,7 +38,7 @@ argparser.add_argument('account_id',
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.2', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   account_id = flags.account_id

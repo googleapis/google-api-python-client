@@ -22,8 +22,7 @@ get_all_ad_units.py.
 Tags: customchannels.list
 """
 
-__author__ = 'sergio.gomes@google.com (Sergio Gomes)'
-
+__author__ = 'jalc@google.com (Jose Alcerreca)'
 
 import argparse
 import sys
@@ -49,7 +48,7 @@ MAX_PAGE_SIZE = 50
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.2', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   # Process flags and read their values.
@@ -85,7 +84,6 @@ def main(argv):
       request = service.customchannels().list_next(request, result)
 
   except client.AccessTokenRefreshError:
-
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')
 
