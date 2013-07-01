@@ -38,91 +38,23 @@ To get detailed log output run:
 
 __author__ = 'zachn@google.com (Zach Newell)'
 
-import gflags
-import httplib2
-import logging
-import os
+import argparse
 import pprint
 import sys
 
-from apiclient.discovery import build
-from oauth2client.client import AccessTokenRefreshError
-from oauth2client.client import flow_from_clientsecrets
-from oauth2client.file import Storage
-from oauth2client.tools import run
+from oauth2client import client
+from apiclient import sample_tools
 
-
-FLAGS = gflags.FLAGS
-
-
-# CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
-# application, including client_id and client_secret, which are found
-# on the API Access tab on the Google APIs
-# Console <http://code.google.com/apis/console>
-CLIENT_SECRETS = 'client_secrets.json'
-
-# Helpful message to display in the browser if the CLIENT_SECRETS file
-# is missing.
-MISSING_CLIENT_SECRETS_MESSAGE = """
-WARNING: Please configure OAuth 2.0
-
-To make this sample run you will need to populate the client_secrets.json file
-found at:
-
-   %s
-
-with information from the APIs Console <https://code.google.com/apis/console>.
-
-""" % os.path.join(os.path.dirname(__file__), CLIENT_SECRETS)
-
-FLOW = flow_from_clientsecrets(CLIENT_SECRETS,
-    scope='https://www.googleapis.com/auth/coordinate',
-    message=MISSING_CLIENT_SECRETS_MESSAGE)
-
-
-# The gflags module makes defining command-line options easy for
-# applications. Run this program with the '--help' argument to see
-# all the flags that it understands.
-gflags.DEFINE_enum('logging_level', 'ERROR',
-    ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-    'Set the level of logging detail.')
-
-gflags.DEFINE_string('teamId', None, 'Coordinate Team ID', short_name='t')
-
-# Create a validator for the teamId flag.
-gflags.RegisterValidator('teamId',
-    lambda value: value is not None,
-    message='--teamId must be defined.',
-    flag_values=FLAGS)
-
-# Make the flag mandatory
-gflags.MarkFlagAsRequired('teamId')
+# Declare command-line flags.
+argparser = argparse.ArgumentParser(add_help=False)
+argparser.add_argument('teamId', help='Coordinate Team ID')
 
 
 def main(argv):
-  # Let the gflags module process the command-line arguments
-  try:
-    argv = FLAGS(argv)
-  except gflags.FlagsError, e:
-    print '%s\nUsage: %s ARGS\n%s' % (e, argv[0], FLAGS)
-    sys.exit(1)
-
-  # Set the logging according to the command-line flag
-  logging.getLogger().setLevel(getattr(logging, FLAGS.logging_level))
-
-  # If the Credentials don't exist or are invalid run through the native client
-  # flow. The Storage object will ensure that if successful the good
-  # Credentials will get written back to a file.
-  storage = Storage('coordinate.dat')
-  credentials = storage.get()
-
-  if credentials is None or credentials.invalid:
-    credentials = run(FLOW, storage)
-
-  # Create an httplib2.Http object to handle our HTTP requests and authorize it
-  # with our good Credentials.
-  http = httplib2.Http()
-  http = credentials.authorize(http)
+  # Authenticate and construct service.
+  service, flags = sample_tools.init(
+      argv, 'coordinate', 'v1', __doc__, __file__, parents=[argparser],
+      scope='https://www.googleapis.com/auth/coordinate')
 
   service = build('coordinate', 'v1', http=http)
 
@@ -142,7 +74,7 @@ def main(argv):
     # Insert a job and store the results
     insert_result = service.jobs().insert(body='',
       title='Google Campus',
-      teamId=FLAGS.teamId,
+      teamId=flags.teamId,
       address='1600 Amphitheatre Parkway Mountain View, CA 94043',
       lat='37.422120',
       lng='122.084429',
@@ -153,7 +85,7 @@ def main(argv):
 
     # Close the job
     update_result = service.jobs().update(body='',
-      teamId=FLAGS.teamId,
+      teamId=flags.teamId,
       jobId=insert_result['id'],
       progress='COMPLETED').execute()
 
