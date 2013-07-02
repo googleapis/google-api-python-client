@@ -85,7 +85,7 @@ def init(argv, name, version, doc, filename, scope=None, parents=[]):
   storage = file.Storage(name + '.dat')
   credentials = storage.get()
   if credentials is None or credentials.invalid:
-    credentials = tools.run(flow, storage, flags)
+    credentials = tools.run_flow(flow, storage, flags)
   http = credentials.authorize(http = httplib2.Http())
 
   # Construct a service object via the discovery service.

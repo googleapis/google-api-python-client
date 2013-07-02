@@ -20,7 +20,7 @@ the same directory.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
-__all__ = ['argparser', 'run', 'message_if_missing']
+__all__ = ['argparser', 'run_flow', 'run', 'message_if_missing']
 
 
 import BaseHTTPServer
@@ -107,7 +107,7 @@ class ClientRedirectHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
 @util.positional(3)
-def run(flow, storage, flags, http=None):
+def run_flow(flow, storage, flags, http=None):
   """Core code for a command-line application.
 
   The run() function is called from your application and runs through all the
@@ -231,3 +231,12 @@ def message_if_missing(filename):
   """Helpful message to display if the CLIENT_SECRETS file is missing."""
 
   return _CLIENT_SECRETS_MESSAGE % filename
+
+try:
+  from old_run import run
+except ImportError:
+  def run(*args, **kwargs):
+    raise NotImplementedError(
+        'The gflags library must be installed to use tools.run(). '
+        'Please install gflags or preferrably switch to using '
+        'tools.run_flow().')
