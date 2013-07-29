@@ -48,7 +48,7 @@ class Model(unittest.TestCase):
     query_params = {}
     body = None
 
-    headers, params, query, body = model.request(
+    headers, unused_params, query, body = model.request(
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
@@ -64,7 +64,7 @@ class Model(unittest.TestCase):
     query_params = {}
     body = {}
 
-    headers, params, query, body = model.request(
+    headers, unused_params, query, body = model.request(
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
@@ -80,7 +80,7 @@ class Model(unittest.TestCase):
     query_params = {}
     body = {}
 
-    headers, params, query, body = model.request(
+    headers, unused_params, query, body = model.request(
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
@@ -97,7 +97,7 @@ class Model(unittest.TestCase):
     query_params = {}
     body = {'data': 'foo'}
 
-    headers, params, query, body = model.request(
+    headers, unused_params, query, body = model.request(
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
@@ -115,7 +115,7 @@ class Model(unittest.TestCase):
         'qux': []}
     body = {}
 
-    headers, params, query, body = model.request(
+    headers, unused_params, query, body = model.request(
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['accept'], 'application/json')
@@ -136,7 +136,7 @@ class Model(unittest.TestCase):
     query_params = {}
     body = {}
 
-    headers, params, query, body = model.request(
+    headers, unused_params, unused_query, body = model.request(
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['user-agent'],
