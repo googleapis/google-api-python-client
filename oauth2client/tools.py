@@ -234,6 +234,7 @@ def message_if_missing(filename):
 
 try:
   from old_run import run
+  from old_run import FLAGS
 except ImportError:
   def run(*args, **kwargs):
     raise NotImplementedError(
