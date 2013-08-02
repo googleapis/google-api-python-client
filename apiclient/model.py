@@ -195,7 +195,6 @@ class BaseModel(Model):
     Raises:
       apiclient.errors.HttpError if a non 2xx response is received.
     """
-    content = content.decode('utf-8')
     self._log_response(resp, content)
     # Error handling is TBD, for example, do we retry
     # for some operation/error combinations?
@@ -258,6 +257,7 @@ class JsonModel(BaseModel):
     return simplejson.dumps(body_value)
 
   def deserialize(self, content):
+    content = content.decode('utf-8')
     body = simplejson.loads(content)
     if self._data_wrapper and isinstance(body, dict) and 'data' in body:
       body = body['data']
