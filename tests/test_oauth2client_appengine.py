@@ -505,6 +505,8 @@ class DecoratorTests(unittest.TestCase):
   def test_required(self):
     # An initial request to an oauth_required decorated path should be a
     # redirect to start the OAuth dance.
+    self.assertEqual(self.decorator.flow, None)
+    self.assertEqual(self.decorator.credentials, None)
     response = self.app.get('http://localhost/foo_path')
     self.assertTrue(response.status.startswith('302'))
     q = parse_qs(response.headers['Location'].split('?', 1)[1])

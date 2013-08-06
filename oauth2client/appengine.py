@@ -575,16 +575,31 @@ class OAuth2Decorator(object):
     self._tls.credentials = credentials
 
   def get_credentials(self):
-    return self._tls.credentials
+    """A thread local Credentials object.
+
+    Returns:
+      A client.Credentials object, or None if credentials hasn't been set in
+      this thread yet, which may happen when calling has_credentials inside
+      oauth_aware.
+    """
+    return getattr(self._tls, 'credentials', None)
+
+  credentials = property(get_credentials, set_credentials)
 
   def set_flow(self, flow):
     self._tls.flow = flow
 
   def get_flow(self):
-    return self._tls.flow
+    """A thread local Flow object.
+
+    Returns:
+      A credentials.Flow object, or None if the flow hasn't been set in this
+      thread yet, which happens in _create_flow() since Flows are created
+      lazily.
+    """
+    return getattr(self._tls, 'flow', None)
 
   flow = property(get_flow, set_flow)
-  credentials = property(get_credentials, set_credentials)
 
 
   @util.positional(4)
