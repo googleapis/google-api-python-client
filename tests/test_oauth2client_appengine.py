@@ -323,6 +323,22 @@ class StorageByKeyNameTest(unittest.TestCase):
     self.assertEqual(None, credentials)
     self.assertEqual(None, memcache.get('foo'))
 
+  def test_get_and_put_set_store_on_cache_retrieval(self):
+    storage = StorageByKeyName(
+      CredentialsModel, 'foo', 'credentials', cache=memcache)
+
+    self.assertEqual(None, storage.get())
+    self.credentials.set_store(storage)
+    storage.put(self.credentials)
+    # Pre-bug 292 old_creds wouldn't have storage, and the _refresh wouldn't
+    # be able to store the updated cred back into the storage.
+    old_creds = storage.get()
+    self.assertEqual(old_creds.access_token, 'foo')
+    old_creds.invalid = True
+    old_creds._refresh(_http_request)
+    new_creds = storage.get()
+    self.assertEqual(new_creds.access_token, 'bar')
+
   def test_get_and_put_ndb(self):
     # Start empty
     storage = StorageByKeyName(

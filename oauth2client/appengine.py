@@ -440,20 +440,20 @@ class StorageByKeyName(Storage):
     Returns:
       oauth2client.Credentials
     """
+    credentials = None
     if self._cache:
       json = self._cache.get(self._key_name)
       if json:
-        return Credentials.new_from_json(json)
-
-    credentials = None
-    entity = self._get_entity()
-    if entity is not None:
-      credentials = getattr(entity, self._property_name)
-      if credentials and hasattr(credentials, 'set_store'):
-        credentials.set_store(self)
+        credentials = Credentials.new_from_json(json)
+    if credentials is None:
+      entity = self._get_entity()
+      if entity is not None:
+        credentials = getattr(entity, self._property_name)
         if self._cache:
           self._cache.set(self._key_name, credentials.to_json())
 
+    if credentials and hasattr(credentials, 'set_store'):
+      credentials.set_store(self)
     return credentials
 
   def locked_put(self, credentials):
