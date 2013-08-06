@@ -78,7 +78,7 @@ h1, h2, h3 {
   <code><a href="#get">get(projectId, jobId)</a></code></p>
 <p class="firstline">Retrieves the specified job by ID.</p>
 <p class="toc_element">
-  <code><a href="#getQueryResults">getQueryResults(projectId, jobId, timeoutMs=None, maxResults=None, startIndex=None)</a></code></p>
+  <code><a href="#getQueryResults">getQueryResults(projectId, jobId, timeoutMs=None, pageToken=None, maxResults=None, startIndex=None)</a></code></p>
 <p class="firstline">Retrieves the results of a query job.</p>
 <p class="toc_element">
   <code><a href="#insert">insert(projectId, body=None, media_body=None)</a></code></p>
@@ -109,16 +109,16 @@ Returns:
         "state": "A String", # [Output-only] Running state of the job.
         "errors": [ # [Output-only] All errors encountered during the running of the job. Errors here do not necessarily mean that the job has completed or was unsuccessful.
           {
-            "debugInfo": "A String", # Debugging information for the service, if present. Should be ignored.
-            "message": "A String", # A human readable explanation of the error.
-            "reason": "A String", # Specifies the error reason. For example, reason will be "required" or "invalid" if some field was missing or malformed.
+            "debugInfo": "A String", # Debugging information. This property is internal to Google and should not be used.
+            "message": "A String", # A human-readable description of the error.
+            "reason": "A String", # A short error code that summarizes the error.
             "location": "A String", # Specifies where the error occurred, if present.
           },
         ],
         "errorResult": { # [Output-only] Final error result of the job. If present, indicates that the job has completed and was unsuccessful.
-          "debugInfo": "A String", # Debugging information for the service, if present. Should be ignored.
-          "message": "A String", # A human readable explanation of the error.
-          "reason": "A String", # Specifies the error reason. For example, reason will be "required" or "invalid" if some field was missing or malformed.
+          "debugInfo": "A String", # Debugging information. This property is internal to Google and should not be used.
+          "message": "A String", # A human-readable description of the error.
+          "reason": "A String", # A short error code that summarizes the error.
           "location": "A String", # Specifies where the error occurred, if present.
         },
       },
@@ -131,6 +131,8 @@ Returns:
           "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while an import job is in the running state, this value may change.
         },
         "query": { # [Output-only] Statistics for a query job.
+          "completionRatio": 3.14, # [Output-Only] Approximate fraction of data processed for this query. This will be 1.0 unless min_completion_ratio for the query was set to something other than 1.0.
+          "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
           "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for this job.
         },
         "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch.
@@ -154,6 +156,7 @@ Returns:
           },
           "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. Each action is atomic and only occurs if BigQuery is able to fully load the data and the load job completes without error. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists, a 'duplicate' error is returned in the job result. Creation, truncation and append actions occur as one atomic update upon job completion.
           "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when running the job. If the number of bad records exceeds this value, an 'invalid' error is returned in the job result and the job fails. The default value is 0, which requires that all records are valid.
+          "allowJaggedRows": True or False, # [Optional] Accept rows that are missing trailing optional columns. The missing values are treated as nulls. Default is false which treats short rows as errors. Only applicable to CSV, ignored for other formats.
           "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when loading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
           "sourceUris": [ # [Required] The fully-qualified URIs that point to your data on Google Cloud Storage.
             "A String",
@@ -169,13 +172,14 @@ Returns:
                 "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
                   # Object with schema name: TableFieldSchema
                 ],
-                "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates a nested schema).
+                "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
                 "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
                 "name": "A String", # [Required] The field name.
               },
             ],
           },
         },
+        "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
         "link": { # [Pick one] Configures a link job.
           "createDisposition": "A String", # [Optional] Whether or not to create a new table, if none exists.
           "writeDisposition": "A String", # [Optional] Whether to overwrite an existing table (WRITE_TRUNCATE), append to an existing table (WRITE_APPEND), or require that the the table is empty (WRITE_EMPTY). Default is WRITE_APPEND.
@@ -189,6 +193,7 @@ Returns:
           ],
         },
         "query": { # [Pick one] Configures a query job.
+          "useQueryCache": True or False, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified.
           "defaultDataset": { # [Optional] Specifies the default dataset to assume for unqualified table names in the query.
             "projectId": "A String", # [Optional] The ID of the container project.
             "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name.
@@ -201,8 +206,9 @@ Returns:
           "priority": "A String", # [Optional] Specifies a priority for the query. Default is INTERACTIVE. Alternative is BATCH.
           "writeDisposition": "A String", # [Optional] Whether to overwrite an existing table (WRITE_TRUNCATE), append to an existing table (WRITE_APPEND), or require that the the table is empty (WRITE_EMPTY). Default is WRITE_EMPTY.
           "allowLargeResults": True or False, # [Experimental] If true, allows >128M results to be materialized in the destination table. Requires destination_table to be set.
-          "createDisposition": "A String", # [Optional] Whether to create the table if it doesn't already exist (CREATE_IF_NEEDED) or to require the table already exist (CREATE_NEVER). Default is CREATE_IF_NEEDED.
           "query": "A String", # [Required] BigQuery SQL query to execute.
+          "createDisposition": "A String", # [Optional] Whether to create the table if it doesn't already exist (CREATE_IF_NEEDED) or to require the table already exist (CREATE_NEVER). Default is CREATE_IF_NEEDED.
+          "minCompletionRatio": 3.14, # [Experimental] Specifies the the minimum fraction of data that must be scanned before a query returns. This should be specified as a value between 0.0 and 1.0 inclusive. The default value is 1.0.
           "preserveNulls": True or False, # [Experimental] If set, preserve null values in table data, rather than mapping null values to the column's default value. This flag currently defaults to false, but the default will soon be changed to true. Shortly afterward, this flag will be removed completely. Please specify true if possible, and false only if you need to force the old behavior while updating client code.
         },
         "copy": { # [Pick one] Copies a table.
@@ -230,9 +236,6 @@ Returns:
           },
           "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
         },
-        "properties": { # [Optional] Properties providing extra details about how the job should be run. Not used for most jobs.
-          "a_key": "A String", # Key-value property pairs.
-        },
       },
       "id": "A String", # [Output-only] Opaque ID field of the job
       "selfLink": "A String", # [Output-only] A URL that can be used to access this resource again.
@@ -240,13 +243,14 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="getQueryResults">getQueryResults(projectId, jobId, timeoutMs=None, maxResults=None, startIndex=None)</code>
+    <code class="details" id="getQueryResults">getQueryResults(projectId, jobId, timeoutMs=None, pageToken=None, maxResults=None, startIndex=None)</code>
   <pre>Retrieves the results of a query job.
 
 Args:
   projectId: string, Project ID of the query job (required)
   jobId: string, Job ID of the query job (required)
   timeoutMs: integer, How long to wait for the query to complete, in milliseconds, before returning. Default is to return immediately. If the timeout passes before the job completes, the request will fail with a TIMEOUT error
+  pageToken: string, Page token, returned by a previous call, to request the next page of results
   maxResults: integer, Maximum number of results to read
   startIndex: string, Zero-based index of the starting row
 
@@ -258,7 +262,7 @@ Returns:
     "rows": [ # An object with as many results as can be contained within the maximum permitted reply size. To get any additional rows, you can call GetQueryResults and specify the jobReference returned above. Present only when the query completes successfully.
       { # Represents a single row in the result set, consisting of one or more fields.
         "f": [
-          { # Represents a single cell in the result set.
+          { # Represents a single cell in the result set. Users of the java client can detect whether their value result is null by calling 'com.google.api.client.util.Data.isNull(cell.getV())'.
             "v": "",
           },
         ],
@@ -268,8 +272,10 @@ Returns:
       "projectId": "A String", # [Required] Project ID being billed for the job.
       "jobId": "A String", # [Required] ID of the job.
     },
+    "pageToken": "A String", # A token used for paging results.
     "jobComplete": True or False, # Whether the query has completed or not. If rows or totalRows are present, this will always be true. If this is false, totalRows will not be available.
     "totalRows": "A String", # The total number of rows in the complete query result set, which can be more than the number of rows in this single page of results. Present only when the query completes successfully.
+    "cacheHit": True or False, # Whether the query result was fetched from the query cache.
     "etag": "A String", # A hash of this response.
     "schema": { # The schema of the results. Present only when the query completes successfully.
       "fields": [ # Describes the fields in a table.
@@ -277,7 +283,7 @@ Returns:
           "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
             # Object with schema name: TableFieldSchema
           ],
-          "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates a nested schema).
+          "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
           "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
           "name": "A String", # [Required] The field name.
         },
@@ -300,16 +306,16 @@ Args:
       "state": "A String", # [Output-only] Running state of the job.
       "errors": [ # [Output-only] All errors encountered during the running of the job. Errors here do not necessarily mean that the job has completed or was unsuccessful.
         {
-          "debugInfo": "A String", # Debugging information for the service, if present. Should be ignored.
-          "message": "A String", # A human readable explanation of the error.
-          "reason": "A String", # Specifies the error reason. For example, reason will be "required" or "invalid" if some field was missing or malformed.
+          "debugInfo": "A String", # Debugging information. This property is internal to Google and should not be used.
+          "message": "A String", # A human-readable description of the error.
+          "reason": "A String", # A short error code that summarizes the error.
           "location": "A String", # Specifies where the error occurred, if present.
         },
       ],
       "errorResult": { # [Output-only] Final error result of the job. If present, indicates that the job has completed and was unsuccessful.
-        "debugInfo": "A String", # Debugging information for the service, if present. Should be ignored.
-        "message": "A String", # A human readable explanation of the error.
-        "reason": "A String", # Specifies the error reason. For example, reason will be "required" or "invalid" if some field was missing or malformed.
+        "debugInfo": "A String", # Debugging information. This property is internal to Google and should not be used.
+        "message": "A String", # A human-readable description of the error.
+        "reason": "A String", # A short error code that summarizes the error.
         "location": "A String", # Specifies where the error occurred, if present.
       },
     },
@@ -322,6 +328,8 @@ Args:
         "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while an import job is in the running state, this value may change.
       },
       "query": { # [Output-only] Statistics for a query job.
+        "completionRatio": 3.14, # [Output-Only] Approximate fraction of data processed for this query. This will be 1.0 unless min_completion_ratio for the query was set to something other than 1.0.
+        "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
         "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for this job.
       },
       "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch.
@@ -345,6 +353,7 @@ Args:
         },
         "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. Each action is atomic and only occurs if BigQuery is able to fully load the data and the load job completes without error. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists, a 'duplicate' error is returned in the job result. Creation, truncation and append actions occur as one atomic update upon job completion.
         "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when running the job. If the number of bad records exceeds this value, an 'invalid' error is returned in the job result and the job fails. The default value is 0, which requires that all records are valid.
+        "allowJaggedRows": True or False, # [Optional] Accept rows that are missing trailing optional columns. The missing values are treated as nulls. Default is false which treats short rows as errors. Only applicable to CSV, ignored for other formats.
         "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when loading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
         "sourceUris": [ # [Required] The fully-qualified URIs that point to your data on Google Cloud Storage.
           "A String",
@@ -360,13 +369,14 @@ Args:
               "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
                 # Object with schema name: TableFieldSchema
               ],
-              "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates a nested schema).
+              "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
               "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
               "name": "A String", # [Required] The field name.
             },
           ],
         },
       },
+      "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
       "link": { # [Pick one] Configures a link job.
         "createDisposition": "A String", # [Optional] Whether or not to create a new table, if none exists.
         "writeDisposition": "A String", # [Optional] Whether to overwrite an existing table (WRITE_TRUNCATE), append to an existing table (WRITE_APPEND), or require that the the table is empty (WRITE_EMPTY). Default is WRITE_APPEND.
@@ -380,6 +390,7 @@ Args:
         ],
       },
       "query": { # [Pick one] Configures a query job.
+        "useQueryCache": True or False, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified.
         "defaultDataset": { # [Optional] Specifies the default dataset to assume for unqualified table names in the query.
           "projectId": "A String", # [Optional] The ID of the container project.
           "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name.
@@ -392,8 +403,9 @@ Args:
         "priority": "A String", # [Optional] Specifies a priority for the query. Default is INTERACTIVE. Alternative is BATCH.
         "writeDisposition": "A String", # [Optional] Whether to overwrite an existing table (WRITE_TRUNCATE), append to an existing table (WRITE_APPEND), or require that the the table is empty (WRITE_EMPTY). Default is WRITE_EMPTY.
         "allowLargeResults": True or False, # [Experimental] If true, allows >128M results to be materialized in the destination table. Requires destination_table to be set.
-        "createDisposition": "A String", # [Optional] Whether to create the table if it doesn't already exist (CREATE_IF_NEEDED) or to require the table already exist (CREATE_NEVER). Default is CREATE_IF_NEEDED.
         "query": "A String", # [Required] BigQuery SQL query to execute.
+        "createDisposition": "A String", # [Optional] Whether to create the table if it doesn't already exist (CREATE_IF_NEEDED) or to require the table already exist (CREATE_NEVER). Default is CREATE_IF_NEEDED.
+        "minCompletionRatio": 3.14, # [Experimental] Specifies the the minimum fraction of data that must be scanned before a query returns. This should be specified as a value between 0.0 and 1.0 inclusive. The default value is 1.0.
         "preserveNulls": True or False, # [Experimental] If set, preserve null values in table data, rather than mapping null values to the column's default value. This flag currently defaults to false, but the default will soon be changed to true. Shortly afterward, this flag will be removed completely. Please specify true if possible, and false only if you need to force the old behavior while updating client code.
       },
       "copy": { # [Pick one] Copies a table.
@@ -421,9 +433,6 @@ Args:
         },
         "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
       },
-      "properties": { # [Optional] Properties providing extra details about how the job should be run. Not used for most jobs.
-        "a_key": "A String", # Key-value property pairs.
-      },
     },
     "id": "A String", # [Output-only] Opaque ID field of the job
     "selfLink": "A String", # [Output-only] A URL that can be used to access this resource again.
@@ -439,16 +448,16 @@ Returns:
         "state": "A String", # [Output-only] Running state of the job.
         "errors": [ # [Output-only] All errors encountered during the running of the job. Errors here do not necessarily mean that the job has completed or was unsuccessful.
           {
-            "debugInfo": "A String", # Debugging information for the service, if present. Should be ignored.
-            "message": "A String", # A human readable explanation of the error.
-            "reason": "A String", # Specifies the error reason. For example, reason will be "required" or "invalid" if some field was missing or malformed.
+            "debugInfo": "A String", # Debugging information. This property is internal to Google and should not be used.
+            "message": "A String", # A human-readable description of the error.
+            "reason": "A String", # A short error code that summarizes the error.
             "location": "A String", # Specifies where the error occurred, if present.
           },
         ],
         "errorResult": { # [Output-only] Final error result of the job. If present, indicates that the job has completed and was unsuccessful.
-          "debugInfo": "A String", # Debugging information for the service, if present. Should be ignored.
-          "message": "A String", # A human readable explanation of the error.
-          "reason": "A String", # Specifies the error reason. For example, reason will be "required" or "invalid" if some field was missing or malformed.
+          "debugInfo": "A String", # Debugging information. This property is internal to Google and should not be used.
+          "message": "A String", # A human-readable description of the error.
+          "reason": "A String", # A short error code that summarizes the error.
           "location": "A String", # Specifies where the error occurred, if present.
         },
       },
@@ -461,6 +470,8 @@ Returns:
           "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while an import job is in the running state, this value may change.
         },
         "query": { # [Output-only] Statistics for a query job.
+          "completionRatio": 3.14, # [Output-Only] Approximate fraction of data processed for this query. This will be 1.0 unless min_completion_ratio for the query was set to something other than 1.0.
+          "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
           "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for this job.
         },
         "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch.
@@ -484,6 +495,7 @@ Returns:
           },
           "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. Each action is atomic and only occurs if BigQuery is able to fully load the data and the load job completes without error. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists, a 'duplicate' error is returned in the job result. Creation, truncation and append actions occur as one atomic update upon job completion.
           "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when running the job. If the number of bad records exceeds this value, an 'invalid' error is returned in the job result and the job fails. The default value is 0, which requires that all records are valid.
+          "allowJaggedRows": True or False, # [Optional] Accept rows that are missing trailing optional columns. The missing values are treated as nulls. Default is false which treats short rows as errors. Only applicable to CSV, ignored for other formats.
           "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when loading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
           "sourceUris": [ # [Required] The fully-qualified URIs that point to your data on Google Cloud Storage.
             "A String",
@@ -499,13 +511,14 @@ Returns:
                 "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
                   # Object with schema name: TableFieldSchema
                 ],
-                "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates a nested schema).
+                "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
                 "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
                 "name": "A String", # [Required] The field name.
               },
             ],
           },
         },
+        "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
         "link": { # [Pick one] Configures a link job.
           "createDisposition": "A String", # [Optional] Whether or not to create a new table, if none exists.
           "writeDisposition": "A String", # [Optional] Whether to overwrite an existing table (WRITE_TRUNCATE), append to an existing table (WRITE_APPEND), or require that the the table is empty (WRITE_EMPTY). Default is WRITE_APPEND.
@@ -519,6 +532,7 @@ Returns:
           ],
         },
         "query": { # [Pick one] Configures a query job.
+          "useQueryCache": True or False, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified.
           "defaultDataset": { # [Optional] Specifies the default dataset to assume for unqualified table names in the query.
             "projectId": "A String", # [Optional] The ID of the container project.
             "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name.
@@ -531,8 +545,9 @@ Returns:
           "priority": "A String", # [Optional] Specifies a priority for the query. Default is INTERACTIVE. Alternative is BATCH.
           "writeDisposition": "A String", # [Optional] Whether to overwrite an existing table (WRITE_TRUNCATE), append to an existing table (WRITE_APPEND), or require that the the table is empty (WRITE_EMPTY). Default is WRITE_EMPTY.
           "allowLargeResults": True or False, # [Experimental] If true, allows >128M results to be materialized in the destination table. Requires destination_table to be set.
-          "createDisposition": "A String", # [Optional] Whether to create the table if it doesn't already exist (CREATE_IF_NEEDED) or to require the table already exist (CREATE_NEVER). Default is CREATE_IF_NEEDED.
           "query": "A String", # [Required] BigQuery SQL query to execute.
+          "createDisposition": "A String", # [Optional] Whether to create the table if it doesn't already exist (CREATE_IF_NEEDED) or to require the table already exist (CREATE_NEVER). Default is CREATE_IF_NEEDED.
+          "minCompletionRatio": 3.14, # [Experimental] Specifies the the minimum fraction of data that must be scanned before a query returns. This should be specified as a value between 0.0 and 1.0 inclusive. The default value is 1.0.
           "preserveNulls": True or False, # [Experimental] If set, preserve null values in table data, rather than mapping null values to the column's default value. This flag currently defaults to false, but the default will soon be changed to true. Shortly afterward, this flag will be removed completely. Please specify true if possible, and false only if you need to force the old behavior while updating client code.
         },
         "copy": { # [Pick one] Copies a table.
@@ -559,9 +574,6 @@ Returns:
             "datasetId": "A String", # [Required] ID of the dataset containing the table.
           },
           "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
-        },
-        "properties": { # [Optional] Properties providing extra details about how the job should be run. Not used for most jobs.
-          "a_key": "A String", # Key-value property pairs.
         },
       },
       "id": "A String", # [Output-only] Opaque ID field of the job
@@ -602,16 +614,16 @@ Returns:
           "state": "A String", # [Output-only] Running state of the job.
           "errors": [ # [Output-only] All errors encountered during the running of the job. Errors here do not necessarily mean that the job has completed or was unsuccessful.
             {
-              "debugInfo": "A String", # Debugging information for the service, if present. Should be ignored.
-              "message": "A String", # A human readable explanation of the error.
-              "reason": "A String", # Specifies the error reason. For example, reason will be "required" or "invalid" if some field was missing or malformed.
+              "debugInfo": "A String", # Debugging information. This property is internal to Google and should not be used.
+              "message": "A String", # A human-readable description of the error.
+              "reason": "A String", # A short error code that summarizes the error.
               "location": "A String", # Specifies where the error occurred, if present.
             },
           ],
           "errorResult": { # [Output-only] Final error result of the job. If present, indicates that the job has completed and was unsuccessful.
-            "debugInfo": "A String", # Debugging information for the service, if present. Should be ignored.
-            "message": "A String", # A human readable explanation of the error.
-            "reason": "A String", # Specifies the error reason. For example, reason will be "required" or "invalid" if some field was missing or malformed.
+            "debugInfo": "A String", # Debugging information. This property is internal to Google and should not be used.
+            "message": "A String", # A human-readable description of the error.
+            "reason": "A String", # A short error code that summarizes the error.
             "location": "A String", # Specifies where the error occurred, if present.
           },
         },
@@ -624,6 +636,8 @@ Returns:
             "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while an import job is in the running state, this value may change.
           },
           "query": { # [Output-only] Statistics for a query job.
+            "completionRatio": 3.14, # [Output-Only] Approximate fraction of data processed for this query. This will be 1.0 unless min_completion_ratio for the query was set to something other than 1.0.
+            "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
             "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for this job.
           },
           "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch.
@@ -647,6 +661,7 @@ Returns:
             },
             "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. Each action is atomic and only occurs if BigQuery is able to fully load the data and the load job completes without error. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists, a 'duplicate' error is returned in the job result. Creation, truncation and append actions occur as one atomic update upon job completion.
             "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when running the job. If the number of bad records exceeds this value, an 'invalid' error is returned in the job result and the job fails. The default value is 0, which requires that all records are valid.
+            "allowJaggedRows": True or False, # [Optional] Accept rows that are missing trailing optional columns. The missing values are treated as nulls. Default is false which treats short rows as errors. Only applicable to CSV, ignored for other formats.
             "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when loading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
             "sourceUris": [ # [Required] The fully-qualified URIs that point to your data on Google Cloud Storage.
               "A String",
@@ -662,13 +677,14 @@ Returns:
                   "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
                     # Object with schema name: TableFieldSchema
                   ],
-                  "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates a nested schema).
+                  "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
                   "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
                   "name": "A String", # [Required] The field name.
                 },
               ],
             },
           },
+          "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
           "link": { # [Pick one] Configures a link job.
             "createDisposition": "A String", # [Optional] Whether or not to create a new table, if none exists.
             "writeDisposition": "A String", # [Optional] Whether to overwrite an existing table (WRITE_TRUNCATE), append to an existing table (WRITE_APPEND), or require that the the table is empty (WRITE_EMPTY). Default is WRITE_APPEND.
@@ -682,6 +698,7 @@ Returns:
             ],
           },
           "query": { # [Pick one] Configures a query job.
+            "useQueryCache": True or False, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified.
             "defaultDataset": { # [Optional] Specifies the default dataset to assume for unqualified table names in the query.
               "projectId": "A String", # [Optional] The ID of the container project.
               "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name.
@@ -694,8 +711,9 @@ Returns:
             "priority": "A String", # [Optional] Specifies a priority for the query. Default is INTERACTIVE. Alternative is BATCH.
             "writeDisposition": "A String", # [Optional] Whether to overwrite an existing table (WRITE_TRUNCATE), append to an existing table (WRITE_APPEND), or require that the the table is empty (WRITE_EMPTY). Default is WRITE_EMPTY.
             "allowLargeResults": True or False, # [Experimental] If true, allows >128M results to be materialized in the destination table. Requires destination_table to be set.
-            "createDisposition": "A String", # [Optional] Whether to create the table if it doesn't already exist (CREATE_IF_NEEDED) or to require the table already exist (CREATE_NEVER). Default is CREATE_IF_NEEDED.
             "query": "A String", # [Required] BigQuery SQL query to execute.
+            "createDisposition": "A String", # [Optional] Whether to create the table if it doesn't already exist (CREATE_IF_NEEDED) or to require the table already exist (CREATE_NEVER). Default is CREATE_IF_NEEDED.
+            "minCompletionRatio": 3.14, # [Experimental] Specifies the the minimum fraction of data that must be scanned before a query returns. This should be specified as a value between 0.0 and 1.0 inclusive. The default value is 1.0.
             "preserveNulls": True or False, # [Experimental] If set, preserve null values in table data, rather than mapping null values to the column's default value. This flag currently defaults to false, but the default will soon be changed to true. Shortly afterward, this flag will be removed completely. Please specify true if possible, and false only if you need to force the old behavior while updating client code.
           },
           "copy": { # [Pick one] Copies a table.
@@ -723,15 +741,12 @@ Returns:
             },
             "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
           },
-          "properties": { # [Optional] Properties providing extra details about how the job should be run. Not used for most jobs.
-            "a_key": "A String", # Key-value property pairs.
-          },
         },
         "id": "A String", # Unique opaque ID of the job.
         "errorResult": { # A result object that will be present only if the job has failed.
-          "debugInfo": "A String", # Debugging information for the service, if present. Should be ignored.
-          "message": "A String", # A human readable explanation of the error.
-          "reason": "A String", # Specifies the error reason. For example, reason will be "required" or "invalid" if some field was missing or malformed.
+          "debugInfo": "A String", # Debugging information. This property is internal to Google and should not be used.
+          "message": "A String", # A human-readable description of the error.
+          "reason": "A String", # A short error code that summarizes the error.
           "location": "A String", # Specifies where the error occurred, if present.
         },
       },
@@ -766,12 +781,14 @@ Args:
     "timeoutMs": 42, # [Optional] How long to wait for the query to complete, in milliseconds, before returning. Default is to return immediately. If the timeout passes before the job completes, the request will fail with a TIMEOUT error.
     "kind": "bigquery#queryRequest", # The resource type of the request.
     "dryRun": True or False, # [Optional] If set, don't actually run the query. A valid query will return an empty response, while an invalid query will return the same error it would if it wasn't a dry run.
+    "useQueryCache": True or False, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified.
     "defaultDataset": { # [Optional] Specifies the default datasetId and projectId to assume for any unqualified table names in the query. If not set, all table names in the query string must be fully-qualified in the format projectId:datasetId.tableid.
       "projectId": "A String", # [Optional] The ID of the container project.
       "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name.
     },
     "maxResults": 42, # [Optional] The maximum number of results to return per page of results. If the response list exceeds the maximum response size for a single response, you will have to page through the results. Default is to return the maximum response size.
     "query": "A String", # [Required] A query string, following the BigQuery query syntax of the query to execute. Table names should be qualified by dataset name in the format projectId:datasetId.tableId unless you specify the defaultDataset value. If the table is in the same project as the job, you can omit the project ID. Example: SELECT f1 FROM myProjectId:myDatasetId.myTableId.
+    "minCompletionRatio": 3.14, # [Experimental] Specifies the the minimum fraction of data that must be scanned before a query returns. This should be specified as a value between 0.0 and 1.0 inclusive. The default value is 1.0.
     "preserveNulls": True or False, # [Experimental] If set, preserve null values in table data, rather than mapping null values to the column's default value. This flag currently defaults to false, but the default will soon be changed to true. Shortly afterward, this flag will be removed completely. Please specify true if possible, and false only if you need to force the old behavior while updating client code.
   }
 
@@ -784,7 +801,7 @@ Returns:
     "rows": [ # An object with as many results as can be contained within the maximum permitted reply size. To get any additional rows, you can call GetQueryResults and specify the jobReference returned above.
       { # Represents a single row in the result set, consisting of one or more fields.
         "f": [
-          { # Represents a single cell in the result set.
+          { # Represents a single cell in the result set. Users of the java client can detect whether their value result is null by calling 'com.google.api.client.util.Data.isNull(cell.getV())'.
             "v": "",
           },
         ],
@@ -794,15 +811,18 @@ Returns:
       "projectId": "A String", # [Required] Project ID being billed for the job.
       "jobId": "A String", # [Required] ID of the job.
     },
+    "pageToken": "A String", # A token used for paging results.
     "jobComplete": True or False, # Whether the query has completed or not. If rows or totalRows are present, this will always be true. If this is false, totalRows will not be available.
     "totalRows": "A String", # The total number of rows in the complete query result set, which can be more than the number of rows in this single page of results.
+    "totalBytesProcessed": "A String", # The total number of bytes processed for this query. If this query was a dry run, this is the number of bytes that would be processed if the query were run.
+    "cacheHit": True or False, # Whether the query result was fetched from the query cache.
     "schema": { # The schema of the results. Present only when the query completes successfully.
       "fields": [ # Describes the fields in a table.
         {
           "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
             # Object with schema name: TableFieldSchema
           ],
-          "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates a nested schema).
+          "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
           "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
           "name": "A String", # [Required] The field name.
         },
