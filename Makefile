@@ -59,6 +59,7 @@ oauth2_prerelease: test
 	-sudo rm -rf snapshot/
 	mkdir snapshot
 	python expandsymlinks.py --source=oauth2client --dest=snapshot/oauth2client
+	python expandsymlinks.py --source=uritemplate --dest=snapshot/uritemplate
 	cp setup_oauth2client.py snapshot/setup.py
 	cp MANIFEST_oauth2client.in snapshot/MANIFEST.in
 	cp README_oauth2client snapshot/README
