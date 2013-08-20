@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This example retrieves a report for the specified ad client.
+"""Retrieves a saved report or a report for the specified ad client.
 
 To get ad clients, run get_all_ad_clients.py.
 
@@ -31,9 +31,11 @@ from oauth2client import client
 
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
-argparser.add_argument('ad_client_id',
+argparser.add_argument(
+    '--ad_client_id',
     help='The ID of the ad client for which to generate a report')
-argparser.add_argument('report_id',
+argparser.add_argument(
+    '--report_id',
     help='The ID of the saved report to generate')
 
 
@@ -51,7 +53,7 @@ def main(argv):
     # Retrieve report.
     if saved_report_id:
       result = service.reports().saved().generate(
-        savedReportId=saved_report_id).execute()
+          savedReportId=saved_report_id).execute()
     elif ad_client_id:
       result = service.reports().generate(
           startDate='2011-01-01', endDate='2011-08-31',
@@ -62,8 +64,7 @@ def main(argv):
           dimension=['DATE'],
           sort=['+DATE']).execute()
     else:
-      print ('Specify ad client id or saved report id!\nUsage: %s ARGS\\n%s'
-             % (sys.argv[0], gflags.FLAGS))
+      argparser.print_help()
       sys.exit(1)
     # Display headers.
     for header in result['headers']:

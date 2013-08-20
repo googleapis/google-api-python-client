@@ -30,16 +30,16 @@ import sys
 from apiclient import sample_tools
 from oauth2client import client
 
-import sys
-import gflags
-
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
-argparser.add_argument('account_id',
+argparser.add_argument(
+    'account_id',
     help='The ID of the account with the specified ad unit')
-argparser.add_argument('ad_client_id',
+argparser.add_argument(
+    'ad_client_id',
     help='The ID of the ad client with the specified ad unit')
-argparser.add_argument('ad_unit_id',
+argparser.add_argument(
+    'ad_unit_id',
     help='The ID of the ad unit for which to get custom channels')
 
 MAX_PAGE_SIZE = 50
