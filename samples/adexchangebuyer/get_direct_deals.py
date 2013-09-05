@@ -31,7 +31,7 @@ from oauth2client import client
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adexchangebuyer', 'v1.2', __doc__, __file__,
+      argv, 'adexchangebuyer', 'v1.3', __doc__, __file__,
       scope='https://www.googleapis.com/auth/adexchange.buyer')
 
   try:

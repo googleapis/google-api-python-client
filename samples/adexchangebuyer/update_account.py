@@ -39,7 +39,7 @@ argparser.add_argument('cookie_matching_url',
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adexchangebuyer', 'v1.2', __doc__, __file__, parents=[argparser],
+      argv, 'adexchangebuyer', 'v1.3', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adexchange.buyer')
 
   account_id = flags.account_id
