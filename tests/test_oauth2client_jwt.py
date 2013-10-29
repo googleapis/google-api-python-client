@@ -61,7 +61,15 @@ class CryptTests(unittest.TestCase):
     self.verifier = crypt.OpenSSLVerifier
 
   def test_sign_and_verify(self):
-    private_key = datafile('privatekey.%s' % self.format)
+    self._check_sign_and_verify('privatekey.%s' % self.format)
+
+  def test_sign_and_verify_from_converted_pkcs12(self):
+    """Tests that following instructions to convert from PKCS12 to PEM works."""
+    if self.format == 'pem':
+      self._check_sign_and_verify('pem_from_pkcs12.pem')
+
+  def _check_sign_and_verify(self, private_key_file):
+    private_key = datafile(private_key_file)
     public_key = datafile('publickey.pem')
 
     signer = self.signer.from_string(private_key)

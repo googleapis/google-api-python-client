@@ -38,7 +38,6 @@ class AppIdentityError(Exception):
 try:
   from OpenSSL import crypto
 
-
   class OpenSSLVerifier(object):
     """Verifies the signature on a message."""
 
@@ -125,8 +124,9 @@ try:
       Raises:
         OpenSSL.crypto.Error if the key can't be parsed.
       """
-      if key.startswith('-----BEGIN '):
-        pkey = crypto.load_privatekey(crypto.FILETYPE_PEM, key)
+      parsed_pem_key = _parse_pem_key(key)
+      if parsed_pem_key:
+        pkey = crypto.load_privatekey(crypto.FILETYPE_PEM, parsed_pem_key)
       else:
         pkey = crypto.load_pkcs12(key, password).get_privatekey()
       return OpenSSLSigner(pkey)
@@ -230,8 +230,9 @@ try:
       Raises:
         NotImplementedError if they key isn't in PEM format.
       """
-      if key.startswith('-----BEGIN '):
-        pkey = RSA.importKey(key)
+      parsed_pem_key = _parse_pem_key(key)
+      if parsed_pem_key:
+        pkey = RSA.importKey(parsed_pem_key)
       else:
         raise NotImplementedError(
             'PKCS12 format is not supported by the PyCrpto library. '
@@ -255,6 +256,24 @@ else:
   raise ImportError('No encryption library found. Please install either '
                     'PyOpenSSL, or PyCrypto 2.6 or later')
 
+
+def _parse_pem_key(raw_key_input):
+  """Identify and extract PEM keys.
+  
+  Determines whether the given key is in the format of PEM key, and extracts
+  the relevant part of the key if it is.
+  
+  Args:
+    raw_key_input: The contents of a private key file (either PEM or PKCS12).
+  
+  Returns:
+    string, The actual key if the contents are from a PEM file, or else None.
+  """
+  offset = raw_key_input.find('-----BEGIN ')
+  if offset != -1:
+    return raw_key_input[offset:]
+  else:
+    return None
 
 def _urlsafe_b64encode(raw_bytes):
   return base64.urlsafe_b64encode(raw_bytes).rstrip('=')
