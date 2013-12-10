@@ -124,7 +124,7 @@ def UploadShapefile(http, project_id, shapefile_prefix):
   }
 
   body = json.dumps(metadata)
-  create_url = "".join(BASE_URL, "upload")
+  create_url = "".join([BASE_URL, "upload"])
 
   logging.info("Uploading metadata for %s", shapefile_prefix)
 
