@@ -21,7 +21,6 @@ Tags: metadata.dimensions.list
 
 __author__ = 'jalc@google.com (Jose Alcerreca)'
 
-import argparse
 import sys
 
 from apiclient import sample_tools
@@ -30,8 +29,8 @@ from oauth2client import client
 
 def main(argv):
   # Authenticate and construct service.
-  service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[],
+  service, unused_flags = sample_tools.init(
+      argv, 'adsense', 'v1.4', __doc__, __file__, parents=[],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   try:

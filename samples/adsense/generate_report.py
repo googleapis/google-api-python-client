@@ -42,7 +42,7 @@ argparser.add_argument(
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.4', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   # Process flags and read their values.
@@ -76,6 +76,10 @@ def main(argv):
       for column in row:
         print '%25s' % column,
       print
+
+    # Display date range.
+    print 'Report from %s to %s.' % (result['startDate'], result['endDate'])
+    print
 
   except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '

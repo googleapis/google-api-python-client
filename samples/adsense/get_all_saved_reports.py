@@ -14,8 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This example gets all the saved reports for the logged
-in user's default account.
+"""Gets all the saved reports for  user's default account.
 
 Tags: savedreports.list
 """
@@ -32,8 +31,8 @@ MAX_PAGE_SIZE = 50
 
 def main(argv):
   # Authenticate and construct service.
-  service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[],
+  service, unused_flags = sample_tools.init(
+      argv, 'adsense', 'v1.4', __doc__, __file__, parents=[],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   try:

@@ -48,7 +48,7 @@ MAX_PAGE_SIZE = 50
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.4', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   # Process flags and read their values.

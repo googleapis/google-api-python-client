@@ -39,14 +39,15 @@ ROW_LIMIT = 5000
 
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
-argparser.add_argument('ad_client_id',
+argparser.add_argument(
+    'ad_client_id',
     help='The ID of the ad client for which to generate a report')
 
 
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.4', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   ad_client_id = flags.ad_client_id
@@ -88,7 +89,7 @@ def main(argv):
         if rows_to_obtain <= 0:
           break
 
-      if (start_index >= int(result['totalMatchedRows'])):
+      if start_index >= int(result['totalMatchedRows']):
         break
 
   except client.AccessTokenRefreshError:

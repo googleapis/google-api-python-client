@@ -32,13 +32,13 @@ MAX_PAGE_SIZE = 50
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
 argparser.add_argument('account_id',
-                     help='The ID of the account for which to get ad clients')
+                       help='The ID of the account for which to get ad clients')
 
 
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.4', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   account_id = flags.account_id

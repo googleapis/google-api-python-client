@@ -21,7 +21,6 @@ Tags: metadata.alerts.list
 
 __author__ = 'jalc@google.com (Jose Alcerreca)'
 
-import argparse
 import sys
 
 from apiclient import sample_tools
@@ -30,9 +29,9 @@ from oauth2client import client
 
 def main(argv):
   # Authenticate and construct service.
-  service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[],
-      scope='https://www.googleapis.com/auth/adsense.readonly')
+  service, unused_flags = sample_tools.init(
+      argv, 'adsense', 'v1.4', __doc__, __file__, parents=[],
+      scope='https://www.googleapis.com/auth/adsense')
 
   try:
     # Retrieve alerts list in pages and display data as we receive it.
@@ -45,6 +44,8 @@ def main(argv):
         for alert in alerts:
           print ('Alert id "%s" with severity "%s" and type "%s" was found. '
                  % (alert['id'], alert['severity'], alert['type']))
+          # Uncomment to dismiss alert. Note that this cannot be undone.
+          # service.alerts().delete(alertId=alert['id']).execute()
       else:
         print 'No alerts found!'
   except client.AccessTokenRefreshError:

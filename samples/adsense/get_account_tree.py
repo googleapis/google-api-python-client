@@ -31,14 +31,15 @@ from oauth2client import client
 
 # Declare command-line flags, and set them as required.
 argparser = argparse.ArgumentParser(add_help=False)
-argparser.add_argument('account_id',
-                     help='The ID of the account to use as the root of the tree')
+argparser.add_argument(
+    'account_id',
+    help='The ID of the account to use as the root of the tree')
 
 
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.4', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   # Process flags and read their values.
@@ -60,7 +61,7 @@ def main(argv):
 def display_tree(account, level=0):
   print (' ' * level * 2 +
          'Account with ID "%s" and name "%s" was found. ' %
-             (account['id'], account['name']))
+         (account['id'], account['name']))
 
   if 'subAccounts' in account:
     for sub_account in account['subAccounts']:

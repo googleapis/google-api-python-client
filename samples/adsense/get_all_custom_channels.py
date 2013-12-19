@@ -32,7 +32,7 @@ from oauth2client import client
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
 argparser.add_argument('ad_client_id',
-    help='The ad client ID for which to get custom channels')
+                       help='The ad client ID for which to get custom channels')
 
 MAX_PAGE_SIZE = 50
 
@@ -40,7 +40,7 @@ MAX_PAGE_SIZE = 50
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.4', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   ad_client_id = flags.ad_client_id
@@ -48,7 +48,7 @@ def main(argv):
   try:
     # Retrieve custom channel list in pages and display data as we receive it.
     request = service.customchannels().list(adClientId=ad_client_id,
-        maxResults=MAX_PAGE_SIZE)
+                                            maxResults=MAX_PAGE_SIZE)
 
     while request is not None:
       result = request.execute()

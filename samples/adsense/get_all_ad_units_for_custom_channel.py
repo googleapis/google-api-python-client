@@ -31,11 +31,14 @@ from oauth2client import client
 
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
-argparser.add_argument('account_id',
+argparser.add_argument(
+    'account_id',
     help='The ID of the account with the specified custom channel')
-argparser.add_argument('ad_client_id',
+argparser.add_argument(
+    'ad_client_id',
     help='The ID of the ad client with the specified custom channel')
-argparser.add_argument('custom_channel_id',
+argparser.add_argument(
+    'custom_channel_id',
     help='The ID of the custom channel for which to get ad units')
 
 MAX_PAGE_SIZE = 50
@@ -44,7 +47,7 @@ MAX_PAGE_SIZE = 50
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'adsense', 'v1.3', __doc__, __file__, parents=[argparser],
+      argv, 'adsense', 'v1.4', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/adsense.readonly')
 
   # Process flags and read their values.

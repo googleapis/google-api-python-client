@@ -31,7 +31,8 @@ from oauth2client import client
 
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
-argparser.add_argument('ad_client_id',
+argparser.add_argument(
+    'ad_client_id',
     help='The ID of the ad client for which to generate a report')
 
 MAX_PAGE_SIZE = 50
@@ -48,7 +49,7 @@ def main(argv):
   try:
     # Retrieve ad unit list in pages and display data as we receive it.
     request = service.adunits().list(adClientId=ad_client_id,
-        maxResults=MAX_PAGE_SIZE)
+                                     maxResults=MAX_PAGE_SIZE)
 
     while request is not None:
       result = request.execute()
