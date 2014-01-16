@@ -42,7 +42,7 @@ def main(argv):
         for payment in payments:
           print ('Payment with id "%s" of %s %s and date %s was found. '
                  % (str(payment['id']),
-                    payment['paymentAmountMicros'],
+                    payment['paymentAmount'],
                     payment['paymentAmountCurrencyCode'],
                     payment.get('paymentDate', 'unknown')))
       else:
