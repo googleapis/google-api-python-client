@@ -159,8 +159,12 @@ class AppAssertionCredentials(AssertionCredentials):
     Args:
       scope: string or iterable of strings, scope(s) of the credentials being
         requested.
+      kwargs: optional keyword args, including:
+        service_account_id: service account id of the application. If None or
+          unspecified, the default service account for the app is used.
     """
     self.scope = util.scopes_to_string(scope)
+    self.service_account_id = kwargs.get('service_account_id', None)
 
     # Assertion type is no longer used, but still in the parent class signature.
     super(AppAssertionCredentials, self).__init__(None)
@@ -186,7 +190,8 @@ class AppAssertionCredentials(AssertionCredentials):
     """
     try:
       scopes = self.scope.split()
-      (token, _) = app_identity.get_access_token(scopes)
+      (token, _) = app_identity.get_access_token(
+          scopes, service_account_id=self.service_account_id)
     except app_identity.Error, e:
       raise AccessTokenRefreshError(str(e))
     self.access_token = token

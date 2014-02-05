@@ -203,6 +203,23 @@ class TestAppAssertionCredentials(unittest.TestCase):
       'http://www.googleapis.com/scope http://www.googleapis.com/scope2',
       credentials.scope)
 
+  def test_custom_service_account(self):
+    scope = "http://www.googleapis.com/scope"
+    account_id = "service_account_name_2@appspot.com"
+    m = mox.Mox()
+    m.StubOutWithMock(app_identity, 'get_access_token')
+    app_identity.get_access_token(
+        [scope], service_account_id=account_id).AndReturn(('a_token_456', None))
+    m.ReplayAll()
+
+    credentials = AppAssertionCredentials(scope, service_account_id=account_id)
+    http = httplib2.Http()
+    credentials.refresh(http)
+    m.VerifyAll()
+    m.UnsetStubs()
+    self.assertEqual('a_token_456', credentials.access_token)
+    self.assertEqual(scope, credentials.scope)
+
 
 class TestFlowModel(db.Model):
   flow = FlowProperty()
