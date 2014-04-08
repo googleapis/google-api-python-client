@@ -37,8 +37,8 @@ def main(argv):
   try:
     # Retrieve direct deals and display them as received if any.
     result = service.directDeals().list().execute()
-    if 'direct_deals' in result:
-      deals = result['direct_deals']
+    if 'directDeals' in result:
+      deals = result['directDeals']
       for deal in deals:
         pprint.pprint(deal)
     else:
