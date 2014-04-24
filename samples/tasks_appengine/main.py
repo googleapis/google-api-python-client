@@ -15,7 +15,7 @@
 import webapp2
 from webapp2_extras import jinja2
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 from oauth2client.appengine import OAuth2Decorator
 
 import settings

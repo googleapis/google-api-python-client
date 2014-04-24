@@ -34,8 +34,8 @@ import re
 import describe
 import uritemplate
 
-from apiclient import discovery
-from apiclient.errors import HttpError
+from googleapiclient import discovery
+from googleapiclient.errors import HttpError
 from google.appengine.api import memcache
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template

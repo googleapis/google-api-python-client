@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for apiclient.schema."""
+"""Unit tests for googleapiclient.schema."""
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -20,7 +20,7 @@ import os
 import unittest
 import StringIO
 
-from apiclient.schema import Schemas
+from googleapiclient.schema import Schemas
 from oauth2client.anyjson import simplejson
 
 

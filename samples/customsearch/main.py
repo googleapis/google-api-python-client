@@ -24,7 +24,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import pprint
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 
 
 def main():

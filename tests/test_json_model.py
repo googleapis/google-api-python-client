@@ -25,11 +25,11 @@ import copy
 import os
 import unittest
 import httplib2
-import apiclient.model
+import googleapiclient.model
 
-from apiclient import __version__
-from apiclient.errors import HttpError
-from apiclient.model import JsonModel
+from googleapiclient import __version__
+from googleapiclient.errors import HttpError
+from googleapiclient.model import JsonModel
 from oauth2client.anyjson import simplejson
 
 # Python 2.5 requires different modules
@@ -216,9 +216,9 @@ class Model(unittest.TestCase):
         self.status = items['status']
         for key, value in items.iteritems():
           self[key] = value
-    old_logging = apiclient.model.logging
-    apiclient.model.logging = MockLogging()
-    apiclient.model.dump_request_response = True
+    old_logging = googleapiclient.model.logging
+    googleapiclient.model.logging = MockLogging()
+    googleapiclient.model.dump_request_response = True
     model = JsonModel()
     request_body = {
         'field1': 'value1',
@@ -233,18 +233,18 @@ class Model(unittest.TestCase):
                 'response_field_2': 'response_value_2'}
     response_body = model.response(MockResponse(response), body_string)
     self.assertEqual(request_body, response_body)
-    self.assertEqual(apiclient.model.logging.info_record[:2],
+    self.assertEqual(googleapiclient.model.logging.info_record[:2],
                      ['--request-start--',
                       '-headers-start-'])
     self.assertTrue('response_field_1: response_value_1' in
-                    apiclient.model.logging.info_record)
+                    googleapiclient.model.logging.info_record)
     self.assertTrue('response_field_2: response_value_2' in
-                    apiclient.model.logging.info_record)
-    self.assertEqual(simplejson.loads(apiclient.model.logging.info_record[-2]),
+                    googleapiclient.model.logging.info_record)
+    self.assertEqual(simplejson.loads(googleapiclient.model.logging.info_record[-2]),
                      request_body)
-    self.assertEqual(apiclient.model.logging.info_record[-1],
+    self.assertEqual(googleapiclient.model.logging.info_record[-1],
                      '--response-end--')
-    apiclient.model.logging = old_logging
+    googleapiclient.model.logging = old_logging
 
   def test_no_data_wrapper_deserialize(self):
     model = JsonModel(data_wrapper=False)

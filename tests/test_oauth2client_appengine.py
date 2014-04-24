@@ -40,7 +40,7 @@ import dev_appserver
 dev_appserver.fix_sys_path()
 import webapp2
 
-from apiclient.http import HttpMockSequence
+from googleapiclient.http import HttpMockSequence
 from google.appengine.api import apiproxy_stub
 from google.appengine.api import apiproxy_stub_map
 from google.appengine.api import app_identity

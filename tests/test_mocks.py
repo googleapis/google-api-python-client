@@ -25,12 +25,12 @@ import httplib2
 import os
 import unittest
 
-from apiclient.errors import HttpError
-from apiclient.errors import UnexpectedBodyError
-from apiclient.errors import UnexpectedMethodError
-from apiclient.discovery import build
-from apiclient.http import RequestMockBuilder
-from apiclient.http import HttpMock
+from googleapiclient.errors import HttpError
+from googleapiclient.errors import UnexpectedBodyError
+from googleapiclient.errors import UnexpectedMethodError
+from googleapiclient.discovery import build
+from googleapiclient.http import RequestMockBuilder
+from googleapiclient.http import HttpMock
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')

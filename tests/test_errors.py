@@ -24,7 +24,7 @@ import unittest
 import httplib2
 
 
-from apiclient.errors import HttpError
+from googleapiclient.errors import HttpError
 
 
 JSON_ERROR_CONTENT = """

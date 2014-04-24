@@ -1,4 +1,4 @@
-# Copyright (C) 2010 Google Inc.
+# Copyright (C) 2014 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@ are not already installed.
 from setuptools import setup
 
 packages = [
-  'apiclient',
-  'oauth2client',
-  'uritemplate',
-  ]
+    'googleapiclient',
+    'oauth2client',
+    'uritemplate',
+]
 
 install_requires = [
     'httplib2>=0.8',
-    ]
+]
 
 needs_json = False
 try:
@@ -44,23 +44,31 @@ if needs_json:
 long_desc = """The Google API Client for Python is a client library for
 accessing the Plus, Moderator, and many other Google APIs."""
 
-import apiclient
-version = apiclient.__version__
+import googleapiclient
+version = googleapiclient.__version__
 
-setup(name="google-api-python-client",
-      version=version,
-      description="Google API Client Library for Python",
-      long_description=long_desc,
-      author="Joe Gregorio",
-      author_email="jcgregorio@google.com",
-      url="http://code.google.com/p/google-api-python-client/",
-      install_requires=install_requires,
-      packages=packages,
-      package_data={},
-      license="Apache 2.0",
-      keywords="google api client",
-      classifiers=['Development Status :: 5 - Production/Stable',
-                   'Intended Audience :: Developers',
-                   'License :: OSI Approved :: Apache Software License',
-                   'Operating System :: POSIX',
-                   'Topic :: Internet :: WWW/HTTP'])
+setup(
+    name="google-api-python-client",
+    version=version,
+    description="Google API Client Library for Python",
+    long_description=long_desc,
+    author="Joe Gregorio",
+    author_email="jcgregorio@google.com",
+    url="http://github.com/google/google-api-python-client/",
+    install_requires=install_requires,
+    packages=packages,
+    package_data={},
+    license="Apache 2.0",
+    keywords="google api client",
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+        'Operating System :: POSIX',
+        'Topic :: Internet :: WWW/HTTP',
+    ],
+    package_dir={
+        'oauth2client':'oauth2client/oauth2client',
+        'uritemplate':'oauth2client/uritemplate',
+    },
+)

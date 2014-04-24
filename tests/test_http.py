@@ -16,7 +16,7 @@
 
 """Http tests
 
-Unit tests for the apiclient.http.
+Unit tests for the googleapiclient.http.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
@@ -31,23 +31,23 @@ import random
 import StringIO
 import time
 
-from apiclient.discovery import build
-from apiclient.errors import BatchError
-from apiclient.errors import HttpError
-from apiclient.errors import InvalidChunkSizeError
-from apiclient.http import BatchHttpRequest
-from apiclient.http import HttpMock
-from apiclient.http import HttpMockSequence
-from apiclient.http import HttpRequest
-from apiclient.http import MAX_URI_LENGTH
-from apiclient.http import MediaFileUpload
-from apiclient.http import MediaInMemoryUpload
-from apiclient.http import MediaIoBaseDownload
-from apiclient.http import MediaIoBaseUpload
-from apiclient.http import MediaUpload
-from apiclient.http import _StreamSlice
-from apiclient.http import set_user_agent
-from apiclient.model import JsonModel
+from googleapiclient.discovery import build
+from googleapiclient.errors import BatchError
+from googleapiclient.errors import HttpError
+from googleapiclient.errors import InvalidChunkSizeError
+from googleapiclient.http import BatchHttpRequest
+from googleapiclient.http import HttpMock
+from googleapiclient.http import HttpMockSequence
+from googleapiclient.http import HttpRequest
+from googleapiclient.http import MAX_URI_LENGTH
+from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaInMemoryUpload
+from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.http import MediaIoBaseUpload
+from googleapiclient.http import MediaUpload
+from googleapiclient.http import _StreamSlice
+from googleapiclient.http import set_user_agent
+from googleapiclient.model import JsonModel
 from oauth2client.client import Credentials
 
 

@@ -24,7 +24,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import httplib2
 import unittest
 
-from apiclient.model import makepatch
+from googleapiclient.model import makepatch
 
 
 TEST_CASES = [

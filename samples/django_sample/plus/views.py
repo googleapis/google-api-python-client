@@ -2,7 +2,7 @@ import os
 import logging
 import httplib2
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse

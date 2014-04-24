@@ -22,7 +22,7 @@ Command-line application that translates some text.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 
 
 def main():

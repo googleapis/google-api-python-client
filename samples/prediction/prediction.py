@@ -43,8 +43,8 @@ import pprint
 import sys
 import time
 
-from apiclient import discovery
-from apiclient import sample_tools
+from googleapiclient import discovery
+from googleapiclient import sample_tools
 from oauth2client import client
 
 

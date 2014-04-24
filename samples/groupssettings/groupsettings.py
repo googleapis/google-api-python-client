@@ -32,7 +32,7 @@ import os
 
 import pprint
 import sys
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 import httplib2
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage

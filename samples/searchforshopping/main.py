@@ -11,7 +11,7 @@ Command-line application that does a search for products.
 
 __author__ = 'aherrman@google.com (Andy Herrman)'
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 
 # Uncomment the next line to get very detailed logging
 # httplib2.debuglevel = 4

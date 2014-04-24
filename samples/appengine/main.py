@@ -30,7 +30,7 @@ import logging
 import os
 import pickle
 
-from apiclient import discovery
+from googleapiclient import discovery
 from oauth2client import appengine
 from oauth2client import client
 from google.appengine.api import memcache

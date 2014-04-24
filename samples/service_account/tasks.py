@@ -33,7 +33,7 @@ import httplib2
 import pprint
 import sys
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 from oauth2client.client import SignedJwtAssertionCredentials
 
 def main(argv):

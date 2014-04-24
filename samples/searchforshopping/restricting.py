@@ -8,7 +8,7 @@ API"""
 
 import pprint
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 
 
 SHOPPING_API_VERSION = 'v1'

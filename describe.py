@@ -29,9 +29,9 @@ import re
 import string
 import sys
 
-from apiclient.discovery import DISCOVERY_URI
-from apiclient.discovery import build
-from apiclient.discovery import build_from_document
+from googleapiclient.discovery import DISCOVERY_URI
+from googleapiclient.discovery import build
+from googleapiclient.discovery import build_from_document
 from oauth2client.anyjson import simplejson
 import httplib2
 import uritemplate

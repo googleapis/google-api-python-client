@@ -43,7 +43,7 @@ import pprint
 import sys
 
 from oauth2client import client
-from apiclient import sample_tools
+from googleapiclient import sample_tools
 
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)

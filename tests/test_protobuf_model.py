@@ -23,10 +23,10 @@ __author__ = 'mmcdonald@google.com (Matt McDonald)'
 
 import unittest
 import httplib2
-import apiclient.model
+import googleapiclient.model
 
-from apiclient.errors import HttpError
-from apiclient.model import ProtocolBufferModel
+from googleapiclient.errors import HttpError
+from googleapiclient.model import ProtocolBufferModel
 
 # Python 2.5 requires different modules
 try:

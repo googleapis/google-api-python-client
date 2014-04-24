@@ -29,8 +29,8 @@ import os
 import unittest
 import urlparse
 
-from apiclient.http import HttpMock
-from apiclient.http import HttpMockSequence
+from googleapiclient.http import HttpMock
+from googleapiclient.http import HttpMockSequence
 from oauth2client import GOOGLE_REVOKE_URI
 from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.anyjson import simplejson

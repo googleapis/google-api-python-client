@@ -39,7 +39,7 @@ import pprint
 import sys
 
 from oauth2client import client
-from apiclient import sample_tools
+from googleapiclient import sample_tools
 
 def main(argv):
   service, flags = sample_tools.init(

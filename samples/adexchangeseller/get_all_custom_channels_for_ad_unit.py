@@ -27,7 +27,7 @@ __author__ = 'sgomes@google.com (Sérgio Gomes)'
 import argparse
 import sys
 
-from apiclient import sample_tools
+from googleapiclient import sample_tools
 from oauth2client import client
 
 # Declare command-line flags.

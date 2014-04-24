@@ -5,7 +5,7 @@
 # To make this totally automatic add the following to
 # your ~/.bash_profile:
 #
-# export PYTHONPATH=/path/to/where/you/checked/out/apiclient
+# export PYTHONPATH=/path/to/where/you/checked/out/googleapiclient
 import sys
 import os
 

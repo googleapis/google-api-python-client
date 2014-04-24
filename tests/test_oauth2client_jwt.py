@@ -35,7 +35,7 @@ try:
 except ImportError:
     from cgi import parse_qs
 
-from apiclient.http import HttpMockSequence
+from googleapiclient.http import HttpMockSequence
 from oauth2client import crypt
 from oauth2client.anyjson import simplejson
 from oauth2client.client import Credentials

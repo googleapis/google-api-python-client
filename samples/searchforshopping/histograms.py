@@ -5,7 +5,7 @@
 
 """Query with ranked results against the shopping search API"""
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 
 
 SHOPPING_API_VERSION = 'v1'

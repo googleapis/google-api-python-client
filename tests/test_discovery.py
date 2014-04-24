@@ -40,29 +40,29 @@ except ImportError:
   from cgi import parse_qs
 
 
-from apiclient.discovery import _fix_up_media_upload
-from apiclient.discovery import _fix_up_method_description
-from apiclient.discovery import _fix_up_parameters
-from apiclient.discovery import build
-from apiclient.discovery import build_from_document
-from apiclient.discovery import DISCOVERY_URI
-from apiclient.discovery import key2param
-from apiclient.discovery import MEDIA_BODY_PARAMETER_DEFAULT_VALUE
-from apiclient.discovery import ResourceMethodParameters
-from apiclient.discovery import STACK_QUERY_PARAMETERS
-from apiclient.discovery import STACK_QUERY_PARAMETER_DEFAULT_VALUE
-from apiclient.errors import HttpError
-from apiclient.errors import InvalidJsonError
-from apiclient.errors import MediaUploadSizeError
-from apiclient.errors import ResumableUploadError
-from apiclient.errors import UnacceptableMimeTypeError
-from apiclient.http import HttpMock
-from apiclient.http import HttpMockSequence
-from apiclient.http import MediaFileUpload
-from apiclient.http import MediaIoBaseUpload
-from apiclient.http import MediaUpload
-from apiclient.http import MediaUploadProgress
-from apiclient.http import tunnel_patch
+from googleapiclient.discovery import _fix_up_media_upload
+from googleapiclient.discovery import _fix_up_method_description
+from googleapiclient.discovery import _fix_up_parameters
+from googleapiclient.discovery import build
+from googleapiclient.discovery import build_from_document
+from googleapiclient.discovery import DISCOVERY_URI
+from googleapiclient.discovery import key2param
+from googleapiclient.discovery import MEDIA_BODY_PARAMETER_DEFAULT_VALUE
+from googleapiclient.discovery import ResourceMethodParameters
+from googleapiclient.discovery import STACK_QUERY_PARAMETERS
+from googleapiclient.discovery import STACK_QUERY_PARAMETER_DEFAULT_VALUE
+from googleapiclient.errors import HttpError
+from googleapiclient.errors import InvalidJsonError
+from googleapiclient.errors import MediaUploadSizeError
+from googleapiclient.errors import ResumableUploadError
+from googleapiclient.errors import UnacceptableMimeTypeError
+from googleapiclient.http import HttpMock
+from googleapiclient.http import HttpMockSequence
+from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaIoBaseUpload
+from googleapiclient.http import MediaUpload
+from googleapiclient.http import MediaUploadProgress
+from googleapiclient.http import tunnel_patch
 from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client import util
 from oauth2client.anyjson import simplejson
@@ -100,7 +100,7 @@ def datafile(filename):
 class SetupHttplib2(unittest.TestCase):
 
   def test_retries(self):
-    # Merely loading apiclient.discovery should set the RETRIES to 1.
+    # Merely loading googleapiclient.discovery should set the RETRIES to 1.
     self.assertEqual(1, httplib2.RETRIES)
 
 

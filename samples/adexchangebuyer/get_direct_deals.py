@@ -24,7 +24,7 @@ __author__ = 'david.t@google.com (David Torres)'
 import pprint
 import sys
 
-from apiclient import sample_tools
+from googleapiclient import sample_tools
 from oauth2client import client
 
 

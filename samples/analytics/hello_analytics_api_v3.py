@@ -46,8 +46,8 @@ __author__ = 'api.nickm@gmail.com (Nick Mihailovski)'
 import argparse
 import sys
 
-from apiclient.errors import HttpError
-from apiclient import sample_tools
+from googleapiclient.errors import HttpError
+from googleapiclient import sample_tools
 from oauth2client.client import AccessTokenRefreshError
 
 
