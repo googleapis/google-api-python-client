@@ -146,7 +146,8 @@ def build(serviceName,
           discoveryServiceUrl=DISCOVERY_URI,
           developerKey=None,
           model=None,
-          requestBuilder=HttpRequest):
+          requestBuilder=HttpRequest,
+          credential=None):
   """Construct a Resource for interacting with an API.
 
   Construct a Resource object for interacting with an API. The serviceName and
@@ -166,6 +167,8 @@ def build(serviceName,
     model: googleapiclient.Model, converts to and from the wire format.
     requestBuilder: googleapiclient.http.HttpRequest, encapsulator for an HTTP
       request.
+    credential: oauth2client.Credentials, credentials to be used for
+      authentication.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -204,7 +207,8 @@ def build(serviceName,
     raise InvalidJsonError()
 
   return build_from_document(content, base=discoveryServiceUrl, http=http,
-      developerKey=developerKey, model=model, requestBuilder=requestBuilder)
+      developerKey=developerKey, model=model, requestBuilder=requestBuilder,
+      credential=credential)
 
 
 @positional(1)
@@ -215,7 +219,8 @@ def build_from_document(
     http=None,
     developerKey=None,
     model=None,
-    requestBuilder=HttpRequest):
+    requestBuilder=HttpRequest,
+    credential=None):
   """Create a Resource for interacting with an API.
 
   Same as `build()`, but constructs the Resource object from a discovery
@@ -236,6 +241,7 @@ def build_from_document(
     model: Model class instance that serializes and de-serializes requests and
       responses.
     requestBuilder: Takes an http request and packages it up to be executed.
+    credential: object, credentials to be used for authentication.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -248,6 +254,12 @@ def build_from_document(
     service = simplejson.loads(service)
   base = urlparse.urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
+
+  if credential:
+    if credential.scopesRequired():
+      credential = credential.createScoped(
+          service['auth']['oauth2']['scopes'].keys())
+    http = credential.authorize(http)
 
   if model is None:
     features = service.get('features', [])
