@@ -256,8 +256,8 @@ def build_from_document(
   schema = Schemas(service)
 
   if credential:
-    if credential.scopesRequired():
-      credential = credential.createScoped(
+    if credential.scopes_required():
+      credential = credential.create_scoped(
           service['auth']['oauth2']['scopes'].keys())
     http = credential.authorize(http)
 
