@@ -518,7 +518,7 @@ class Discovery(unittest.TestCase):
 
   def test_credential(self):
     class CredentialMock:
-      def scopesRequired(self):
+      def scopes_required(self):
         return False
 
       def authorize(self, http):

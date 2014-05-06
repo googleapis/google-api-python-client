@@ -257,8 +257,14 @@ def build_from_document(
 
   if credential:
     if credential.scopes_required():
-      credential = credential.create_scoped(
-          service['auth']['oauth2']['scopes'].keys())
+      if ('auth' in service and
+          'oauth2' in service['auth'] and
+          'scopes' in service['auth']['oauth2']):
+        credential = credential.create_scoped(
+            service['auth']['oauth2']['scopes'].keys())
+      else:
+        raise Exception('This service does not require authentication. '
+                        'No need to pass in a credential.')
     http = credential.authorize(http)
 
   if model is None:
