@@ -8,9 +8,11 @@ Installation
 
 To install, simply use `pip` or `easy_install`:
 
-   $ pip install --upgrade google-api-python-client
+    $ pip install --upgrade google-api-python-client
 
-   $ easy_install --upgrade google-api-python-client
+or
+
+    $ easy_install --upgrade google-api-python-client
 
 See the
 [Developers Guide](https://developers.google.com/api-client-library/python/start/get_started)
