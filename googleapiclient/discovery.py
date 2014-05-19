@@ -257,7 +257,7 @@ def build_from_document(
 
   if credentials:
     should_authorize = True
-    if credentials.scopes_required():
+    if credentials.create_scoped_required():
       if ('auth' in service and
           'oauth2' in service['auth'] and
           'scopes' in service['auth']['oauth2']):
