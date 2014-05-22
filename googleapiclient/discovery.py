@@ -190,7 +190,7 @@ def build(serviceName,
   if 'REMOTE_ADDR' in os.environ:
     requested_url = _add_query_parameter(requested_url, 'userIp',
                                          os.environ['REMOTE_ADDR'])
-  logger.info('URL being requested: %s' % requested_url)
+  logger.info('URL being requested: GET %s' % requested_url)
 
   resp, content = http.request(requested_url)
 
@@ -727,7 +727,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                                      'boundary="%s"') % multipart_boundary
           url = _add_query_parameter(url, 'uploadType', 'multipart')
 
-    logger.info('URL being requested: %s' % url)
+    logger.info('URL being requested: %s %s' % (httpMethod,url))
     return self._requestBuilder(self._http,
                                 model.response,
                                 url,
@@ -835,7 +835,7 @@ Returns:
 
     request.uri = uri
 
-    logger.info('URL being requested: %s' % uri)
+    logger.info('URL being requested: %s %s' % (methodName,uri))
 
     return request
 
