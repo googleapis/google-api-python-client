@@ -265,15 +265,15 @@ def build_from_document(
     #    found (meaning the given service requires no authentication), there is
     #    no authorization of the http. 
     if credentials.create_scoped_required():
-      if 'scopes' in service.get('auth', {}).get('oauth2', {}):
-        credentials = credentials.create_scoped(
-            service['auth']['oauth2']['scopes'].keys())
-        http = credentials.authorize(http)
+      scopes = service.get('auth', {}).get('oauth2', {}).get('scopes', {})
+      if scopes:
+        credentials = credentials.create_scoped(scopes.keys())
       else:
         # No need to authorize the http object
         # if the service does not require authentication.
-        pass
-    else:
+        credentials = None
+
+    if credentials:
       http = credentials.authorize(http)
 
   if model is None:
