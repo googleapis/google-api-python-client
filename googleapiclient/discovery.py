@@ -256,18 +256,16 @@ def build_from_document(
   schema = Schemas(service)
 
   if credentials:
-    should_authorize = True
     if credentials.create_scoped_required():
-      if ('auth' in service and
-          'oauth2' in service['auth'] and
-          'scopes' in service['auth']['oauth2']):
+      if 'scopes' in service.get('auth', {}).get('oauth2', {}):
         credentials = credentials.create_scoped(
             service['auth']['oauth2']['scopes'].keys())
+        http = credentials.authorize(http)
       else:
         # No need to authorize the http object
         # if the service does not require authentication.
-        should_authorize = False
-    if should_authorize:
+        pass
+    else:
       http = credentials.authorize(http)
 
   if model is None:
