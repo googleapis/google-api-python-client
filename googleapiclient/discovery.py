@@ -256,6 +256,14 @@ def build_from_document(
   schema = Schemas(service)
 
   if credentials:
+    # If credentials were passed in, we could have two cases:
+    # 1. the scopes were specified, in which case the given credentials
+    #    are used for authorizing the http;
+    # 2. the scopes were not provided (meaning the Default Credentials are
+    #    to be used). In this case, the Default Credentials are built and
+    #    used instead of the original credentials. If there are no scopes
+    #    found (meaning the given service requires no authentication), there is
+    #    no authorization of the http. 
     if credentials.create_scoped_required():
       if 'scopes' in service.get('auth', {}).get('oauth2', {}):
         credentials = credentials.create_scoped(
