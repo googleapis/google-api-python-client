@@ -146,7 +146,8 @@ def build(serviceName,
           discoveryServiceUrl=DISCOVERY_URI,
           developerKey=None,
           model=None,
-          requestBuilder=HttpRequest):
+          requestBuilder=HttpRequest,
+          credentials=None):
   """Construct a Resource for interacting with an API.
 
   Construct a Resource object for interacting with an API. The serviceName and
@@ -166,6 +167,8 @@ def build(serviceName,
     model: googleapiclient.Model, converts to and from the wire format.
     requestBuilder: googleapiclient.http.HttpRequest, encapsulator for an HTTP
       request.
+    credentials: oauth2client.Credentials, credentials to be used for
+      authentication.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -204,7 +207,8 @@ def build(serviceName,
     raise InvalidJsonError()
 
   return build_from_document(content, base=discoveryServiceUrl, http=http,
-      developerKey=developerKey, model=model, requestBuilder=requestBuilder)
+      developerKey=developerKey, model=model, requestBuilder=requestBuilder,
+      credentials=credentials)
 
 
 @positional(1)
@@ -215,7 +219,8 @@ def build_from_document(
     http=None,
     developerKey=None,
     model=None,
-    requestBuilder=HttpRequest):
+    requestBuilder=HttpRequest,
+    credentials=None):
   """Create a Resource for interacting with an API.
 
   Same as `build()`, but constructs the Resource object from a discovery
@@ -236,6 +241,7 @@ def build_from_document(
     model: Model class instance that serializes and de-serializes requests and
       responses.
     requestBuilder: Takes an http request and packages it up to be executed.
+    credentials: object, credentials to be used for authentication.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -248,6 +254,27 @@ def build_from_document(
     service = simplejson.loads(service)
   base = urlparse.urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
+
+  if credentials:
+    # If credentials were passed in, we could have two cases:
+    # 1. the scopes were specified, in which case the given credentials
+    #    are used for authorizing the http;
+    # 2. the scopes were not provided (meaning the Default Credentials are
+    #    to be used). In this case, the Default Credentials are built and
+    #    used instead of the original credentials. If there are no scopes
+    #    found (meaning the given service requires no authentication), there is
+    #    no authorization of the http. 
+    if credentials.create_scoped_required():
+      scopes = service.get('auth', {}).get('oauth2', {}).get('scopes', {})
+      if scopes:
+        credentials = credentials.create_scoped(scopes.keys())
+      else:
+        # No need to authorize the http object
+        # if the service does not require authentication.
+        credentials = None
+
+    if credentials:
+      http = credentials.authorize(http)
 
   if model is None:
     features = service.get('features', [])
