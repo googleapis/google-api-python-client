@@ -516,6 +516,20 @@ class Discovery(unittest.TestCase):
     self.assertTrue(getattr(plus, 'activities'))
     self.assertTrue(getattr(plus, 'people'))
 
+  def test_credentials(self):
+    class CredentialsMock:
+      def create_scoped_required(self):
+        return False
+
+      def authorize(self, http):
+        http.orest = True
+
+    self.http = HttpMock(datafile('plus.json'), {'status': '200'})
+    build('plus', 'v1', http=self.http, credentials=None)
+    self.assertFalse(hasattr(self.http, 'orest'))
+    build('plus', 'v1', http=self.http, credentials=CredentialsMock())
+    self.assertTrue(hasattr(self.http, 'orest'))
+
   def test_full_featured(self):
     # Zoo should exercise all discovery facets
     # and should also have no future.json file.
