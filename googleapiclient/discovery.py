@@ -63,6 +63,7 @@ from googleapiclient.model import MediaModel
 from googleapiclient.model import RawModel
 from googleapiclient.schema import Schemas
 from oauth2client.anyjson import simplejson
+from oauth2client.client import GoogleCredentials
 from oauth2client.util import _add_query_parameter
 from oauth2client.util import positional
 
@@ -263,8 +264,9 @@ def build_from_document(
     #    to be used). In this case, the Default Credentials are built and
     #    used instead of the original credentials. If there are no scopes
     #    found (meaning the given service requires no authentication), there is
-    #    no authorization of the http. 
-    if credentials.create_scoped_required():
+    #    no authorization of the http.
+    if (isinstance(credentials, GoogleCredentials) and
+        credentials.create_scoped_required()):
       scopes = service.get('auth', {}).get('oauth2', {}).get('scopes', {})
       if scopes:
         credentials = credentials.create_scoped(scopes.keys())
