@@ -802,7 +802,7 @@ class TestBatch(unittest.TestCase):
       parts = e.content.split(boundary)
       self.assertEqual(4, len(parts))
       self.assertEqual('', parts[0])
-      self.assertEqual('--', parts[3])
+      self.assertEqual('--', parts[3].rstrip())
       header = parts[1].splitlines()[1]
       self.assertEqual('Content-Type: application/http', header)
 
