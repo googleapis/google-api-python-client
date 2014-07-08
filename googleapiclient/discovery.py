@@ -260,11 +260,11 @@ def build_from_document(
     # If credentials were passed in, we could have two cases:
     # 1. the scopes were specified, in which case the given credentials
     #    are used for authorizing the http;
-    # 2. the scopes were not provided (meaning the Default Credentials are
-    #    to be used). In this case, the Default Credentials are built and
-    #    used instead of the original credentials. If there are no scopes
-    #    found (meaning the given service requires no authentication), there is
-    #    no authorization of the http.
+    # 2. the scopes were not provided (meaning the Application Default
+    #    Credentials are to be used). In this case, the Application Default
+    #    Credentials are built and used instead of the original credentials.
+    #    If there are no scopes found (meaning the given service requires no
+    #    authentication), there is no authorization of the http.
     if (isinstance(credentials, GoogleCredentials) and
         credentials.create_scoped_required()):
       scopes = service.get('auth', {}).get('oauth2', {}).get('scopes', {})
