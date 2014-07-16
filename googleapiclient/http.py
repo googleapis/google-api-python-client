@@ -1229,7 +1229,12 @@ class BatchHttpRequest(object):
       msg.set_payload(body)
       message.attach(msg)
 
-    body = message.as_string()
+    # encode the body: note that we can't use `as_string`, because
+    # it plays games with `From ` lines.
+    fp = StringIO.StringIO()
+    g = Generator(fp, mangle_from_=False)
+    g.flatten(message, unixfrom=False)
+    body = fp.getvalue()
 
     headers = {}
     headers['content-type'] = ('multipart/mixed; '
