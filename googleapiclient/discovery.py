@@ -27,7 +27,9 @@ __all__ = [
 
 
 # Standard library imports
+import StringIO
 import copy
+from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 import keyword
@@ -728,7 +730,12 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
           payload = media_upload.getbytes(0, media_upload.size())
           msg.set_payload(payload)
           msgRoot.attach(msg)
-          body = msgRoot.as_string()
+          # encode the body: note that we can't use `as_string`, because
+          # it plays games with `From ` lines.
+          fp = StringIO.StringIO()
+          g = Generator(fp, mangle_from_=False)
+          g.flatten(msgRoot, unixfrom=False)
+          body = fp.getvalue()
 
           multipart_boundary = msgRoot.get_boundary()
           headers['content-type'] = ('multipart/related; '
