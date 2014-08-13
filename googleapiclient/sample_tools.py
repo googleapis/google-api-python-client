@@ -92,7 +92,7 @@ def init(argv, name, version, doc, filename, scope=None, parents=[], discovery_f
   if discovery_filename is None:
     # Construct a service object via the discovery service.
     service = discovery.build(name, version, http=http)
-  else  # Construct a service from the local documents
+  else:
     # Construct a service object using a local discovery document file.
     f = open(discovery_filename)
     discovery_doc = f.read()
