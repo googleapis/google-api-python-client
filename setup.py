@@ -30,11 +30,11 @@ from setuptools import setup
 packages = [
     'googleapiclient',
     'oauth2client',
-    'uritemplate',
 ]
 
 install_requires = [
     'httplib2>=0.8',
+    'uritemplate>=0.6',
 ]
 
 long_desc = """The Google API Client for Python is a client library for
@@ -65,6 +65,5 @@ setup(
     ],
     package_dir={
         'oauth2client':'oauth2client/oauth2client',
-        'uritemplate':'oauth2client/uritemplate',
     },
 )
