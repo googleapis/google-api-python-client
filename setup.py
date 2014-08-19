@@ -17,6 +17,14 @@
 Also installs included versions of third party libraries, if those libraries
 are not already installed.
 """
+from __future__ import print_function
+
+import sys
+
+if sys.version_info <= (2, 6):
+  print('oauth2client requires python version >= 2.6.', file=sys.stderr)
+  sys.exit(1)
+
 from setuptools import setup
 
 packages = [
@@ -28,18 +36,6 @@ packages = [
 install_requires = [
     'httplib2>=0.8',
 ]
-
-needs_json = False
-try:
-  import json
-except ImportError:
-  try:
-    import simplejson
-  except ImportError:
-    needs_json = True
-
-if needs_json:
-  install_requires.append('simplejson')
 
 long_desc = """The Google API Client for Python is a client library for
 accessing the Plus, Moderator, and many other Google APIs."""
