@@ -22,6 +22,7 @@ Unit tests for the JSON model.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import copy
+import json
 import os
 import unittest
 import httplib2
@@ -30,7 +31,6 @@ import googleapiclient.model
 from googleapiclient import __version__
 from googleapiclient.errors import HttpError
 from googleapiclient.model import JsonModel
-from oauth2client.anyjson import simplejson
 
 # Python 2.5 requires different modules
 try:
@@ -225,7 +225,7 @@ class Model(unittest.TestCase):
         'field2': 'value2'
         }
     body_string = model.request({}, {}, {}, request_body)[-1]
-    json_body = simplejson.loads(body_string)
+    json_body = json.loads(body_string)
     self.assertEqual(request_body, json_body)
 
     response = {'status': 200,
@@ -240,7 +240,7 @@ class Model(unittest.TestCase):
                     googleapiclient.model.logging.info_record)
     self.assertTrue('response_field_2: response_value_2' in
                     googleapiclient.model.logging.info_record)
-    self.assertEqual(simplejson.loads(googleapiclient.model.logging.info_record[-2]),
+    self.assertEqual(json.loads(googleapiclient.model.logging.info_record[-2]),
                      request_body)
     self.assertEqual(googleapiclient.model.logging.info_record[-1],
                      '--response-end--')

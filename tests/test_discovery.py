@@ -26,6 +26,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import copy
 import datetime
 import httplib2
+import json
 import os
 import pickle
 import sys
@@ -65,7 +66,6 @@ from googleapiclient.http import MediaUploadProgress
 from googleapiclient.http import tunnel_patch
 from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client import util
-from oauth2client.anyjson import simplejson
 from oauth2client.client import OAuth2Credentials
 
 import uritemplate
@@ -108,7 +108,7 @@ class Utilities(unittest.TestCase):
 
   def setUp(self):
     with open(datafile('zoo.json'), 'r') as fh:
-      self.zoo_root_desc = simplejson.loads(fh.read())
+      self.zoo_root_desc = json.loads(fh.read())
     self.zoo_get_method_desc = self.zoo_root_desc['methods']['query']
     self.zoo_animals_resource = self.zoo_root_desc['resources']['animals']
     self.zoo_insert_method_desc = self.zoo_animals_resource['methods']['insert']
@@ -337,7 +337,7 @@ class DiscoveryFromDocument(unittest.TestCase):
 
   def test_can_build_from_local_deserialized_document(self):
     discovery = open(datafile('plus.json')).read()
-    discovery = simplejson.loads(discovery)
+    discovery = json.loads(discovery)
     plus = build_from_document(discovery, base="https://www.googleapis.com/")
     self.assertTrue(plus is not None)
     self.assertTrue(hasattr(plus, 'activities'))
@@ -1045,7 +1045,7 @@ class Discovery(unittest.TestCase):
           'Content-Range': 'bytes */14',
           'content-length': '0'
           }
-      self.assertEqual(expected, simplejson.loads(e.content),
+      self.assertEqual(expected, json.loads(e.content),
         'Should send an empty body when requesting the current upload status.')
 
   def test_pickle(self):

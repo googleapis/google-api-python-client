@@ -26,6 +26,7 @@ import base64
 import copy
 import gzip
 import httplib2
+import json
 import logging
 import mimeparse
 import mimetypes
@@ -49,7 +50,6 @@ from errors import UnexpectedBodyError
 from errors import UnexpectedMethodError
 from model import JsonModel
 from oauth2client import util
-from oauth2client.anyjson import simplejson
 
 
 DEFAULT_CHUNK_SIZE = 512*1024
@@ -221,7 +221,7 @@ class MediaUpload(object):
         del d[member]
     d['_class'] = t.__name__
     d['_module'] = t.__module__
-    return simplejson.dumps(d)
+    return json.dumps(d)
 
   def to_json(self):
     """Create a JSON representation of an instance of MediaUpload.
@@ -244,7 +244,7 @@ class MediaUpload(object):
       An instance of the subclass of MediaUpload that was serialized with
       to_json().
     """
-    data = simplejson.loads(s)
+    data = json.loads(s)
     # Find and call the right classmethod from_json() to restore the object.
     module = data['_module']
     m = __import__(module, fromlist=module.split('.')[:-1])
@@ -436,7 +436,7 @@ class MediaFileUpload(MediaIoBaseUpload):
 
   @staticmethod
   def from_json(s):
-    d = simplejson.loads(s)
+    d = json.loads(s)
     return MediaFileUpload(d['_filename'], mimetype=d['_mimetype'],
                            chunksize=d['_chunksize'], resumable=d['_resumable'])
 
@@ -913,12 +913,12 @@ class HttpRequest(object):
     del d['_sleep']
     del d['_rand']
 
-    return simplejson.dumps(d)
+    return json.dumps(d)
 
   @staticmethod
   def from_json(s, http, postproc):
     """Returns an HttpRequest populated with info from a JSON object."""
-    d = simplejson.loads(s)
+    d = json.loads(s)
     if d['resumable'] is not None:
       d['resumable'] = MediaUpload.new_from_json(d['resumable'])
     return HttpRequest(
@@ -1430,8 +1430,8 @@ class RequestMockBuilder(object):
           # or expecting a body and not provided one.
           raise UnexpectedBodyError(expected_body, body)
         if isinstance(expected_body, str):
-          expected_body = simplejson.loads(expected_body)
-        body = simplejson.loads(body)
+          expected_body = json.loads(expected_body)
+        body = json.loads(body)
         if body != expected_body:
           raise UnexpectedBodyError(expected_body, body)
       return HttpRequestMock(resp, content, postproc)
@@ -1522,7 +1522,7 @@ class HttpMockSequence(object):
     if content == 'echo_request_headers':
       content = headers
     elif content == 'echo_request_headers_as_json':
-      content = simplejson.dumps(headers)
+      content = json.dumps(headers)
     elif content == 'echo_request_body':
       if hasattr(body, 'read'):
         content = body.read()

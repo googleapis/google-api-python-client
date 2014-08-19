@@ -32,6 +32,7 @@ import copy
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
+import json
 import keyword
 import logging
 import mimetypes
@@ -64,7 +65,6 @@ from googleapiclient.model import JsonModel
 from googleapiclient.model import MediaModel
 from googleapiclient.model import RawModel
 from googleapiclient.schema import Schemas
-from oauth2client.anyjson import simplejson
 from oauth2client.client import GoogleCredentials
 from oauth2client.util import _add_query_parameter
 from oauth2client.util import positional
@@ -204,7 +204,7 @@ def build(serviceName,
     raise HttpError(resp, content, uri=requested_url)
 
   try:
-    service = simplejson.loads(content)
+    service = json.loads(content)
   except ValueError, e:
     logger.error('Failed to parse as JSON: ' + content)
     raise InvalidJsonError()
@@ -254,7 +254,7 @@ def build_from_document(
   future = {}
 
   if isinstance(service, basestring):
-    service = simplejson.loads(service)
+    service = json.loads(service)
   base = urlparse.urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
 

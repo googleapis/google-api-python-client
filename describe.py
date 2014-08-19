@@ -24,6 +24,7 @@ the generated API surface itself.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import argparse
+import json
 import os
 import re
 import string
@@ -32,7 +33,6 @@ import sys
 from googleapiclient.discovery import DISCOVERY_URI
 from googleapiclient.discovery import build
 from googleapiclient.discovery import build_from_document
-from oauth2client.anyjson import simplejson
 import httplib2
 import uritemplate
 
@@ -346,7 +346,7 @@ def document_api(name, version):
               'api': name,
               'apiVersion': version})
           )
-  discovery = simplejson.loads(content)
+  discovery = json.loads(content)
 
   version = safe_version(version)
 
@@ -362,7 +362,7 @@ def document_api_from_discovery_document(uri):
   """
   http = httplib2.Http()
   response, content = http.request(FLAGS.discovery_uri)
-  discovery = simplejson.loads(content)
+  discovery = json.loads(content)
 
   service = build_from_document(discovery)
 
@@ -383,7 +383,7 @@ if __name__ == '__main__':
         FLAGS.directory_uri,
         headers={'X-User-IP': '0.0.0.0'})
     if resp.status == 200:
-      directory = simplejson.loads(content)['items']
+      directory = json.loads(content)['items']
       for api in directory:
         document_api(api['name'], api['version'])
     else:

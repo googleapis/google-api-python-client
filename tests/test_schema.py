@@ -16,12 +16,12 @@
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import json
 import os
 import unittest
 import StringIO
 
 from googleapiclient.schema import Schemas
-from oauth2client.anyjson import simplejson
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -51,7 +51,7 @@ class SchemasTest(unittest.TestCase):
     f = file(datafile('zoo.json'))
     discovery = f.read()
     f.close()
-    discovery = simplejson.loads(discovery)
+    discovery = json.loads(discovery)
     self.sc = Schemas(discovery)
 
   def test_basic_formatting(self):

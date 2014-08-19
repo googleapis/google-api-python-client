@@ -26,6 +26,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import httplib2
 import inspect
+import json
 import logging
 import os
 import pydoc
@@ -40,7 +41,6 @@ from google.appengine.api import memcache
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp import util
-from oauth2client.anyjson import simplejson
 
 
 DISCOVERY_URI = 'https://www.googleapis.com/discovery/v1/apis?preferred=true'
@@ -53,7 +53,7 @@ def get_directory_doc():
   if ip:
     uri += ('&userIp=' + ip)
   resp, content = http.request(uri)
-  directory = simplejson.loads(content)['items']
+  directory = json.loads(content)['items']
   for item in directory:
     item['title'] = item.get('title', item.get('description', ''))
     item['safe_version'] = describe.safe_version(item['version'])

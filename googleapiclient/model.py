@@ -24,12 +24,12 @@ object representation.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import json
 import logging
 import urllib
 
 from googleapiclient import __version__
 from errors import HttpError
-from oauth2client.anyjson import simplejson
 
 
 dump_request_response = False
@@ -125,7 +125,7 @@ class BaseModel(Model):
       path_params: dict, parameters that appear in the request path
       query_params: dict, parameters that appear in the query
       body_value: object, the request body as a Python object, which must be
-                  serializable by simplejson.
+                  serializable by json.
     Returns:
       A tuple of (headers, path_params, query, body)
 
@@ -254,11 +254,11 @@ class JsonModel(BaseModel):
     if (isinstance(body_value, dict) and 'data' not in body_value and
         self._data_wrapper):
       body_value = {'data': body_value}
-    return simplejson.dumps(body_value)
+    return json.dumps(body_value)
 
   def deserialize(self, content):
     content = content.decode('utf-8')
-    body = simplejson.loads(content)
+    body = json.loads(content)
     if self._data_wrapper and isinstance(body, dict) and 'data' in body:
       body = body['data']
     return body
