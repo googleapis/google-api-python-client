@@ -33,6 +33,7 @@ To get detailed log output run:
 
   $ python prediction.py --logging_level=DEBUG
 """
+from __future__ import print_function
 
 __author__ = ('jcgregorio@google.com (Joe Gregorio), '
               'marccohen@google.com (Marc Cohen)')
@@ -66,9 +67,9 @@ def print_header(line):
   '''Format and print header block sized to length of line'''
   header_str = '='
   header_line = header_str * len(line)
-  print '\n' + header_line
-  print line
-  print header_line
+  print('\n' + header_line)
+  print(line)
+  print(header_line)
 
 
 def main(argv):
@@ -89,14 +90,14 @@ def main(argv):
     # List models.
     print_header('Fetching list of first ten models')
     result = papi.list(maxResults=10, project=flags.project_id).execute()
-    print 'List results:'
+    print('List results:')
     pprint.pprint(result)
 
     # Start training request on a data set.
     print_header('Submitting model training request')
     body = {'id': flags.model_id, 'storageDataLocation': flags.object_name}
     start = papi.insert(body=body, project=flags.project_id).execute()
-    print 'Training results:'
+    print('Training results:')
     pprint.pprint(start)
 
     # Wait for the training to complete.
@@ -104,7 +105,7 @@ def main(argv):
     while True:
       status = papi.get(id=flags.model_id, project=flags.project_id).execute()
       state = status['trainingStatus']
-      print 'Training state: ' + state
+      print('Training state: ' + state)
       if state == 'DONE':
         break
       elif state == 'RUNNING':
@@ -114,14 +115,14 @@ def main(argv):
         raise Exception('Training Error: ' + state)
 
       # Job has completed.
-      print 'Training completed:'
+      print('Training completed:')
       pprint.pprint(status)
       break
 
     # Describe model.
     print_header('Fetching model description')
     result = papi.analyze(id=flags.model_id, project=flags.project_id).execute()
-    print 'Analyze results:'
+    print('Analyze results:')
     pprint.pprint(result)
 
     # Make some predictions using the newly trained model.
@@ -130,13 +131,13 @@ def main(argv):
       body = {'input': {'csvInstance': [sample_text]}}
       result = papi.predict(
         body=body, id=flags.model_id, project=flags.project_id).execute()
-      print 'Prediction results for "%s"...' % sample_text
+      print('Prediction results for "%s"...' % sample_text)
       pprint.pprint(result)
 
     # Delete model.
     print_header('Deleting model')
     result = papi.delete(id=flags.model_id, project=flags.project_id).execute()
-    print 'Model deleted.'
+    print('Model deleted.')
 
   except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run '

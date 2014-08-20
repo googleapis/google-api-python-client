@@ -18,6 +18,7 @@
 
 Tags: preferreddeals.list
 """
+from __future__ import print_function
 
 __author__ = 'sgomes@google.com (Sérgio Gomes)'
 
@@ -54,7 +55,7 @@ def main(argv):
           output += 'was found.'
           print(output)
       else:
-        print 'No preferred deals found!'
+        print('No preferred deals found!')
   except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')

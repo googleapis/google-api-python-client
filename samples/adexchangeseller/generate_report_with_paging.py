@@ -24,6 +24,7 @@ To get ad clients, run get_all_ad_clients.py.
 
 Tags: reports.generate
 """
+from __future__ import print_function
 
 __author__ = 'sgomes@google.com (Sérgio Gomes)'
 
@@ -70,14 +71,14 @@ def main(argv):
       # If this is the first page, display the headers.
       if start_index == 0:
         for header in result['headers']:
-          print '%25s' % header['name'],
-        print
+          print('%25s' % header['name'], end=' ')
+        print()
 
       # Display results for this page.
       for row in result['rows']:
         for column in row:
-          print '%25s' % column,
-        print
+          print('%25s' % column, end=' ')
+        print()
 
       start_index += len(result['rows'])
 

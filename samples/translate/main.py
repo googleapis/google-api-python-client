@@ -19,6 +19,7 @@
 
 Command-line application that translates some text.
 """
+from __future__ import print_function
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -32,11 +33,11 @@ def main():
   # to get an API key for your own application.
   service = build('translate', 'v2',
             developerKey='AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0')
-  print service.translations().list(
+  print(service.translations().list(
       source='en',
       target='fr',
       q=['flower', 'car']
-    ).execute()
+    ).execute())
 
 if __name__ == '__main__':
   main()

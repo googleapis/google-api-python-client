@@ -33,6 +33,7 @@ To get detailed log output run:
 
   $ python audit.py --logging_level=DEBUG
 """
+from __future__ import print_function
 
 __author__ = 'rahulpaul@google.com (Rahul Paul)'
 
@@ -55,7 +56,7 @@ def main(argv):
     activities = service.activities()
 
     # Retrieve the first two activities
-    print 'Retrieving the first 2 activities...'
+    print('Retrieving the first 2 activities...')
     activity_list = activities.list(
         applicationId='207535951991', customerId='C01rv1wm7', maxResults='2',
         actorEmail='admin@enterprise-audit-clientlib.com').execute()
@@ -66,7 +67,7 @@ def main(argv):
     if match is not None:
       next_token = match.group(0)
 
-      print '\nRetrieving the next 2 activities...'
+      print('\nRetrieving the next 2 activities...')
       activity_list = activities.list(
           applicationId='207535951991', customerId='C01rv1wm7',
           maxResults='2', actorEmail='admin@enterprise-audit-clientlib.com',

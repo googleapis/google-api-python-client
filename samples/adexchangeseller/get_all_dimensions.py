@@ -18,6 +18,7 @@
 
 Tags: metadata.dimensions.list
 """
+from __future__ import print_function
 
 __author__ = 'sgomes@google.com (Sérgio Gomes)'
 
@@ -43,10 +44,10 @@ def main(argv):
       if 'items' in result:
         dimensions = result['items']
         for dimension in dimensions:
-          print ('Dimension id "%s" for product(s): [%s] was found. '
-                 % (dimension['id'], ', '.join(dimension['supportedProducts'])))
+          print(('Dimension id "%s" for product(s): [%s] was found. '
+                 % (dimension['id'], ', '.join(dimension['supportedProducts']))))
       else:
-        print 'No dimensions found!'
+        print('No dimensions found!')
   except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')

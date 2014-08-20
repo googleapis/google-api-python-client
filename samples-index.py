@@ -28,6 +28,7 @@ files in the samples. The format of the README file is:
 
    The rest of the file is ignored when it comes to building the index.
 """
+from __future__ import print_function
 
 import httplib2
 import itertools
@@ -239,7 +240,7 @@ Documentation for the %(api_name)s in [https://google-api-client-libraries.appsp
 </tr>""" % context)
     page.append('</table>\n')
 
-  print ''.join(page)
+  print(''.join(page))
 
 
 if __name__ == '__main__':

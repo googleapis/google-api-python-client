@@ -24,6 +24,7 @@ by running:
 
   $ python groupsettings.py --help
 """
+from __future__ import print_function
 
 __author__ = 'Shraddha Gupta <shraddhag@google.com>'
 
@@ -75,12 +76,12 @@ def access_settings(service, groupId, settings):
 
   # Retrieve the group properties
   g = group.get(groupUniqueId=groupId).execute()
-  print '\nGroup properties for group %s\n' % g['name']
+  print('\nGroup properties for group %s\n' % g['name'])
   pprint.pprint(g)
 
   # If dictionary is empty, return without updating the properties.
   if not settings.keys():
-    print '\nGive access parameters to update group access permissions\n'
+    print('\nGive access parameters to update group access permissions\n')
     return
 
   body = {}
@@ -94,7 +95,7 @@ def access_settings(service, groupId, settings):
   # Update the properties of group
   g1 = group.update(groupUniqueId=groupId, body=body).execute()
 
-  print '\nUpdated Access Permissions to the group\n'
+  print('\nUpdated Access Permissions to the group\n')
   pprint.pprint(g1)
 
 
@@ -126,7 +127,7 @@ def main(argv):
   (options, args) = parser.parse_args()
 
   if options.groupId is None:
-    print 'Give the groupId for the group'
+    print('Give the groupId for the group')
     parser.print_help()
     return
 
@@ -134,7 +135,7 @@ def main(argv):
 
   if (options.whoCanInvite or options.whoCanJoin or options.whoCanPostMessage
       or options.whoCanPostMessage or options.whoCanViewMembership) is None:
-    print 'No access parameters given in input to update access permissions'
+    print('No access parameters given in input to update access permissions')
     parser.print_help()
   else:
     settings = {'whoCanInvite': options.whoCanInvite,
@@ -152,7 +153,7 @@ def main(argv):
   credentials = storage.get()
 
   if credentials is None or credentials.invalid:
-    print 'invalid credentials'
+    print('invalid credentials')
     # Save the credentials in storage to be used in subsequent runs.
     credentials = run(FLOW, storage)
 

@@ -40,6 +40,7 @@ understands by running:
 
   $ python hello_analytics_api_v3.py --help
 """
+from __future__ import print_function
 
 __author__ = 'api.nickm@gmail.com (Nick Mihailovski)'
 
@@ -61,19 +62,19 @@ def main(argv):
   try:
     first_profile_id = get_first_profile_id(service)
     if not first_profile_id:
-      print 'Could not find a valid profile for this user.'
+      print('Could not find a valid profile for this user.')
     else:
       results = get_top_keywords(service, first_profile_id)
       print_results(results)
 
   except TypeError as error:
     # Handle errors in constructing a query.
-    print ('There was an error in constructing your query : %s' % error)
+    print(('There was an error in constructing your query : %s' % error))
 
   except HttpError as error:
     # Handle API errors.
-    print ('Arg, there was an API error : %s : %s' %
-           (error.resp.status, error._get_reason()))
+    print(('Arg, there was an API error : %s : %s' %
+           (error.resp.status, error._get_reason())))
 
   except AccessTokenRefreshError:
     # Handle Auth errors.
@@ -151,15 +152,15 @@ def print_results(results):
     results: The response returned from the Core Reporting API.
   """
 
-  print
-  print 'Profile Name: %s' % results.get('profileInfo').get('profileName')
-  print
+  print()
+  print('Profile Name: %s' % results.get('profileInfo').get('profileName'))
+  print()
 
   # Print header.
   output = []
   for header in results.get('columnHeaders'):
     output.append('%30s' % header.get('name'))
-  print ''.join(output)
+  print(''.join(output))
 
   # Print data table.
   if results.get('rows', []):
@@ -167,10 +168,10 @@ def print_results(results):
       output = []
       for cell in row:
         output.append('%30s' % cell)
-      print ''.join(output)
+      print(''.join(output))
 
   else:
-    print 'No Rows Found'
+    print('No Rows Found')
 
 
 if __name__ == '__main__':
