@@ -21,6 +21,7 @@ Contents:
  - best_match():        Choose the mime-type with the highest quality ('q')
                           from a list of candidates.
 """
+from functools import reduce
 
 __version__ = '0.1.3'
 __author__ = 'Joe Gregorio'
@@ -68,7 +69,7 @@ def parse_media_range(range):
     necessary.
     """
     (type, subtype, params) = parse_mime_type(range)
-    if not params.has_key('q') or not params['q'] or \
+    if 'q' not in params or not params['q'] or \
             not float(params['q']) or float(params['q']) > 1\
             or float(params['q']) < 0:
         params['q'] = '1'
@@ -99,7 +100,7 @@ def fitness_and_quality_parsed(mime_type, parsed_ranges):
         if type_match and subtype_match:
             param_matches = reduce(lambda x, y: x + y, [1 for (key, value) in \
                     target_params.iteritems() if key != 'q' and \
-                    params.has_key(key) and value == params[key]], 0)
+                    key in params and value == params[key]], 0)
             fitness = (type == target_type) and 100 or 0
             fitness += (subtype == target_subtype) and 10 or 0
             fitness += param_matches

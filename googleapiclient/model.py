@@ -21,6 +21,7 @@ as JSON, Atom, etc. The model classes are responsible
 for converting between the wire format and the Python
 object representation.
 """
+from __future__ import absolute_import
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -29,7 +30,7 @@ import logging
 import urllib
 
 from googleapiclient import __version__
-from errors import HttpError
+from .errors import HttpError
 
 
 dump_request_response = False

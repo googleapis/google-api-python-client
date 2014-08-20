@@ -140,7 +140,7 @@ class Utilities(unittest.TestCase):
     parameters = self._base_fix_up_parameters_test(self.zoo_get_method_desc,
                                                    'GET', self.zoo_root_desc)
     # Since http_method is 'GET'
-    self.assertFalse(parameters.has_key('body'))
+    self.assertFalse('body' in parameters)
 
   def test_fix_up_parameters_insert(self):
     parameters = self._base_fix_up_parameters_test(self.zoo_insert_method_desc,
@@ -163,15 +163,15 @@ class Utilities(unittest.TestCase):
 
     parameters = _fix_up_parameters(invalid_method_desc, dummy_root_desc,
                                     no_payload_http_method)
-    self.assertFalse(parameters.has_key('body'))
+    self.assertFalse('body' in parameters)
 
     parameters = _fix_up_parameters(valid_method_desc, dummy_root_desc,
                                     no_payload_http_method)
-    self.assertFalse(parameters.has_key('body'))
+    self.assertFalse('body' in parameters)
 
     parameters = _fix_up_parameters(invalid_method_desc, dummy_root_desc,
                                     with_payload_http_method)
-    self.assertFalse(parameters.has_key('body'))
+    self.assertFalse('body' in parameters)
 
     parameters = _fix_up_parameters(valid_method_desc, dummy_root_desc,
                                     with_payload_http_method)
@@ -251,7 +251,7 @@ class Utilities(unittest.TestCase):
     http_method = 'GET'
     method_id = 'bigquery.query'
     accept = []
-    max_size = 0L
+    max_size = 0
     media_path_url = None
     self.assertEqual(result, (path_url, http_method, method_id, accept,
                               max_size, media_path_url))
@@ -263,7 +263,7 @@ class Utilities(unittest.TestCase):
     http_method = 'POST'
     method_id = 'zoo.animals.insert'
     accept = ['image/png']
-    max_size = 1024L
+    max_size = 1024
     media_path_url = 'https://www.googleapis.com/upload/zoo/v1/animals'
     self.assertEqual(result, (path_url, http_method, method_id, accept,
                               max_size, media_path_url))

@@ -35,6 +35,7 @@ To get detailed log output run:
 
   $ python coordinate.py -t teamId --logging_level=DEBUG
 """
+from __future__ import print_function
 
 __author__ = 'zachn@google.com (Zach Newell)'
 

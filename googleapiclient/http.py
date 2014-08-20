@@ -18,6 +18,7 @@ The classes implement a command pattern, with every
 object supporting an execute() method that does the
 actuall HTTP request.
 """
+from __future__ import absolute_import
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -28,7 +29,7 @@ import gzip
 import httplib2
 import json
 import logging
-import mimeparse
+from . import mimeparse
 import mimetypes
 import os
 import random
@@ -42,13 +43,13 @@ from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from email.parser import FeedParser
-from errors import BatchError
-from errors import HttpError
-from errors import InvalidChunkSizeError
-from errors import ResumableUploadError
-from errors import UnexpectedBodyError
-from errors import UnexpectedMethodError
-from model import JsonModel
+from .errors import BatchError
+from .errors import HttpError
+from .errors import InvalidChunkSizeError
+from .errors import ResumableUploadError
+from .errors import UnexpectedBodyError
+from .errors import UnexpectedMethodError
+from .model import JsonModel
 from oauth2client import util
 
 
