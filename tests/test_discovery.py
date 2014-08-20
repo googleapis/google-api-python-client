@@ -368,7 +368,7 @@ class DiscoveryFromHttp(unittest.TestCase):
       zoo = build('zoo', 'v1', http=http, developerKey='foo',
                   discoveryServiceUrl='http://example.com')
       self.fail('Should have raised an exception.')
-    except HttpError, e:
+    except HttpError as e:
       self.assertEqual(e.uri, 'http://example.com?userIp=10.0.0.1')
 
   def test_userip_missing_is_not_added_to_discovery_uri(self):
@@ -381,7 +381,7 @@ class DiscoveryFromHttp(unittest.TestCase):
       zoo = build('zoo', 'v1', http=http, developerKey=None,
                   discoveryServiceUrl='http://example.com')
       self.fail('Should have raised an exception.')
-    except HttpError, e:
+    except HttpError as e:
       self.assertEqual(e.uri, 'http://example.com')
 
 
@@ -395,28 +395,28 @@ class Discovery(unittest.TestCase):
     try:
       plus.activities().list()
       self.fail()
-    except TypeError, e:
+    except TypeError as e:
       self.assertTrue('Missing' in str(e))
 
     # Missing required parameters even if supplied as None.
     try:
       plus.activities().list(collection=None, userId=None)
       self.fail()
-    except TypeError, e:
+    except TypeError as e:
       self.assertTrue('Missing' in str(e))
 
     # Parameter doesn't match regex
     try:
       plus.activities().list(collection='not_a_collection_name', userId='me')
       self.fail()
-    except TypeError, e:
+    except TypeError as e:
       self.assertTrue('not an allowed value' in str(e))
 
     # Unexpected parameter
     try:
       plus.activities().list(flubber=12)
       self.fail()
-    except TypeError, e:
+    except TypeError as e:
       self.assertTrue('unexpected' in str(e))
 
   def _check_query_types(self, request):
@@ -785,7 +785,7 @@ class Discovery(unittest.TestCase):
     try:
       request.execute(http=http)
       self.fail('Should have raised ResumableUploadError.')
-    except ResumableUploadError, e:
+    except ResumableUploadError as e:
       self.assertEqual(400, e.resp.status)
 
   def test_resumable_media_fail_unknown_response_code_subsequent_request(self):
@@ -885,7 +885,7 @@ class Discovery(unittest.TestCase):
 
       try:
         body = request.execute(http=http)
-      except HttpError, e:
+      except HttpError as e:
         self.assertEqual('01234', e.content)
 
     except ImportError:
@@ -1040,7 +1040,7 @@ class Discovery(unittest.TestCase):
     try:
       # Should resume the upload by first querying the status of the upload.
       request.next_chunk(http=http)
-    except HttpError, e:
+    except HttpError as e:
       expected = {
           'Content-Range': 'bytes */14',
           'content-length': '0'
