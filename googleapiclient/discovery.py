@@ -333,9 +333,9 @@ def _media_size_to_long(maxSize):
   units = maxSize[-2:].upper()
   bit_shift = _MEDIA_SIZE_BIT_SHIFTS.get(units)
   if bit_shift is not None:
-    return long(maxSize[:-2]) << bit_shift
+    return int(maxSize[:-2]) << bit_shift
   else:
-    return long(maxSize)
+    return int(maxSize)
 
 
 def _media_path_url_from_info(root_desc, path_url):
