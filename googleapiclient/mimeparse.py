@@ -1,4 +1,4 @@
-# Copyright (C) 2007 Joe Gregorio
+# Copyright 2014 Joe Gregorio
 #
 # Licensed under the MIT License
 

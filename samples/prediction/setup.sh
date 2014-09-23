@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2011 Google Inc. All Rights Reserved.
+# Copyright 2014 Google Inc. All Rights Reserved.
 # Author: jcgregorio@google.com (Joe Gregorio)
 #
 # Uploads a training data set to Google Storage to be used by this sample

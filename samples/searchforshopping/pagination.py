@@ -1,7 +1,7 @@
 #!/usr/bin/python2.4
 # -*- coding: utf-8 -*-
 #
-# Copyright 2010 Google Inc. All Rights Reserved.
+# Copyright 2014 Google Inc. All Rights Reserved.
 
 """Queries with paginated results against the shopping search API"""
 

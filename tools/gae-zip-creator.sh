@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2012, Google Inc
+# Copyright 2014. Google Inc. All Rights Reserved.
 #
 # Generates a zip of the google api python client and dependencies.
 #
