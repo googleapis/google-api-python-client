@@ -22,18 +22,19 @@ from __future__ import print_function
 import sys
 
 if sys.version_info <= (2, 6):
-  print('oauth2client requires python version >= 2.6.', file=sys.stderr)
+  print('google-api-python-client requires python version >= 2.6.',
+        file=sys.stderr)
   sys.exit(1)
 
 from setuptools import setup
 
 packages = [
     'googleapiclient',
-    'oauth2client',
 ]
 
 install_requires = [
     'httplib2>=0.8',
+    'oauth2client>=1.3',
     'uritemplate>=0.6',
 ]
 
@@ -63,7 +64,4 @@ setup(
         'Operating System :: POSIX',
         'Topic :: Internet :: WWW/HTTP',
     ],
-    package_dir={
-        'oauth2client':'oauth2client/oauth2client',
-    },
 )
