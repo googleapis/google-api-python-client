@@ -29,6 +29,7 @@ if sys.version_info <= (2, 6):
 from setuptools import setup
 
 packages = [
+    'apiclient',
     'googleapiclient',
 ]
 
