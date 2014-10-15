@@ -87,20 +87,14 @@ h1, h2, h3 {
   <code><a href="#get">get(variantId)</a></code></p>
 <p class="firstline">Gets a variant by ID.</p>
 <p class="toc_element">
-  <code><a href="#getSummary">getSummary(datasetId=None)</a></code></p>
-<p class="firstline">Gets a summary of all the variant data in a dataset.</p>
-<p class="toc_element">
   <code><a href="#import_">import_(body)</a></code></p>
-<p class="firstline">Creates variant data by asynchronously importing the provided information.</p>
-<p class="toc_element">
-  <code><a href="#patch">patch(variantId, body)</a></code></p>
-<p class="firstline">Updates a variant. This method supports patch semantics.</p>
+<p class="firstline">Creates variant data by asynchronously importing the provided information. The variants for import will be merged with any existing data and each other according to the behavior of mergeVariants. In particular, this means for merged VCF variants that have conflicting INFO fields, some data will be arbitrarily discarded. As a special case, for single-sample VCF files, QUAL and FILTER fields will be moved to the call level; these are sometimes interpreted in a call-specific context. Imported VCF headers are appended to the metadata already in a VariantSet.</p>
 <p class="toc_element">
   <code><a href="#search">search(body)</a></code></p>
 <p class="firstline">Gets a list of variants matching the criteria.</p>
 <p class="toc_element">
   <code><a href="#update">update(variantId, body)</a></code></p>
-<p class="firstline">Updates a variant.</p>
+<p class="firstline">Updates a variant's names and info fields. All other modifications are silently ignored. Returns the modified variant without its calls.</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="create">create(body)</code>
@@ -110,86 +104,94 @@ Args:
   body: object, The request body. (required)
     The object takes the form of:
 
-{ # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a Dataset.
+{ # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a variant set.
   "info": { # A map of additional variant information.
     "a_key": [ # A string which maps to an array of values.
       "A String",
     ],
   },
-  "end": "A String", # The end position (1-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - position). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
+  "variantSetId": "A String", # The ID of the variant set this variant belongs to.
+  "end": "A String", # The end position (0-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - start). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
   "calls": [ # The variant calls for this particular variant. Each one represents the determination of genotype with respect to this variant.
-    { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a callset with the name NA12345.
+    { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a call set with the name NA12345.
       "info": { # A map of additional variant call information.
         "a_key": [ # A string which maps to an array of values.
           "A String",
         ],
       },
-      "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases field of "T" and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value "CA" for this variant. If the genotype was instead [0, 1], the represented value would be "TA". Ordering of the genotype values is important if the phaseset field is present. If a genotype is not called (that is, a "." is present in the GT string) -1 is returned.
+      "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases value of T and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value CA for this variant. If the genotype was instead [0, 1], the represented value would be TA. Ordering of the genotype values is important if the phaseset is present. If a genotype is not called (that is, a . is present in the GT string) -1 is returned.
         42,
       ],
-      "callsetId": "A String", # The ID of the callset this variant call belongs to.
-      "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls on the same contig which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to "*".
+      "callSetId": "A String", # The ID of the call set this variant call belongs to.
+      "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls in the same reference sequence which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to *.
       "genotypeLikelihood": [ # The genotype likelihoods for this variant call. Each array entry represents how likely a specific genotype is for this call. The value ordering is defined by the GL tag in the VCF spec.
         3.14,
       ],
-      "callsetName": "A String", # The name of the callset this variant call belongs to.
+      "callSetName": "A String", # The name of the call set this variant call belongs to.
     },
   ],
   "created": "A String", # The date this variant was created, in milliseconds from the epoch.
   "referenceBases": "A String", # The reference bases for this variant. They start at the given position.
+  "filter": [ # A list of filters (normally quality filters) this variant has failed. PASS indicates this variant has passed all filters.
+    "A String",
+  ],
+  "start": "A String", # The position at which this variant occurs (0-based). This corresponds to the first base of the string of reference bases.
   "names": [ # Names for the variant, for example a RefSNP ID.
     "A String",
   ],
   "alternateBases": [ # The bases that appear instead of the reference bases.
     "A String",
   ],
-  "position": "A String", # The position at which this variant occurs (1-based). This corresponds to the first base of the string of reference bases.
-  "contig": "A String", # The contig on which this variant occurs. (such as 'chr20' or 'X')
+  "referenceName": "A String", # The reference on which this variant occurs. (such as chr20 or X)
+  "quality": 3.14, # A measure of how likely this variant is to be real. A higher value is better.
   "id": "A String", # The Google generated ID of the variant, immutable.
-  "datasetId": "A String", # The ID of the dataset this variant belongs to.
 }
 
 
 Returns:
   An object of the form:
 
-    { # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a Dataset.
+    { # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a variant set.
     "info": { # A map of additional variant information.
       "a_key": [ # A string which maps to an array of values.
         "A String",
       ],
     },
-    "end": "A String", # The end position (1-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - position). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
+    "variantSetId": "A String", # The ID of the variant set this variant belongs to.
+    "end": "A String", # The end position (0-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - start). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
     "calls": [ # The variant calls for this particular variant. Each one represents the determination of genotype with respect to this variant.
-      { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a callset with the name NA12345.
+      { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a call set with the name NA12345.
         "info": { # A map of additional variant call information.
           "a_key": [ # A string which maps to an array of values.
             "A String",
           ],
         },
-        "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases field of "T" and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value "CA" for this variant. If the genotype was instead [0, 1], the represented value would be "TA". Ordering of the genotype values is important if the phaseset field is present. If a genotype is not called (that is, a "." is present in the GT string) -1 is returned.
+        "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases value of T and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value CA for this variant. If the genotype was instead [0, 1], the represented value would be TA. Ordering of the genotype values is important if the phaseset is present. If a genotype is not called (that is, a . is present in the GT string) -1 is returned.
           42,
         ],
-        "callsetId": "A String", # The ID of the callset this variant call belongs to.
-        "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls on the same contig which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to "*".
+        "callSetId": "A String", # The ID of the call set this variant call belongs to.
+        "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls in the same reference sequence which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to *.
         "genotypeLikelihood": [ # The genotype likelihoods for this variant call. Each array entry represents how likely a specific genotype is for this call. The value ordering is defined by the GL tag in the VCF spec.
           3.14,
         ],
-        "callsetName": "A String", # The name of the callset this variant call belongs to.
+        "callSetName": "A String", # The name of the call set this variant call belongs to.
       },
     ],
     "created": "A String", # The date this variant was created, in milliseconds from the epoch.
     "referenceBases": "A String", # The reference bases for this variant. They start at the given position.
+    "filter": [ # A list of filters (normally quality filters) this variant has failed. PASS indicates this variant has passed all filters.
+      "A String",
+    ],
+    "start": "A String", # The position at which this variant occurs (0-based). This corresponds to the first base of the string of reference bases.
     "names": [ # Names for the variant, for example a RefSNP ID.
       "A String",
     ],
     "alternateBases": [ # The bases that appear instead of the reference bases.
       "A String",
     ],
-    "position": "A String", # The position at which this variant occurs (1-based). This corresponds to the first base of the string of reference bases.
-    "contig": "A String", # The contig on which this variant occurs. (such as 'chr20' or 'X')
+    "referenceName": "A String", # The reference on which this variant occurs. (such as chr20 or X)
+    "quality": 3.14, # A measure of how likely this variant is to be real. A higher value is better.
     "id": "A String", # The Google generated ID of the variant, immutable.
-    "datasetId": "A String", # The ID of the dataset this variant belongs to.
   }</pre>
 </div>
 
@@ -211,14 +213,14 @@ Args:
     The object takes the form of:
 
 { # The variant data export request.
+    "variantSetId": "A String", # Required. The ID of the variant set that contains variant data which should be exported. The caller must have READ access to this variant set.
     "format": "A String", # The format for the exported data.
-    "projectId": "A String", # The Google Cloud project number that owns this export. This is the project that will be billed.
-    "callsetIds": [ # If provided, only variant call information from the specified callsets will be exported. By default all variant calls are exported.
+    "projectId": "A String", # The Google Cloud project number that owns the destination BigQuery dataset. The caller must have WRITE access to this project. This project will also own the resulting export job.
+    "callSetIds": [ # If provided, only variant call information from the specified call sets will be exported. By default all variant calls are exported.
       "A String",
     ],
-    "bigqueryDataset": "A String", # The BigQuery dataset to export data to. Note that this is distinct from the Genomics concept of "dataset". The caller must have WRITE access to this BigQuery dataset.
-    "datasetId": "A String", # Required. The ID of the dataset that contains variant data which should be exported. The caller must have READ access to this dataset.
-    "bigqueryTable": "A String", # The BigQuery table to export data to. The caller must have WRITE access to this BigQuery table.
+    "bigqueryDataset": "A String", # The BigQuery dataset to export data to. Note that this is distinct from the Genomics concept of "dataset".
+    "bigqueryTable": "A String", # The BigQuery table to export data to. If the table doesn't exist, it will be created. If it already exists, it will be overwritten.
   }
 
 
@@ -240,94 +242,64 @@ Args:
 Returns:
   An object of the form:
 
-    { # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a Dataset.
+    { # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a variant set.
     "info": { # A map of additional variant information.
       "a_key": [ # A string which maps to an array of values.
         "A String",
       ],
     },
-    "end": "A String", # The end position (1-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - position). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
+    "variantSetId": "A String", # The ID of the variant set this variant belongs to.
+    "end": "A String", # The end position (0-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - start). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
     "calls": [ # The variant calls for this particular variant. Each one represents the determination of genotype with respect to this variant.
-      { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a callset with the name NA12345.
+      { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a call set with the name NA12345.
         "info": { # A map of additional variant call information.
           "a_key": [ # A string which maps to an array of values.
             "A String",
           ],
         },
-        "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases field of "T" and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value "CA" for this variant. If the genotype was instead [0, 1], the represented value would be "TA". Ordering of the genotype values is important if the phaseset field is present. If a genotype is not called (that is, a "." is present in the GT string) -1 is returned.
+        "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases value of T and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value CA for this variant. If the genotype was instead [0, 1], the represented value would be TA. Ordering of the genotype values is important if the phaseset is present. If a genotype is not called (that is, a . is present in the GT string) -1 is returned.
           42,
         ],
-        "callsetId": "A String", # The ID of the callset this variant call belongs to.
-        "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls on the same contig which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to "*".
+        "callSetId": "A String", # The ID of the call set this variant call belongs to.
+        "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls in the same reference sequence which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to *.
         "genotypeLikelihood": [ # The genotype likelihoods for this variant call. Each array entry represents how likely a specific genotype is for this call. The value ordering is defined by the GL tag in the VCF spec.
           3.14,
         ],
-        "callsetName": "A String", # The name of the callset this variant call belongs to.
+        "callSetName": "A String", # The name of the call set this variant call belongs to.
       },
     ],
     "created": "A String", # The date this variant was created, in milliseconds from the epoch.
     "referenceBases": "A String", # The reference bases for this variant. They start at the given position.
+    "filter": [ # A list of filters (normally quality filters) this variant has failed. PASS indicates this variant has passed all filters.
+      "A String",
+    ],
+    "start": "A String", # The position at which this variant occurs (0-based). This corresponds to the first base of the string of reference bases.
     "names": [ # Names for the variant, for example a RefSNP ID.
       "A String",
     ],
     "alternateBases": [ # The bases that appear instead of the reference bases.
       "A String",
     ],
-    "position": "A String", # The position at which this variant occurs (1-based). This corresponds to the first base of the string of reference bases.
-    "contig": "A String", # The contig on which this variant occurs. (such as 'chr20' or 'X')
+    "referenceName": "A String", # The reference on which this variant occurs. (such as chr20 or X)
+    "quality": 3.14, # A measure of how likely this variant is to be real. A higher value is better.
     "id": "A String", # The Google generated ID of the variant, immutable.
-    "datasetId": "A String", # The ID of the dataset this variant belongs to.
-  }</pre>
-</div>
-
-<div class="method">
-    <code class="details" id="getSummary">getSummary(datasetId=None)</code>
-  <pre>Gets a summary of all the variant data in a dataset.
-
-Args:
-  datasetId: string, Required. The ID of the dataset to get variant summary information for.
-
-Returns:
-  An object of the form:
-
-    { # The variants summary response.
-    "contigBounds": [ # A list of all contigs used by the variants in a dataset with associated coordinate upper bounds for each one.
-      { # ContigBound records an upper bound for the starting coordinate of variants in a particular contig.
-        "contig": "A String", # The contig the bound is associate with.
-        "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the contig.
-      },
-    ],
-    "metadata": [ # The metadata associated with this dataset.
-      { # Metadata describes a single piece of variant call metadata. These data include a top level key and either a single value string (value) or a list of key-value pairs (info.) Value and info are mutually exclusive.
-        "info": { # Remaining structured metadata key-value pairs.
-          "a_key": [ # A string which maps to an array of values.
-            "A String",
-          ],
-        },
-        "description": "A String", # A textual description of this metadata.
-        "number": "A String", # The number of values that can be included in a field described by this metadata.
-        "value": "A String", # The value field for simple metadata
-        "key": "A String", # The top-level key.
-        "type": "A String", # The type of data. Possible types include: Integer, Float, Flag, Character, and String.
-        "id": "A String", # User-provided ID field, not enforced by this API. Two or more pieces of structured metadata with identical id and key fields are considered equivalent.
-      },
-    ],
   }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="import_">import_(body)</code>
-  <pre>Creates variant data by asynchronously importing the provided information.
+  <pre>Creates variant data by asynchronously importing the provided information. The variants for import will be merged with any existing data and each other according to the behavior of mergeVariants. In particular, this means for merged VCF variants that have conflicting INFO fields, some data will be arbitrarily discarded. As a special case, for single-sample VCF files, QUAL and FILTER fields will be moved to the call level; these are sometimes interpreted in a call-specific context. Imported VCF headers are appended to the metadata already in a VariantSet.
 
 Args:
   body: object, The request body. (required)
     The object takes the form of:
 
 { # The variant data import request.
+    "variantSetId": "A String", # Required. The variant set to which variant data should be imported.
     "sourceUris": [ # A list of URIs pointing at VCF files in Google Cloud Storage. See the VCF Specification for more details on the input format.
       "A String",
     ],
-    "datasetId": "A String", # Required. The dataset to which variant data should be imported.
+    "format": "A String", # The format of the variant data being imported.
   }
 
 
@@ -340,98 +312,6 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="patch">patch(variantId, body)</code>
-  <pre>Updates a variant. This method supports patch semantics.
-
-Args:
-  variantId: string, The ID of the variant to be updated.. (required)
-  body: object, The request body. (required)
-    The object takes the form of:
-
-{ # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a Dataset.
-  "info": { # A map of additional variant information.
-    "a_key": [ # A string which maps to an array of values.
-      "A String",
-    ],
-  },
-  "end": "A String", # The end position (1-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - position). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
-  "calls": [ # The variant calls for this particular variant. Each one represents the determination of genotype with respect to this variant.
-    { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a callset with the name NA12345.
-      "info": { # A map of additional variant call information.
-        "a_key": [ # A string which maps to an array of values.
-          "A String",
-        ],
-      },
-      "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases field of "T" and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value "CA" for this variant. If the genotype was instead [0, 1], the represented value would be "TA". Ordering of the genotype values is important if the phaseset field is present. If a genotype is not called (that is, a "." is present in the GT string) -1 is returned.
-        42,
-      ],
-      "callsetId": "A String", # The ID of the callset this variant call belongs to.
-      "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls on the same contig which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to "*".
-      "genotypeLikelihood": [ # The genotype likelihoods for this variant call. Each array entry represents how likely a specific genotype is for this call. The value ordering is defined by the GL tag in the VCF spec.
-        3.14,
-      ],
-      "callsetName": "A String", # The name of the callset this variant call belongs to.
-    },
-  ],
-  "created": "A String", # The date this variant was created, in milliseconds from the epoch.
-  "referenceBases": "A String", # The reference bases for this variant. They start at the given position.
-  "names": [ # Names for the variant, for example a RefSNP ID.
-    "A String",
-  ],
-  "alternateBases": [ # The bases that appear instead of the reference bases.
-    "A String",
-  ],
-  "position": "A String", # The position at which this variant occurs (1-based). This corresponds to the first base of the string of reference bases.
-  "contig": "A String", # The contig on which this variant occurs. (such as 'chr20' or 'X')
-  "id": "A String", # The Google generated ID of the variant, immutable.
-  "datasetId": "A String", # The ID of the dataset this variant belongs to.
-}
-
-
-Returns:
-  An object of the form:
-
-    { # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a Dataset.
-    "info": { # A map of additional variant information.
-      "a_key": [ # A string which maps to an array of values.
-        "A String",
-      ],
-    },
-    "end": "A String", # The end position (1-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - position). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
-    "calls": [ # The variant calls for this particular variant. Each one represents the determination of genotype with respect to this variant.
-      { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a callset with the name NA12345.
-        "info": { # A map of additional variant call information.
-          "a_key": [ # A string which maps to an array of values.
-            "A String",
-          ],
-        },
-        "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases field of "T" and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value "CA" for this variant. If the genotype was instead [0, 1], the represented value would be "TA". Ordering of the genotype values is important if the phaseset field is present. If a genotype is not called (that is, a "." is present in the GT string) -1 is returned.
-          42,
-        ],
-        "callsetId": "A String", # The ID of the callset this variant call belongs to.
-        "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls on the same contig which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to "*".
-        "genotypeLikelihood": [ # The genotype likelihoods for this variant call. Each array entry represents how likely a specific genotype is for this call. The value ordering is defined by the GL tag in the VCF spec.
-          3.14,
-        ],
-        "callsetName": "A String", # The name of the callset this variant call belongs to.
-      },
-    ],
-    "created": "A String", # The date this variant was created, in milliseconds from the epoch.
-    "referenceBases": "A String", # The reference bases for this variant. They start at the given position.
-    "names": [ # Names for the variant, for example a RefSNP ID.
-      "A String",
-    ],
-    "alternateBases": [ # The bases that appear instead of the reference bases.
-      "A String",
-    ],
-    "position": "A String", # The position at which this variant occurs (1-based). This corresponds to the first base of the string of reference bases.
-    "contig": "A String", # The contig on which this variant occurs. (such as 'chr20' or 'X')
-    "id": "A String", # The Google generated ID of the variant, immutable.
-    "datasetId": "A String", # The ID of the dataset this variant belongs to.
-  }</pre>
-</div>
-
-<div class="method">
     <code class="details" id="search">search(body)</code>
   <pre>Gets a list of variants matching the criteria.
 
@@ -440,19 +320,19 @@ Args:
     The object takes the form of:
 
 { # The variant search request.
-    "endPosition": "A String", # Required. The end of the window (1-based, inclusive) for which overlapping variants should be returned.
-    "startPosition": "A String", # Required. The beginning of the window (1-based, inclusive) for which overlapping variants should be returned.
-    "callsetNames": [ # Only return variant calls which belong to callsets which have exactly these names. Leaving this blank returns all variant calls. At most one of callsetNames or callsetIds should be provided.
-      "A String",
-    ],
-    "maxResults": "A String", # The maximum number of variants to return.
-    "pageToken": "A String", # The continuation token, which is used to page through large result sets. To get the next page of results, set this parameter to the value of "nextPageToken" from the previous response.
-    "callsetIds": [ # Only return variant calls which belong to callsets with these ids. Leaving this blank returns all variant calls. At most one of callsetNames or callsetIds should be provided.
+    "end": "A String", # Required. The end of the window (0-based, exclusive) for which overlapping variants should be returned.
+    "pageSize": 42, # The maximum number of variants to return.
+    "start": "A String", # Required. The beginning of the window (0-based, inclusive) for which overlapping variants should be returned.
+    "maxCalls": 42, # The maximum number of calls to return. However, at least one variant will always be returned, even if it has more calls than this limit.
+    "pageToken": "A String", # The continuation token, which is used to page through large result sets. To get the next page of results, set this parameter to the value of nextPageToken from the previous response.
+    "callSetIds": [ # Only return variant calls which belong to call sets with these ids. Leaving this blank returns all variant calls. If a variant has no calls belonging to any of these call sets, it won't be returned at all. Currently, variants with no calls from any call set will never be returned.
       "A String",
     ],
     "variantName": "A String", # Only return variants which have exactly this name.
-    "contig": "A String", # Required. Only return variants on this contig.
-    "datasetId": "A String", # Required. The ID of the dataset to search.
+    "referenceName": "A String", # Required. Only return variants in this reference sequence.
+    "variantSetIds": [ # Exactly one variant set ID must be provided. Only variants from this variant set will be returned.
+      "A String",
+    ],
   }
 
 
@@ -462,43 +342,47 @@ Returns:
     { # The variant search response.
     "nextPageToken": "A String", # The continuation token, which is used to page through large result sets. Provide this value in a subsequent request to return the next page of results. This field will be empty if there aren't any additional results.
     "variants": [ # The list of matching Variants.
-      { # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a Dataset.
+      { # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a variant set.
         "info": { # A map of additional variant information.
           "a_key": [ # A string which maps to an array of values.
             "A String",
           ],
         },
-        "end": "A String", # The end position (1-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - position). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
+        "variantSetId": "A String", # The ID of the variant set this variant belongs to.
+        "end": "A String", # The end position (0-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - start). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
         "calls": [ # The variant calls for this particular variant. Each one represents the determination of genotype with respect to this variant.
-          { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a callset with the name NA12345.
+          { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a call set with the name NA12345.
             "info": { # A map of additional variant call information.
               "a_key": [ # A string which maps to an array of values.
                 "A String",
               ],
             },
-            "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases field of "T" and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value "CA" for this variant. If the genotype was instead [0, 1], the represented value would be "TA". Ordering of the genotype values is important if the phaseset field is present. If a genotype is not called (that is, a "." is present in the GT string) -1 is returned.
+            "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases value of T and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value CA for this variant. If the genotype was instead [0, 1], the represented value would be TA. Ordering of the genotype values is important if the phaseset is present. If a genotype is not called (that is, a . is present in the GT string) -1 is returned.
               42,
             ],
-            "callsetId": "A String", # The ID of the callset this variant call belongs to.
-            "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls on the same contig which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to "*".
+            "callSetId": "A String", # The ID of the call set this variant call belongs to.
+            "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls in the same reference sequence which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to *.
             "genotypeLikelihood": [ # The genotype likelihoods for this variant call. Each array entry represents how likely a specific genotype is for this call. The value ordering is defined by the GL tag in the VCF spec.
               3.14,
             ],
-            "callsetName": "A String", # The name of the callset this variant call belongs to.
+            "callSetName": "A String", # The name of the call set this variant call belongs to.
           },
         ],
         "created": "A String", # The date this variant was created, in milliseconds from the epoch.
         "referenceBases": "A String", # The reference bases for this variant. They start at the given position.
+        "filter": [ # A list of filters (normally quality filters) this variant has failed. PASS indicates this variant has passed all filters.
+          "A String",
+        ],
+        "start": "A String", # The position at which this variant occurs (0-based). This corresponds to the first base of the string of reference bases.
         "names": [ # Names for the variant, for example a RefSNP ID.
           "A String",
         ],
         "alternateBases": [ # The bases that appear instead of the reference bases.
           "A String",
         ],
-        "position": "A String", # The position at which this variant occurs (1-based). This corresponds to the first base of the string of reference bases.
-        "contig": "A String", # The contig on which this variant occurs. (such as 'chr20' or 'X')
+        "referenceName": "A String", # The reference on which this variant occurs. (such as chr20 or X)
+        "quality": 3.14, # A measure of how likely this variant is to be real. A higher value is better.
         "id": "A String", # The Google generated ID of the variant, immutable.
-        "datasetId": "A String", # The ID of the dataset this variant belongs to.
       },
     ],
   }</pre>
@@ -506,93 +390,101 @@ Returns:
 
 <div class="method">
     <code class="details" id="update">update(variantId, body)</code>
-  <pre>Updates a variant.
+  <pre>Updates a variant's names and info fields. All other modifications are silently ignored. Returns the modified variant without its calls.
 
 Args:
-  variantId: string, The ID of the variant to be updated.. (required)
+  variantId: string, The ID of the variant to be updated. (required)
   body: object, The request body. (required)
     The object takes the form of:
 
-{ # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a Dataset.
+{ # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a variant set.
   "info": { # A map of additional variant information.
     "a_key": [ # A string which maps to an array of values.
       "A String",
     ],
   },
-  "end": "A String", # The end position (1-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - position). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
+  "variantSetId": "A String", # The ID of the variant set this variant belongs to.
+  "end": "A String", # The end position (0-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - start). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
   "calls": [ # The variant calls for this particular variant. Each one represents the determination of genotype with respect to this variant.
-    { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a callset with the name NA12345.
+    { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a call set with the name NA12345.
       "info": { # A map of additional variant call information.
         "a_key": [ # A string which maps to an array of values.
           "A String",
         ],
       },
-      "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases field of "T" and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value "CA" for this variant. If the genotype was instead [0, 1], the represented value would be "TA". Ordering of the genotype values is important if the phaseset field is present. If a genotype is not called (that is, a "." is present in the GT string) -1 is returned.
+      "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases value of T and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value CA for this variant. If the genotype was instead [0, 1], the represented value would be TA. Ordering of the genotype values is important if the phaseset is present. If a genotype is not called (that is, a . is present in the GT string) -1 is returned.
         42,
       ],
-      "callsetId": "A String", # The ID of the callset this variant call belongs to.
-      "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls on the same contig which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to "*".
+      "callSetId": "A String", # The ID of the call set this variant call belongs to.
+      "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls in the same reference sequence which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to *.
       "genotypeLikelihood": [ # The genotype likelihoods for this variant call. Each array entry represents how likely a specific genotype is for this call. The value ordering is defined by the GL tag in the VCF spec.
         3.14,
       ],
-      "callsetName": "A String", # The name of the callset this variant call belongs to.
+      "callSetName": "A String", # The name of the call set this variant call belongs to.
     },
   ],
   "created": "A String", # The date this variant was created, in milliseconds from the epoch.
   "referenceBases": "A String", # The reference bases for this variant. They start at the given position.
+  "filter": [ # A list of filters (normally quality filters) this variant has failed. PASS indicates this variant has passed all filters.
+    "A String",
+  ],
+  "start": "A String", # The position at which this variant occurs (0-based). This corresponds to the first base of the string of reference bases.
   "names": [ # Names for the variant, for example a RefSNP ID.
     "A String",
   ],
   "alternateBases": [ # The bases that appear instead of the reference bases.
     "A String",
   ],
-  "position": "A String", # The position at which this variant occurs (1-based). This corresponds to the first base of the string of reference bases.
-  "contig": "A String", # The contig on which this variant occurs. (such as 'chr20' or 'X')
+  "referenceName": "A String", # The reference on which this variant occurs. (such as chr20 or X)
+  "quality": 3.14, # A measure of how likely this variant is to be real. A higher value is better.
   "id": "A String", # The Google generated ID of the variant, immutable.
-  "datasetId": "A String", # The ID of the dataset this variant belongs to.
 }
 
 
 Returns:
   An object of the form:
 
-    { # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a Dataset.
+    { # A Variant represents a change in DNA sequence relative to some reference. For example, a Variant could represent a SNP or an insertion. Variants belong to a variant set.
     "info": { # A map of additional variant information.
       "a_key": [ # A string which maps to an array of values.
         "A String",
       ],
     },
-    "end": "A String", # The end position (1-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - position). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
+    "variantSetId": "A String", # The ID of the variant set this variant belongs to.
+    "end": "A String", # The end position (0-based) of this variant. This corresponds to the first base after the last base in the reference allele. So, the length of the reference allele is (end - start). This is useful for variants that don't explicitly give alternate bases, for example large deletions.
     "calls": [ # The variant calls for this particular variant. Each one represents the determination of genotype with respect to this variant.
-      { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a callset with the name NA12345.
+      { # A Call represents the determination of genotype with respect to a particular variant. It may include associated information such as quality and phasing. For example, a Call might assign a probability of 0.32 to the occurrence of a SNP named rs1234 in a call set with the name NA12345.
         "info": { # A map of additional variant call information.
           "a_key": [ # A string which maps to an array of values.
             "A String",
           ],
         },
-        "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases field of "T" and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value "CA" for this variant. If the genotype was instead [0, 1], the represented value would be "TA". Ordering of the genotype values is important if the phaseset field is present. If a genotype is not called (that is, a "." is present in the GT string) -1 is returned.
+        "genotype": [ # The genotype of this variant call. Each value represents either the value of the referenceBases field or a 1-based index into alternateBases. If a variant had a referenceBases value of T and an alternateBases value of ["A", "C"], and the genotype was [2, 1], that would mean the call represented the heterozygous value CA for this variant. If the genotype was instead [0, 1], the represented value would be TA. Ordering of the genotype values is important if the phaseset is present. If a genotype is not called (that is, a . is present in the GT string) -1 is returned.
           42,
         ],
-        "callsetId": "A String", # The ID of the callset this variant call belongs to.
-        "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls on the same contig which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to "*".
+        "callSetId": "A String", # The ID of the call set this variant call belongs to.
+        "phaseset": "A String", # If this field is present, this variant call's genotype ordering implies the phase of the bases and is consistent with any other variant calls in the same reference sequence which have the same phaseset value. When importing data from VCF, if the genotype data was phased but no phase set was specified this field will be set to *.
         "genotypeLikelihood": [ # The genotype likelihoods for this variant call. Each array entry represents how likely a specific genotype is for this call. The value ordering is defined by the GL tag in the VCF spec.
           3.14,
         ],
-        "callsetName": "A String", # The name of the callset this variant call belongs to.
+        "callSetName": "A String", # The name of the call set this variant call belongs to.
       },
     ],
     "created": "A String", # The date this variant was created, in milliseconds from the epoch.
     "referenceBases": "A String", # The reference bases for this variant. They start at the given position.
+    "filter": [ # A list of filters (normally quality filters) this variant has failed. PASS indicates this variant has passed all filters.
+      "A String",
+    ],
+    "start": "A String", # The position at which this variant occurs (0-based). This corresponds to the first base of the string of reference bases.
     "names": [ # Names for the variant, for example a RefSNP ID.
       "A String",
     ],
     "alternateBases": [ # The bases that appear instead of the reference bases.
       "A String",
     ],
-    "position": "A String", # The position at which this variant occurs (1-based). This corresponds to the first base of the string of reference bases.
-    "contig": "A String", # The contig on which this variant occurs. (such as 'chr20' or 'X')
+    "referenceName": "A String", # The reference on which this variant occurs. (such as chr20 or X)
+    "quality": 3.14, # A measure of how likely this variant is to be real. A higher value is better.
     "id": "A String", # The Google generated ID of the variant, immutable.
-    "datasetId": "A String", # The ID of the dataset this variant belongs to.
   }</pre>
 </div>
 
