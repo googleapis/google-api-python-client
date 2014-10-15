@@ -21,7 +21,7 @@ from __future__ import print_function
 
 import sys
 
-if sys.version_info <= (2, 6):
+if sys.version_info < (2, 6):
   print('google-api-python-client requires python version >= 2.6.',
         file=sys.stderr)
   sys.exit(1)
@@ -38,6 +38,9 @@ install_requires = [
     'oauth2client>=1.3',
     'uritemplate>=0.6',
 ]
+
+if sys.version_info < (2, 7):
+  install_requires.append('argparse')
 
 long_desc = """The Google API Client for Python is a client library for
 accessing the Plus, Moderator, and many other Google APIs."""
