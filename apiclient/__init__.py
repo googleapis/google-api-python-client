@@ -10,3 +10,5 @@ from googleapiclient import mimeparse
 from googleapiclient import model
 from googleapiclient import sample_tools
 from googleapiclient import schema
+
+__version__ = apiclient.__version__
