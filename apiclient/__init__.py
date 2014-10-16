@@ -1,6 +1,6 @@
 """Retain apiclient as an alias for googleapiclient."""
 
-from googleapiclient import *
+import googleapiclient
 
 from googleapiclient import channel
 from googleapiclient import discovery
@@ -11,4 +11,4 @@ from googleapiclient import model
 from googleapiclient import sample_tools
 from googleapiclient import schema
 
-__version__ = apiclient.__version__
+__version__ = googleapiclient.__version__
