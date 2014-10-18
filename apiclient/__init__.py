@@ -23,3 +23,18 @@ from googleapiclient import sample_tools
 from googleapiclient import schema
 
 __version__ = googleapiclient.__version__
+
+_SUBMODULES = {
+    'channel': channel,
+    'discovery': discovery,
+    'errors': errors,
+    'http': http,
+    'mimeparse': mimeparse,
+    'model': model,
+    'sample_tools': sample_tools,
+    'schema': schema,
+}
+
+import sys
+for module_name, module in _SUBMODULES.iteritems():
+  sys.modules['apiclient.%s' % module_name] = module
