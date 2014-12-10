@@ -1,5 +1,5 @@
-# -*- coding:utf-8 -*-
 #!/usr/bin/python2.4
+# -*- coding:utf-8 -*-
 #
 # Copyright 2014 Google Inc. All Rights Reserved.
 #
