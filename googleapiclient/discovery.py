@@ -116,6 +116,31 @@ STACK_QUERY_PARAMETER_DEFAULT_VALUE = {'type': 'string', 'location': 'query'}
 RESERVED_WORDS = frozenset(['body'])
 
 
+def is_string(obj):
+  """Checks if argument is a string type (str or unicode).
+
+  Python2 had a basestring superclass for both str and unicode.
+  Python3 only has str.
+
+  This function is used to check if a variable is a string-type AND be
+  compatible with both versions of python.
+
+  Another option is to use the python module, six.
+    from six import string_types
+    isinstance(s, string_types)
+
+  Args:
+    obj: string, object to check.
+
+  Returns:
+    A boolean on whether or not the input object is a string or unicode
+  """
+  try:
+    return isinstance(obj, basestring)
+  except NameError:
+    return isinstance(obj, str)
+
+
 def fix_method_name(name):
   """Fix method names to avoid reserved word conflicts.
 
@@ -266,7 +291,7 @@ def build_from_document(
   # future is no longer used.
   future = {}
 
-  if isinstance(service, basestring):
+  if is_string(service):
     service = json.loads(service)
   base = urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
@@ -628,7 +653,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
 
     for name, regex in parameters.pattern_params.iteritems():
       if name in kwargs:
-        if isinstance(kwargs[name], basestring):
+        if is_string(kwargs[name]):
           pvalues = [kwargs[name]]
         else:
           pvalues = kwargs[name]
@@ -644,7 +669,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         # name differently, since we want to handle both
         # arg='value' and arg=['value1', 'value2']
         if (name in parameters.repeated_params and
-            not isinstance(kwargs[name], basestring)):
+            not is_string(kwargs[name])):
           values = kwargs[name]
         else:
           values = [kwargs[name]]
@@ -691,7 +716,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
 
     if media_filename:
       # Ensure we end up with a valid MediaUpload object.
-      if isinstance(media_filename, basestring):
+      if is_string(media_filename):
         (media_mime_type, encoding) = mimetypes.guess_type(media_filename)
         if media_mime_type is None:
           raise UnknownFileType(media_filename)
