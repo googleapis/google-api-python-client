@@ -29,7 +29,7 @@ import logging
 import urllib
 
 from googleapiclient import __version__
-from errors import HttpError
+from googleapiclient.errors import HttpError
 
 
 dump_request_response = False

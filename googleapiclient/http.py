@@ -32,28 +32,35 @@ import gzip
 import httplib2
 import json
 import logging
-import mimeparse
 import mimetypes
 import os
 import random
 import sys
 import time
 import urllib
-import urlparse
 import uuid
+
+try:
+  from urllib import parse
+  urlparse = parse
+  urlunparse = parse
+except ImportError:
+  from urlparse import urlparse, urlunparse
 
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from email.parser import FeedParser
-from errors import BatchError
-from errors import HttpError
-from errors import InvalidChunkSizeError
-from errors import ResumableUploadError
-from errors import UnexpectedBodyError
-from errors import UnexpectedMethodError
-from model import JsonModel
+from googleapiclient.errors import BatchError
+from googleapiclient.errors import HttpError
+from googleapiclient.errors import InvalidChunkSizeError
+from googleapiclient.errors import ResumableUploadError
+from googleapiclient.errors import UnexpectedBodyError
+from googleapiclient.errors import UnexpectedMethodError
+from googleapiclient.model import JsonModel
 from oauth2client import util
+
+from googleapiclient import mimeparse
 
 
 DEFAULT_CHUNK_SIZE = 512*1024
@@ -701,8 +708,8 @@ class HttpRequest(object):
       self.method = 'POST'
       self.headers['x-http-method-override'] = 'GET'
       self.headers['content-type'] = 'application/x-www-form-urlencoded'
-      parsed = urlparse.urlparse(self.uri)
-      self.uri = urlparse.urlunparse(
+      parsed = urlparse(self.uri)
+      self.uri = urlunparse(
           (parsed.scheme, parsed.netloc, parsed.path, parsed.params, None,
            None)
           )
@@ -1085,8 +1092,8 @@ class BatchHttpRequest(object):
       The request as a string in application/http format.
     """
     # Construct status line
-    parsed = urlparse.urlparse(request.uri)
-    request_line = urlparse.urlunparse(
+    parsed = urlparse(request.uri)
+    request_line = urlunparse(
         (None, None, parsed.path, parsed.params, parsed.query, None)
         )
     status_line = request.method + ' ' + request_line + ' HTTP/1.1\n'
