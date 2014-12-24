@@ -41,16 +41,11 @@ import logging
 import mimetypes
 import os
 import re
-import urllib
 try:
-  from urllib import parse
-  urljoin = parse
-  urlparse = parse
-  urlunparse = parse
-  parse_qs = parse
-  parse_qsl = parse
+  from urllib.parse import urlencode, urlparse, urljoin, urlunparse, parse_qs, parse_qsl
 except ImportError:
   from urlparse import urlparse, urljoin, urlunparse
+  from urllib import urlencode
   try:
     from urlparse import parse_qs, parse_qsl
   except ImportError:
@@ -883,7 +878,7 @@ Returns:
     # Find and remove old 'pageToken' value from URI
     newq = [(key, value) for (key, value) in q if key != 'pageToken']
     newq.append(('pageToken', pageToken))
-    parsed[4] = urllib.urlencode(newq)
+    parsed[4] = urlencode(newq)
     uri = urlunparse(parsed)
 
     request.uri = uri

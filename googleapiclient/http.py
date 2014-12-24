@@ -37,15 +37,13 @@ import os
 import random
 import sys
 import time
-import urllib
 import uuid
 
 try:
-  from urllib import parse
-  urlparse = parse
-  urlunparse = parse
+  from urllib.parse import urlparse, urlunparse, quote, unquote
 except ImportError:
   from urlparse import urlparse, urlunparse
+  from urllib import quote, unquote
 
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
@@ -1057,7 +1055,7 @@ class BatchHttpRequest(object):
     if self._base_id is None:
       self._base_id = uuid.uuid4()
 
-    return '<%s+%s>' % (self._base_id, urllib.quote(id_))
+    return '<%s+%s>' % (self._base_id, quote(id_))
 
   def _header_to_id(self, header):
     """Convert a Content-ID header value to an id.
@@ -1080,7 +1078,7 @@ class BatchHttpRequest(object):
       raise BatchError("Invalid value for Content-ID: %s" % header)
     base, id_ = header[1:-1].rsplit('+', 1)
 
-    return urllib.unquote(id_)
+    return unquote(id_)
 
   def _serialize_request(self, request):
     """Convert an HttpRequest object into a string.
