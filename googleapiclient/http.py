@@ -1092,7 +1092,7 @@ class BatchHttpRequest(object):
     # Construct status line
     parsed = urlparse(request.uri)
     request_line = urlunparse(
-        (None, None, parsed.path, parsed.params, parsed.query, None)
+        ('', '', parsed.path, parsed.params, parsed.query, '')
         )
     status_line = request.method + ' ' + request_line + ' HTTP/1.1\n'
     major, minor = request.headers.get('content-type', 'application/json').split('/')
