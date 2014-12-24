@@ -205,7 +205,7 @@ def build(serviceName,
 
   try:
     service = json.loads(content)
-  except ValueError, e:
+  except ValueError as e:
     logger.error('Failed to parse as JSON: ' + content)
     raise InvalidJsonError()
 
