@@ -28,7 +28,10 @@ import os
 import unittest
 import urllib
 import random
-import StringIO
+try:
+  from io import BytesIO
+except ImportError:
+  import BytesIO
 import time
 
 from googleapiclient.discovery import build
@@ -231,7 +234,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
 
   def test_media_io_base_upload_from_string_io(self):
     f = open(datafile('small.png'), 'r')
-    fd = StringIO.StringIO(f.read())
+    fd = BytesIO(f.read())
     f.close()
 
     upload = MediaIoBaseUpload(
@@ -331,7 +334,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http=http)
     self.request = zoo.animals().get_media(name='Lion')
-    self.fd = StringIO.StringIO()
+    self.fd = BytesIO()
 
   def test_media_io_base_download(self):
     self.request.http = HttpMockSequence([
@@ -961,7 +964,7 @@ class TestStreamSlice(unittest.TestCase):
   """Test _StreamSlice."""
 
   def setUp(self):
-    self.stream = StringIO.StringIO('0123456789')
+    self.stream = BytesIO('0123456789')
 
   def test_read(self):
     s =  _StreamSlice(self.stream, 0, 4)

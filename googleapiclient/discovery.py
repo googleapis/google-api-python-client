@@ -27,7 +27,10 @@ __all__ = [
 
 
 # Standard library imports
-import StringIO
+try:
+  from io import BytesIO
+except ImportError:
+  import BytesIO
 import copy
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
@@ -39,19 +42,26 @@ import mimetypes
 import os
 import re
 import urllib
-import urlparse
-
 try:
-  from urlparse import parse_qsl
+  from urllib import parse
+  urljoin = parse
+  urlparse = parse
+  urlunparse = parse
+  parse_qs = parse
+  parse_qsl = parse
 except ImportError:
-  from cgi import parse_qsl
+  from urlparse import urlparse, urljoin, urlunparse
+  try:
+    from urlparse import parse_qs, parse_qsl
+  except ImportError:
+    from cgi import parse_qs
 
 # Third-party imports
 import httplib2
-import mimeparse
 import uritemplate
 
 # Local imports
+from googleapiclient import mimeparse
 from googleapiclient.errors import HttpError
 from googleapiclient.errors import InvalidJsonError
 from googleapiclient.errors import MediaUploadSizeError
@@ -255,7 +265,7 @@ def build_from_document(
 
   if isinstance(service, basestring):
     service = json.loads(service)
-  base = urlparse.urljoin(service['rootUrl'], service['servicePath'])
+  base = urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
 
   if credentials:
@@ -671,7 +681,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         actual_path_params, actual_query_params, body_value)
 
     expanded_url = uritemplate.expand(pathUrl, params)
-    url = urlparse.urljoin(self._baseUrl, expanded_url + query)
+    url = urljoin(self._baseUrl, expanded_url + query)
 
     resumable = None
     multipart_boundary = ''
@@ -697,7 +707,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
 
       # Use the media path uri for media uploads
       expanded_url = uritemplate.expand(mediaPathUrl, params)
-      url = urlparse.urljoin(self._baseUrl, expanded_url + query)
+      url = urljoin(self._baseUrl, expanded_url + query)
       if media_upload.resumable():
         url = _add_query_parameter(url, 'uploadType', 'resumable')
 
@@ -732,7 +742,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
           msgRoot.attach(msg)
           # encode the body: note that we can't use `as_string`, because
           # it plays games with `From ` lines.
-          fp = StringIO.StringIO()
+          fp = BytesIO()
           g = Generator(fp, mangle_from_=False)
           g.flatten(msgRoot, unixfrom=False)
           body = fp.getvalue()
@@ -839,14 +849,14 @@ Returns:
     request = copy.copy(previous_request)
 
     pageToken = previous_response['nextPageToken']
-    parsed = list(urlparse.urlparse(request.uri))
+    parsed = list(urlparse(request.uri))
     q = parse_qsl(parsed[4])
 
     # Find and remove old 'pageToken' value from URI
     newq = [(key, value) for (key, value) in q if key != 'pageToken']
     newq.append(('pageToken', pageToken))
     parsed[4] = urllib.urlencode(newq)
-    uri = urlparse.urlunparse(parsed)
+    uri = urlunparse(parsed)
 
     request.uri = uri
 
