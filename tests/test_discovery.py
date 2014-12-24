@@ -33,9 +33,7 @@ import sys
 import unittest
 
 try:
-  from urllib import parse
-  urlparse = parse
-  parse_qs = parse
+  from urllib.parse import urlparse, parse_qs
 except ImportError:
   from urlparse import urlparse
   try:
@@ -77,7 +75,6 @@ from oauth2client.client import OAuth2Credentials
 
 import uritemplate
 
-import sys
 if sys.version > '3':
   long = int
 

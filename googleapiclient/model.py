@@ -26,7 +26,10 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import json
 import logging
-import urllib
+try:
+  from urllib.parse import urlencode
+except ImportError:
+  from urllib import urlencode
 
 from googleapiclient import __version__
 from googleapiclient.errors import HttpError
@@ -179,10 +182,16 @@ class BaseModel(Model):
           x = x.encode('utf-8')
           astuples.append((key, x))
       else:
-        if isinstance(value, unicode) and callable(value.encode):
-          value = value.encode('utf-8')
+        # if isinstance(value, unicode) and callable(value.encode):
+        #   value = value.encode('utf-8')
+        try:
+          if isinstance(value, unicode) and callable(value.encode):
+            value = value.encode('utf-8')
+        except NameError:
+          if isinstance(value, str) and callable(value.encode):
+            value = value.encode('utf-8')
         astuples.append((key, value))
-    return '?' + urllib.urlencode(astuples)
+    return '?' + urlencode(astuples)
 
   def _log_response(self, resp, content):
     """Logs debugging information about the response if requested."""
