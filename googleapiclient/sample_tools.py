@@ -94,9 +94,9 @@ def init(argv, name, version, doc, filename, scope=None, parents=[], discovery_f
     service = discovery.build(name, version, http=http)
   else:
     # Construct a service object using a local discovery document file.
-	with open(discovery_filename) as discovery_file:
-	  service = discovery.build_from_document(
-		  discovery_file.read(),
-		  base='https://www.googleapis.com/',
-		  http=http)
+    with open(discovery_filename) as discovery_file:
+      service = discovery.build_from_document(
+          discovery_file.read(),
+          base='https://www.googleapis.com/',
+          http=http)
   return (service, flags)
