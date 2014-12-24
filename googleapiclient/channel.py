@@ -88,7 +88,11 @@ X_GOOG_RESOURCE_ID    = 'X-GOOG-RESOURCE-ID'
 
 def _upper_header_keys(headers):
   new_headers = {}
-  for k, v in headers.iteritems():
+  try:
+    header_items = headers.iteritems()
+  except AttributeError:
+    header_items = headers.items()
+  for k, v in header_items:
     new_headers[k.upper()] = v
   return new_headers
 

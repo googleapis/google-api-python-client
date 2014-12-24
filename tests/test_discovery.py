@@ -141,7 +141,11 @@ class Utilities(unittest.TestCase):
       self.assertEqual(STACK_QUERY_PARAMETER_DEFAULT_VALUE,
                        parameters[param_name])
 
-    for param_name, value in root_desc.get('parameters', {}).iteritems():
+    try:
+      parameters_items = root_desc.get('parameters', {}).iteritems()
+    except AttributeError:
+      parameters_items = root_desc.get('parameters', {}).items()
+    for param_name, value in parameters_items:
       self.assertEqual(value, parameters[param_name])
 
     return parameters

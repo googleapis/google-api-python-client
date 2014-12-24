@@ -640,13 +640,17 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
   def method(self, **kwargs):
     # Don't bother with doc string, it will be over-written by createMethod.
 
-    for name in kwargs.iterkeys():
+    try:
+      kwargs_keys = kwargs.iterkeys()
+    except AttributeError:
+      kwargs_keys = kwargs.keys()
+    for name in kwargs_keys:
       if name not in parameters.argmap:
         raise TypeError('Got an unexpected keyword argument "%s"' % name)
 
     # Remove args that have a value of None.
     keys = kwargs.keys()
-    for name in keys:
+    for name in list(keys):
       if kwargs[name] is None:
         del kwargs[name]
 
@@ -810,7 +814,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     docs.append('Args:\n')
 
   # Skip undocumented params and params common to all methods.
-  skip_parameters = rootDesc.get('parameters', {}).keys()
+  skip_parameters = list(rootDesc.get('parameters', {}).keys())
   skip_parameters.extend(STACK_QUERY_PARAMETERS)
 
   all_args = parameters.argmap.keys()

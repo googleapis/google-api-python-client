@@ -195,7 +195,11 @@ def print_query(results):
 
   print 'Query Parameters:'
   query = results.get('query')
-  for key, value in query.iteritems():
+  try:
+    query_items = query.iteritems()
+  except AttributeError:
+    query_items = query.items()
+  for key, value in query_items:
     print '%s = %s' % (key, value)
   print
 
@@ -236,7 +240,11 @@ def print_totals_for_all_results(results):
   print 'Here are the metric totals for the matched total results.'
   totals = results.get('totalsForAllResults')
 
-  for metric_name, metric_total in totals.iteritems():
+  try:
+    totals_items = totals.iteritems()
+  except AttributeError:
+    totals_items = totals.items()
+  for metric_name, metric_total in totals_items:
     print 'Metric Name  = %s' % metric_name
     print 'Metric Total = %s' % metric_total
     print
