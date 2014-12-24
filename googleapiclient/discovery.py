@@ -79,6 +79,9 @@ from oauth2client.client import GoogleCredentials
 from oauth2client.util import _add_query_parameter
 from oauth2client.util import positional
 
+import sys
+if sys.version > '3':
+  long = int
 
 # The client library requires a version of httplib2 that supports RETRIES.
 httplib2.RETRIES = 1
@@ -339,7 +342,7 @@ def _media_size_to_long(maxSize):
     The size as an integer value.
   """
   if len(maxSize) < 2:
-    return 0L
+    return long(0)
   units = maxSize[-2:].upper()
   bit_shift = _MEDIA_SIZE_BIT_SHIFTS.get(units)
   if bit_shift is not None:
@@ -436,7 +439,7 @@ def _fix_up_media_upload(method_desc, root_desc, path_url, parameters):
         accepted for media upload. Defaults to empty list if not in the
         discovery document.
       - max_size is a long representing the max size in bytes allowed for a
-        media upload. Defaults to 0L if not in the discovery document.
+        media upload. Defaults to long(0) if not in the discovery document.
       - media_path_url is a String; the absolute URI for media upload for the
         API method. Constructed using the API root URI and service path from
         the discovery document and the relative path for the API method. If
@@ -481,7 +484,7 @@ def _fix_up_method_description(method_desc, root_desc):
         accepted for media upload. Defaults to empty list if not in the
         discovery document.
       - max_size is a long representing the max size in bytes allowed for a
-        media upload. Defaults to 0L if not in the discovery document.
+        media upload. Defaults to long(0) if not in the discovery document.
       - media_path_url is a String; the absolute URI for media upload for the
         API method. Constructed using the API root URI and service path from
         the discovery document and the relative path for the API method. If
