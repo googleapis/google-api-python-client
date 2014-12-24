@@ -106,11 +106,19 @@ class BaseModel(Model):
     if dump_request_response:
       logging.info('--request-start--')
       logging.info('-headers-start-')
-      for h, v in headers.iteritems():
+      try:
+        header_items = headers.iteritems()
+      except AttributeError:
+        header_items = headers.items()
+      for h, v in header_items:
         logging.info('%s: %s', h, v)
       logging.info('-headers-end-')
       logging.info('-path-parameters-start-')
-      for h, v in path_params.iteritems():
+      try:
+        path_params_items = path_params.iteritems()
+      except AttributeError:
+        path_params_items = path_params.items()
+      for h, v in path_params_items:
         logging.info('%s: %s', h, v)
       logging.info('-path-parameters-end-')
       logging.info('body: %s', body)
@@ -161,7 +169,11 @@ class BaseModel(Model):
     if self.alt_param is not None:
       params.update({'alt': self.alt_param})
     astuples = []
-    for key, value in params.iteritems():
+    try:
+      param_items = params.iteritems()
+    except AttributeError:
+      param_items = params.items()
+    for key, value in param_items:
       if type(value) == type([]):
         for x in value:
           x = x.encode('utf-8')
@@ -176,7 +188,11 @@ class BaseModel(Model):
     """Logs debugging information about the response if requested."""
     if dump_request_response:
       logging.info('--response-start--')
-      for h, v in resp.iteritems():
+      try:
+        resp_items = resp.iteritems()
+      except AttributeError:
+        resp_items = resp.items()
+      for h, v in resp_items:
         logging.info('%s: %s', h, v)
       if content:
         logging.info(content)
@@ -361,7 +377,11 @@ def makepatch(original, modified):
       body=makepatch(original, item)).execute()
   """
   patch = {}
-  for key, original_value in original.iteritems():
+  try:
+    original_items = original.iteritems()
+  except AttributeError:
+    original_items = original.items()
+  for key, original_value in original_items:
     modified_value = modified.get(key, None)
     if modified_value is None:
       # Use None to signal that the element is deleted

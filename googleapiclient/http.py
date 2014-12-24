@@ -1107,7 +1107,11 @@ class BatchHttpRequest(object):
     if 'content-type' in headers:
       del headers['content-type']
 
-    for key, value in headers.iteritems():
+    try:
+      header_items = headers.iteritems()
+    except AttributeError:
+      header_items = headers.items()
+    for key, value in header_items:
       msg[key] = value
     msg['Host'] = parsed.netloc
     msg.set_unixfrom(None)
