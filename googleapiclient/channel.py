@@ -222,7 +222,11 @@ class Channel(object):
     Args:
       resp: dict, The response from a watch() method.
     """
-    for json_name, param_name in CHANNEL_PARAMS.iteritems():
+    try:
+      channel_param_items = CHANNEL_PARAMS.iteritems()
+    except AttributeError:
+      channel_param_items = CHANNEL_PARAMS.items()
+    for json_name, param_name in channel_param_items:
       value = resp.get(json_name)
       if value is not None:
         setattr(self, param_name, value)
