@@ -28,9 +28,9 @@ __all__ = [
 
 # Standard library imports
 try:
-  from io import BytesIO
+  from io import BytesIO, StringIO
 except ImportError:
-  import BytesIO
+  import BytesIO, StringIO
 import copy
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
@@ -789,7 +789,12 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
           msgRoot.attach(msg)
           # encode the body: note that we can't use `as_string`, because
           # it plays games with `From ` lines.
-          fp = BytesIO()
+          # fp = BytesIO()
+          # fp = StringIO()
+          if sys.version > '3':
+            fp = StringIO()
+          else:
+            fp = BytesIO()
           g = Generator(fp, mangle_from_=False)
           g.flatten(msgRoot, unixfrom=False)
           body = fp.getvalue()
