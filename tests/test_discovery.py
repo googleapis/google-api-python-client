@@ -151,7 +151,7 @@ class Utilities(unittest.TestCase):
     parameters = self._base_fix_up_parameters_test(self.zoo_get_method_desc,
                                                    'GET', self.zoo_root_desc)
     # Since http_method is 'GET'
-    self.assertFalse(parameters.has_key('body'))
+    self.assertFalse('body' in parameters)
 
   def test_fix_up_parameters_insert(self):
     parameters = self._base_fix_up_parameters_test(self.zoo_insert_method_desc,
@@ -174,15 +174,15 @@ class Utilities(unittest.TestCase):
 
     parameters = _fix_up_parameters(invalid_method_desc, dummy_root_desc,
                                     no_payload_http_method)
-    self.assertFalse(parameters.has_key('body'))
+    self.assertFalse('body' in parameters)
 
     parameters = _fix_up_parameters(valid_method_desc, dummy_root_desc,
                                     no_payload_http_method)
-    self.assertFalse(parameters.has_key('body'))
+    self.assertFalse('body' in parameters)
 
     parameters = _fix_up_parameters(invalid_method_desc, dummy_root_desc,
                                     with_payload_http_method)
-    self.assertFalse(parameters.has_key('body'))
+    self.assertFalse('body' in parameters)
 
     parameters = _fix_up_parameters(valid_method_desc, dummy_root_desc,
                                     with_payload_http_method)
@@ -591,7 +591,7 @@ class Discovery(unittest.TestCase):
     zoo = build('zoo', 'v1', http=self.http)
     request = zoo.animals().crossbreed(media_body=datafile('small.png'))
     self.assertEquals('image/png', request.headers['content-type'])
-    self.assertEquals('PNG', request.body[1:4])
+    self.assertEquals(b'PNG', request.body[1:4])
 
   def test_simple_media_raise_correct_exceptions(self):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
@@ -615,7 +615,7 @@ class Discovery(unittest.TestCase):
 
     request = zoo.animals().insert(media_body=datafile('small.png'))
     self.assertEquals('image/png', request.headers['content-type'])
-    self.assertEquals('PNG', request.body[1:4])
+    self.assertEquals(b'PNG', request.body[1:4])
     assertUrisEqual(self,
         'https://www.googleapis.com/upload/zoo/v1/animals?uploadType=media&alt=json',
         request.uri)
@@ -897,7 +897,7 @@ class Discovery(unittest.TestCase):
       try:
         body = request.execute(http=http)
       except HttpError as e:
-        self.assertEqual('01234', e.content)
+        self.assertEqual(b'01234', e.content)
 
     except ImportError:
       pass

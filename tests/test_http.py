@@ -136,7 +136,7 @@ class TestMediaUpload(unittest.TestCase):
     self.assertEqual(190, upload.size())
     self.assertEqual(True, upload.resumable())
     self.assertEqual(500, upload.chunksize())
-    self.assertEqual('PNG', upload.getbytes(1, 3))
+    self.assertEqual(b'PNG', upload.getbytes(1, 3))
 
     json = upload.to_json()
     new_upload = MediaUpload.new_from_json(json)
@@ -145,7 +145,7 @@ class TestMediaUpload(unittest.TestCase):
     self.assertEqual(190, new_upload.size())
     self.assertEqual(True, new_upload.resumable())
     self.assertEqual(500, new_upload.chunksize())
-    self.assertEqual('PNG', new_upload.getbytes(1, 3))
+    self.assertEqual(b'PNG', new_upload.getbytes(1, 3))
 
   def test_media_file_upload_raises_on_invalid_chunksize(self):
     self.assertRaises(InvalidChunkSizeError, MediaFileUpload,
@@ -153,12 +153,12 @@ class TestMediaUpload(unittest.TestCase):
         resumable=True)
 
   def test_media_inmemory_upload(self):
-    media = MediaInMemoryUpload('abcdef', mimetype='text/plain', chunksize=10,
+    media = MediaInMemoryUpload(b'abcdef', mimetype='text/plain', chunksize=10,
                                 resumable=True)
     self.assertEqual('text/plain', media.mimetype())
     self.assertEqual(10, media.chunksize())
     self.assertTrue(media.resumable())
-    self.assertEqual('bc', media.getbytes(1, 2))
+    self.assertEqual(b'bc', media.getbytes(1, 2))
     self.assertEqual(6, media.size())
 
   def test_http_request_to_from_json(self):
@@ -207,23 +207,23 @@ class TestMediaIoBaseUpload(unittest.TestCase):
       self.assertEqual(190, upload.size())
       self.assertEqual(True, upload.resumable())
       self.assertEqual(500, upload.chunksize())
-      self.assertEqual('PNG', upload.getbytes(1, 3))
+      self.assertEqual(b'PNG', upload.getbytes(1, 3))
     except ImportError:
       pass
 
   def test_media_io_base_upload_from_file_object(self):
-    f = open(datafile('small.png'), 'r')
+    f = open(datafile('small.png'), 'rb')
     upload = MediaIoBaseUpload(
         fd=f, mimetype='image/png', chunksize=500, resumable=True)
     self.assertEqual('image/png', upload.mimetype())
     self.assertEqual(190, upload.size())
     self.assertEqual(True, upload.resumable())
     self.assertEqual(500, upload.chunksize())
-    self.assertEqual('PNG', upload.getbytes(1, 3))
+    self.assertEqual(b'PNG', upload.getbytes(1, 3))
     f.close()
 
   def test_media_io_base_upload_serializable(self):
-    f = open(datafile('small.png'), 'r')
+    f = open(datafile('small.png'), 'rb')
     upload = MediaIoBaseUpload(fd=f, mimetype='image/png')
 
     try:
@@ -233,7 +233,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
       pass
 
   def test_media_io_base_upload_from_string_io(self):
-    f = open(datafile('small.png'), 'r')
+    f = open(datafile('small.png'), 'rb')
     fd = BytesIO(f.read())
     f.close()
 
@@ -243,14 +243,14 @@ class TestMediaIoBaseUpload(unittest.TestCase):
     self.assertEqual(190, upload.size())
     self.assertEqual(True, upload.resumable())
     self.assertEqual(500, upload.chunksize())
-    self.assertEqual('PNG', upload.getbytes(1, 3))
+    self.assertEqual(b'PNG', upload.getbytes(1, 3))
     f.close()
 
   def test_media_io_base_upload_from_bytes(self):
     try:
       import io
 
-      f = open(datafile('small.png'), 'r')
+      f = open(datafile('small.png'), 'rb')
       fd = io.BytesIO(f.read())
       upload = MediaIoBaseUpload(
           fd=fd, mimetype='image/png', chunksize=500, resumable=True)
@@ -258,7 +258,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
       self.assertEqual(190, upload.size())
       self.assertEqual(True, upload.resumable())
       self.assertEqual(500, upload.chunksize())
-      self.assertEqual('PNG', upload.getbytes(1, 3))
+      self.assertEqual(b'PNG', upload.getbytes(1, 3))
     except ImportError:
       pass
 
@@ -266,7 +266,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
     try:
       import io
 
-      f = open(datafile('small.png'), 'r')
+      f = open(datafile('small.png'), 'rb')
       fd = io.BytesIO(f.read())
       self.assertRaises(InvalidChunkSizeError, MediaIoBaseUpload,
           fd, 'image/png', chunksize=-2, resumable=True)
@@ -277,7 +277,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
     try:
       import io
 
-      fd = io.BytesIO('stuff')
+      fd = io.BytesIO(b'stuff')
       upload = MediaIoBaseUpload(
           fd=fd, mimetype='image/png', chunksize=500, resumable=True)
       self.assertEqual(True, upload.has_stream())
@@ -291,7 +291,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
     except ImportError:
       return
 
-    f = open(datafile('small.png'), 'r')
+    f = open(datafile('small.png'), 'rb')
     fd = io.BytesIO(f.read())
     upload = MediaIoBaseUpload(
         fd=fd, mimetype='image/png', chunksize=500, resumable=True)
@@ -407,7 +407,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
     status, done = download.next_chunk()
 
-    self.assertEqual(self.fd.getvalue(), '123')
+    self.assertEqual(self.fd.getvalue(), b'123')
 
   def test_media_io_base_download_retries_5xx(self):
     self.request.http = HttpMockSequence([
@@ -443,7 +443,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     # Check for exponential backoff using the rand function above.
     self.assertEqual([20, 40, 80], sleeptimes)
 
-    self.assertEqual(self.fd.getvalue(), '123')
+    self.assertEqual(self.fd.getvalue(), b'123')
     self.assertEqual(False, done)
     self.assertEqual(3, download._progress)
     self.assertEqual(5, download._total_size)
@@ -457,7 +457,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     # Check for exponential backoff using the rand function above.
     self.assertEqual([20, 40, 80], sleeptimes)
 
-    self.assertEqual(self.fd.getvalue(), '12345')
+    self.assertEqual(self.fd.getvalue(), b'12345')
     self.assertEqual(True, done)
     self.assertEqual(5, download._progress)
     self.assertEqual(5, download._total_size)
@@ -627,7 +627,7 @@ class TestHttpRequest(unittest.TestCase):
     request.execute(num_retries=num_retries)
 
     self.assertEqual(num_retries, len(sleeptimes))
-    for retry_num in xrange(num_retries):
+    for retry_num in range(num_retries):
       self.assertEqual(10 * 2**(retry_num + 1), sleeptimes[retry_num])
 
   def test_no_retry_fails_fast(self):
@@ -964,21 +964,21 @@ class TestStreamSlice(unittest.TestCase):
   """Test _StreamSlice."""
 
   def setUp(self):
-    self.stream = BytesIO('0123456789')
+    self.stream = BytesIO(b'0123456789')
 
   def test_read(self):
     s =  _StreamSlice(self.stream, 0, 4)
-    self.assertEqual('', s.read(0))
-    self.assertEqual('0', s.read(1))
-    self.assertEqual('123', s.read())
+    self.assertEqual(b'', s.read(0))
+    self.assertEqual(b'0', s.read(1))
+    self.assertEqual(b'123', s.read())
 
   def test_read_too_much(self):
     s =  _StreamSlice(self.stream, 1, 4)
-    self.assertEqual('1234', s.read(6))
+    self.assertEqual(b'1234', s.read(6))
 
   def test_read_all(self):
     s =  _StreamSlice(self.stream, 2, 1)
-    self.assertEqual('2', s.read(-1))
+    self.assertEqual(b'2', s.read(-1))
 
 
 class TestResponseCallback(unittest.TestCase):
