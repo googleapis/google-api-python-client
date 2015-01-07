@@ -344,9 +344,11 @@ def _media_size_to_long(maxSize):
   """
   if len(maxSize) < 2:
     try:
-      return 0L
+      maxSize = eval('0L')
     except SyntaxError:
-      return 0
+      maxSize = 0
+    finally:
+      return maxSize
   units = maxSize[-2:].upper()
   bit_shift = _MEDIA_SIZE_BIT_SHIFTS.get(units)
   if bit_shift is not None:
