@@ -123,7 +123,12 @@ class Model(unittest.TestCase):
 
     query_dict = parse_qs(query[1:])
     self.assertEqual(query_dict['foo'], ['1'])
-    self.assertEqual(query_dict['bar'], [u'\N{COMET}'.encode('utf-8')])
+    if isinstance(u'\N{COMET}', str):
+      # Python 3, no need to encode
+      self.assertEqual(query_dict['bar'], [u'\N{COMET}'])
+    else:
+      # Python 2, encode string
+      self.assertEqual(query_dict['bar'], [u'\N{COMET}'.encode('utf-8')])
     self.assertEqual(query_dict['baz'], ['fe', 'fi', 'fo', 'fum'])
     self.assertTrue('qux' not in query_dict)
     self.assertEqual(body, '{}')
