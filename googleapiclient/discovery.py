@@ -26,6 +26,11 @@ __all__ = [
     ]
 
 
+# Support Python3
+import sys
+if sys.version_info.major > 2:
+  basestring = str
+
 # Standard library imports
 try:
   from io import StringIO
@@ -262,13 +267,8 @@ def build_from_document(
   # future is no longer used.
   future = {}
 
-  try:
-    if isinstance(service, basestring):
-      service = json.loads(service)
-  except NameError:
-    if isinstance(service, str):
-      service = json.loads(service)
-
+  if isinstance(service, basestring):
+    service = json.loads(service)
   base = urlparse.urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
 
@@ -774,7 +774,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     docs.append('Args:\n')
 
   # Skip undocumented params and params common to all methods.
-  skip_parameters = list(rootDesc.get('parameters', {}).keys())
+  skip_parameters = list(rootDesc.get('parameters', {}))
   skip_parameters.extend(STACK_QUERY_PARAMETERS)
 
   all_args = parameters.argmap.keys()
