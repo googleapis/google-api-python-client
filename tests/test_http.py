@@ -26,13 +26,17 @@ import httplib2
 import logging
 import os
 import unittest
-import urllib
 import random
 try:
   from io import BytesIO, StringIO, FileIO
 except ImportError:
   import BytesIO, StringIO, FileIO
 import time
+
+try:
+  from urllib.parse import urlencode
+except ImportError:
+  from urllib import urlencode
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import BatchError
@@ -932,7 +936,7 @@ class TestRequestUriTooLong(unittest.TestCase):
     req = HttpRequest(
         http,
         _postproc,
-        'http://example.com?' + urllib.urlencode(query),
+        'http://example.com?' + urlencode(query),
         method='GET',
         body=None,
         headers={},
