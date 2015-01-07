@@ -44,8 +44,8 @@ import os
 import re
 import urllib
 try:
-  from urllib import parse as urlparse
-except ImportError:
+  urlparse = urllib.parse
+except AttributeError:
   import urlparse
 
 try:
