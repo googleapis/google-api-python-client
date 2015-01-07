@@ -29,9 +29,9 @@ import unittest
 import urllib
 import random
 try:
-  from io import BytesIO
+  from io import BytesIO, StringIO, FileIO
 except ImportError:
-  import BytesIO
+  import BytesIO, StringIO, FileIO
 import time
 
 from googleapiclient.discovery import build
@@ -233,8 +233,8 @@ class TestMediaIoBaseUpload(unittest.TestCase):
       pass
 
   def test_media_io_base_upload_from_string_io(self):
-    f = open(datafile('small.png'), 'rb')
-    fd = BytesIO(f.read())
+    f = open(datafile('small.png'), 'r')
+    fd = StringIO(f.read().encode())
     f.close()
 
     upload = MediaIoBaseUpload(
@@ -243,15 +243,14 @@ class TestMediaIoBaseUpload(unittest.TestCase):
     self.assertEqual(190, upload.size())
     self.assertEqual(True, upload.resumable())
     self.assertEqual(500, upload.chunksize())
-    self.assertEqual(b'PNG', upload.getbytes(1, 3))
+    self.assertEqual('PNG', upload.getbytes(1, 3))
     f.close()
 
   def test_media_io_base_upload_from_bytes(self):
     try:
-      import io
-
       f = open(datafile('small.png'), 'rb')
-      fd = io.BytesIO(f.read())
+      fd = BytesIO(f.read())
+      f.close()
       upload = MediaIoBaseUpload(
           fd=fd, mimetype='image/png', chunksize=500, resumable=True)
       self.assertEqual('image/png', upload.mimetype())
@@ -264,10 +263,9 @@ class TestMediaIoBaseUpload(unittest.TestCase):
 
   def test_media_io_base_upload_raises_on_invalid_chunksize(self):
     try:
-      import io
-
       f = open(datafile('small.png'), 'rb')
-      fd = io.BytesIO(f.read())
+      fd = BytesIO(f.read())
+      f.close()
       self.assertRaises(InvalidChunkSizeError, MediaIoBaseUpload,
           fd, 'image/png', chunksize=-2, resumable=True)
     except ImportError:
@@ -275,9 +273,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
 
   def test_media_io_base_upload_streamable(self):
     try:
-      import io
-
-      fd = io.BytesIO(b'stuff')
+      fd = BytesIO(b'stuff')
       upload = MediaIoBaseUpload(
           fd=fd, mimetype='image/png', chunksize=500, resumable=True)
       self.assertEqual(True, upload.has_stream())
@@ -286,13 +282,8 @@ class TestMediaIoBaseUpload(unittest.TestCase):
       pass
 
   def test_media_io_base_next_chunk_retries(self):
-    try:
-      import io
-    except ImportError:
-      return
-
     f = open(datafile('small.png'), 'rb')
-    fd = io.BytesIO(f.read())
+    fd = BytesIO(f.read())
     upload = MediaIoBaseUpload(
         fd=fd, mimetype='image/png', chunksize=500, resumable=True)
 
@@ -339,9 +330,9 @@ class TestMediaIoBaseDownload(unittest.TestCase):
   def test_media_io_base_download(self):
     self.request.http = HttpMockSequence([
       ({'status': '200',
-        'content-range': '0-2/5'}, '123'),
+        'content-range': '0-2/5'}, b'123'),
       ({'status': '200',
-        'content-range': '3-4/5'}, '45'),
+        'content-range': '3-4/5'}, b'45'),
     ])
     self.assertEqual(True, self.request.http.follow_redirects)
 
@@ -357,7 +348,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
     status, done = download.next_chunk()
 
-    self.assertEqual(self.fd.getvalue(), '123')
+    self.assertEqual(self.fd.getvalue(), b'123')
     self.assertEqual(False, done)
     self.assertEqual(3, download._progress)
     self.assertEqual(5, download._total_size)
@@ -365,7 +356,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
     status, done = download.next_chunk()
 
-    self.assertEqual(self.fd.getvalue(), '12345')
+    self.assertEqual(self.fd.getvalue(), b'12345')
     self.assertEqual(True, done)
     self.assertEqual(5, download._progress)
     self.assertEqual(5, download._total_size)
@@ -373,9 +364,9 @@ class TestMediaIoBaseDownload(unittest.TestCase):
   def test_media_io_base_download_handle_redirects(self):
     self.request.http = HttpMockSequence([
       ({'status': '200',
-        'content-location': 'https://secure.example.net/lion'}, ''),
+        'content-location': 'https://secure.example.net/lion'}, b''),
       ({'status': '200',
-        'content-range': '0-2/5'}, 'abc'),
+        'content-range': '0-2/5'}, b'abc'),
     ])
 
     download = MediaIoBaseDownload(
@@ -402,7 +393,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     # Even after raising an exception we can pick up where we left off.
     self.request.http = HttpMockSequence([
       ({'status': '200',
-        'content-range': '0-2/5'}, '123'),
+        'content-range': '0-2/5'}, b'123'),
     ])
 
     status, done = download.next_chunk()
@@ -415,12 +406,12 @@ class TestMediaIoBaseDownload(unittest.TestCase):
       ({'status': '500'}, ''),
       ({'status': '500'}, ''),
       ({'status': '200',
-        'content-range': '0-2/5'}, '123'),
+        'content-range': '0-2/5'}, b'123'),
       ({'status': '503'}, ''),
       ({'status': '503'}, ''),
       ({'status': '503'}, ''),
       ({'status': '200',
-        'content-range': '3-4/5'}, '45'),
+        'content-range': '3-4/5'}, b'45'),
     ])
 
     download = MediaIoBaseDownload(
@@ -694,7 +685,7 @@ class TestBatch(unittest.TestCase):
         None,
         'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
         method='POST',
-        body='{}',
+        body=u'{}',
         headers={'content-type': 'application/json'},
         methodId=None,
         resumable=None)
@@ -703,7 +694,7 @@ class TestBatch(unittest.TestCase):
 
   def test_serialize_request_media_body(self):
     batch = BatchHttpRequest()
-    f = open(datafile('small.png'))
+    f = open(datafile('small.png'), 'rb')
     body = f.read()
     f.close()
 
@@ -726,7 +717,7 @@ class TestBatch(unittest.TestCase):
         None,
         'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
         method='POST',
-        body='',
+        body=b'',
         headers={'content-type': 'application/json'},
         methodId=None,
         resumable=None)

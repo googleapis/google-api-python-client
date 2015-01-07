@@ -41,9 +41,9 @@ except ImportError:
   except ImportError:
     from cgi import parse_qs
 try:
-  from io import BytesIO
+  from io import BytesIO, StringIO
 except ImportError:
-  import BytesIO
+  import BytesIO, StringIO
 
 
 from googleapiclient.discovery import _fix_up_media_upload
@@ -511,7 +511,7 @@ class Discovery(unittest.TestCase):
 
   def test_tunnel_patch(self):
     http = HttpMockSequence([
-      ({'status': '200'}, open(datafile('zoo.json'), 'rb').read()),
+      ({'status': '200'}, open(datafile('zoo.json'), 'r').read()),
       ({'status': '200'}, 'echo_request_headers_as_json'),
       ])
     http = tunnel_patch(http)
@@ -846,31 +846,25 @@ class Discovery(unittest.TestCase):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http=self.http)
 
-    try:
-      import io
+    # Set up a seekable stream and try to upload in single chunk.
+    fd = BytesIO(b'01234"56789"')
+    media_upload = MediaIoBaseUpload(
+        fd=fd, mimetype='text/plain', chunksize=-1, resumable=True)
 
-      # Set up a seekable stream and try to upload in single chunk.
-      fd = io.BytesIO(b'01234"56789"')
-      media_upload = MediaIoBaseUpload(
-          fd=fd, mimetype='text/plain', chunksize=-1, resumable=True)
+    request = zoo.animals().insert(media_body=media_upload, body=None)
 
-      request = zoo.animals().insert(media_body=media_upload, body=None)
+    # The single chunk fails, restart at the right point.
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '308',
+        'location': 'http://upload.example.com/2',
+        'range': '0-4'}, ''),
+      ({'status': '200'}, 'echo_request_body'),
+      ])
 
-      # The single chunk fails, restart at the right point.
-      http = HttpMockSequence([
-        ({'status': '200',
-          'location': 'http://upload.example.com'}, ''),
-        ({'status': '308',
-          'location': 'http://upload.example.com/2',
-          'range': '0-4'}, ''),
-        ({'status': '200'}, 'echo_request_body'),
-        ])
-
-      body = request.execute(http=http)
-      self.assertEqual('56789', body)
-
-    except ImportError:
-      pass
+    body = request.execute(http=http)
+    self.assertEqual('56789', body)
 
 
   def test_media_io_base_stream_chunksize_resume(self):
@@ -878,10 +872,9 @@ class Discovery(unittest.TestCase):
     zoo = build('zoo', 'v1', http=self.http)
 
     try:
-      import io
 
       # Set up a seekable stream and try to upload in chunks.
-      fd = io.BytesIO(b'0123456789')
+      fd = BytesIO(b'0123456789')
       media_upload = MediaIoBaseUpload(
           fd=fd, mimetype='text/plain', chunksize=5, resumable=True)
 

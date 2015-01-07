@@ -23,9 +23,9 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 
 try:
-  from io import BytesIO
+  from io import BytesIO, StringIO
 except ImportError:
-  import BytesIO
+  import BytesIO, StringIO
 import base64
 import copy
 import gzip
@@ -1121,7 +1121,12 @@ class BatchHttpRequest(object):
       msg['content-length'] = str(len(request.body))
 
     # Serialize the mime message.
-    fp = BytesIO()
+    # fp = BytesIO()
+    # fp = StringIO()
+    if sys.version > '3':
+      fp = StringIO()
+    else:
+      fp = BytesIO()
     # maxheaderlen=0 means don't line wrap headers.
     g = Generator(fp, maxheaderlen=0)
     g.flatten(msg, unixfrom=False)
@@ -1131,7 +1136,7 @@ class BatchHttpRequest(object):
     if request.body is None:
       body = body[:-2]
 
-    return status_line.encode('utf-8') + body
+    return status_line + body
 
   def _deserialize_response(self, payload):
     """Convert string into httplib2 response and content.
@@ -1244,7 +1249,12 @@ class BatchHttpRequest(object):
 
     # encode the body: note that we can't use `as_string`, because
     # it plays games with `From ` lines.
-    fp = BytesIO()
+    # fp = BytesIO()
+    # fp = StringIO()
+    if sys.version > '3':
+      fp = StringIO()
+    else:
+      fp = BytesIO()
     g = Generator(fp, mangle_from_=False)
     g.flatten(message, unixfrom=False)
     body = fp.getvalue()
