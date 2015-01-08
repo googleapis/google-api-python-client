@@ -418,11 +418,7 @@ def _fix_up_parameters(method_desc, root_desc, http_method):
   parameters = method_desc.setdefault('parameters', {})
 
   # Add in the parameters common to all methods.
-  try:
-    parameter_items = root_desc.get('parameters', {}).iteritems()
-  except AttributeError:
-    parameter_items = root_desc.get('parameters', {}).items()
-  for name, description in parameter_items:
+  for name, description in root_desc.get('parameters', {}).items():
     parameters[name] = description
 
   # Add in undocumented query parameters.
@@ -588,11 +584,7 @@ class ResourceMethodParameters(object):
           comes from the dictionary of methods stored in the 'methods' key in
           the deserialized discovery document.
     """
-    try:
-      parameter_items = method_desc.get('parameters', {}).iteritems()
-    except AttributeError:
-      parameter_items = method_desc.get('parameters', {}).items()
-    for arg, desc in parameter_items:
+    for arg, desc in method_desc.get('parameters', {}).items():
       param = key2param(arg)
       self.argmap[param] = arg
 
@@ -640,11 +632,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
   def method(self, **kwargs):
     # Don't bother with doc string, it will be over-written by createMethod.
 
-    try:
-      kwargs_keys = kwargs.iterkeys()
-    except AttributeError:
-      kwargs_keys = kwargs.keys()
-    for name in kwargs_keys:
+    for name in kwargs.keys():
       if name not in parameters.argmap:
         raise TypeError('Got an unexpected keyword argument "%s"' % name)
 
@@ -658,11 +646,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
       if name not in kwargs:
         raise TypeError('Missing required parameter "%s"' % name)
 
-    try:
-      pattern_parameter_items = parameters.pattern_params.iteritems()
-    except AttributeError:
-      pattern_parameter_items = parameters.pattern_params.items()
-    for name, regex in pattern_parameter_items:
+    for name, regex in parameters.pattern_params.items():
       if name in kwargs:
         if is_string(kwargs[name]):
           pvalues = [kwargs[name]]
@@ -674,11 +658,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                 'Parameter "%s" value "%s" does not match the pattern "%s"' %
                 (name, pvalue, regex))
 
-    try:
-      enum_parameter_items = parameters.enum_params.iteritems()
-    except AttributeError:
-      enum_parameter_items = parameters.enum_params.items()
-    for name, enums in enum_parameter_items:
+    for name, enums in parameters.enum_params.items():
       if name in kwargs:
         # We need to handle the case of a repeated enum
         # name differently, since we want to handle both
@@ -696,11 +676,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
 
     actual_query_params = {}
     actual_path_params = {}
-    try:
-      kwargs_items = kwargs.iteritems()
-    except AttributeError:
-      kwargs_items = kwargs.items()
-    for key, value in kwargs_items:
+    for key, value in kwargs.items():
       to_type = parameters.param_types.get(key, 'string')
       # For repeated parameters we cast each member of the list.
       if key in parameters.repeated_params and type(value) == type([]):
@@ -994,11 +970,7 @@ class Resource(object):
   def _add_basic_methods(self, resourceDesc, rootDesc, schema):
     # Add basic methods to Resource
     if 'methods' in resourceDesc:
-      try:
-        methods_items = resourceDesc['methods'].iteritems()
-      except AttributeError:
-        methods_items = resourceDesc['methods'].items()
-      for methodName, methodDesc in methods_items:
+      for methodName, methodDesc in resourceDesc['methods'].items():
         fixedMethodName, method = createMethod(
             methodName, methodDesc, rootDesc, schema)
         self._set_dynamic_attr(fixedMethodName,
@@ -1037,11 +1009,7 @@ class Resource(object):
 
         return (methodName, methodResource)
 
-      try:
-        resources_items = resourceDesc['resources'].iteritems()
-      except AttributeError:
-        resources_items = resourceDesc['resources'].items()
-      for methodName, methodDesc in resources_items:
+      for methodName, methodDesc in resourceDesc['resources'].items():
         fixedMethodName, method = createResourceMethod(methodName, methodDesc)
         self._set_dynamic_attr(fixedMethodName,
                                method.__get__(self, self.__class__))
@@ -1051,11 +1019,7 @@ class Resource(object):
     # Look for response bodies in schema that contain nextPageToken, and methods
     # that take a pageToken parameter.
     if 'methods' in resourceDesc:
-      try:
-        methods_items = resourceDesc['methods'].iteritems()
-      except AttributeError:
-        methods_items = resourceDesc['methods'].items()
-      for methodName, methodDesc in methods_items:
+      for methodName, methodDesc in resourceDesc['methods'].items():
         if 'response' in methodDesc:
           responseSchema = methodDesc['response']
           if '$ref' in responseSchema:

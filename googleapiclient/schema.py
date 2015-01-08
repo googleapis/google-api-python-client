@@ -249,11 +249,7 @@ class _SchemaToStruct(object):
       self.emitEnd('{', schema.get('description', ''))
       self.indent()
       if 'properties' in schema:
-        try:
-          properties_items = schema.get('properties', {}).iteritems()
-        except AttributeError:
-          properties_items = schema.get('properties', {}).items()
-        for pname, pschema in properties_items:
+        for pname, pschema in schema.get('properties', {}).items():
           self.emitBegin('"%s": ' % pname)
           self._to_str_impl(pschema)
       elif 'additionalProperties' in schema:

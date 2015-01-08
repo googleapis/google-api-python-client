@@ -100,12 +100,8 @@ def fitness_and_quality_parsed(mime_type, parsed_ranges):
                          subtype == '*' or\
                          target_subtype == '*')
         if type_match and subtype_match:
-            try:
-              target_params_items = target_params.iteritems()
-            except AttributeError:
-              target_params_items = target_params.items()
             param_matches = reduce(lambda x, y: x + y, [1 for (key, value) in \
-                    target_params_items if key != 'q' and \
+                    target_params.items() if key != 'q' and \
                     key in params and value == params[key]], 0)
             fitness = (type == target_type) and 100 or 0
             fitness += (subtype == target_subtype) and 10 or 0

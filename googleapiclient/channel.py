@@ -88,11 +88,7 @@ X_GOOG_RESOURCE_ID    = 'X-GOOG-RESOURCE-ID'
 
 def _upper_header_keys(headers):
   new_headers = {}
-  try:
-    header_items = headers.iteritems()
-  except AttributeError:
-    header_items = headers.items()
-  for k, v in header_items:
+  for k, v in headers.items():
     new_headers[k.upper()] = v
   return new_headers
 
@@ -222,11 +218,7 @@ class Channel(object):
     Args:
       resp: dict, The response from a watch() method.
     """
-    try:
-      channel_param_items = CHANNEL_PARAMS.iteritems()
-    except AttributeError:
-      channel_param_items = CHANNEL_PARAMS.items()
-    for json_name, param_name in channel_param_items:
+    for json_name, param_name in CHANNEL_PARAMS.items():
       value = resp.get(json_name)
       if value is not None:
         setattr(self, param_name, value)

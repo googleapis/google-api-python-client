@@ -36,9 +36,5 @@ _SUBMODULES = {
 }
 
 import sys
-try:
-  submodule_items = _SUBMODULES.iteritems()
-except AttributeError:
-  submodule_items = _SUBMODULES.items()
-for module_name, module in submodule_items:
+for module_name, module in _SUBMODULES.items():
   sys.modules['apiclient.%s' % module_name] = module

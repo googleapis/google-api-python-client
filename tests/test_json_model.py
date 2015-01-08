@@ -219,11 +219,7 @@ class Model(unittest.TestCase):
       def __init__(self, items):
         super(MockResponse, self).__init__()
         self.status = items['status']
-        try:
-          items_items = items.iteritems()
-        except AttributeError:
-          items_items = items.items()
-        for key, value in items_items:
+        for key, value in items.items():
           self[key] = value
     old_logging = googleapiclient.model.logging
     googleapiclient.model.logging = MockLogging()
