@@ -111,8 +111,8 @@ class Model(unittest.TestCase):
     headers = {}
     path_params = {}
     query_params = {'foo': 1, 'bar': u'\N{COMET}',
-        'baz': ['fe', 'fi', 'fo', 'fum'], # Repeated parameters
-        'qux': []}
+                    'baz': ['fe', 'fi', 'fo', 'fum'],  # Repeated parameters
+                    'qux': []}
     body = {}
 
     headers, unused_params, query, body = model.request(
@@ -145,8 +145,8 @@ class Model(unittest.TestCase):
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['user-agent'],
-        'my-test-app/1.23.4 google-api-python-client/' + __version__ +
-        ' (gzip)')
+                     'my-test-app/1.23.4 google-api-python-client/' +
+                     __version__ + ' (gzip)')
 
   def test_bad_response(self):
     model = JsonModel(data_wrapper=False)
@@ -209,6 +209,7 @@ class Model(unittest.TestCase):
       def __init__(self):
         self.info_record = []
         self.debug_record = []
+
       def info(self, message, *args):
         self.info_record.append(message % args)
 
@@ -228,7 +229,7 @@ class Model(unittest.TestCase):
     request_body = {
         'field1': 'value1',
         'field2': 'value2'
-        }
+    }
     body_string = model.request({}, {}, {}, request_body)[-1]
     json_body = json.loads(body_string)
     self.assertEqual(request_body, json_body)
@@ -274,8 +275,6 @@ class Model(unittest.TestCase):
     content = '{"atad": "is good"}'
     content = model.response(resp, content)
     self.assertEqual(content, {'atad': 'is good'})
-
-
 
 if __name__ == '__main__':
   unittest.main()

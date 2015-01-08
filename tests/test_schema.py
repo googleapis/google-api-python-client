@@ -45,6 +45,7 @@ LOAD_FEED = """{
     "kind": "zoo#loadFeed",
   }"""
 
+
 class SchemasTest(unittest.TestCase):
   def setUp(self):
     f = open(datafile('zoo.json'))
@@ -61,60 +62,64 @@ class SchemasTest(unittest.TestCase):
     self.assertTrue('Unknown type' in self.sc.prettyPrintSchema({}))
 
   def test_simple_object(self):
-    self.assertEqual({}, eval(self.sc.prettyPrintSchema({'type': 'object'})))
+    self.assertEqual({},
+                     eval(self.sc.prettyPrintSchema({'type': 'object'})))
 
   def test_string(self):
-    self.assertEqual(type(""), type(eval(self.sc.prettyPrintSchema({'type':
-      'string'}))))
+    self.assertEqual(type(""),
+                     type(eval(self.sc.prettyPrintSchema({'type': 'string'}))))
 
   def test_integer(self):
-    self.assertEqual(type(20), type(eval(self.sc.prettyPrintSchema({'type':
-      'integer'}))))
+    self.assertEqual(type(20),
+                     type(eval(self.sc.prettyPrintSchema({'type': 'integer'}))))
 
   def test_number(self):
-    self.assertEqual(type(1.2), type(eval(self.sc.prettyPrintSchema({'type':
-      'number'}))))
+    self.assertEqual(type(1.2),
+                     type(eval(self.sc.prettyPrintSchema({'type': 'number'}))))
 
   def test_boolean(self):
-    self.assertEqual(type(True), type(eval(self.sc.prettyPrintSchema({'type':
-      'boolean'}))))
+    self.assertEqual(type(True),
+                     type(eval(self.sc.prettyPrintSchema({'type': 'boolean'}))))
 
   def test_string_default(self):
-    self.assertEqual('foo', eval(self.sc.prettyPrintSchema({'type':
-      'string', 'default': 'foo'})))
+    self.assertEqual('foo',
+                     eval(self.sc.prettyPrintSchema({'type': 'string', 'default': 'foo'})))
 
   def test_integer_default(self):
-    self.assertEqual(20, eval(self.sc.prettyPrintSchema({'type':
-      'integer', 'default': 20})))
+    self.assertEqual(20,
+                     eval(self.sc.prettyPrintSchema({'type': 'integer', 'default': 20})))
 
   def test_number_default(self):
-    self.assertEqual(1.2, eval(self.sc.prettyPrintSchema({'type':
-      'number', 'default': 1.2})))
+    self.assertEqual(1.2,
+                     eval(self.sc.prettyPrintSchema({'type': 'number', 'default': 1.2})))
 
   def test_boolean_default(self):
-    self.assertEqual(False, eval(self.sc.prettyPrintSchema({'type':
-      'boolean', 'default': False})))
+    self.assertEqual(False,
+                     eval(self.sc.prettyPrintSchema({'type': 'boolean', 'default': False})))
 
   def test_null(self):
-    self.assertEqual(None, eval(self.sc.prettyPrintSchema({'type': 'null'})))
+    self.assertEqual(None,
+                     eval(self.sc.prettyPrintSchema({'type': 'null'})))
 
   def test_any(self):
-    self.assertEqual('', eval(self.sc.prettyPrintSchema({'type': 'any'})))
+    self.assertEqual('',
+                     eval(self.sc.prettyPrintSchema({'type': 'any'})))
 
   def test_array(self):
-    self.assertEqual([{}], eval(self.sc.prettyPrintSchema({'type': 'array',
-      'items': {'type': 'object'}})))
+    self.assertEqual([{}],
+                     eval(self.sc.prettyPrintSchema({'type': 'array', 'items': {'type': 'object'}})))
 
   def test_nested_references(self):
     feed = {
-        'items': [ {
+        'items': [
+          {
             'photo': {
               'hash': 'A String',
               'hashAlgorithm': 'A String',
               'filename': 'A String',
               'type': 'A String',
               'size': 42
-              },
+            },
             'kind': 'zoo#animal',
             'etag': 'A String',
             'name': 'A String'
@@ -122,7 +127,7 @@ class SchemasTest(unittest.TestCase):
         ],
         'kind': 'zoo#animalFeed',
         'etag': 'A String'
-      }
+    }
 
     self.assertEqual(feed, eval(self.sc.prettyPrintByName('AnimalFeed')))
 
@@ -136,7 +141,7 @@ class SchemasTest(unittest.TestCase):
               'filename': 'A String',
               'type': 'A String',
               'size': 42
-              },
+            },
             'kind': 'zoo#animal',
             'etag': 'A String',
             'name': 'A String'
@@ -144,13 +149,12 @@ class SchemasTest(unittest.TestCase):
         },
         'kind': 'zoo#animalMap',
         'etag': 'A String'
-      }
+    }
 
     self.assertEqual(items, eval(self.sc.prettyPrintByName('AnimalMap')))
 
   def test_unknown_name(self):
-    self.assertRaises(KeyError,
-        self.sc.prettyPrintByName, 'UknownSchemaThing')
+    self.assertRaises(KeyError, self.sc.prettyPrintByName, 'UknownSchemaThing')
 
 
 if __name__ == '__main__':

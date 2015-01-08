@@ -34,11 +34,10 @@ class TestChannel(unittest.TestCase):
     self.assertEqual(1, body.get('expiration', 'missing'))
 
     # Converting to a body after updating with a response body.
-    ch.update({
-        'resourceId': 'updated_res_id',
-        'resourceUri': 'updated_res_uri',
-        'some_random_parameter': 2,
-        })
+    ch.update({'resourceId': 'updated_res_id',
+               'resourceUri': 'updated_res_uri',
+               'some_random_parameter': 2,
+               })
 
     body = ch.body()
     self.assertEqual('http://example.org/callback', body['address'])
@@ -73,7 +72,7 @@ class TestChannel(unittest.TestCase):
     ch = channel.new_webhook_channel(
         'http://example.com/callback',
         expiration=datetime.datetime(1970, 1, 1, second=5, microsecond=1000),
-        params={'some':'stuff'})
+        params={'some': 'stuff'})
     self.assertEqual(5001, ch.expiration)
     self.assertEqual('http://example.com/callback', ch.address)
     self.assertEqual({'some': 'stuff'}, ch.params)
@@ -82,7 +81,7 @@ class TestChannel(unittest.TestCase):
 class TestNotification(unittest.TestCase):
   def test_basic(self):
     n = channel.Notification(12, 'sync', 'http://example.org',
-                     'http://example.org/v1')
+                             'http://example.org/v1')
 
     self.assertEqual(12, n.message_number)
     self.assertEqual('sync', n.state)
@@ -90,13 +89,12 @@ class TestNotification(unittest.TestCase):
     self.assertEqual('http://example.org/v1', n.resource_id)
 
   def test_notification_from_headers(self):
-    headers = {
-        'X-GoOG-CHANNEL-ID': 'myid',
-        'X-Goog-MESSAGE-NUMBER': '1',
-        'X-Goog-rESOURCE-STATE': 'sync',
-        'X-Goog-reSOURCE-URI': 'http://example.com/',
-        'X-Goog-resOURCE-ID': 'http://example.com/resource_1',
-        }
+    headers = {'X-GoOG-CHANNEL-ID': 'myid',
+               'X-Goog-MESSAGE-NUMBER': '1',
+               'X-Goog-rESOURCE-STATE': 'sync',
+               'X-Goog-reSOURCE-URI': 'http://example.com/',
+               'X-Goog-resOURCE-ID': 'http://example.com/resource_1',
+               }
 
     ch = channel.Channel('web_hook', 'myid', 'mytoken',
                          'http://example.org/callback',

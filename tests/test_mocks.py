@@ -35,6 +35,7 @@ from googleapiclient.http import HttpMock
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
+
 def datafile(filename):
   return os.path.join(DATA_DIR, filename)
 
@@ -53,7 +54,7 @@ class Mocks(unittest.TestCase):
   def test_simple_response(self):
     requestBuilder = RequestMockBuilder({
         'plus.activities.get': (None, '{"foo": "bar"}')
-        })
+    })
     plus = build('plus', 'v1', http=self.http, requestBuilder=requestBuilder)
 
     activity = plus.activities().get(activityId='tag:blah').execute()
@@ -73,7 +74,7 @@ class Mocks(unittest.TestCase):
   def test_simple_unexpected_body(self):
     requestBuilder = RequestMockBuilder({
         'zoo.animals.insert': (None, '{"data": {"foo": "bar"}}', None)
-        })
+    })
     zoo = build('zoo', 'v1', http=self.zoo_http, requestBuilder=requestBuilder)
 
     try:
@@ -85,7 +86,7 @@ class Mocks(unittest.TestCase):
   def test_simple_expected_body(self):
     requestBuilder = RequestMockBuilder({
         'zoo.animals.insert': (None, '{"data": {"foo": "bar"}}', '{}')
-        })
+    })
     zoo = build('zoo', 'v1', http=self.zoo_http, requestBuilder=requestBuilder)
 
     try:
@@ -97,8 +98,8 @@ class Mocks(unittest.TestCase):
   def test_simple_wrong_body(self):
     requestBuilder = RequestMockBuilder({
         'zoo.animals.insert': (None, '{"data": {"foo": "bar"}}',
-                                    '{"data": {"foo": "bar"}}')
-        })
+                               '{"data": {"foo": "bar"}}')
+    })
     zoo = build('zoo', 'v1', http=self.zoo_http, requestBuilder=requestBuilder)
 
     try:
@@ -111,8 +112,8 @@ class Mocks(unittest.TestCase):
   def test_simple_matching_str_body(self):
     requestBuilder = RequestMockBuilder({
         'zoo.animals.insert': (None, '{"data": {"foo": "bar"}}',
-                                    '{"data": {"foo": "bar"}}')
-        })
+                               '{"data": {"foo": "bar"}}')
+    })
     zoo = build('zoo', 'v1', http=self.zoo_http, requestBuilder=requestBuilder)
 
     activity = zoo.animals().insert(
@@ -122,8 +123,8 @@ class Mocks(unittest.TestCase):
   def test_simple_matching_dict_body(self):
     requestBuilder = RequestMockBuilder({
         'zoo.animals.insert': (None, '{"data": {"foo": "bar"}}',
-                                    {'data': {'foo': 'bar'}})
-        })
+                               {'data': {'foo': 'bar'}})
+    })
     zoo = build('zoo', 'v1', http=self.zoo_http, requestBuilder=requestBuilder)
 
     activity = zoo.animals().insert(
@@ -131,14 +132,16 @@ class Mocks(unittest.TestCase):
     self.assertEqual({'foo': 'bar'}, activity)
 
   def test_errors(self):
-    errorResponse = httplib2.Response({'status': 500, 'reason': 'Server Error'})
+    errorResponse = httplib2.Response({'status': 500,
+                                       'reason': 'Server Error'})
     requestBuilder = RequestMockBuilder({
         'plus.activities.list': (errorResponse, '{}')
-        })
+    })
     plus = build('plus', 'v1', http=self.http, requestBuilder=requestBuilder)
 
     try:
-      activity = plus.activities().list(collection='public', userId='me').execute()
+      activity = plus.activities().list(collection='public',
+                                        userId='me').execute()
       self.fail('An exception should have been thrown')
     except HttpError as e:
       self.assertEqual('{}', e.content)
