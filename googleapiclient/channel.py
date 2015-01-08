@@ -68,22 +68,21 @@ EPOCH = datetime.datetime.utcfromtimestamp(0)
 
 # Map the names of the parameters in the JSON channel description to
 # the parameter names we use in the Channel class.
-CHANNEL_PARAMS = {
-    'address': 'address',
-    'id': 'id',
-    'expiration': 'expiration',
-    'params': 'params',
-    'resourceId': 'resource_id',
-    'resourceUri': 'resource_uri',
-    'type': 'type',
-    'token': 'token',
-    }
+CHANNEL_PARAMS = {'address': 'address',
+                  'id': 'id',
+                  'expiration': 'expiration',
+                  'params': 'params',
+                  'resourceId': 'resource_id',
+                  'resourceUri': 'resource_uri',
+                  'type': 'type',
+                  'token': 'token',
+                  }
 
-X_GOOG_CHANNEL_ID     = 'X-GOOG-CHANNEL-ID'
+X_GOOG_CHANNEL_ID = 'X-GOOG-CHANNEL-ID'
 X_GOOG_MESSAGE_NUMBER = 'X-GOOG-MESSAGE-NUMBER'
 X_GOOG_RESOURCE_STATE = 'X-GOOG-RESOURCE-STATE'
-X_GOOG_RESOURCE_URI   = 'X-GOOG-RESOURCE-URI'
-X_GOOG_RESOURCE_ID    = 'X-GOOG-RESOURCE-ID'
+X_GOOG_RESOURCE_URI = 'X-GOOG-RESOURCE-URI'
+X_GOOG_RESOURCE_ID = 'X-GOOG-RESOURCE-ID'
 
 
 def _upper_header_keys(headers):
@@ -167,8 +166,8 @@ class Channel(object):
         delivered. Specific to the channel type.
       expiration: int, The time, in milliseconds from the epoch, when this
         channel will expire.
-      params: dict, A dictionary of string to string, with additional parameters
-        controlling delivery channel behavior.
+      params: dict, A dictionary of string to string, with additional
+        parameters controlling delivery channel behavior.
       resource_id: str, An opaque id that identifies the resource that is
         being watched. Stable across different API versions.
       resource_uri: str, The canonicalized ID of the watched resource.
@@ -191,12 +190,11 @@ class Channel(object):
     Returns:
       A dictionary representation of the channel.
     """
-    result = {
-        'id': self.id,
-        'token': self.token,
-        'type': self.type,
-        'address': self.address
-        }
+    result = {'id': self.id,
+              'token': self.token,
+              'type': self.type,
+              'address': self.address
+              }
     if self.params:
       result['params'] = self.params
     if self.resource_id:
@@ -274,12 +272,11 @@ def new_webhook_channel(url, token=None, expiration=None, params=None):
     expiration_ms = 0
     if expiration:
       delta = expiration - EPOCH
-      expiration_ms = delta.microseconds/1000 + (
-          delta.seconds + delta.days*24*3600)*1000
+      expiration_ms = delta.microseconds / 1000 + (
+          delta.seconds + delta.days * 24 * 3600) * 1000
       if expiration_ms < 0:
         expiration_ms = 0
 
     return Channel('web_hook', str(uuid.uuid4()),
                    token, url, expiration=expiration_ms,
                    params=params)
-

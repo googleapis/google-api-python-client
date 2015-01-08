@@ -165,7 +165,7 @@ class BaseModel(Model):
       params.update({'alt': self.alt_param})
     astuples = []
     for key, value in params.items():
-      if type(value) == type([]):
+      if isinstance(value, list):
         for x in value:
           x = x.encode('utf-8')
           astuples.append((key, x))
@@ -260,8 +260,9 @@ class JsonModel(BaseModel):
     self._data_wrapper = data_wrapper
 
   def serialize(self, body_value):
-    if (isinstance(body_value, dict) and 'data' not in body_value and
-        self._data_wrapper):
+    if isinstance(body_value, dict)\
+       and 'data' not in body_value\
+       and self._data_wrapper:
       body_value = {'data': body_value}
     return json.dumps(body_value)
 
@@ -379,7 +380,7 @@ def makepatch(original, modified):
       # Use None to signal that the element is deleted
       patch[key] = None
     elif original_value != modified_value:
-      if type(original_value) == type({}):
+      if isinstance(original_value, dict):
         # Recursively descend objects
         patch[key] = makepatch(original_value, modified_value)
       else:

@@ -102,9 +102,11 @@ class InvalidChunkSizeError(Error):
   """The given chunksize is not valid."""
   pass
 
+
 class InvalidNotificationError(Error):
   """The channel Notification is invalid."""
   pass
+
 
 class BatchError(HttpError):
   """Error occured during batch operations."""

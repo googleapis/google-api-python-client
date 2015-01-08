@@ -31,7 +31,8 @@ from oauth2client import file
 from oauth2client import tools
 
 
-def init(argv, name, version, doc, filename, scope=None, parents=[], discovery_filename=None):
+def init(argv, name, version, doc, filename, scope=None, parents=[],
+         discovery_filename=None):
   """A common initialization routine for samples.
 
   Many of the sample applications do the same initialization, which has now
@@ -75,9 +76,8 @@ def init(argv, name, version, doc, filename, scope=None, parents=[], discovery_f
                                 'client_secrets.json')
 
   # Set up a Flow object to be used if we need to authenticate.
-  flow = client.flow_from_clientsecrets(client_secrets,
-      scope=scope,
-      message=tools.message_if_missing(client_secrets))
+  flow = client.flow_from_clientsecrets(client_secrets, scope=scope,
+                                        message=tools.message_if_missing(client_secrets))
 
   # Prepare credentials, and authorize HTTP object with them.
   # If the credentials don't exist or are invalid run through the native client
@@ -87,7 +87,7 @@ def init(argv, name, version, doc, filename, scope=None, parents=[], discovery_f
   credentials = storage.get()
   if credentials is None or credentials.invalid:
     credentials = tools.run_flow(flow, storage, flags)
-  http = credentials.authorize(http = httplib2.Http())
+  http = credentials.authorize(http=httplib2.Http())
 
   if discovery_filename is None:
     # Construct a service object via the discovery service.

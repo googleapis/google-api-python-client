@@ -18,19 +18,19 @@ A client library for Google's discovery based APIs.
 """
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
-__all__ = [
-    'build',
-    'build_from_document',
-    'fix_method_name',
-    'key2param',
-    ]
+__all__ = ['build',
+           'build_from_document',
+           'fix_method_name',
+           'key2param',
+           ]
 
 
 # Standard library imports
 try:
   from io import BytesIO, StringIO
 except ImportError:
-  import BytesIO, StringIO
+  import BytesIO
+  import StringIO
 import copy
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
@@ -42,7 +42,8 @@ import mimetypes
 import os
 import re
 try:
-  from urllib.parse import urlencode, urlparse, urljoin, urlunparse, parse_qs, parse_qsl
+  from urllib.parse import urlencode, urlparse, urljoin,\
+      urlunparse, parse_qs, parse_qsl
 except ImportError:
   from urlparse import urlparse, urljoin, urlunparse
   from urllib import urlencode
@@ -209,10 +210,9 @@ def build(serviceName,
   Returns:
     A Resource object with methods for interacting with the service.
   """
-  params = {
-      'api': serviceName,
-      'apiVersion': version
-      }
+  params = {'api': serviceName,
+            'apiVersion': version
+            }
 
   if http is None:
     http = httplib2.Http()
@@ -232,7 +232,7 @@ def build(serviceName,
 
   if resp.status == 404:
     raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName,
-                                                            version))
+                                                             version))
   if resp.status >= 400:
     raise HttpError(resp, content, uri=requested_url)
 
@@ -243,20 +243,20 @@ def build(serviceName,
     raise InvalidJsonError()
 
   return build_from_document(content, base=discoveryServiceUrl, http=http,
-      developerKey=developerKey, model=model, requestBuilder=requestBuilder,
-      credentials=credentials)
+                             developerKey=developerKey, model=model,
+                             requestBuilder=requestBuilder,
+                             credentials=credentials)
 
 
 @positional(1)
-def build_from_document(
-    service,
-    base=None,
-    future=None,
-    http=None,
-    developerKey=None,
-    model=None,
-    requestBuilder=HttpRequest,
-    credentials=None):
+def build_from_document(service,
+                        base=None,
+                        future=None,
+                        http=None,
+                        developerKey=None,
+                        model=None,
+                        requestBuilder=HttpRequest,
+                        credentials=None):
   """Create a Resource for interacting with an API.
 
   Same as `build()`, but constructs the Resource object from a discovery
@@ -301,7 +301,7 @@ def build_from_document(
     #    If there are no scopes found (meaning the given service requires no
     #    authentication), there is no authorization of the http.
     if (isinstance(credentials, GoogleCredentials) and
-        credentials.create_scoped_required()):
+       credentials.create_scoped_required()):
       scopes = service.get('auth', {}).get('oauth2', {}).get('scopes', {})
       if scopes:
         credentials = credentials.create_scoped(scopes.keys())
@@ -335,7 +335,7 @@ def _cast(value, schema_type):
     A string representation of 'value' based on the schema_type.
   """
   if schema_type == 'string':
-    if type(value) == type('') or type(value) == type(u''):
+    if is_string(value):
       return value
     else:
       return str(value)
@@ -346,7 +346,7 @@ def _cast(value, schema_type):
   elif schema_type == 'boolean':
     return str(bool(value)).lower()
   else:
-    if type(value) == type('') or type(value) == type(u''):
+    if is_string(value):
       return value
     else:
       return str(value)
@@ -516,8 +516,8 @@ def _fix_up_method_description(method_desc, root_desc):
 
   parameters = _fix_up_parameters(method_desc, root_desc, http_method)
   # Order is important. `_fix_up_media_upload` needs `method_desc` to have a
-  # 'parameters' key and needs to know if there is a 'body' parameter because it
-  # also sets a 'media_body' parameter.
+  # 'parameters' key and needs to know if there is a 'body' parameter because
+  # it also sets a 'media_body' parameter.
   accept, max_size, media_path_url = _fix_up_media_upload(
       method_desc, root_desc, path_url, parameters)
 
@@ -664,7 +664,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         # name differently, since we want to handle both
         # arg='value' and arg=['value1', 'value2']
         if (name in parameters.repeated_params and
-            not is_string(kwargs[name])):
+           not is_string(kwargs[name])):
           values = kwargs[name]
         else:
           values = [kwargs[name]]
@@ -679,7 +679,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     for key, value in kwargs.items():
       to_type = parameters.param_types.get(key, 'string')
       # For repeated parameters we cast each member of the list.
-      if key in parameters.repeated_params and type(value) == type([]):
+      if key in parameters.repeated_params and isinstance(value, list):
         cast_value = [_cast(x, to_type) for x in value]
       else:
         cast_value = _cast(value, to_type)
@@ -700,8 +700,9 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
       model = RawModel()
 
     headers = {}
-    headers, params, query, body = model.request(headers,
-        actual_path_params, actual_query_params, body_value)
+    headers, params, query, body = model.request(headers, actual_path_params,
+                                                 actual_query_params,
+                                                 body_value)
 
     expanded_url = uritemplate.expand(pathUrl, params)
     url = urljoin(self._baseUrl, expanded_url + query)
@@ -780,7 +781,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                                      'boundary="%s"') % multipart_boundary
           url = _add_query_parameter(url, 'uploadType', 'multipart')
 
-    logger.info('URL being requested: %s %s' % (httpMethod,url))
+    logger.info('URL being requested: %s %s' % (httpMethod, url))
     return self._requestBuilder(self._http,
                                 model.response,
                                 url,
@@ -822,10 +823,10 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     paramdesc = methodDesc['parameters'][parameters.argmap[arg]]
     paramdoc = paramdesc.get('description', 'A parameter')
     if '$ref' in paramdesc:
-      docs.append(
-          ('  %s: object, %s%s%s\n    The object takes the'
-          ' form of:\n\n%s\n\n') % (arg, paramdoc, required, repeated,
-            schema.prettyPrintByName(paramdesc['$ref'])))
+      docs.append(('  %s: object, %s%s%s\n    The object takes the'
+                   ' form of:\n\n%s\n\n') %
+                  (arg, paramdoc, required, repeated,
+                   schema.prettyPrintByName(paramdesc['$ref'])))
     else:
       paramtype = paramdesc.get('type', 'string')
       docs.append('  %s: %s, %s%s%s\n' % (arg, paramtype, paramdoc, required,
@@ -888,7 +889,7 @@ Returns:
 
     request.uri = uri
 
-    logger.info('URL being requested: %s %s' % (methodName,uri))
+    logger.info('URL being requested: %s %s' % (methodName, uri))
 
     return request
 
@@ -1016,16 +1017,15 @@ class Resource(object):
 
   def _add_next_methods(self, resourceDesc, schema):
     # Add _next() methods
-    # Look for response bodies in schema that contain nextPageToken, and methods
-    # that take a pageToken parameter.
+    # Look for response bodies in schema that contain nextPageToken, and
+    # methods that take a pageToken parameter.
     if 'methods' in resourceDesc:
       for methodName, methodDesc in resourceDesc['methods'].items():
         if 'response' in methodDesc:
           responseSchema = methodDesc['response']
           if '$ref' in responseSchema:
             responseSchema = schema.get(responseSchema['$ref'])
-          hasNextPageToken = 'nextPageToken' in responseSchema.get('properties',
-                                                                   {})
+          hasNextPageToken = 'nextPageToken' in responseSchema.get('properties', {})
           hasPageToken = 'pageToken' in methodDesc.get('parameters', {})
           if hasNextPageToken and hasPageToken:
             fixedMethodName, method = createNextMethod(methodName + '_next')
