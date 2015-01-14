@@ -25,12 +25,11 @@ __all__ = ['build',
            ]
 
 
+from six import StringIO
+from six.moves.urllib.parse import urlencode, urlparse, urljoin,\
+      urlunparse, parse_qs, parse_qsl
+
 # Standard library imports
-try:
-  from io import BytesIO, StringIO
-except ImportError:
-  import BytesIO
-  import StringIO
 import copy
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
@@ -41,16 +40,6 @@ import logging
 import mimetypes
 import os
 import re
-try:
-  from urllib.parse import urlencode, urlparse, urljoin,\
-      urlunparse, parse_qs, parse_qsl
-except ImportError:
-  from urlparse import urlparse, urljoin, urlunparse
-  from urllib import urlencode
-  try:
-    from urlparse import parse_qs, parse_qsl
-  except ImportError:
-    from cgi import parse_qs
 
 # Third-party imports
 import httplib2
@@ -764,12 +753,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
           msgRoot.attach(msg)
           # encode the body: note that we can't use `as_string`, because
           # it plays games with `From ` lines.
-          # fp = BytesIO()
-          # fp = StringIO()
-          if sys.version > '3':
-            fp = StringIO()
-          else:
-            fp = BytesIO()
+          fp = StringIO()
           g = Generator(fp, mangle_from_=False)
           g.flatten(msgRoot, unixfrom=False)
           body = fp.getvalue()

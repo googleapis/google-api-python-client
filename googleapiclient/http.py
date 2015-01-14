@@ -22,11 +22,9 @@ actuall HTTP request.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 
-try:
-  from io import BytesIO, StringIO
-except ImportError:
-  import BytesIO
-  import StringIO
+from six import BytesIO, StringIO
+from six.moves.urllib.parse import urlparse, urlunparse, quote, unquote
+
 import base64
 import copy
 import gzip
@@ -40,11 +38,6 @@ import sys
 import time
 import uuid
 
-try:
-  from urllib.parse import urlparse, urlunparse, quote, unquote
-except ImportError:
-  from urlparse import urlparse, urlunparse
-  from urllib import quote, unquote
 
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
@@ -1118,12 +1111,7 @@ class BatchHttpRequest(object):
       msg['content-length'] = str(len(request.body))
 
     # Serialize the mime message.
-    # fp = BytesIO()
-    # fp = StringIO()
-    if sys.version > '3':
-      fp = StringIO()
-    else:
-      fp = BytesIO()
+    fp = StringIO()
     # maxheaderlen=0 means don't line wrap headers.
     g = Generator(fp, maxheaderlen=0)
     g.flatten(msg, unixfrom=False)
@@ -1246,12 +1234,7 @@ class BatchHttpRequest(object):
 
     # encode the body: note that we can't use `as_string`, because
     # it plays games with `From ` lines.
-    # fp = BytesIO()
-    # fp = StringIO()
-    if sys.version > '3':
-      fp = StringIO()
-    else:
-      fp = BytesIO()
+    fp = StringIO()
     g = Generator(fp, mangle_from_=False)
     g.flatten(message, unixfrom=False)
     body = fp.getvalue()

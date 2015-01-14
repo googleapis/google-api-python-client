@@ -27,18 +27,12 @@ import logging
 import os
 import unittest
 import random
-try:
-  from io import BytesIO, StringIO, FileIO
-except ImportError:
-  import BytesIO
-  import StringIO
-  import FileIO
 import time
 
-try:
-  from urllib.parse import urlencode
-except ImportError:
-  from urllib import urlencode
+
+from six import BytesIO, StringIO
+from io import FileIO
+from six.moves.urllib.parse import urlencode
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import BatchError
@@ -200,19 +194,14 @@ class TestMediaUpload(unittest.TestCase):
 class TestMediaIoBaseUpload(unittest.TestCase):
 
   def test_media_io_base_upload_from_file_io(self):
-    try:
-      import io
-
-      fd = io.FileIO(datafile('small.png'), 'r')
-      upload = MediaIoBaseUpload(
-          fd=fd, mimetype='image/png', chunksize=500, resumable=True)
-      self.assertEqual('image/png', upload.mimetype())
-      self.assertEqual(190, upload.size())
-      self.assertEqual(True, upload.resumable())
-      self.assertEqual(500, upload.chunksize())
-      self.assertEqual(b'PNG', upload.getbytes(1, 3))
-    except ImportError:
-      pass
+    fd = FileIO(datafile('small.png'), 'r')
+    upload = MediaIoBaseUpload(
+        fd=fd, mimetype='image/png', chunksize=500, resumable=True)
+    self.assertEqual('image/png', upload.mimetype())
+    self.assertEqual(190, upload.size())
+    self.assertEqual(True, upload.resumable())
+    self.assertEqual(500, upload.chunksize())
+    self.assertEqual(b'PNG', upload.getbytes(1, 3))
 
   def test_media_io_base_upload_from_file_object(self):
     f = open(datafile('small.png'), 'rb')

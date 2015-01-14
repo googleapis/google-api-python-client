@@ -32,18 +32,8 @@ import pickle
 import sys
 import unittest
 
-try:
-  from urllib.parse import urlparse, parse_qs
-except ImportError:
-  from urlparse import urlparse
-  try:
-    from urlparse import parse_qs
-  except ImportError:
-    from cgi import parse_qs
-try:
-  from io import BytesIO, StringIO
-except ImportError:
-  import BytesIO, StringIO
+from six import BytesIO, StringIO
+from six.moves.urllib.parse import urlparse, parse_qs
 
 
 from googleapiclient.discovery import _fix_up_media_upload

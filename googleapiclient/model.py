@@ -26,10 +26,8 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import json
 import logging
-try:
-  from urllib.parse import urlencode
-except ImportError:
-  from urllib import urlencode
+
+from six.moves.urllib.parse import urlencode
 
 from googleapiclient import __version__
 from googleapiclient.errors import HttpError
