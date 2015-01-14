@@ -76,8 +76,6 @@ from oauth2client.util import _add_query_parameter
 from oauth2client.util import positional
 
 import sys
-if sys.version > '3':
-  long = int
 
 # The client library requires a version of httplib2 that supports RETRIES.
 httplib2.RETRIES = 1
@@ -352,7 +350,7 @@ def _cast(value, schema_type):
       return str(value)
 
 
-def _media_size_to_long(maxSize):
+def _media_size_to_int(maxSize):
   """Convert a string media size, such as 10GB or 3TB into an integer.
 
   Args:
@@ -362,13 +360,13 @@ def _media_size_to_long(maxSize):
     The size as an integer value.
   """
   if len(maxSize) < 2:
-    return long(0)
+    return 0
   units = maxSize[-2:].upper()
   bit_shift = _MEDIA_SIZE_BIT_SHIFTS.get(units)
   if bit_shift is not None:
-    return long(maxSize[:-2]) << bit_shift
+    return maxSize[:-2] << bit_shift
   else:
-    return long(maxSize)
+    return maxSize
 
 
 def _media_path_url_from_info(root_desc, path_url):
@@ -458,8 +456,8 @@ def _fix_up_media_upload(method_desc, root_desc, path_url, parameters):
       - accept is a list of strings representing what content types are
         accepted for media upload. Defaults to empty list if not in the
         discovery document.
-      - max_size is a long representing the max size in bytes allowed for a
-        media upload. Defaults to long(0) if not in the discovery document.
+      - max_size is a integer representing the max size in bytes allowed for a
+        media upload. Defaults to int(0) if not in the discovery document.
       - media_path_url is a String; the absolute URI for media upload for the
         API method. Constructed using the API root URI and service path from
         the discovery document and the relative path for the API method. If
@@ -467,7 +465,7 @@ def _fix_up_media_upload(method_desc, root_desc, path_url, parameters):
   """
   media_upload = method_desc.get('mediaUpload', {})
   accept = media_upload.get('accept', [])
-  max_size = _media_size_to_long(media_upload.get('maxSize', ''))
+  max_size = _media_size_to_int(media_upload.get('maxSize', ''))
   media_path_url = None
 
   if media_upload:
@@ -503,8 +501,8 @@ def _fix_up_method_description(method_desc, root_desc):
       - accept is a list of strings representing what content types are
         accepted for media upload. Defaults to empty list if not in the
         discovery document.
-      - max_size is a long representing the max size in bytes allowed for a
-        media upload. Defaults to long(0) if not in the discovery document.
+      - max_size is a integer representing the max size in bytes allowed for a
+        media upload. Defaults to int(0) if not in the discovery document.
       - media_path_url is a String; the absolute URI for media upload for the
         API method. Constructed using the API root URI and service path from
         the discovery document and the relative path for the API method. If

@@ -75,9 +75,6 @@ from oauth2client.client import OAuth2Credentials
 
 import uritemplate
 
-if sys.version > '3':
-  long = int
-
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 util.positional_parameters_enforcement = util.POSITIONAL_EXCEPTION
@@ -260,7 +257,7 @@ class Utilities(unittest.TestCase):
     http_method = 'GET'
     method_id = 'bigquery.query'
     accept = []
-    max_size = long(0)
+    max_size = 0
     media_path_url = None
     self.assertEqual(result, (path_url, http_method, method_id, accept,
                               max_size, media_path_url))
@@ -272,7 +269,7 @@ class Utilities(unittest.TestCase):
     http_method = 'POST'
     method_id = 'zoo.animals.insert'
     accept = ['image/png']
-    max_size = long(1024)
+    max_size = 1024
     media_path_url = 'https://www.googleapis.com/upload/zoo/v1/animals'
     self.assertEqual(result, (path_url, http_method, method_id, accept,
                               max_size, media_path_url))
