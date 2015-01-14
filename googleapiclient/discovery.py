@@ -364,7 +364,7 @@ def _media_size_to_int(maxSize):
   units = maxSize[-2:].upper()
   bit_shift = _MEDIA_SIZE_BIT_SHIFTS.get(units)
   if bit_shift is not None:
-    return maxSize[:-2] << bit_shift
+    return int(maxSize[:-2]) << bit_shift
   else:
     return maxSize
 
