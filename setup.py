@@ -29,6 +29,7 @@ if sys.version_info < (2, 6):
 from setuptools import setup
 import pkg_resources
 
+
 def _DetectBadness():
   import os
   if 'SKIP_GOOGLEAPICLIENT_COMPAT_CHECK' in os.environ:
@@ -61,6 +62,7 @@ install_requires = [
     'httplib2>=0.8',
     'oauth2client>=1.3',
     'uritemplate>=0.6',
+    'six>=1.8.0',
 ]
 
 if sys.version_info < (2, 7):
