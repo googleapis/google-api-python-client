@@ -1452,7 +1452,7 @@ class HttpMock(object):
       headers: dict, header to return with response
     """
     if headers is None:
-      headers = {'status': '200 OK'}
+      headers = {'status': '200'}
     if filename:
       f = file(filename, 'r')
       self.data = f.read()
