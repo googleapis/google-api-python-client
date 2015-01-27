@@ -27,7 +27,7 @@ __all__ = ['build',
 
 from six import StringIO
 from six.moves.urllib.parse import urlencode, urlparse, urljoin,\
-      urlunparse, parse_qs, parse_qsl
+    urlunparse, parse_qsl
 
 # Standard library imports
 import copy
@@ -63,8 +63,6 @@ from googleapiclient.schema import Schemas
 from oauth2client.client import GoogleCredentials
 from oauth2client.util import _add_query_parameter
 from oauth2client.util import positional
-
-import sys
 
 # The client library requires a version of httplib2 that supports RETRIES.
 httplib2.RETRIES = 1
