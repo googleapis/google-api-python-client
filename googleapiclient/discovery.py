@@ -25,6 +25,7 @@ __all__ = ['build',
            ]
 
 
+import six
 from six import StringIO
 from six.moves.urllib.parse import urlencode, urlparse, urljoin,\
     urlunparse, parse_qsl
@@ -214,6 +215,8 @@ def build(serviceName,
   logger.info('URL being requested: GET %s' % requested_url)
 
   resp, content = http.request(requested_url)
+  if six.PY3 and isinstance(content, bytes):
+    content = content.decode('utf-8')
 
   if resp.status == 404:
     raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName,
