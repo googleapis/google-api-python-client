@@ -559,6 +559,8 @@ class MediaIoBaseDownload(object):
         content_range = resp['content-range']
         length = content_range.rsplit('/', 1)[1]
         self._total_size = int(length)
+      else:
+        self._total_size = int(resp['content-length'])
 
       if self._progress == self._total_size:
         self._done = True
