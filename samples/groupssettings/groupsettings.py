@@ -87,7 +87,7 @@ def access_settings(service, groupId, settings):
 
   # Settings might contain null value for some keys(properties). 
   # Extract the properties with values and add to dictionary body.
-  for key in settings.iterkeys():
+  for key in headers.keys():
     if settings[key] is not None:
       body[key] = settings[key]
 

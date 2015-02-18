@@ -26,10 +26,11 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import json
 import logging
-import urllib
+
+from six.moves.urllib.parse import urlencode
 
 from googleapiclient import __version__
-from errors import HttpError
+from googleapiclient.errors import HttpError
 
 
 dump_request_response = False
@@ -106,11 +107,11 @@ class BaseModel(Model):
     if dump_request_response:
       logging.info('--request-start--')
       logging.info('-headers-start-')
-      for h, v in headers.iteritems():
+      for h, v in headers.items():
         logging.info('%s: %s', h, v)
       logging.info('-headers-end-')
       logging.info('-path-parameters-start-')
-      for h, v in path_params.iteritems():
+      for h, v in path_params.items():
         logging.info('%s: %s', h, v)
       logging.info('-path-parameters-end-')
       logging.info('body: %s', body)
@@ -161,22 +162,28 @@ class BaseModel(Model):
     if self.alt_param is not None:
       params.update({'alt': self.alt_param})
     astuples = []
-    for key, value in params.iteritems():
-      if type(value) == type([]):
+    for key, value in params.items():
+      if isinstance(value, list):
         for x in value:
           x = x.encode('utf-8')
           astuples.append((key, x))
       else:
-        if isinstance(value, unicode) and callable(value.encode):
-          value = value.encode('utf-8')
+        # if isinstance(value, unicode) and callable(value.encode):
+        #   value = value.encode('utf-8')
+        try:
+          if isinstance(value, unicode) and callable(value.encode):
+            value = value.encode('utf-8')
+        except NameError:
+          if isinstance(value, str) and callable(value.encode):
+            value = value.encode('utf-8')
         astuples.append((key, value))
-    return '?' + urllib.urlencode(astuples)
+    return '?' + urlencode(astuples)
 
   def _log_response(self, resp, content):
     """Logs debugging information about the response if requested."""
     if dump_request_response:
       logging.info('--response-start--')
-      for h, v in resp.iteritems():
+      for h, v in resp.items():
         logging.info('%s: %s', h, v)
       if content:
         logging.info(content)
@@ -251,13 +258,17 @@ class JsonModel(BaseModel):
     self._data_wrapper = data_wrapper
 
   def serialize(self, body_value):
-    if (isinstance(body_value, dict) and 'data' not in body_value and
-        self._data_wrapper):
+    if isinstance(body_value, dict)\
+       and 'data' not in body_value\
+       and self._data_wrapper:
       body_value = {'data': body_value}
     return json.dumps(body_value)
 
   def deserialize(self, content):
-    content = content.decode('utf-8')
+    try:
+      content = content.decode('utf-8')
+    except AttributeError:
+      pass
     body = json.loads(content)
     if self._data_wrapper and isinstance(body, dict) and 'data' in body:
       body = body['data']
@@ -361,13 +372,13 @@ def makepatch(original, modified):
       body=makepatch(original, item)).execute()
   """
   patch = {}
-  for key, original_value in original.iteritems():
+  for key, original_value in original.items():
     modified_value = modified.get(key, None)
     if modified_value is None:
       # Use None to signal that the element is deleted
       patch[key] = None
     elif original_value != modified_value:
-      if type(original_value) == type({}):
+      if isinstance(original_value, dict):
         # Recursively descend objects
         patch[key] = makepatch(original_value, modified_value)
       else:

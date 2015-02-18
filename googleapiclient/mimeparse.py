@@ -29,6 +29,9 @@ __license__ = 'MIT License'
 __credits__ = ''
 
 
+from functools import reduce
+
+
 def parse_mime_type(mime_type):
     """Parses a mime-type into its component parts.
 
@@ -40,9 +43,9 @@ def parse_mime_type(mime_type):
        ('application', 'xhtml', {'q', '0.5'})
        """
     parts = mime_type.split(';')
-    params = dict([tuple([s.strip() for s in param.split('=', 1)])\
-            for param in parts[1:]
-                  ])
+    params = dict([tuple([s.strip() for s in param.split('=', 1)])
+                  for param in parts[1:]
+                   ])
     full_type = parts[0].strip()
     # Java URLConnection class sends an Accept header that includes a
     # single '*'. Turn it into a legal wildcard.
@@ -68,7 +71,7 @@ def parse_media_range(range):
     necessary.
     """
     (type, subtype, params) = parse_mime_type(range)
-    if not params.has_key('q') or not params['q'] or \
+    if 'q' not in params or not params['q'] or \
             not float(params['q']) or float(params['q']) > 1\
             or float(params['q']) < 0:
         params['q'] = '1'
@@ -87,19 +90,18 @@ def fitness_and_quality_parsed(mime_type, parsed_ranges):
     """
     best_fitness = -1
     best_fit_q = 0
-    (target_type, target_subtype, target_params) =\
-            parse_media_range(mime_type)
+    (target_type, target_subtype, target_params) = parse_media_range(mime_type)
     for (type, subtype, params) in parsed_ranges:
-        type_match = (type == target_type or\
-                      type == '*' or\
+        type_match = (type == target_type or
+                      type == '*' or
                       target_type == '*')
-        subtype_match = (subtype == target_subtype or\
-                         subtype == '*' or\
+        subtype_match = (subtype == target_subtype or
+                         subtype == '*' or
                          target_subtype == '*')
         if type_match and subtype_match:
-            param_matches = reduce(lambda x, y: x + y, [1 for (key, value) in \
-                    target_params.iteritems() if key != 'q' and \
-                    params.has_key(key) and value == params[key]], 0)
+            param_matches = reduce(lambda x, y: x + y, [1 for (key, value) in
+                                   target_params.items() if key != 'q' and
+                                   key in params and value == params[key]], 0)
             fitness = (type == target_type) and 100 or 0
             fitness += (subtype == target_subtype) and 10 or 0
             fitness += param_matches

@@ -103,8 +103,8 @@ class Schemas(object):
     seen.append(name)
 
     if name not in self.pretty:
-      self.pretty[name] = _SchemaToStruct(self.schemas[name],
-          seen, dent=dent).to_str(self._prettyPrintByName)
+      self.pretty[name] = _SchemaToStruct(self.schemas[name], seen,
+                                          dent=dent).to_str(self._prettyPrintByName)
 
     seen.pop()
 
@@ -249,7 +249,7 @@ class _SchemaToStruct(object):
       self.emitEnd('{', schema.get('description', ''))
       self.indent()
       if 'properties' in schema:
-        for pname, pschema in schema.get('properties', {}).iteritems():
+        for pname, pschema in schema.get('properties', {}).items():
           self.emitBegin('"%s": ' % pname)
           self._to_str_impl(pschema)
       elif 'additionalProperties' in schema:

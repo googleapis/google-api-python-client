@@ -84,11 +84,11 @@ def main(argv):
     results = get_api_query(service, flags.table_id).execute()
     print_results(results)
 
-  except TypeError, error:
+  except TypeError as error:
     # Handle errors in constructing a query.
     print ('There was an error in constructing your query : %s' % error)
 
-  except HttpError, error:
+  except HttpError as error:
     # Handle API errors.
     print ('Arg, there was an API error : %s : %s' %
            (error.resp.status, error._get_reason()))
@@ -195,7 +195,7 @@ def print_query(results):
 
   print 'Query Parameters:'
   query = results.get('query')
-  for key, value in query.iteritems():
+  for key, value in query.items():
     print '%s = %s' % (key, value)
   print
 
@@ -236,7 +236,7 @@ def print_totals_for_all_results(results):
   print 'Here are the metric totals for the matched total results.'
   totals = results.get('totalsForAllResults')
 
-  for metric_name, metric_total in totals.iteritems():
+  for metric_name, metric_total in totals.items():
     print 'Metric Name  = %s' % metric_name
     print 'Metric Total = %s' % metric_total
     print

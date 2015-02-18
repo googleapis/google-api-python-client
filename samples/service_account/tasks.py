@@ -39,7 +39,7 @@ from oauth2client.client import SignedJwtAssertionCredentials
 def main(argv):
   # Load the key in PKCS 12 format that you downloaded from the Google API
   # Console when you created your Service account.
-  f = file('key.p12', 'rb')
+  f = open('key.p12', 'rb')
   key = f.read()
   f.close()
 

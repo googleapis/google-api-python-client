@@ -111,8 +111,8 @@ class Model(unittest.TestCase):
     headers = {}
     path_params = {}
     query_params = {'foo': 1, 'bar': u'\N{COMET}',
-        'baz': ['fe', 'fi', 'fo', 'fum'], # Repeated parameters
-        'qux': []}
+                    'baz': ['fe', 'fi', 'fo', 'fum'],  # Repeated parameters
+                    'qux': []}
     body = {}
 
     headers, unused_params, query, body = model.request(
@@ -123,7 +123,12 @@ class Model(unittest.TestCase):
 
     query_dict = parse_qs(query[1:])
     self.assertEqual(query_dict['foo'], ['1'])
-    self.assertEqual(query_dict['bar'], [u'\N{COMET}'.encode('utf-8')])
+    if isinstance(u'\N{COMET}', str):
+      # Python 3, no need to encode
+      self.assertEqual(query_dict['bar'], [u'\N{COMET}'])
+    else:
+      # Python 2, encode string
+      self.assertEqual(query_dict['bar'], [u'\N{COMET}'.encode('utf-8')])
     self.assertEqual(query_dict['baz'], ['fe', 'fi', 'fo', 'fum'])
     self.assertTrue('qux' not in query_dict)
     self.assertEqual(body, '{}')
@@ -140,8 +145,8 @@ class Model(unittest.TestCase):
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['user-agent'],
-        'my-test-app/1.23.4 google-api-python-client/' + __version__ +
-        ' (gzip)')
+                     'my-test-app/1.23.4 google-api-python-client/' +
+                     __version__ + ' (gzip)')
 
   def test_bad_response(self):
     model = JsonModel(data_wrapper=False)
@@ -152,7 +157,7 @@ class Model(unittest.TestCase):
     try:
       content = model.response(resp, content)
       self.fail('Should have thrown an exception')
-    except HttpError, e:
+    except HttpError as e:
       self.assertTrue('not authorized' in str(e))
 
     resp['content-type'] = 'application/json'
@@ -160,7 +165,7 @@ class Model(unittest.TestCase):
     try:
       content = model.response(resp, content)
       self.fail('Should have thrown an exception')
-    except HttpError, e:
+    except HttpError as e:
       self.assertTrue('not authorized' in str(e))
 
   def test_good_response(self):
@@ -204,6 +209,7 @@ class Model(unittest.TestCase):
       def __init__(self):
         self.info_record = []
         self.debug_record = []
+
       def info(self, message, *args):
         self.info_record.append(message % args)
 
@@ -214,7 +220,7 @@ class Model(unittest.TestCase):
       def __init__(self, items):
         super(MockResponse, self).__init__()
         self.status = items['status']
-        for key, value in items.iteritems():
+        for key, value in items.items():
           self[key] = value
     old_logging = googleapiclient.model.logging
     googleapiclient.model.logging = MockLogging()
@@ -223,7 +229,7 @@ class Model(unittest.TestCase):
     request_body = {
         'field1': 'value1',
         'field2': 'value2'
-        }
+    }
     body_string = model.request({}, {}, {}, request_body)[-1]
     json_body = json.loads(body_string)
     self.assertEqual(request_body, json_body)
@@ -269,8 +275,6 @@ class Model(unittest.TestCase):
     content = '{"atad": "is good"}'
     content = model.response(resp, content)
     self.assertEqual(content, {'atad': 'is good'})
-
-
 
 if __name__ == '__main__':
   unittest.main()

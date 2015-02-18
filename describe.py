@@ -147,7 +147,6 @@ parser.add_argument('--dest', default=BASE,
                     help='Directory name to write documents into.')
 
 
-
 def safe_version(version):
   """Create a safe version of the verion string.
 
@@ -192,11 +191,11 @@ def method_params(doc):
   doclines = doc.splitlines()
   if 'Args:' in doclines:
     begin = doclines.index('Args:')
-    if 'Returns:' in doclines[begin+1:]:
+    if 'Returns:' in doclines[begin + 1:]:
       end = doclines.index('Returns:', begin)
-      args = doclines[begin+1: end]
+      args = doclines[begin + 1: end]
     else:
-      args = doclines[begin+1:]
+      args = doclines[begin + 1:]
 
     parameters = []
     for line in args:
@@ -206,7 +205,7 @@ def method_params(doc):
       pname = m.group(1)
       desc = m.group(2)
       if '(required)' not in desc:
-        pname = pname + '=None'
+        pname += '=None'
       parameters.append(pname)
     parameters = ', '.join(parameters)
   else:
@@ -271,12 +270,11 @@ def document_collection(resource, path, root_discovery, discovery, css=CSS):
   collections = []
   methods = []
   resource_name = path.split('.')[-2]
-  html = [
-      '<html><body>',
-      css,
-      '<h1>%s</h1>' % breadcrumbs(path[:-1], root_discovery),
-      '<h2>Instance Methods</h2>'
-      ]
+  html = ['<html><body>',
+          css,
+          '<h1>%s</h1>' % breadcrumbs(path[:-1], root_discovery),
+          '<h2>Instance Methods</h2>'
+          ]
 
   # Which methods are for collections.
   for name in dir(resource):
@@ -285,7 +283,6 @@ def document_collection(resource, path, root_discovery, discovery, css=CSS):
         collections.append(name)
       else:
         methods.append(name)
-
 
   # TOC
   if collections:
@@ -330,7 +327,8 @@ def document_collection_recursive(resource, path, root_discovery, discovery):
       dname = name.rsplit('_')[0]
       collection = getattr(resource, name)()
       document_collection_recursive(collection, path + name + '.', root_discovery,
-               discovery['resources'].get(dname, {}))
+                                    discovery['resources'].get(dname, {}))
+
 
 def document_api(name, version):
   """Document the given API.
@@ -344,8 +342,7 @@ def document_api(name, version):
       uritemplate.expand(
           FLAGS.discovery_uri_template, {
               'api': name,
-              'apiVersion': version})
-          )
+              'apiVersion': version}))
   discovery = json.loads(content)
 
   version = safe_version(version)

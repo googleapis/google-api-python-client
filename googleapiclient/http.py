@@ -21,38 +21,41 @@ actuall HTTP request.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-import StringIO
+
+from six import BytesIO, StringIO
+from six.moves.urllib.parse import urlparse, urlunparse, quote, unquote
+
 import base64
 import copy
 import gzip
 import httplib2
 import json
 import logging
-import mimeparse
 import mimetypes
 import os
 import random
 import sys
 import time
-import urllib
-import urlparse
 import uuid
+
 
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from email.parser import FeedParser
-from errors import BatchError
-from errors import HttpError
-from errors import InvalidChunkSizeError
-from errors import ResumableUploadError
-from errors import UnexpectedBodyError
-from errors import UnexpectedMethodError
-from model import JsonModel
+from googleapiclient.errors import BatchError
+from googleapiclient.errors import HttpError
+from googleapiclient.errors import InvalidChunkSizeError
+from googleapiclient.errors import ResumableUploadError
+from googleapiclient.errors import UnexpectedBodyError
+from googleapiclient.errors import UnexpectedMethodError
+from googleapiclient.model import JsonModel
 from oauth2client import util
 
+from googleapiclient import mimeparse
 
-DEFAULT_CHUNK_SIZE = 512*1024
+
+DEFAULT_CHUNK_SIZE = 512 * 1024
 
 MAX_URI_LENGTH = 2048
 
@@ -278,7 +281,7 @@ class MediaIoBaseUpload(MediaUpload):
 
   @util.positional(3)
   def __init__(self, fd, mimetype, chunksize=DEFAULT_CHUNK_SIZE,
-      resumable=False):
+               resumable=False):
     """Constructor.
 
     Args:
@@ -438,7 +441,8 @@ class MediaFileUpload(MediaIoBaseUpload):
   def from_json(s):
     d = json.loads(s)
     return MediaFileUpload(d['_filename'], mimetype=d['_mimetype'],
-                           chunksize=d['_chunksize'], resumable=d['_resumable'])
+                           chunksize=d['_chunksize'],
+                           resumable=d['_resumable'])
 
 
 class MediaInMemoryUpload(MediaIoBaseUpload):
@@ -465,8 +469,9 @@ class MediaInMemoryUpload(MediaIoBaseUpload):
     resumable: bool, True if this is a resumable upload. False means upload
       in a single request.
     """
-    fd = StringIO.StringIO(body)
-    super(MediaInMemoryUpload, self).__init__(fd, mimetype, chunksize=chunksize,
+    fd = BytesIO(body)
+    super(MediaInMemoryUpload, self).__init__(fd, mimetype,
+                                              chunksize=chunksize,
                                               resumable=resumable)
 
 
@@ -532,15 +537,14 @@ class MediaIoBaseDownload(object):
       googleapiclient.errors.HttpError if the response was not a 2xx.
       httplib2.HttpLib2Error if a transport error has occured.
     """
-    headers = {
-        'range': 'bytes=%d-%d' % (
-            self._progress, self._progress + self._chunksize)
-        }
+    headers = {'range': 'bytes=%d-%d' % (self._progress,
+                                         self._progress + self._chunksize)
+               }
     http = self._request.http
 
-    for retry_num in xrange(num_retries + 1):
+    for retry_num in range(num_retries + 1):
       if retry_num > 0:
-        self._sleep(self._rand() * 2**retry_num)
+        self._sleep(self._rand() * 2 ** retry_num)
         logging.warning(
             'Retry #%d for media download: GET %s, following status: %d'
             % (retry_num, self._uri, resp.status))
@@ -701,18 +705,17 @@ class HttpRequest(object):
       self.method = 'POST'
       self.headers['x-http-method-override'] = 'GET'
       self.headers['content-type'] = 'application/x-www-form-urlencoded'
-      parsed = urlparse.urlparse(self.uri)
-      self.uri = urlparse.urlunparse(
-          (parsed.scheme, parsed.netloc, parsed.path, parsed.params, None,
-           None)
-          )
+      parsed = urlparse(self.uri)
+      self.uri = urlunparse((parsed.scheme, parsed.netloc, parsed.path,
+                             parsed.params, None, None)
+                            )
       self.body = parsed.query
       self.headers['content-length'] = str(len(self.body))
 
     # Handle retries for server-side errors.
-    for retry_num in xrange(num_retries + 1):
+    for retry_num in range(num_retries + 1):
       if retry_num > 0:
-        self._sleep(self._rand() * 2**retry_num)
+        self._sleep(self._rand() * 2 ** retry_num)
         logging.warning('Retry #%d for request: %s %s, following status: %d'
                         % (retry_num, self.method, self.uri, resp.status))
 
@@ -793,9 +796,9 @@ class HttpRequest(object):
         start_headers['X-Upload-Content-Length'] = size
       start_headers['content-length'] = str(self.body_size)
 
-      for retry_num in xrange(num_retries + 1):
+      for retry_num in range(num_retries + 1):
         if retry_num > 0:
-          self._sleep(self._rand() * 2**retry_num)
+          self._sleep(self._rand() * 2 ** retry_num)
           logging.warning(
               'Retry #%d for resumable URI request: %s %s, following status: %d'
               % (retry_num, self.method, self.uri, resp.status))
@@ -814,10 +817,9 @@ class HttpRequest(object):
       # If we are in an error state then query the server for current state of
       # the upload by sending an empty PUT and reading the 'range' header in
       # the response.
-      headers = {
-          'Content-Range': 'bytes */%s' % size,
-          'content-length': '0'
-          }
+      headers = {'Content-Range': 'bytes */%s' % size,
+                 'content-length': '0'
+                 }
       resp, content = http.request(self.resumable_uri, 'PUT',
                                    headers=headers)
       status, body = self._process_response(resp, content)
@@ -850,17 +852,16 @@ class HttpRequest(object):
 
       chunk_end = self.resumable_progress + len(data) - 1
 
-    headers = {
-        'Content-Range': 'bytes %d-%d/%s' % (
-            self.resumable_progress, chunk_end, size),
-        # Must set the content-length header here because httplib can't
-        # calculate the size when working with _StreamSlice.
-        'Content-Length': str(chunk_end - self.resumable_progress + 1)
-        }
+    headers = {'Content-Range': 'bytes %d-%d/%s' % (self.resumable_progress,
+                                                    chunk_end, size),
+               # Must set the content-length header here because httplib can't
+               # calculate the size when working with _StreamSlice.
+               'Content-Length': str(chunk_end - self.resumable_progress + 1)
+               }
 
-    for retry_num in xrange(num_retries + 1):
+    for retry_num in range(num_retries + 1):
       if retry_num > 0:
-        self._sleep(self._rand() * 2**retry_num)
+        self._sleep(self._rand() * 2 ** retry_num)
         logging.warning(
             'Retry #%d for media upload: %s %s, following status: %d'
             % (retry_num, self.method, self.uri, resp.status))
@@ -904,7 +905,8 @@ class HttpRequest(object):
       self._in_error_state = True
       raise HttpError(resp, content, uri=self.uri)
 
-    return (MediaUploadProgress(self.resumable_progress, self.resumable.size()),
+    return (MediaUploadProgress(self.resumable_progress,
+                                self.resumable.size()),
             None)
 
   def to_json(self):
@@ -1021,7 +1023,7 @@ class BatchHttpRequest(object):
     # via execute()
     creds = None
     if request.http is not None and hasattr(request.http.request,
-        'credentials'):
+                                            'credentials'):
       creds = request.http.request.credentials
     elif http is not None and hasattr(http.request, 'credentials'):
       creds = http.request.credentials
@@ -1033,7 +1035,7 @@ class BatchHttpRequest(object):
     # Only apply the credentials if we are using the http object passed in,
     # otherwise apply() will get called during _serialize_request().
     if request.http is None or not hasattr(request.http.request,
-        'credentials'):
+                                           'credentials'):
       creds.apply(request.headers)
 
   def _id_to_header(self, id_):
@@ -1050,7 +1052,7 @@ class BatchHttpRequest(object):
     if self._base_id is None:
       self._base_id = uuid.uuid4()
 
-    return '<%s+%s>' % (self._base_id, urllib.quote(id_))
+    return '<%s+%s>' % (self._base_id, quote(id_))
 
   def _header_to_id(self, header):
     """Convert a Content-ID header value to an id.
@@ -1073,7 +1075,7 @@ class BatchHttpRequest(object):
       raise BatchError("Invalid value for Content-ID: %s" % header)
     base, id_ = header[1:-1].rsplit('+', 1)
 
-    return urllib.unquote(id_)
+    return unquote(id_)
 
   def _serialize_request(self, request):
     """Convert an HttpRequest object into a string.
@@ -1085,24 +1087,25 @@ class BatchHttpRequest(object):
       The request as a string in application/http format.
     """
     # Construct status line
-    parsed = urlparse.urlparse(request.uri)
-    request_line = urlparse.urlunparse(
-        (None, None, parsed.path, parsed.params, parsed.query, None)
-        )
+    parsed = urlparse(request.uri)
+    request_line = urlunparse(('', '', parsed.path, parsed.params,
+                               parsed.query, '')
+                              )
     status_line = request.method + ' ' + request_line + ' HTTP/1.1\n'
-    major, minor = request.headers.get('content-type', 'application/json').split('/')
+    major, minor = request.headers.get('content-type', 'application/json')\
+                                  .split('/')
     msg = MIMENonMultipart(major, minor)
     headers = request.headers.copy()
 
     if request.http is not None and hasattr(request.http.request,
-        'credentials'):
+                                            'credentials'):
       request.http.request.credentials.apply(headers)
 
     # MIMENonMultipart adds its own Content-Type header.
     if 'content-type' in headers:
       del headers['content-type']
 
-    for key, value in headers.iteritems():
+    for key, value in headers.items():
       msg[key] = value
     msg['Host'] = parsed.netloc
     msg.set_unixfrom(None)
@@ -1112,7 +1115,7 @@ class BatchHttpRequest(object):
       msg['content-length'] = str(len(request.body))
 
     # Serialize the mime message.
-    fp = StringIO.StringIO()
+    fp = StringIO()
     # maxheaderlen=0 means don't line wrap headers.
     g = Generator(fp, maxheaderlen=0)
     g.flatten(msg, unixfrom=False)
@@ -1122,7 +1125,7 @@ class BatchHttpRequest(object):
     if request.body is None:
       body = body[:-2]
 
-    return status_line.encode('utf-8') + body
+    return status_line + body
 
   def _deserialize_response(self, payload):
     """Convert string into httplib2 response and content.
@@ -1235,7 +1238,7 @@ class BatchHttpRequest(object):
 
     # encode the body: note that we can't use `as_string`, because
     # it plays games with `From ` lines.
-    fp = StringIO.StringIO()
+    fp = StringIO()
     g = Generator(fp, mangle_from_=False)
     g.flatten(message, unixfrom=False)
     body = fp.getvalue()
@@ -1332,7 +1335,7 @@ class BatchHttpRequest(object):
         if resp.status >= 300:
           raise HttpError(resp, content, uri=request.uri)
         response = request.postproc(resp, content)
-      except HttpError, e:
+      except HttpError as e:
         exception = e
 
       if callback is not None:
@@ -1458,7 +1461,7 @@ class HttpMock(object):
     if headers is None:
       headers = {'status': '200 OK'}
     if filename:
-      f = file(filename, 'r')
+      f = open(filename, 'r')
       self.data = f.read()
       f.close()
     else:
@@ -1469,7 +1472,6 @@ class HttpMock(object):
     self.method = None
     self.body = None
     self.headers = None
-
 
   def request(self, uri,
               method='GET',
@@ -1570,7 +1572,7 @@ def set_user_agent(http, user_agent):
     else:
       headers['user-agent'] = user_agent
     resp, content = request_orig(uri, method, body, headers,
-                        redirections, connection_type)
+                                 redirections, connection_type)
     return resp, content
 
   http.request = new_request
@@ -1611,7 +1613,7 @@ def tunnel_patch(http):
       headers['x-http-method-override'] = "PATCH"
       method = 'POST'
     resp, content = request_orig(uri, method, body, headers,
-                        redirections, connection_type)
+                                 redirections, connection_type)
     return resp, content
 
   http.request = new_request

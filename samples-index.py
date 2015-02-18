@@ -223,7 +223,7 @@ Documentation for the %(api_name)s in [https://google-api-client-libraries.appsp
     page.append('|| [%(uri)s %(dir)s] || %(desc)s ||\n' % context)
 
   # Now group the samples by keywords.
-  for keyword, keyword_name in KEYWORDS.iteritems():
+  for keyword, keyword_name in KEYWORDS.items():
     if keyword not in keyword_set:
       continue
     page.append('\n= %s Samples =\n\n' % keyword_name)
