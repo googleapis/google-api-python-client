@@ -22,6 +22,7 @@ should be defined in this file.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+import six
 import json
 
 from oauth2client import util
@@ -44,6 +45,8 @@ class HttpError(Error):
   def _get_reason(self):
     """Calculate the reason for the error from the response content."""
     reason = self.resp.reason
+    if six.PY3 and isinstance(self.content, bytes):
+      self.content = self.content.decode('utf-8')
     try:
       data = json.loads(self.content)
       reason = data['error']['message']
