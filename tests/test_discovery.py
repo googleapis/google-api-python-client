@@ -26,6 +26,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import copy
 import datetime
 import httplib2
+import itertools
 import json
 import os
 import pickle
@@ -44,6 +45,7 @@ except ImportError:
 from googleapiclient.discovery import _fix_up_media_upload
 from googleapiclient.discovery import _fix_up_method_description
 from googleapiclient.discovery import _fix_up_parameters
+from googleapiclient.discovery import _urljoin
 from googleapiclient.discovery import build
 from googleapiclient.discovery import build_from_document
 from googleapiclient.discovery import DISCOVERY_URI
@@ -267,6 +269,24 @@ class Utilities(unittest.TestCase):
     media_path_url = 'https://www.googleapis.com/upload/zoo/v1/animals'
     self.assertEqual(result, (path_url, http_method, method_id, accept,
                               max_size, media_path_url))
+
+  def test_urljoin(self):
+    # We want to exhaustively test various URL combinations.
+    simple_bases = ['https://www.googleapis.com', 'https://www.googleapis.com/']
+    long_urls = ['foo/v1/bar:custom?alt=json', '/foo/v1/bar:custom?alt=json']
+
+    long_bases = [
+      'https://www.googleapis.com/foo/v1',
+      'https://www.googleapis.com/foo/v1/',
+    ]
+    simple_urls = ['bar:custom?alt=json', '/bar:custom?alt=json']
+
+    final_url = 'https://www.googleapis.com/foo/v1/bar:custom?alt=json'
+    for base, url in itertools.product(simple_bases, long_urls):
+      self.assertEqual(final_url, _urljoin(base, url))
+    for base, url in itertools.product(long_bases, simple_urls):
+      self.assertEqual(final_url, _urljoin(base, url))
+
 
   def test_ResourceMethodParameters_zoo_get(self):
     parameters = ResourceMethodParameters(self.zoo_get_method_desc)
