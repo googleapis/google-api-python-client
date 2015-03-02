@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright 2014 Google Inc. All Rights Reserved.
