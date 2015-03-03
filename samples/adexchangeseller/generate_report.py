@@ -20,6 +20,7 @@ To get ad clients, run get_all_ad_clients.py.
 
 Tags: reports.generate
 """
+from __future__ import print_function
 
 __author__ = 'sgomes@google.com (Sérgio Gomes)'
 
@@ -68,14 +69,14 @@ def main(argv):
       sys.exit(1)
     # Display headers.
     for header in result['headers']:
-      print '%25s' % header['name'],
-    print
+      print('%25s' % header['name'], end=' ')
+    print()
 
     # Display results.
     for row in result['rows']:
       for column in row:
-        print '%25s' % column,
-      print
+        print('%25s' % column, end=' ')
+      print()
 
   except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '

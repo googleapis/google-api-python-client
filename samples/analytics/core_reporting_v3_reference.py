@@ -56,6 +56,7 @@ understands by running:
 
   $ python core_reporting_v3_reference.py --help
 """
+from __future__ import print_function
 
 __author__ = 'api.nickm@gmail.com (Nick Mihailovski)'
 
@@ -84,14 +85,14 @@ def main(argv):
     results = get_api_query(service, flags.table_id).execute()
     print_results(results)
 
-  except TypeError, error:
+  except TypeError as error:
     # Handle errors in constructing a query.
-    print ('There was an error in constructing your query : %s' % error)
+    print(('There was an error in constructing your query : %s' % error))
 
-  except HttpError, error:
+  except HttpError as error:
     # Handle API errors.
-    print ('Arg, there was an API error : %s : %s' %
-           (error.resp.status, error._get_reason()))
+    print(('Arg, there was an API error : %s : %s' %
+           (error.resp.status, error._get_reason())))
 
   except AccessTokenRefreshError:
     # Handle Auth errors.
@@ -142,12 +143,12 @@ def print_report_info(results):
     results: The response returned from the Core Reporting API.
   """
 
-  print 'Report Infos:'
-  print 'Contains Sampled Data = %s' % results.get('containsSampledData')
-  print 'Kind                  = %s' % results.get('kind')
-  print 'ID                    = %s' % results.get('id')
-  print 'Self Link             = %s' % results.get('selfLink')
-  print
+  print('Report Infos:')
+  print('Contains Sampled Data = %s' % results.get('containsSampledData'))
+  print('Kind                  = %s' % results.get('kind'))
+  print('ID                    = %s' % results.get('id'))
+  print('Self Link             = %s' % results.get('selfLink'))
+  print()
 
 
 def print_pagination_info(results):
@@ -157,16 +158,16 @@ def print_pagination_info(results):
     results: The response returned from the Core Reporting API.
   """
 
-  print 'Pagination Infos:'
-  print 'Items per page = %s' % results.get('itemsPerPage')
-  print 'Total Results  = %s' % results.get('totalResults')
+  print('Pagination Infos:')
+  print('Items per page = %s' % results.get('itemsPerPage'))
+  print('Total Results  = %s' % results.get('totalResults'))
 
   # These only have values if other result pages exist.
   if results.get('previousLink'):
-    print 'Previous Link  = %s' % results.get('previousLink')
+    print('Previous Link  = %s' % results.get('previousLink'))
   if results.get('nextLink'):
-    print 'Next Link      = %s' % results.get('nextLink')
-  print
+    print('Next Link      = %s' % results.get('nextLink'))
+  print()
 
 
 def print_profile_info(results):
@@ -176,14 +177,14 @@ def print_profile_info(results):
     results: The response returned from the Core Reporting API.
   """
 
-  print 'Profile Infos:'
+  print('Profile Infos:')
   info = results.get('profileInfo')
-  print 'Account Id      = %s' % info.get('accountId')
-  print 'Web Property Id = %s' % info.get('webPropertyId')
-  print 'Profile Id      = %s' % info.get('profileId')
-  print 'Table Id        = %s' % info.get('tableId')
-  print 'Profile Name    = %s' % info.get('profileName')
-  print
+  print('Account Id      = %s' % info.get('accountId'))
+  print('Web Property Id = %s' % info.get('webPropertyId'))
+  print('Profile Id      = %s' % info.get('profileId'))
+  print('Table Id        = %s' % info.get('tableId'))
+  print('Profile Name    = %s' % info.get('profileName'))
+  print()
 
 
 def print_query(results):
@@ -193,11 +194,11 @@ def print_query(results):
     results: The response returned from the Core Reporting API.
   """
 
-  print 'Query Parameters:'
+  print('Query Parameters:')
   query = results.get('query')
   for key, value in query.iteritems():
-    print '%s = %s' % (key, value)
-  print
+    print('%s = %s' % (key, value))
+  print()
 
 
 def print_column_headers(results):
@@ -211,15 +212,15 @@ def print_column_headers(results):
     results: The response returned from the Core Reporting API.
   """
 
-  print 'Column Headers:'
+  print('Column Headers:')
   headers = results.get('columnHeaders')
   for header in headers:
     # Print Dimension or Metric name.
-    print '\t%s name:    = %s' % (header.get('columnType').title(),
-                                  header.get('name'))
-    print '\tColumn Type = %s' % header.get('columnType')
-    print '\tData Type   = %s' % header.get('dataType')
-    print
+    print('\t%s name:    = %s' % (header.get('columnType').title(),
+                                  header.get('name')))
+    print('\tColumn Type = %s' % header.get('columnType'))
+    print('\tData Type   = %s' % header.get('dataType'))
+    print()
 
 
 def print_totals_for_all_results(results):
@@ -229,17 +230,17 @@ def print_totals_for_all_results(results):
     results: The response returned from the Core Reporting API.
   """
 
-  print 'Total Metrics For All Results:'
-  print 'This query returned %s rows.' % len(results.get('rows'))
-  print ('But the query matched %s total results.' %
-         results.get('totalResults'))
-  print 'Here are the metric totals for the matched total results.'
+  print('Total Metrics For All Results:')
+  print('This query returned %s rows.' % len(results.get('rows')))
+  print(('But the query matched %s total results.' %
+         results.get('totalResults')))
+  print('Here are the metric totals for the matched total results.')
   totals = results.get('totalsForAllResults')
 
   for metric_name, metric_total in totals.iteritems():
-    print 'Metric Name  = %s' % metric_name
-    print 'Metric Total = %s' % metric_total
-    print
+    print('Metric Name  = %s' % metric_name)
+    print('Metric Total = %s' % metric_total)
+    print()
 
 
 def print_rows(results):
@@ -249,12 +250,12 @@ def print_rows(results):
     results: The response returned from the Core Reporting API.
   """
 
-  print 'Rows:'
+  print('Rows:')
   if results.get('rows', []):
     for row in results.get('rows'):
-      print '\t'.join(row)
+      print('\t'.join(row))
   else:
-    print 'No Rows Found'
+    print('No Rows Found')
 
 
 if __name__ == '__main__':

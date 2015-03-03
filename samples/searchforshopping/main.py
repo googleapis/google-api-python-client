@@ -8,6 +8,7 @@ API for Shopping.
 
 Command-line application that does a search for products.
 '''
+from __future__ import print_function
 
 __author__ = 'aherrman@google.com (Andy Herrman)'
 
@@ -22,7 +23,7 @@ def main():
             developerKey='AIzaSyDRRpR3GS1F1_jKNNM9HCNd2wJQyPG3oN0')
 
   # Search over all public offers:
-  print 'Searching all public offers.'
+  print('Searching all public offers.')
   res = p.products().list(
       country='US',
       source='public',
@@ -31,8 +32,8 @@ def main():
   print_items(res['items'])
 
   # Search over a specific merchant's offers:
-  print
-  print 'Searching Google Store.'
+  print()
+  print('Searching Google Store.')
   res = p.products().list(
       country='US',
       source='public',
@@ -45,8 +46,8 @@ def main():
   googleId = res['items'][0]['product']['googleId']
 
   # Get data for the single public offer:
-  print
-  print 'Getting data for offer %s' % googleId
+  print()
+  print('Getting data for offer %s' % googleId)
   res = p.products().get(
       source='public',
       accountId='5968952',
@@ -59,9 +60,9 @@ def main():
 def print_item(item):
   """Displays a single item: title, merchant, link."""
   product = item['product']
-  print '- %s [%s] (%s)' % (product['title'],
+  print('- %s [%s] (%s)' % (product['title'],
                           product['author']['name'],
-                          product['link'])
+                          product['link']))
 
 
 def print_items(items):

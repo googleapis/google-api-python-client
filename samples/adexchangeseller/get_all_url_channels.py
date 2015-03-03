@@ -20,6 +20,7 @@ To get ad clients, run get_all_ad_clients.py.
 
 Tags: urlchannels.list
 """
+from __future__ import print_function
 
 __author__ = 'sgomes@google.com (Sérgio Gomes)'
 
@@ -55,8 +56,8 @@ def main(argv):
 
       url_channels = result['items']
       for url_channel in url_channels:
-        print ('URL channel with URL pattern "%s" was found.'
-               % url_channel['urlPattern'])
+        print(('URL channel with URL pattern "%s" was found.'
+               % url_channel['urlPattern']))
 
       request = service.customchannels().list_next(request, result)
 

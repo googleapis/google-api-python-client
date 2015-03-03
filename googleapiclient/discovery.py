@@ -16,6 +16,7 @@
 
 A client library for Google's discovery based APIs.
 """
+from __future__ import absolute_import
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 __all__ = [
@@ -48,7 +49,7 @@ except ImportError:
 
 # Third-party imports
 import httplib2
-import mimeparse
+from . import mimeparse
 import uritemplate
 
 # Local imports
@@ -205,7 +206,7 @@ def build(serviceName,
 
   try:
     service = json.loads(content)
-  except ValueError, e:
+  except ValueError as e:
     logger.error('Failed to parse as JSON: ' + content)
     raise InvalidJsonError()
 
@@ -329,13 +330,13 @@ def _media_size_to_long(maxSize):
     The size as an integer value.
   """
   if len(maxSize) < 2:
-    return 0L
+    return 0
   units = maxSize[-2:].upper()
   bit_shift = _MEDIA_SIZE_BIT_SHIFTS.get(units)
   if bit_shift is not None:
-    return long(maxSize[:-2]) << bit_shift
+    return int(maxSize[:-2]) << bit_shift
   else:
-    return long(maxSize)
+    return int(maxSize)
 
 
 def _media_path_url_from_info(root_desc, path_url):

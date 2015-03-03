@@ -31,6 +31,7 @@ To get detailed log output run:
 
   $ python blogger.py --logging_level=DEBUG
 """
+from __future__ import print_function
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -54,24 +55,24 @@ def main(argv):
 
       # Retrieve this user's profile information
       thisuser = users.get(userId='self').execute(http=http)
-      print 'This user\'s display name is: %s' % thisuser['displayName']
+      print('This user\'s display name is: %s' % thisuser['displayName'])
 
       # Retrieve the list of Blogs this user has write privileges on
       thisusersblogs = users.blogs().list(userId='self').execute()
       for blog in thisusersblogs['items']:
-        print 'The blog named \'%s\' is at: %s' % (blog['name'], blog['url'])
+        print('The blog named \'%s\' is at: %s' % (blog['name'], blog['url']))
 
       posts = service.posts()
 
       # List the posts for each blog this user has
       for blog in thisusersblogs['items']:
-        print 'The posts for %s:' % blog['name']
+        print('The posts for %s:' % blog['name'])
         request = posts.list(blogId=blog['id'])
         while request != None:
           posts_doc = request.execute(http=http)
           if 'items' in posts_doc and not (posts_doc['items'] is None):
             for post in posts_doc['items']:
-              print '  %s (%s)' % (post['title'], post['url'])
+              print('  %s (%s)' % (post['title'], post['url']))
           request = posts.list_next(request, posts_doc)
 
   except client.AccessTokenRefreshError:

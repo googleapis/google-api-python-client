@@ -18,6 +18,7 @@
 
 Tags: adclients.list
 """
+from __future__ import print_function
 
 __author__ = 'sgomes@google.com (Sérgio Gomes)'
 
@@ -43,11 +44,11 @@ def main(argv):
       result = request.execute()
       ad_clients = result['items']
       for ad_client in ad_clients:
-        print ('Ad client for product "%s" with ID "%s" was found. '
-               % (ad_client['productCode'], ad_client['id']))
+        print(('Ad client for product "%s" with ID "%s" was found. '
+               % (ad_client['productCode'], ad_client['id'])))
 
-        print ('\tSupports reporting: %s' %
-               (ad_client['supportsReporting'] and 'Yes' or 'No'))
+        print(('\tSupports reporting: %s' %
+               (ad_client['supportsReporting'] and 'Yes' or 'No')))
 
       request = service.adclients().list_next(request, result)
 

@@ -19,6 +19,7 @@ in user's default account.
 
 Tags: savedreports.list
 """
+from __future__ import print_function
 
 __author__ = 'sgomes@google.com (Sérgio Gomes)'
 
@@ -44,8 +45,8 @@ def main(argv):
       result = request.execute()
       saved_reports = result['items']
       for saved_report in saved_reports:
-        print ('Saved report with ID "%s" and name "%s" was found.'
-               % (saved_report['id'], saved_report['name']))
+        print(('Saved report with ID "%s" and name "%s" was found.'
+               % (saved_report['id'], saved_report['name'])))
 
       request = service.reports().saved().list_next(request, result)
 

@@ -35,6 +35,7 @@ To get detailed log output run:
 
   $ python coordinate.py -t teamId --logging_level=DEBUG
 """
+from __future__ import print_function
 
 __author__ = 'zachn@google.com (Zach Newell)'
 
@@ -91,7 +92,7 @@ def main(argv):
 
     pprint.pprint(update_result)
 
-  except AccessTokenRefreshError, e:
+  except AccessTokenRefreshError as e:
     print ('The credentials have been revoked or expired, please re-run'
       'the application to re-authorize')
 

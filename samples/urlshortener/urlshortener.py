@@ -32,6 +32,7 @@ To get detailed log output run:
 
   $ python urlshortener.py --logging_level=DEBUG
 """
+from __future__ import print_function
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 

@@ -18,6 +18,7 @@
 
 Tags: metadata.metrics.list
 """
+from __future__ import print_function
 
 __author__ = 'sgomes@google.com (Sérgio Gomes)'
 
@@ -43,10 +44,10 @@ def main(argv):
       if 'items' in result:
         metrics = result['items']
         for metric in metrics:
-          print ('Metric id "%s" for product(s): [%s] was found. '
-                 % (metric['id'], ', '.join(metric['supportedProducts'])))
+          print(('Metric id "%s" for product(s): [%s] was found. '
+                 % (metric['id'], ', '.join(metric['supportedProducts']))))
       else:
-        print 'No metrics found!'
+        print('No metrics found!')
   except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')

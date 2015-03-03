@@ -18,6 +18,7 @@
 
 Tags: alerts.list
 """
+from __future__ import print_function
 
 __author__ = 'sgomes@google.com (Sérgio Gomes)'
 
@@ -43,10 +44,10 @@ def main(argv):
       if 'items' in result:
         alerts = result['items']
         for alert in alerts:
-          print ('Alert id "%s" with severity "%s" and type "%s" was found. '
-                 % (alert['id'], alert['severity'], alert['type']))
+          print(('Alert id "%s" with severity "%s" and type "%s" was found. '
+                 % (alert['id'], alert['severity'], alert['type'])))
       else:
-        print 'No alerts found!'
+        print('No alerts found!')
   except client.AccessTokenRefreshError:
     print ('The credentials have been revoked or expired, please re-run the '
            'application to re-authorize')

@@ -4,6 +4,7 @@
 # Copyright 2014 Google Inc. All Rights Reserved.
 
 """Query with ranked results against the shopping search API"""
+from __future__ import print_function
 
 from googleapiclient.discovery import build
 
@@ -37,7 +38,7 @@ def main():
   # Pick the first and only facet for this query
   facet = response['facets'][0]
 
-  print '\n\tHistogram for "%s":\n' % facet['property']
+  print('\n\tHistogram for "%s":\n' % facet['property'])
 
   labels = []
   values = []
@@ -49,9 +50,9 @@ def main():
   weighting = 50.0 / max(values)
 
   for label, value in zip(labels, values):
-    print label, '#' * int(weighting * value), '(%s)' % value
+    print(label, '#' * int(weighting * value), '(%s)' % value)
 
-  print
+  print()
 
 
 if __name__ == '__main__':
