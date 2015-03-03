@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Unit tests for googleapiclient.schema."""
+from __future__ import absolute_import
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -48,7 +49,7 @@ LOAD_FEED = """{
 
 class SchemasTest(unittest.TestCase):
   def setUp(self):
-    f = file(datafile('zoo.json'))
+    f = open(datafile('zoo.json'))
     discovery = f.read()
     f.close()
     discovery = json.loads(discovery)

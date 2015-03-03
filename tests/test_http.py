@@ -18,6 +18,8 @@
 
 Unit tests for the googleapiclient.http.
 """
+from __future__ import absolute_import
+from six.moves import range
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -624,7 +626,7 @@ class TestHttpRequest(unittest.TestCase):
     request.execute(num_retries=num_retries)
 
     self.assertEqual(num_retries, len(sleeptimes))
-    for retry_num in xrange(num_retries):
+    for retry_num in range(num_retries):
       self.assertEqual(10 * 2**(retry_num + 1), sleeptimes[retry_num])
 
   def test_no_retry_fails_fast(self):

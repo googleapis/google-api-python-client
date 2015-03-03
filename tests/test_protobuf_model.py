@@ -18,6 +18,7 @@
 
 Unit tests for the Protocol Buffer model.
 """
+from __future__ import absolute_import
 
 __author__ = 'mmcdonald@google.com (Matt McDonald)'
 

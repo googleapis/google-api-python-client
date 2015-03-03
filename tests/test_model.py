@@ -19,6 +19,7 @@
 
 Unit tests for model utility methods.
 """
+from __future__ import absolute_import
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 

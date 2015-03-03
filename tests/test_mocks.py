@@ -18,6 +18,7 @@
 
 Unit tests for the Mocks.
 """
+from __future__ import absolute_import
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 

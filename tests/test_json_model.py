@@ -18,6 +18,8 @@
 
 Unit tests for the JSON model.
 """
+from __future__ import absolute_import
+import six
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -214,7 +216,7 @@ class Model(unittest.TestCase):
       def __init__(self, items):
         super(MockResponse, self).__init__()
         self.status = items['status']
-        for key, value in items.iteritems():
+        for key, value in six.iteritems(items):
           self[key] = value
     old_logging = googleapiclient.model.logging
     googleapiclient.model.logging = MockLogging()
