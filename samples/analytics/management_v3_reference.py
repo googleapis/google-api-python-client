@@ -71,11 +71,11 @@ def main(argv):
   try:
     traverse_hiearchy(service)
 
-  except TypeError, error:
+  except TypeError as error:
     # Handle errors in constructing a query.
     print ('There was an error in constructing your query : %s' % error)
 
-  except HttpError, error:
+  except HttpError as error:
     # Handle API errors.
     print ('Arg, there was an API error : %s : %s' %
            (error.resp.status, error._get_reason()))

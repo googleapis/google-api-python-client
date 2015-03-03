@@ -66,11 +66,11 @@ def main(argv):
       results = get_top_keywords(service, first_profile_id)
       print_results(results)
 
-  except TypeError, error:
+  except TypeError as error:
     # Handle errors in constructing a query.
     print ('There was an error in constructing your query : %s' % error)
 
-  except HttpError, error:
+  except HttpError as error:
     # Handle API errors.
     print ('Arg, there was an API error : %s : %s' %
            (error.resp.status, error._get_reason()))

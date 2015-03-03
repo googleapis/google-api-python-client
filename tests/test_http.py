@@ -796,7 +796,7 @@ class TestBatch(unittest.TestCase):
     try:
       batch.execute(http=http)
       self.fail('Should raise exception')
-    except BatchError, e:
+    except BatchError as e:
       boundary, _ = e.content.split(None, 1)
       self.assertEqual('--', boundary[:2])
       parts = e.content.split(boundary)
