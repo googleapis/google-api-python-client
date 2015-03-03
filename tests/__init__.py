@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Test Package set up."""
+from __future__ import absolute_import
 
 __author__ = 'afshar@google.com (Ali Afshar)'
 

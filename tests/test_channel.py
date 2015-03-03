@@ -1,4 +1,5 @@
 """Notification channels tests."""
+from __future__ import absolute_import
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 

@@ -17,6 +17,7 @@
 All exceptions defined by the library
 should be defined in this file.
 """
+from __future__ import absolute_import
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 

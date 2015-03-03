@@ -20,6 +20,8 @@
 
 Unit tests for objects created from discovery documents.
 """
+from __future__ import absolute_import
+import six
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -89,9 +91,9 @@ def assertUrisEqual(testcase, expected, actual):
   testcase.assertEqual(expected.fragment, actual.fragment)
   expected_query = parse_qs(expected.query)
   actual_query = parse_qs(actual.query)
-  for name in expected_query.keys():
+  for name in list(expected_query.keys()):
     testcase.assertEqual(expected_query[name], actual_query[name])
-  for name in actual_query.keys():
+  for name in list(actual_query.keys()):
     testcase.assertEqual(expected_query[name], actual_query[name])
 
 
@@ -133,7 +135,7 @@ class Utilities(unittest.TestCase):
       self.assertEqual(STACK_QUERY_PARAMETER_DEFAULT_VALUE,
                        parameters[param_name])
 
-    for param_name, value in root_desc.get('parameters', {}).iteritems():
+    for param_name, value in six.iteritems(root_desc.get('parameters', {})):
       self.assertEqual(value, parameters[param_name])
 
     return parameters
@@ -300,7 +302,7 @@ class Utilities(unittest.TestCase):
                    'o': 'object',
                    'q': 'string',
                    'rr': 'string'}
-    keys = param_types.keys()
+    keys = list(param_types.keys())
     self.assertEqual(parameters.argmap, dict((key, key) for key in keys))
     self.assertEqual(parameters.required_params, [])
     self.assertEqual(sorted(parameters.repeated_params), ['er', 'rr'])
@@ -318,7 +320,7 @@ class Utilities(unittest.TestCase):
     parameters = ResourceMethodParameters(method_desc)
 
     param_types = {'name': 'string'}
-    keys = param_types.keys()
+    keys = list(param_types.keys())
     self.assertEqual(parameters.argmap, dict((key, key) for key in keys))
     self.assertEqual(parameters.required_params, ['name'])
     self.assertEqual(parameters.repeated_params, [])

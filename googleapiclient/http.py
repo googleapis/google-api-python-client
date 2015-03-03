@@ -19,6 +19,8 @@ object supporting an execute() method that does the
 actuall HTTP request.
 """
 from __future__ import absolute_import
+import six
+from six.moves import range
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -539,7 +541,7 @@ class MediaIoBaseDownload(object):
         }
     http = self._request.http
 
-    for retry_num in xrange(num_retries + 1):
+    for retry_num in range(num_retries + 1):
       if retry_num > 0:
         self._sleep(self._rand() * 2**retry_num)
         logging.warning(
@@ -709,7 +711,7 @@ class HttpRequest(object):
       self.headers['content-length'] = str(len(self.body))
 
     # Handle retries for server-side errors.
-    for retry_num in xrange(num_retries + 1):
+    for retry_num in range(num_retries + 1):
       if retry_num > 0:
         self._sleep(self._rand() * 2**retry_num)
         logging.warning('Retry #%d for request: %s %s, following status: %d'
@@ -792,7 +794,7 @@ class HttpRequest(object):
         start_headers['X-Upload-Content-Length'] = size
       start_headers['content-length'] = str(self.body_size)
 
-      for retry_num in xrange(num_retries + 1):
+      for retry_num in range(num_retries + 1):
         if retry_num > 0:
           self._sleep(self._rand() * 2**retry_num)
           logging.warning(
@@ -857,7 +859,7 @@ class HttpRequest(object):
         'Content-Length': str(chunk_end - self.resumable_progress + 1)
         }
 
-    for retry_num in xrange(num_retries + 1):
+    for retry_num in range(num_retries + 1):
       if retry_num > 0:
         self._sleep(self._rand() * 2**retry_num)
         logging.warning(
@@ -1101,7 +1103,7 @@ class BatchHttpRequest(object):
     if 'content-type' in headers:
       del headers['content-type']
 
-    for key, value in headers.iteritems():
+    for key, value in six.iteritems(headers):
       msg[key] = value
     msg['Host'] = parsed.netloc
     msg.set_unixfrom(None)
@@ -1457,7 +1459,7 @@ class HttpMock(object):
     if headers is None:
       headers = {'status': '200 OK'}
     if filename:
-      f = file(filename, 'r')
+      f = open(filename, 'r')
       self.data = f.read()
       f.close()
     else:
