@@ -61,6 +61,7 @@ install_requires = [
     'httplib2>=0.8',
     'oauth2client>=1.3',
     'uritemplate>=0.6',
+    'six>=1.8.0'
 ]
 
 if sys.version_info < (2, 7):
