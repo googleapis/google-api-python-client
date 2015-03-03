@@ -16,6 +16,7 @@
 
 Consolidates a lot of code commonly repeated in sample applications.
 """
+from __future__ import absolute_import
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 __all__ = ['init']
