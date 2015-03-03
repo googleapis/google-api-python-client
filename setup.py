@@ -60,6 +60,7 @@ packages = [
 install_requires = [
     'httplib2>=0.8',
     'oauth2client>=1.3',
+    'six>=1.6.1',
     'uritemplate>=0.6',
 ]
 
