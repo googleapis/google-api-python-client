@@ -34,11 +34,7 @@ from googleapiclient import __version__
 from googleapiclient.errors import HttpError
 from googleapiclient.model import JsonModel
 
-# Python 2.5 requires different modules
-try:
-  from urlparse import parse_qs
-except ImportError:
-  from cgi import parse_qs
+from six.moves.urllib.parse import parse_qs
 
 
 class Model(unittest.TestCase):

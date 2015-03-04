@@ -29,6 +29,8 @@ __all__ = [
     ]
 
 from six import StringIO
+from six.moves.urllib.parse import urlencode, urlparse, urljoin, \
+  urlunparse, parse_qsl
 
 # Standard library imports
 import copy
@@ -41,13 +43,6 @@ import logging
 import mimetypes
 import os
 import re
-import urllib
-import urlparse
-
-try:
-  from urlparse import parse_qsl
-except ImportError:
-  from cgi import parse_qsl
 
 # Third-party imports
 import httplib2
@@ -258,7 +253,7 @@ def build_from_document(
 
   if isinstance(service, six.string_types):
     service = json.loads(service)
-  base = urlparse.urljoin(service['rootUrl'], service['servicePath'])
+  base = urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
 
   if credentials:
@@ -505,7 +500,7 @@ def _urljoin(base, url):
   # exception here is the case of media uploads, where url will be an
   # absolute url.
   if url.startswith('http://') or url.startswith('https://'):
-    return urlparse.urljoin(base, url)
+    return urljoin(base, url)
   new_base = base if base.endswith('/') else base + '/'
   new_url = url[1:] if url.startswith('/') else url
   return new_base + new_url
@@ -859,14 +854,14 @@ Returns:
     request = copy.copy(previous_request)
 
     pageToken = previous_response['nextPageToken']
-    parsed = list(urlparse.urlparse(request.uri))
+    parsed = list(urlparse(request.uri))
     q = parse_qsl(parsed[4])
 
     # Find and remove old 'pageToken' value from URI
     newq = [(key, value) for (key, value) in q if key != 'pageToken']
     newq.append(('pageToken', pageToken))
-    parsed[4] = urllib.urlencode(newq)
-    uri = urlparse.urlunparse(parsed)
+    parsed[4] = urlencode(newq)
+    uri = urlunparse(parsed)
 
     request.uri = uri
 

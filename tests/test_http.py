@@ -25,13 +25,13 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 from six import BytesIO, StringIO
 from io import FileIO
+from six.moves.urllib.parse import urlencode
 
 # Do not remove the httplib2 import
 import httplib2
 import logging
 import os
 import unittest2 as unittest
-import urllib
 import random
 import time
 
@@ -917,7 +917,7 @@ class TestRequestUriTooLong(unittest.TestCase):
     req = HttpRequest(
         http,
         _postproc,
-        'http://example.com?' + urllib.urlencode(query),
+        'http://example.com?' + urlencode(query),
         method='GET',
         body=None,
         headers={},
