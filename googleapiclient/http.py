@@ -1089,7 +1089,7 @@ class BatchHttpRequest(object):
     # Construct status line
     parsed = urlparse(request.uri)
     request_line = urlunparse(
-        (None, None, parsed.path, parsed.params, parsed.query, None)
+        ('', '', parsed.path, parsed.params, parsed.query, '')
         )
     status_line = request.method + ' ' + request_line + ' HTTP/1.1\n'
     major, minor = request.headers.get('content-type', 'application/json').split('/')
@@ -1124,7 +1124,7 @@ class BatchHttpRequest(object):
     if request.body is None:
       body = body[:-2]
 
-    return status_line.encode('utf-8') + body
+    return status_line + body
 
   def _deserialize_response(self, payload):
     """Convert string into httplib2 response and content.
