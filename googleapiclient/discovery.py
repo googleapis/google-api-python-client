@@ -202,6 +202,11 @@ def build(serviceName,
     raise HttpError(resp, content, uri=requested_url)
 
   try:
+    content = content.decode('utf-8')
+  except AttributeError:
+    pass
+
+  try:
     service = json.loads(content)
   except ValueError as e:
     logger.error('Failed to parse as JSON: ' + content)
