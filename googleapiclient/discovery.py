@@ -28,9 +28,9 @@ __all__ = [
     'key2param',
     ]
 
+from six import StringIO
 
 # Standard library imports
-import StringIO
 import copy
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
@@ -752,7 +752,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
           msgRoot.attach(msg)
           # encode the body: note that we can't use `as_string`, because
           # it plays games with `From ` lines.
-          fp = StringIO.StringIO()
+          fp = StringIO()
           g = Generator(fp, mangle_from_=False)
           g.flatten(msgRoot, unixfrom=False)
           body = fp.getvalue()

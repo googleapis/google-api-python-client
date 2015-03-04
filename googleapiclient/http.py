@@ -24,7 +24,8 @@ from six.moves import range
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-import StringIO
+from six import BytesIO, StringIO
+
 import base64
 import copy
 import gzip
@@ -262,7 +263,7 @@ class MediaIoBaseUpload(MediaUpload):
   Note that the Python file object is compatible with io.Base and can be used
   with this class also.
 
-    fh = io.BytesIO('...Some data to upload...')
+    fh = BytesIO('...Some data to upload...')
     media = MediaIoBaseUpload(fh, mimetype='image/png',
       chunksize=1024*1024, resumable=True)
     farm.animals().insert(
@@ -468,7 +469,7 @@ class MediaInMemoryUpload(MediaIoBaseUpload):
     resumable: bool, True if this is a resumable upload. False means upload
       in a single request.
     """
-    fd = StringIO.StringIO(body)
+    fd = BytesIO(body)
     super(MediaInMemoryUpload, self).__init__(fd, mimetype, chunksize=chunksize,
                                               resumable=resumable)
 
@@ -1113,7 +1114,7 @@ class BatchHttpRequest(object):
       msg['content-length'] = str(len(request.body))
 
     # Serialize the mime message.
-    fp = StringIO.StringIO()
+    fp = StringIO()
     # maxheaderlen=0 means don't line wrap headers.
     g = Generator(fp, maxheaderlen=0)
     g.flatten(msg, unixfrom=False)
@@ -1236,7 +1237,7 @@ class BatchHttpRequest(object):
 
     # encode the body: note that we can't use `as_string`, because
     # it plays games with `From ` lines.
-    fp = StringIO.StringIO()
+    fp = StringIO()
     g = Generator(fp, mangle_from_=False)
     g.flatten(message, unixfrom=False)
     body = fp.getvalue()

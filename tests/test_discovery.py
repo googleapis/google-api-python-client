@@ -25,6 +25,8 @@ import six
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+from six import BytesIO, StringIO
+
 import copy
 import datetime
 import httplib2
@@ -35,7 +37,6 @@ import pickle
 import sys
 import unittest2 as unittest
 import urlparse
-import StringIO
 
 
 try:
@@ -857,62 +858,48 @@ class Discovery(unittest.TestCase):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http=self.http)
 
-    try:
-      import io
+    # Set up a seekable stream and try to upload in single chunk.
+    fd = BytesIO('01234"56789"')
+    media_upload = MediaIoBaseUpload(
+        fd=fd, mimetype='text/plain', chunksize=-1, resumable=True)
 
-      # Set up a seekable stream and try to upload in single chunk.
-      fd = io.BytesIO('01234"56789"')
-      media_upload = MediaIoBaseUpload(
-          fd=fd, mimetype='text/plain', chunksize=-1, resumable=True)
+    request = zoo.animals().insert(media_body=media_upload, body=None)
 
-      request = zoo.animals().insert(media_body=media_upload, body=None)
+    # The single chunk fails, restart at the right point.
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '308',
+        'location': 'http://upload.example.com/2',
+        'range': '0-4'}, ''),
+      ({'status': '200'}, 'echo_request_body'),
+      ])
 
-      # The single chunk fails, restart at the right point.
-      http = HttpMockSequence([
-        ({'status': '200',
-          'location': 'http://upload.example.com'}, ''),
-        ({'status': '308',
-          'location': 'http://upload.example.com/2',
-          'range': '0-4'}, ''),
-        ({'status': '200'}, 'echo_request_body'),
-        ])
-
-      body = request.execute(http=http)
-      self.assertEqual('56789', body)
-
-    except ImportError:
-      pass
-
+    body = request.execute(http=http)
+    self.assertEqual('56789', body)
 
   def test_media_io_base_stream_chunksize_resume(self):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http=self.http)
 
+    # Set up a seekable stream and try to upload in chunks.
+    fd = BytesIO('0123456789')
+    media_upload = MediaIoBaseUpload(
+        fd=fd, mimetype='text/plain', chunksize=5, resumable=True)
+
+    request = zoo.animals().insert(media_body=media_upload, body=None)
+
+    # The single chunk fails, pull the content sent out of the exception.
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '400'}, 'echo_request_body'),
+      ])
+
     try:
-      import io
-
-      # Set up a seekable stream and try to upload in chunks.
-      fd = io.BytesIO('0123456789')
-      media_upload = MediaIoBaseUpload(
-          fd=fd, mimetype='text/plain', chunksize=5, resumable=True)
-
-      request = zoo.animals().insert(media_body=media_upload, body=None)
-
-      # The single chunk fails, pull the content sent out of the exception.
-      http = HttpMockSequence([
-        ({'status': '200',
-          'location': 'http://upload.example.com'}, ''),
-        ({'status': '400'}, 'echo_request_body'),
-        ])
-
-      try:
-        body = request.execute(http=http)
-      except HttpError as e:
-        self.assertEqual('01234', e.content)
-
-    except ImportError:
-      pass
-
+      body = request.execute(http=http)
+    except HttpError as e:
+      self.assertEqual('01234', e.content)
 
   def test_resumable_media_handle_uploads_of_unknown_size(self):
     http = HttpMockSequence([
@@ -1021,7 +1008,7 @@ class Discovery(unittest.TestCase):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http=self.http)
 
-    fd = StringIO.StringIO('data goes here')
+    fd = BytesIO('data goes here')
 
     # Create an upload that doesn't know the full size of the media.
     upload = MediaIoBaseUpload(
@@ -1045,7 +1032,7 @@ class Discovery(unittest.TestCase):
     zoo = build('zoo', 'v1', http=self.http)
 
     # Create an upload that doesn't know the full size of the media.
-    fd = StringIO.StringIO('data goes here')
+    fd = BytesIO('data goes here')
 
     upload = MediaIoBaseUpload(
         fd=fd, mimetype='image/png', chunksize=500, resumable=True)
