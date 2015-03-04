@@ -46,10 +46,10 @@ import re
 
 # Third-party imports
 import httplib2
-from . import mimeparse
 import uritemplate
 
 # Local imports
+from googleapiclient import mimeparse
 from googleapiclient.errors import HttpError
 from googleapiclient.errors import InvalidJsonError
 from googleapiclient.errors import MediaUploadSizeError

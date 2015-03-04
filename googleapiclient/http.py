@@ -33,7 +33,6 @@ import gzip
 import httplib2
 import json
 import logging
-from . import mimeparse
 import mimetypes
 import os
 import random
@@ -45,13 +44,15 @@ from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from email.parser import FeedParser
-from .errors import BatchError
-from .errors import HttpError
-from .errors import InvalidChunkSizeError
-from .errors import ResumableUploadError
-from .errors import UnexpectedBodyError
-from .errors import UnexpectedMethodError
-from .model import JsonModel
+
+from googleapiclient import mimeparse
+from googleapiclient.errors import BatchError
+from googleapiclient.errors import HttpError
+from googleapiclient.errors import InvalidChunkSizeError
+from googleapiclient.errors import ResumableUploadError
+from googleapiclient.errors import UnexpectedBodyError
+from googleapiclient.errors import UnexpectedMethodError
+from googleapiclient.model import JsonModel
 from oauth2client import util
 
 
