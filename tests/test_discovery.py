@@ -596,7 +596,7 @@ class Discovery(unittest.TestCase):
     zoo = build('zoo', 'v1', http=self.http)
     request = zoo.animals().crossbreed(media_body=datafile('small.png'))
     self.assertEquals('image/png', request.headers['content-type'])
-    self.assertEquals('PNG', request.body[1:4])
+    self.assertEquals(b'PNG', request.body[1:4])
 
   def test_simple_media_raise_correct_exceptions(self):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
@@ -620,7 +620,7 @@ class Discovery(unittest.TestCase):
 
     request = zoo.animals().insert(media_body=datafile('small.png'))
     self.assertEquals('image/png', request.headers['content-type'])
-    self.assertEquals('PNG', request.body[1:4])
+    self.assertEquals(b'PNG', request.body[1:4])
     assertUrisEqual(self,
         'https://www.googleapis.com/upload/zoo/v1/animals?uploadType=media&alt=json',
         request.uri)
@@ -852,7 +852,7 @@ class Discovery(unittest.TestCase):
     zoo = build('zoo', 'v1', http=self.http)
 
     # Set up a seekable stream and try to upload in single chunk.
-    fd = BytesIO('01234"56789"')
+    fd = BytesIO(b'01234"56789"')
     media_upload = MediaIoBaseUpload(
         fd=fd, mimetype='text/plain', chunksize=-1, resumable=True)
 
@@ -876,7 +876,7 @@ class Discovery(unittest.TestCase):
     zoo = build('zoo', 'v1', http=self.http)
 
     # Set up a seekable stream and try to upload in chunks.
-    fd = BytesIO('0123456789')
+    fd = BytesIO(b'0123456789')
     media_upload = MediaIoBaseUpload(
         fd=fd, mimetype='text/plain', chunksize=5, resumable=True)
 
@@ -892,7 +892,7 @@ class Discovery(unittest.TestCase):
     try:
       body = request.execute(http=http)
     except HttpError as e:
-      self.assertEqual('01234', e.content)
+      self.assertEqual(b'01234', e.content)
 
   def test_resumable_media_handle_uploads_of_unknown_size(self):
     http = HttpMockSequence([
@@ -1001,7 +1001,7 @@ class Discovery(unittest.TestCase):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http=self.http)
 
-    fd = BytesIO('data goes here')
+    fd = BytesIO(b'data goes here')
 
     # Create an upload that doesn't know the full size of the media.
     upload = MediaIoBaseUpload(
@@ -1025,7 +1025,7 @@ class Discovery(unittest.TestCase):
     zoo = build('zoo', 'v1', http=self.http)
 
     # Create an upload that doesn't know the full size of the media.
-    fd = BytesIO('data goes here')
+    fd = BytesIO(b'data goes here')
 
     upload = MediaIoBaseUpload(
         fd=fd, mimetype='image/png', chunksize=500, resumable=True)
