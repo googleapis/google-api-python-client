@@ -23,6 +23,7 @@ from six.moves import range
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+from six import PY3
 from six import BytesIO, StringIO
 from io import FileIO
 from six.moves.urllib.parse import urlencode
@@ -228,6 +229,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
     except NotImplementedError:
       pass
 
+  @unittest.skipIf(PY3, 'Strings and Bytes are different types')
   def test_media_io_base_upload_from_string_io(self):
     f = open(datafile('small.png'), 'rb')
     fd = StringIO(f.read())
