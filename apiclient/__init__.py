@@ -1,5 +1,7 @@
 """Retain apiclient as an alias for googleapiclient."""
 
+from six import iteritems
+
 import googleapiclient
 
 try:
@@ -36,5 +38,5 @@ _SUBMODULES = {
 }
 
 import sys
-for module_name, module in _SUBMODULES.iteritems():
+for module_name, module in iteritems(_SUBMODULES):
   sys.modules['apiclient.%s' % module_name] = module
