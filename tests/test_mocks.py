@@ -24,7 +24,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import httplib2
 import os
-import unittest
+import unittest2 as unittest
 
 from googleapiclient.errors import HttpError
 from googleapiclient.errors import UnexpectedBodyError

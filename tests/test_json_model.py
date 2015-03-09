@@ -26,7 +26,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import copy
 import json
 import os
-import unittest
+import unittest2 as unittest
 import httplib2
 import googleapiclient.model
 
