@@ -33,7 +33,7 @@ import json
 import os
 import pickle
 import sys
-import unittest
+import unittest2 as unittest
 import urlparse
 import StringIO
 

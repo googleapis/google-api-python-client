@@ -27,7 +27,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import httplib2
 import logging
 import os
-import unittest
+import unittest2 as unittest
 import urllib
 import random
 import StringIO

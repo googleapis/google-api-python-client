@@ -3,7 +3,7 @@ from __future__ import absolute_import
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
-import unittest
+import unittest2 as unittest
 import datetime
 
 from googleapiclient import channel
