@@ -26,10 +26,11 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 import json
 import logging
-import urllib
+
+from six.moves.urllib.parse import urlencode
 
 from googleapiclient import __version__
-from .errors import HttpError
+from googleapiclient.errors import HttpError
 
 
 dump_request_response = False
@@ -170,7 +171,7 @@ class BaseModel(Model):
         if isinstance(value, six.text_type) and callable(value.encode):
           value = value.encode('utf-8')
         astuples.append((key, value))
-    return '?' + urllib.urlencode(astuples)
+    return '?' + urlencode(astuples)
 
   def _log_response(self, resp, content):
     """Logs debugging information about the response if requested."""
@@ -257,7 +258,10 @@ class JsonModel(BaseModel):
     return json.dumps(body_value)
 
   def deserialize(self, content):
-    content = content.decode('utf-8')
+    try:
+        content = content.decode('utf-8')
+    except AttributeError:
+        pass
     body = json.loads(content)
     if self._data_wrapper and isinstance(body, dict) and 'data' in body:
       body = body['data']

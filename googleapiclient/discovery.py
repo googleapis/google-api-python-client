@@ -28,9 +28,11 @@ __all__ = [
     'key2param',
     ]
 
+from six import StringIO
+from six.moves.urllib.parse import urlencode, urlparse, urljoin, \
+  urlunparse, parse_qsl
 
 # Standard library imports
-import StringIO
 import copy
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
@@ -41,20 +43,13 @@ import logging
 import mimetypes
 import os
 import re
-import urllib
-import urlparse
-
-try:
-  from urlparse import parse_qsl
-except ImportError:
-  from cgi import parse_qsl
 
 # Third-party imports
 import httplib2
-from . import mimeparse
 import uritemplate
 
 # Local imports
+from googleapiclient import mimeparse
 from googleapiclient.errors import HttpError
 from googleapiclient.errors import InvalidJsonError
 from googleapiclient.errors import MediaUploadSizeError
@@ -207,6 +202,11 @@ def build(serviceName,
     raise HttpError(resp, content, uri=requested_url)
 
   try:
+    content = content.decode('utf-8')
+  except AttributeError:
+    pass
+
+  try:
     service = json.loads(content)
   except ValueError as e:
     logger.error('Failed to parse as JSON: ' + content)
@@ -258,7 +258,7 @@ def build_from_document(
 
   if isinstance(service, six.string_types):
     service = json.loads(service)
-  base = urlparse.urljoin(service['rootUrl'], service['servicePath'])
+  base = urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
 
   if credentials:
@@ -505,7 +505,7 @@ def _urljoin(base, url):
   # exception here is the case of media uploads, where url will be an
   # absolute url.
   if url.startswith('http://') or url.startswith('https://'):
-    return urlparse.urljoin(base, url)
+    return urljoin(base, url)
   new_base = base if base.endswith('/') else base + '/'
   new_url = url[1:] if url.startswith('/') else url
   return new_base + new_url
@@ -712,7 +712,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         raise TypeError('media_filename must be str or MediaUpload.')
 
       # Check the maxSize
-      if maxSize > 0 and media_upload.size() > maxSize:
+      if media_upload.size() is not None and media_upload.size() > maxSize > 0:
         raise MediaUploadSizeError("Media larger than: %s" % maxSize)
 
       # Use the media path uri for media uploads
@@ -752,7 +752,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
           msgRoot.attach(msg)
           # encode the body: note that we can't use `as_string`, because
           # it plays games with `From ` lines.
-          fp = StringIO.StringIO()
+          fp = StringIO()
           g = Generator(fp, mangle_from_=False)
           g.flatten(msgRoot, unixfrom=False)
           body = fp.getvalue()
@@ -859,14 +859,14 @@ Returns:
     request = copy.copy(previous_request)
 
     pageToken = previous_response['nextPageToken']
-    parsed = list(urlparse.urlparse(request.uri))
+    parsed = list(urlparse(request.uri))
     q = parse_qsl(parsed[4])
 
     # Find and remove old 'pageToken' value from URI
     newq = [(key, value) for (key, value) in q if key != 'pageToken']
     newq.append(('pageToken', pageToken))
-    parsed[4] = urllib.urlencode(newq)
-    uri = urlparse.urlunparse(parsed)
+    parsed[4] = urlencode(newq)
+    uri = urlunparse(parsed)
 
     request.uri = uri
 

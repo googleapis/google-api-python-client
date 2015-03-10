@@ -34,11 +34,7 @@ from googleapiclient import __version__
 from googleapiclient.errors import HttpError
 from googleapiclient.model import JsonModel
 
-# Python 2.5 requires different modules
-try:
-  from urlparse import parse_qs
-except ImportError:
-  from cgi import parse_qs
+from six.moves.urllib.parse import parse_qs
 
 
 class Model(unittest.TestCase):
@@ -125,7 +121,12 @@ class Model(unittest.TestCase):
 
     query_dict = parse_qs(query[1:])
     self.assertEqual(query_dict['foo'], ['1'])
-    self.assertEqual(query_dict['bar'], [u'\N{COMET}'.encode('utf-8')])
+    if six.PY3:
+      # Python 3, no need to encode
+      self.assertEqual(query_dict['bar'], [u'\N{COMET}'])
+    else:
+      # Python 2, encode string
+      self.assertEqual(query_dict['bar'], [u'\N{COMET}'.encode('utf-8')])
     self.assertEqual(query_dict['baz'], ['fe', 'fi', 'fo', 'fum'])
     self.assertTrue('qux' not in query_dict)
     self.assertEqual(body, '{}')

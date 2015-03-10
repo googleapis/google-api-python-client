@@ -20,7 +20,6 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import json
 import os
 import unittest2 as unittest
-import StringIO
 
 from googleapiclient.schema import Schemas
 
