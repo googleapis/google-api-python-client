@@ -25,6 +25,10 @@ if sys.version_info < (2, 6):
   print('google-api-python-client requires python version >= 2.6.',
         file=sys.stderr)
   sys.exit(1)
+if (3, 1) <= sys.version_info < (3, 3):
+  print('google-api-python-client requires python3 version >= 3.3.',
+        file=sys.stderr)
+  sys.exit(1)
 
 from setuptools import setup
 import pkg_resources
@@ -59,7 +63,7 @@ packages = [
 
 install_requires = [
     'httplib2>=0.8',
-    'oauth2client>=1.3',
+    'oauth2client>=1.4.6',
     'six>=1.6.1',
     'uritemplate>=0.6',
 ]
@@ -86,10 +90,16 @@ setup(
     license="Apache 2.0",
     keywords="google api client",
     classifiers=[
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
-        'Operating System :: POSIX',
+        'Operating System :: OS Independent',
         'Topic :: Internet :: WWW/HTTP',
     ],
 )
