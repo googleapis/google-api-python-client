@@ -44,7 +44,12 @@ class HttpError(Error):
     """Calculate the reason for the error from the response content."""
     reason = self.resp.reason
     try:
-      data = json.loads(self.content)
+      # turn content into a unicode string, this is required on python 3
+      if isinstance(self.content, bytes):
+        content = self.content.decode('utf-8')
+      else:
+        content = self.content
+      data = json.loads(content)
       reason = data['error']['message']
     except (ValueError, KeyError):
       pass

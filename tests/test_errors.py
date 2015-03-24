@@ -71,6 +71,17 @@ class Error(unittest.TestCase):
     error = HttpError(resp, content)
     self.assertEqual(str(error), '<HttpError 400 "Failed">')
 
+  def test_json_bytes_body(self):
+    """Test a nicely formed, expected error response when the body is `bytes`."""
+    resp, content = fake_response(JSON_ERROR_CONTENT,
+        {'status':'400', 'content-type': 'application/json'},
+        reason='Failed')
+    # this will turn the body into `bytes` which is different from `str` on
+    # python 3 and is what we usually get from the network
+    content = content.encode('utf-8')
+    error = HttpError(resp, content, uri='http://example.org')
+    self.assertEqual(str(error), '<HttpError 400 when requesting http://example.org returned "country is required">')
+
   def test_with_uri(self):
     """Test handling of passing in the request uri."""
     resp, content = fake_response('{',
