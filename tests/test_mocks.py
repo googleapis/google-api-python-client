@@ -134,7 +134,7 @@ class Mocks(unittest.TestCase):
   def test_errors(self):
     errorResponse = httplib2.Response({'status': 500, 'reason': 'Server Error'})
     requestBuilder = RequestMockBuilder({
-        'plus.activities.list': (errorResponse, '{}')
+        'plus.activities.list': (errorResponse, b'{}')
         })
     plus = build('plus', 'v1', http=self.http, requestBuilder=requestBuilder)
 
@@ -142,7 +142,7 @@ class Mocks(unittest.TestCase):
       activity = plus.activities().list(collection='public', userId='me').execute()
       self.fail('An exception should have been thrown')
     except HttpError as e:
-      self.assertEqual('{}', e.content)
+      self.assertEqual(b'{}', e.content)
       self.assertEqual(500, e.resp.status)
       self.assertEqual('Server Error', e.resp.reason)
 

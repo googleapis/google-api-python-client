@@ -1257,6 +1257,10 @@ class BatchHttpRequest(object):
 
     # Prepend with a content-type header so FeedParser can handle it.
     header = 'content-type: %s\r\n\r\n' % resp['content-type']
+    # PY3's FeedParser only accepts unicode. So we should decode content
+    # here, and encode each payload again.
+    if six.PY3:
+      content = content.decode('utf-8')
     for_parser = header + content
 
     parser = FeedParser()
@@ -1270,6 +1274,9 @@ class BatchHttpRequest(object):
     for part in mime_response.get_payload():
       request_id = self._header_to_id(part['Content-ID'])
       response, content = self._deserialize_response(part.get_payload())
+      # We encode content here to emulate normal http response.
+      if isinstance(content, six.text_type):
+        content = content.encode('utf-8')
       self._responses[request_id] = (response, content)
 
   @util.positional(1)
@@ -1536,6 +1543,8 @@ class HttpMockSequence(object):
         content = body
     elif content == 'echo_request_uri':
       content = uri
+    if isinstance(content, six.text_type):
+      content = content.encode('utf-8')
     return httplib2.Response(resp), content
 
 

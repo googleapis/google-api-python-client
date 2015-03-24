@@ -460,7 +460,7 @@ Content-Length: 14
 ETag: "etag/pony"\r\n\r\n{"answer": 42}"""
 
 
-BATCH_RESPONSE = """--batch_foobarbaz
+BATCH_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
 Content-ID: <randomness+1>
@@ -482,7 +482,7 @@ ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 --batch_foobarbaz--"""
 
 
-BATCH_ERROR_RESPONSE = """--batch_foobarbaz
+BATCH_ERROR_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
 Content-ID: <randomness+1>
@@ -518,7 +518,7 @@ ETag: "etag/sheep"\r\n\r\n{
 --batch_foobarbaz--"""
 
 
-BATCH_RESPONSE_WITH_401 = """--batch_foobarbaz
+BATCH_RESPONSE_WITH_401 = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
 Content-ID: <randomness+1>
@@ -541,7 +541,7 @@ ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 --batch_foobarbaz--"""
 
 
-BATCH_SINGLE_RESPONSE = """--batch_foobarbaz
+BATCH_SINGLE_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
 Content-ID: <randomness+1>
@@ -928,7 +928,7 @@ class TestRequestUriTooLong(unittest.TestCase):
 
     # Query parameters should be sent in the body.
     response = req.execute()
-    self.assertEqual('q=' + 'a' * MAX_URI_LENGTH + '%3F%26', response)
+    self.assertEqual(b'q=' + b'a' * MAX_URI_LENGTH + b'%3F%26', response)
 
     # Extra headers should be set.
     response = req.execute()

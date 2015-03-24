@@ -150,7 +150,7 @@ class Model(unittest.TestCase):
     model = JsonModel(data_wrapper=False)
     resp = httplib2.Response({'status': '401'})
     resp.reason = 'Unauthorized'
-    content = '{"error": {"message": "not authorized"}}'
+    content = b'{"error": {"message": "not authorized"}}'
 
     try:
       content = model.response(resp, content)

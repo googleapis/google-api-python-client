@@ -28,7 +28,7 @@ import httplib2
 from googleapiclient.errors import HttpError
 
 
-JSON_ERROR_CONTENT = """
+JSON_ERROR_CONTENT = b"""
 {
  "error": {
   "errors": [
@@ -65,7 +65,7 @@ class Error(unittest.TestCase):
 
   def test_bad_json_body(self):
     """Test handling of bodies with invalid json."""
-    resp, content = fake_response('{',
+    resp, content = fake_response(b'{',
         { 'status':'400', 'content-type': 'application/json'},
         reason='Failed')
     error = HttpError(resp, content)
@@ -73,7 +73,7 @@ class Error(unittest.TestCase):
 
   def test_with_uri(self):
     """Test handling of passing in the request uri."""
-    resp, content = fake_response('{',
+    resp, content = fake_response(b'{',
         {'status':'400', 'content-type': 'application/json'},
         reason='Failure')
     error = HttpError(resp, content, uri='http://example.org')
@@ -81,7 +81,7 @@ class Error(unittest.TestCase):
 
   def test_missing_message_json_body(self):
     """Test handling of bodies with missing expected 'message' element."""
-    resp, content = fake_response('{}',
+    resp, content = fake_response(b'{}',
         {'status':'400', 'content-type': 'application/json'},
         reason='Failed')
     error = HttpError(resp, content)
@@ -89,12 +89,12 @@ class Error(unittest.TestCase):
 
   def test_non_json(self):
     """Test handling of non-JSON bodies"""
-    resp, content = fake_response('}NOT OK', {'status':'400'})
+    resp, content = fake_response(b'}NOT OK', {'status':'400'})
     error = HttpError(resp, content)
     self.assertEqual(str(error), '<HttpError 400 "Ok">')
 
   def test_missing_reason(self):
     """Test an empty dict with a missing resp.reason."""
-    resp, content = fake_response('}NOT OK', {'status': '400'}, reason=None)
+    resp, content = fake_response(b'}NOT OK', {'status': '400'}, reason=None)
     error = HttpError(resp, content)
     self.assertEqual(str(error), '<HttpError 400 "">')
