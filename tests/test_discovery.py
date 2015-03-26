@@ -1048,7 +1048,7 @@ class Discovery(unittest.TestCase):
           'Content-Range': 'bytes */14',
           'content-length': '0'
           }
-      self.assertEqual(expected, json.loads(e.content),
+      self.assertEqual(expected, json.loads(e.content.decode('utf-8')),
         'Should send an empty body when requesting the current upload status.')
 
   def test_pickle(self):
@@ -1186,7 +1186,7 @@ class MediaGet(unittest.TestCase):
       ({'status': '200'}, 'standing in for media'),
       ])
     response = request.execute(http=http)
-    self.assertEqual('standing in for media', response)
+    self.assertEqual(b'standing in for media', response)
 
 
 if __name__ == '__main__':
