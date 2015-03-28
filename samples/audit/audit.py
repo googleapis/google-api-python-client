@@ -50,8 +50,6 @@ def main(argv):
       argv, 'audit', 'v1', __doc__, __file__,
       scope='https://www.googleapis.com/auth/apps/reporting/audit.readonly')
 
-  service = build('audit', 'v1', http=http)
-
   try:
     activities = service.activities()
 
