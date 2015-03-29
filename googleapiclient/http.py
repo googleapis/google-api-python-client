@@ -1252,9 +1252,6 @@ class BatchHttpRequest(object):
     if resp.status >= 300:
       raise HttpError(resp, content, uri=self._batch_uri)
 
-    # Now break out the individual responses and store each one.
-    boundary, _ = content.split(None, 1)
-
     # Prepend with a content-type header so FeedParser can handle it.
     header = 'content-type: %s\r\n\r\n' % resp['content-type']
     # PY3's FeedParser only accepts unicode. So we should decode content
