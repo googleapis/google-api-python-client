@@ -258,10 +258,8 @@ class JsonModel(BaseModel):
     return json.dumps(body_value)
 
   def deserialize(self, content):
-    try:
-        content = content.decode('utf-8')
-    except AttributeError:
-        pass
+    if isinstance(content, bytes):
+      content = content.decode('utf-8')
     body = json.loads(content)
     if self._data_wrapper and isinstance(body, dict) and 'data' in body:
       body = body['data']

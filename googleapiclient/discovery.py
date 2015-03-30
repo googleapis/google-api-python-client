@@ -201,10 +201,8 @@ def build(serviceName,
   if resp.status >= 400:
     raise HttpError(resp, content, uri=requested_url)
 
-  try:
+  if isinstance(content, bytes):
     content = content.decode('utf-8')
-  except AttributeError:
-    pass
 
   try:
     service = json.loads(content)
