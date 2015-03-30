@@ -980,6 +980,13 @@ class TestResponseCallback(unittest.TestCase):
     self.assertEqual(1, len(responses))
 
 
+class TestHttpMock(unittest.TestCase):
+  def test_default_response_headers(self):
+    http = HttpMock(datafile('zoo.json'))
+    resp, content = http.request("http://example.com")
+    self.assertEqual(resp.status, 200)
+
+
 if __name__ == '__main__':
   logging.getLogger().setLevel(logging.ERROR)
   unittest.main()
