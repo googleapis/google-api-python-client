@@ -566,7 +566,7 @@ class MediaIoBaseDownload(object):
       elif 'content-length' in resp:
         self._total_size = int(resp['content-length'])
 
-      if self._progress == self._total_size:
+      if self._progress == self._total_size or resp.status == 200:
         self._done = True
       return MediaDownloadProgress(self._progress, self._total_size), self._done
     else:
