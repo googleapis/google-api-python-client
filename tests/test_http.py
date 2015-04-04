@@ -348,6 +348,29 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     self.assertEqual(5, download._progress)
     self.assertEqual(5, download._total_size)
 
+  def test_media_io_base_download_handle_range_request_ignored(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '200'}, b'12345'),
+    ])
+
+    download = MediaIoBaseDownload(
+        fd=self.fd, request=self.request, chunksize=6)
+
+    self.assertEqual(self.fd, download._fd)
+    self.assertEqual(6, download._chunksize)
+    self.assertEqual(0, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(False, download._done)
+    self.assertEqual(self.request.uri, download._uri)
+
+    status, done = download.next_chunk()
+
+    self.assertEqual(self.fd.getvalue(), b'12345')
+    self.assertEqual(True, done)
+    self.assertEqual(5, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(5, status.resumable_progress)
+
   def test_media_io_base_download_handle_redirects(self):
     self.request.http = HttpMockSequence([
       ({'status': '200',
