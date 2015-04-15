@@ -16,7 +16,11 @@ $ easy_install --upgrade google-api-python-client
 See the [Developers Guide](https://developers.google.com/api-client-library/python/start/get_started) for more detailed instructions and additional documentation.
 
 # Python Version
-Python 2.6 or 2.7 is required. Python 3.x is not yet supported.
+Python 2.6 or 2.7 are fully supported.
+
+Python 3.3+ is also now supported! However, this library has not yet been used
+as thoroughly with Python 3, so we'd recommend testing before deploying with
+Python 3 in production.
 
 # Third Party Libraries and Dependencies
 The following libraries will be installed when you install the client library:
