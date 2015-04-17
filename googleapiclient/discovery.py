@@ -212,7 +212,7 @@ def build(serviceName,
     logger.error('Failed to parse as JSON: ' + content)
     raise InvalidJsonError()
 
-  return build_from_document(content, base=discoveryServiceUrl, http=http,
+  return build_from_document(service, base=discoveryServiceUrl, http=http,
       developerKey=developerKey, model=model, requestBuilder=requestBuilder,
       credentials=credentials)
 
