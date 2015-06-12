@@ -453,6 +453,11 @@ MIME-Version: 1.0
 Host: www.googleapis.com
 content-length: 0\r\n\r\n"""
 
+NO_BODY_EXPECTED_GET = """GET /someapi/v1/collection/?foo=bar HTTP/1.1
+Content-Type: application/json
+MIME-Version: 1.0
+Host: www.googleapis.com\r\n\r\n"""
+
 
 RESPONSE = """HTTP/1.1 200 OK
 Content-Type: application/json
@@ -710,6 +715,20 @@ class TestBatch(unittest.TestCase):
         resumable=None)
     s = batch._serialize_request(request).splitlines()
     self.assertEqual(NO_BODY_EXPECTED.splitlines(), s)
+
+  def test_serialize_get_request_no_body(self):
+    batch = BatchHttpRequest()
+    request = HttpRequest(
+        None,
+        None,
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
+        method='GET',
+        body=None,
+        headers={'content-type': 'application/json'},
+        methodId=None,
+        resumable=None)
+    s = batch._serialize_request(request).splitlines()
+    self.assertEqual(NO_BODY_EXPECTED_GET.splitlines(), s)
 
   def test_deserialize_response(self):
     batch = BatchHttpRequest()
