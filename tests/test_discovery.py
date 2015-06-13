@@ -55,6 +55,7 @@ from googleapiclient.errors import InvalidJsonError
 from googleapiclient.errors import MediaUploadSizeError
 from googleapiclient.errors import ResumableUploadError
 from googleapiclient.errors import UnacceptableMimeTypeError
+from googleapiclient.http import BatchHttpRequest
 from googleapiclient.http import HttpMock
 from googleapiclient.http import HttpMockSequence
 from googleapiclient.http import MediaFileUpload
@@ -513,6 +514,22 @@ class Discovery(unittest.TestCase):
     request = zoo.animals().patch(name='lion', body='{"description": "foo"}')
 
     self.assertEqual(request.method, 'PATCH')
+
+  def test_batch_request_from_discovery(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    # zoo defines a batchPath
+    zoo = build('zoo', 'v1', http=self.http)
+    batch_request = zoo.new_batch_http_request()
+    self.assertEqual(batch_request._batch_uri,
+                     "https://www.googleapis.com/batchZoo")
+
+  def test_batch_request_from_default(self):
+    self.http = HttpMock(datafile('plus.json'), {'status': '200'})
+    # plus does not define a batchPath
+    plus = build('plus', 'v1', http=self.http)
+    batch_request = plus.new_batch_http_request()
+    self.assertEqual(batch_request._batch_uri,
+                     "https://www.googleapis.com/batch")
 
   def test_tunnel_patch(self):
     http = HttpMockSequence([
@@ -1066,6 +1083,7 @@ class Discovery(unittest.TestCase):
                             'load',
                             'loadNoTemplate',
                             'my',
+                            'new_batch_http_request',
                             'query',
                             'scopedAnimals']
 
