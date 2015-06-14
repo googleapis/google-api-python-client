@@ -956,6 +956,19 @@ class Resource(object):
       batch_uri = '%s%s' % (
         rootDesc['rootUrl'], rootDesc.get('batchPath', 'batch'))
       def new_batch_http_request(callback=None):
+        """Create a BatchHttpRequest object based on the discovery document.
+
+        Args:
+          callback: callable, A callback to be called for each response, of the
+            form callback(id, response, exception). The first parameter is the
+            request id, and the second is the deserialized response object. The
+            third is an apiclient.errors.HttpError exception object if an HTTP
+            error occurred while processing the request, or None if no error
+            occurred.
+
+        Returns:
+          A BatchHttpRequest object based on the discovery document.
+        """
         return BatchHttpRequest(callback=callback, batch_uri=batch_uri)
       self._set_dynamic_attr('new_batch_http_request', new_batch_http_request)
 
