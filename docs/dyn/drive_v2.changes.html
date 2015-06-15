@@ -78,13 +78,13 @@ h1, h2, h3 {
   <code><a href="#get">get(changeId)</a></code></p>
 <p class="firstline">Gets a specific change.</p>
 <p class="toc_element">
-  <code><a href="#list">list(includeSubscribed=None, includeDeleted=None, pageToken=None, maxResults=None, startChangeId=None)</a></code></p>
+  <code><a href="#list">list(includeSubscribed=None, includeDeleted=None, pageToken=None, maxResults=None, startChangeId=None, spaces=None)</a></code></p>
 <p class="firstline">Lists the changes for a user.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#watch">watch(body, includeSubscribed=None, includeDeleted=None, pageToken=None, maxResults=None, startChangeId=None)</a></code></p>
+  <code><a href="#watch">watch(body, includeSubscribed=None, includeDeleted=None, pageToken=None, maxResults=None, startChangeId=None, spaces=None)</a></code></p>
 <p class="firstline">Subscribe to changes for a user.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -105,13 +105,13 @@ Returns:
       "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
       "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
       "appDataContents": True or False, # Whether this file is in the Application Data folder.
-      "thumbnailLink": "A String", # A link to the file's thumbnail.
+      "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
       "labels": { # A group of labels for the file.
         "restricted": True or False, # Whether viewers are prevented from downloading this file.
         "hidden": True or False, # Deprecated.
         "viewed": True or False, # Whether this file has been viewed by this user.
         "starred": True or False, # Whether this file is starred by the user.
-        "trashed": True or False, # Whether this file has been trashed.
+        "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
       },
       "indexableText": { # Indexable text attributes for the file (can only be written)
         "text": "A String", # The text to be indexed for this file.
@@ -208,7 +208,7 @@ Returns:
       ],
       "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
         "mimeType": "A String", # The MIME type of the thumbnail.
-        "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image.
+        "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
       },
       "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
         "a_key": "A String",
@@ -249,7 +249,12 @@ Returns:
       "fileSize": "A String", # The size of the file in bytes. This is only populated for files with content stored in Drive.
       "createdDate": "A String", # Create time for this file (formatted RFC 3339 timestamp).
       "properties": [ # The list of properties.
-        { # A key-value pair that is either public or private to an application.
+        { # A key-value pair attached to a file that is either public or private to an application.
+            # The following limits apply to file properties:
+            # - Maximum of 100 properties total per file
+            # - Maximum of 30 private properties per app
+            # - Maximum of 30 public properties
+            # - Maximum of 124 bytes size limit on (key + value) string in UTF-8 encoding for a single property.
           "kind": "drive#property", # This is always drive#property.
           "value": "A String", # The value of this property.
           "etag": "A String", # ETag of the property.
@@ -291,6 +296,9 @@ Returns:
         ],
         "selfLink": "A String", # A link back to this permission.
       },
+      "spaces": [ # The list of spaces which contain the file. Supported values are 'drive' and 'appDataFolder'.
+        "A String",
+      ],
       "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This will only be populated on files with content stored in Drive.
       "fileExtension": "A String", # The file extension used when downloading this file. This field is read only. To set the extension, include it in the title when creating the file. This is only populated for files with content stored in Drive.
       "headRevisionId": "A String", # The ID of the file's head revision. This will only be populated for files with content stored in Drive.
@@ -305,7 +313,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(includeSubscribed=None, includeDeleted=None, pageToken=None, maxResults=None, startChangeId=None)</code>
+    <code class="details" id="list">list(includeSubscribed=None, includeDeleted=None, pageToken=None, maxResults=None, startChangeId=None, spaces=None)</code>
   <pre>Lists the changes for a user.
 
 Args:
@@ -314,6 +322,7 @@ Args:
   pageToken: string, Page token for changes.
   maxResults: integer, Maximum number of changes to return.
   startChangeId: string, Change ID to start listing changes from.
+  spaces: string, A comma-separated list of spaces to query. Supported values are 'drive' and 'appDataFolder'.
 
 Returns:
   An object of the form:
@@ -330,13 +339,13 @@ Returns:
           "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
           "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
           "appDataContents": True or False, # Whether this file is in the Application Data folder.
-          "thumbnailLink": "A String", # A link to the file's thumbnail.
+          "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
           "labels": { # A group of labels for the file.
             "restricted": True or False, # Whether viewers are prevented from downloading this file.
             "hidden": True or False, # Deprecated.
             "viewed": True or False, # Whether this file has been viewed by this user.
             "starred": True or False, # Whether this file is starred by the user.
-            "trashed": True or False, # Whether this file has been trashed.
+            "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
           },
           "indexableText": { # Indexable text attributes for the file (can only be written)
             "text": "A String", # The text to be indexed for this file.
@@ -433,7 +442,7 @@ Returns:
           ],
           "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
             "mimeType": "A String", # The MIME type of the thumbnail.
-            "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image.
+            "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
           },
           "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
             "a_key": "A String",
@@ -474,7 +483,12 @@ Returns:
           "fileSize": "A String", # The size of the file in bytes. This is only populated for files with content stored in Drive.
           "createdDate": "A String", # Create time for this file (formatted RFC 3339 timestamp).
           "properties": [ # The list of properties.
-            { # A key-value pair that is either public or private to an application.
+            { # A key-value pair attached to a file that is either public or private to an application.
+                # The following limits apply to file properties:
+                # - Maximum of 100 properties total per file
+                # - Maximum of 30 private properties per app
+                # - Maximum of 30 public properties
+                # - Maximum of 124 bytes size limit on (key + value) string in UTF-8 encoding for a single property.
               "kind": "drive#property", # This is always drive#property.
               "value": "A String", # The value of this property.
               "etag": "A String", # ETag of the property.
@@ -516,6 +530,9 @@ Returns:
             ],
             "selfLink": "A String", # A link back to this permission.
           },
+          "spaces": [ # The list of spaces which contain the file. Supported values are 'drive' and 'appDataFolder'.
+            "A String",
+          ],
           "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This will only be populated on files with content stored in Drive.
           "fileExtension": "A String", # The file extension used when downloading this file. This field is read only. To set the extension, include it in the title when creating the file. This is only populated for files with content stored in Drive.
           "headRevisionId": "A String", # The ID of the file's head revision. This will only be populated for files with content stored in Drive.
@@ -550,7 +567,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="watch">watch(body, includeSubscribed=None, includeDeleted=None, pageToken=None, maxResults=None, startChangeId=None)</code>
+    <code class="details" id="watch">watch(body, includeSubscribed=None, includeDeleted=None, pageToken=None, maxResults=None, startChangeId=None, spaces=None)</code>
   <pre>Subscribe to changes for a user.
 
 Args:
@@ -577,6 +594,7 @@ Args:
   pageToken: string, Page token for changes.
   maxResults: integer, Maximum number of changes to return.
   startChangeId: string, Change ID to start listing changes from.
+  spaces: string, A comma-separated list of spaces to query. Supported values are 'drive' and 'appDataFolder'.
 
 Returns:
   An object of the form:

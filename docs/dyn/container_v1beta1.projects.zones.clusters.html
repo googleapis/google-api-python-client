@@ -95,7 +95,7 @@ The cluster is created in the project's default network.
 
 A firewall is added that allows traffic into port 443 on the master, which enables HTTPS. A firewall and a route is added for each node to allow the containers on that node to communicate with all other instances in the cluster.
 
-Finally, a route named k8s-iproute-10-xx-0-0 is created to track that the cluster's 10.xx.0.0/16 CIDR has been assigned.
+Finally, an entry is added to the project's global metadata indicating which CIDR range is being used by the cluster.
 
 Args:
   projectId: string, The Google Developers Console project ID or  project number. (required)
@@ -106,20 +106,31 @@ Args:
 {
     "cluster": { # A cluster resource.
       "status": "A String", # [Output only] The current status of this cluster.
-      "endpoint": "A String", # [Output only] The IP address of this cluster's Kubernetes master. The endpoint can be accessed from the internet at https://username:password@endpoint/.
-          #
-          # See the masterAuth property of this resource for username and password information.
+      "containerIpv4Cidr": "A String", # The IP address range of the container pods in this cluster, in  CIDR notation (e.g. 10.96.0.0/14). Leave blank to have one automatically chosen or specify a /14 block in 10.0.0.0/8 or 172.16.0.0/12.
       "description": "A String", # An optional description of this cluster.
-      "zone": "A String", # [Output only] The name of the Google Compute Engine zone in which the cluster resides.
+      "name": "A String", # The name of this cluster. The name must be unique within this project and zone, and can be up to 40 characters with the following restrictions:
+          # - Lowercase letters, numbers, and hyphens only.
+          # - Must start with a letter.
+          # - Must end with a number or a letter.
       "numNodes": 42, # The number of nodes to create in this cluster. You must ensure that your Compute Engine resource quota is sufficient for this number of instances plus one (to include the master). You must also have available firewall and routes quota.
       "nodeRoutingPrefixSize": 42, # [Output only] The size of the address space on each node for hosting containers.
-      "masterAuth": { # The HTTP basic authentication information for accessing the master. Because the master endpoint is open to the internet, you should create a strong password.
-        "password": "A String", # The password to use when accessing the Kubernetes master endpoint.
-        "user": "A String", # The username to use when accessing the Kubernetes master endpoint.
+      "instanceGroupUrls": [ # [Output only] The resource URLs of [instance groups](/compute/docs/instance-groups/) associated with this cluster.
+        "A String",
+      ],
+      "masterAuth": { # The authentication information for accessing the master. Authentication is either done using HTTP basic authentication or using a bearer token. # The authentication information for accessing the master.
+        "bearerToken": "A String", # The token used to authenticate API requests to the master. The token is to be included in an HTTP Authorization Header in all requests to the master endpoint. The format of the header is: "Authorization: Bearer ".
+        "clientKey": "A String", # [Output only] Base64 encoded private key used by clients to authenticate to the cluster endpoint.
+        "clientCertificate": "A String", # [Output only] Base64 encoded public certificate used by clients to authenticate to the cluster endpoint.
+        "user": "A String", # The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint.
+        "password": "A String", # The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Because the master endpoint is open to the internet, you should create a strong password.
+        "clusterCaCertificate": "A String", # [Output only] Base64 encoded public certificate that is the root of trust for the cluster.
       },
       "clusterApiVersion": "A String", # The API version of the Kubernetes master and kubelets running in this cluster. Leave blank to pick up the latest stable release, or specify a version of the form "x.y.z". The Google Container Engine release notes lists the currently supported versions. If an incorrect version is specified, the server returns an error listing the currently supported versions.
       "network": "A String", # The name of the Google Compute Engine network to which the cluster is connected.
-      "containerIpv4Cidr": "A String", # [Output only] The IP addresses of the container pods in this cluster, in  CIDR notation (e.g. 1.2.3.4/29).
+      "zone": "A String", # [Output only] The name of the Google Compute Engine zone in which the cluster resides.
+      "endpoint": "A String", # [Output only] The IP address of this cluster's Kubernetes master. The endpoint can be accessed from the internet at https://username:password@endpoint/.
+          #
+          # See the masterAuth property of this resource for username and password information.
       "nodeConfig": { # The machine type and image to use for all nodes in this cluster. See the descriptions of the child properties of nodeConfig.
         "serviceAccounts": [ # The optional list of ServiceAccounts, each with their specified scopes, to be made available on all of the node VMs. In addition to the service accounts and scopes specified, the "default" account will always be created with the following scopes to ensure the correct functioning of the cluster:
             # - https://www.googleapis.com/auth/compute,
@@ -139,13 +150,11 @@ Args:
             # If specifying an image, you are responsible for ensuring its compatibility with the Debian 7 backports image. We recommend leaving this field blank to accept the default backports-debian-7-wheezy value.
       },
       "statusMessage": "A String", # [Output only] Additional information about the current status of this cluster, if available.
-      "servicesIpv4Cidr": "A String", # [Output only] The IP addresses of the Kubernetes services in this cluster, in  CIDR notation (e.g. 1.2.3.4/29). Service addresses are always in the 10.0.0.0/16 range.
+      "servicesIpv4Cidr": "A String", # [Output only] The IP address range of the Kubernetes services in this cluster, in  CIDR notation (e.g. 1.2.3.4/29). Service addresses are typically put in the last /16 from the container CIDR.
       "creationTimestamp": "A String", # [Output only] The time the cluster was created, in RFC3339 text format.
+      "enableCloudLogging": True or False, # Whether logs from the cluster should be made available via the Google Cloud Logging service. This includes both logs from your applications running in the cluster as well as logs from the Kubernetes components themselves.
       "selfLink": "A String", # [Output only] Server-defined URL for the resource.
-      "name": "A String", # The name of this cluster. The name must be unique within this project and zone, and can be up to 40 characters with the following restrictions:
-          # - Lowercase letters, numbers, and hyphens only.
-          # - Must start with a letter.
-          # - Must end with a number or a letter.
+      "enableCloudMonitoring": True or False, # Whether metrics from the cluster should be made available via the Google Cloud Monitoring service.
     },
   }
 
@@ -155,7 +164,7 @@ Returns:
 
     { # Defines the operation resource. All fields are output only.
     "status": "A String", # The current status of the operation.
-    "name": "A String", # The server-assigned ID for this operation. If the operation is fulfilled upfront, it may not have a resource name.
+    "name": "A String", # The server-assigned ID for the operation.
     "zone": "A String", # The name of the Google Compute Engine zone in which the operation is taking place.
     "errorMessage": "A String", # If an error has occurred, a textual description of the error.
     "targetLink": "A String", # Server-defined URL for the target of the operation.
@@ -181,7 +190,7 @@ Returns:
 
     { # Defines the operation resource. All fields are output only.
     "status": "A String", # The current status of the operation.
-    "name": "A String", # The server-assigned ID for this operation. If the operation is fulfilled upfront, it may not have a resource name.
+    "name": "A String", # The server-assigned ID for the operation.
     "zone": "A String", # The name of the Google Compute Engine zone in which the operation is taking place.
     "errorMessage": "A String", # If an error has occurred, a textual description of the error.
     "targetLink": "A String", # Server-defined URL for the target of the operation.
@@ -205,20 +214,31 @@ Returns:
 
     {
     "status": "A String", # [Output only] The current status of this cluster.
-    "endpoint": "A String", # [Output only] The IP address of this cluster's Kubernetes master. The endpoint can be accessed from the internet at https://username:password@endpoint/.
-        #
-        # See the masterAuth property of this resource for username and password information.
+    "containerIpv4Cidr": "A String", # The IP address range of the container pods in this cluster, in  CIDR notation (e.g. 10.96.0.0/14). Leave blank to have one automatically chosen or specify a /14 block in 10.0.0.0/8 or 172.16.0.0/12.
     "description": "A String", # An optional description of this cluster.
-    "zone": "A String", # [Output only] The name of the Google Compute Engine zone in which the cluster resides.
+    "name": "A String", # The name of this cluster. The name must be unique within this project and zone, and can be up to 40 characters with the following restrictions:
+        # - Lowercase letters, numbers, and hyphens only.
+        # - Must start with a letter.
+        # - Must end with a number or a letter.
     "numNodes": 42, # The number of nodes to create in this cluster. You must ensure that your Compute Engine resource quota is sufficient for this number of instances plus one (to include the master). You must also have available firewall and routes quota.
     "nodeRoutingPrefixSize": 42, # [Output only] The size of the address space on each node for hosting containers.
-    "masterAuth": { # The HTTP basic authentication information for accessing the master. Because the master endpoint is open to the internet, you should create a strong password.
-      "password": "A String", # The password to use when accessing the Kubernetes master endpoint.
-      "user": "A String", # The username to use when accessing the Kubernetes master endpoint.
+    "instanceGroupUrls": [ # [Output only] The resource URLs of [instance groups](/compute/docs/instance-groups/) associated with this cluster.
+      "A String",
+    ],
+    "masterAuth": { # The authentication information for accessing the master. Authentication is either done using HTTP basic authentication or using a bearer token. # The authentication information for accessing the master.
+      "bearerToken": "A String", # The token used to authenticate API requests to the master. The token is to be included in an HTTP Authorization Header in all requests to the master endpoint. The format of the header is: "Authorization: Bearer ".
+      "clientKey": "A String", # [Output only] Base64 encoded private key used by clients to authenticate to the cluster endpoint.
+      "clientCertificate": "A String", # [Output only] Base64 encoded public certificate used by clients to authenticate to the cluster endpoint.
+      "user": "A String", # The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint.
+      "password": "A String", # The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Because the master endpoint is open to the internet, you should create a strong password.
+      "clusterCaCertificate": "A String", # [Output only] Base64 encoded public certificate that is the root of trust for the cluster.
     },
     "clusterApiVersion": "A String", # The API version of the Kubernetes master and kubelets running in this cluster. Leave blank to pick up the latest stable release, or specify a version of the form "x.y.z". The Google Container Engine release notes lists the currently supported versions. If an incorrect version is specified, the server returns an error listing the currently supported versions.
     "network": "A String", # The name of the Google Compute Engine network to which the cluster is connected.
-    "containerIpv4Cidr": "A String", # [Output only] The IP addresses of the container pods in this cluster, in  CIDR notation (e.g. 1.2.3.4/29).
+    "zone": "A String", # [Output only] The name of the Google Compute Engine zone in which the cluster resides.
+    "endpoint": "A String", # [Output only] The IP address of this cluster's Kubernetes master. The endpoint can be accessed from the internet at https://username:password@endpoint/.
+        #
+        # See the masterAuth property of this resource for username and password information.
     "nodeConfig": { # The machine type and image to use for all nodes in this cluster. See the descriptions of the child properties of nodeConfig.
       "serviceAccounts": [ # The optional list of ServiceAccounts, each with their specified scopes, to be made available on all of the node VMs. In addition to the service accounts and scopes specified, the "default" account will always be created with the following scopes to ensure the correct functioning of the cluster:
           # - https://www.googleapis.com/auth/compute,
@@ -238,13 +258,11 @@ Returns:
           # If specifying an image, you are responsible for ensuring its compatibility with the Debian 7 backports image. We recommend leaving this field blank to accept the default backports-debian-7-wheezy value.
     },
     "statusMessage": "A String", # [Output only] Additional information about the current status of this cluster, if available.
-    "servicesIpv4Cidr": "A String", # [Output only] The IP addresses of the Kubernetes services in this cluster, in  CIDR notation (e.g. 1.2.3.4/29). Service addresses are always in the 10.0.0.0/16 range.
+    "servicesIpv4Cidr": "A String", # [Output only] The IP address range of the Kubernetes services in this cluster, in  CIDR notation (e.g. 1.2.3.4/29). Service addresses are typically put in the last /16 from the container CIDR.
     "creationTimestamp": "A String", # [Output only] The time the cluster was created, in RFC3339 text format.
+    "enableCloudLogging": True or False, # Whether logs from the cluster should be made available via the Google Cloud Logging service. This includes both logs from your applications running in the cluster as well as logs from the Kubernetes components themselves.
     "selfLink": "A String", # [Output only] Server-defined URL for the resource.
-    "name": "A String", # The name of this cluster. The name must be unique within this project and zone, and can be up to 40 characters with the following restrictions:
-        # - Lowercase letters, numbers, and hyphens only.
-        # - Must start with a letter.
-        # - Must end with a number or a letter.
+    "enableCloudMonitoring": True or False, # Whether metrics from the cluster should be made available via the Google Cloud Monitoring service.
   }</pre>
 </div>
 
@@ -263,20 +281,31 @@ Returns:
     "clusters": [ # A list of clusters in the project in the specified zone.
       {
         "status": "A String", # [Output only] The current status of this cluster.
-        "endpoint": "A String", # [Output only] The IP address of this cluster's Kubernetes master. The endpoint can be accessed from the internet at https://username:password@endpoint/.
-            #
-            # See the masterAuth property of this resource for username and password information.
+        "containerIpv4Cidr": "A String", # The IP address range of the container pods in this cluster, in  CIDR notation (e.g. 10.96.0.0/14). Leave blank to have one automatically chosen or specify a /14 block in 10.0.0.0/8 or 172.16.0.0/12.
         "description": "A String", # An optional description of this cluster.
-        "zone": "A String", # [Output only] The name of the Google Compute Engine zone in which the cluster resides.
+        "name": "A String", # The name of this cluster. The name must be unique within this project and zone, and can be up to 40 characters with the following restrictions:
+            # - Lowercase letters, numbers, and hyphens only.
+            # - Must start with a letter.
+            # - Must end with a number or a letter.
         "numNodes": 42, # The number of nodes to create in this cluster. You must ensure that your Compute Engine resource quota is sufficient for this number of instances plus one (to include the master). You must also have available firewall and routes quota.
         "nodeRoutingPrefixSize": 42, # [Output only] The size of the address space on each node for hosting containers.
-        "masterAuth": { # The HTTP basic authentication information for accessing the master. Because the master endpoint is open to the internet, you should create a strong password.
-          "password": "A String", # The password to use when accessing the Kubernetes master endpoint.
-          "user": "A String", # The username to use when accessing the Kubernetes master endpoint.
+        "instanceGroupUrls": [ # [Output only] The resource URLs of [instance groups](/compute/docs/instance-groups/) associated with this cluster.
+          "A String",
+        ],
+        "masterAuth": { # The authentication information for accessing the master. Authentication is either done using HTTP basic authentication or using a bearer token. # The authentication information for accessing the master.
+          "bearerToken": "A String", # The token used to authenticate API requests to the master. The token is to be included in an HTTP Authorization Header in all requests to the master endpoint. The format of the header is: "Authorization: Bearer ".
+          "clientKey": "A String", # [Output only] Base64 encoded private key used by clients to authenticate to the cluster endpoint.
+          "clientCertificate": "A String", # [Output only] Base64 encoded public certificate used by clients to authenticate to the cluster endpoint.
+          "user": "A String", # The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint.
+          "password": "A String", # The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Because the master endpoint is open to the internet, you should create a strong password.
+          "clusterCaCertificate": "A String", # [Output only] Base64 encoded public certificate that is the root of trust for the cluster.
         },
         "clusterApiVersion": "A String", # The API version of the Kubernetes master and kubelets running in this cluster. Leave blank to pick up the latest stable release, or specify a version of the form "x.y.z". The Google Container Engine release notes lists the currently supported versions. If an incorrect version is specified, the server returns an error listing the currently supported versions.
         "network": "A String", # The name of the Google Compute Engine network to which the cluster is connected.
-        "containerIpv4Cidr": "A String", # [Output only] The IP addresses of the container pods in this cluster, in  CIDR notation (e.g. 1.2.3.4/29).
+        "zone": "A String", # [Output only] The name of the Google Compute Engine zone in which the cluster resides.
+        "endpoint": "A String", # [Output only] The IP address of this cluster's Kubernetes master. The endpoint can be accessed from the internet at https://username:password@endpoint/.
+            #
+            # See the masterAuth property of this resource for username and password information.
         "nodeConfig": { # The machine type and image to use for all nodes in this cluster. See the descriptions of the child properties of nodeConfig.
           "serviceAccounts": [ # The optional list of ServiceAccounts, each with their specified scopes, to be made available on all of the node VMs. In addition to the service accounts and scopes specified, the "default" account will always be created with the following scopes to ensure the correct functioning of the cluster:
               # - https://www.googleapis.com/auth/compute,
@@ -296,13 +325,11 @@ Returns:
               # If specifying an image, you are responsible for ensuring its compatibility with the Debian 7 backports image. We recommend leaving this field blank to accept the default backports-debian-7-wheezy value.
         },
         "statusMessage": "A String", # [Output only] Additional information about the current status of this cluster, if available.
-        "servicesIpv4Cidr": "A String", # [Output only] The IP addresses of the Kubernetes services in this cluster, in  CIDR notation (e.g. 1.2.3.4/29). Service addresses are always in the 10.0.0.0/16 range.
+        "servicesIpv4Cidr": "A String", # [Output only] The IP address range of the Kubernetes services in this cluster, in  CIDR notation (e.g. 1.2.3.4/29). Service addresses are typically put in the last /16 from the container CIDR.
         "creationTimestamp": "A String", # [Output only] The time the cluster was created, in RFC3339 text format.
+        "enableCloudLogging": True or False, # Whether logs from the cluster should be made available via the Google Cloud Logging service. This includes both logs from your applications running in the cluster as well as logs from the Kubernetes components themselves.
         "selfLink": "A String", # [Output only] Server-defined URL for the resource.
-        "name": "A String", # The name of this cluster. The name must be unique within this project and zone, and can be up to 40 characters with the following restrictions:
-            # - Lowercase letters, numbers, and hyphens only.
-            # - Must start with a letter.
-            # - Must end with a number or a letter.
+        "enableCloudMonitoring": True or False, # Whether metrics from the cluster should be made available via the Google Cloud Monitoring service.
       },
     ],
   }</pre>
