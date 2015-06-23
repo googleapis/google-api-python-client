@@ -44,21 +44,21 @@ from googleapiclient import sample_tools
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
-      argv, 'plus', 'v1', __doc__, __file__,
+      argv, 'blogger', 'v3', __doc__, __file__,
       scope='https://www.googleapis.com/auth/blogger')
-
-  service = build('blogger', 'v2', http=http)
 
   try:
 
       users = service.users()
 
       # Retrieve this user's profile information
-      thisuser = users.get(userId='self').execute(http=http)
+      thisuser = users.get(userId='self').execute()
       print('This user\'s display name is: %s' % thisuser['displayName'])
 
+      blogs = service.blogs()
+
       # Retrieve the list of Blogs this user has write privileges on
-      thisusersblogs = users.blogs().list(userId='self').execute()
+      thisusersblogs = blogs.listByUser(userId='self').execute()
       for blog in thisusersblogs['items']:
         print('The blog named \'%s\' is at: %s' % (blog['name'], blog['url']))
 
@@ -69,7 +69,7 @@ def main(argv):
         print('The posts for %s:' % blog['name'])
         request = posts.list(blogId=blog['id'])
         while request != None:
-          posts_doc = request.execute(http=http)
+          posts_doc = request.execute()
           if 'items' in posts_doc and not (posts_doc['items'] is None):
             for post in posts_doc['items']:
               print('  %s (%s)' % (post['title'], post['url']))
