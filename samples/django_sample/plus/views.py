@@ -4,8 +4,6 @@ import httplib2
 
 from googleapiclient.discovery import build
 from django.contrib.auth.decorators import login_required
-from django.core.urlresolvers import reverse
-from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
@@ -33,7 +31,7 @@ def index(request):
   credential = storage.get()
   if credential is None or credential.invalid == True:
     FLOW.params['state'] = xsrfutil.generate_token(settings.SECRET_KEY,
-                                                   request.user)
+                                                   request.user.pk)
     authorize_url = FLOW.step1_get_authorize_url()
     return HttpResponseRedirect(authorize_url)
   else:
@@ -52,8 +50,8 @@ def index(request):
 
 @login_required
 def auth_return(request):
-  if not xsrfutil.validate_token(settings.SECRET_KEY, request.REQUEST['state'],
-                                 request.user):
+  if not xsrfutil.validate_token(settings.SECRET_KEY, str(request.REQUEST['state']),
+                                 request.user.pk):
     return  HttpResponseBadRequest()
   credential = FLOW.step2_exchange(request.REQUEST)
   storage = Storage(CredentialsModel, 'id', request.user, 'credential')
