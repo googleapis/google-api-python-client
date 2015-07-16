@@ -366,6 +366,17 @@ class DiscoveryFromDocument(unittest.TestCase):
     plus = build_from_document(discovery, base=base)
     self.assertEquals("https://www.googleapis.com/plus/v1/", plus._baseUrl)
 
+  def test_building_with_optional_http(self):
+    discovery = open(datafile('plus.json')).read()
+    plus = build_from_document(discovery, base="https://www.googleapis.com/")
+    self.assertTrue(isinstance(plus._http, httplib2.Http))
+
+  def test_building_with_explicit_http(self):
+    http = HttpMock()
+    discovery = open(datafile('plus.json')).read()
+    plus = build_from_document(
+      discovery, base="https://www.googleapis.com/", http=http)
+    self.assertEquals(plus._http, http)
 
 class DiscoveryFromHttp(unittest.TestCase):
   def setUp(self):
