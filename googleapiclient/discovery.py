@@ -254,6 +254,9 @@ def build_from_document(
     A Resource object with methods for interacting with the service.
   """
 
+  if http is None:
+    http = httplib2.Http()
+
   # future is no longer used.
   future = {}
 
