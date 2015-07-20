@@ -51,16 +51,15 @@ class HttpError(Error):
       reason = data['error']['message']
     except (ValueError, KeyError):
       pass
-    if reason is None:
-      reason = ''
     return reason
 
   def __repr__(self):
     if self.uri:
       return '<HttpError %s when requesting %s returned "%s">' % (
-          self.resp.status, self.uri, self.reason)
+          self.resp.status, self.uri, self.reason if self.reason else '')
     else:
-      return '<HttpError %s "%s">' % (self.resp.status, self.reason)
+      return '<HttpError %s "%s">' % (self.resp.status,
+                                      self.reason if self.reason else '')
 
   __str__ = __repr__
 
