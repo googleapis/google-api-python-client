@@ -40,7 +40,7 @@ class HttpError(Error):
     if not isinstance(content, bytes):
         raise TypeError("HTTP content should be bytes")
     self.content = content
-    self.reason = _get_reason().strip()
+    self.reason = self._get_reason().strip()
     self.uri = uri
 
   def _get_reason(self):
