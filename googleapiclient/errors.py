@@ -40,7 +40,7 @@ class HttpError(Error):
     if not isinstance(content, bytes):
         raise TypeError("HTTP content should be bytes")
     self.content = content
-    self.reason = self._get_reason().strip()
+    self.reason = self._get_reason()
     self.uri = uri
 
   def _get_reason(self):
@@ -48,7 +48,7 @@ class HttpError(Error):
     reason = self.resp.reason
     try:
       data = json.loads(self.content.decode('utf-8'))
-      reason = data['error']['message']
+      reason = data['error']['message'].strip()
     except (ValueError, KeyError):
       pass
     return reason
