@@ -1183,6 +1183,14 @@ class Next(unittest.TestCase):
     request = tasks.tasklists().list()
     self.assertEqual(None, tasks.tasklists().list_next(request, {}))
 
+  def test_next_successful_none_on_empty_page_token(self):
+    self.http = HttpMock(datafile('tasks.json'), {'status': '200'})
+    tasks = build('tasks', 'v1', http=self.http)
+    request = tasks.tasklists().list()
+    next_request = tasks.tasklists().list_next(
+        request, {'nextPageToken': ''})
+    self.assertEqual(None, next_request)
+
   def test_next_successful_with_next_page_token(self):
     self.http = HttpMock(datafile('tasks.json'), {'status': '200'})
     tasks = build('tasks', 'v1', http=self.http)
