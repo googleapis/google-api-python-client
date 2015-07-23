@@ -857,7 +857,7 @@ Returns:
     # Retrieve nextPageToken from previous_response
     # Use as pageToken in previous_request to create new request.
 
-    if 'nextPageToken' not in previous_response:
+    if 'nextPageToken' not in previous_response or not previous_response['nextPageToken']:
       return None
 
     request = copy.copy(previous_request)
