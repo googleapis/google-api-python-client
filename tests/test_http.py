@@ -766,6 +766,11 @@ class TestBatch(unittest.TestCase):
     self.request1.resumable = upload
     self.assertRaises(BatchError, batch.add, self.request1, request_id='1')
 
+  def test_execute_empty_batch_no_http(self):
+    batch = BatchHttpRequest()
+    ret = batch.execute()
+    self.assertEqual(None, ret)
+
   def test_execute(self):
     batch = BatchHttpRequest()
     callbacks = Callbacks()
