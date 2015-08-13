@@ -1463,7 +1463,7 @@ class HttpMock(object):
     if headers is None:
       headers = {'status': '200'}
     if filename:
-      f = open(filename, 'r')
+      f = open(filename, 'rb')
       self.data = f.read()
       f.close()
     else:

@@ -1010,6 +1010,17 @@ class TestHttpMock(unittest.TestCase):
     resp, content = http.request("http://example.com")
     self.assertEqual(resp.status, 200)
 
+  def test_error_response(self):
+    http = HttpMock(datafile('bad_request.json'), {'status': '400'})
+    model = JsonModel()
+    request = HttpRequest(
+        http,
+        model.response,
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
+        method='GET',
+        headers={})
+    self.assertRaises(HttpError, request.execute)
+
 
 if __name__ == '__main__':
   logging.getLogger().setLevel(logging.ERROR)
