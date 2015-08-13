@@ -170,6 +170,21 @@ Documentation for the Prediction API in
   </tr>
 </table>
 
+## ![](http://www.google.com/images/icons/product/search-32.gif) Search Console API
+
+Add sites to a Search Console account, retrieve site data and diagnostics, and submit sitemaps.
+
+Documentation for the Search Console API in
+[Google Developers](https://developers.google.com/webmaster-tools/v3/).
+
+<table>
+  <tr>
+    <td><a href="searchconsole">samples/searchconsole</a></td>
+    <td>Command-line samples for Search Console API (formerly known as Webmaster Tools API)</td>
+  </tr>
+</table>
+
+
 ## ![](http://www.google.com/images/icons/product/search-32.gif) Search API For Shopping
 
 Lets you search over product data.
