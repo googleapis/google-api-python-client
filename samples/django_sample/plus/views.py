@@ -8,7 +8,7 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 from django_sample.plus.models import CredentialsModel
 from django_sample import settings
 from oauth2client import xsrfutil
@@ -45,7 +45,7 @@ def index(request):
                                    userId='me').execute()
     logging.info(activitylist)
 
-    return render_to_response('plus/welcome.html', {
+    return render(request, 'plus/welcome.html', {
                 'activitylist': activitylist,
                 })
 
