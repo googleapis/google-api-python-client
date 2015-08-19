@@ -38,6 +38,8 @@ import pickle
 import sys
 import unittest2 as unittest
 
+import mock
+
 from googleapiclient.discovery import _fix_up_media_upload
 from googleapiclient.discovery import _fix_up_method_description
 from googleapiclient.discovery import _fix_up_parameters
@@ -50,6 +52,8 @@ from googleapiclient.discovery import MEDIA_BODY_PARAMETER_DEFAULT_VALUE
 from googleapiclient.discovery import ResourceMethodParameters
 from googleapiclient.discovery import STACK_QUERY_PARAMETERS
 from googleapiclient.discovery import STACK_QUERY_PARAMETER_DEFAULT_VALUE
+from googleapiclient.discovery_cache import DISCOVERY_DOC_MAX_AGE
+from googleapiclient.discovery_cache.base import Cache
 from googleapiclient.errors import HttpError
 from googleapiclient.errors import InvalidJsonError
 from googleapiclient.errors import MediaUploadSizeError
@@ -338,7 +342,7 @@ class DiscoveryErrors(unittest.TestCase):
   def test_failed_to_parse_discovery_json(self):
     self.http = HttpMock(datafile('malformed.json'), {'status': '200'})
     try:
-      plus = build('plus', 'v1', http=self.http)
+      plus = build('plus', 'v1', http=self.http, cache_discovery=False)
       self.fail("should have raised an exception over malformed JSON.")
     except InvalidJsonError:
       pass
@@ -411,6 +415,104 @@ class DiscoveryFromHttp(unittest.TestCase):
       self.fail('Should have raised an exception.')
     except HttpError as e:
       self.assertEqual(e.uri, 'http://example.com')
+
+
+class DiscoveryFromAppEngineCache(unittest.TestCase):
+  def test_appengine_memcache(self):
+    # Hack module import
+    self.orig_import = __import__
+    self.mocked_api = mock.MagicMock()
+
+    def import_mock(name, *args):
+      if name == 'google.appengine.api':
+        return self.mocked_api
+      return self.orig_import(name, *args)
+
+    import_fullname = '__builtin__.__import__'
+    if sys.version_info[0] >= 3:
+      import_fullname = 'builtins.__import__'
+
+    with mock.patch(import_fullname, side_effect=import_mock):
+      namespace = 'google-api-client'
+      self.http = HttpMock(datafile('plus.json'), {'status': '200'})
+
+      self.mocked_api.memcache.get.return_value = None
+
+      plus = build('plus', 'v1', http=self.http)
+
+      # memcache.get is called once
+      url = 'https://www.googleapis.com/discovery/v1/apis/plus/v1/rest'
+      self.mocked_api.memcache.get.assert_called_once_with(url,
+                                                           namespace=namespace)
+
+      # memcache.set is called once
+      with open(datafile('plus.json')) as f:
+        content = f.read()
+      self.mocked_api.memcache.set.assert_called_once_with(
+        url, content, time=DISCOVERY_DOC_MAX_AGE, namespace=namespace)
+
+      # Returns the cached content this time.
+      self.mocked_api.memcache.get.return_value = content
+
+      # Make sure the contents are returned from the cache.
+      # (Otherwise it should through an error)
+      self.http = HttpMock(None, {'status': '200'})
+
+      plus = build('plus', 'v1', http=self.http)
+
+      # memcache.get is called twice
+      self.mocked_api.memcache.get.assert_has_calls(
+        [mock.call(url, namespace=namespace),
+         mock.call(url, namespace=namespace)])
+
+      # memcahce.set is called just once
+      self.mocked_api.memcache.set.assert_called_once_with(
+        url, content, time=DISCOVERY_DOC_MAX_AGE,namespace=namespace)
+
+
+class DictCache(Cache):
+  def __init__(self):
+    self.d = {}
+  def get(self, url):
+    return self.d.get(url, None)
+  def set(self, url, content):
+    self.d[url] = content
+  def contains(self, url):
+    return url in self.d
+
+
+class DiscoveryFromFileCache(unittest.TestCase):
+  def test_file_based_cache(self):
+    cache = mock.Mock(wraps=DictCache())
+    with mock.patch('googleapiclient.discovery_cache.file_cache.cache',
+                    new=cache):
+      self.http = HttpMock(datafile('plus.json'), {'status': '200'})
+
+      plus = build('plus', 'v1', http=self.http)
+
+      # cache.get is called once
+      url = 'https://www.googleapis.com/discovery/v1/apis/plus/v1/rest'
+      cache.get.assert_called_once_with(url)
+
+      # cache.set is called once
+      with open(datafile('plus.json')) as f:
+        content = f.read()
+      cache.set.assert_called_once_with(url, content)
+
+      # Make sure there is a cache entry for the plus v1 discovery doc.
+      self.assertTrue(cache.contains(url))
+
+      # Make sure the contents are returned from the cache.
+      # (Otherwise it should through an error)
+      self.http = HttpMock(None, {'status': '200'})
+
+      plus = build('plus', 'v1', http=self.http)
+
+      # cache.get is called twice
+      cache.get.assert_has_calls([mock.call(url), mock.call(url)])
+
+      # cahce.set is called just once
+      cache.set.assert_called_once_with(url, content)
 
 
 class Discovery(unittest.TestCase):
@@ -548,7 +650,7 @@ class Discovery(unittest.TestCase):
       ({'status': '200'}, 'echo_request_headers_as_json'),
       ])
     http = tunnel_patch(http)
-    zoo = build('zoo', 'v1', http=http)
+    zoo = build('zoo', 'v1', http=http, cache_discovery=False)
     resp = zoo.animals().patch(
         name='lion', body='{"description": "foo"}').execute()
 
