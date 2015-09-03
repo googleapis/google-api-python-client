@@ -59,6 +59,7 @@ _DetectBadness()
 packages = [
     'apiclient',
     'googleapiclient',
+    'googleapiclient/discovery_cache',
 ]
 
 install_requires = [
