@@ -29,6 +29,7 @@ __all__ = [
     ]
 
 from six import StringIO
+from six.moves import http_client
 from six.moves.urllib.parse import urlencode, urlparse, urljoin, \
   urlunparse, parse_qsl
 
@@ -190,7 +191,15 @@ def build(serviceName,
 
   requested_url = uritemplate.expand(discoveryServiceUrl, params)
 
-  content = _retrieve_discovery_doc(requested_url, http, cache_discovery, cache)
+  try:
+    content = _retrieve_discovery_doc(requested_url, http, cache_discovery,
+                                      cache)
+  except HttpError as e:
+    if e.resp.status == http_client.NOT_FOUND:
+      raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName,
+                                                               version))
+    else:
+      raise e
 
   return build_from_document(content, base=discoveryServiceUrl, http=http,
       developerKey=developerKey, model=model, requestBuilder=requestBuilder,
@@ -232,9 +241,6 @@ def _retrieve_discovery_doc(url, http, cache_discovery, cache=None):
 
   resp, content = http.request(actual_url)
 
-  if resp.status == 404:
-    raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName,
-                                                             version))
   if resp.status >= 400:
     raise HttpError(resp, content, uri=actual_url)
 

@@ -59,6 +59,7 @@ from googleapiclient.errors import InvalidJsonError
 from googleapiclient.errors import MediaUploadSizeError
 from googleapiclient.errors import ResumableUploadError
 from googleapiclient.errors import UnacceptableMimeTypeError
+from googleapiclient.errors import UnknownApiNameOrVersion
 from googleapiclient.http import BatchHttpRequest
 from googleapiclient.http import HttpMock
 from googleapiclient.http import HttpMockSequence
@@ -346,6 +347,13 @@ class DiscoveryErrors(unittest.TestCase):
       self.fail("should have raised an exception over malformed JSON.")
     except InvalidJsonError:
       pass
+
+  def test_unknown_api_name_or_version(self):
+      http = HttpMockSequence([
+        ({'status': '404'}, open(datafile('zoo.json'), 'rb').read()),
+      ])
+      with self.assertRaises(UnknownApiNameOrVersion):
+        plus = build('plus', 'v1', http=http, cache_discovery=False)
 
 
 class DiscoveryFromDocument(unittest.TestCase):
