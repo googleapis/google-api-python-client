@@ -57,6 +57,7 @@ from googleapiclient.errors import MediaUploadSizeError
 from googleapiclient.errors import UnacceptableMimeTypeError
 from googleapiclient.errors import UnknownApiNameOrVersion
 from googleapiclient.errors import UnknownFileType
+from googleapiclient.errors import ParameterRequiredError
 from googleapiclient.http import BatchHttpRequest
 from googleapiclient.http import HttpRequest
 from googleapiclient.http import MediaFileUpload
@@ -846,7 +847,10 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     required = ''
     if arg in parameters.required_params:
       required = ' (required)'
-    paramdesc = methodDesc['parameters'][parameters.argmap[arg]]
+    try:
+      paramdesc = methodDesc['parameters'][parameters.argmap[arg]]
+    except KeyError:
+      raise ParameterRequiredError('Missing path parameter "%s" in input message' % arg)
     paramdoc = paramdesc.get('description', 'A parameter')
     if '$ref' in paramdesc:
       docs.append(
