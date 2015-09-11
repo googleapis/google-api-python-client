@@ -76,41 +76,39 @@ h1, h2, h3 {
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="#aggregate">aggregate(userId, body)</a></code></p>
-<p class="firstline">A description of how to use this function</p>
+<p class="firstline">Aggregates data of a certain type or stream into buckets divided by a given type of boundary. Multiple data sets of multiple types and from multiple sources can be aggreated into exactly one bucket type per request.</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="aggregate">aggregate(userId, body)</code>
-  <pre>A description of how to use this function
+  <pre>Aggregates data of a certain type or stream into buckets divided by a given type of boundary. Multiple data sets of multiple types and from multiple sources can be aggreated into exactly one bucket type per request.
 
 Args:
-  userId: string, A parameter (required)
+  userId: string, Aggregate data for the person identified. Use me to indicate the authenticated user. Only me is supported at this time. (required)
   body: object, The request body. (required)
     The object takes the form of:
 
 {
-    "aggregateBy": [
-      {
-        "outputDataTypeName": "A String",
-        "dataSourceId": "A String",
-        "dataTypeName": "A String", # by dataype or by datasource
-        "outputDataSourceId": "A String",
+    "aggregateBy": [ # The specification of data to be aggregated. At least one aggregateBy spec must be provided. All data that is specified will be aggregated using the same bucketing criteria. There will be one dataset in the response for every aggregateBy spec.
+      { # The specification of which data to aggregate.
+        "dataSourceId": "A String", # A data source ID to aggregate. Mutually exclusive of dataTypeName. Only data from the specified data source ID will be included in the aggregation. The dataset in the response will have the same data source ID.
+        "dataTypeName": "A String", # The data type to aggregate. All data sources providing this data type will contribute data to the aggregation. The response will contain a single dataset for this data type name. The dataset will have a data source ID of derived:com.google.:com.google.android.gms:aggregated
       },
     ],
-    "bucketByActivitySegment": {
-      "activityDataSourceId": "A String", # default activity stream will be used if not specified
-      "minDurationMillis": "A String", # Only activity segments of duration longer than this is used
+    "bucketByActivitySegment": { # Specifies that data be aggregated each activity segment recored for a user. Similar to bucketByActivitySegment, but bucketing is done for each activity segment rather than all segments of the same type. Mutually exclusive of other bucketing specifications.
+      "activityDataSourceId": "A String", # The default activity stream will be used if a specific activityDataSourceId is not specified.
+      "minDurationMillis": "A String", # Specifies that only activity segments of duration longer than minDurationMillis are considered and used as a container for aggregated data.
     },
-    "endTimeMillis": "A String",
-    "bucketBySession": {
-      "minDurationMillis": "A String", # Only sessions of duration longer than this is used
+    "endTimeMillis": "A String", # The end of a window of time. Data that intersects with this time window will be aggregated. The time is in milliseconds since epoch, inclusive.
+    "bucketBySession": { # Specifies that data be aggregated by user sessions. Data that does not fall within the time range of a session will not be included in the response. Mutually exclusive of other bucketing specifications.
+      "minDurationMillis": "A String", # Specifies that only sessions of duration longer than minDurationMillis are considered and used as a container for aggregated data.
     },
-    "bucketByActivityType": {
-      "activityDataSourceId": "A String", # default activity stream will be used if not specified
-      "minDurationMillis": "A String", # Only activity segments of duration longer than this is used
+    "bucketByActivityType": { # Specifies that data be aggregated by the type of activity being performed when the data was recorded. All data that was recorded during a certain activity type (for the given time range) will be aggregated into the same bucket. Data that was recorded while the user was not active will not be included in the response. Mutually exclusive of other bucketing specifications.
+      "activityDataSourceId": "A String", # The default activity stream will be used if a specific activityDataSourceId is not specified.
+      "minDurationMillis": "A String", # Specifies that only activity segments of duration longer than minDurationMillis are considered and used as a container for aggregated data.
     },
-    "startTimeMillis": "A String", # required time range
-    "bucketByTime": { # apparently oneof is not supported by reduced_nano_proto
-      "durationMillis": "A String",
+    "startTimeMillis": "A String", # The start of a window of time. Data that intersects with this time window will be aggregated. The time is in milliseconds since epoch, inclusive.
+    "bucketByTime": { # Specifies that data be aggregated by a single time interval. Mutually exclusive of other bucketing specifications.
+      "durationMillis": "A String", # Specifies that result buckets aggregate data by exactly durationMillis time frames. Time frames that contain no data will be included in the response with an empty dataset.
     },
   }
 
@@ -119,10 +117,10 @@ Returns:
   An object of the form:
 
     {
-    "bucket": [
+    "bucket": [ # A list of buckets containing the aggregated data.
       {
-        "endTimeMillis": "A String",
-        "dataset": [ # There will be one dataset per datatype/datasource
+        "endTimeMillis": "A String", # The end time for the aggregated data, in milliseconds since epoch, inclusive.
+        "dataset": [ # There will be one dataset per AggregateBy in the request.
           { # A dataset represents a projection container for data points. They do not carry any info of their own. Datasets represent a set of data points from a particular data source. A data point can be found in more than one dataset.
               "minStartTimeNs": "A String", # The smallest start time of all data points in this possibly partial representation of the dataset. Time is in nanoseconds from epoch. This should also match the first part of the dataset identifier.
               "nextPageToken": "A String", # This token will be set when a dataset is received in response to a GET request and the dataset is too large to be included in a single response. Provide this value in a subsequent GET request to return the next page of data points within this dataset.
@@ -144,8 +142,19 @@ Returns:
                     { # Holder object for the value of a single field in a data point.
                         #
                         # A field value has a particular format and is only ever set to one of an integer or a floating point value.
-                      "fpVal": 3.14, # Floating point value. When this is set, intVal must not be set.
-                      "intVal": 42, # Integer value. When this is set, fpVal must not be set.
+                      "mapVal": [ # Map value. The valid key space and units for the corresponding value of each entry should be documented as part of the data type definition. Keys should be kept small whenever possible. Data streams with large keys and high data frequency may be down sampled.
+                        {
+                          "value": { # Holder object for the value of an entry in a map field of a data point.
+                              #
+                              # A map value supports a subset of the formats that the regular Value supports.
+                            "fpVal": 3.14, # Floating point value.
+                          },
+                          "key": "A String",
+                        },
+                      ],
+                      "fpVal": 3.14, # Floating point value. When this is set, other values must not be set.
+                      "intVal": 42, # Integer value. When this is set, other values must not be set.
+                      "stringVal": "A String", # String value. When this is set, other values must not be set. Strings should be kept small whenever possible. Data streams with large string values and high data frequency may be down sampled.
                     },
                   ],
                   "computationTimeMillis": "A String", # Used for version checking during transformation; that is, a datapoint can only replace another datapoint that has an older computation time stamp.
@@ -155,7 +164,7 @@ Returns:
               ],
             },
         ],
-        "session": { # Sessions contain metadata, such as a user-friendly name and time interval information. # available for Bucket.Type.SESSION
+        "session": { # Sessions contain metadata, such as a user-friendly name and time interval information. # Available for Bucket.Type.SESSION
           "modifiedTimeMillis": "A String", # A timestamp that indicates when the session was last modified.
           "endTimeMillis": "A String", # An end time, in milliseconds since epoch, inclusive.
           "description": "A String", # A description for this session.
@@ -171,8 +180,8 @@ Returns:
           "id": "A String", # A client-generated identifier that is unique across all sessions owned by this particular user.
           "name": "A String", # A human readable name of the session.
         },
-        "activity": 42, # available for Bucket.Type.ACTIVITY_TYPE, Bucket.Type.ACTIVITY_SEGMENT
-        "startTimeMillis": "A String",
+        "activity": 42, # Available for Bucket.Type.ACTIVITY_TYPE, Bucket.Type.ACTIVITY_SEGMENT
+        "startTimeMillis": "A String", # The start time for the aggregated data, in milliseconds since epoch, inclusive.
         "type": "A String", # The type of a bucket signifies how the data aggregation is performed in the bucket.
       },
     ],

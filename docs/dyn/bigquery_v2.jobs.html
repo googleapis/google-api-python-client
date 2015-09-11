@@ -76,7 +76,7 @@ h1, h2, h3 {
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="#cancel">cancel(projectId, jobId)</a></code></p>
-<p class="firstline">Requests that a job be cancelled. This call will return immediately, and the client will need to poll for the job status to see if the cancel completed successfully.</p>
+<p class="firstline">Requests that a job be cancelled. This call will return immediately, and the client will need to poll for the job status to see if the cancel completed successfully. Cancelled jobs may still incur costs.</p>
 <p class="toc_element">
   <code><a href="#get">get(projectId, jobId)</a></code></p>
 <p class="firstline">Returns information about a specific job. Job information is available for a six month period after creation. Requires that you're the person who ran the job, or have the Is Owner project role.</p>
@@ -88,7 +88,7 @@ h1, h2, h3 {
 <p class="firstline">Starts a new asynchronous job. Requires the Can View project role.</p>
 <p class="toc_element">
   <code><a href="#list">list(projectId, projection=None, stateFilter=None, pageToken=None, allUsers=None, maxResults=None)</a></code></p>
-<p class="firstline">Lists all jobs that you started in the specified project. The job list returns in reverse chronological order of when the jobs were created, starting with the most recent job created. Requires the Can View project role, or the Is Owner project role if you set the allUsers property.</p>
+<p class="firstline">Lists all jobs that you started in the specified project. Job information is available for a six month period after creation. The job list is sorted in reverse chronological order, by job creation time. Requires the Can View project role, or the Is Owner project role if you set the allUsers property.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
@@ -98,7 +98,7 @@ h1, h2, h3 {
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="cancel">cancel(projectId, jobId)</code>
-  <pre>Requests that a job be cancelled. This call will return immediately, and the client will need to poll for the job status to see if the cancel completed successfully.
+  <pre>Requests that a job be cancelled. This call will return immediately, and the client will need to poll for the job status to see if the cancel completed successfully. Cancelled jobs may still incur costs.
 
 Args:
   projectId: string, Project ID of the job to cancel (required)
@@ -131,19 +131,21 @@ Returns:
           "load": { # [Output-only] Statistics for a load job.
             "outputRows": "A String", # [Output-only] Number of rows imported in a load job. Note that while an import job is in the running state, this value may change.
             "inputFiles": "A String", # [Output-only] Number of source files in a load job.
-            "inputFileBytes": "A String", # [Output-only] Number of bytes of source data in a joad job.
-            "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while an import job is in the running state, this value may change.
+            "inputFileBytes": "A String", # [Output-only] Number of bytes of source data in a load job.
+            "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while a load job is in the running state, this value may change.
           },
           "creationTime": "A String", # [Output-only] Creation time of this job, in milliseconds since the epoch. This field will be present on all jobs.
           "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
           "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
           "query": { # [Output-only] Statistics for a query job.
             "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
-            "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for this job.
+            "billingTier": 42, # [Output-only] Billing tier for the job.
+            "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
+            "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
           },
           "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch. This field will be present whenever a job is in the DONE state.
           "extract": { # [Output-only] Statistics for an extract job.
-            "destinationUriFileCounts": [ # [Experimental] Number of files per destination URI or URI pattern specified in the extract configuration. These values will be in the same order as the URIs specified in the 'destinationUris' field.
+            "destinationUriFileCounts": [ # [Output-only] Number of files per destination URI or URI pattern specified in the extract configuration. These values will be in the same order as the URIs specified in the 'destinationUris' field.
               "A String",
             ],
           },
@@ -236,10 +238,10 @@ Returns:
                   "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
                   "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
                 },
-                "sourceFormat": "A String", # [Optional] The data format. External data sources must be in CSV format. The default value is CSV.
+                "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON".
                 "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid.
-                "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns
-                "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. CSV limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
+                "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
+                "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
                   "A String",
                 ],
                 "schema": { # [Required] The schema for the data.
@@ -257,6 +259,12 @@ Returns:
                 },
               },
             },
+            "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
+              {
+                "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
+                "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
+              },
+            ],
           },
           "copy": { # [Pick one] Copies a table.
             "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
@@ -336,19 +344,21 @@ Returns:
         "load": { # [Output-only] Statistics for a load job.
           "outputRows": "A String", # [Output-only] Number of rows imported in a load job. Note that while an import job is in the running state, this value may change.
           "inputFiles": "A String", # [Output-only] Number of source files in a load job.
-          "inputFileBytes": "A String", # [Output-only] Number of bytes of source data in a joad job.
-          "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while an import job is in the running state, this value may change.
+          "inputFileBytes": "A String", # [Output-only] Number of bytes of source data in a load job.
+          "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while a load job is in the running state, this value may change.
         },
         "creationTime": "A String", # [Output-only] Creation time of this job, in milliseconds since the epoch. This field will be present on all jobs.
         "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
         "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
         "query": { # [Output-only] Statistics for a query job.
           "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
-          "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for this job.
+          "billingTier": 42, # [Output-only] Billing tier for the job.
+          "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
+          "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
         },
         "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch. This field will be present whenever a job is in the DONE state.
         "extract": { # [Output-only] Statistics for an extract job.
-          "destinationUriFileCounts": [ # [Experimental] Number of files per destination URI or URI pattern specified in the extract configuration. These values will be in the same order as the URIs specified in the 'destinationUris' field.
+          "destinationUriFileCounts": [ # [Output-only] Number of files per destination URI or URI pattern specified in the extract configuration. These values will be in the same order as the URIs specified in the 'destinationUris' field.
             "A String",
           ],
         },
@@ -441,10 +451,10 @@ Returns:
                 "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
                 "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
               },
-              "sourceFormat": "A String", # [Optional] The data format. External data sources must be in CSV format. The default value is CSV.
+              "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON".
               "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid.
-              "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns
-              "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. CSV limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
+              "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
+              "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
                 "A String",
               ],
               "schema": { # [Required] The schema for the data.
@@ -462,6 +472,12 @@ Returns:
               },
             },
           },
+          "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
+            {
+              "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
+              "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
+            },
+          ],
         },
         "copy": { # [Pick one] Copies a table.
           "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
@@ -512,7 +528,7 @@ Returns:
 Args:
   projectId: string, Project ID of the query job (required)
   jobId: string, Job ID of the query job (required)
-  timeoutMs: integer, How long to wait for the query to complete, in milliseconds, before returning. Default is to return immediately. If the timeout passes before the job completes, the request will fail with a TIMEOUT error
+  timeoutMs: integer, How long to wait for the query to complete, in milliseconds, before returning. Default is 10 seconds. If the timeout passes before the job completes, the 'jobComplete' field in the response will be false
   pageToken: string, Page token, returned by a previous call, to request the next page of results
   maxResults: integer, Maximum number of results to read
   startIndex: string, Zero-based index of the starting row
@@ -522,13 +538,12 @@ Returns:
 
     {
     "kind": "bigquery#getQueryResultsResponse", # The resource type of the response.
-    "rows": [ # An object with as many results as can be contained within the maximum permitted reply size. To get any additional rows, you can call GetQueryResults and specify the jobReference returned above. Present only when the query completes successfully.
+    "errors": [ # [Output-only] All errors and warnings encountered during the running of the job. Errors here do not necessarily mean that the job has completed or was unsuccessful.
       {
-        "f": [ # Represents a single row in the result set, consisting of one or more fields.
-          {
-            "v": "",
-          },
-        ],
+        "debugInfo": "A String", # Debugging information. This property is internal to Google and should not be used.
+        "message": "A String", # A human-readable description of the error.
+        "reason": "A String", # A short error code that summarizes the error.
+        "location": "A String", # Specifies where the error occurred, if present.
       },
     ],
     "jobReference": { # Reference to the BigQuery Job that was created to run the query. This field will be present even if the original request timed out, in which case GetQueryResults can be used to read the results once the query has completed. Since this API only returns the first page of results, subsequent pages can be fetched via the same mechanism (GetQueryResults).
@@ -541,6 +556,15 @@ Returns:
     "totalBytesProcessed": "A String", # The total number of bytes processed for this query.
     "cacheHit": True or False, # Whether the query result was fetched from the query cache.
     "etag": "A String", # A hash of this response.
+    "rows": [ # An object with as many results as can be contained within the maximum permitted reply size. To get any additional rows, you can call GetQueryResults and specify the jobReference returned above. Present only when the query completes successfully.
+      {
+        "f": [ # Represents a single row in the result set, consisting of one or more fields.
+          {
+            "v": "",
+          },
+        ],
+      },
+    ],
     "schema": { # The schema of the results. Present only when the query completes successfully.
       "fields": [ # Describes the fields in a table.
         {
@@ -589,19 +613,21 @@ Args:
       "load": { # [Output-only] Statistics for a load job.
         "outputRows": "A String", # [Output-only] Number of rows imported in a load job. Note that while an import job is in the running state, this value may change.
         "inputFiles": "A String", # [Output-only] Number of source files in a load job.
-        "inputFileBytes": "A String", # [Output-only] Number of bytes of source data in a joad job.
-        "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while an import job is in the running state, this value may change.
+        "inputFileBytes": "A String", # [Output-only] Number of bytes of source data in a load job.
+        "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while a load job is in the running state, this value may change.
       },
       "creationTime": "A String", # [Output-only] Creation time of this job, in milliseconds since the epoch. This field will be present on all jobs.
       "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
       "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
       "query": { # [Output-only] Statistics for a query job.
         "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
-        "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for this job.
+        "billingTier": 42, # [Output-only] Billing tier for the job.
+        "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
+        "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
       },
       "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch. This field will be present whenever a job is in the DONE state.
       "extract": { # [Output-only] Statistics for an extract job.
-        "destinationUriFileCounts": [ # [Experimental] Number of files per destination URI or URI pattern specified in the extract configuration. These values will be in the same order as the URIs specified in the 'destinationUris' field.
+        "destinationUriFileCounts": [ # [Output-only] Number of files per destination URI or URI pattern specified in the extract configuration. These values will be in the same order as the URIs specified in the 'destinationUris' field.
           "A String",
         ],
       },
@@ -694,10 +720,10 @@ Args:
               "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
               "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
             },
-            "sourceFormat": "A String", # [Optional] The data format. External data sources must be in CSV format. The default value is CSV.
+            "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON".
             "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid.
-            "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns
-            "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. CSV limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
+            "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
+            "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
               "A String",
             ],
             "schema": { # [Required] The schema for the data.
@@ -715,6 +741,12 @@ Args:
             },
           },
         },
+        "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
+          {
+            "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
+            "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
+          },
+        ],
       },
       "copy": { # [Pick one] Copies a table.
         "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
@@ -785,19 +817,21 @@ Returns:
         "load": { # [Output-only] Statistics for a load job.
           "outputRows": "A String", # [Output-only] Number of rows imported in a load job. Note that while an import job is in the running state, this value may change.
           "inputFiles": "A String", # [Output-only] Number of source files in a load job.
-          "inputFileBytes": "A String", # [Output-only] Number of bytes of source data in a joad job.
-          "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while an import job is in the running state, this value may change.
+          "inputFileBytes": "A String", # [Output-only] Number of bytes of source data in a load job.
+          "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while a load job is in the running state, this value may change.
         },
         "creationTime": "A String", # [Output-only] Creation time of this job, in milliseconds since the epoch. This field will be present on all jobs.
         "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
         "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
         "query": { # [Output-only] Statistics for a query job.
           "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
-          "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for this job.
+          "billingTier": 42, # [Output-only] Billing tier for the job.
+          "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
+          "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
         },
         "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch. This field will be present whenever a job is in the DONE state.
         "extract": { # [Output-only] Statistics for an extract job.
-          "destinationUriFileCounts": [ # [Experimental] Number of files per destination URI or URI pattern specified in the extract configuration. These values will be in the same order as the URIs specified in the 'destinationUris' field.
+          "destinationUriFileCounts": [ # [Output-only] Number of files per destination URI or URI pattern specified in the extract configuration. These values will be in the same order as the URIs specified in the 'destinationUris' field.
             "A String",
           ],
         },
@@ -890,10 +924,10 @@ Returns:
                 "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
                 "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
               },
-              "sourceFormat": "A String", # [Optional] The data format. External data sources must be in CSV format. The default value is CSV.
+              "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON".
               "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid.
-              "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns
-              "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. CSV limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
+              "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
+              "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
                 "A String",
               ],
               "schema": { # [Required] The schema for the data.
@@ -911,6 +945,12 @@ Returns:
               },
             },
           },
+          "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
+            {
+              "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
+              "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
+            },
+          ],
         },
         "copy": { # [Pick one] Copies a table.
           "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
@@ -956,7 +996,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="list">list(projectId, projection=None, stateFilter=None, pageToken=None, allUsers=None, maxResults=None)</code>
-  <pre>Lists all jobs that you started in the specified project. The job list returns in reverse chronological order of when the jobs were created, starting with the most recent job created. Requires the Can View project role, or the Is Owner project role if you set the allUsers property.
+  <pre>Lists all jobs that you started in the specified project. Job information is available for a six month period after creation. The job list is sorted in reverse chronological order, by job creation time. Requires the Can View project role, or the Is Owner project role if you set the allUsers property.
 
 Args:
   projectId: string, Project ID of the jobs to list (required)
@@ -1004,19 +1044,21 @@ Returns:
           "load": { # [Output-only] Statistics for a load job.
             "outputRows": "A String", # [Output-only] Number of rows imported in a load job. Note that while an import job is in the running state, this value may change.
             "inputFiles": "A String", # [Output-only] Number of source files in a load job.
-            "inputFileBytes": "A String", # [Output-only] Number of bytes of source data in a joad job.
-            "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while an import job is in the running state, this value may change.
+            "inputFileBytes": "A String", # [Output-only] Number of bytes of source data in a load job.
+            "outputBytes": "A String", # [Output-only] Size of the loaded data in bytes. Note that while a load job is in the running state, this value may change.
           },
           "creationTime": "A String", # [Output-only] Creation time of this job, in milliseconds since the epoch. This field will be present on all jobs.
           "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
           "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
           "query": { # [Output-only] Statistics for a query job.
             "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
-            "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for this job.
+            "billingTier": 42, # [Output-only] Billing tier for the job.
+            "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
+            "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
           },
           "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch. This field will be present whenever a job is in the DONE state.
           "extract": { # [Output-only] Statistics for an extract job.
-            "destinationUriFileCounts": [ # [Experimental] Number of files per destination URI or URI pattern specified in the extract configuration. These values will be in the same order as the URIs specified in the 'destinationUris' field.
+            "destinationUriFileCounts": [ # [Output-only] Number of files per destination URI or URI pattern specified in the extract configuration. These values will be in the same order as the URIs specified in the 'destinationUris' field.
               "A String",
             ],
           },
@@ -1109,10 +1151,10 @@ Returns:
                   "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
                   "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
                 },
-                "sourceFormat": "A String", # [Optional] The data format. External data sources must be in CSV format. The default value is CSV.
+                "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON".
                 "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid.
-                "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns
-                "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. CSV limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
+                "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
+                "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
                   "A String",
                 ],
                 "schema": { # [Required] The schema for the data.
@@ -1130,6 +1172,12 @@ Returns:
                 },
               },
             },
+            "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
+              {
+                "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
+                "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
+              },
+            ],
           },
           "copy": { # [Pick one] Copies a table.
             "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
@@ -1206,7 +1254,7 @@ Args:
 {
     "timeoutMs": 42, # [Optional] How long to wait for the query to complete, in milliseconds, before the request times out and returns. Note that this is only a timeout for the request, not the query. If the query takes longer to run than the timeout value, the call returns without any results and with the 'jobComplete' flag set to false. You can call GetQueryResults() to wait for the query to complete and read the results. The default value is 10000 milliseconds (10 seconds).
     "kind": "bigquery#queryRequest", # The resource type of the request.
-    "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run.
+    "dryRun": True or False, # [Optional] If set to true, BigQuery doesn't run the job. Instead, if the query is valid, BigQuery returns statistics about the job such as how many bytes would be processed. If the query is invalid, an error returns. The default value is false.
     "useQueryCache": true, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. The default value is true.
     "defaultDataset": { # [Optional] Specifies the default datasetId and projectId to assume for any unqualified table names in the query. If not set, all table names in the query string must be qualified in the format 'datasetId.tableId'.
       "projectId": "A String", # [Optional] The ID of the project containing this dataset.
@@ -1223,13 +1271,12 @@ Returns:
 
     {
     "kind": "bigquery#queryResponse", # The resource type.
-    "rows": [ # An object with as many results as can be contained within the maximum permitted reply size. To get any additional rows, you can call GetQueryResults and specify the jobReference returned above.
+    "errors": [ # [Output-only] All errors and warnings encountered during the running of the job. Errors here do not necessarily mean that the job has completed or was unsuccessful.
       {
-        "f": [ # Represents a single row in the result set, consisting of one or more fields.
-          {
-            "v": "",
-          },
-        ],
+        "debugInfo": "A String", # Debugging information. This property is internal to Google and should not be used.
+        "message": "A String", # A human-readable description of the error.
+        "reason": "A String", # A short error code that summarizes the error.
+        "location": "A String", # Specifies where the error occurred, if present.
       },
     ],
     "jobReference": { # Reference to the Job that was created to run the query. This field will be present even if the original request timed out, in which case GetQueryResults can be used to read the results once the query has completed. Since this API only returns the first page of results, subsequent pages can be fetched via the same mechanism (GetQueryResults).
@@ -1241,6 +1288,15 @@ Returns:
     "totalRows": "A String", # The total number of rows in the complete query result set, which can be more than the number of rows in this single page of results.
     "totalBytesProcessed": "A String", # The total number of bytes processed for this query. If this query was a dry run, this is the number of bytes that would be processed if the query were run.
     "cacheHit": True or False, # Whether the query result was fetched from the query cache.
+    "rows": [ # An object with as many results as can be contained within the maximum permitted reply size. To get any additional rows, you can call GetQueryResults and specify the jobReference returned above.
+      {
+        "f": [ # Represents a single row in the result set, consisting of one or more fields.
+          {
+            "v": "",
+          },
+        ],
+      },
+    ],
     "schema": { # The schema of the results. Present only when the query completes successfully.
       "fields": [ # Describes the fields in a table.
         {
