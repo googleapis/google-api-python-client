@@ -79,7 +79,7 @@ h1, h2, h3 {
 <p class="firstline">Approves the specified product (and the relevant app permissions, if any).</p>
 <p class="toc_element">
   <code><a href="#generateApprovalUrl">generateApprovalUrl(enterpriseId, productId, languageCode=None)</a></code></p>
-<p class="firstline">Generates a URL that can be used to display an iframe to view the product's permissions (if any) and approve the product. This URL can be used to approve the product for a limited time (currently 1 hour) using the Products.approve call.</p>
+<p class="firstline">Generates a URL that can be rendered in an iframe to display the permissions (if any) of a product. An enterprise admin must view these permissions and accept them on behalf of their organization in order to approve that product.</p>
 <p class="toc_element">
   <code><a href="#get">get(enterpriseId, productId, language=None)</a></code></p>
 <p class="firstline">Retrieves details of a product for display to an enterprise admin.</p>
@@ -104,7 +104,7 @@ Args:
     The object takes the form of:
 
 {
-    "approvalUrlInfo": { # Information on an approval URL.
+    "approvalUrlInfo": { # Information on an approval URL. # The approval URL that was shown to the user. Only the permissions shown to the user with that URL will be accepted, which may not be the product's entire set of permissions. For example, the URL may only display new permissions from an update after the product was approved, or not include new permissions if the product was updated since the URL was generated.
       "kind": "androidenterprise#approvalUrlInfo", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#approvalUrlInfo".
       "approvalUrl": "A String", # A URL that displays a product's permissions and that can also be used to approve the product with the Products.approve call.
     },
@@ -115,18 +115,20 @@ Args:
 
 <div class="method">
     <code class="details" id="generateApprovalUrl">generateApprovalUrl(enterpriseId, productId, languageCode=None)</code>
-  <pre>Generates a URL that can be used to display an iframe to view the product's permissions (if any) and approve the product. This URL can be used to approve the product for a limited time (currently 1 hour) using the Products.approve call.
+  <pre>Generates a URL that can be rendered in an iframe to display the permissions (if any) of a product. An enterprise admin must view these permissions and accept them on behalf of their organization in order to approve that product.
+
+Admins should accept the displayed permissions by interacting with a separate UI element in the EMM console, which in turn should trigger the use of this URL as the approvalUrlInfo.approvalUrl property in a Products.approve call to approve the product. This URL can only be used to display permissions for up to 1 day.
 
 Args:
   enterpriseId: string, The ID of the enterprise. (required)
   productId: string, The ID of the product. (required)
-  languageCode: string, The language code that will be used for permission names and descriptions in the returned iframe.
+  languageCode: string, The BCP 47 language code used for permission names and descriptions in the returned iframe, for instance "en-US".
 
 Returns:
   An object of the form:
 
     {
-    "url": "A String", # A iframe-able URL that displays a product's permissions (if any). This URL can be used to approve the product only once and for a limited time (1 hour), using the Products.approve call. If the product is not currently approved and has no permissions, this URL will point to an empty page. If the product is currently approved and all of its permissions (if any) are also approved, this field will not be populated.
+    "url": "A String", # A URL that can be rendered in an iframe to display the permissions (if any) of a product. This URL can be used to approve the product only once and only within 24 hours of being generated, using the Products.approve call. If the product is currently unapproved and has no permissions, this URL will point to an empty page. If the product is currently approved, a URL will only be generated if that product has added permissions since it was last approved, and the URL will only display those new permissions that have not yet been accepted.
   }</pre>
 </div>
 
@@ -146,21 +148,20 @@ Returns:
       #
       # The information provided for each product (localized name, icon, link to the full Google Play details page) is intended to allow a basic representation of the product within an MDM user interface.
     "kind": "androidenterprise#product", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#product".
-    "distributionChannel": "A String", # How and to whom the package is made available.
+    "distributionChannel": "A String", # How and to whom the package is made available. The value publicGoogleHosted means that the package is available through the Play Store and not restricted to a specific enterprise. The value privateGoogleHosted means that the package is a private app (restricted to an enterprise) but hosted by Google. The value privateSelfHosted means that the package is a private app (restricted to an enterprise) and is privately hosted.
     "title": "A String", # The name of the product.
     "workDetailsUrl": "A String", # A link to the Google Play for Work details page for the product, for use by an Enterprise administrator.
-    "appVersion": [ # List of app versions available for this product. The returned list contains only public versions. E.g. alpha, beta or canary versions will not be included.
-      { # App version represents a single APK version.
-        "versionCode": 42, # Unique increasing identifier for the apk version.
-        "versionString": "A String", # The string used in the Play Store by the app developer to identify a version of an app. The string is not necessarily unique or localized (e.g. "1.4").
+    "appVersion": [ # App versions currently available for this product. The returned list contains only public versions. Alpha and beta versions are not included.
+      { # This represents a single version of the app.
+        "versionCode": 42, # Unique increasing identifier for the app version.
+        "versionString": "A String", # The string used in the Play Store by the app developer to identify the version. The string is not necessarily unique or localized (for example, the string could be "1.4").
       },
     ],
     "iconUrl": "A String", # A link to an image that can be used as an icon for the product.
     "authorName": "A String", # The name of the author of the product (e.g. the app developer).
     "requiresContainerApp": True or False, # Whether this app can only be installed on devices using the Android for Work container app.
     "detailsUrl": "A String", # A link to the (consumer) Google Play details page for the product.
-    "productId": "A String", # A string of the form "app:
-        # " - e.g. "app:com.google.android.gm" represents the GMail app.
+    "productId": "A String", # A string of the form app:<package name>. For example, app:com.google.android.gm represents the Gmail app.
   }</pre>
 </div>
 
@@ -200,6 +201,7 @@ Returns:
         "description": "A String", # A longer description of the restriction, giving more detail of what it affects.
       },
     ],
+    "kind": "androidenterprise#appRestrictionsSchema", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#appRestrictionsSchema".
   }</pre>
 </div>
 
