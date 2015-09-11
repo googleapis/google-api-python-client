@@ -29,10 +29,9 @@ prerelease:
 	-sudo rm -rf dist/
 	-rm -rf snapshot/
 	-sudo rm -rf snapshot/
-	# ./tools/gae-zip-creator.sh
 	python expandsymlinks.py
 	cd snapshot; python setup.py clean
-	cd snapshot; python setup.py sdist --formats=gztar,zip
+	cd snapshot; python setup.py sdist --formats=gztar,zip bdist_wheel --universal
 	cd snapshot; tar czf google-api-python-client-samples-$(shell python setup.py --version).tar.gz samples
 	cd snapshot; zip -r google-api-python-client-samples-$(shell python setup.py --version).zip samples
 
@@ -43,5 +42,5 @@ release: prerelease
 	@echo "Are you sure you want to proceed? (yes/no)"
 	@read yn; if [ yes -ne $(yn) ]; then exit 1; fi
 	@echo "Here we go..."
-	cd snapshot; python setup.py sdist --formats=gztar,zip register upload
-	
+	cd snapshot; python setup.py sdist --formats=gztar,zip bdist_wheel --universal
+	cd snapshot; twine upload dist/*
