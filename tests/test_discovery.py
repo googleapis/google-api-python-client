@@ -1098,22 +1098,6 @@ class Discovery(unittest.TestCase):
     upload = IoBaseHasStream()
 
     orig_version = sys.version_info
-    sys.version_info = (2, 5, 5, 'final', 0)
-
-    request = zoo.animals().insert(media_body=upload, body=None)
-
-    http = HttpMockSequence([
-      ({'status': '200',
-        'location': 'http://upload.example.com'}, ''),
-      ({'status': '200'}, 'echo_request_headers_as_json'),
-      ])
-
-    # This should not raise an exception because stream() shouldn't be called.
-    status, body = request.next_chunk(http=http)
-    self.assertEqual(body, {
-        'Content-Range': 'bytes 0-9/*',
-        'Content-Length': '10'
-        })
 
     sys.version_info = (2, 6, 5, 'final', 0)
 

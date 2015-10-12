@@ -827,10 +827,7 @@ class HttpRequest(object):
         # The upload was complete.
         return (status, body)
 
-    # The httplib.request method can take streams for the body parameter, but
-    # only in Python 2.6 or later. If a stream is available under those
-    # conditions then use it as the body argument.
-    if self.resumable.has_stream() and sys.version_info[1] >= 6:
+    if self.resumable.has_stream():
       data = self.resumable.stream()
       if self.resumable.chunksize() == -1:
         data.seek(self.resumable_progress)
