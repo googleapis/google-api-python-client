@@ -35,6 +35,7 @@ import itertools
 import json
 import os
 import pickle
+import re
 import sys
 import unittest2 as unittest
 
@@ -787,7 +788,21 @@ class Discovery(unittest.TestCase):
     request = zoo.animals().insert(media_body=datafile('small.png'), body={})
     self.assertTrue(request.headers['content-type'].startswith(
         'multipart/related'))
-    self.assertEquals('--==', request.body[0:4])
+    with open(datafile('small.png'), 'rb') as f:
+      contents = f.read()
+    boundary = re.match(b'--=+([^=]+)', request.body).group(1)
+    self.assertEqual(
+      request.body.rstrip(b"\n"), # Python 2.6 does not add a trailing \n
+      b'--===============' + boundary + b'==\n' +
+      b'Content-Type: application/json\n' +
+      b'MIME-Version: 1.0\n\n' +
+      b'{"data": {}}\n' +
+      b'--===============' + boundary + b'==\n' +
+      b'Content-Type: image/png\n' +
+      b'MIME-Version: 1.0\n' +
+      b'Content-Transfer-Encoding: binary\n\n' +
+      contents +
+      b'\n--===============' + boundary + b'==--')
     assertUrisEqual(self,
         'https://www.googleapis.com/upload/zoo/v1/animals?uploadType=multipart&alt=json',
         request.uri)

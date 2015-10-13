@@ -28,14 +28,17 @@ __all__ = [
     'key2param',
     ]
 
-from six import StringIO
+from six import BytesIO
 from six.moves import http_client
 from six.moves.urllib.parse import urlencode, urlparse, urljoin, \
   urlunparse, parse_qsl
 
 # Standard library imports
 import copy
-from email.generator import Generator
+try:
+  from email.generator import BytesGenerator
+except ImportError:
+  from email.generator import Generator as BytesGenerator
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 import json
@@ -102,6 +105,10 @@ STACK_QUERY_PARAMETER_DEFAULT_VALUE = {'type': 'string', 'location': 'query'}
 # Library-specific reserved words beyond Python keywords.
 RESERVED_WORDS = frozenset(['body'])
 
+# patch _write_lines to avoid munging '\r' into '\n'
+# ( https://bugs.python.org/issue18886 https://bugs.python.org/issue19003 )
+class _BytesGenerator(BytesGenerator):
+  _write_lines = BytesGenerator.write
 
 def fix_method_name(name):
   """Fix method names to avoid reserved word conflicts.
@@ -797,8 +804,8 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
           msgRoot.attach(msg)
           # encode the body: note that we can't use `as_string`, because
           # it plays games with `From ` lines.
-          fp = StringIO()
-          g = Generator(fp, mangle_from_=False)
+          fp = BytesIO()
+          g = _BytesGenerator(fp, mangle_from_=False)
           g.flatten(msgRoot, unixfrom=False)
           body = fp.getvalue()
 
