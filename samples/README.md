@@ -127,7 +127,7 @@ Documentation for the Groups Settings API in
 
 <table>
   <tr>
-    <td><a href="groupsettings">samples/groupsettings</a></td>
+    <td><a href="groupssettings">samples/groupssettings</a></td>
     <td>Sample for the Groups Settings API</td>
   </tr>
 </table>
