@@ -131,6 +131,13 @@ class TestUserAgent(unittest.TestCase):
 
 class TestMediaUpload(unittest.TestCase):
 
+  def test_media_file_upload_mimetype_detection(self):
+    upload = MediaFileUpload(datafile('small.png'))
+    self.assertEqual('image/png', upload.mimetype())
+
+    upload = MediaFileUpload(datafile('empty'))
+    self.assertEqual('application/octet-stream', upload.mimetype())
+
   def test_media_file_upload_to_from_json(self):
     upload = MediaFileUpload(
         datafile('small.png'), chunksize=500, resumable=True)

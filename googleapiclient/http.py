@@ -425,7 +425,11 @@ class MediaFileUpload(MediaIoBaseUpload):
     self._filename = filename
     fd = open(self._filename, 'rb')
     if mimetype is None:
-      (mimetype, encoding) = mimetypes.guess_type(filename)
+      # No mimetype provided, make a guess.
+      mimetype, _ = mimetypes.guess_type(filename)
+      if mimetype is None:
+        # Guess failed, use octet-stream.
+        mimetype = 'application/octet-stream'
     super(MediaFileUpload, self).__init__(fd, mimetype, chunksize=chunksize,
                                           resumable=resumable)
 
