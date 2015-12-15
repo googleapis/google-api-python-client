@@ -34,6 +34,7 @@ import logging
 import os
 import unittest2 as unittest
 import random
+import ssl
 import time
 
 from googleapiclient.discovery import build
@@ -99,6 +100,20 @@ class MockCredentials(Credentials):
   def apply(self, headers):
     self._applied += 1
     headers['authorization'] = self._bearer_token + ' ' + str(self._refreshed)
+
+
+class HttpMockWithSSLErrors(object):
+  def __init__(self, num_errors, success_json, success_data):
+    self.num_errors = num_errors
+    self.success_json = success_json
+    self.success_data = success_data
+
+  def request(self, *args, **kwargs):
+    if not self.num_errors:
+      return httplib2.Response(self.success_json), self.success_data
+    else:
+      self.num_errors -= 1
+      raise ssl.SSLError()
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -394,6 +409,20 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
     self.assertEqual(self.fd.getvalue(), b'123')
 
+  def test_media_io_base_download_retries_ssl_errors(self):
+    self.request.http = HttpMockWithSSLErrors(
+        3, {'status': '200', 'content-range': '0-2/3'}, b'123')
+
+    download = MediaIoBaseDownload(
+        fd=self.fd, request=self.request, chunksize=3)
+    download._sleep = lambda _x: 0  # do nothing
+    download._rand = lambda: 10
+
+    status, done = download.next_chunk(num_retries=3)
+
+    self.assertEqual(self.fd.getvalue(), b'123')
+    self.assertEqual(True, done)
+
   def test_media_io_base_download_retries_5xx(self):
     self.request.http = HttpMockSequence([
       ({'status': '500'}, ''),
@@ -592,6 +621,36 @@ class TestHttpRequest(unittest.TestCase):
     self.assertEqual(str, type(http.uri))
     self.assertEqual(method, http.method)
     self.assertEqual(str, type(http.method))
+
+  def test_retry_ssl_errors_non_resumable(self):
+    model = JsonModel()
+    request = HttpRequest(
+        HttpMockWithSSLErrors(3, {'status': '200'}, '{"foo": "bar"}'),
+        model.response,
+        u'https://www.example.com/json_api_endpoint')
+    request._sleep = lambda _x: 0  # do nothing
+    request._rand = lambda: 10
+    response = request.execute(num_retries=3)
+    self.assertEqual({u'foo': u'bar'}, response)
+
+  def test_retry_ssl_errors_resumable(self):
+    f = open(datafile('small.png'), 'rb')
+    fd = BytesIO(f.read())
+    upload = MediaIoBaseUpload(
+        fd=fd, mimetype='image/png', chunksize=500, resumable=True)
+    model = JsonModel()
+
+    request = HttpRequest(
+        HttpMockWithSSLErrors(
+            3, {'status': '200', 'location': 'location'}, '{"foo": "bar"}'),
+        model.response,
+        u'https://www.example.com/file_upload',
+        method='POST',
+        resumable=upload)
+    request._sleep = lambda _x: 0  # do nothing
+    request._rand = lambda: 10
+    response = request.execute(num_retries=3)
+    self.assertEqual({u'foo': u'bar'}, response)
 
   def test_retry(self):
     num_retries = 5
