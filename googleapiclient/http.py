@@ -87,7 +87,7 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
   for retry_num in range(num_retries + 1):
     if retry_num > 0:
       sleep(rand() * 2**retry_num)
-      LOGGER.warning(
+      logging.warning(
           'Retry #%d for %s: %s %s%s' % (retry_num, req_type, method, uri,
           ', following status: %d' % resp.status if resp else ''))
 
