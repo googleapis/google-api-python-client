@@ -82,6 +82,8 @@ URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
 DISCOVERY_URI = ('https://www.googleapis.com/discovery/v1/apis/'
                  '{api}/{apiVersion}/rest')
+DISCOVERY_URI2 = ('https://{api}}.googleapis.com/$discovery/rest?'
+                  'version={apiVersion}')
 DEFAULT_METHOD_DOC = 'A description of how to use this function'
 HTTP_PAYLOAD_METHODS = frozenset(['PUT', 'POST', 'PATCH'])
 _MEDIA_SIZE_BIT_SHIFTS = {'KB': 10, 'MB': 20, 'GB': 30, 'TB': 40}
@@ -203,8 +205,19 @@ def build(serviceName,
                                       cache)
   except HttpError as e:
     if e.resp.status == http_client.NOT_FOUND:
-      raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName,
-                                                               version))
+      # Try with a different Discovery uri pattern.
+      discoveryServiceUrl = DISCOVERY_URI2
+      requested_url = uritemplate.expand(discoveryServiceUrl, params)
+
+      try:
+        content = _retrieve_discovery_doc(requested_url, http, cache_discovery,
+                                          cache)
+      except HttpError as e:
+        if e.resp.status == http_client.NOT_FOUND:
+          raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName,
+                                                                   version))
+        else:
+          raise e
     else:
       raise e
 
