@@ -82,7 +82,7 @@ URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
 DISCOVERY_URI = ('https://www.googleapis.com/discovery/v1/apis/'
                  '{api}/{apiVersion}/rest')
-DISCOVERY_URI2 = ('https://{api}}.googleapis.com/$discovery/rest?'
+DISCOVERY_URI2 = ('https://{api}.googleapis.com/$discovery/rest?'
                   'version={apiVersion}')
 DEFAULT_METHOD_DOC = 'A description of how to use this function'
 HTTP_PAYLOAD_METHODS = frozenset(['PUT', 'POST', 'PATCH'])
@@ -198,28 +198,22 @@ def build(serviceName,
   if http is None:
     http = httplib2.Http()
 
-  requested_url = uritemplate.expand(discoveryServiceUrl, params)
+  for discovery_url in [discoveryServiceUrl,DISCOVERY_URI2]
+    requested_url = uritemplate.expand(discovery_url, params)
 
-  try:
-    content = _retrieve_discovery_doc(requested_url, http, cache_discovery,
-                                      cache)
-  except HttpError as e:
-    if e.resp.status == http_client.NOT_FOUND:
-      # Try with a different Discovery uri pattern.
-      discoveryServiceUrl = DISCOVERY_URI2
-      requested_url = uritemplate.expand(discoveryServiceUrl, params)
-
-      try:
-        content = _retrieve_discovery_doc(requested_url, http, cache_discovery,
-                                          cache)
-      except HttpError as e:
-        if e.resp.status == http_client.NOT_FOUND:
-          raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName,
-                                                                   version))
-        else:
-          raise e
+    try:
+      content = _retrieve_discovery_doc(requested_url, http, cache_discovery,
+                                        cache)
+      discoveryServiceUrl = discovery_url
+    except HttpError as e:
+      if e.resp.status == http_client.NOT_FOUND:
+        continue
     else:
       raise e
+
+  if content = None:
+    raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName,
+                                                             version))
 
   return build_from_document(content, base=discoveryServiceUrl, http=http,
       developerKey=developerKey, model=model, requestBuilder=requestBuilder,
