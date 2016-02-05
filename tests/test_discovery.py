@@ -426,13 +426,13 @@ class DiscoveryFromHttp(unittest.TestCase):
     except HttpError as e:
       self.assertEqual(e.uri, 'http://example.com')
 
-  def test_discovery_loading_from_backup_uri(self):
-    http = HttpMockSequence([
-      ({'status': '404'}, 'Not found'),
-      ({'status': '200'}, open(datafile('zoo.json'), 'rb').read()),
-    ])
-    zoo = build('zoo', 'v1', http=http, cache_discovery=False)
-    self.assertTrue(hasattr(zoo, 'animals'))
+  def test_discovery_loading_from_v2_discovery_uri(self):
+     http = HttpMockSequence([
+       ({'status': '404'}, 'Not found'),
+       ({'status': '200'}, open(datafile('zoo.json'), 'rb').read()),
+     ])
+     zoo = build('zoo', 'v1', http=http, cache_discovery=False)
+     self.assertTrue(hasattr(zoo, 'animals'))
 
 
 class DiscoveryFromAppEngineCache(unittest.TestCase):
