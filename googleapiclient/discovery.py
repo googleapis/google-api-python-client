@@ -82,6 +82,10 @@ URITEMPLATE = re.compile('{[^}]*}')
 VARNAME = re.compile('[a-zA-Z0-9_-]+')
 DISCOVERY_URI = ('https://www.googleapis.com/discovery/v1/apis/'
                  '{api}/{apiVersion}/rest')
+V1_DISCOVERY_URI = DISCOVERY_URI
+V2_DISCOVERY_URI = ('https://{api}.googleapis.com/$discovery/rest?'
+                    'version={apiVersion}')
+
 DEFAULT_METHOD_DOC = 'A description of how to use this function'
 HTTP_PAYLOAD_METHODS = frozenset(['PUT', 'POST', 'PATCH'])
 _MEDIA_SIZE_BIT_SHIFTS = {'KB': 10, 'MB': 20, 'GB': 30, 'TB': 40}
@@ -153,7 +157,7 @@ def key2param(key):
 def build(serviceName,
           version,
           http=None,
-          discoveryServiceUrl=DISCOVERY_URI,
+          discoveryServiceUrl=V1_DISCOVERY_URI,
           developerKey=None,
           model=None,
           requestBuilder=HttpRequest,
@@ -196,21 +200,23 @@ def build(serviceName,
   if http is None:
     http = httplib2.Http()
 
-  requested_url = uritemplate.expand(discoveryServiceUrl, params)
+  for discovery_url in [discoveryServiceUrl, V2_DISCOVERY_URI]:
+    requested_url = uritemplate.expand(discovery_url, params)
 
-  try:
-    content = _retrieve_discovery_doc(requested_url, http, cache_discovery,
-                                      cache)
-  except HttpError as e:
-    if e.resp.status == http_client.NOT_FOUND:
-      raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName,
-                                                               version))
-    else:
-      raise e
+    try:
+      content = _retrieve_discovery_doc(requested_url, http, cache_discovery,
+                                        cache)
+      return build_from_document(content, base=discovery_url, http=http,
+          developerKey=developerKey, model=model, requestBuilder=requestBuilder,
+          credentials=credentials)
+    except HttpError as e:
+      if e.resp.status == http_client.NOT_FOUND:
+        continue
+      else:
+        raise e
 
-  return build_from_document(content, base=discoveryServiceUrl, http=http,
-      developerKey=developerKey, model=model, requestBuilder=requestBuilder,
-      credentials=credentials)
+  raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName,
+                                                           version))
 
 
 def _retrieve_discovery_doc(url, http, cache_discovery, cache=None):
