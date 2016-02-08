@@ -33,6 +33,8 @@ from googleapiclient import __version__
 from googleapiclient.errors import HttpError
 
 
+LOGGER = logging.getLogger(__name__)
+
 dump_request_response = False
 
 
@@ -105,18 +107,18 @@ class BaseModel(Model):
   def _log_request(self, headers, path_params, query, body):
     """Logs debugging information about the request if requested."""
     if dump_request_response:
-      logging.info('--request-start--')
-      logging.info('-headers-start-')
+      LOGGER.info('--request-start--')
+      LOGGER.info('-headers-start-')
       for h, v in six.iteritems(headers):
-        logging.info('%s: %s', h, v)
-      logging.info('-headers-end-')
-      logging.info('-path-parameters-start-')
+        LOGGER.info('%s: %s', h, v)
+      LOGGER.info('-headers-end-')
+      LOGGER.info('-path-parameters-start-')
       for h, v in six.iteritems(path_params):
-        logging.info('%s: %s', h, v)
-      logging.info('-path-parameters-end-')
-      logging.info('body: %s', body)
-      logging.info('query: %s', query)
-      logging.info('--request-end--')
+        LOGGER.info('%s: %s', h, v)
+      LOGGER.info('-path-parameters-end-')
+      LOGGER.info('body: %s', body)
+      LOGGER.info('query: %s', query)
+      LOGGER.info('--request-end--')
 
   def request(self, headers, path_params, query_params, body_value):
     """Updates outgoing requests with a serialized body.
@@ -176,12 +178,12 @@ class BaseModel(Model):
   def _log_response(self, resp, content):
     """Logs debugging information about the response if requested."""
     if dump_request_response:
-      logging.info('--response-start--')
+      LOGGER.info('--response-start--')
       for h, v in six.iteritems(resp):
-        logging.info('%s: %s', h, v)
+        LOGGER.info('%s: %s', h, v)
       if content:
-        logging.info(content)
-      logging.info('--response-end--')
+        LOGGER.info(content)
+      LOGGER.info('--response-end--')
 
   def response(self, resp, content):
     """Convert the response wire format into a Python object.
@@ -206,7 +208,7 @@ class BaseModel(Model):
         return self.no_content_response
       return self.deserialize(content)
     else:
-      logging.debug('Content from bad request was: %s' % content)
+      LOGGER.debug('Content from bad request was: %s' % content)
       raise HttpError(resp, content)
 
   def serialize(self, body_value):
