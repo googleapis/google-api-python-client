@@ -80,10 +80,36 @@ def main(argv):
       argv, 'analytics', 'v4', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/analytics.readonly',
       discovery_service_url='https://analytics.googleapis.com/$discovery/google_rest/rest?key=AIzaSyDMNb369FUbBHlZBwFMI83ukWVUzr_D6J8&labels=TRUSTED_TESTER')
+  
+  table_id = flags.table_id
+  
+  print('Executing a simple request using a single date range:')
+  run_demo(service, build_simple_request(table_id))
 
+  print('Executing a request using metrics/dimension filters:')
+  run_demo(service, build_request_with_filters(table_id))
+
+  print('Executing a request using both original and comparison date ranges:')
+  run_demo(service, build_request_with_comparison_date_range(table_id))
+
+  print('Executing a request using pivots feature:')
+  run_demo(service, build_request_with_pivots(table_id))
+
+  print('Executing a request using segments feature:')
+  run_demo(service, build_request_with_segments(table_id))
+
+  print('Executing a request using cohorts feature:')
+  run_demo(service, build_request_with_cohorts(table_id))
+
+
+def run_demo(service, report_request):
   # Try to make a request to the API. Print the results or handle errors.
   try:
-    results = get_api_query(service, flags.table_id).execute()
+    # Note that multiple requests can potentially be sent in a single batch
+    body = {
+        'reportRequests': [report_request]
+    }
+    results = service.reports().batchGet(body=body).execute()
     print_results(results)
 
   except TypeError as error:
@@ -101,43 +127,107 @@ def main(argv):
            'the application to re-authorize')
 
 
-def get_api_query(service, table_id):
-  """Returns a query object to retrieve data from the Core Reporting API.
-
-  Args:
-    service: The service object built by the Google API Python client library.
-    table_id: str The table ID form which to retrieve data.
-  """
-  report_request = {}
-  report_request['viewId'] = table_id
-
-  # Optional limit on the maximum page size.
-  report_request['pageSize'] = 25
-
-  # Optional indication of the desired sampling level
-  report_request['samplingLevel'] = 'LARGE'
-
-  apply_orderby(report_request)
-
-  apply_date_ranges(report_request)
-
-  apply_metrics(report_request)
-
-  apply_dimensions(report_request)
-
-  apply_dimension_filter(report_request)
-
-  apply_metric_filter(report_request)
-
-  apply_segment(report_request)
-
-  apply_pivot(report_request)
-
-  # Note that multiple requests can potentially be sent in a single batch
-  body = {
-      'reportRequests': [report_request]
+def build_report_request(table_id):
+  report_request = {
+      'viewId': table_id,
+      'pageSize': 25,   # Optional limit on the maximum page size.
+      # Optional indication of the desired sampling level
+      'samplingLevel': 'LARGE'
   }
-  return service.reports().batchGet(body=body)
+  return report_request
+
+
+def build_simple_request(table_id):
+  request = build_report_request(table_id)
+
+  apply_orderby(request)
+  apply_single_date_range(request)
+  apply_metrics(request)
+  apply_dimensions(request)
+
+  return request
+
+
+def build_request_with_filters(table_id):
+  request = build_report_request(table_id)
+
+  apply_orderby(request)
+  apply_metrics(request)
+  apply_dimensions(request)
+  apply_single_date_range(request)
+  apply_dimension_filter(request)
+  apply_metric_filter(request)
+
+  return request
+
+
+def build_request_with_comparison_date_range(table_id):
+  request = build_report_request(table_id)
+
+  apply_orderby(request)
+  apply_metrics(request)
+  apply_dimensions(request)
+  apply_two_date_ranges(request)
+
+  return request
+
+
+def build_request_with_pivots(table_id):
+  request = build_report_request(table_id)
+
+  apply_orderby(request)
+  apply_single_date_range(request)
+  apply_metrics(request)
+  apply_dimensions(request)
+  apply_pivot(request)
+
+  return request
+
+
+def build_request_with_segments(table_id):
+  request = build_report_request(table_id)
+
+  apply_orderby(request)
+  apply_single_date_range(request)
+  apply_metrics(request)
+  apply_dimensions_with_segment(request)
+  apply_segment(request)
+
+  return request
+
+
+def build_request_with_cohorts(table_id):
+  request = {
+      'viewId': table_id,
+      'dimensions': [
+          {'name': 'ga:cohort'},
+          {'name': 'ga:cohortNthWeek'}],
+      'metrics': [
+          {'expression': 'ga:cohortTotalUsersWithLifetimeCriteria'},
+          {'expression': 'ga:cohortRevenuePerUser'}
+      ],
+      'cohortGroup': {
+          'cohorts': [{
+              'name': 'cohort 1',
+              'type': 'FIRST_VISIT_DATE',
+              'dateRange': {
+                  'startDate': '2015-08-01',
+                  'endDate': '2015-09-01'
+              }
+          },
+                      {
+                          'name': 'cohort 2',
+                          'type': 'FIRST_VISIT_DATE',
+                          'dateRange': {
+                              'startDate': '2015-07-01',
+                              'end_date': '2015-08-01'
+                          }
+                      }],
+          'lifetimeValue': True
+      }
+  }
+
+  return request
 
 
 def apply_segment(report_request, not_from_newyork_segment):
@@ -222,7 +312,14 @@ def apply_metrics(report_request, original_date_range):
   report_request['metrics'] = metrics
 
 
-def apply_date_ranges(report_request):
+def apply_single_date_range(report_request):
+  report_request['dateRanges'] = [{
+      'startDate': '2015-05-01',
+      'endDate': '2016-02-01'
+  }]
+
+
+def apply_two_date_ranges(report_request):
   # If two date ranges are specified, the second range will be used to compare
   # data against the first range.
   original_date_range = {
@@ -248,6 +345,15 @@ def apply_dimension_filter(report_request):
   report_request['dimensionFilterClauses'] = [dimension_filter_clauses]
 
 
+def apply_dimensions_with_segment(report_request):
+  apply_dimensions(report_request)
+  report_request['dimensions'].append({
+      # ga:segment is a special dimension that holds the information about the row's segment.
+      # Remove it if you are not using segments in the query.
+      'name': 'ga:segment'
+  })
+
+
 def apply_dimensions(report_request):
   #  Dimensions definition
   dimensions = [
@@ -262,11 +368,6 @@ def apply_dimensions(report_request):
           # This dimension definition groups the values of ga:sessionCount into four distinct
           # buckets: <10, [10-100), [100, 200), >= 200 sec
           'histogramBuckets': [10, 100, 200]
-      },
-      {
-          # ga:segment is a special dimension that holds the information about the row's segment.
-          # Remove it if you are not using segments in the query.
-          'name': 'ga:segment'
       }
   ]
   report_request['dimensions'] = dimensions
@@ -414,13 +515,16 @@ def print_metrics(date_range, column_header):
     print('\tValue = %s' % metric_value)
     print()
 
-def print_pivot_dimensions(pivot_header_entry):
-    for dimension_index, dimension_name in enumerate( pivot_header_entry.get('dimensionNames', [])):
-      print('\t\t\tPivot dimension name = %s' % dimension_name)
 
-      dimension_value = pivot_header_entry.get('dimensionValues')[dimension_index]
-      print('\t\t\tPivot dimension value = %s' % dimension_value)
-      
+def print_pivot_dimensions(pivot_header_entry):
+  for dimension_index, dimension_name in enumerate(
+      pivot_header_entry.get('dimensionNames', [])):
+    print('\t\t\tPivot dimension name = %s' % dimension_name)
+
+    dimension_value = pivot_header_entry.get('dimensionValues')[dimension_index]
+    print('\t\t\tPivot dimension value = %s' % dimension_value)
+
+
 def print_pivot_values(date_range, column_header):
   pivot_values = date_range.get('pivotValues')
   if pivot_values:
