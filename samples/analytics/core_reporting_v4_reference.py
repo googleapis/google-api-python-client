@@ -17,10 +17,10 @@
 
 """Reference command-line example for Google Analytics Core Reporting API v4.
 
-This application demonstrates how to use the python client library to access
+This application demonstrates how to use the Python client library to access
 all the pieces of data returned by the Google Analytics Core Reporting API v4.
 
-The application manages autorization by saving an OAuth2.0 token in a local
+The application manages authorization by saving an OAuth2.0 token in a local
 file and reusing the token for subsequent requests.
 
 Before You Begin:
@@ -41,13 +41,13 @@ Supply your TABLE_ID
   specifying the TABLE_ID constant below. This value is of the form: ga:xxxx
   where xxxx is the profile ID. You can get the profile ID by either querying
   the Management API or by looking it up in the account settings of the
-  Google Anlaytics web interface.
+  Google Analytics web interface.
 
 Sample Usage:
 
   $ python core_reporting_v4_reference.py ga:xxxx
 
-Where the table ID is used to identify from which Google Anlaytics profile
+Where the table ID is used to identify from which Google Analytics profile
 to retrieve data. This ID is in the format ga:xxxx where xxxx is the
 profile ID.
 
@@ -70,43 +70,16 @@ from oauth2client.client import AccessTokenRefreshError
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
 argparser.add_argument('table_id', type=str,
-                     help=('The table ID of the profile you wish to access. '
-                           'Format is ga:xxx where xxx is your profile ID.'))
+                       help=('The table ID of the profile you wish to access. '
+                             'Format is ga:xxx where xxx is your profile ID.'))
 
-# The list of metric ids will be used both to generate a request and display a
-# response in human readable form
-metrics =  [ { 'expression': 'ga:sessions' }, 
-             { 'expression': 'ga:sessionDuration' } 
-           ]
-
-# The list of dimensions is, similarly to metrics, is used to both generate a request
-# and properly display the response since the response object only contains dimension
-# values but no labels.
-dimensions = [ {
-                 'name':'ga:source'
-               },
-
-               {
-                 'name': 'ga:keyword'
-               },
-
-               {
-                 'name': 'ga:sessionDurationBucket',
-                 # For session duration dimension, group values into four buckets:
-                 # [0..30 secs), [30..60 secs), [60, 1000), [1000, infinity) 
-                 'histogramBuckets': [ 30, 60, 1000 ]
-                },
-                {
-                    'name': 'ga:segment'
-                }
-              ]
 
 def main(argv):
   # Authenticate and construct service.
   service, flags = sample_tools.init(
       argv, 'analytics', 'v4', __doc__, __file__, parents=[argparser],
-      scope='https://www.googleapis.com/auth/analytics.readonly', discovery_service_url="https://analytics.googleapis.com/$discovery/google_rest/rest?key=AIzaSyDMNb369FUbBHlZBwFMI83ukWVUzr_D6J8&labels=TRUSTED_TESTER")
-
+      scope='https://www.googleapis.com/auth/analytics.readonly',
+      discovery_service_url='https://analytics.googleapis.com/$discovery/google_rest/rest?key=AIzaSyDMNb369FUbBHlZBwFMI83ukWVUzr_D6J8&labels=TRUSTED_TESTER')
 
   # Try to make a request to the API. Print the results or handle errors.
   try:
@@ -144,80 +117,193 @@ def get_api_query(service, table_id):
   # Optional indication of the desired sampling level
   report_request['samplingLevel'] = 'LARGE'
 
-  # Order report by sessions count, descending.
-  orderBy = {'fieldName': 'ga:sessions desc', 
-             'orderType': 'VALUE'}
-  report_request['orderBys'] = [ orderBy ]
+  apply_orderby(report_request)
 
+  apply_date_ranges(report_request)
+
+  apply_metrics(report_request)
+
+  apply_dimensions(report_request)
+
+  apply_dimension_filter(report_request)
+
+  apply_metric_filter(report_request)
+
+  apply_segment(report_request)
+
+  apply_pivot(report_request)
+
+  # Note that multiple requests can potentially be sent in a single batch
+  body = {
+      'reportRequests': [report_request]
+  }
+  return service.reports().batchGet(body=body)
+
+
+def apply_segment(report_request, not_from_newyork_segment):
+  # Creating a segment for users who are NOT from New York by applying a dimension
+  # filter on ga:city and inverting the match using 'matchComplement'
+  # property.
+  not_from_newyork_segment = {
+      'name': 'Users NOT from New York', 'sessionSegment':
+          {
+              'segmentFilters':
+                  [
+                      {'simpleSegment':
+       {
+           'orFiltersForSegment':
+               [
+                   {
+                       'segmentFilterClauses':
+                           [
+                               {
+                                   'dimensionFilter':
+                                       {
+                                           'dimensionName': 'ga:city',
+                                           'expressions':
+                                               [
+                                                   'New York'
+                                               ]
+                                       }
+                               }
+                           ]
+                   }
+               ]
+       },
+                       'matchComplement':True}
+                  ]
+          }
+  }
+  segment = {'dynamicSegment': not_from_newyork_segment}
+  report_request['segments'] = [segment]
+
+
+def apply_pivot(report_request):
+  pivot = {
+      'metrics': [
+          {
+              'expression': 'ga:sessions'
+          }
+      ],
+      'dimensions': [
+          {
+              'name': 'ga:browser'
+          },
+          {
+              'name': 'ga:city'
+          }
+      ],
+      'dimensionFilterClauses': [
+          {
+              'filters':
+                  [
+                      {
+                          'dimensionName': 'ga:browser',
+                          'operator': 'IN_LIST',
+                          'expressions': ['Chrome', 'Safari', 'Firefox', 'IE']
+                      }
+                  ]
+          }
+      ]
+  }
+  report_request['pivots'] = [pivot]
+
+
+def apply_metrics(report_request, original_date_range):
+  # Metrics definition
+  metrics = [
+      {
+          'expression': 'ga:sessions'
+      },
+      {
+          'expression': 'ga:sessionDuration'
+      }
+  ]
+  report_request['metrics'] = metrics
+
+
+def apply_date_ranges(report_request):
   # If two date ranges are specified, the second range will be used to compare
   # data against the first range.
   original_date_range = {
-          'startDate': '2015-05-01',
-          'endDate': '2016-02-01'
+      'startDate': '2015-05-01',
+      'endDate': '2016-02-01'
   }
-
   comparison_date_range = {
-          'startDate': '2014-05-01',
-          'endDate': '2015-02-01'
+      'startDate': '2014-05-01',
+      'endDate': '2015-06-01'
   }
+  report_request['dateRanges'] = [original_date_range, comparison_date_range]
 
-  report_request['dateRanges'] = [ original_date_range, comparison_date_range ]
 
-  report_request['metrics'] = metrics
+def apply_dimension_filter(report_request):
+  # Include only data from organic search results
+  dimension_filter = {
+      'dimensionName': 'ga:medium',
+      'expressions': ['organic'],
+      'operator': 'EXACT'
+  }
+  dimension_filter_clauses = {
+      'filters': [dimension_filter]}
+  report_request['dimensionFilterClauses'] = [dimension_filter_clauses]
 
+
+def apply_dimensions(report_request):
+  #  Dimensions definition
+  dimensions = [
+      {
+          'name': 'ga:source'
+      },
+      {
+          'name': 'ga:keyword'
+      },
+      {
+          'name': 'ga:sessionCount',
+          # This dimension definition groups the values of ga:sessionCount into four distinct
+          # buckets: <10, [10-100), [100, 200), >= 200 sec
+          'histogramBuckets': [10, 100, 200]
+      },
+      {
+          # ga:segment is a special dimension that holds the information about the row's segment.
+          # Remove it if you are not using segments in the query.
+          'name': 'ga:segment'
+      }
+  ]
   report_request['dimensions'] = dimensions
 
-  # Include only data from organic search results
-  dimensionFilter = {'dimensionName': 'ga:medium',
-                  'expressions': ['organic'],
-                  'operator': 'EXACT'
-                  }
 
-  dimensionFilterClauses = {'filters': [ dimensionFilter ]}
-  report_request['dimensionFilterClauses'] = [ dimensionFilterClauses ]
+def apply_orderby(report_request):
+  # Order report by sessions count, descending.
+  order_by = {'fieldName': 'ga:sessions desc',
+              'orderType': 'VALUE'}
+  report_request['orderBys'] = [order_by]
 
-  # Note that metric filters will only apply to the 'original' (first) date range.
-  sessionsMetricFilter = {'metricName': 'ga:sessions',
-                  'comparisonValue': '5',
-                  'operator': 'GREATER_THAN'
-                  }
 
-  sessionDurationMetricFilter = {'metricName': 'ga:sessionDuration',
-                  'comparisonValue': '0',
-                  'operator': 'GREATER_THAN'
-                  }
+def apply_metric_filter(report_request):
+  # Note that metric filters will only apply to the 'original' (first) date
+  # range.
+  sessions_metric_filter = {
+      'metricName': 'ga:sessions',
+      'comparisonValue': '5',
+      'operator': 'GREATER_THAN'
+  }
+  session_duration_metric_filter = {
+      'metricName': 'ga:sessionDuration',
+      'comparisonValue': '2500',
+      'operator': 'GREATER_THAN'
+  }
 
   # Combine multiple metric filters using AND operator
-  metricFilterClauses = {'filters': [ sessionsMetricFilter,
-                                      sessionDurationMetricFilter ],
-                         'operator': 'AND'
-                         }
-  report_request['metricFilterClauses'] = [] # metricFilterClauses ]
+  metric_filter_clause = {
+      'filters':
+          [
+              sessions_metric_filter,
+              session_duration_metric_filter
+          ],
+      'operator': 'AND'
+  }
+  report_request['metricFilterClauses'] = [metric_filter_clause]
 
-
-  report_request['segments']  =   [ {'dynamicSegment': {'name': 'Users NOT from New York',
-                                                       'sessionSegment': { 'segmentFilters': [ 
-                                                            { 'simpleSegment': {  'orFiltersForSegment': [ 
-                                                                                                          { 'segmentFilterClauses': [
-                                                                                                              { 'dimensionFilter': { 'dimensionName': 'ga:city',
-                                                                                                                                     'expressions': [ 'New York' ]
-                                                                                                                                   }
-                                                                                                              }
-                                                                                                            ]
-                                                                                                           }
-                                                                                                        ]
-                                                                                },
-                                                             'matchComplement': True
-                                                             }
-                                                            ]
-                                        }
-                                                       }
-                                    }
-                                  ]
-
-  # Note that multiple requests can potentially be sent in a single batch
-  body = { 'reportRequests': [ report_request ] }
-  return service.reports().batchGet( body=body )
 
 def print_results(results):
   """Prints all the results in the Core Reporting API Response.
@@ -225,11 +311,13 @@ def print_results(results):
   Args:
     results: The response returned from the Core Reporting API.
   """
-  print_response_info(results)
-  reports =  results.get('reports')
-  if len( reports ) == 0:
-    print("No reports included in response")
+  # print_response_info(results)
+  reports = results.get('reports')
+  if len(reports) == 0:
+    print('No reports included in response')
     return
+
+  print('Query cost = %s' % results.get('queryCost', 'n/a'))
 
   # This example will receive only one report, but response can contain multiple
   # reports, one per each batched request.
@@ -247,6 +335,7 @@ def print_response_info(results):
     results: The response returned from the Core Reporting API.
   """
   print(results)
+
 
 def print_report_info(report):
   """Prints general information about this report.
@@ -276,15 +365,14 @@ def print_column_headers(report):
   headers = report.get('columnHeader')
   for dimension in headers.get('dimensions'):
     # Print Dimension name.
-    print('\tDimension name =  %s' % dimension )
+    print('\tDimension name =  %s' % dimension)
   print()
-
 
   metricHeader = headers.get('metricHeader')
   for metric in metricHeader.get('metricHeaderEntries'):
     # Print metric name.
-    print('\tMetric name = %s' % metric.get('name') )
-    print('\tMetric type = %s' % metric.get('type') )
+    print('\tMetric name = %s' % metric.get('name'))
+    print('\tMetric type = %s' % metric.get('type'))
     print()
 
 
@@ -298,42 +386,93 @@ def print_totals_for_all_results(report):
   data = report.get('data')
   print('Total Metrics For All Results:')
 
-  print('\tisDataGolden = %s' % data.get('isDataGolden') )
+  print('\tisDataGolden = %s' % data.get('isDataGolden'))
   print('\tThis query returned %s rows.' % len(data.get('rows', [])))
   print(('\tBut the query matched %s total results.' %
          data.get('rowCount')))
   print()
 
   print('Here are the metric TOTALS for the matched total results.')
-  print_date_ranges(data.get('totals'))
+  print_date_ranges(data.get('totals'), report.get('columnHeader'))
   print()
 
   print('Here are the metric MINIMUMS for the matched total results.')
-  print_date_ranges(data.get('minimums'))
+  print_date_ranges(data.get('minimums'), report.get('columnHeader'))
   print()
 
   print('Here are the metric MAXIMUMS for the matched total results.')
-  print_date_ranges(data.get('maximums'))
+  print_date_ranges(data.get('maximums'), report.get('columnHeader'))
   print()
 
-def print_date_ranges(dateRanges):
-  """Prints the contents of date ranges object
-  """
-  for dateRangeIndex, dateRange in enumerate( dateRanges ):
-    print( '\tDate range #%s' % dateRangeIndex )
-    for metricIndex, value in enumerate( dateRange.get( 'values', [] ) ):
-      # Display metric expression as metric label
-      print('\tMetric  = %s' % metrics[ metricIndex ].get('expression'))
-      print('\tValue = %s' % value)
+
+def print_metrics(date_range, column_header):
+  for metric_index, metric_value in enumerate(date_range.get('values', [])):
+    metric_name = column_header.get('metricHeader', {}).get(
+        'metricHeaderEntries', [])[metric_index].get('name')
+
+    print('\tMetric  = %s' % metric_name)
+    print('\tValue = %s' % metric_value)
+    print()
+
+def print_pivot_dimensions(pivot_header_entry):
+    for dimension_index, dimension_name in enumerate( pivot_header_entry.get('dimensionNames', [])):
+      print('\t\t\tPivot dimension name = %s' % dimension_name)
+
+      dimension_value = pivot_header_entry.get('dimensionValues')[dimension_index]
+      print('\t\t\tPivot dimension value = %s' % dimension_value)
+      
+def print_pivot_values(date_range, column_header):
+  pivot_values = date_range.get('pivotValues')
+  if pivot_values:
+    # Iterate through every pivot region
+    for pivot_region_index, pivot_region in enumerate(pivot_values):
+      print('"\t\tPivot region #%d' % pivot_region_index)
+
+      if pivot_region.get('values'):
+        # Iterate through every metric column within the current pivot region
+        for pivot_metric_index, pivot_value in enumerate(
+            pivot_region.get('values')):
+
+          # Obtain the pivot header entry object from the report header that will be used to
+          # display the pivot header for the current column
+          pivot_header_entry = (
+              column_header.get('metricHeader').get('pivotHeaders')
+              [pivot_region_index].get('pivotHeaderEntries')
+              [pivot_metric_index])
+
+          # Print the dimension section of the pivot header
+          print_pivot_dimensions(pivot_header_entry)
+
+          # Print the pivot metric name
+          pivot_name = pivot_header_entry.get('metric', {}).get('name')
+          print('"\t\t\tPivot metric name = %s' % pivot_name)
+
+          # Print the pivot metric value
+          print('\t\t\tPivot metric value = ' + pivot_value)
+
+          print()
       print()
 
-def print_dimensions(dimensionValues):
+
+def print_date_ranges(date_ranges, column_header):
+  """Prints the contents of each date range object: metric values and pivots
+  """
+  for date_range_index, date_range in enumerate(date_ranges):
+    print('\tDate range #%d' % date_range_index)
+
+    print_metrics(date_range, column_header)
+    print_pivot_values(date_range, column_header)
+
+
+def print_dimensions(dimension_values, column_header):
   """Prints dimensions
   """
-  for dimensionIndex, value in enumerate( dimensionValues ):
-    print('\tDimension name = %s' % dimensions[ dimensionIndex ].get('name') )
+  for dimension_index, value in enumerate(dimension_values):
+    dimension_name = column_header.get('dimensions')[dimension_index]
+    print('\tDimension name = %s' % dimension_name)
     print('\tDimension value = %s' % value)
     print()
+
 
 def print_rows(report):
   """Prints all the rows of data returned by the API.
@@ -344,10 +483,10 @@ def print_rows(report):
   print('Rows:')
   data = report.get('data')
   if data.get('rows', []):
-    for index, row in enumerate( data.get('rows') ):
-      print( 'Row %d' % index )
-      print_date_ranges( row.get('metrics') )
-      print_dimensions( row.get('dimensions') )
+    for index, row in enumerate(data.get('rows')):
+      print('Row %d' % index)
+      print_dimensions(row.get('dimensions'))
+      print_date_ranges(row.get('metrics'), report.get('columnHeader'))
       print()
   else:
     print('No Rows Found')
