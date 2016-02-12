@@ -31,9 +31,11 @@ from six.moves.urllib.parse import urlencode
 # Do not remove the httplib2 import
 import httplib2
 import logging
+import mock
 import os
 import unittest2 as unittest
 import random
+import socket
 import ssl
 import time
 
@@ -102,7 +104,7 @@ class MockCredentials(Credentials):
     headers['authorization'] = self._bearer_token + ' ' + str(self._refreshed)
 
 
-class HttpMockWithSSLErrors(object):
+class HttpMockWithErrors(object):
   def __init__(self, num_errors, success_json, success_data):
     self.num_errors = num_errors
     self.success_json = success_json
@@ -113,7 +115,45 @@ class HttpMockWithSSLErrors(object):
       return httplib2.Response(self.success_json), self.success_data
     else:
       self.num_errors -= 1
-      raise ssl.SSLError()
+      if self.num_errors == 1:
+        raise ssl.SSLError()
+      else:
+        if PY3:
+          ex = TimeoutError()
+        else:
+          ex = socket.error()
+        # Initialize the timeout error code to the platform's error code.
+        try:
+          # For Windows:
+          ex.errno = socket.errno.WSAETIMEDOUT
+        except AttributeError:
+          # For Linux/Mac:
+          ex.errno = socket.errno.ETIMEDOUT
+        # Now raise the correct timeout error.
+        raise ex
+
+
+class HttpMockWithNonRetriableErrors(object):
+  def __init__(self, num_errors, success_json, success_data):
+    self.num_errors = num_errors
+    self.success_json = success_json
+    self.success_data = success_data
+
+  def request(self, *args, **kwargs):
+    if not self.num_errors:
+      return httplib2.Response(self.success_json), self.success_data
+    else:
+      self.num_errors -= 1
+      ex = socket.error()
+      # Initialize the timeout error code to the platform's error code.
+      try:
+        # For Windows:
+        ex.errno = socket.errno.WSAECONNREFUSED
+      except AttributeError:
+        # For Linux/Mac:
+        ex.errno = socket.errno.ECONNREFUSED
+      # Now raise the correct timeout error.
+      raise ex
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -409,8 +449,8 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
     self.assertEqual(self.fd.getvalue(), b'123')
 
-  def test_media_io_base_download_retries_ssl_errors(self):
-    self.request.http = HttpMockWithSSLErrors(
+  def test_media_io_base_download_retries_connection_errors(self):
+    self.request.http = HttpMockWithErrors(
         3, {'status': '200', 'content-range': '0-2/3'}, b'123')
 
     download = MediaIoBaseDownload(
@@ -593,6 +633,51 @@ Content-Length: 14
 ETag: "etag/pony"\r\n\r\n{"foo": 42}
 --batch_foobarbaz--"""
 
+
+USER_RATE_LIMIT_EXCEEDED_RESPONSE = """{
+ "error": {
+  "errors": [
+   {
+    "domain": "usageLimits",
+    "reason": "userRateLimitExceeded",
+    "message": "User Rate Limit Exceeded"
+   }
+  ],
+  "code": 403,
+  "message": "User Rate Limit Exceeded"
+ }
+}"""
+
+
+RATE_LIMIT_EXCEEDED_RESPONSE = """{
+ "error": {
+  "errors": [
+   {
+    "domain": "usageLimits",
+    "reason": "rateLimitExceeded",
+    "message": "Rate Limit Exceeded"
+   }
+  ],
+  "code": 403,
+  "message": "Rate Limit Exceeded"
+ }
+}"""
+
+
+NOT_CONFIGURED_RESPONSE = """{
+ "error": {
+  "errors": [
+   {
+    "domain": "usageLimits",
+    "reason": "accessNotConfigured",
+    "message": "Access Not Configured"
+   }
+  ],
+  "code": 403,
+  "message": "Access Not Configured"
+ }
+}"""
+
 class Callbacks(object):
   def __init__(self):
     self.responses = {}
@@ -622,10 +707,22 @@ class TestHttpRequest(unittest.TestCase):
     self.assertEqual(method, http.method)
     self.assertEqual(str, type(http.method))
 
-  def test_retry_ssl_errors_non_resumable(self):
+  def test_no_retry_connection_errors(self):
     model = JsonModel()
     request = HttpRequest(
-        HttpMockWithSSLErrors(3, {'status': '200'}, '{"foo": "bar"}'),
+        HttpMockWithNonRetriableErrors(1, {'status': '200'}, '{"foo": "bar"}'),
+        model.response,
+        u'https://www.example.com/json_api_endpoint')
+    request._sleep = lambda _x: 0  # do nothing
+    request._rand = lambda: 10
+    with self.assertRaises(socket.error):
+      response = request.execute(num_retries=3)
+
+
+  def test_retry_connection_errors_non_resumable(self):
+    model = JsonModel()
+    request = HttpRequest(
+        HttpMockWithErrors(3, {'status': '200'}, '{"foo": "bar"}'),
         model.response,
         u'https://www.example.com/json_api_endpoint')
     request._sleep = lambda _x: 0  # do nothing
@@ -633,7 +730,7 @@ class TestHttpRequest(unittest.TestCase):
     response = request.execute(num_retries=3)
     self.assertEqual({u'foo': u'bar'}, response)
 
-  def test_retry_ssl_errors_resumable(self):
+  def test_retry_connection_errors_resumable(self):
     with open(datafile('small.png'), 'rb') as small_png_file:
       small_png_fd = BytesIO(small_png_file.read())
     upload = MediaIoBaseUpload(fd=small_png_fd, mimetype='image/png',
@@ -641,7 +738,7 @@ class TestHttpRequest(unittest.TestCase):
     model = JsonModel()
 
     request = HttpRequest(
-        HttpMockWithSSLErrors(
+        HttpMockWithErrors(
             3, {'status': '200', 'location': 'location'}, '{"foo": "bar"}'),
         model.response,
         u'https://www.example.com/file_upload',
@@ -654,7 +751,10 @@ class TestHttpRequest(unittest.TestCase):
 
   def test_retry(self):
     num_retries = 5
-    resp_seq = [({'status': '500'}, '')] * num_retries
+    resp_seq = [({'status': '500'}, '')] * (num_retries - 3)
+    resp_seq.append(({'status': '403'}, RATE_LIMIT_EXCEEDED_RESPONSE))
+    resp_seq.append(({'status': '403'}, USER_RATE_LIMIT_EXCEEDED_RESPONSE))
+    resp_seq.append(({'status': '429'}, ''))
     resp_seq.append(({'status': '200'}, '{}'))
 
     http = HttpMockSequence(resp_seq)
@@ -679,6 +779,30 @@ class TestHttpRequest(unittest.TestCase):
     for retry_num in range(num_retries):
       self.assertEqual(10 * 2**(retry_num + 1), sleeptimes[retry_num])
 
+  def test_no_retry_succeeds(self):
+    num_retries = 5
+    resp_seq = [({'status': '200'}, '{}')] * (num_retries)
+
+    http = HttpMockSequence(resp_seq)
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/collection/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        body=u'{}',
+        headers={'content-type': 'application/json'})
+
+    sleeptimes = []
+    request._sleep = lambda x: sleeptimes.append(x)
+    request._rand = lambda: 10
+
+    request.execute(num_retries=num_retries)
+
+    self.assertEqual(0, len(sleeptimes))
+
   def test_no_retry_fails_fast(self):
     http = HttpMockSequence([
         ({'status': '500'}, ''),
@@ -696,14 +820,80 @@ class TestHttpRequest(unittest.TestCase):
         headers={'content-type': 'application/json'})
 
     request._rand = lambda: 1.0
-    request._sleep = lambda _: self.fail('sleep should not have been called.')
+    request._sleep = mock.MagicMock()
 
-    try:
+    with self.assertRaises(HttpError):
       request.execute()
-      self.fail('Should have raised an exception.')
-    except HttpError:
-      pass
+    request._sleep.assert_not_called()
 
+  def test_no_retry_403_not_configured_fails_fast(self):
+    http = HttpMockSequence([
+        ({'status': '403'}, NOT_CONFIGURED_RESPONSE),
+        ({'status': '200'}, '{}')
+        ])
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/collection/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        body=u'{}',
+        headers={'content-type': 'application/json'})
+
+    request._rand = lambda: 1.0
+    request._sleep =  mock.MagicMock()
+
+    with self.assertRaises(HttpError):
+      request.execute()
+    request._sleep.assert_not_called()
+
+  def test_no_retry_403_fails_fast(self):
+    http = HttpMockSequence([
+        ({'status': '403'}, ''),
+        ({'status': '200'}, '{}')
+        ])
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/collection/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        body=u'{}',
+        headers={'content-type': 'application/json'})
+
+    request._rand = lambda: 1.0
+    request._sleep =  mock.MagicMock()
+
+    with self.assertRaises(HttpError):
+      request.execute()
+    request._sleep.assert_not_called()
+
+  def test_no_retry_401_fails_fast(self):
+    http = HttpMockSequence([
+        ({'status': '401'}, ''),
+        ({'status': '200'}, '{}')
+        ])
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/collection/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        body=u'{}',
+        headers={'content-type': 'application/json'})
+
+    request._rand = lambda: 1.0
+    request._sleep =  mock.MagicMock()
+
+    with self.assertRaises(HttpError):
+      request.execute()
+    request._sleep.assert_not_called()
 
 class TestBatch(unittest.TestCase):
 

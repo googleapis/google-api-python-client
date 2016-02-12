@@ -20,6 +20,7 @@ actuall HTTP request.
 """
 from __future__ import absolute_import
 import six
+from six.moves import http_client
 from six.moves import range
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
@@ -36,6 +37,7 @@ import logging
 import mimetypes
 import os
 import random
+import socket
 import ssl
 import sys
 import time
@@ -63,6 +65,51 @@ DEFAULT_CHUNK_SIZE = 512*1024
 
 MAX_URI_LENGTH = 2048
 
+_TOO_MANY_REQUESTS = 429
+
+
+def _should_retry_response(resp_status, content):
+  """Determines whether a response should be retried.
+
+  Args:
+    resp_status: The response status received.
+    content: The response content body. 
+
+  Returns:
+    True if the response should be retried, otherwise False.
+  """
+  # Retry on 5xx errors.
+  if resp_status >= 500:
+    return True
+
+  # Retry on 429 errors.
+  if resp_status == _TOO_MANY_REQUESTS:
+    return True
+
+  # For 403 errors, we have to check for the `reason` in the response to
+  # determine if we should retry.
+  if resp_status == six.moves.http_client.FORBIDDEN:
+    # If there's no details about the 403 type, don't retry.
+    if not content:
+      return False
+
+    # Content is in JSON format.
+    try:
+      data = json.loads(content.decode('utf-8'))
+      reason = data['error']['errors'][0]['reason']
+    except (UnicodeDecodeError, ValueError, KeyError):
+      LOGGER.warning('Invalid JSON content from response: %s', content)
+      return False
+
+    LOGGER.warning('Encountered 403 Forbidden with reason "%s"', reason)
+
+    # Only retry on rate limit related failures.
+    if reason in ('userRateLimitExceeded', 'rateLimitExceeded', ):
+      return True
+
+  # Everything else is a success or non-retriable so break.
+  return False
+
 
 def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
                    **kwargs):
@@ -84,21 +131,37 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
     resp, content - Response from the http request (may be HTTP 5xx).
   """
   resp = None
+  content = None
   for retry_num in range(num_retries + 1):
     if retry_num > 0:
-      sleep(rand() * 2**retry_num)
+      # Sleep before retrying.
+      sleep_time = rand() * 2 ** retry_num
       LOGGER.warning(
-          'Retry #%d for %s: %s %s%s' % (retry_num, req_type, method, uri,
-          ', following status: %d' % resp.status if resp else ''))
+          'Sleeping %.2f seconds before retry %d of %d for %s: %s %s, after %s',
+          sleep_time, retry_num, num_retries, req_type, method, uri,
+          resp.status if resp else exception)
+      sleep(sleep_time)
 
     try:
+      exception = None
       resp, content = http.request(uri, method, *args, **kwargs)
-    except ssl.SSLError:
-      if retry_num == num_retries:
+    # Retry on SSL errors and socket timeout errors.
+    except ssl.SSLError as ssl_error:
+      exception = ssl_error
+    except socket.error as socket_error:
+      # errno's contents differ by platform, so we have to match by name.
+      if socket.errno.errorcode.get(socket_error.errno) not in (
+          'WSAETIMEDOUT', 'ETIMEDOUT', ):
         raise
+      exception = socket_error
+
+    if exception:
+      if retry_num == num_retries:
+        raise exception
       else:
         continue
-    if resp.status < 500:
+
+    if not _should_retry_response(resp.status, content):
       break
 
   return resp, content
