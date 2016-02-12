@@ -79,10 +79,10 @@ def main(argv):
   service, flags = sample_tools.init(
       argv, 'analytics', 'v4', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/analytics.readonly',
-      discovery_service_url='https://analytics.googleapis.com/$discovery/google_rest/rest?key=AIzaSyDMNb369FUbBHlZBwFMI83ukWVUzr_D6J8&labels=TRUSTED_TESTER')
-  
+      discovery_service_url='https://analytics.googleapis.com/$discovery/google_rest/rest?key=<YOUR_API_KEY>&labels=TRUSTED_TESTER')
+
   table_id = flags.table_id
-  
+
   print('Executing a simple request using a single date range:')
   run_demo(service, build_simple_request(table_id))
 
