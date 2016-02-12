@@ -440,10 +440,10 @@ class DiscoveryFromAppEngineCache(unittest.TestCase):
     self.orig_import = __import__
     self.mocked_api = mock.MagicMock()
 
-    def import_mock(name, *args):
+    def import_mock(name, *args, **kwargs):
       if name == 'google.appengine.api':
         return self.mocked_api
-      return self.orig_import(name, *args)
+      return self.orig_import(name, *args, **kwargs)
 
     import_fullname = '__builtin__.__import__'
     if sys.version_info[0] >= 3:
