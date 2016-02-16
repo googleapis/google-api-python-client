@@ -29,11 +29,7 @@ import os
 import tempfile
 import threading
 
-try:
-  from oauth2client.contrib.locked_file import LockedFile
-except ImportError:
-  # oauth2client < 2.0.0
-  from oauth2client.locked_file import LockedFile
+from oauth2client.contrib.locked_file import LockedFile
 
 from . import base
 from ..discovery_cache import DISCOVERY_DOC_MAX_AGE
