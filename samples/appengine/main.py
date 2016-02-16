@@ -31,8 +31,8 @@ import os
 import pickle
 
 from googleapiclient import discovery
-from oauth2client import appengine
 from oauth2client import client
+from oauth2client.contrib import appengine
 from google.appengine.api import memcache
 
 import webapp2
