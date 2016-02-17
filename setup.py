@@ -63,10 +63,10 @@ packages = [
 ]
 
 install_requires = [
-    'httplib2>=0.8',
-    'oauth2client>=1.4.6',
-    'six>=1.6.1',
-    'uritemplate>=0.6',
+    'httplib2>=0.8,<1',
+    'oauth2client>=2.0.0,<3',
+    'six>=1.6.1,<2',
+    'uritemplate>=0.6,<1',
 ]
 
 if sys.version_info < (2, 7):
