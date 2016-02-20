@@ -90,6 +90,9 @@ h1, h2, h3 {
   <code><a href="#getOobConfirmationCode">getOobConfirmationCode(body)</a></code></p>
 <p class="firstline">Get a code for user action confirmation.</p>
 <p class="toc_element">
+  <code><a href="#getProjectConfig">getProjectConfig()</a></code></p>
+<p class="firstline">Get project configuration.</p>
+<p class="toc_element">
   <code><a href="#getPublicKeys">getPublicKeys()</a></code></p>
 <p class="firstline">Get token signing public key.</p>
 <p class="toc_element">
@@ -102,11 +105,20 @@ h1, h2, h3 {
   <code><a href="#setAccountInfo">setAccountInfo(body)</a></code></p>
 <p class="firstline">Set account info for a user.</p>
 <p class="toc_element">
+  <code><a href="#signOutUser">signOutUser(body)</a></code></p>
+<p class="firstline">Sign out user.</p>
+<p class="toc_element">
+  <code><a href="#signupNewUser">signupNewUser(body)</a></code></p>
+<p class="firstline">Signup new user.</p>
+<p class="toc_element">
   <code><a href="#uploadAccount">uploadAccount(body)</a></code></p>
 <p class="firstline">Batch upload existing user accounts.</p>
 <p class="toc_element">
   <code><a href="#verifyAssertion">verifyAssertion(body)</a></code></p>
 <p class="firstline">Verifies the assertion returned by the IdP.</p>
+<p class="toc_element">
+  <code><a href="#verifyCustomToken">verifyCustomToken(body)</a></code></p>
+<p class="firstline">Verifies the developer asserted ID token.</p>
 <p class="toc_element">
   <code><a href="#verifyPassword">verifyPassword(body)</a></code></p>
 <p class="firstline">Verifies the user entered password.</p>
@@ -137,9 +149,13 @@ Returns:
   An object of the form:
 
     { # Response of creating the IDP authentication URL.
+    "sessionId": "A String", # Session ID which should be passed in the following verifyAssertion request.
     "kind": "identitytoolkit#CreateAuthUriResponse", # The fixed string identitytoolkit#CreateAuthUriResponse".
     "captchaRequired": True or False, # True if captcha is required.
     "registered": True or False, # Whether the user is registered if the identifier is an email.
+    "allProviders": [ # all providers the user has once used to do federated login
+      "A String",
+    ],
     "forExistingProvider": True or False, # True if the authUri is for user's existing provider.
     "providerId": "A String", # The provider ID of the auth URI.
     "authUri": "A String", # The URI used by the IDP to authenticate the user.
@@ -155,6 +171,7 @@ Args:
     The object takes the form of:
 
 { # Request to delete account.
+    "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
     "localId": "A String", # The local ID of the user.
   }
 
@@ -177,6 +194,7 @@ Args:
 
 { # Request to download user account in batch.
     "nextPageToken": "A String", # The token for the next page. This should be taken from the previous response.
+    "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
     "maxResults": 42, # The max number of results to return in the response.
   }
 
@@ -202,6 +220,7 @@ Returns:
             "federatedId": "A String", # User's identifier at IDP.
             "providerId": "A String", # The IdP ID. For white listed IdPs it's a short domain name, e.g., google.com, aol.com, live.net and yahoo.com. For other OpenID IdPs it's the OP identifier.
             "displayName": "A String", # The user's display name at the IDP.
+            "email": "A String", # User's email at IDP.
             "photoUrl": "A String", # The user's photo url at the IDP.
           },
         ],
@@ -252,6 +271,7 @@ Returns:
             "federatedId": "A String", # User's identifier at IDP.
             "providerId": "A String", # The IdP ID. For white listed IdPs it's a short domain name, e.g., google.com, aol.com, live.net and yahoo.com. For other OpenID IdPs it's the OP identifier.
             "displayName": "A String", # The user's display name at the IDP.
+            "email": "A String", # User's email at IDP.
             "photoUrl": "A String", # The user's photo url at the IDP.
           },
         ],
@@ -289,6 +309,31 @@ Returns:
     { # Response of getting a code for user confirmation (reset password, change email etc.).
     "kind": "identitytoolkit#GetOobConfirmationCodeResponse", # The fixed string "identitytoolkit#GetOobConfirmationCodeResponse".
     "oobCode": "A String", # The code to be send to the user.
+    "email": "A String", # The email address that the email is sent to.
+  }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="getProjectConfig">getProjectConfig()</code>
+  <pre>Get project configuration.
+
+Args:
+
+Returns:
+  An object of the form:
+
+    { # Response of getting the project configuration.
+    "projectId": "A String", # Project ID of the relying party.
+    "apiKey": "A String", # Browser API key, needed when making http request to Apiary.
+    "allowPasswordUser": True or False, # Whether to allow password user sign in or sign up.
+    "idpConfig": [ # OAuth2 provider configuration.
+      { # Template for a single idp configuration.
+        "experimentPercent": 42, # Percent of users who will be prompted/redirected federated login for this IDP.
+        "enabled": True or False, # Whether this IDP is enabled.
+        "clientId": "A String", # OAuth2 client ID.
+        "provider": "A String", # OAuth2 provider.
+      },
+    ],
   }</pre>
 </div>
 
@@ -356,15 +401,18 @@ Args:
     The object takes the form of:
 
 { # Request to set the account information.
+    "instanceId": "A String", # Instance id token of the app.
+    "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
     "displayName": "A String", # The name of the user.
     "localId": "A String", # The local ID of the user.
     "validSince": "A String", # Timestamp in seconds for valid login token.
-    "upgradeToFederatedLogin": True or False, # Mark the user to upgrade to federated login.
+    "photoUrl": "A String", # The photo url of the user.
     "captchaResponse": "A String", # Response to the captcha.
     "emailVerified": True or False, # Mark the email as verified or not.
     "provider": [ # The associated IDPs of the user.
       "A String",
     ],
+    "upgradeToFederatedLogin": True or False, # Mark the user to upgrade to federated login.
     "disableUser": True or False, # Whether to disable the user.
     "captchaChallenge": "A String", # The captcha challenge.
     "idToken": "A String", # The GITKit token of the authenticated user.
@@ -380,8 +428,6 @@ Returns:
     { # Respone of setting the account information.
     "kind": "identitytoolkit#SetAccountInfoResponse", # The fixed string "identitytoolkit#SetAccountInfoResponse".
     "displayName": "A String", # The name of the user.
-    "newEmail": "A String", # The new email the user attempts to change to.
-    "idToken": "A String", # The Gitkit id token to login the newly sign up user.
     "providerUserInfo": [ # The user's profiles at the associated IdPs.
       {
         "providerId": "A String", # The IdP ID. For whitelisted IdPs it's a short domain name, e.g., google.com, aol.com, live.net and yahoo.com. For other OpenID IdPs it's the OP identifier.
@@ -389,6 +435,61 @@ Returns:
         "photoUrl": "A String", # The user's photo url at the IDP.
       },
     ],
+    "photoUrl": "A String", # The photo url of the user.
+    "idToken": "A String", # The Gitkit id token to login the newly sign up user.
+    "newEmail": "A String", # The new email the user attempts to change to.
+    "email": "A String", # The email of the user.
+  }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="signOutUser">signOutUser(body)</code>
+  <pre>Sign out user.
+
+Args:
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # Request to sign out user.
+    "instanceId": "A String", # Instance id token of the app.
+    "localId": "A String", # The local ID of the user.
+  }
+
+
+Returns:
+  An object of the form:
+
+    { # Response of signing out user.
+    "localId": "A String", # The local ID of the user.
+  }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="signupNewUser">signupNewUser(body)</code>
+  <pre>Signup new user.
+
+Args:
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # Request to signup new user, create anonymous user or anonymous user reauth.
+    "instanceId": "A String", # Instance id token of the app.
+    "displayName": "A String", # The name of the user.
+    "captchaResponse": "A String", # Response to the captcha.
+    "idToken": "A String", # The GITKit token of the authenticated user.
+    "captchaChallenge": "A String", # The captcha challenge.
+    "password": "A String", # The new password of the user.
+    "email": "A String", # The email of the user.
+  }
+
+
+Returns:
+  An object of the form:
+
+    { # Response of signing up new user, creating anonymous user or anonymous user reauth.
+    "idToken": "A String", # The Gitkit id token to login the newly sign up user.
+    "kind": "identitytoolkit#SignupNewUserResponse", # The fixed string "identitytoolkit#SignupNewUserResponse".
+    "displayName": "A String", # The name of the user.
     "email": "A String", # The email of the user.
   }</pre>
 </div>
@@ -403,6 +504,7 @@ Args:
 
 { # Request to upload user account in batch.
     "hashAlgorithm": "A String", # The password hash algorithm.
+    "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
     "users": [ # The account info to be stored.
       { # Template for an individual account info.
         "displayName": "A String", # The name of the user.
@@ -418,6 +520,7 @@ Args:
             "federatedId": "A String", # User's identifier at IDP.
             "providerId": "A String", # The IdP ID. For white listed IdPs it's a short domain name, e.g., google.com, aol.com, live.net and yahoo.com. For other OpenID IdPs it's the OP identifier.
             "displayName": "A String", # The user's display name at the IDP.
+            "email": "A String", # User's email at IDP.
             "photoUrl": "A String", # The user's photo url at the IDP.
           },
         ],
@@ -456,10 +559,14 @@ Args:
     The object takes the form of:
 
 { # Request to verify the IDP assertion.
-    "requestUri": "A String", # The URI to which the IDP redirects the user back. It may contain federated login result params added by the IDP.
     "postBody": "A String", # The post body if the request is a HTTP POST.
-    "returnRefreshToken": True or False, # Whether to return refresh tokens.
+    "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
+    "instanceId": "A String", # Instance id token of the app.
+    "idToken": "A String", # The GITKit token of the authenticated user.
     "pendingIdToken": "A String", # The GITKit token for the non-trusted IDP pending to be confirmed by the user.
+    "sessionId": "A String", # Session ID, which should match the one in previous createAuthUri request.
+    "requestUri": "A String", # The URI to which the IDP redirects the user back. It may contain federated login result params added by the IDP.
+    "returnRefreshToken": True or False, # Whether to return refresh tokens.
   }
 
 
@@ -475,7 +582,7 @@ Returns:
     "verifiedProvider": [ # When action is 'map', contains the idps which can be used for confirmation.
       "A String",
     ],
-    "providerId": "A String", # The IdP ID. For white listed IdPs it's a short domain name e.g. google.com, aol.com, live.net and yahoo.com. If the "providerId" param is set to OpenID OP identifer other than the whilte listed IdPs the OP identifier is returned. If the "identifier" param is federated ID in the createAuthUri request. The domain part of the federated ID is returned.
+    "needEmail": True or False, # Whether need client to supply email to complete the federated login flow.
     "dateOfBirth": "A String", # The birth date of the IdP account.
     "nickName": "A String", # The nick name of the user.
     "email": "A String", # The email returned by the IdP. NOTE: The federated login user may not own the email.
@@ -494,11 +601,35 @@ Returns:
     "oauthRequestToken": "A String", # The user approved request token for the OpenID OAuth extension.
     "oauthAuthorizationCode": "A String", # The OAuth2 authorization code.
     "originalEmail": "A String", # The original email stored in the mapping storage. It's returned when the federated ID is associated to a different email.
+    "providerId": "A String", # The IdP ID. For white listed IdPs it's a short domain name e.g. google.com, aol.com, live.net and yahoo.com. If the "providerId" param is set to OpenID OP identifer other than the whilte listed IdPs the OP identifier is returned. If the "identifier" param is federated ID in the createAuthUri request. The domain part of the federated ID is returned.
     "context": "A String", # The opaque value used by the client to maintain context info between the authentication request and the IDP callback.
     "lastName": "A String", # The last name of the user.
     "action": "A String", # The action code.
     "timeZone": "A String", # The timezone of the user.
     "emailRecycled": True or False, # It's true if the email is recycled.
+  }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="verifyCustomToken">verifyCustomToken(body)</code>
+  <pre>Verifies the developer asserted ID token.
+
+Args:
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # Request to verify a custom token
+    "instanceId": "A String", # Instance id token of the app.
+    "token": "A String", # The custom token to verify
+  }
+
+
+Returns:
+  An object of the form:
+
+    { # Response from verifying a custom token
+    "idToken": "A String", # The GITKit token for authenticated user.
+    "kind": "identitytoolkit#VerifyCustomTokenResponse", # The fixed string "identitytoolkit#VerifyCustomTokenResponse".
   }</pre>
 </div>
 
@@ -511,11 +642,14 @@ Args:
     The object takes the form of:
 
 { # Request to verify the password.
+    "instanceId": "A String", # Instance id token of the app.
+    "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
     "captchaResponse": "A String", # Response to the captcha.
+    "idToken": "A String", # The GITKit token of the authenticated user.
+    "pendingIdToken": "A String", # The GITKit token for the non-trusted IDP, which is to be confirmed by the user.
     "captchaChallenge": "A String", # The captcha challenge.
     "password": "A String", # The password inputed by the user.
     "email": "A String", # The email of the user.
-    "pendingIdToken": "A String", # The GITKit token for the non-trusted IDP, which is to be confirmed by the user.
   }
 
 
