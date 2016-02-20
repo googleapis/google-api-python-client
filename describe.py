@@ -33,6 +33,7 @@ import sys
 from googleapiclient.discovery import DISCOVERY_URI
 from googleapiclient.discovery import build
 from googleapiclient.discovery import build_from_document
+from googleapiclient.discovery import UnknownApiNameOrVersion
 import httplib2
 import uritemplate
 
@@ -339,7 +340,12 @@ def document_api(name, version):
     name: string, Name of the API.
     version: string, Version of the API.
   """
-  service = build(name, version)
+  try:
+    service = build(name, version)
+  except UnknownApiNameOrVersion as e:
+    print 'Warning: {} {} found but could not be built.'.format(name, version)
+    return
+
   response, content = http.request(
       uritemplate.expand(
           FLAGS.discovery_uri_template, {
