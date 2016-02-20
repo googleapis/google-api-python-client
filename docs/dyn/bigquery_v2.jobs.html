@@ -101,8 +101,8 @@ h1, h2, h3 {
   <pre>Requests that a job be cancelled. This call will return immediately, and the client will need to poll for the job status to see if the cancel completed successfully. Cancelled jobs may still incur costs.
 
 Args:
-  projectId: string, Project ID of the job to cancel (required)
-  jobId: string, Job ID of the job to cancel (required)
+  projectId: string, [Required] Project ID of the job to cancel (required)
+  jobId: string, [Required] Job ID of the job to cancel (required)
 
 Returns:
   An object of the form:
@@ -138,10 +138,41 @@ Returns:
           "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
           "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
           "query": { # [Output-only] Statistics for a query job.
-            "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
-            "billingTier": 42, # [Output-only] Billing tier for the job.
+            "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query as a list of stages.
+              {
+                "computeRatioMax": 3.14, # Relative amount of time the slowest shard spent on CPU-bound tasks.
+                "recordsWritten": "A String", # Number of records written by the stage.
+                "waitRatioMax": 3.14, # Relative amount of time the slowest shard spent waiting to be scheduled.
+                "readRatioAvg": 3.14, # Relative amount of time the average shard spent reading input.
+                "readRatioMax": 3.14, # Relative amount of time the slowest shard spent reading input.
+                "steps": [ # List of operations within the stage in dependency order (approximately chronological).
+                  {
+                    "kind": "A String", # Machine-readable operation type.
+                    "substeps": [ # Human-readable stage descriptions.
+                      "A String",
+                    ],
+                  },
+                ],
+                "recordsRead": "A String", # Number of records read into the stage.
+                "computeRatioAvg": 3.14, # Relative amount of time the average shard spent on CPU-bound tasks.
+                "writeRatioMax": 3.14, # Relative amount of time the slowest shard spent on writing output.
+                "writeRatioAvg": 3.14, # Relative amount of time the average shard spent on writing output.
+                "waitRatioAvg": 3.14, # Relative amount of time the average shard spent waiting to be scheduled.
+                "id": "A String", # Unique ID for stage within plan.
+                "name": "A String", # Human-readable name for stage.
+              },
+            ],
             "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
             "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
+            "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
+            "billingTier": 42, # [Output-only] Billing tier for the job.
+            "referencedTables": [ # [Output-only, Experimental] Referenced tables for the job. Queries that reference more than 50 tables will not have a complete list.
+              {
+                "projectId": "A String", # [Required] The ID of the project containing this table.
+                "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+                "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+              },
+            ],
           },
           "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch. This field will be present whenever a job is in the DONE state.
           "extract": { # [Output-only] Statistics for an extract job.
@@ -159,7 +190,7 @@ Returns:
         "configuration": { # [Required] Describes the job configuration.
           "load": { # [Pick one] Configures a load job.
             "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
-            "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
+            "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. The separator can be any ISO-8859-1 single-byte character. To use a character in the range 128-255, you must encode the character as UTF8. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
             "sourceFormat": "A String", # [Optional] The format of the data files. For CSV files, specify "CSV". For datastore backups, specify "DATASTORE_BACKUP". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". The default value is CSV.
             "destinationTable": { # [Required] The destination table to load the data into.
               "projectId": "A String", # [Required] The ID of the project containing this table.
@@ -182,7 +213,7 @@ Returns:
               "A String",
             ],
             "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
-            "schema": { # [Optional] The schema for the destination table. The schema can be omitted if the destination table already exists or if the schema can be inferred from the loaded data.
+            "schema": { # [Optional] The schema for the destination table. The schema can be omitted if the destination table already exists, or if you're loading data from Google Cloud Datastore.
               "fields": [ # Describes the fields in a table.
                 {
                   "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
@@ -196,75 +227,20 @@ Returns:
               ],
             },
           },
-          "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
-          "link": { # [Pick one] Configures a link job.
-            "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
-            "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
-            "destinationTable": { # [Required] The destination table of the link job.
-              "projectId": "A String", # [Required] The ID of the project containing this table.
-              "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-              "datasetId": "A String", # [Required] The ID of the dataset containing this table.
-            },
-            "sourceUri": [ # [Required] URI of source table to link.
+          "extract": { # [Pick one] Configures an extract job.
+            "destinationUri": "A String", # [Pick one] DEPRECATED: Use destinationUris instead, passing only one URI as necessary. The fully-qualified Google Cloud Storage URI where the extracted table should be written.
+            "compression": "A String", # [Optional] The compression type to use for exported files. Possible values include GZIP and NONE. The default value is NONE.
+            "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
+            "destinationFormat": "A String", # [Optional] The exported file format. Possible values include CSV, NEWLINE_DELIMITED_JSON and AVRO. The default value is CSV. Tables with nested or repeated fields cannot be exported as CSV.
+            "printHeader": true, # [Optional] Whether to print out a header row in the results. Default is true.
+            "destinationUris": [ # [Pick one] A list of fully-qualified Google Cloud Storage URIs where the extracted table should be written.
               "A String",
             ],
-          },
-          "query": { # [Pick one] Configures a query job.
-            "flattenResults": true, # [Optional] Flattens all nested and repeated fields in the query results. The default value is true. allowLargeResults must be true if this is set to false.
-            "useQueryCache": true, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified. The default value is true.
-            "defaultDataset": { # [Optional] Specifies the default dataset to use for unqualified table names in the query.
-              "projectId": "A String", # [Optional] The ID of the project containing this dataset.
-              "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-            },
-            "destinationTable": { # [Optional] Describes the table where the query results should be stored. If not present, a new table will be created to store the results.
+            "sourceTable": { # [Required] A reference to the table being exported.
               "projectId": "A String", # [Required] The ID of the project containing this table.
               "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
               "datasetId": "A String", # [Required] The ID of the dataset containing this table.
             },
-            "priority": "A String", # [Optional] Specifies a priority for the query. Possible values include INTERACTIVE and BATCH. The default value is INTERACTIVE.
-            "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
-            "allowLargeResults": True or False, # If true, allows the query to produce arbitrarily large result tables at a slight cost in performance. Requires destinationTable to be set.
-            "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
-            "query": "A String", # [Required] BigQuery SQL query to execute.
-            "preserveNulls": True or False, # [Deprecated] This property is deprecated.
-            "tableDefinitions": { # [Experimental] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
-              "a_key": {
-                "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE.
-                "csvOptions": { # Additional properties to set if sourceFormat is set to CSV.
-                  "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
-                  "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
-                  "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
-                  "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-                  "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
-                  "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
-                },
-                "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON".
-                "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid.
-                "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
-                "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
-                  "A String",
-                ],
-                "schema": { # [Required] The schema for the data.
-                  "fields": [ # Describes the fields in a table.
-                    {
-                      "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
-                        # Object with schema name: TableFieldSchema
-                      ],
-                      "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
-                      "description": "A String", # [Optional] The field description. The maximum length is 16K characters.
-                      "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
-                      "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
-                    },
-                  ],
-                },
-              },
-            },
-            "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
-              {
-                "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
-                "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
-              },
-            ],
           },
           "copy": { # [Pick one] Copies a table.
             "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
@@ -287,20 +263,65 @@ Returns:
               "datasetId": "A String", # [Required] The ID of the dataset containing this table.
             },
           },
-          "extract": { # [Pick one] Configures an extract job.
-            "destinationUri": "A String", # [Pick one] DEPRECATED: Use destinationUris instead, passing only one URI as necessary. The fully-qualified Google Cloud Storage URI where the extracted table should be written.
-            "compression": "A String", # [Optional] The compression type to use for exported files. Possible values include GZIP and NONE. The default value is NONE.
-            "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
-            "destinationFormat": "A String", # [Optional] The exported file format. Possible values include CSV, NEWLINE_DELIMITED_JSON and AVRO. The default value is CSV. Tables with nested or repeated fields cannot be exported as CSV.
-            "printHeader": true, # [Optional] Whether to print out a header row in the results. Default is true.
-            "destinationUris": [ # [Pick one] A list of fully-qualified Google Cloud Storage URIs where the extracted table should be written.
-              "A String",
-            ],
-            "sourceTable": { # [Required] A reference to the table being exported.
+          "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
+          "query": { # [Pick one] Configures a query job.
+            "flattenResults": true, # [Optional] Flattens all nested and repeated fields in the query results. The default value is true. allowLargeResults must be true if this is set to false.
+            "maximumBillingTier": 1, # [Optional] Limits the billing tier for this job. Queries that have resource usage beyond this tier will fail (without incurring a charge). If unspecified, this will be set to your project default.
+            "useQueryCache": true, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified. The default value is true.
+            "defaultDataset": { # [Optional] Specifies the default dataset to use for unqualified table names in the query.
+              "projectId": "A String", # [Optional] The ID of the project containing this dataset.
+              "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+            },
+            "useLegacySql": True or False, # [Experimental] Specifies whether to use BigQuery's legacy SQL dialect for this query. The default value is true. If set to false, the query will use BigQuery's updated SQL dialect with improved standards compliance. When using BigQuery's updated SQL, the values of allowLargeResults and flattenResults are ignored. Queries with useLegacySql set to false will be run as if allowLargeResults is true and flattenResults is false.
+            "destinationTable": { # [Optional] Describes the table where the query results should be stored. If not present, a new table will be created to store the results.
               "projectId": "A String", # [Required] The ID of the project containing this table.
               "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
               "datasetId": "A String", # [Required] The ID of the dataset containing this table.
             },
+            "priority": "A String", # [Optional] Specifies a priority for the query. Possible values include INTERACTIVE and BATCH. The default value is INTERACTIVE.
+            "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
+            "allowLargeResults": True or False, # If true, allows the query to produce arbitrarily large result tables at a slight cost in performance. Requires destinationTable to be set.
+            "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
+            "query": "A String", # [Required] BigQuery SQL query to execute.
+            "preserveNulls": True or False, # [Deprecated] This property is deprecated.
+            "tableDefinitions": { # [Optional] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
+              "a_key": {
+                "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE. This setting is ignored for Google Cloud Datastore backups.
+                "csvOptions": { # Additional properties to set if sourceFormat is set to CSV.
+                  "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
+                  "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
+                  "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+                  "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
+                  "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
+                  "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
+                },
+                "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP".
+                "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Datastore backups.
+                "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Datastore backups: This setting is ignored.
+                "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs. For Google Cloud Datastore backups, exactly one URI can be specified, and it must end with '.backup_info'. Also, the '*' wildcard character is not allowed.
+                  "A String",
+                ],
+                "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Datastore backups.
+                  "fields": [ # Describes the fields in a table.
+                    {
+                      "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
+                        # Object with schema name: TableFieldSchema
+                      ],
+                      "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
+                      "description": "A String", # [Optional] The field description. The maximum length is 16K characters.
+                      "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+                      "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
+                    },
+                  ],
+                },
+              },
+            },
+            "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
+              {
+                "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
+                "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
+              },
+            ],
           },
         },
         "id": "A String", # [Output-only] Opaque ID field of the job
@@ -315,8 +336,8 @@ Returns:
   <pre>Returns information about a specific job. Job information is available for a six month period after creation. Requires that you're the person who ran the job, or have the Is Owner project role.
 
 Args:
-  projectId: string, Project ID of the requested job (required)
-  jobId: string, Job ID of the requested job (required)
+  projectId: string, [Required] Project ID of the requested job (required)
+  jobId: string, [Required] Job ID of the requested job (required)
 
 Returns:
   An object of the form:
@@ -351,10 +372,41 @@ Returns:
         "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
         "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
         "query": { # [Output-only] Statistics for a query job.
-          "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
-          "billingTier": 42, # [Output-only] Billing tier for the job.
+          "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query as a list of stages.
+            {
+              "computeRatioMax": 3.14, # Relative amount of time the slowest shard spent on CPU-bound tasks.
+              "recordsWritten": "A String", # Number of records written by the stage.
+              "waitRatioMax": 3.14, # Relative amount of time the slowest shard spent waiting to be scheduled.
+              "readRatioAvg": 3.14, # Relative amount of time the average shard spent reading input.
+              "readRatioMax": 3.14, # Relative amount of time the slowest shard spent reading input.
+              "steps": [ # List of operations within the stage in dependency order (approximately chronological).
+                {
+                  "kind": "A String", # Machine-readable operation type.
+                  "substeps": [ # Human-readable stage descriptions.
+                    "A String",
+                  ],
+                },
+              ],
+              "recordsRead": "A String", # Number of records read into the stage.
+              "computeRatioAvg": 3.14, # Relative amount of time the average shard spent on CPU-bound tasks.
+              "writeRatioMax": 3.14, # Relative amount of time the slowest shard spent on writing output.
+              "writeRatioAvg": 3.14, # Relative amount of time the average shard spent on writing output.
+              "waitRatioAvg": 3.14, # Relative amount of time the average shard spent waiting to be scheduled.
+              "id": "A String", # Unique ID for stage within plan.
+              "name": "A String", # Human-readable name for stage.
+            },
+          ],
           "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
           "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
+          "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
+          "billingTier": 42, # [Output-only] Billing tier for the job.
+          "referencedTables": [ # [Output-only, Experimental] Referenced tables for the job. Queries that reference more than 50 tables will not have a complete list.
+            {
+              "projectId": "A String", # [Required] The ID of the project containing this table.
+              "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+              "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+            },
+          ],
         },
         "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch. This field will be present whenever a job is in the DONE state.
         "extract": { # [Output-only] Statistics for an extract job.
@@ -372,7 +424,7 @@ Returns:
       "configuration": { # [Required] Describes the job configuration.
         "load": { # [Pick one] Configures a load job.
           "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
-          "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
+          "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. The separator can be any ISO-8859-1 single-byte character. To use a character in the range 128-255, you must encode the character as UTF8. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
           "sourceFormat": "A String", # [Optional] The format of the data files. For CSV files, specify "CSV". For datastore backups, specify "DATASTORE_BACKUP". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". The default value is CSV.
           "destinationTable": { # [Required] The destination table to load the data into.
             "projectId": "A String", # [Required] The ID of the project containing this table.
@@ -395,7 +447,7 @@ Returns:
             "A String",
           ],
           "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
-          "schema": { # [Optional] The schema for the destination table. The schema can be omitted if the destination table already exists or if the schema can be inferred from the loaded data.
+          "schema": { # [Optional] The schema for the destination table. The schema can be omitted if the destination table already exists, or if you're loading data from Google Cloud Datastore.
             "fields": [ # Describes the fields in a table.
               {
                 "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
@@ -409,75 +461,20 @@ Returns:
             ],
           },
         },
-        "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
-        "link": { # [Pick one] Configures a link job.
-          "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
-          "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
-          "destinationTable": { # [Required] The destination table of the link job.
-            "projectId": "A String", # [Required] The ID of the project containing this table.
-            "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-            "datasetId": "A String", # [Required] The ID of the dataset containing this table.
-          },
-          "sourceUri": [ # [Required] URI of source table to link.
+        "extract": { # [Pick one] Configures an extract job.
+          "destinationUri": "A String", # [Pick one] DEPRECATED: Use destinationUris instead, passing only one URI as necessary. The fully-qualified Google Cloud Storage URI where the extracted table should be written.
+          "compression": "A String", # [Optional] The compression type to use for exported files. Possible values include GZIP and NONE. The default value is NONE.
+          "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
+          "destinationFormat": "A String", # [Optional] The exported file format. Possible values include CSV, NEWLINE_DELIMITED_JSON and AVRO. The default value is CSV. Tables with nested or repeated fields cannot be exported as CSV.
+          "printHeader": true, # [Optional] Whether to print out a header row in the results. Default is true.
+          "destinationUris": [ # [Pick one] A list of fully-qualified Google Cloud Storage URIs where the extracted table should be written.
             "A String",
           ],
-        },
-        "query": { # [Pick one] Configures a query job.
-          "flattenResults": true, # [Optional] Flattens all nested and repeated fields in the query results. The default value is true. allowLargeResults must be true if this is set to false.
-          "useQueryCache": true, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified. The default value is true.
-          "defaultDataset": { # [Optional] Specifies the default dataset to use for unqualified table names in the query.
-            "projectId": "A String", # [Optional] The ID of the project containing this dataset.
-            "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-          },
-          "destinationTable": { # [Optional] Describes the table where the query results should be stored. If not present, a new table will be created to store the results.
+          "sourceTable": { # [Required] A reference to the table being exported.
             "projectId": "A String", # [Required] The ID of the project containing this table.
             "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
             "datasetId": "A String", # [Required] The ID of the dataset containing this table.
           },
-          "priority": "A String", # [Optional] Specifies a priority for the query. Possible values include INTERACTIVE and BATCH. The default value is INTERACTIVE.
-          "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
-          "allowLargeResults": True or False, # If true, allows the query to produce arbitrarily large result tables at a slight cost in performance. Requires destinationTable to be set.
-          "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
-          "query": "A String", # [Required] BigQuery SQL query to execute.
-          "preserveNulls": True or False, # [Deprecated] This property is deprecated.
-          "tableDefinitions": { # [Experimental] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
-            "a_key": {
-              "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE.
-              "csvOptions": { # Additional properties to set if sourceFormat is set to CSV.
-                "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
-                "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
-                "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
-                "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-                "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
-                "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
-              },
-              "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON".
-              "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid.
-              "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
-              "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
-                "A String",
-              ],
-              "schema": { # [Required] The schema for the data.
-                "fields": [ # Describes the fields in a table.
-                  {
-                    "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
-                      # Object with schema name: TableFieldSchema
-                    ],
-                    "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
-                    "description": "A String", # [Optional] The field description. The maximum length is 16K characters.
-                    "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
-                    "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
-                  },
-                ],
-              },
-            },
-          },
-          "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
-            {
-              "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
-              "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
-            },
-          ],
         },
         "copy": { # [Pick one] Copies a table.
           "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
@@ -500,20 +497,65 @@ Returns:
             "datasetId": "A String", # [Required] The ID of the dataset containing this table.
           },
         },
-        "extract": { # [Pick one] Configures an extract job.
-          "destinationUri": "A String", # [Pick one] DEPRECATED: Use destinationUris instead, passing only one URI as necessary. The fully-qualified Google Cloud Storage URI where the extracted table should be written.
-          "compression": "A String", # [Optional] The compression type to use for exported files. Possible values include GZIP and NONE. The default value is NONE.
-          "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
-          "destinationFormat": "A String", # [Optional] The exported file format. Possible values include CSV, NEWLINE_DELIMITED_JSON and AVRO. The default value is CSV. Tables with nested or repeated fields cannot be exported as CSV.
-          "printHeader": true, # [Optional] Whether to print out a header row in the results. Default is true.
-          "destinationUris": [ # [Pick one] A list of fully-qualified Google Cloud Storage URIs where the extracted table should be written.
-            "A String",
-          ],
-          "sourceTable": { # [Required] A reference to the table being exported.
+        "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
+        "query": { # [Pick one] Configures a query job.
+          "flattenResults": true, # [Optional] Flattens all nested and repeated fields in the query results. The default value is true. allowLargeResults must be true if this is set to false.
+          "maximumBillingTier": 1, # [Optional] Limits the billing tier for this job. Queries that have resource usage beyond this tier will fail (without incurring a charge). If unspecified, this will be set to your project default.
+          "useQueryCache": true, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified. The default value is true.
+          "defaultDataset": { # [Optional] Specifies the default dataset to use for unqualified table names in the query.
+            "projectId": "A String", # [Optional] The ID of the project containing this dataset.
+            "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+          },
+          "useLegacySql": True or False, # [Experimental] Specifies whether to use BigQuery's legacy SQL dialect for this query. The default value is true. If set to false, the query will use BigQuery's updated SQL dialect with improved standards compliance. When using BigQuery's updated SQL, the values of allowLargeResults and flattenResults are ignored. Queries with useLegacySql set to false will be run as if allowLargeResults is true and flattenResults is false.
+          "destinationTable": { # [Optional] Describes the table where the query results should be stored. If not present, a new table will be created to store the results.
             "projectId": "A String", # [Required] The ID of the project containing this table.
             "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
             "datasetId": "A String", # [Required] The ID of the dataset containing this table.
           },
+          "priority": "A String", # [Optional] Specifies a priority for the query. Possible values include INTERACTIVE and BATCH. The default value is INTERACTIVE.
+          "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
+          "allowLargeResults": True or False, # If true, allows the query to produce arbitrarily large result tables at a slight cost in performance. Requires destinationTable to be set.
+          "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
+          "query": "A String", # [Required] BigQuery SQL query to execute.
+          "preserveNulls": True or False, # [Deprecated] This property is deprecated.
+          "tableDefinitions": { # [Optional] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
+            "a_key": {
+              "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE. This setting is ignored for Google Cloud Datastore backups.
+              "csvOptions": { # Additional properties to set if sourceFormat is set to CSV.
+                "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
+                "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
+                "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+                "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
+                "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
+                "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
+              },
+              "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP".
+              "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Datastore backups.
+              "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Datastore backups: This setting is ignored.
+              "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs. For Google Cloud Datastore backups, exactly one URI can be specified, and it must end with '.backup_info'. Also, the '*' wildcard character is not allowed.
+                "A String",
+              ],
+              "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Datastore backups.
+                "fields": [ # Describes the fields in a table.
+                  {
+                    "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
+                      # Object with schema name: TableFieldSchema
+                    ],
+                    "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
+                    "description": "A String", # [Optional] The field description. The maximum length is 16K characters.
+                    "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+                    "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
+                  },
+                ],
+              },
+            },
+          },
+          "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
+            {
+              "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
+              "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
+            },
+          ],
         },
       },
       "id": "A String", # [Output-only] Opaque ID field of the job
@@ -526,8 +568,8 @@ Returns:
   <pre>Retrieves the results of a query job.
 
 Args:
-  projectId: string, Project ID of the query job (required)
-  jobId: string, Job ID of the query job (required)
+  projectId: string, [Required] Project ID of the query job (required)
+  jobId: string, [Required] Job ID of the query job (required)
   timeoutMs: integer, How long to wait for the query to complete, in milliseconds, before returning. Default is 10 seconds. If the timeout passes before the job completes, the 'jobComplete' field in the response will be false
   pageToken: string, Page token, returned by a previous call, to request the next page of results
   maxResults: integer, Maximum number of results to read
@@ -620,10 +662,41 @@ Args:
       "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
       "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
       "query": { # [Output-only] Statistics for a query job.
-        "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
-        "billingTier": 42, # [Output-only] Billing tier for the job.
+        "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query as a list of stages.
+          {
+            "computeRatioMax": 3.14, # Relative amount of time the slowest shard spent on CPU-bound tasks.
+            "recordsWritten": "A String", # Number of records written by the stage.
+            "waitRatioMax": 3.14, # Relative amount of time the slowest shard spent waiting to be scheduled.
+            "readRatioAvg": 3.14, # Relative amount of time the average shard spent reading input.
+            "readRatioMax": 3.14, # Relative amount of time the slowest shard spent reading input.
+            "steps": [ # List of operations within the stage in dependency order (approximately chronological).
+              {
+                "kind": "A String", # Machine-readable operation type.
+                "substeps": [ # Human-readable stage descriptions.
+                  "A String",
+                ],
+              },
+            ],
+            "recordsRead": "A String", # Number of records read into the stage.
+            "computeRatioAvg": 3.14, # Relative amount of time the average shard spent on CPU-bound tasks.
+            "writeRatioMax": 3.14, # Relative amount of time the slowest shard spent on writing output.
+            "writeRatioAvg": 3.14, # Relative amount of time the average shard spent on writing output.
+            "waitRatioAvg": 3.14, # Relative amount of time the average shard spent waiting to be scheduled.
+            "id": "A String", # Unique ID for stage within plan.
+            "name": "A String", # Human-readable name for stage.
+          },
+        ],
         "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
         "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
+        "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
+        "billingTier": 42, # [Output-only] Billing tier for the job.
+        "referencedTables": [ # [Output-only, Experimental] Referenced tables for the job. Queries that reference more than 50 tables will not have a complete list.
+          {
+            "projectId": "A String", # [Required] The ID of the project containing this table.
+            "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+            "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+          },
+        ],
       },
       "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch. This field will be present whenever a job is in the DONE state.
       "extract": { # [Output-only] Statistics for an extract job.
@@ -641,7 +714,7 @@ Args:
     "configuration": { # [Required] Describes the job configuration.
       "load": { # [Pick one] Configures a load job.
         "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
-        "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
+        "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. The separator can be any ISO-8859-1 single-byte character. To use a character in the range 128-255, you must encode the character as UTF8. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
         "sourceFormat": "A String", # [Optional] The format of the data files. For CSV files, specify "CSV". For datastore backups, specify "DATASTORE_BACKUP". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". The default value is CSV.
         "destinationTable": { # [Required] The destination table to load the data into.
           "projectId": "A String", # [Required] The ID of the project containing this table.
@@ -664,7 +737,7 @@ Args:
           "A String",
         ],
         "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
-        "schema": { # [Optional] The schema for the destination table. The schema can be omitted if the destination table already exists or if the schema can be inferred from the loaded data.
+        "schema": { # [Optional] The schema for the destination table. The schema can be omitted if the destination table already exists, or if you're loading data from Google Cloud Datastore.
           "fields": [ # Describes the fields in a table.
             {
               "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
@@ -678,75 +751,20 @@ Args:
           ],
         },
       },
-      "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
-      "link": { # [Pick one] Configures a link job.
-        "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
-        "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
-        "destinationTable": { # [Required] The destination table of the link job.
-          "projectId": "A String", # [Required] The ID of the project containing this table.
-          "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-          "datasetId": "A String", # [Required] The ID of the dataset containing this table.
-        },
-        "sourceUri": [ # [Required] URI of source table to link.
+      "extract": { # [Pick one] Configures an extract job.
+        "destinationUri": "A String", # [Pick one] DEPRECATED: Use destinationUris instead, passing only one URI as necessary. The fully-qualified Google Cloud Storage URI where the extracted table should be written.
+        "compression": "A String", # [Optional] The compression type to use for exported files. Possible values include GZIP and NONE. The default value is NONE.
+        "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
+        "destinationFormat": "A String", # [Optional] The exported file format. Possible values include CSV, NEWLINE_DELIMITED_JSON and AVRO. The default value is CSV. Tables with nested or repeated fields cannot be exported as CSV.
+        "printHeader": true, # [Optional] Whether to print out a header row in the results. Default is true.
+        "destinationUris": [ # [Pick one] A list of fully-qualified Google Cloud Storage URIs where the extracted table should be written.
           "A String",
         ],
-      },
-      "query": { # [Pick one] Configures a query job.
-        "flattenResults": true, # [Optional] Flattens all nested and repeated fields in the query results. The default value is true. allowLargeResults must be true if this is set to false.
-        "useQueryCache": true, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified. The default value is true.
-        "defaultDataset": { # [Optional] Specifies the default dataset to use for unqualified table names in the query.
-          "projectId": "A String", # [Optional] The ID of the project containing this dataset.
-          "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-        },
-        "destinationTable": { # [Optional] Describes the table where the query results should be stored. If not present, a new table will be created to store the results.
+        "sourceTable": { # [Required] A reference to the table being exported.
           "projectId": "A String", # [Required] The ID of the project containing this table.
           "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
           "datasetId": "A String", # [Required] The ID of the dataset containing this table.
         },
-        "priority": "A String", # [Optional] Specifies a priority for the query. Possible values include INTERACTIVE and BATCH. The default value is INTERACTIVE.
-        "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
-        "allowLargeResults": True or False, # If true, allows the query to produce arbitrarily large result tables at a slight cost in performance. Requires destinationTable to be set.
-        "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
-        "query": "A String", # [Required] BigQuery SQL query to execute.
-        "preserveNulls": True or False, # [Deprecated] This property is deprecated.
-        "tableDefinitions": { # [Experimental] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
-          "a_key": {
-            "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE.
-            "csvOptions": { # Additional properties to set if sourceFormat is set to CSV.
-              "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
-              "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
-              "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
-              "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-              "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
-              "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
-            },
-            "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON".
-            "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid.
-            "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
-            "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
-              "A String",
-            ],
-            "schema": { # [Required] The schema for the data.
-              "fields": [ # Describes the fields in a table.
-                {
-                  "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
-                    # Object with schema name: TableFieldSchema
-                  ],
-                  "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
-                  "description": "A String", # [Optional] The field description. The maximum length is 16K characters.
-                  "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
-                  "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
-                },
-              ],
-            },
-          },
-        },
-        "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
-          {
-            "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
-            "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
-          },
-        ],
       },
       "copy": { # [Pick one] Copies a table.
         "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
@@ -769,20 +787,65 @@ Args:
           "datasetId": "A String", # [Required] The ID of the dataset containing this table.
         },
       },
-      "extract": { # [Pick one] Configures an extract job.
-        "destinationUri": "A String", # [Pick one] DEPRECATED: Use destinationUris instead, passing only one URI as necessary. The fully-qualified Google Cloud Storage URI where the extracted table should be written.
-        "compression": "A String", # [Optional] The compression type to use for exported files. Possible values include GZIP and NONE. The default value is NONE.
-        "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
-        "destinationFormat": "A String", # [Optional] The exported file format. Possible values include CSV, NEWLINE_DELIMITED_JSON and AVRO. The default value is CSV. Tables with nested or repeated fields cannot be exported as CSV.
-        "printHeader": true, # [Optional] Whether to print out a header row in the results. Default is true.
-        "destinationUris": [ # [Pick one] A list of fully-qualified Google Cloud Storage URIs where the extracted table should be written.
-          "A String",
-        ],
-        "sourceTable": { # [Required] A reference to the table being exported.
+      "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
+      "query": { # [Pick one] Configures a query job.
+        "flattenResults": true, # [Optional] Flattens all nested and repeated fields in the query results. The default value is true. allowLargeResults must be true if this is set to false.
+        "maximumBillingTier": 1, # [Optional] Limits the billing tier for this job. Queries that have resource usage beyond this tier will fail (without incurring a charge). If unspecified, this will be set to your project default.
+        "useQueryCache": true, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified. The default value is true.
+        "defaultDataset": { # [Optional] Specifies the default dataset to use for unqualified table names in the query.
+          "projectId": "A String", # [Optional] The ID of the project containing this dataset.
+          "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+        },
+        "useLegacySql": True or False, # [Experimental] Specifies whether to use BigQuery's legacy SQL dialect for this query. The default value is true. If set to false, the query will use BigQuery's updated SQL dialect with improved standards compliance. When using BigQuery's updated SQL, the values of allowLargeResults and flattenResults are ignored. Queries with useLegacySql set to false will be run as if allowLargeResults is true and flattenResults is false.
+        "destinationTable": { # [Optional] Describes the table where the query results should be stored. If not present, a new table will be created to store the results.
           "projectId": "A String", # [Required] The ID of the project containing this table.
           "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
           "datasetId": "A String", # [Required] The ID of the dataset containing this table.
         },
+        "priority": "A String", # [Optional] Specifies a priority for the query. Possible values include INTERACTIVE and BATCH. The default value is INTERACTIVE.
+        "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
+        "allowLargeResults": True or False, # If true, allows the query to produce arbitrarily large result tables at a slight cost in performance. Requires destinationTable to be set.
+        "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
+        "query": "A String", # [Required] BigQuery SQL query to execute.
+        "preserveNulls": True or False, # [Deprecated] This property is deprecated.
+        "tableDefinitions": { # [Optional] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
+          "a_key": {
+            "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE. This setting is ignored for Google Cloud Datastore backups.
+            "csvOptions": { # Additional properties to set if sourceFormat is set to CSV.
+              "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
+              "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
+              "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+              "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
+              "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
+              "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
+            },
+            "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP".
+            "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Datastore backups.
+            "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Datastore backups: This setting is ignored.
+            "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs. For Google Cloud Datastore backups, exactly one URI can be specified, and it must end with '.backup_info'. Also, the '*' wildcard character is not allowed.
+              "A String",
+            ],
+            "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Datastore backups.
+              "fields": [ # Describes the fields in a table.
+                {
+                  "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
+                    # Object with schema name: TableFieldSchema
+                  ],
+                  "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
+                  "description": "A String", # [Optional] The field description. The maximum length is 16K characters.
+                  "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+                  "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
+                },
+              ],
+            },
+          },
+        },
+        "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
+          {
+            "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
+            "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
+          },
+        ],
       },
     },
     "id": "A String", # [Output-only] Opaque ID field of the job
@@ -824,10 +887,41 @@ Returns:
         "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
         "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
         "query": { # [Output-only] Statistics for a query job.
-          "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
-          "billingTier": 42, # [Output-only] Billing tier for the job.
+          "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query as a list of stages.
+            {
+              "computeRatioMax": 3.14, # Relative amount of time the slowest shard spent on CPU-bound tasks.
+              "recordsWritten": "A String", # Number of records written by the stage.
+              "waitRatioMax": 3.14, # Relative amount of time the slowest shard spent waiting to be scheduled.
+              "readRatioAvg": 3.14, # Relative amount of time the average shard spent reading input.
+              "readRatioMax": 3.14, # Relative amount of time the slowest shard spent reading input.
+              "steps": [ # List of operations within the stage in dependency order (approximately chronological).
+                {
+                  "kind": "A String", # Machine-readable operation type.
+                  "substeps": [ # Human-readable stage descriptions.
+                    "A String",
+                  ],
+                },
+              ],
+              "recordsRead": "A String", # Number of records read into the stage.
+              "computeRatioAvg": 3.14, # Relative amount of time the average shard spent on CPU-bound tasks.
+              "writeRatioMax": 3.14, # Relative amount of time the slowest shard spent on writing output.
+              "writeRatioAvg": 3.14, # Relative amount of time the average shard spent on writing output.
+              "waitRatioAvg": 3.14, # Relative amount of time the average shard spent waiting to be scheduled.
+              "id": "A String", # Unique ID for stage within plan.
+              "name": "A String", # Human-readable name for stage.
+            },
+          ],
           "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
           "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
+          "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
+          "billingTier": 42, # [Output-only] Billing tier for the job.
+          "referencedTables": [ # [Output-only, Experimental] Referenced tables for the job. Queries that reference more than 50 tables will not have a complete list.
+            {
+              "projectId": "A String", # [Required] The ID of the project containing this table.
+              "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+              "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+            },
+          ],
         },
         "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch. This field will be present whenever a job is in the DONE state.
         "extract": { # [Output-only] Statistics for an extract job.
@@ -845,7 +939,7 @@ Returns:
       "configuration": { # [Required] Describes the job configuration.
         "load": { # [Pick one] Configures a load job.
           "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
-          "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
+          "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. The separator can be any ISO-8859-1 single-byte character. To use a character in the range 128-255, you must encode the character as UTF8. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
           "sourceFormat": "A String", # [Optional] The format of the data files. For CSV files, specify "CSV". For datastore backups, specify "DATASTORE_BACKUP". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". The default value is CSV.
           "destinationTable": { # [Required] The destination table to load the data into.
             "projectId": "A String", # [Required] The ID of the project containing this table.
@@ -868,7 +962,7 @@ Returns:
             "A String",
           ],
           "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
-          "schema": { # [Optional] The schema for the destination table. The schema can be omitted if the destination table already exists or if the schema can be inferred from the loaded data.
+          "schema": { # [Optional] The schema for the destination table. The schema can be omitted if the destination table already exists, or if you're loading data from Google Cloud Datastore.
             "fields": [ # Describes the fields in a table.
               {
                 "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
@@ -882,75 +976,20 @@ Returns:
             ],
           },
         },
-        "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
-        "link": { # [Pick one] Configures a link job.
-          "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
-          "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
-          "destinationTable": { # [Required] The destination table of the link job.
-            "projectId": "A String", # [Required] The ID of the project containing this table.
-            "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-            "datasetId": "A String", # [Required] The ID of the dataset containing this table.
-          },
-          "sourceUri": [ # [Required] URI of source table to link.
+        "extract": { # [Pick one] Configures an extract job.
+          "destinationUri": "A String", # [Pick one] DEPRECATED: Use destinationUris instead, passing only one URI as necessary. The fully-qualified Google Cloud Storage URI where the extracted table should be written.
+          "compression": "A String", # [Optional] The compression type to use for exported files. Possible values include GZIP and NONE. The default value is NONE.
+          "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
+          "destinationFormat": "A String", # [Optional] The exported file format. Possible values include CSV, NEWLINE_DELIMITED_JSON and AVRO. The default value is CSV. Tables with nested or repeated fields cannot be exported as CSV.
+          "printHeader": true, # [Optional] Whether to print out a header row in the results. Default is true.
+          "destinationUris": [ # [Pick one] A list of fully-qualified Google Cloud Storage URIs where the extracted table should be written.
             "A String",
           ],
-        },
-        "query": { # [Pick one] Configures a query job.
-          "flattenResults": true, # [Optional] Flattens all nested and repeated fields in the query results. The default value is true. allowLargeResults must be true if this is set to false.
-          "useQueryCache": true, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified. The default value is true.
-          "defaultDataset": { # [Optional] Specifies the default dataset to use for unqualified table names in the query.
-            "projectId": "A String", # [Optional] The ID of the project containing this dataset.
-            "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-          },
-          "destinationTable": { # [Optional] Describes the table where the query results should be stored. If not present, a new table will be created to store the results.
+          "sourceTable": { # [Required] A reference to the table being exported.
             "projectId": "A String", # [Required] The ID of the project containing this table.
             "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
             "datasetId": "A String", # [Required] The ID of the dataset containing this table.
           },
-          "priority": "A String", # [Optional] Specifies a priority for the query. Possible values include INTERACTIVE and BATCH. The default value is INTERACTIVE.
-          "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
-          "allowLargeResults": True or False, # If true, allows the query to produce arbitrarily large result tables at a slight cost in performance. Requires destinationTable to be set.
-          "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
-          "query": "A String", # [Required] BigQuery SQL query to execute.
-          "preserveNulls": True or False, # [Deprecated] This property is deprecated.
-          "tableDefinitions": { # [Experimental] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
-            "a_key": {
-              "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE.
-              "csvOptions": { # Additional properties to set if sourceFormat is set to CSV.
-                "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
-                "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
-                "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
-                "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-                "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
-                "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
-              },
-              "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON".
-              "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid.
-              "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
-              "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
-                "A String",
-              ],
-              "schema": { # [Required] The schema for the data.
-                "fields": [ # Describes the fields in a table.
-                  {
-                    "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
-                      # Object with schema name: TableFieldSchema
-                    ],
-                    "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
-                    "description": "A String", # [Optional] The field description. The maximum length is 16K characters.
-                    "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
-                    "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
-                  },
-                ],
-              },
-            },
-          },
-          "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
-            {
-              "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
-              "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
-            },
-          ],
         },
         "copy": { # [Pick one] Copies a table.
           "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
@@ -973,20 +1012,65 @@ Returns:
             "datasetId": "A String", # [Required] The ID of the dataset containing this table.
           },
         },
-        "extract": { # [Pick one] Configures an extract job.
-          "destinationUri": "A String", # [Pick one] DEPRECATED: Use destinationUris instead, passing only one URI as necessary. The fully-qualified Google Cloud Storage URI where the extracted table should be written.
-          "compression": "A String", # [Optional] The compression type to use for exported files. Possible values include GZIP and NONE. The default value is NONE.
-          "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
-          "destinationFormat": "A String", # [Optional] The exported file format. Possible values include CSV, NEWLINE_DELIMITED_JSON and AVRO. The default value is CSV. Tables with nested or repeated fields cannot be exported as CSV.
-          "printHeader": true, # [Optional] Whether to print out a header row in the results. Default is true.
-          "destinationUris": [ # [Pick one] A list of fully-qualified Google Cloud Storage URIs where the extracted table should be written.
-            "A String",
-          ],
-          "sourceTable": { # [Required] A reference to the table being exported.
+        "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
+        "query": { # [Pick one] Configures a query job.
+          "flattenResults": true, # [Optional] Flattens all nested and repeated fields in the query results. The default value is true. allowLargeResults must be true if this is set to false.
+          "maximumBillingTier": 1, # [Optional] Limits the billing tier for this job. Queries that have resource usage beyond this tier will fail (without incurring a charge). If unspecified, this will be set to your project default.
+          "useQueryCache": true, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified. The default value is true.
+          "defaultDataset": { # [Optional] Specifies the default dataset to use for unqualified table names in the query.
+            "projectId": "A String", # [Optional] The ID of the project containing this dataset.
+            "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+          },
+          "useLegacySql": True or False, # [Experimental] Specifies whether to use BigQuery's legacy SQL dialect for this query. The default value is true. If set to false, the query will use BigQuery's updated SQL dialect with improved standards compliance. When using BigQuery's updated SQL, the values of allowLargeResults and flattenResults are ignored. Queries with useLegacySql set to false will be run as if allowLargeResults is true and flattenResults is false.
+          "destinationTable": { # [Optional] Describes the table where the query results should be stored. If not present, a new table will be created to store the results.
             "projectId": "A String", # [Required] The ID of the project containing this table.
             "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
             "datasetId": "A String", # [Required] The ID of the dataset containing this table.
           },
+          "priority": "A String", # [Optional] Specifies a priority for the query. Possible values include INTERACTIVE and BATCH. The default value is INTERACTIVE.
+          "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
+          "allowLargeResults": True or False, # If true, allows the query to produce arbitrarily large result tables at a slight cost in performance. Requires destinationTable to be set.
+          "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
+          "query": "A String", # [Required] BigQuery SQL query to execute.
+          "preserveNulls": True or False, # [Deprecated] This property is deprecated.
+          "tableDefinitions": { # [Optional] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
+            "a_key": {
+              "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE. This setting is ignored for Google Cloud Datastore backups.
+              "csvOptions": { # Additional properties to set if sourceFormat is set to CSV.
+                "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
+                "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
+                "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+                "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
+                "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
+                "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
+              },
+              "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP".
+              "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Datastore backups.
+              "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Datastore backups: This setting is ignored.
+              "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs. For Google Cloud Datastore backups, exactly one URI can be specified, and it must end with '.backup_info'. Also, the '*' wildcard character is not allowed.
+                "A String",
+              ],
+              "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Datastore backups.
+                "fields": [ # Describes the fields in a table.
+                  {
+                    "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
+                      # Object with schema name: TableFieldSchema
+                    ],
+                    "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
+                    "description": "A String", # [Optional] The field description. The maximum length is 16K characters.
+                    "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+                    "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
+                  },
+                ],
+              },
+            },
+          },
+          "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
+            {
+              "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
+              "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
+            },
+          ],
         },
       },
       "id": "A String", # [Output-only] Opaque ID field of the job
@@ -1051,10 +1135,41 @@ Returns:
           "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
           "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
           "query": { # [Output-only] Statistics for a query job.
-            "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
-            "billingTier": 42, # [Output-only] Billing tier for the job.
+            "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query as a list of stages.
+              {
+                "computeRatioMax": 3.14, # Relative amount of time the slowest shard spent on CPU-bound tasks.
+                "recordsWritten": "A String", # Number of records written by the stage.
+                "waitRatioMax": 3.14, # Relative amount of time the slowest shard spent waiting to be scheduled.
+                "readRatioAvg": 3.14, # Relative amount of time the average shard spent reading input.
+                "readRatioMax": 3.14, # Relative amount of time the slowest shard spent reading input.
+                "steps": [ # List of operations within the stage in dependency order (approximately chronological).
+                  {
+                    "kind": "A String", # Machine-readable operation type.
+                    "substeps": [ # Human-readable stage descriptions.
+                      "A String",
+                    ],
+                  },
+                ],
+                "recordsRead": "A String", # Number of records read into the stage.
+                "computeRatioAvg": 3.14, # Relative amount of time the average shard spent on CPU-bound tasks.
+                "writeRatioMax": 3.14, # Relative amount of time the slowest shard spent on writing output.
+                "writeRatioAvg": 3.14, # Relative amount of time the average shard spent on writing output.
+                "waitRatioAvg": 3.14, # Relative amount of time the average shard spent waiting to be scheduled.
+                "id": "A String", # Unique ID for stage within plan.
+                "name": "A String", # Human-readable name for stage.
+              },
+            ],
             "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
             "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
+            "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
+            "billingTier": 42, # [Output-only] Billing tier for the job.
+            "referencedTables": [ # [Output-only, Experimental] Referenced tables for the job. Queries that reference more than 50 tables will not have a complete list.
+              {
+                "projectId": "A String", # [Required] The ID of the project containing this table.
+                "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+                "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+              },
+            ],
           },
           "endTime": "A String", # [Output-only] End time of this job, in milliseconds since the epoch. This field will be present whenever a job is in the DONE state.
           "extract": { # [Output-only] Statistics for an extract job.
@@ -1072,7 +1187,7 @@ Returns:
         "configuration": { # [Full-projection-only] Specifies the job configuration.
           "load": { # [Pick one] Configures a load job.
             "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
-            "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
+            "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. The separator can be any ISO-8859-1 single-byte character. To use a character in the range 128-255, you must encode the character as UTF8. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
             "sourceFormat": "A String", # [Optional] The format of the data files. For CSV files, specify "CSV". For datastore backups, specify "DATASTORE_BACKUP". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". The default value is CSV.
             "destinationTable": { # [Required] The destination table to load the data into.
               "projectId": "A String", # [Required] The ID of the project containing this table.
@@ -1095,7 +1210,7 @@ Returns:
               "A String",
             ],
             "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
-            "schema": { # [Optional] The schema for the destination table. The schema can be omitted if the destination table already exists or if the schema can be inferred from the loaded data.
+            "schema": { # [Optional] The schema for the destination table. The schema can be omitted if the destination table already exists, or if you're loading data from Google Cloud Datastore.
               "fields": [ # Describes the fields in a table.
                 {
                   "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
@@ -1109,75 +1224,20 @@ Returns:
               ],
             },
           },
-          "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
-          "link": { # [Pick one] Configures a link job.
-            "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
-            "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
-            "destinationTable": { # [Required] The destination table of the link job.
-              "projectId": "A String", # [Required] The ID of the project containing this table.
-              "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-              "datasetId": "A String", # [Required] The ID of the dataset containing this table.
-            },
-            "sourceUri": [ # [Required] URI of source table to link.
+          "extract": { # [Pick one] Configures an extract job.
+            "destinationUri": "A String", # [Pick one] DEPRECATED: Use destinationUris instead, passing only one URI as necessary. The fully-qualified Google Cloud Storage URI where the extracted table should be written.
+            "compression": "A String", # [Optional] The compression type to use for exported files. Possible values include GZIP and NONE. The default value is NONE.
+            "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
+            "destinationFormat": "A String", # [Optional] The exported file format. Possible values include CSV, NEWLINE_DELIMITED_JSON and AVRO. The default value is CSV. Tables with nested or repeated fields cannot be exported as CSV.
+            "printHeader": true, # [Optional] Whether to print out a header row in the results. Default is true.
+            "destinationUris": [ # [Pick one] A list of fully-qualified Google Cloud Storage URIs where the extracted table should be written.
               "A String",
             ],
-          },
-          "query": { # [Pick one] Configures a query job.
-            "flattenResults": true, # [Optional] Flattens all nested and repeated fields in the query results. The default value is true. allowLargeResults must be true if this is set to false.
-            "useQueryCache": true, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified. The default value is true.
-            "defaultDataset": { # [Optional] Specifies the default dataset to use for unqualified table names in the query.
-              "projectId": "A String", # [Optional] The ID of the project containing this dataset.
-              "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-            },
-            "destinationTable": { # [Optional] Describes the table where the query results should be stored. If not present, a new table will be created to store the results.
+            "sourceTable": { # [Required] A reference to the table being exported.
               "projectId": "A String", # [Required] The ID of the project containing this table.
               "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
               "datasetId": "A String", # [Required] The ID of the dataset containing this table.
             },
-            "priority": "A String", # [Optional] Specifies a priority for the query. Possible values include INTERACTIVE and BATCH. The default value is INTERACTIVE.
-            "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
-            "allowLargeResults": True or False, # If true, allows the query to produce arbitrarily large result tables at a slight cost in performance. Requires destinationTable to be set.
-            "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
-            "query": "A String", # [Required] BigQuery SQL query to execute.
-            "preserveNulls": True or False, # [Deprecated] This property is deprecated.
-            "tableDefinitions": { # [Experimental] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
-              "a_key": {
-                "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE.
-                "csvOptions": { # Additional properties to set if sourceFormat is set to CSV.
-                  "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
-                  "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
-                  "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
-                  "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-                  "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
-                  "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
-                },
-                "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON".
-                "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid.
-                "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names
-                "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs.
-                  "A String",
-                ],
-                "schema": { # [Required] The schema for the data.
-                  "fields": [ # Describes the fields in a table.
-                    {
-                      "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
-                        # Object with schema name: TableFieldSchema
-                      ],
-                      "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
-                      "description": "A String", # [Optional] The field description. The maximum length is 16K characters.
-                      "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
-                      "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
-                    },
-                  ],
-                },
-              },
-            },
-            "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
-              {
-                "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
-                "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
-              },
-            ],
           },
           "copy": { # [Pick one] Copies a table.
             "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
@@ -1200,20 +1260,65 @@ Returns:
               "datasetId": "A String", # [Required] The ID of the dataset containing this table.
             },
           },
-          "extract": { # [Pick one] Configures an extract job.
-            "destinationUri": "A String", # [Pick one] DEPRECATED: Use destinationUris instead, passing only one URI as necessary. The fully-qualified Google Cloud Storage URI where the extracted table should be written.
-            "compression": "A String", # [Optional] The compression type to use for exported files. Possible values include GZIP and NONE. The default value is NONE.
-            "fieldDelimiter": "A String", # [Optional] Delimiter to use between fields in the exported data. Default is ','
-            "destinationFormat": "A String", # [Optional] The exported file format. Possible values include CSV, NEWLINE_DELIMITED_JSON and AVRO. The default value is CSV. Tables with nested or repeated fields cannot be exported as CSV.
-            "printHeader": true, # [Optional] Whether to print out a header row in the results. Default is true.
-            "destinationUris": [ # [Pick one] A list of fully-qualified Google Cloud Storage URIs where the extracted table should be written.
-              "A String",
-            ],
-            "sourceTable": { # [Required] A reference to the table being exported.
+          "dryRun": True or False, # [Optional] If set, don't actually run this job. A valid query will return a mostly empty response with some processing statistics, while an invalid query will return the same error it would if it wasn't a dry run. Behavior of non-query jobs is undefined.
+          "query": { # [Pick one] Configures a query job.
+            "flattenResults": true, # [Optional] Flattens all nested and repeated fields in the query results. The default value is true. allowLargeResults must be true if this is set to false.
+            "maximumBillingTier": 1, # [Optional] Limits the billing tier for this job. Queries that have resource usage beyond this tier will fail (without incurring a charge). If unspecified, this will be set to your project default.
+            "useQueryCache": true, # [Optional] Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. Moreover, the query cache is only available when a query does not have a destination table specified. The default value is true.
+            "defaultDataset": { # [Optional] Specifies the default dataset to use for unqualified table names in the query.
+              "projectId": "A String", # [Optional] The ID of the project containing this dataset.
+              "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+            },
+            "useLegacySql": True or False, # [Experimental] Specifies whether to use BigQuery's legacy SQL dialect for this query. The default value is true. If set to false, the query will use BigQuery's updated SQL dialect with improved standards compliance. When using BigQuery's updated SQL, the values of allowLargeResults and flattenResults are ignored. Queries with useLegacySql set to false will be run as if allowLargeResults is true and flattenResults is false.
+            "destinationTable": { # [Optional] Describes the table where the query results should be stored. If not present, a new table will be created to store the results.
               "projectId": "A String", # [Required] The ID of the project containing this table.
               "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
               "datasetId": "A String", # [Required] The ID of the dataset containing this table.
             },
+            "priority": "A String", # [Optional] Specifies a priority for the query. Possible values include INTERACTIVE and BATCH. The default value is INTERACTIVE.
+            "writeDisposition": "A String", # [Optional] Specifies the action that occurs if the destination table already exists. The following values are supported: WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the table data. WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
+            "allowLargeResults": True or False, # If true, allows the query to produce arbitrarily large result tables at a slight cost in performance. Requires destinationTable to be set.
+            "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
+            "query": "A String", # [Required] BigQuery SQL query to execute.
+            "preserveNulls": True or False, # [Deprecated] This property is deprecated.
+            "tableDefinitions": { # [Optional] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
+              "a_key": {
+                "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE. This setting is ignored for Google Cloud Datastore backups.
+                "csvOptions": { # Additional properties to set if sourceFormat is set to CSV.
+                  "fieldDelimiter": "A String", # [Optional] The separator for fields in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. BigQuery also supports the escape sequence "\t" to specify a tab separator. The default value is a comma (',').
+                  "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
+                  "skipLeadingRows": 42, # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+                  "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
+                  "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
+                  "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
+                },
+                "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP".
+                "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Datastore backups.
+                "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Datastore backups: This setting is ignored.
+                "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud Storage. Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources, plus an additional limit of 10 GB maximum size across all URIs. For Google Cloud Datastore backups, exactly one URI can be specified, and it must end with '.backup_info'. Also, the '*' wildcard character is not allowed.
+                  "A String",
+                ],
+                "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Datastore backups.
+                  "fields": [ # Describes the fields in a table.
+                    {
+                      "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
+                        # Object with schema name: TableFieldSchema
+                      ],
+                      "type": "A String", # [Required] The field data type. Possible values include STRING, INTEGER, FLOAT, BOOLEAN, TIMESTAMP or RECORD (where RECORD indicates that the field contains a nested schema).
+                      "description": "A String", # [Optional] The field description. The maximum length is 16K characters.
+                      "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+                      "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
+                    },
+                  ],
+                },
+              },
+            },
+            "userDefinedFunctionResources": [ # [Experimental] Describes user-defined function resources used in the query.
+              {
+                "resourceUri": "A String", # [Pick one] A code resource to load from a Google Cloud Storage URI (gs://bucket/path).
+                "inlineCode": "A String", # [Pick one] An inline resource that contains code for a user-defined function (UDF). Providing a inline code resource is equivalent to providing a URI for a file containing the same code.
+              },
+            ],
           },
         },
         "id": "A String", # Unique opaque ID of the job.
@@ -1260,6 +1365,7 @@ Args:
       "projectId": "A String", # [Optional] The ID of the project containing this dataset.
       "datasetId": "A String", # [Required] A unique ID for this dataset, without the project name. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
     },
+    "useLegacySql": True or False, # [Experimental] Specifies whether to use BigQuery's legacy SQL dialect for this query. The default value is true. If set to false, the query will use BigQuery's updated SQL dialect with improved standards compliance. When using BigQuery's updated SQL, the values of allowLargeResults and flattenResults are ignored. Queries with useLegacySql set to false will be run as if allowLargeResults is true and flattenResults is false.
     "maxResults": 42, # [Optional] The maximum number of rows of data to return per page of results. Setting this flag to a small value such as 1000 and then paging through results might improve reliability when the query result set is large. In addition to this limit, responses are also limited to 10 MB. By default, there is no maximum row count, and only the byte limit applies.
     "query": "A String", # [Required] A query string, following the BigQuery query syntax, of the query to execute. Example: "SELECT count(f1) FROM [myProjectId:myDatasetId.myTableId]".
     "preserveNulls": True or False, # [Deprecated] This property is deprecated.
