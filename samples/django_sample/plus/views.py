@@ -11,7 +11,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django_sample.plus.models import CredentialsModel
 from django_sample import settings
-from oauth2client import xsrfutil
+from oauth2client.contrib import xsrfutil
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.contrib.django_orm import Storage
 
