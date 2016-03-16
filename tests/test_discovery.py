@@ -352,6 +352,7 @@ class DiscoveryErrors(unittest.TestCase):
   def test_unknown_api_name_or_version(self):
       http = HttpMockSequence([
         ({'status': '404'}, open(datafile('zoo.json'), 'rb').read()),
+        ({'status': '404'}, open(datafile('zoo.json'), 'rb').read()),
       ])
       with self.assertRaises(UnknownApiNameOrVersion):
         plus = build('plus', 'v1', http=http, cache_discovery=False)
@@ -425,6 +426,13 @@ class DiscoveryFromHttp(unittest.TestCase):
     except HttpError as e:
       self.assertEqual(e.uri, 'http://example.com')
 
+  def test_discovery_loading_from_v2_discovery_uri(self):
+      http = HttpMockSequence([
+        ({'status': '404'}, 'Not found'),
+        ({'status': '200'}, open(datafile('zoo.json'), 'rb').read()),
+      ])
+      zoo = build('zoo', 'v1', http=http, cache_discovery=False)
+      self.assertTrue(hasattr(zoo, 'animals'))
 
 class DiscoveryFromAppEngineCache(unittest.TestCase):
   def test_appengine_memcache(self):
