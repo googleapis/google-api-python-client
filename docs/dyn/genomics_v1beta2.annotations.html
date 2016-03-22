@@ -91,7 +91,7 @@ h1, h2, h3 {
 <p class="firstline">Updates an annotation. The update must respect all mutability restrictions and other invariants described on the annotation resource. Caller must have WRITE permission for the associated dataset. This method supports patch semantics.</p>
 <p class="toc_element">
   <code><a href="#search">search(body)</a></code></p>
-<p class="firstline">Searches for annotations that match the given criteria. Results are returned ordered by start position. Annotations that have matching start positions are ordered deterministically. Caller must have READ permission for the queried annotation sets.</p>
+<p class="firstline">Searches for annotations that match the given criteria. Results are ordered by genomic coordinate (by reference sequence, then position). Annotations with equivalent genomic coordinates are returned in an unspecified order. This order is consistent, such that two queries for the same content (regardless of page size) yield annotations in the same order across their respective streams of paginated responses. Caller must have READ permission for the queried annotation sets.</p>
 <p class="toc_element">
   <code><a href="#update">update(annotationId, body)</a></code></p>
 <p class="firstline">Updates an annotation. The update must respect all mutability restrictions and other invariants described on the annotation resource. Caller must have WRITE permission for the associated dataset.</p>
@@ -103,13 +103,16 @@ h1, h2, h3 {
 
 If the request has a systemic issue, such as an attempt to write to an inaccessible annotation set, the entire RPC will fail accordingly. For lesser data issues, when possible an error will be isolated to the corresponding batch entry in the response; the remaining well formed annotations will be created normally.
 
+
+For details on the requirements for each individual annotation resource, see annotations.create.
+
 Args:
   body: object, The request body. (required)
     The object takes the form of:
 
 {
     "annotations": [ # The annotations to be created. At most 4096 can be specified in a single request.
-      { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. A variant annotation is represented by one or more of these canonical types. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are 'Gene' and 'Variant'.
+      { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are GENE and VARIANT.
         "info": { # A string which maps to an array of values.
           "a_key": [ # A string which maps to an array of values.
             "A String",
@@ -142,7 +145,7 @@ Args:
           ],
           "geneId": "A String", # Google annotation ID of the gene affected by this variant. This should be provided when the variant is created.
         },
-        "annotationSetId": "A String", # The ID of the containing annotation set.
+        "annotationSetId": "A String", # The annotation set to which this annotation belongs.
         "position": { # A 0-based half-open genomic coordinate range over a reference sequence, for representing the position of a genomic resource. # The position of this annotation on the reference sequence.
           "start": "A String", # The start position of the range on the reference, 0-based inclusive.
           "referenceId": "A String", # The ID of the Google Genomics reference associated with this range.
@@ -181,7 +184,7 @@ Args:
             },
           ],
         },
-        "id": "A String", # The generated unique ID for this annotation.
+        "id": "A String", # The server-generated annotation ID, unique across all annotations.
       },
     ],
   }
@@ -197,7 +200,7 @@ Returns:
           "message": "A String", # Error message for this status, if any.
           "code": 42, # The HTTP status code for this operation.
         },
-        "annotation": { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. A variant annotation is represented by one or more of these canonical types. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are 'Gene' and 'Variant'. # The annotation, if any.
+        "annotation": { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are GENE and VARIANT. # The annotation, if any.
           "info": { # A string which maps to an array of values.
             "a_key": [ # A string which maps to an array of values.
               "A String",
@@ -230,7 +233,7 @@ Returns:
             ],
             "geneId": "A String", # Google annotation ID of the gene affected by this variant. This should be provided when the variant is created.
           },
-          "annotationSetId": "A String", # The ID of the containing annotation set.
+          "annotationSetId": "A String", # The annotation set to which this annotation belongs.
           "position": { # A 0-based half-open genomic coordinate range over a reference sequence, for representing the position of a genomic resource. # The position of this annotation on the reference sequence.
             "start": "A String", # The start position of the range on the reference, 0-based inclusive.
             "referenceId": "A String", # The ID of the Google Genomics reference associated with this range.
@@ -269,7 +272,7 @@ Returns:
               },
             ],
           },
-          "id": "A String", # The generated unique ID for this annotation.
+          "id": "A String", # The server-generated annotation ID, unique across all annotations.
         },
       },
     ],
@@ -280,11 +283,20 @@ Returns:
     <code class="details" id="create">create(body)</code>
   <pre>Creates a new annotation. Caller must have WRITE permission for the associated annotation set.
 
+
+The following fields must be provided when creating an annotation:  
+- annotationSetId 
+- position.referenceName or  position.referenceId  Transcripts 
+For annotations of type TRANSCRIPT, the following fields of annotation.transcript must be provided:  
+- exons.start 
+- exons.end  
+All other fields may be optionally specified, unless documented as being server-generated (for example, the id field). The annotated range must be no longer than 100Mbp (mega base pairs). See the annotation resource for additional restrictions on each field.
+
 Args:
   body: object, The request body. (required)
     The object takes the form of:
 
-{ # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. A variant annotation is represented by one or more of these canonical types. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are 'Gene' and 'Variant'.
+{ # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are GENE and VARIANT.
   "info": { # A string which maps to an array of values.
     "a_key": [ # A string which maps to an array of values.
       "A String",
@@ -317,7 +329,7 @@ Args:
     ],
     "geneId": "A String", # Google annotation ID of the gene affected by this variant. This should be provided when the variant is created.
   },
-  "annotationSetId": "A String", # The ID of the containing annotation set.
+  "annotationSetId": "A String", # The annotation set to which this annotation belongs.
   "position": { # A 0-based half-open genomic coordinate range over a reference sequence, for representing the position of a genomic resource. # The position of this annotation on the reference sequence.
     "start": "A String", # The start position of the range on the reference, 0-based inclusive.
     "referenceId": "A String", # The ID of the Google Genomics reference associated with this range.
@@ -356,14 +368,14 @@ Args:
       },
     ],
   },
-  "id": "A String", # The generated unique ID for this annotation.
+  "id": "A String", # The server-generated annotation ID, unique across all annotations.
 }
 
 
 Returns:
   An object of the form:
 
-    { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. A variant annotation is represented by one or more of these canonical types. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are 'Gene' and 'Variant'.
+    { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are GENE and VARIANT.
     "info": { # A string which maps to an array of values.
       "a_key": [ # A string which maps to an array of values.
         "A String",
@@ -396,7 +408,7 @@ Returns:
       ],
       "geneId": "A String", # Google annotation ID of the gene affected by this variant. This should be provided when the variant is created.
     },
-    "annotationSetId": "A String", # The ID of the containing annotation set.
+    "annotationSetId": "A String", # The annotation set to which this annotation belongs.
     "position": { # A 0-based half-open genomic coordinate range over a reference sequence, for representing the position of a genomic resource. # The position of this annotation on the reference sequence.
       "start": "A String", # The start position of the range on the reference, 0-based inclusive.
       "referenceId": "A String", # The ID of the Google Genomics reference associated with this range.
@@ -435,7 +447,7 @@ Returns:
         },
       ],
     },
-    "id": "A String", # The generated unique ID for this annotation.
+    "id": "A String", # The server-generated annotation ID, unique across all annotations.
   }</pre>
 </div>
 
@@ -444,7 +456,7 @@ Returns:
   <pre>Deletes an annotation. Caller must have WRITE permission for the associated annotation set.
 
 Args:
-  annotationId: string, The ID of the annotation set to be deleted. (required)
+  annotationId: string, The ID of the annotation to be deleted. (required)
 </pre>
 </div>
 
@@ -453,12 +465,12 @@ Args:
   <pre>Gets an annotation. Caller must have READ permission for the associated annotation set.
 
 Args:
-  annotationId: string, The ID of the annotation set to be retrieved. (required)
+  annotationId: string, The ID of the annotation to be retrieved. (required)
 
 Returns:
   An object of the form:
 
-    { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. A variant annotation is represented by one or more of these canonical types. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are 'Gene' and 'Variant'.
+    { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are GENE and VARIANT.
     "info": { # A string which maps to an array of values.
       "a_key": [ # A string which maps to an array of values.
         "A String",
@@ -491,7 +503,7 @@ Returns:
       ],
       "geneId": "A String", # Google annotation ID of the gene affected by this variant. This should be provided when the variant is created.
     },
-    "annotationSetId": "A String", # The ID of the containing annotation set.
+    "annotationSetId": "A String", # The annotation set to which this annotation belongs.
     "position": { # A 0-based half-open genomic coordinate range over a reference sequence, for representing the position of a genomic resource. # The position of this annotation on the reference sequence.
       "start": "A String", # The start position of the range on the reference, 0-based inclusive.
       "referenceId": "A String", # The ID of the Google Genomics reference associated with this range.
@@ -530,7 +542,7 @@ Returns:
         },
       ],
     },
-    "id": "A String", # The generated unique ID for this annotation.
+    "id": "A String", # The server-generated annotation ID, unique across all annotations.
   }</pre>
 </div>
 
@@ -539,11 +551,11 @@ Returns:
   <pre>Updates an annotation. The update must respect all mutability restrictions and other invariants described on the annotation resource. Caller must have WRITE permission for the associated dataset. This method supports patch semantics.
 
 Args:
-  annotationId: string, The ID of the annotation set to be updated. (required)
+  annotationId: string, The ID of the annotation to be updated. (required)
   body: object, The request body. (required)
     The object takes the form of:
 
-{ # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. A variant annotation is represented by one or more of these canonical types. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are 'Gene' and 'Variant'.
+{ # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are GENE and VARIANT.
   "info": { # A string which maps to an array of values.
     "a_key": [ # A string which maps to an array of values.
       "A String",
@@ -576,7 +588,7 @@ Args:
     ],
     "geneId": "A String", # Google annotation ID of the gene affected by this variant. This should be provided when the variant is created.
   },
-  "annotationSetId": "A String", # The ID of the containing annotation set.
+  "annotationSetId": "A String", # The annotation set to which this annotation belongs.
   "position": { # A 0-based half-open genomic coordinate range over a reference sequence, for representing the position of a genomic resource. # The position of this annotation on the reference sequence.
     "start": "A String", # The start position of the range on the reference, 0-based inclusive.
     "referenceId": "A String", # The ID of the Google Genomics reference associated with this range.
@@ -615,14 +627,14 @@ Args:
       },
     ],
   },
-  "id": "A String", # The generated unique ID for this annotation.
+  "id": "A String", # The server-generated annotation ID, unique across all annotations.
 }
 
 
 Returns:
   An object of the form:
 
-    { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. A variant annotation is represented by one or more of these canonical types. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are 'Gene' and 'Variant'.
+    { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are GENE and VARIANT.
     "info": { # A string which maps to an array of values.
       "a_key": [ # A string which maps to an array of values.
         "A String",
@@ -655,7 +667,7 @@ Returns:
       ],
       "geneId": "A String", # Google annotation ID of the gene affected by this variant. This should be provided when the variant is created.
     },
-    "annotationSetId": "A String", # The ID of the containing annotation set.
+    "annotationSetId": "A String", # The annotation set to which this annotation belongs.
     "position": { # A 0-based half-open genomic coordinate range over a reference sequence, for representing the position of a genomic resource. # The position of this annotation on the reference sequence.
       "start": "A String", # The start position of the range on the reference, 0-based inclusive.
       "referenceId": "A String", # The ID of the Google Genomics reference associated with this range.
@@ -694,13 +706,13 @@ Returns:
         },
       ],
     },
-    "id": "A String", # The generated unique ID for this annotation.
+    "id": "A String", # The server-generated annotation ID, unique across all annotations.
   }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="search">search(body)</code>
-  <pre>Searches for annotations that match the given criteria. Results are returned ordered by start position. Annotations that have matching start positions are ordered deterministically. Caller must have READ permission for the queried annotation sets.
+  <pre>Searches for annotations that match the given criteria. Results are ordered by genomic coordinate (by reference sequence, then position). Annotations with equivalent genomic coordinates are returned in an unspecified order. This order is consistent, such that two queries for the same content (regardless of page size) yield annotations in the same order across their respective streams of paginated responses. Caller must have READ permission for the queried annotation sets.
 
 Args:
   body: object, The request body. (required)
@@ -717,7 +729,7 @@ Args:
     "annotationSetIds": [ # The annotation sets to search within. The caller must have READ access to these annotation sets. Required. All queried annotation sets must have the same type.
       "A String",
     ],
-    "pageSize": 42, # Specifies number of results to return in a single page. If unspecified, it will default to 256. The maximum value is 2048.
+    "pageSize": 42, # The maximum number of results to return in a single page. If unspecified, defaults to 256. The maximum value is 2048.
   }
 
 
@@ -727,7 +739,7 @@ Returns:
     {
     "nextPageToken": "A String", # The continuation token, which is used to page through large result sets. Provide this value in a subsequent request to return the next page of results. This field will be empty if there aren't any additional results.
     "annotations": [ # The matching annotations.
-      { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. A variant annotation is represented by one or more of these canonical types. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are 'Gene' and 'Variant'.
+      { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are GENE and VARIANT.
         "info": { # A string which maps to an array of values.
           "a_key": [ # A string which maps to an array of values.
             "A String",
@@ -760,7 +772,7 @@ Returns:
           ],
           "geneId": "A String", # Google annotation ID of the gene affected by this variant. This should be provided when the variant is created.
         },
-        "annotationSetId": "A String", # The ID of the containing annotation set.
+        "annotationSetId": "A String", # The annotation set to which this annotation belongs.
         "position": { # A 0-based half-open genomic coordinate range over a reference sequence, for representing the position of a genomic resource. # The position of this annotation on the reference sequence.
           "start": "A String", # The start position of the range on the reference, 0-based inclusive.
           "referenceId": "A String", # The ID of the Google Genomics reference associated with this range.
@@ -799,7 +811,7 @@ Returns:
             },
           ],
         },
-        "id": "A String", # The generated unique ID for this annotation.
+        "id": "A String", # The server-generated annotation ID, unique across all annotations.
       },
     ],
   }</pre>
@@ -810,11 +822,11 @@ Returns:
   <pre>Updates an annotation. The update must respect all mutability restrictions and other invariants described on the annotation resource. Caller must have WRITE permission for the associated dataset.
 
 Args:
-  annotationId: string, The ID of the annotation set to be updated. (required)
+  annotationId: string, The ID of the annotation to be updated. (required)
   body: object, The request body. (required)
     The object takes the form of:
 
-{ # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. A variant annotation is represented by one or more of these canonical types. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are 'Gene' and 'Variant'.
+{ # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are GENE and VARIANT.
   "info": { # A string which maps to an array of values.
     "a_key": [ # A string which maps to an array of values.
       "A String",
@@ -847,7 +859,7 @@ Args:
     ],
     "geneId": "A String", # Google annotation ID of the gene affected by this variant. This should be provided when the variant is created.
   },
-  "annotationSetId": "A String", # The ID of the containing annotation set.
+  "annotationSetId": "A String", # The annotation set to which this annotation belongs.
   "position": { # A 0-based half-open genomic coordinate range over a reference sequence, for representing the position of a genomic resource. # The position of this annotation on the reference sequence.
     "start": "A String", # The start position of the range on the reference, 0-based inclusive.
     "referenceId": "A String", # The ID of the Google Genomics reference associated with this range.
@@ -886,14 +898,14 @@ Args:
       },
     ],
   },
-  "id": "A String", # The generated unique ID for this annotation.
+  "id": "A String", # The server-generated annotation ID, unique across all annotations.
 }
 
 
 Returns:
   An object of the form:
 
-    { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. A variant annotation is represented by one or more of these canonical types. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are 'Gene' and 'Variant'.
+    { # An annotation describes a region of reference genome. The value of an annotation may be one of several canonical types, supplemented by arbitrary info tags. An annotation is not inherently associated with a specific sample or individual (though a client could choose to use annotations in this way). Example canonical annotation types are GENE and VARIANT.
     "info": { # A string which maps to an array of values.
       "a_key": [ # A string which maps to an array of values.
         "A String",
@@ -926,7 +938,7 @@ Returns:
       ],
       "geneId": "A String", # Google annotation ID of the gene affected by this variant. This should be provided when the variant is created.
     },
-    "annotationSetId": "A String", # The ID of the containing annotation set.
+    "annotationSetId": "A String", # The annotation set to which this annotation belongs.
     "position": { # A 0-based half-open genomic coordinate range over a reference sequence, for representing the position of a genomic resource. # The position of this annotation on the reference sequence.
       "start": "A String", # The start position of the range on the reference, 0-based inclusive.
       "referenceId": "A String", # The ID of the Google Genomics reference associated with this range.
@@ -965,7 +977,7 @@ Returns:
         },
       ],
     },
-    "id": "A String", # The generated unique ID for this annotation.
+    "id": "A String", # The server-generated annotation ID, unique across all annotations.
   }</pre>
 </div>
 

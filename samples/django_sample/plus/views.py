@@ -11,9 +11,9 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django_sample.plus.models import CredentialsModel
 from django_sample import settings
-from oauth2client import xsrfutil
+from oauth2client.contrib import xsrfutil
 from oauth2client.client import flow_from_clientsecrets
-from oauth2client.django_orm import Storage
+from oauth2client.contrib.django_orm import Storage
 
 # CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
 # application, including client_id and client_secret, which are found
