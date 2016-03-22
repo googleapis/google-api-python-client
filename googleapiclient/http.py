@@ -57,6 +57,8 @@ from googleapiclient.model import JsonModel
 from oauth2client import util
 
 
+LOGGER = logging.getLogger(__name__)
+
 DEFAULT_CHUNK_SIZE = 512*1024
 
 MAX_URI_LENGTH = 2048
@@ -85,7 +87,7 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
   for retry_num in range(num_retries + 1):
     if retry_num > 0:
       sleep(rand() * 2**retry_num)
-      logging.warning(
+      LOGGER.warning(
           'Retry #%d for %s: %s %s%s' % (retry_num, req_type, method, uri,
           ', following status: %d' % resp.status if resp else ''))
 
@@ -882,7 +884,7 @@ class HttpRequest(object):
     for retry_num in range(num_retries + 1):
       if retry_num > 0:
         self._sleep(self._rand() * 2**retry_num)
-        logging.warning(
+        LOGGER.warning(
             'Retry #%d for media upload: %s %s, following status: %d'
             % (retry_num, self.method, self.uri, resp.status))
 
@@ -1632,7 +1634,7 @@ def tunnel_patch(http):
       headers = {}
     if method == 'PATCH':
       if 'oauth_token' in headers.get('authorization', ''):
-        logging.warning(
+        LOGGER.warning(
             'OAuth 1.0 request made with Credentials after tunnel_patch.')
       headers['x-http-method-override'] = "PATCH"
       method = 'POST'

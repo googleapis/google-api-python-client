@@ -34,7 +34,7 @@ from oauth2client.contrib.locked_file import LockedFile
 from . import base
 from ..discovery_cache import DISCOVERY_DOC_MAX_AGE
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 FILENAME = 'google-api-python-client-discovery-doc.cache'
 EPOCH = datetime.datetime.utcfromtimestamp(0)
@@ -84,7 +84,7 @@ class Cache(base.Cache):
         # If we can not obtain the lock, other process or thread must
         # have initialized the file.
       except Exception as e:
-        logging.warning(e, exc_info=True)
+        LOGGER.warning(e, exc_info=True)
       finally:
         f.unlock_and_close()
 
@@ -100,10 +100,10 @@ class Cache(base.Cache):
             return content
         return None
       else:
-        logger.debug('Could not obtain a lock for the cache file.')
+        LOGGER.debug('Could not obtain a lock for the cache file.')
         return None
     except Exception as e:
-      logger.warning(e, exc_info=True)
+      LOGGER.warning(e, exc_info=True)
     finally:
       f.unlock_and_close()
 
@@ -122,9 +122,9 @@ class Cache(base.Cache):
         f.file_handle().seek(0)
         json.dump(cache, f.file_handle())
       else:
-        logger.debug('Could not obtain a lock for the cache file.')
+        LOGGER.debug('Could not obtain a lock for the cache file.')
     except Exception as e:
-      logger.warning(e, exc_info=True)
+      LOGGER.warning(e, exc_info=True)
     finally:
       f.unlock_and_close()
 
