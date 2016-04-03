@@ -87,6 +87,23 @@ def main(argv):
   response = execute_request(service, flags.property_uri, request)
   print_table(response, 'Top Queries')
 
+  # Get top 11-20 mobile queries for the date range, sorted by click count, descending.
+  request = {
+      'startDate': flags.start_date,
+      'endDate': flags.end_date,
+      'dimensions': ['query'],
+      'dimensionFilterGroups': [{
+          'filters': [{
+              'dimension': 'device',
+              'expression': 'mobile'
+          }]
+      }],
+      'rowLimit': 10,
+      'startRow': 10
+  }
+  response = execute_request(service, flags.property_uri, request)
+  print_table(response, 'Top 11-20 Mobile Queries')
+
   # Get top 10 pages for the date range, sorted by click count, descending.
   request = {
       'startDate': flags.start_date,
