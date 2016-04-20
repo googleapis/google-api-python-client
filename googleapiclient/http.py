@@ -38,10 +38,17 @@ import mimetypes
 import os
 import random
 import socket
-import ssl
 import sys
 import time
 import uuid
+
+# TODO(issue 221): Remove this conditional import jibbajabba.
+try:
+  import ssl
+except ImportError:
+  _ssl_SSLError = object()
+else:
+  _ssl_SSLError = ssl.SSLError
 
 from email.generator import Generator
 from email.mime.multipart import MIMEMultipart
@@ -146,7 +153,7 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
       exception = None
       resp, content = http.request(uri, method, *args, **kwargs)
     # Retry on SSL errors and socket timeout errors.
-    except ssl.SSLError as ssl_error:
+    except _ssl_SSLError as ssl_error:
       exception = ssl_error
     except socket.error as socket_error:
       # errno's contents differ by platform, so we have to match by name.
