@@ -122,14 +122,19 @@ class HttpMockWithErrors(object):
           ex = TimeoutError()
         else:
           ex = socket.error()
-        # Initialize the timeout error code to the platform's error code.
-        try:
-          # For Windows:
-          ex.errno = socket.errno.WSAETIMEDOUT
-        except AttributeError:
-          # For Linux/Mac:
-          ex.errno = socket.errno.ETIMEDOUT
-        # Now raise the correct timeout error.
+        
+        if self.num_errors == 2:
+          #first try a broken pipe error (#218)
+          ex.errno = socket.errno.EPIPE
+        else:
+          # Initialize the timeout error code to the platform's error code.
+          try:
+            # For Windows:
+            ex.errno = socket.errno.WSAETIMEDOUT
+          except AttributeError:
+            # For Linux/Mac:
+            ex.errno = socket.errno.ETIMEDOUT
+        # Now raise the correct error.
         raise ex
 
 
@@ -145,7 +150,7 @@ class HttpMockWithNonRetriableErrors(object):
     else:
       self.num_errors -= 1
       ex = socket.error()
-      # Initialize the timeout error code to the platform's error code.
+      # set errno to a non-retriable value
       try:
         # For Windows:
         ex.errno = socket.errno.WSAECONNREFUSED

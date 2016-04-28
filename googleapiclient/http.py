@@ -158,7 +158,7 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
     except socket.error as socket_error:
       # errno's contents differ by platform, so we have to match by name.
       if socket.errno.errorcode.get(socket_error.errno) not in (
-          'WSAETIMEDOUT', 'ETIMEDOUT', ):
+          'WSAETIMEDOUT', 'ETIMEDOUT', 'EPIPE', 'ECONNABORTED', ):
         raise
       exception = socket_error
 
