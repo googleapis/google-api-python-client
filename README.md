@@ -24,7 +24,7 @@ Python 3 in production.
 
 # Third Party Libraries and Dependencies
 The following libraries will be installed when you install the client library:
-* [httplib2](https://github.com/jcgregorio/httplib2)
+* [httplib2](https://github.com/httplib2/httplib2)
 * [uri-templates](https://github.com/uri-templates/uritemplate-py)
 
 For development you will also need the following libraries:
