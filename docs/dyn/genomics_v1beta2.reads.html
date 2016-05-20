@@ -84,7 +84,7 @@ h1, h2, h3 {
 
 If a target positional range is specified, search returns all reads whose alignment to the reference genome overlap the range. A query which specifies only read group set IDs yields all reads in those read group sets, including unmapped reads.
 
-All reads returned (including reads on subsequent pages) are ordered by genomic coordinate (reference sequence & position). Reads with equivalent genomic coordinates are returned in a deterministic order.
+All reads returned (including reads on subsequent pages) are ordered by genomic coordinate (by reference sequence, then position). Reads with equivalent genomic coordinates are returned in an unspecified order. This order is consistent, such that two queries for the same content (regardless of page size) yield reads in the same order across their respective streams of paginated responses.
 
 Implements GlobalAllianceApi.searchReads.
 
@@ -99,10 +99,10 @@ Args:
     "readGroupIds": [ # The IDs of the read groups within which to search for reads. All specified read groups must belong to the same read group sets. Must specify one of readGroupSetIds or readGroupIds.
       "A String",
     ],
-    "pageSize": 42, # Specifies number of results to return in a single page. If unspecified, it will default to 256. The maximum value is 2048.
+    "pageSize": 42, # The maximum number of results to return in a single page. If unspecified, defaults to 256. The maximum value is 2048.
     "start": "A String", # The start position of the range on the reference, 0-based inclusive. If specified, referenceName must also be specified.
     "pageToken": "A String", # The continuation token, which is used to page through large result sets. To get the next page of results, set this parameter to the value of nextPageToken from the previous response.
-    "referenceName": "A String", # The reference sequence name, for example chr1, 1, or chrX. If set to *, only unmapped reads are returned.
+    "referenceName": "A String", # The reference sequence name, for example chr1, 1, or chrX. If set to *, only unmapped reads are returned. If unspecified, all reads (mapped and unmapped) returned.
     "end": "A String", # The end position of the range on the reference, 0-based exclusive. If specified, referenceName must also be specified.
   }
 
@@ -122,15 +122,15 @@ Returns:
             "A String",
           ],
         },
-        "duplicateFragment": True or False, # The fragment is a PCR or optical duplicate (SAM flag 0x400)
-        "readGroupSetId": "A String", # The ID of the read group set this read belongs to. (Every read must belong to exactly one read group set.)
-        "alignedQuality": [ # The quality of the read sequence contained in this alignment record. alignedSequence and alignedQuality may be shorter than the full read sequence and quality. This will occur if the alignment is part of a chimeric alignment, or if the read was trimmed. When this occurs, the CIGAR for this read will begin/end with a hard clip operator that will indicate the length of the excised sequence.
+        "duplicateFragment": True or False, # The fragment is a PCR or optical duplicate (SAM flag 0x400).
+        "readGroupSetId": "A String", # The ID of the read group set this read belongs to. A read belongs to exactly one read group set.
+        "alignedQuality": [ # The quality of the read sequence contained in this alignment record. (equivalent to QUAL in SAM). alignedSequence and alignedQuality may be shorter than the full read sequence and quality. This will occur if the alignment is part of a chimeric alignment, or if the read was trimmed. When this occurs, the CIGAR for this read will begin/end with a hard clip operator that will indicate the length of the excised sequence.
           42,
         ],
-        "failedVendorQualityChecks": True or False, # SAM flag 0x200
+        "failedVendorQualityChecks": True or False, # Whether this read did not pass filters, such as platform or vendor quality controls (SAM flag 0x200).
         "fragmentName": "A String", # The fragment name. Equivalent to QNAME (query template name) in SAM.
         "readNumber": 42, # The read number in sequencing. 0-based and less than numberReads. This field replaces SAM flag 0x40 and 0x80.
-        "properPlacement": True or False, # The orientation and the distance between reads from the fragment are consistent with the sequencing protocol (SAM flag 0x2)
+        "properPlacement": True or False, # The orientation and the distance between reads from the fragment are consistent with the sequencing protocol (SAM flag 0x2).
         "nextMatePosition": { # An abstraction for referring to a genomic position, in relation to some already known reference. For now, represents a genomic position as a reference name, a base number on that reference (0-based), and a determination of forward or reverse strand. # The position of the primary alignment of the (readNumber+1)%numberReads read in the fragment. It replaces mate position and mate strand in SAM. This field will be unset if that read is unmapped or if the fragment only has a single read.
           "position": "A String", # The 0-based offset from the start of the forward strand for that reference.
           "reverseStrand": True or False, # Whether this position is on the reverse strand, as opposed to the forward strand.
@@ -140,9 +140,9 @@ Returns:
         "numberReads": 42, # The number of reads in the fragment (extension to SAM flag 0x1).
         "fragmentLength": 42, # The observed length of the fragment, equivalent to TLEN in SAM.
         "secondaryAlignment": True or False, # Whether this alignment is secondary. Equivalent to SAM flag 0x100. A secondary alignment represents an alternative to the primary alignment for this read. Aligners may return secondary alignments if a read can map ambiguously to multiple coordinates in the genome. By convention, each read has one and only one alignment where both secondaryAlignment and supplementaryAlignment are false.
-        "alignedSequence": "A String", # The bases of the read sequence contained in this alignment record, without CIGAR operations applied. alignedSequence and alignedQuality may be shorter than the full read sequence and quality. This will occur if the alignment is part of a chimeric alignment, or if the read was trimmed. When this occurs, the CIGAR for this read will begin/end with a hard clip operator that will indicate the length of the excised sequence.
+        "alignedSequence": "A String", # The bases of the read sequence contained in this alignment record, without CIGAR operations applied (equivalent to SEQ in SAM). alignedSequence and alignedQuality may be shorter than the full read sequence and quality. This will occur if the alignment is part of a chimeric alignment, or if the read was trimmed. When this occurs, the CIGAR for this read will begin/end with a hard clip operator that will indicate the length of the excised sequence.
         "id": "A String", # The unique ID for this read. This is a generated unique ID, not to be confused with fragmentName.
-        "alignment": { # A linear alignment can be represented by one CIGAR string. Describes the mapped position and local alignment of the read to the reference. # The linear alignment for this alignment record. This field will be unset if the read is unmapped.
+        "alignment": { # A linear alignment can be represented by one CIGAR string. Describes the mapped position and local alignment of the read to the reference. # The linear alignment for this alignment record. This field is null for unmapped reads.
           "position": { # An abstraction for referring to a genomic position, in relation to some already known reference. For now, represents a genomic position as a reference name, a base number on that reference (0-based), and a determination of forward or reverse strand. # The position of this alignment.
             "position": "A String", # The 0-based offset from the start of the forward strand for that reference.
             "reverseStrand": True or False, # Whether this position is on the reverse strand, as opposed to the forward strand.
@@ -156,8 +156,10 @@ Returns:
             },
           ],
           "mappingQuality": 42, # The mapping quality of this alignment. Represents how likely the read maps to this position as opposed to other locations.
+              #
+              # Specifically, this is -10 log10 Pr(mapping position is wrong), rounded to the nearest integer.
         },
-        "readGroupId": "A String", # The ID of the read group this read belongs to. (Every read must belong to exactly one read group.)
+        "readGroupId": "A String", # The ID of the read group this read belongs to. A read belongs to exactly one read group. This is a server-generated ID (not SAM's RG tag).
       },
     ],
   }</pre>

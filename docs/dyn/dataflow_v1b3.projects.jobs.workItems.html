@@ -112,7 +112,7 @@ Returns:
     "workItems": [ # A list of the leased WorkItems.
       { # WorkItem represents basic information about a WorkItem to be executed in the cloud.
         "reportStatusInterval": "A String", # Recommended reporting interval.
-        "leaseExpireTime": "A String", # Time when the lease on this [Work][] will expire.
+        "leaseExpireTime": "A String", # Time when the lease on this Work will expire.
         "seqMapTask": { # Describes a particular function to invoke. # Additional information for SeqMapTask WorkItems.
           "inputs": [ # Information about each of the inputs.
             { # Information about a side input of a DoFn or an input of a SeqDoFn.
@@ -250,6 +250,35 @@ Returns:
                 },
               ],
               "partialGroupByKey": { # An instruction that does a partial group-by-key. One input and one output. # Additional information for PartialGroupByKey instructions.
+                "sideInputs": [ # Zero or more side inputs.
+                  { # Information about a side input of a DoFn or an input of a SeqDoFn.
+                    "sources": [ # The source(s) to read element(s) from to get the value of this side input. If more than one source, then the elements are taken from the sources, in the specified order if order matters. At least one source is required.
+                      { # A source that records can be read and decoded from.
+                        "codec": { # The codec to use to decode data read from the source.
+                          "a_key": "", # Properties of the object.
+                        },
+                        "baseSpecs": [ # While splitting, sources may specify the produced bundles as differences against another source, in order to save backend-side memory and allow bigger jobs. For details, see SourceSplitRequest. To support this use case, the full set of parameters of the source is logically obtained by taking the latest explicitly specified value of each parameter in the order: base_specs (later items win), spec (overrides anything in base_specs).
+                          {
+                            "a_key": "", # Properties of the object.
+                          },
+                        ],
+                        "spec": { # The source to read from, plus its parameters.
+                          "a_key": "", # Properties of the object.
+                        },
+                        "doesNotNeedSplitting": True or False, # Setting this value to true hints to the framework that the source doesn't need splitting, and using SourceSplitRequest on it would yield SOURCE_SPLIT_OUTCOME_USE_CURRENT. E.g. a file splitter may set this to true when splitting a single file into a set of byte ranges of appropriate size, and set this to false when splitting a filepattern into individual files. However, for efficiency, a file splitter may decide to produce file subranges directly from the filepattern to avoid a splitting round-trip. See SourceSplitRequest for an overview of the splitting process. This field is meaningful only in the Source objects populated by the user (e.g. when filling in a DerivedSource). Source objects supplied by the framework to the user don't have this field populated.
+                        "metadata": { # Metadata about a Source useful for automatically optimizing and tuning the pipeline, etc. # Optionally, metadata for this source can be supplied right away, avoiding a SourceGetMetadataOperation roundtrip (see SourceOperationRequest). This field is meaningful only in the Source objects populated by the user (e.g. when filling in a DerivedSource). Source objects supplied by the framework to the user don't have this field populated.
+                          "infinite": True or False, # Specifies that the size of this source is known to be infinite (this is a streaming source).
+                          "estimatedSizeBytes": "A String", # An estimate of the total size (in bytes) of the data that would be read from this source. This estimate is in terms of external storage size, before any decompression or other processing done by the reader.
+                          "producesSortedKeys": True or False, # Whether this source is known to produce key/value pairs with the (encoded) keys in lexicographically sorted order.
+                        },
+                      },
+                    ],
+                    "kind": { # How to interpret the source element(s) as a side input value.
+                      "a_key": "", # Properties of the object.
+                    },
+                    "tag": "A String", # The id of the tag the user code will access this side input by; this should correspond to the tag of some MultiOutputInfo.
+                  },
+                ],
                 "input": { # An input of an instruction, as a reference to an output of a producer instruction. # Describes the input to the partial group-by-key instruction.
                   "outputNum": 42, # The output index (origin zero) within the producer.
                   "producerInstructionIndex": 42, # The index (origin zero) of the parallel instruction that produces the output to be consumed by this input. This index is relative to the list of instructions in this input's instruction's containing MapTask.
@@ -355,6 +384,7 @@ Returns:
         "configuration": "A String", # Work item-specific configuration as an opaque blob.
         "streamingSetupTask": { # A task which initializes part of a streaming Dataflow job. # Additional information for StreamingSetupTask WorkItems.
           "workerHarnessPort": 42, # The TCP port used by the worker to communicate with the Dataflow worker harness.
+          "drain": True or False, # The user has requested drain.
           "streamingComputationTopology": { # Global topology of the streaming Dataflow job, including all computations and their sharded locations. # The global topology of the streaming Dataflow job.
             "computations": [ # The computations associated with a streaming Dataflow job.
               { # All configuration data for a particular Computation.
@@ -434,9 +464,11 @@ Returns:
                 ],
               },
             ],
+            "persistentStateVersion": 42, # Version number for persistent state.
             "userStageToComputationNameMap": { # Maps user stage names to stable computation names.
               "a_key": "A String",
             },
+            "forwardingKeyBits": 42, # The size (in bits) of keys that will be assigned to source messages.
           },
           "receiveWorkPort": 42, # The TCP port on which the worker should listen for messages from other streaming computation workers.
         },
@@ -473,9 +505,9 @@ Args:
       { # Conveys a worker's progress through the work described by a WorkItem.
         "reportIndex": "A String", # The report index. When a WorkItem is leased, the lease will contain an initial report index. When a WorkItem's status is reported to the system, the report should be sent with that report index, and the response will contain the index the worker should use for the next report. Reports received with unexpected index values will be rejected by the service. In order to preserve idempotency, the worker should not alter the contents of a report, even if the worker must submit the same report multiple times before getting back a response. The worker should not submit a subsequent report until the response for the previous report had been received from the service.
         "errors": [ # Specifies errors which occurred during processing. If errors are provided, and completed = true, then the WorkItem is considered to have failed.
-          { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). The error model is designed to be: - Simple to use and understand for most users - Flexible enough to meet unexpected needs # Overview The `Status` message contains three pieces of data: error code, error message, and error details. The error code should be an enum value of [google.rpc.Code][], but it may accept additional error codes if needed. The error message should be a developer-facing English message that helps developers *understand* and *resolve* the error. If a localized user-facing error message is needed, put the localized message in the error details or localize it in the client. The optional error details may contain arbitrary information about the error. There is a predefined set of error detail types in the package `google.rpc` which can be used for common error conditions. # Language mapping The `Status` message is the logical representation of the error model, but it is not necessarily the actual wire format. When the `Status` message is exposed in different client libraries and different wire protocols, it can be mapped differently. For example, it will likely be mapped to some exceptions in Java, but more likely mapped to some error codes in C. # Other uses The error model and the `Status` message can be used in a variety of environments, either with or without APIs, to provide a consistent developer experience across different environments. Example uses of this error model include: - Partial errors. If a service needs to return partial errors to the client, it may embed the `Status` in the normal response to indicate the partial errors. - Workflow errors. A typical workflow has multiple steps. Each step may have a `Status` message for error reporting purpose. - Batch operations. If a client uses batch request and batch response, the `Status` message should be used directly inside batch response, one for each error sub-response. - Asynchronous operations. If an API call embeds asynchronous operation results in its response, the status of those operations should be represented directly using the `Status` message. - Logging. If some API errors are stored in logs, the message `Status` could be used directly after any stripping needed for security/privacy reasons.
-            "message": "A String", # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
-            "code": 42, # The status code, which should be an enum value of [google.rpc.Code][].
+          { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). The error model is designed to be: - Simple to use and understand for most users - Flexible enough to meet unexpected needs # Overview The `Status` message contains three pieces of data: error code, error message, and error details. The error code should be an enum value of google.rpc.Code, but it may accept additional error codes if needed. The error message should be a developer-facing English message that helps developers *understand* and *resolve* the error. If a localized user-facing error message is needed, put the localized message in the error details or localize it in the client. The optional error details may contain arbitrary information about the error. There is a predefined set of error detail types in the package `google.rpc` which can be used for common error conditions. # Language mapping The `Status` message is the logical representation of the error model, but it is not necessarily the actual wire format. When the `Status` message is exposed in different client libraries and different wire protocols, it can be mapped differently. For example, it will likely be mapped to some exceptions in Java, but more likely mapped to some error codes in C. # Other uses The error model and the `Status` message can be used in a variety of environments, either with or without APIs, to provide a consistent developer experience across different environments. Example uses of this error model include: - Partial errors. If a service needs to return partial errors to the client, it may embed the `Status` in the normal response to indicate the partial errors. - Workflow errors. A typical workflow has multiple steps. Each step may have a `Status` message for error reporting purpose. - Batch operations. If a client uses batch request and batch response, the `Status` message should be used directly inside batch response, one for each error sub-response. - Asynchronous operations. If an API call embeds asynchronous operation results in its response, the status of those operations should be represented directly using the `Status` message. - Logging. If some API errors are stored in logs, the message `Status` could be used directly after any stripping needed for security/privacy reasons.
+            "message": "A String", # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
+            "code": 42, # The status code, which should be an enum value of google.rpc.Code.
             "details": [ # A list of messages that carry the error details. There will be a common set of message types for APIs to use.
               {
                 "a_key": "", # Properties of the object. Contains field @ype with type URL.
@@ -693,8 +725,8 @@ Args:
             },
           },
         },
-        "progress": { # A progress measurement of a WorkItem by a worker. # The WorkItem's approximate progress.
-          "position": { # Position defines a position within a collection of data. The value can be either the end position, a key (used with ordered collections), a byte offset, or a record index. # A Position within the work to represent a progress.
+        "progress": { # Obsolete in favor of ApproximateReportedProgress and ApproximateSplitRequest. # DEPRECATED in favor of reported_progress.
+          "position": { # Position defines a position within a collection of data. The value can be either the end position, a key (used with ordered collections), a byte offset, or a record index. # Obsolete.
             "end": True or False, # Position is past all other positions. Also useful for the end position of an unbounded range.
             "recordIndex": "A String", # Position is a record index.
             "byteOffset": "A String", # Position is a byte offset.
@@ -705,8 +737,8 @@ Args:
             },
             "shufflePosition": "A String", # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED sharding).
           },
-          "remainingTime": "A String", # Completion as an estimated time remaining.
-          "percentComplete": 3.14, # Completion as percentage of the work, from 0.0 (beginning, nothing complete), to 1.0 (end of the work range, entire WorkItem complete).
+          "remainingTime": "A String", # Obsolete.
+          "percentComplete": 3.14, # Obsolete.
         },
         "metricUpdates": [ # Worker output metrics (counters) for this WorkItem.
           { # Describes the state of a metric.
@@ -728,6 +760,28 @@ Args:
             "internal": "", # Worker-computed aggregate value for internal use by the Dataflow service.
           },
         ],
+        "reportedProgress": { # A progress measurement of a WorkItem by a worker. # The worker's progress through this WorkItem.
+          "fractionConsumed": 3.14, # Completion as fraction of the input consumed, from 0.0 (beginning, nothing consumed), to 1.0 (end of the input, entire input consumed).
+          "position": { # Position defines a position within a collection of data. The value can be either the end position, a key (used with ordered collections), a byte offset, or a record index. # A Position within the work to represent a progress.
+            "end": True or False, # Position is past all other positions. Also useful for the end position of an unbounded range.
+            "recordIndex": "A String", # Position is a record index.
+            "byteOffset": "A String", # Position is a byte offset.
+            "key": "A String", # Position is a string key, ordered lexicographically.
+            "concatPosition": { # A position that encapsulates an inner position and an index for the inner position. A ConcatPosition can be used by a reader of a source that encapsulates a set of other sources. # CloudPosition is a concat position.
+              "index": 42, # Index of the inner source.
+              "position": # Object with schema name: Position # Position within the inner source.
+            },
+            "shufflePosition": "A String", # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED sharding).
+          },
+          "remainingParallelism": { # Represents the level of parallelism in a WorkItem's input, reported by the worker. # Total amount of parallelism in the input of this WorkItem that has not been consumed yet (i.e. can be delegated to a new WorkItem via dynamic splitting). "Amount of parallelism" refers to how many non-empty parts of the input can be read in parallel. This does not necessarily equal number of records. An input that can be read in parallel down to the individual records is called "perfectly splittable". An example of non-perfectly parallelizable input is a block-compressed file format where a block of records has to be read as a whole, but different blocks can be read in parallel. Examples: * If we have read 30 records out of 50 in a perfectly splittable 50-record input, this value should be 20. * If we are reading through block 3 in a block-compressed file consisting of 5 blocks, this value should be 2 (since blocks 4 and 5 can be processed in parallel by new work items via dynamic splitting). * If we are reading through the last block in a block-compressed file, or reading or processing the last record in a perfectly splittable input, this value should be 0, because the remainder of the work item cannot be further split.
+            "isInfinite": True or False, # Specifies whether the parallelism is infinite. If true, "value" is ignored. Infinite parallelism means the service will assume that the work item can always be split into more non-empty work items by dynamic splitting. This is a work-around for lack of support for infinity by the current JSON-based Java RPC stack.
+            "value": 3.14, # Specifies the level of parallelism in case it is finite.
+          },
+          "consumedParallelism": { # Represents the level of parallelism in a WorkItem's input, reported by the worker. # Total amount of parallelism in the portion of input of this work item that has already been consumed. In the first two examples above (see remaining_parallelism), the value should be 30 or 3 respectively. The sum of remaining_parallelism and consumed_parallelism should equal the total amount of parallelism in this work item. If specified, must be finite.
+            "isInfinite": True or False, # Specifies whether the parallelism is infinite. If true, "value" is ignored. Infinite parallelism means the service will assume that the work item can always be split into more non-empty work items by dynamic splitting. This is a work-around for lack of support for infinity by the current JSON-based Java RPC stack.
+            "value": 3.14, # Specifies the level of parallelism in case it is finite.
+          },
+        },
       },
     ],
   }
@@ -757,8 +811,9 @@ Returns:
         },
         "nextReportIndex": "A String", # The index value to use for the next report sent by the worker. Note: If the report call fails for whatever reason, the worker should reuse this index for subsequent report attempts.
         "leaseExpireTime": "A String", # Time at which the current lease will expire.
-        "suggestedStopPoint": { # A progress measurement of a WorkItem by a worker. # The progress point in the WorkItem where the Dataflow service suggests that the worker truncate the task.
-          "position": { # Position defines a position within a collection of data. The value can be either the end position, a key (used with ordered collections), a byte offset, or a record index. # A Position within the work to represent a progress.
+        "splitRequest": { # A suggestion by the service to the worker to dynamically split the WorkItem. # The progress point in the WorkItem where the Dataflow service suggests that the worker truncate the task.
+          "fractionConsumed": 3.14, # A fraction at which to split the work item, from 0.0 (beginning of the input) to 1.0 (end of the input).
+          "position": { # Position defines a position within a collection of data. The value can be either the end position, a key (used with ordered collections), a byte offset, or a record index. # A Position at which to split the work item.
             "end": True or False, # Position is past all other positions. Also useful for the end position of an unbounded range.
             "recordIndex": "A String", # Position is a record index.
             "byteOffset": "A String", # Position is a byte offset.
@@ -769,8 +824,21 @@ Returns:
             },
             "shufflePosition": "A String", # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED sharding).
           },
-          "remainingTime": "A String", # Completion as an estimated time remaining.
-          "percentComplete": 3.14, # Completion as percentage of the work, from 0.0 (beginning, nothing complete), to 1.0 (end of the work range, entire WorkItem complete).
+        },
+        "suggestedStopPoint": { # Obsolete in favor of ApproximateReportedProgress and ApproximateSplitRequest. # DEPRECATED in favor of split_request.
+          "position": { # Position defines a position within a collection of data. The value can be either the end position, a key (used with ordered collections), a byte offset, or a record index. # Obsolete.
+            "end": True or False, # Position is past all other positions. Also useful for the end position of an unbounded range.
+            "recordIndex": "A String", # Position is a record index.
+            "byteOffset": "A String", # Position is a byte offset.
+            "key": "A String", # Position is a string key, ordered lexicographically.
+            "concatPosition": { # A position that encapsulates an inner position and an index for the inner position. A ConcatPosition can be used by a reader of a source that encapsulates a set of other sources. # CloudPosition is a concat position.
+              "index": 42, # Index of the inner source.
+              "position": # Object with schema name: Position # Position within the inner source.
+            },
+            "shufflePosition": "A String", # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED sharding).
+          },
+          "remainingTime": "A String", # Obsolete.
+          "percentComplete": 3.14, # Obsolete.
         },
       },
     ],
