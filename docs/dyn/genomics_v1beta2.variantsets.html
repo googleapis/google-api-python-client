@@ -79,7 +79,7 @@ h1, h2, h3 {
 <p class="firstline">Creates a new variant set (only necessary in v1).</p>
 <p class="toc_element">
   <code><a href="#delete">delete(variantSetId)</a></code></p>
-<p class="firstline">Deletes the contents of a variant set. The variant set object is not deleted.</p>
+<p class="firstline">Deletes a variant set including all variants, call sets, and calls within. This is not reversible.</p>
 <p class="toc_element">
   <code><a href="#export">export(variantSetId, body)</a></code></p>
 <p class="firstline">Exports variant set data to an external destination.</p>
@@ -113,14 +113,8 @@ Args:
     The object takes the form of:
 
 { # A variant set is a collection of call sets and variants. It contains summary statistics of those contents. A variant set belongs to a dataset.
-  "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
-    { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
-      "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
-      "referenceName": "A String", # The reference the bound is associate with.
-    },
-  ],
-  "id": "A String", # The Google-generated ID of the variant set. Immutable.
-  "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+  "name": "A String", # User-specified, mutable name.
+  "description": "A String", # A textual description of this variant set.
   "metadata": [ # The metadata associated with this variant set.
     { # Metadata describes a single piece of variant call metadata. These data include a top level key and either a single value string (value) or a list of key-value pairs (info.) Value and info are mutually exclusive.
       "info": { # A string which maps to an array of values.
@@ -136,6 +130,17 @@ Args:
       "id": "A String", # User-provided ID field, not enforced by this API. Two or more pieces of structured metadata with identical id and key fields are considered equivalent.
     },
   ],
+  "referenceSetId": "A String", # The reference set to which the variant set is mapped. The reference set describes the alignment provenance of the variant set, while the referenceBounds describe the shape of the actual variant data. The reference set's reference names are a superset of those found in the referenceBounds.
+      # 
+      # For example, given a variant set that is mapped to the GRCh38 reference set and contains a single variant on reference 'X', referenceBounds would contain only an entry for 'X', while the associated reference set enumerates all possible references: '1', '2', 'X', 'Y', 'MT', etc.
+  "id": "A String", # The Google-generated ID of the variant set. Immutable.
+  "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+  "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
+    { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
+      "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
+      "referenceName": "A String", # The name of the reference associated with this reference bound.
+    },
+  ],
 }
 
 
@@ -143,14 +148,8 @@ Returns:
   An object of the form:
 
     { # A variant set is a collection of call sets and variants. It contains summary statistics of those contents. A variant set belongs to a dataset.
-    "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
-      { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
-        "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
-        "referenceName": "A String", # The reference the bound is associate with.
-      },
-    ],
-    "id": "A String", # The Google-generated ID of the variant set. Immutable.
-    "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+    "name": "A String", # User-specified, mutable name.
+    "description": "A String", # A textual description of this variant set.
     "metadata": [ # The metadata associated with this variant set.
       { # Metadata describes a single piece of variant call metadata. These data include a top level key and either a single value string (value) or a list of key-value pairs (info.) Value and info are mutually exclusive.
         "info": { # A string which maps to an array of values.
@@ -166,15 +165,26 @@ Returns:
         "id": "A String", # User-provided ID field, not enforced by this API. Two or more pieces of structured metadata with identical id and key fields are considered equivalent.
       },
     ],
+    "referenceSetId": "A String", # The reference set to which the variant set is mapped. The reference set describes the alignment provenance of the variant set, while the referenceBounds describe the shape of the actual variant data. The reference set's reference names are a superset of those found in the referenceBounds.
+        #
+        # For example, given a variant set that is mapped to the GRCh38 reference set and contains a single variant on reference 'X', referenceBounds would contain only an entry for 'X', while the associated reference set enumerates all possible references: '1', '2', 'X', 'Y', 'MT', etc.
+    "id": "A String", # The Google-generated ID of the variant set. Immutable.
+    "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+    "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
+      { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
+        "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
+        "referenceName": "A String", # The name of the reference associated with this reference bound.
+      },
+    ],
   }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="delete">delete(variantSetId)</code>
-  <pre>Deletes the contents of a variant set. The variant set object is not deleted.
+  <pre>Deletes a variant set including all variants, call sets, and calls within. This is not reversible.
 
 Args:
-  variantSetId: string, The ID of the variant set to be deleted. (required)
+  variantSetId: string, The ID of the variant set to be deleted. Required. (required)
 </pre>
 </div>
 
@@ -183,7 +193,7 @@ Args:
   <pre>Exports variant set data to an external destination.
 
 Args:
-  variantSetId: string, Required. The ID of the variant set that contains variant data which should be exported. The caller must have READ access to this variant set. (required)
+  variantSetId: string, The ID of the variant set that contains variant data which should be exported. Required. The caller must have READ access to this variant set. (required)
   body: object, The request body. (required)
     The object takes the form of:
 
@@ -211,20 +221,14 @@ Returns:
   <pre>Gets a variant set by ID.
 
 Args:
-  variantSetId: string, Required. The ID of the variant set. (required)
+  variantSetId: string, The ID of the variant set. Required. (required)
 
 Returns:
   An object of the form:
 
     { # A variant set is a collection of call sets and variants. It contains summary statistics of those contents. A variant set belongs to a dataset.
-    "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
-      { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
-        "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
-        "referenceName": "A String", # The reference the bound is associate with.
-      },
-    ],
-    "id": "A String", # The Google-generated ID of the variant set. Immutable.
-    "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+    "name": "A String", # User-specified, mutable name.
+    "description": "A String", # A textual description of this variant set.
     "metadata": [ # The metadata associated with this variant set.
       { # Metadata describes a single piece of variant call metadata. These data include a top level key and either a single value string (value) or a list of key-value pairs (info.) Value and info are mutually exclusive.
         "info": { # A string which maps to an array of values.
@@ -240,6 +244,17 @@ Returns:
         "id": "A String", # User-provided ID field, not enforced by this API. Two or more pieces of structured metadata with identical id and key fields are considered equivalent.
       },
     ],
+    "referenceSetId": "A String", # The reference set to which the variant set is mapped. The reference set describes the alignment provenance of the variant set, while the referenceBounds describe the shape of the actual variant data. The reference set's reference names are a superset of those found in the referenceBounds.
+        #
+        # For example, given a variant set that is mapped to the GRCh38 reference set and contains a single variant on reference 'X', referenceBounds would contain only an entry for 'X', while the associated reference set enumerates all possible references: '1', '2', 'X', 'Y', 'MT', etc.
+    "id": "A String", # The Google-generated ID of the variant set. Immutable.
+    "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+    "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
+      { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
+        "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
+        "referenceName": "A String", # The name of the reference associated with this reference bound.
+      },
+    ],
   }</pre>
 </div>
 
@@ -247,7 +262,7 @@ Returns:
     <code class="details" id="importVariants">importVariants(variantSetId, body)</code>
   <pre>Creates variant data by asynchronously importing the provided information.
 
-The variants for import will be merged with any existing data and each other according to the behavior of mergeVariants. In particular, this means for merged VCF variants that have conflicting INFO fields, some data will be arbitrarily discarded. As a special case, for single-sample VCF files, QUAL and FILTER fields will be moved to the call level; these are sometimes interpreted in a call-specific context. Imported VCF headers are appended to the metadata already in a variant set.
+The variants for import will be merged with any existing data and each other according to the behavior of mergeVariants. In particular, this means for merged VCF variants that have conflicting info fields, some data will be arbitrarily discarded unless otherwise specified in the InfoMergeConfig field of ImportVariantsRequest. As a special case, for single-sample VCF files, QUAL and FILTER fields will be moved to the call level; these are sometimes interpreted in a call-specific context. Imported VCF headers are appended to the metadata already in a variant set.
 
 Args:
   variantSetId: string, Required. The variant set to which variant data should be imported. (required)
@@ -259,7 +274,7 @@ Args:
     "sourceUris": [ # A list of URIs referencing variant files in Google Cloud Storage. URIs can include wildcards as described here. Note that recursive wildcards ('**') are not supported.
       "A String",
     ],
-    "format": "A String", # The format of the variant data being imported. If unspecified, defaults to to "VCF".
+    "format": "A String", # The format of the variant data being imported. If unspecified, defaults to "VCF".
   }
 
 
@@ -275,7 +290,7 @@ Returns:
     <code class="details" id="mergeVariants">mergeVariants(variantSetId, body)</code>
   <pre>Merges the given variants with existing variants. Each variant will be merged with an existing variant that matches its reference sequence, start, end, reference bases, and alternative bases. If no such variant exists, a new one will be created.
 
-When variants are merged, the call information from the new variant is added to the existing variant, and other fields (such as key/value pairs) are discarded.
+When variants are merged, the call information from the new variant is added to the existing variant. Variant info fields are merged as specified in the InfoMergeConfig field of the MergeVariantsRequest.
 
 Args:
   variantSetId: string, The destination variant set. (required)
@@ -337,19 +352,13 @@ Args:
   <pre>Updates a variant set's metadata. All other modifications are silently ignored. This method supports patch semantics.
 
 Args:
-  variantSetId: string, The ID of the variant to be updated (must already exist). (required)
+  variantSetId: string, The ID of the variant set to be updated (must already exist). (required)
   body: object, The request body. (required)
     The object takes the form of:
 
 { # A variant set is a collection of call sets and variants. It contains summary statistics of those contents. A variant set belongs to a dataset.
-  "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
-    { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
-      "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
-      "referenceName": "A String", # The reference the bound is associate with.
-    },
-  ],
-  "id": "A String", # The Google-generated ID of the variant set. Immutable.
-  "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+  "name": "A String", # User-specified, mutable name.
+  "description": "A String", # A textual description of this variant set.
   "metadata": [ # The metadata associated with this variant set.
     { # Metadata describes a single piece of variant call metadata. These data include a top level key and either a single value string (value) or a list of key-value pairs (info.) Value and info are mutually exclusive.
       "info": { # A string which maps to an array of values.
@@ -365,6 +374,17 @@ Args:
       "id": "A String", # User-provided ID field, not enforced by this API. Two or more pieces of structured metadata with identical id and key fields are considered equivalent.
     },
   ],
+  "referenceSetId": "A String", # The reference set to which the variant set is mapped. The reference set describes the alignment provenance of the variant set, while the referenceBounds describe the shape of the actual variant data. The reference set's reference names are a superset of those found in the referenceBounds.
+      # 
+      # For example, given a variant set that is mapped to the GRCh38 reference set and contains a single variant on reference 'X', referenceBounds would contain only an entry for 'X', while the associated reference set enumerates all possible references: '1', '2', 'X', 'Y', 'MT', etc.
+  "id": "A String", # The Google-generated ID of the variant set. Immutable.
+  "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+  "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
+    { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
+      "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
+      "referenceName": "A String", # The name of the reference associated with this reference bound.
+    },
+  ],
 }
 
 
@@ -372,14 +392,8 @@ Returns:
   An object of the form:
 
     { # A variant set is a collection of call sets and variants. It contains summary statistics of those contents. A variant set belongs to a dataset.
-    "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
-      { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
-        "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
-        "referenceName": "A String", # The reference the bound is associate with.
-      },
-    ],
-    "id": "A String", # The Google-generated ID of the variant set. Immutable.
-    "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+    "name": "A String", # User-specified, mutable name.
+    "description": "A String", # A textual description of this variant set.
     "metadata": [ # The metadata associated with this variant set.
       { # Metadata describes a single piece of variant call metadata. These data include a top level key and either a single value string (value) or a list of key-value pairs (info.) Value and info are mutually exclusive.
         "info": { # A string which maps to an array of values.
@@ -393,6 +407,17 @@ Returns:
         "key": "A String", # The top-level key.
         "type": "A String", # The type of data. Possible types include: Integer, Float, Flag, Character, and String.
         "id": "A String", # User-provided ID field, not enforced by this API. Two or more pieces of structured metadata with identical id and key fields are considered equivalent.
+      },
+    ],
+    "referenceSetId": "A String", # The reference set to which the variant set is mapped. The reference set describes the alignment provenance of the variant set, while the referenceBounds describe the shape of the actual variant data. The reference set's reference names are a superset of those found in the referenceBounds.
+        #
+        # For example, given a variant set that is mapped to the GRCh38 reference set and contains a single variant on reference 'X', referenceBounds would contain only an entry for 'X', while the associated reference set enumerates all possible references: '1', '2', 'X', 'Y', 'MT', etc.
+    "id": "A String", # The Google-generated ID of the variant set. Immutable.
+    "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+    "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
+      { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
+        "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
+        "referenceName": "A String", # The name of the reference associated with this reference bound.
       },
     ],
   }</pre>
@@ -413,7 +438,7 @@ Args:
     "datasetIds": [ # Exactly one dataset ID must be provided here. Only variant sets which belong to this dataset will be returned.
       "A String",
     ],
-    "pageSize": 42, # The maximum number of variant sets to return in a request.
+    "pageSize": 42, # The maximum number of results to return in a single page. If unspecified, defaults to 1024.
   }
 
 
@@ -424,14 +449,8 @@ Returns:
     "nextPageToken": "A String", # The continuation token, which is used to page through large result sets. Provide this value in a subsequent request to return the next page of results. This field will be empty if there aren't any additional results.
     "variantSets": [ # The variant sets belonging to the requested dataset.
       { # A variant set is a collection of call sets and variants. It contains summary statistics of those contents. A variant set belongs to a dataset.
-        "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
-          { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
-            "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
-            "referenceName": "A String", # The reference the bound is associate with.
-          },
-        ],
-        "id": "A String", # The Google-generated ID of the variant set. Immutable.
-        "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+        "name": "A String", # User-specified, mutable name.
+        "description": "A String", # A textual description of this variant set.
         "metadata": [ # The metadata associated with this variant set.
           { # Metadata describes a single piece of variant call metadata. These data include a top level key and either a single value string (value) or a list of key-value pairs (info.) Value and info are mutually exclusive.
             "info": { # A string which maps to an array of values.
@@ -447,6 +466,17 @@ Returns:
             "id": "A String", # User-provided ID field, not enforced by this API. Two or more pieces of structured metadata with identical id and key fields are considered equivalent.
           },
         ],
+        "referenceSetId": "A String", # The reference set to which the variant set is mapped. The reference set describes the alignment provenance of the variant set, while the referenceBounds describe the shape of the actual variant data. The reference set's reference names are a superset of those found in the referenceBounds.
+            #
+            # For example, given a variant set that is mapped to the GRCh38 reference set and contains a single variant on reference 'X', referenceBounds would contain only an entry for 'X', while the associated reference set enumerates all possible references: '1', '2', 'X', 'Y', 'MT', etc.
+        "id": "A String", # The Google-generated ID of the variant set. Immutable.
+        "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+        "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
+          { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
+            "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
+            "referenceName": "A String", # The name of the reference associated with this reference bound.
+          },
+        ],
       },
     ],
   }</pre>
@@ -457,19 +487,13 @@ Returns:
   <pre>Updates a variant set's metadata. All other modifications are silently ignored.
 
 Args:
-  variantSetId: string, The ID of the variant to be updated (must already exist). (required)
+  variantSetId: string, The ID of the variant set to be updated (must already exist). (required)
   body: object, The request body. (required)
     The object takes the form of:
 
 { # A variant set is a collection of call sets and variants. It contains summary statistics of those contents. A variant set belongs to a dataset.
-  "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
-    { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
-      "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
-      "referenceName": "A String", # The reference the bound is associate with.
-    },
-  ],
-  "id": "A String", # The Google-generated ID of the variant set. Immutable.
-  "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+  "name": "A String", # User-specified, mutable name.
+  "description": "A String", # A textual description of this variant set.
   "metadata": [ # The metadata associated with this variant set.
     { # Metadata describes a single piece of variant call metadata. These data include a top level key and either a single value string (value) or a list of key-value pairs (info.) Value and info are mutually exclusive.
       "info": { # A string which maps to an array of values.
@@ -485,6 +509,17 @@ Args:
       "id": "A String", # User-provided ID field, not enforced by this API. Two or more pieces of structured metadata with identical id and key fields are considered equivalent.
     },
   ],
+  "referenceSetId": "A String", # The reference set to which the variant set is mapped. The reference set describes the alignment provenance of the variant set, while the referenceBounds describe the shape of the actual variant data. The reference set's reference names are a superset of those found in the referenceBounds.
+      # 
+      # For example, given a variant set that is mapped to the GRCh38 reference set and contains a single variant on reference 'X', referenceBounds would contain only an entry for 'X', while the associated reference set enumerates all possible references: '1', '2', 'X', 'Y', 'MT', etc.
+  "id": "A String", # The Google-generated ID of the variant set. Immutable.
+  "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+  "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
+    { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
+      "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
+      "referenceName": "A String", # The name of the reference associated with this reference bound.
+    },
+  ],
 }
 
 
@@ -492,14 +527,8 @@ Returns:
   An object of the form:
 
     { # A variant set is a collection of call sets and variants. It contains summary statistics of those contents. A variant set belongs to a dataset.
-    "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
-      { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
-        "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
-        "referenceName": "A String", # The reference the bound is associate with.
-      },
-    ],
-    "id": "A String", # The Google-generated ID of the variant set. Immutable.
-    "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+    "name": "A String", # User-specified, mutable name.
+    "description": "A String", # A textual description of this variant set.
     "metadata": [ # The metadata associated with this variant set.
       { # Metadata describes a single piece of variant call metadata. These data include a top level key and either a single value string (value) or a list of key-value pairs (info.) Value and info are mutually exclusive.
         "info": { # A string which maps to an array of values.
@@ -513,6 +542,17 @@ Returns:
         "key": "A String", # The top-level key.
         "type": "A String", # The type of data. Possible types include: Integer, Float, Flag, Character, and String.
         "id": "A String", # User-provided ID field, not enforced by this API. Two or more pieces of structured metadata with identical id and key fields are considered equivalent.
+      },
+    ],
+    "referenceSetId": "A String", # The reference set to which the variant set is mapped. The reference set describes the alignment provenance of the variant set, while the referenceBounds describe the shape of the actual variant data. The reference set's reference names are a superset of those found in the referenceBounds.
+        #
+        # For example, given a variant set that is mapped to the GRCh38 reference set and contains a single variant on reference 'X', referenceBounds would contain only an entry for 'X', while the associated reference set enumerates all possible references: '1', '2', 'X', 'Y', 'MT', etc.
+    "id": "A String", # The Google-generated ID of the variant set. Immutable.
+    "datasetId": "A String", # The dataset to which this variant set belongs. Immutable.
+    "referenceBounds": [ # A list of all references used by the variants in a variant set with associated coordinate upper bounds for each one.
+      { # ReferenceBound records an upper bound for the starting coordinate of variants in a particular reference.
+        "upperBound": "A String", # An upper bound (inclusive) on the starting coordinate of any variant in the reference sequence.
+        "referenceName": "A String", # The name of the reference associated with this reference bound.
       },
     ],
   }</pre>
