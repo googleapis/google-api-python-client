@@ -1394,6 +1394,14 @@ class BatchHttpRequest(object):
     if http is None:
       raise ValueError("Missing a valid http object.")
 
+    # Special case for OAuth2Credentials-style objects which have not yet been
+    # refreshed with an initial access_token.
+    if getattr(http.request, 'credentials', None) is not None:
+      creds = http.request.credentials
+      if not getattr(creds, 'access_token', None):
+        LOGGER.info('Attempting refresh to obtain initial access_token')
+        creds.refresh(http)
+
     self._execute(http, self._order, self._requests)
 
     # Loop over all the requests and check for 401s. For each 401 request the

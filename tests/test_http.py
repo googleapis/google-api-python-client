@@ -1072,6 +1072,34 @@ class TestBatch(unittest.TestCase):
       header = parts[1].splitlines()[1]
       self.assertEqual('Content-Type: application/http', header)
 
+  def test_execute_initial_refresh_oauth2(self):
+    batch = BatchHttpRequest()
+    callbacks = Callbacks()
+    cred = MockCredentials('Foo')
+
+    # Pretend this is a OAuth2Credentials object
+    cred.access_token = None
+
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_SINGLE_RESPONSE),
+    ])
+
+    cred.authorize(http)
+
+    batch.add(self.request1, callback=callbacks.f)
+    batch.execute(http=http)
+
+    self.assertEqual({'foo': 42}, callbacks.responses['1'])
+    self.assertIsNone(callbacks.exceptions['1'])
+
+    self.assertEqual(1, cred._refreshed)
+
+    self.assertEqual(1, cred._authorized)
+
+    self.assertEqual(1, cred._applied)
+
   def test_execute_refresh_and_retry_on_401(self):
     batch = BatchHttpRequest()
     callbacks = Callbacks()
