@@ -639,7 +639,7 @@ class MediaIoBaseDownload(object):
     """Get the next chunk of the download.
 
     Args:
-      num_retries: Integer, number of times to retry 500's with randomized
+      num_retries: Integer, number of times to retry with randomized
             exponential backoff. If all retries fail, the raised HttpError
             represents the last request. If zero (default), we attempt the
             request only once.
@@ -782,7 +782,7 @@ class HttpRequest(object):
     Args:
       http: httplib2.Http, an http object to be used in place of the
             one the HttpRequest request object was constructed with.
-      num_retries: Integer, number of times to retry 500's with randomized
+      num_retries: Integer, number of times to retry with randomized
             exponential backoff. If all retries fail, the raised HttpError
             represents the last request. If zero (default), we attempt the
             request only once.
@@ -870,7 +870,7 @@ class HttpRequest(object):
     Args:
       http: httplib2.Http, an http object to be used in place of the
             one the HttpRequest request object was constructed with.
-      num_retries: Integer, number of times to retry 500's with randomized
+      num_retries: Integer, number of times to retry with randomized
             exponential backoff. If all retries fail, the raised HttpError
             represents the last request. If zero (default), we attempt the
             request only once.
@@ -965,7 +965,7 @@ class HttpRequest(object):
       except:
         self._in_error_state = True
         raise
-      if resp.status < 500:
+      if not _should_retry_response(resp.status, content):
         break
 
     return self._process_response(resp, content)
