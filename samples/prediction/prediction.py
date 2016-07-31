@@ -60,7 +60,7 @@ argparser.add_argument('object_name',
 argparser.add_argument('model_id',
     help='Model Id of your choosing to name trained model')
 argparser.add_argument('project_id',
-    help='Model Id of your choosing to name trained model')
+    help='Project Id of your Google Cloud Project')
 
 
 def print_header(line):
