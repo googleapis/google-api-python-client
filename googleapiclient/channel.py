@@ -64,6 +64,13 @@ from googleapiclient import errors
 from oauth2client import util
 import six
 
+# Oauth2client < 3 has the positional helper in 'util', >= 3 has it
+# in '_helpers'.
+try:
+  from oauth2client import util
+except ImportError:
+  from oauth2client import _helpers as util
+
 
 # The unix time epoch starts at midnight 1970.
 EPOCH = datetime.datetime.utcfromtimestamp(0)
