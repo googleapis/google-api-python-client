@@ -138,7 +138,7 @@ Returns:
           "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
           "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
           "query": { # [Output-only] Statistics for a query job.
-            "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query as a list of stages.
+            "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query.
               {
                 "computeRatioMax": 3.14, # Relative amount of time the slowest shard spent on CPU-bound tasks.
                 "recordsWritten": "A String", # Number of records written by the stage.
@@ -165,6 +165,7 @@ Returns:
             "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
             "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
             "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
+            "numDmlAffectedRows": "A String", # [Output-only, Experimental] The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
             "billingTier": 42, # [Output-only] Billing tier for the job.
             "referencedTables": [ # [Output-only, Experimental] Referenced tables for the job. Queries that reference more than 50 tables will not have a complete list.
               {
@@ -298,6 +299,7 @@ Returns:
             "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
             "query": "A String", # [Required] BigQuery SQL query to execute.
             "preserveNulls": True or False, # [Deprecated] This property is deprecated.
+            "maximumBytesBilled": "A String", # [Optional] Limits the bytes billed for this job. Queries that will have bytes billed beyond this limit will fail (without incurring a charge). If unspecified, this will be set to your project default.
             "tableDefinitions": { # [Optional] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
               "a_key": {
                 "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
@@ -316,11 +318,12 @@ Returns:
                   "A String",
                 ],
                 "bigtableOptions": { # [Optional] Additional options if sourceFormat is set to BIGTABLE.
+                  "readRowkeyAsString": True or False, # [Optional] If field is true, then the rowkey column families will be read and converted to string. Otherwise they are read with BYTES type values and users need to manually cast them with CAST if necessary. The default value is false.
                   "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
                   "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
                     {
                       "familyId": "A String", # Identifier of the column family.
-                      "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
+                      "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
                       "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
                       "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
                         {
@@ -329,7 +332,7 @@ Returns:
                           "fieldName": "A String", # [Optional] If the qualifier is not a valid BigQuery field identifier i.e. does not match [a-zA-Z][a-zA-Z0-9_]*, a valid identifier must be provided as the column field name and is used as field name in queries.
                           "onlyReadLatest": True or False, # [Optional] If this is set, only the latest version of value in this column are exposed. 'onlyReadLatest' can also be set at the column family level. However, the setting at this level takes precedence if 'onlyReadLatest' is set at both levels.
                           "qualifierString": "A String",
-                          "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
+                          "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
                         },
                       ],
                       "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
@@ -411,7 +414,7 @@ Returns:
         "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
         "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
         "query": { # [Output-only] Statistics for a query job.
-          "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query as a list of stages.
+          "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query.
             {
               "computeRatioMax": 3.14, # Relative amount of time the slowest shard spent on CPU-bound tasks.
               "recordsWritten": "A String", # Number of records written by the stage.
@@ -438,6 +441,7 @@ Returns:
           "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
           "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
           "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
+          "numDmlAffectedRows": "A String", # [Output-only, Experimental] The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
           "billingTier": 42, # [Output-only] Billing tier for the job.
           "referencedTables": [ # [Output-only, Experimental] Referenced tables for the job. Queries that reference more than 50 tables will not have a complete list.
             {
@@ -571,6 +575,7 @@ Returns:
           "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
           "query": "A String", # [Required] BigQuery SQL query to execute.
           "preserveNulls": True or False, # [Deprecated] This property is deprecated.
+          "maximumBytesBilled": "A String", # [Optional] Limits the bytes billed for this job. Queries that will have bytes billed beyond this limit will fail (without incurring a charge). If unspecified, this will be set to your project default.
           "tableDefinitions": { # [Optional] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
             "a_key": {
               "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
@@ -589,11 +594,12 @@ Returns:
                 "A String",
               ],
               "bigtableOptions": { # [Optional] Additional options if sourceFormat is set to BIGTABLE.
+                "readRowkeyAsString": True or False, # [Optional] If field is true, then the rowkey column families will be read and converted to string. Otherwise they are read with BYTES type values and users need to manually cast them with CAST if necessary. The default value is false.
                 "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
                 "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
                   {
                     "familyId": "A String", # Identifier of the column family.
-                    "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
+                    "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
                     "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
                     "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
                       {
@@ -602,7 +608,7 @@ Returns:
                         "fieldName": "A String", # [Optional] If the qualifier is not a valid BigQuery field identifier i.e. does not match [a-zA-Z][a-zA-Z0-9_]*, a valid identifier must be provided as the column field name and is used as field name in queries.
                         "onlyReadLatest": True or False, # [Optional] If this is set, only the latest version of value in this column are exposed. 'onlyReadLatest' can also be set at the column family level. However, the setting at this level takes precedence if 'onlyReadLatest' is set at both levels.
                         "qualifierString": "A String",
-                        "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
+                        "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
                       },
                     ],
                     "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
@@ -685,6 +691,7 @@ Returns:
         ],
       },
     ],
+    "numDmlAffectedRows": "A String", # [Output-only, Experimental] The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
     "schema": { # The schema of the results. Present only when the query completes successfully.
       "fields": [ # Describes the fields in a table.
         {
@@ -740,7 +747,7 @@ Args:
       "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
       "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
       "query": { # [Output-only] Statistics for a query job.
-        "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query as a list of stages.
+        "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query.
           {
             "computeRatioMax": 3.14, # Relative amount of time the slowest shard spent on CPU-bound tasks.
             "recordsWritten": "A String", # Number of records written by the stage.
@@ -767,6 +774,7 @@ Args:
         "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
         "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
         "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
+        "numDmlAffectedRows": "A String", # [Output-only, Experimental] The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
         "billingTier": 42, # [Output-only] Billing tier for the job.
         "referencedTables": [ # [Output-only, Experimental] Referenced tables for the job. Queries that reference more than 50 tables will not have a complete list.
           {
@@ -900,6 +908,7 @@ Args:
         "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
         "query": "A String", # [Required] BigQuery SQL query to execute.
         "preserveNulls": True or False, # [Deprecated] This property is deprecated.
+        "maximumBytesBilled": "A String", # [Optional] Limits the bytes billed for this job. Queries that will have bytes billed beyond this limit will fail (without incurring a charge). If unspecified, this will be set to your project default.
         "tableDefinitions": { # [Optional] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
           "a_key": {
             "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
@@ -918,11 +927,12 @@ Args:
               "A String",
             ],
             "bigtableOptions": { # [Optional] Additional options if sourceFormat is set to BIGTABLE.
+              "readRowkeyAsString": True or False, # [Optional] If field is true, then the rowkey column families will be read and converted to string. Otherwise they are read with BYTES type values and users need to manually cast them with CAST if necessary. The default value is false.
               "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
               "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
                 {
                   "familyId": "A String", # Identifier of the column family.
-                  "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
+                  "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
                   "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
                   "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
                     {
@@ -931,7 +941,7 @@ Args:
                       "fieldName": "A String", # [Optional] If the qualifier is not a valid BigQuery field identifier i.e. does not match [a-zA-Z][a-zA-Z0-9_]*, a valid identifier must be provided as the column field name and is used as field name in queries.
                       "onlyReadLatest": True or False, # [Optional] If this is set, only the latest version of value in this column are exposed. 'onlyReadLatest' can also be set at the column family level. However, the setting at this level takes precedence if 'onlyReadLatest' is set at both levels.
                       "qualifierString": "A String",
-                      "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
+                      "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
                     },
                   ],
                   "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
@@ -1004,7 +1014,7 @@ Returns:
         "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
         "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
         "query": { # [Output-only] Statistics for a query job.
-          "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query as a list of stages.
+          "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query.
             {
               "computeRatioMax": 3.14, # Relative amount of time the slowest shard spent on CPU-bound tasks.
               "recordsWritten": "A String", # Number of records written by the stage.
@@ -1031,6 +1041,7 @@ Returns:
           "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
           "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
           "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
+          "numDmlAffectedRows": "A String", # [Output-only, Experimental] The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
           "billingTier": 42, # [Output-only] Billing tier for the job.
           "referencedTables": [ # [Output-only, Experimental] Referenced tables for the job. Queries that reference more than 50 tables will not have a complete list.
             {
@@ -1164,6 +1175,7 @@ Returns:
           "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
           "query": "A String", # [Required] BigQuery SQL query to execute.
           "preserveNulls": True or False, # [Deprecated] This property is deprecated.
+          "maximumBytesBilled": "A String", # [Optional] Limits the bytes billed for this job. Queries that will have bytes billed beyond this limit will fail (without incurring a charge). If unspecified, this will be set to your project default.
           "tableDefinitions": { # [Optional] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
             "a_key": {
               "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
@@ -1182,11 +1194,12 @@ Returns:
                 "A String",
               ],
               "bigtableOptions": { # [Optional] Additional options if sourceFormat is set to BIGTABLE.
+                "readRowkeyAsString": True or False, # [Optional] If field is true, then the rowkey column families will be read and converted to string. Otherwise they are read with BYTES type values and users need to manually cast them with CAST if necessary. The default value is false.
                 "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
                 "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
                   {
                     "familyId": "A String", # Identifier of the column family.
-                    "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
+                    "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
                     "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
                     "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
                       {
@@ -1195,7 +1208,7 @@ Returns:
                         "fieldName": "A String", # [Optional] If the qualifier is not a valid BigQuery field identifier i.e. does not match [a-zA-Z][a-zA-Z0-9_]*, a valid identifier must be provided as the column field name and is used as field name in queries.
                         "onlyReadLatest": True or False, # [Optional] If this is set, only the latest version of value in this column are exposed. 'onlyReadLatest' can also be set at the column family level. However, the setting at this level takes precedence if 'onlyReadLatest' is set at both levels.
                         "qualifierString": "A String",
-                        "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
+                        "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
                       },
                     ],
                     "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
@@ -1291,7 +1304,7 @@ Returns:
           "totalBytesProcessed": "A String", # [Output-only] [Deprecated] Use the bytes processed in the query statistics instead.
           "startTime": "A String", # [Output-only] Start time of this job, in milliseconds since the epoch. This field will be present when the job transitions from the PENDING state to either RUNNING or DONE.
           "query": { # [Output-only] Statistics for a query job.
-            "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query as a list of stages.
+            "queryPlan": [ # [Output-only, Experimental] Describes execution plan for the query.
               {
                 "computeRatioMax": 3.14, # Relative amount of time the slowest shard spent on CPU-bound tasks.
                 "recordsWritten": "A String", # Number of records written by the stage.
@@ -1318,6 +1331,7 @@ Returns:
             "totalBytesBilled": "A String", # [Output-only] Total bytes billed for the job.
             "totalBytesProcessed": "A String", # [Output-only] Total bytes processed for the job.
             "cacheHit": True or False, # [Output-only] Whether the query result was fetched from the query cache.
+            "numDmlAffectedRows": "A String", # [Output-only, Experimental] The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
             "billingTier": 42, # [Output-only] Billing tier for the job.
             "referencedTables": [ # [Output-only, Experimental] Referenced tables for the job. Queries that reference more than 50 tables will not have a complete list.
               {
@@ -1451,6 +1465,7 @@ Returns:
             "createDisposition": "A String", # [Optional] Specifies whether the job is allowed to create new tables. The following values are supported: CREATE_IF_NEEDED: If the table does not exist, BigQuery creates the table. CREATE_NEVER: The table must already exist. If it does not, a 'notFound' error is returned in the job result. The default value is CREATE_IF_NEEDED. Creation, truncation and append actions occur as one atomic update upon job completion.
             "query": "A String", # [Required] BigQuery SQL query to execute.
             "preserveNulls": True or False, # [Deprecated] This property is deprecated.
+            "maximumBytesBilled": "A String", # [Optional] Limits the bytes billed for this job. Queries that will have bytes billed beyond this limit will fail (without incurring a charge). If unspecified, this will be set to your project default.
             "tableDefinitions": { # [Optional] If querying an external data source outside of BigQuery, describes the data format, location and other properties of the data source. By defining these properties, the data source can then be queried as if it were a standard BigQuery table.
               "a_key": {
                 "compression": "A String", # [Optional] The compression type of the data source. Possible values include GZIP and NONE. The default value is NONE. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
@@ -1469,11 +1484,12 @@ Returns:
                   "A String",
                 ],
                 "bigtableOptions": { # [Optional] Additional options if sourceFormat is set to BIGTABLE.
+                  "readRowkeyAsString": True or False, # [Optional] If field is true, then the rowkey column families will be read and converted to string. Otherwise they are read with BYTES type values and users need to manually cast them with CAST if necessary. The default value is false.
                   "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
                   "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
                     {
                       "familyId": "A String", # Identifier of the column family.
-                      "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
+                      "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
                       "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
                       "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
                         {
@@ -1482,7 +1498,7 @@ Returns:
                           "fieldName": "A String", # [Optional] If the qualifier is not a valid BigQuery field identifier i.e. does not match [a-zA-Z][a-zA-Z0-9_]*, a valid identifier must be provided as the column field name and is used as field name in queries.
                           "onlyReadLatest": True or False, # [Optional] If this is set, only the latest version of value in this column are exposed. 'onlyReadLatest' can also be set at the column family level. However, the setting at this level takes precedence if 'onlyReadLatest' is set at both levels.
                           "qualifierString": "A String",
-                          "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Defaut type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
+                          "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
                         },
                       ],
                       "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
@@ -1598,6 +1614,7 @@ Returns:
         ],
       },
     ],
+    "numDmlAffectedRows": "A String", # [Output-only, Experimental] The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
     "schema": { # The schema of the results. Present only when the query completes successfully.
       "fields": [ # Describes the fields in a table.
         {
