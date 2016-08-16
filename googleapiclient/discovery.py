@@ -322,6 +322,15 @@ def build_from_document(
 
   if isinstance(service, six.string_types):
     service = json.loads(service)
+
+  if  'rootUrl' not in service and (isinstance(http, (HttpMock,
+                                                      HttpMockSequence))):
+      logger.error("You are using HttpMock or HttpMockSequence without" +
+                   "having the service discovery doc in cache. Try calling " +
+                   "build() without mocking once first to populate the " +
+                   "cache.")
+      raise InvalidJsonError()
+
   base = urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
 
