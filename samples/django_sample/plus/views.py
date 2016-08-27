@@ -11,7 +11,7 @@ from django_sample.plus.models import CredentialsModel
 from django_sample import settings
 from oauth2client.contrib import xsrfutil
 from oauth2client.client import flow_from_clientsecrets
-from oauth2client.contrib.django_orm import Storage
+from oauth2client.contrib.django_util.storage import DjangoORMStorage
 
 # CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
 # application, including client_id and client_secret, which are found
@@ -27,7 +27,7 @@ FLOW = flow_from_clientsecrets(
 
 @login_required
 def index(request):
-  storage = Storage(CredentialsModel, 'id', request.user, 'credential')
+  storage = DjangoORMStorage(CredentialsModel, 'id', request.user, 'credential')
   credential = storage.get()
   if credential is None or credential.invalid == True:
     FLOW.params['state'] = xsrfutil.generate_token(settings.SECRET_KEY,
@@ -50,10 +50,10 @@ def index(request):
 
 @login_required
 def auth_return(request):
-  if not xsrfutil.validate_token(settings.SECRET_KEY, request.REQUEST['state'],
+  if not xsrfutil.validate_token(settings.SECRET_KEY, str(request.GET['state']),
                                  request.user):
     return  HttpResponseBadRequest()
   credential = FLOW.step2_exchange(request.REQUEST)
-  storage = Storage(CredentialsModel, 'id', request.user, 'credential')
+  storage = DjangoORMStorage(CredentialsModel, 'id', request.user, 'credential')
   storage.put(credential)
   return HttpResponseRedirect("/")
