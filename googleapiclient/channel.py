@@ -61,7 +61,6 @@ import datetime
 import uuid
 
 from googleapiclient import errors
-from oauth2client import util
 import six
 
 # Oauth2client < 3 has the positional helper in 'util', >= 3 has it
