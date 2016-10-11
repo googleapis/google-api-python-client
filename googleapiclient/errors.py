@@ -52,8 +52,12 @@ class HttpError(Error):
     reason = self.resp.reason
     try:
       data = json.loads(self.content.decode('utf-8'))
-      reason = data['error']['message']
-    except (ValueError, KeyError):
+      if isinstance(data, dict):
+        reason = data['error']['message']
+      elif isinstance(data, list) and len(data) > 0:
+        first_error = data[0]
+        reason = first_error['error']['message']
+    except (ValueError, KeyError, TypeError):
       pass
     if reason is None:
       reason = ''
