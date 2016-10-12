@@ -127,6 +127,7 @@ h1, h2, h3 {
 <div class="method">
     <code class="details" id="create">create(body, x__xgafv=None)</code>
   <pre>Creates a new managed service.
+Please note one producer project can own no more than 20 services.
 
 Operation<response: ManagedService>
 
@@ -734,22 +735,23 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
 Returns:
   An object of the form:
 
-    { # `Service` is the root object of the configuration schema. It
-      # describes basic information like the name of the service and the
-      # exposed API interfaces, and delegates other aspects to configuration
-      # sub-sections.
+    { # `Service` is the root object of Google service configuration schema. It
+      # describes basic information about a service, such as the name and the
+      # title, and delegates other aspects to sub-sections. Each sub-section is
+      # either a proto message or a repeated proto message that configures a
+      # specific aspect, such as auth. See each proto message definition for details.
       #
       # Example:
       #
       #     type: google.api.Service
-      #     config_version: 1
+      #     config_version: 3
       #     name: calendar.googleapis.com
       #     title: Google Calendar API
       #     apis:
-      #     - name: google.calendar.Calendar
+      #     - name: google.calendar.v3.Calendar
       #     backend:
       #       rules:
-      #       - selector: "*"
+      #       - selector: "google.calendar.v3.*"
       #         address: calendar.example.com
     "control": { # Selects and configures the service controller used by the service.  The # Configuration for the service control plane.
         # service controller handles features like abuse, quota, billing, logging,
@@ -822,7 +824,7 @@ Returns:
             # slash, underscore, hyphen, period [/_-.].
       },
     ],
-    "systemParameters": { # ### System parameter configuration # Configuration for system parameters.
+    "systemParameters": { # ### System parameter configuration # System parameter configuration.
         #
         # A system parameter is a special kind of parameter defined by the API
         # system, not by an individual API. It is typically mapped to an HTTP header
@@ -897,7 +899,7 @@ Returns:
         },
       ],
     },
-    "monitoring": { # Monitoring configuration of the service. # Monitoring configuration of the service.
+    "monitoring": { # Monitoring configuration of the service. # Monitoring configuration.
         #
         # The example below shows how to configure monitored resources and metrics
         # for monitoring. In the example, a monitored resource and two metrics are
@@ -1578,8 +1580,8 @@ Returns:
           # **NOTE:** All service configuration rules follow "last one wins" order.
         { # A visibility rule provides visibility configuration for an individual API
             # element.
-          "restriction": "A String", # Lists the visibility labels for this rule. Any of the listed labels grants
-              # visibility to the element.
+          "restriction": "A String", # A comma-separated list of visibility labels that apply to the `selector`.
+              # Any of the listed labels can be used to grant the visibility.
               #
               # If a rule has multiple labels, removing one of the labels but not all of
               # them can break clients.
@@ -1605,7 +1607,9 @@ Returns:
             # Use sentence case without an ending period, for example "Request count".
         "description": "A String", # A detailed description of the metric, which can be used in documentation.
         "metricKind": "A String", # Whether the metric records instantaneous values, changes to a value, etc.
+            # Some combinations of `metric_kind` and `value_type` might not be supported.
         "valueType": "A String", # Whether the measurement is an integer, a floating-point number, etc.
+            # Some combinations of `metric_kind` and `value_type` might not be supported.
         "labels": [ # The set of labels that can be used to describe a specific instance of this
             # metric type. For example, the
             # `compute.googleapis.com/instance/network/received_bytes_count` metric type
@@ -1795,7 +1799,7 @@ Returns:
         ],
       },
     ],
-    "logging": { # Logging configuration of the service. # Logging configuration of the service.
+    "logging": { # Logging configuration of the service. # Logging configuration.
         #
         # The following example shows how to configure logs to be sent to the
         # producer and consumer projects. In the example,
@@ -2056,6 +2060,69 @@ Returns:
         },
       ],
     },
+    "endpoints": [ # Configuration for network endpoints.  If this is empty, then an endpoint
+        # with the same name as the service is automatically generated to service all
+        # defined APIs.
+      { # `Endpoint` describes a network endpoint that serves a set of APIs.
+          # A service may expose any number of endpoints, and all endpoints share the
+          # same service configuration, such as quota configuration and monitoring
+          # configuration.
+          #
+          # Example service configuration:
+          #
+          #     name: library-example.googleapis.com
+          #     endpoints:
+          #       # Below entry makes 'google.example.library.v1.Library'
+          #       # API be served from endpoint address library-example.googleapis.com.
+          #       # It also allows HTTP OPTIONS calls to be passed to the backend, for
+          #       # it to decide whether the subsequent cross-origin request is
+          #       # allowed to proceed.
+          #     - name: library-example.googleapis.com
+          #       apis: google.example.library.v1.Library
+          #       allow_cors: true
+          #       # Below entry makes 'google.example.library.v1.Library'
+          #       # API be served from endpoint address
+          #       # google.example.library-example.v1.LibraryManager.
+          #     - name: library-manager.googleapis.com
+          #       apis: google.example.library.v1.LibraryManager
+          #       # BNS address for a borg job. Can specify a task by appending
+          #       # "/taskId" (e.g. "/0") to the job spec.
+          #
+          # Example OpenAPI extension for endpoint with allow_cors set to true:
+          #
+          #     {
+          #       "swagger": "2.0",
+          #       "info": {
+          #         "description": "A simple..."
+          #       },
+          #       "host": "MY_PROJECT_ID.appspot.com",
+          #       "x-google-endpoints": [{
+          #         "name": "MY_PROJECT_ID.appspot.com",
+          #         "allow_cors": "true"
+          #       }]
+          #     }
+        "allowCors": True or False, # Allowing
+            # [CORS](https://en.wikipedia.org/wiki/Cross-origin_resource_sharing), aka
+            # cross-domain traffic, would allow the backends served from this endpoint to
+            # receive and respond to HTTP OPTIONS requests. The response will be used by
+            # the browser to determine whether the subsequent cross-origin request is
+            # allowed to proceed.
+        "aliases": [ # DEPRECATED: This field is no longer supported. Instead of using aliases,
+            # please specify multiple google.api.Endpoint for each of the intented
+            # alias.
+            #
+            # Additional names that this endpoint will be hosted on.
+          "A String",
+        ],
+        "features": [ # The list of features enabled on this endpoint.
+          "A String",
+        ],
+        "name": "A String", # The canonical name of this endpoint.
+        "apis": [ # The list of APIs served by this endpoint.
+          "A String",
+        ],
+      },
+    ],
   }</pre>
 </div>
 
