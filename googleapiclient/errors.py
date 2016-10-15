@@ -126,6 +126,9 @@ class BatchError(HttpError):
     self.reason = reason
 
   def __repr__(self):
+    if getattr(self.resp, 'status', None) is None:
+      return '<BatchError "%s">' % (self.reason)
+    else:
       return '<BatchError %s "%s">' % (self.resp.status, self.reason)
 
   __str__ = __repr__

@@ -1053,7 +1053,9 @@ class TestBatch(unittest.TestCase):
     upload = MediaFileUpload(
         datafile('small.png'), chunksize=500, resumable=True)
     self.request1.resumable = upload
-    self.assertRaises(BatchError, batch.add, self.request1, request_id='1')
+    with self.assertRaises(BatchError) as batch_error:
+      batch.add(self.request1, request_id='1')
+    str(batch_error.exception)
 
   def test_execute_empty_batch_no_http(self):
     batch = BatchHttpRequest()
