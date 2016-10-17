@@ -70,15 +70,17 @@ from googleapiclient.http import MediaUpload
 from googleapiclient.http import MediaUploadProgress
 from googleapiclient.http import tunnel_patch
 from oauth2client import GOOGLE_TOKEN_URI
-from oauth2client import util
 from oauth2client.client import OAuth2Credentials
+
+try:
+  from oauth2client import util
+except ImportError:
+  from oauth2client import _helpers as util
 
 import uritemplate
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
-
-util.positional_parameters_enforcement = util.POSITIONAL_EXCEPTION
 
 
 def assertUrisEqual(testcase, expected, actual):
@@ -501,8 +503,8 @@ class DictCache(Cache):
 class DiscoveryFromFileCache(unittest.TestCase):
   def test_file_based_cache(self):
     cache = mock.Mock(wraps=DictCache())
-    with mock.patch('googleapiclient.discovery_cache.file_cache.cache',
-                    new=cache):
+    with mock.patch('googleapiclient.discovery_cache.autodetect',
+                    return_value=cache):
       self.http = HttpMock(datafile('plus.json'), {'status': '200'})
 
       plus = build('plus', 'v1', http=self.http)
