@@ -24,9 +24,14 @@ import mock
 
 from googleapiclient.discovery_cache import DISCOVERY_DOC_MAX_AGE
 from googleapiclient.discovery_cache.base import Cache
-from googleapiclient.discovery_cache.file_cache import Cache as FileCache
+
+try:
+  from googleapiclient.discovery_cache.file_cache import Cache as FileCache
+except ImportError:
+  FileCache = None
 
 
+@unittest.skipIf(FileCache is None, 'FileCache unavailable.')
 class FileCacheTest(unittest.TestCase):
   @mock.patch('googleapiclient.discovery_cache.file_cache.FILENAME',
               new='google-api-python-client-discovery-doc-tests.cache')

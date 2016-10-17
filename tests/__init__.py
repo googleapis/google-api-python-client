@@ -15,8 +15,15 @@ from __future__ import absolute_import
 
 __author__ = 'afshar@google.com (Ali Afshar)'
 
-import oauth2client.util
+
+# Oauth2client < 3 has the positional helper in 'util', >= 3 has it
+# in '_helpers'.
+try:
+  from oauth2client import util
+except ImportError:
+  from oauth2client import _helpers as util
+
 
 def setup_package():
   """Run on testing package."""
-  oauth2client.util.positional_parameters_enforcement = 'EXCEPTION'
+  util.positional_parameters_enforcement = 'EXCEPTION'

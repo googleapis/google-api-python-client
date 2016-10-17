@@ -33,7 +33,12 @@ try:
   from oauth2client.contrib.locked_file import LockedFile
 except ImportError:
   # oauth2client < 2.0.0
-  from oauth2client.locked_file import LockedFile
+  try:
+    from oauth2client.locked_file import LockedFile
+  except ImportError:
+    # oauth2client > 4.0.0
+    raise ImportError(
+      'file_cache is unavailable when using oauth2client >= 4.0.0')
 
 from . import base
 from ..discovery_cache import DISCOVERY_DOC_MAX_AGE
