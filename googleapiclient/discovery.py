@@ -61,6 +61,8 @@ from googleapiclient.errors import UnacceptableMimeTypeError
 from googleapiclient.errors import UnknownApiNameOrVersion
 from googleapiclient.errors import UnknownFileType
 from googleapiclient.http import BatchHttpRequest
+from googleapiclient.http import HttpMock
+from googleapiclient.http import HttpMockSequence
 from googleapiclient.http import HttpRequest
 from googleapiclient.http import MediaFileUpload
 from googleapiclient.http import MediaUpload
