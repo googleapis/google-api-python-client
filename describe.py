@@ -129,7 +129,7 @@ METHOD_LINK = """<p class="toc_element">
 
 BASE = 'docs/dyn'
 
-DIRECTORY_URI = 'https://www.googleapis.com/discovery/v1/apis?preferred=true'
+DIRECTORY_URI = 'https://www.googleapis.com/discovery/v1/apis'
 
 parser = argparse.ArgumentParser(description=__doc__)
 
