@@ -84,6 +84,12 @@ h1, h2, h3 {
   <code><a href="#emptyTrash">emptyTrash()</a></code></p>
 <p class="firstline">Permanently deletes all of the user's trashed files.</p>
 <p class="toc_element">
+  <code><a href="#export">export(fileId, mimeType)</a></code></p>
+<p class="firstline">Exports a Google Doc to the requested MIME type and returns the exported content.</p>
+<p class="toc_element">
+  <code><a href="#export_media">export_media(fileId, mimeType)</a></code></p>
+<p class="firstline">Exports a Google Doc to the requested MIME type and returns the exported content.</p>
+<p class="toc_element">
   <code><a href="#generateIds">generateIds(space=None, maxResults=None)</a></code></p>
 <p class="firstline">Generates a set of file IDs which can be provided in insert requests.</p>
 <p class="toc_element">
@@ -149,10 +155,11 @@ Args:
     "text": "A String", # The text to be indexed for this file.
   },
   "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+  "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
   "lastModifyingUserName": "A String", # Name of the last user to modify this file.
   "writersCanShare": True or False, # Whether writers can share the document with other users.
   "owners": [ # The owner(s) of this file.
-    { # The JSON template for a user.
+    { # Information about a Drive user.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -165,7 +172,7 @@ Args:
   ],
   "ownedByMe": True or False, # Whether the file is owned by the current user.
   "id": "A String", # The ID of the file.
-  "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+  "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
     },
@@ -180,7 +187,7 @@ Args:
     "durationMillis": "A String", # The duration of the video in milliseconds.
     "height": 42, # The height of the video in pixels.
   },
-  "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+  "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
     },
@@ -192,7 +199,7 @@ Args:
   },
   "copyable": True or False, # Whether the file can be copied by the current user.
   "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-  "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+  "markedViewedByMeDate": "A String", # Deprecated.
   "ownerNames": [ # Name(s) of the owner(s) of this file.
     "A String",
   ],
@@ -219,12 +226,12 @@ Args:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -238,12 +245,14 @@ Args:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
   ],
   "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
     "a_key": "A String",
   },
+  "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
   "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
     "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
     "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -311,12 +320,12 @@ Args:
     "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
     "name": "A String", # The name for this permission.
     "kind": "drive#permission", # This is always drive#permission.
-    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
     "authKey": "A String", # The authkey parameter required for this permission.
     "etag": "A String", # The ETag of the permission.
     "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-    "photoLink": "A String", # A link to the profile photo, if available.
+    "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
     "role": "A String", # The primary role for this user. Allowed values are:
         # - owner
         # - reader
@@ -330,12 +339,13 @@ Args:
       "A String",
     ],
     "selfLink": "A String", # A link back to this permission.
+    "photoLink": "A String", # A link to the profile photo, if available.
   },
   "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
     "A String",
   ],
   "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-  "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+  "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
   "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "selfLink": "A String", # A link back to this file.
@@ -373,10 +383,11 @@ Returns:
       "text": "A String", # The text to be indexed for this file.
     },
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+    "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
     "writersCanShare": True or False, # Whether writers can share the document with other users.
     "owners": [ # The owner(s) of this file.
-      { # The JSON template for a user.
+      { # Information about a Drive user.
         "picture": { # The user's profile picture.
           "url": "A String", # A URL that points to a profile picture of this user.
         },
@@ -389,7 +400,7 @@ Returns:
     ],
     "ownedByMe": True or False, # Whether the file is owned by the current user.
     "id": "A String", # The ID of the file.
-    "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+    "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -404,7 +415,7 @@ Returns:
       "durationMillis": "A String", # The duration of the video in milliseconds.
       "height": 42, # The height of the video in pixels.
     },
-    "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+    "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -416,7 +427,7 @@ Returns:
     },
     "copyable": True or False, # Whether the file can be copied by the current user.
     "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-    "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+    "markedViewedByMeDate": "A String", # Deprecated.
     "ownerNames": [ # Name(s) of the owner(s) of this file.
       "A String",
     ],
@@ -443,12 +454,12 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-        "photoLink": "A String", # A link to the profile photo, if available.
+        "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
         "role": "A String", # The primary role for this user. Allowed values are:
             # - owner
             # - reader
@@ -462,12 +473,14 @@ Returns:
           "A String",
         ],
         "selfLink": "A String", # A link back to this permission.
+        "photoLink": "A String", # A link to the profile photo, if available.
       },
     ],
     "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
       "a_key": "A String",
     },
+    "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
     "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
       "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
       "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -535,12 +548,12 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -554,12 +567,13 @@ Returns:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
     "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
       "A String",
     ],
     "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-    "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+    "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
     "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "selfLink": "A String", # A link back to this file.
@@ -581,6 +595,26 @@ Args:
   <pre>Permanently deletes all of the user's trashed files.
 
 Args:
+</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="export">export(fileId, mimeType)</code>
+  <pre>Exports a Google Doc to the requested MIME type and returns the exported content.
+
+Args:
+  fileId: string, The ID of the file. (required)
+  mimeType: string, The MIME type of the format requested for this export. (required)
+</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="export_media">export_media(fileId, mimeType)</code>
+  <pre>Exports a Google Doc to the requested MIME type and returns the exported content.
+
+Args:
+  fileId: string, The ID of the file. (required)
+  mimeType: string, The MIME type of the format requested for this export. (required)
 </pre>
 </div>
 
@@ -616,7 +650,7 @@ Args:
       FULL - Deprecated
   revisionId: string, Specifies the Revision ID that should be downloaded. Ignored unless alt=media is specified.
   acknowledgeAbuse: boolean, Whether the user is acknowledging the risk of downloading known malware or other abusive files.
-  updateViewedDate: boolean, Whether to update the view date after successfully retrieving the file.
+  updateViewedDate: boolean, Deprecated: Use files.update with modifiedDateBehavior=noChange, updateViewedDate=true and an empty request body.
 
 Returns:
   An object of the form:
@@ -638,10 +672,11 @@ Returns:
       "text": "A String", # The text to be indexed for this file.
     },
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+    "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
     "writersCanShare": True or False, # Whether writers can share the document with other users.
     "owners": [ # The owner(s) of this file.
-      { # The JSON template for a user.
+      { # Information about a Drive user.
         "picture": { # The user's profile picture.
           "url": "A String", # A URL that points to a profile picture of this user.
         },
@@ -654,7 +689,7 @@ Returns:
     ],
     "ownedByMe": True or False, # Whether the file is owned by the current user.
     "id": "A String", # The ID of the file.
-    "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+    "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -669,7 +704,7 @@ Returns:
       "durationMillis": "A String", # The duration of the video in milliseconds.
       "height": 42, # The height of the video in pixels.
     },
-    "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+    "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -681,7 +716,7 @@ Returns:
     },
     "copyable": True or False, # Whether the file can be copied by the current user.
     "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-    "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+    "markedViewedByMeDate": "A String", # Deprecated.
     "ownerNames": [ # Name(s) of the owner(s) of this file.
       "A String",
     ],
@@ -708,12 +743,12 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-        "photoLink": "A String", # A link to the profile photo, if available.
+        "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
         "role": "A String", # The primary role for this user. Allowed values are:
             # - owner
             # - reader
@@ -727,12 +762,14 @@ Returns:
           "A String",
         ],
         "selfLink": "A String", # A link back to this permission.
+        "photoLink": "A String", # A link to the profile photo, if available.
       },
     ],
     "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
       "a_key": "A String",
     },
+    "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
     "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
       "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
       "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -800,12 +837,12 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -819,12 +856,13 @@ Returns:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
     "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
       "A String",
     ],
     "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-    "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+    "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
     "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "selfLink": "A String", # A link back to this file.
@@ -844,7 +882,7 @@ Args:
       FULL - Deprecated
   revisionId: string, Specifies the Revision ID that should be downloaded. Ignored unless alt=media is specified.
   acknowledgeAbuse: boolean, Whether the user is acknowledging the risk of downloading known malware or other abusive files.
-  updateViewedDate: boolean, Whether to update the view date after successfully retrieving the file.
+  updateViewedDate: boolean, Deprecated: Use files.update with modifiedDateBehavior=noChange, updateViewedDate=true and an empty request body.
 
 Returns:
   The media object as a string.
@@ -877,10 +915,11 @@ Args:
     "text": "A String", # The text to be indexed for this file.
   },
   "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+  "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
   "lastModifyingUserName": "A String", # Name of the last user to modify this file.
   "writersCanShare": True or False, # Whether writers can share the document with other users.
   "owners": [ # The owner(s) of this file.
-    { # The JSON template for a user.
+    { # Information about a Drive user.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -893,7 +932,7 @@ Args:
   ],
   "ownedByMe": True or False, # Whether the file is owned by the current user.
   "id": "A String", # The ID of the file.
-  "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+  "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
     },
@@ -908,7 +947,7 @@ Args:
     "durationMillis": "A String", # The duration of the video in milliseconds.
     "height": 42, # The height of the video in pixels.
   },
-  "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+  "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
     },
@@ -920,7 +959,7 @@ Args:
   },
   "copyable": True or False, # Whether the file can be copied by the current user.
   "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-  "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+  "markedViewedByMeDate": "A String", # Deprecated.
   "ownerNames": [ # Name(s) of the owner(s) of this file.
     "A String",
   ],
@@ -947,12 +986,12 @@ Args:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -966,12 +1005,14 @@ Args:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
   ],
   "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
     "a_key": "A String",
   },
+  "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
   "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
     "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
     "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -1039,12 +1080,12 @@ Args:
     "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
     "name": "A String", # The name for this permission.
     "kind": "drive#permission", # This is always drive#permission.
-    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
     "authKey": "A String", # The authkey parameter required for this permission.
     "etag": "A String", # The ETag of the permission.
     "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-    "photoLink": "A String", # A link to the profile photo, if available.
+    "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
     "role": "A String", # The primary role for this user. Allowed values are:
         # - owner
         # - reader
@@ -1058,12 +1099,13 @@ Args:
       "A String",
     ],
     "selfLink": "A String", # A link back to this permission.
+    "photoLink": "A String", # A link to the profile photo, if available.
   },
   "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
     "A String",
   ],
   "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-  "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+  "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
   "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "selfLink": "A String", # A link back to this file.
@@ -1103,10 +1145,11 @@ Returns:
       "text": "A String", # The text to be indexed for this file.
     },
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+    "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
     "writersCanShare": True or False, # Whether writers can share the document with other users.
     "owners": [ # The owner(s) of this file.
-      { # The JSON template for a user.
+      { # Information about a Drive user.
         "picture": { # The user's profile picture.
           "url": "A String", # A URL that points to a profile picture of this user.
         },
@@ -1119,7 +1162,7 @@ Returns:
     ],
     "ownedByMe": True or False, # Whether the file is owned by the current user.
     "id": "A String", # The ID of the file.
-    "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+    "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -1134,7 +1177,7 @@ Returns:
       "durationMillis": "A String", # The duration of the video in milliseconds.
       "height": 42, # The height of the video in pixels.
     },
-    "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+    "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -1146,7 +1189,7 @@ Returns:
     },
     "copyable": True or False, # Whether the file can be copied by the current user.
     "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-    "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+    "markedViewedByMeDate": "A String", # Deprecated.
     "ownerNames": [ # Name(s) of the owner(s) of this file.
       "A String",
     ],
@@ -1173,12 +1216,12 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-        "photoLink": "A String", # A link to the profile photo, if available.
+        "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
         "role": "A String", # The primary role for this user. Allowed values are:
             # - owner
             # - reader
@@ -1192,12 +1235,14 @@ Returns:
           "A String",
         ],
         "selfLink": "A String", # A link back to this permission.
+        "photoLink": "A String", # A link to the profile photo, if available.
       },
     ],
     "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
       "a_key": "A String",
     },
+    "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
     "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
       "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
       "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -1265,12 +1310,12 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -1284,12 +1329,13 @@ Returns:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
     "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
       "A String",
     ],
     "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-    "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+    "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
     "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "selfLink": "A String", # A link back to this file.
@@ -1340,10 +1386,11 @@ Returns:
           "text": "A String", # The text to be indexed for this file.
         },
         "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+        "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
         "lastModifyingUserName": "A String", # Name of the last user to modify this file.
         "writersCanShare": True or False, # Whether writers can share the document with other users.
         "owners": [ # The owner(s) of this file.
-          { # The JSON template for a user.
+          { # Information about a Drive user.
             "picture": { # The user's profile picture.
               "url": "A String", # A URL that points to a profile picture of this user.
             },
@@ -1356,7 +1403,7 @@ Returns:
         ],
         "ownedByMe": True or False, # Whether the file is owned by the current user.
         "id": "A String", # The ID of the file.
-        "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+        "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
           "picture": { # The user's profile picture.
             "url": "A String", # A URL that points to a profile picture of this user.
           },
@@ -1371,7 +1418,7 @@ Returns:
           "durationMillis": "A String", # The duration of the video in milliseconds.
           "height": 42, # The height of the video in pixels.
         },
-        "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+        "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
           "picture": { # The user's profile picture.
             "url": "A String", # A URL that points to a profile picture of this user.
           },
@@ -1383,7 +1430,7 @@ Returns:
         },
         "copyable": True or False, # Whether the file can be copied by the current user.
         "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-        "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+        "markedViewedByMeDate": "A String", # Deprecated.
         "ownerNames": [ # Name(s) of the owner(s) of this file.
           "A String",
         ],
@@ -1410,12 +1457,12 @@ Returns:
             "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
             "name": "A String", # The name for this permission.
             "kind": "drive#permission", # This is always drive#permission.
-            "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-            "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+            "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+            "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
             "authKey": "A String", # The authkey parameter required for this permission.
             "etag": "A String", # The ETag of the permission.
             "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-            "photoLink": "A String", # A link to the profile photo, if available.
+            "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
             "role": "A String", # The primary role for this user. Allowed values are:
                 # - owner
                 # - reader
@@ -1429,12 +1476,14 @@ Returns:
               "A String",
             ],
             "selfLink": "A String", # A link back to this permission.
+            "photoLink": "A String", # A link to the profile photo, if available.
           },
         ],
         "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
         "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
           "a_key": "A String",
         },
+        "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
         "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
           "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
           "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -1502,12 +1551,12 @@ Returns:
           "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
           "name": "A String", # The name for this permission.
           "kind": "drive#permission", # This is always drive#permission.
-          "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-          "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+          "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+          "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
           "authKey": "A String", # The authkey parameter required for this permission.
           "etag": "A String", # The ETag of the permission.
           "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-          "photoLink": "A String", # A link to the profile photo, if available.
+          "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
           "role": "A String", # The primary role for this user. Allowed values are:
               # - owner
               # - reader
@@ -1521,12 +1570,13 @@ Returns:
             "A String",
           ],
           "selfLink": "A String", # A link back to this permission.
+          "photoLink": "A String", # A link to the profile photo, if available.
         },
         "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
           "A String",
         ],
         "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-        "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+        "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
         "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
         "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
         "selfLink": "A String", # A link back to this file.
@@ -1579,10 +1629,11 @@ Args:
     "text": "A String", # The text to be indexed for this file.
   },
   "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+  "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
   "lastModifyingUserName": "A String", # Name of the last user to modify this file.
   "writersCanShare": True or False, # Whether writers can share the document with other users.
   "owners": [ # The owner(s) of this file.
-    { # The JSON template for a user.
+    { # Information about a Drive user.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -1595,7 +1646,7 @@ Args:
   ],
   "ownedByMe": True or False, # Whether the file is owned by the current user.
   "id": "A String", # The ID of the file.
-  "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+  "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
     },
@@ -1610,7 +1661,7 @@ Args:
     "durationMillis": "A String", # The duration of the video in milliseconds.
     "height": 42, # The height of the video in pixels.
   },
-  "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+  "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
     },
@@ -1622,7 +1673,7 @@ Args:
   },
   "copyable": True or False, # Whether the file can be copied by the current user.
   "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-  "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+  "markedViewedByMeDate": "A String", # Deprecated.
   "ownerNames": [ # Name(s) of the owner(s) of this file.
     "A String",
   ],
@@ -1649,12 +1700,12 @@ Args:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -1668,12 +1719,14 @@ Args:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
   ],
   "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
     "a_key": "A String",
   },
+  "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
   "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
     "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
     "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -1741,12 +1794,12 @@ Args:
     "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
     "name": "A String", # The name for this permission.
     "kind": "drive#permission", # This is always drive#permission.
-    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
     "authKey": "A String", # The authkey parameter required for this permission.
     "etag": "A String", # The ETag of the permission.
     "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-    "photoLink": "A String", # A link to the profile photo, if available.
+    "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
     "role": "A String", # The primary role for this user. Allowed values are:
         # - owner
         # - reader
@@ -1760,12 +1813,13 @@ Args:
       "A String",
     ],
     "selfLink": "A String", # A link back to this permission.
+    "photoLink": "A String", # A link to the profile photo, if available.
   },
   "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
     "A String",
   ],
   "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-  "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+  "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
   "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "selfLink": "A String", # A link back to this file.
@@ -1813,10 +1867,11 @@ Returns:
       "text": "A String", # The text to be indexed for this file.
     },
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+    "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
     "writersCanShare": True or False, # Whether writers can share the document with other users.
     "owners": [ # The owner(s) of this file.
-      { # The JSON template for a user.
+      { # Information about a Drive user.
         "picture": { # The user's profile picture.
           "url": "A String", # A URL that points to a profile picture of this user.
         },
@@ -1829,7 +1884,7 @@ Returns:
     ],
     "ownedByMe": True or False, # Whether the file is owned by the current user.
     "id": "A String", # The ID of the file.
-    "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+    "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -1844,7 +1899,7 @@ Returns:
       "durationMillis": "A String", # The duration of the video in milliseconds.
       "height": 42, # The height of the video in pixels.
     },
-    "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+    "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -1856,7 +1911,7 @@ Returns:
     },
     "copyable": True or False, # Whether the file can be copied by the current user.
     "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-    "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+    "markedViewedByMeDate": "A String", # Deprecated.
     "ownerNames": [ # Name(s) of the owner(s) of this file.
       "A String",
     ],
@@ -1883,12 +1938,12 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-        "photoLink": "A String", # A link to the profile photo, if available.
+        "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
         "role": "A String", # The primary role for this user. Allowed values are:
             # - owner
             # - reader
@@ -1902,12 +1957,14 @@ Returns:
           "A String",
         ],
         "selfLink": "A String", # A link back to this permission.
+        "photoLink": "A String", # A link to the profile photo, if available.
       },
     ],
     "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
       "a_key": "A String",
     },
+    "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
     "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
       "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
       "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -1975,12 +2032,12 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -1994,12 +2051,13 @@ Returns:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
     "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
       "A String",
     ],
     "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-    "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+    "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
     "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "selfLink": "A String", # A link back to this file.
@@ -2034,10 +2092,11 @@ Returns:
       "text": "A String", # The text to be indexed for this file.
     },
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+    "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
     "writersCanShare": True or False, # Whether writers can share the document with other users.
     "owners": [ # The owner(s) of this file.
-      { # The JSON template for a user.
+      { # Information about a Drive user.
         "picture": { # The user's profile picture.
           "url": "A String", # A URL that points to a profile picture of this user.
         },
@@ -2050,7 +2109,7 @@ Returns:
     ],
     "ownedByMe": True or False, # Whether the file is owned by the current user.
     "id": "A String", # The ID of the file.
-    "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+    "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -2065,7 +2124,7 @@ Returns:
       "durationMillis": "A String", # The duration of the video in milliseconds.
       "height": 42, # The height of the video in pixels.
     },
-    "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+    "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -2077,7 +2136,7 @@ Returns:
     },
     "copyable": True or False, # Whether the file can be copied by the current user.
     "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-    "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+    "markedViewedByMeDate": "A String", # Deprecated.
     "ownerNames": [ # Name(s) of the owner(s) of this file.
       "A String",
     ],
@@ -2104,12 +2163,12 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-        "photoLink": "A String", # A link to the profile photo, if available.
+        "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
         "role": "A String", # The primary role for this user. Allowed values are:
             # - owner
             # - reader
@@ -2123,12 +2182,14 @@ Returns:
           "A String",
         ],
         "selfLink": "A String", # A link back to this permission.
+        "photoLink": "A String", # A link to the profile photo, if available.
       },
     ],
     "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
       "a_key": "A String",
     },
+    "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
     "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
       "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
       "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -2196,12 +2257,12 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -2215,12 +2276,13 @@ Returns:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
     "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
       "A String",
     ],
     "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-    "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+    "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
     "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "selfLink": "A String", # A link back to this file.
@@ -2255,10 +2317,11 @@ Returns:
       "text": "A String", # The text to be indexed for this file.
     },
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+    "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
     "writersCanShare": True or False, # Whether writers can share the document with other users.
     "owners": [ # The owner(s) of this file.
-      { # The JSON template for a user.
+      { # Information about a Drive user.
         "picture": { # The user's profile picture.
           "url": "A String", # A URL that points to a profile picture of this user.
         },
@@ -2271,7 +2334,7 @@ Returns:
     ],
     "ownedByMe": True or False, # Whether the file is owned by the current user.
     "id": "A String", # The ID of the file.
-    "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+    "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -2286,7 +2349,7 @@ Returns:
       "durationMillis": "A String", # The duration of the video in milliseconds.
       "height": 42, # The height of the video in pixels.
     },
-    "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+    "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -2298,7 +2361,7 @@ Returns:
     },
     "copyable": True or False, # Whether the file can be copied by the current user.
     "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-    "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+    "markedViewedByMeDate": "A String", # Deprecated.
     "ownerNames": [ # Name(s) of the owner(s) of this file.
       "A String",
     ],
@@ -2325,12 +2388,12 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-        "photoLink": "A String", # A link to the profile photo, if available.
+        "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
         "role": "A String", # The primary role for this user. Allowed values are:
             # - owner
             # - reader
@@ -2344,12 +2407,14 @@ Returns:
           "A String",
         ],
         "selfLink": "A String", # A link back to this permission.
+        "photoLink": "A String", # A link to the profile photo, if available.
       },
     ],
     "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
       "a_key": "A String",
     },
+    "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
     "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
       "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
       "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -2417,12 +2482,12 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -2436,12 +2501,13 @@ Returns:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
     "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
       "A String",
     ],
     "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-    "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+    "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
     "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "selfLink": "A String", # A link back to this file.
@@ -2476,10 +2542,11 @@ Returns:
       "text": "A String", # The text to be indexed for this file.
     },
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+    "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
     "writersCanShare": True or False, # Whether writers can share the document with other users.
     "owners": [ # The owner(s) of this file.
-      { # The JSON template for a user.
+      { # Information about a Drive user.
         "picture": { # The user's profile picture.
           "url": "A String", # A URL that points to a profile picture of this user.
         },
@@ -2492,7 +2559,7 @@ Returns:
     ],
     "ownedByMe": True or False, # Whether the file is owned by the current user.
     "id": "A String", # The ID of the file.
-    "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+    "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -2507,7 +2574,7 @@ Returns:
       "durationMillis": "A String", # The duration of the video in milliseconds.
       "height": 42, # The height of the video in pixels.
     },
-    "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+    "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -2519,7 +2586,7 @@ Returns:
     },
     "copyable": True or False, # Whether the file can be copied by the current user.
     "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-    "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+    "markedViewedByMeDate": "A String", # Deprecated.
     "ownerNames": [ # Name(s) of the owner(s) of this file.
       "A String",
     ],
@@ -2546,12 +2613,12 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-        "photoLink": "A String", # A link to the profile photo, if available.
+        "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
         "role": "A String", # The primary role for this user. Allowed values are:
             # - owner
             # - reader
@@ -2565,12 +2632,14 @@ Returns:
           "A String",
         ],
         "selfLink": "A String", # A link back to this permission.
+        "photoLink": "A String", # A link to the profile photo, if available.
       },
     ],
     "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
       "a_key": "A String",
     },
+    "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
     "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
       "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
       "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -2638,12 +2707,12 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -2657,12 +2726,13 @@ Returns:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
     "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
       "A String",
     ],
     "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-    "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+    "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
     "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "selfLink": "A String", # A link back to this file.
@@ -2696,10 +2766,11 @@ Args:
     "text": "A String", # The text to be indexed for this file.
   },
   "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+  "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
   "lastModifyingUserName": "A String", # Name of the last user to modify this file.
   "writersCanShare": True or False, # Whether writers can share the document with other users.
   "owners": [ # The owner(s) of this file.
-    { # The JSON template for a user.
+    { # Information about a Drive user.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -2712,7 +2783,7 @@ Args:
   ],
   "ownedByMe": True or False, # Whether the file is owned by the current user.
   "id": "A String", # The ID of the file.
-  "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+  "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
     },
@@ -2727,7 +2798,7 @@ Args:
     "durationMillis": "A String", # The duration of the video in milliseconds.
     "height": 42, # The height of the video in pixels.
   },
-  "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+  "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
     },
@@ -2739,7 +2810,7 @@ Args:
   },
   "copyable": True or False, # Whether the file can be copied by the current user.
   "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-  "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+  "markedViewedByMeDate": "A String", # Deprecated.
   "ownerNames": [ # Name(s) of the owner(s) of this file.
     "A String",
   ],
@@ -2766,12 +2837,12 @@ Args:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -2785,12 +2856,14 @@ Args:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
   ],
   "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
     "a_key": "A String",
   },
+  "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
   "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
     "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
     "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -2858,12 +2931,12 @@ Args:
     "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
     "name": "A String", # The name for this permission.
     "kind": "drive#permission", # This is always drive#permission.
-    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
     "authKey": "A String", # The authkey parameter required for this permission.
     "etag": "A String", # The ETag of the permission.
     "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-    "photoLink": "A String", # A link to the profile photo, if available.
+    "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
     "role": "A String", # The primary role for this user. Allowed values are:
         # - owner
         # - reader
@@ -2877,12 +2950,13 @@ Args:
       "A String",
     ],
     "selfLink": "A String", # A link back to this permission.
+    "photoLink": "A String", # A link to the profile photo, if available.
   },
   "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
     "A String",
   ],
   "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-  "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+  "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
   "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
   "selfLink": "A String", # A link back to this file.
@@ -2931,10 +3005,11 @@ Returns:
       "text": "A String", # The text to be indexed for this file.
     },
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
+    "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
     "writersCanShare": True or False, # Whether writers can share the document with other users.
     "owners": [ # The owner(s) of this file.
-      { # The JSON template for a user.
+      { # Information about a Drive user.
         "picture": { # The user's profile picture.
           "url": "A String", # A URL that points to a profile picture of this user.
         },
@@ -2947,7 +3022,7 @@ Returns:
     ],
     "ownedByMe": True or False, # Whether the file is owned by the current user.
     "id": "A String", # The ID of the file.
-    "sharingUser": { # The JSON template for a user. # User that shared the item with the current user, if available.
+    "sharingUser": { # Information about a Drive user. # User that shared the item with the current user, if available.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -2962,7 +3037,7 @@ Returns:
       "durationMillis": "A String", # The duration of the video in milliseconds.
       "height": 42, # The height of the video in pixels.
     },
-    "lastModifyingUser": { # The JSON template for a user. # The last user to modify this file.
+    "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
       },
@@ -2974,7 +3049,7 @@ Returns:
     },
     "copyable": True or False, # Whether the file can be copied by the current user.
     "folderColorRgb": "A String", # Folder color as an RGB hex string if the file is a folder. The list of supported colors is available in the folderColorPalette field of the About resource. If an unsupported color is specified, it will be changed to the closest color in the palette.
-    "markedViewedByMeDate": "A String", # Time this file was explicitly marked viewed by the user (formatted RFC 3339 timestamp).
+    "markedViewedByMeDate": "A String", # Deprecated.
     "ownerNames": [ # Name(s) of the owner(s) of this file.
       "A String",
     ],
@@ -3001,12 +3076,12 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-        "photoLink": "A String", # A link to the profile photo, if available.
+        "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
         "role": "A String", # The primary role for this user. Allowed values are:
             # - owner
             # - reader
@@ -3020,12 +3095,14 @@ Returns:
           "A String",
         ],
         "selfLink": "A String", # A link back to this permission.
+        "photoLink": "A String", # A link to the profile photo, if available.
       },
     ],
     "fullFileExtension": "A String", # The full file extension; extracted from the title. May contain multiple concatenated extensions, such as "tar.gz". Removing an extension from the title does not clear this field; however, changing the extension on the title does update this field. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "openWithLinks": { # A map of the id of each of the user's apps to a link to open this file with that app. Only populated when the drive.apps.readonly scope is used.
       "a_key": "A String",
     },
+    "canReadRevisions": True or False, # Whether the current user has read access to the Revisions resource of the file.
     "imageMediaMetadata": { # Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.
       "exposureBias": 3.14, # The exposure bias of the photo (APEX value).
       "exposureTime": 3.14, # The length of the exposure, in seconds.
@@ -3093,12 +3170,12 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
-      "photoLink": "A String", # A link to the profile photo, if available.
+      "expirationDate": "A String", # The time at which this permission will expire (RFC 3339 date-time).
       "role": "A String", # The primary role for this user. Allowed values are:
           # - owner
           # - reader
@@ -3112,12 +3189,13 @@ Returns:
         "A String",
       ],
       "selfLink": "A String", # A link back to this permission.
+      "photoLink": "A String", # A link to the profile photo, if available.
     },
     "spaces": [ # The list of spaces which contain the file. Supported values are 'drive', 'appDataFolder' and 'photos'.
       "A String",
     ],
     "shareable": True or False, # Whether the file's sharing settings can be modified by the current user.
-    "originalFilename": "A String", # The original filename if the file was uploaded manually, or the original title if the file was inserted through the API. Note that renames of the title will not change the original filename. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
+    "originalFilename": "A String", # The original filename of the uploaded content if available, or else the original value of the title field. This is only available for files with binary content in Drive.
     "fileExtension": "A String", # The final component of fullFileExtension with trailing text that does not appear to be part of the extension removed. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "headRevisionId": "A String", # The ID of the file's head revision. This field is only populated for files with content stored in Drive; it is not populated for Google Docs or shortcut files.
     "selfLink": "A String", # A link back to this file.
@@ -3155,7 +3233,7 @@ Args:
       FULL - Deprecated
   revisionId: string, Specifies the Revision ID that should be downloaded. Ignored unless alt=media is specified.
   acknowledgeAbuse: boolean, Whether the user is acknowledging the risk of downloading known malware or other abusive files.
-  updateViewedDate: boolean, Whether to update the view date after successfully retrieving the file.
+  updateViewedDate: boolean, Deprecated: Use files.update with modifiedDateBehavior=noChange, updateViewedDate=true and an empty request body.
 
 Returns:
   An object of the form:
@@ -3206,7 +3284,7 @@ Args:
       FULL - Deprecated
   revisionId: string, Specifies the Revision ID that should be downloaded. Ignored unless alt=media is specified.
   acknowledgeAbuse: boolean, Whether the user is acknowledging the risk of downloading known malware or other abusive files.
-  updateViewedDate: boolean, Whether to update the view date after successfully retrieving the file.
+  updateViewedDate: boolean, Deprecated: Use files.update with modifiedDateBehavior=noChange, updateViewedDate=true and an empty request body.
 
 Returns:
   The media object as a string.
