@@ -108,6 +108,12 @@ MEDIA_BODY_PARAMETER_DEFAULT_VALUE = {
     'type': 'string',
     'required': False,
 }
+MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE = {
+    'description': ('The MIME type of the media request body, or an instance '
+                    'of a MediaUpload object.'),
+    'type': 'string',
+    'required': False,
+}
 
 # Parameters accepted by the stack, but not visible via discovery.
 # TODO(dhermes): Remove 'userip' in 'v2'.
@@ -481,7 +487,7 @@ def _fix_up_parameters(method_desc, root_desc, http_method):
 
 
 def _fix_up_media_upload(method_desc, root_desc, path_url, parameters):
-  """Updates parameters of API by adding 'media_body' if supported by method.
+  """Adds 'media_body' and 'media_mime_type' parameters if supported by method.
 
   SIDE EFFECTS: If the method supports media upload and has a required body,
   sets body to be optional (required=False) instead. Also, if there is a
@@ -518,6 +524,7 @@ def _fix_up_media_upload(method_desc, root_desc, path_url, parameters):
   if media_upload:
     media_path_url = _media_path_url_from_info(root_desc, path_url)
     parameters['media_body'] = MEDIA_BODY_PARAMETER_DEFAULT_VALUE.copy()
+    parameters['media_mime_type'] = MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE.copy()
     if 'body' in parameters:
       parameters['body']['required'] = False
 
@@ -751,6 +758,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         actual_path_params[parameters.argmap[key]] = cast_value
     body_value = kwargs.get('body', None)
     media_filename = kwargs.get('media_body', None)
+    media_mime_type = kwargs.get('media_mime_type', None)
 
     if self._developerKey:
       actual_query_params['key'] = self._developerKey
@@ -774,7 +782,11 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     if media_filename:
       # Ensure we end up with a valid MediaUpload object.
       if isinstance(media_filename, six.string_types):
-        (media_mime_type, encoding) = mimetypes.guess_type(media_filename)
+        if media_mime_type is None:
+          logger.warning(
+              'media_mime_type argument not specified: trying to auto-detect for %s',
+              media_filename)
+          media_mime_type, _ = mimetypes.guess_type(media_filename)
         if media_mime_type is None:
           raise UnknownFileType(media_filename)
         if not mimeparse.best_match([media_mime_type], ','.join(accept)):
