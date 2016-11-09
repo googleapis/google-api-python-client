@@ -341,16 +341,16 @@ class TestMediaIoBaseUpload(unittest.TestCase):
     upload = MediaIoBaseUpload(
         fd=fd, mimetype='image/png', chunksize=500, resumable=True)
 
-    # Simulate 5XXs for both the request that creates the resumable upload and
-    # the upload itself.
+    # Simulate errors for both the request that creates the resumable upload
+    # and the upload itself.
     http = HttpMockSequence([
       ({'status': '500'}, ''),
       ({'status': '500'}, ''),
       ({'status': '503'}, ''),
       ({'status': '200', 'location': 'location'}, ''),
-      ({'status': '500'}, ''),
-      ({'status': '500'}, ''),
-      ({'status': '503'}, ''),
+      ({'status': '403'}, USER_RATE_LIMIT_EXCEEDED_RESPONSE),
+      ({'status': '403'}, RATE_LIMIT_EXCEEDED_RESPONSE),
+      ({'status': '429'}, ''),
       ({'status': '200'}, '{}'),
     ])
 
@@ -371,6 +371,34 @@ class TestMediaIoBaseUpload(unittest.TestCase):
 
     request.execute(num_retries=3)
     self.assertEqual([20, 40, 80, 20, 40, 80], sleeptimes)
+
+  def test_media_io_base_next_chunk_no_retry_403_not_configured(self):
+    fd = BytesIO(b"i am png")
+    upload = MediaIoBaseUpload(
+        fd=fd, mimetype='image/png', chunksize=500, resumable=True)
+
+    http = HttpMockSequence([
+        ({'status': '403'}, NOT_CONFIGURED_RESPONSE),
+        ({'status': '200'}, '{}')
+        ])
+
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/upload/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        headers={},
+        resumable=upload)
+
+    request._rand = lambda: 1.0
+    request._sleep =  mock.MagicMock()
+
+    with self.assertRaises(HttpError):
+      request.execute(num_retries=3)
+    request._sleep.assert_not_called()
 
 
 class TestMediaIoBaseDownload(unittest.TestCase):
@@ -1025,7 +1053,9 @@ class TestBatch(unittest.TestCase):
     upload = MediaFileUpload(
         datafile('small.png'), chunksize=500, resumable=True)
     self.request1.resumable = upload
-    self.assertRaises(BatchError, batch.add, self.request1, request_id='1')
+    with self.assertRaises(BatchError) as batch_error:
+      batch.add(self.request1, request_id='1')
+    str(batch_error.exception)
 
   def test_execute_empty_batch_no_http(self):
     batch = BatchHttpRequest()

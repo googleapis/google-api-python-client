@@ -55,6 +55,13 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from email.parser import FeedParser
 
+# Oauth2client < 3 has the positional helper in 'util', >= 3 has it
+# in '_helpers'.
+try:
+  from oauth2client import util
+except ImportError:
+  from oauth2client import _helpers as util
+
 from googleapiclient import mimeparse
 from googleapiclient.errors import BatchError
 from googleapiclient.errors import HttpError
@@ -63,7 +70,6 @@ from googleapiclient.errors import ResumableUploadError
 from googleapiclient.errors import UnexpectedBodyError
 from googleapiclient.errors import UnexpectedMethodError
 from googleapiclient.model import JsonModel
-from oauth2client import util
 
 
 LOGGER = logging.getLogger(__name__)
@@ -639,7 +645,7 @@ class MediaIoBaseDownload(object):
     """Get the next chunk of the download.
 
     Args:
-      num_retries: Integer, number of times to retry 500's with randomized
+      num_retries: Integer, number of times to retry with randomized
             exponential backoff. If all retries fail, the raised HttpError
             represents the last request. If zero (default), we attempt the
             request only once.
@@ -782,7 +788,7 @@ class HttpRequest(object):
     Args:
       http: httplib2.Http, an http object to be used in place of the
             one the HttpRequest request object was constructed with.
-      num_retries: Integer, number of times to retry 500's with randomized
+      num_retries: Integer, number of times to retry with randomized
             exponential backoff. If all retries fail, the raised HttpError
             represents the last request. If zero (default), we attempt the
             request only once.
@@ -870,7 +876,7 @@ class HttpRequest(object):
     Args:
       http: httplib2.Http, an http object to be used in place of the
             one the HttpRequest request object was constructed with.
-      num_retries: Integer, number of times to retry 500's with randomized
+      num_retries: Integer, number of times to retry with randomized
             exponential backoff. If all retries fail, the raised HttpError
             represents the last request. If zero (default), we attempt the
             request only once.
@@ -965,7 +971,7 @@ class HttpRequest(object):
       except:
         self._in_error_state = True
         raise
-      if resp.status < 500:
+      if not _should_retry_response(resp.status, content):
         break
 
     return self._process_response(resp, content)
