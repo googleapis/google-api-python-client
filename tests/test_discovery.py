@@ -50,6 +50,7 @@ from googleapiclient.discovery import build_from_document
 from googleapiclient.discovery import DISCOVERY_URI
 from googleapiclient.discovery import key2param
 from googleapiclient.discovery import MEDIA_BODY_PARAMETER_DEFAULT_VALUE
+from googleapiclient.discovery import MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE
 from googleapiclient.discovery import ResourceMethodParameters
 from googleapiclient.discovery import STACK_QUERY_PARAMETERS
 from googleapiclient.discovery import STACK_QUERY_PARAMETER_DEFAULT_VALUE
@@ -61,6 +62,7 @@ from googleapiclient.errors import MediaUploadSizeError
 from googleapiclient.errors import ResumableUploadError
 from googleapiclient.errors import UnacceptableMimeTypeError
 from googleapiclient.errors import UnknownApiNameOrVersion
+from googleapiclient.errors import UnknownFileType
 from googleapiclient.http import BatchHttpRequest
 from googleapiclient.http import HttpMock
 from googleapiclient.http import HttpMockSequence
@@ -70,15 +72,17 @@ from googleapiclient.http import MediaUpload
 from googleapiclient.http import MediaUploadProgress
 from googleapiclient.http import tunnel_patch
 from oauth2client import GOOGLE_TOKEN_URI
-from oauth2client import util
 from oauth2client.client import OAuth2Credentials
+
+try:
+  from oauth2client import util
+except ImportError:
+  from oauth2client import _helpers as util
 
 import uritemplate
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
-
-util.positional_parameters_enforcement = util.POSITIONAL_EXCEPTION
 
 
 def assertUrisEqual(testcase, expected, actual):
@@ -210,14 +214,16 @@ class Utilities(unittest.TestCase):
 
   def test_fix_up_media_upload_no_initial_valid_minimal(self):
     valid_method_desc = {'mediaUpload': {'accept': []}}
-    final_parameters = {'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE}
+    final_parameters = {'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
+                        'media_mime_type': MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE}
     self._base_fix_up_method_description_test(
         valid_method_desc, {}, final_parameters, [], 0,
         'http://root/upload/fake/fake-path/')
 
   def test_fix_up_media_upload_no_initial_valid_full(self):
     valid_method_desc = {'mediaUpload': {'accept': ['*/*'], 'maxSize': '10GB'}}
-    final_parameters = {'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE}
+    final_parameters = {'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
+                        'media_mime_type': MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE}
     ten_gb = 10 * 2**30
     self._base_fix_up_method_description_test(
         valid_method_desc, {}, final_parameters, ['*/*'],
@@ -234,7 +240,8 @@ class Utilities(unittest.TestCase):
     valid_method_desc = {'mediaUpload': {'accept': []}}
     initial_parameters = {'body': {}}
     final_parameters = {'body': {'required': False},
-                        'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE}
+                        'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
+                        'media_mime_type': MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE}
     self._base_fix_up_method_description_test(
         valid_method_desc, initial_parameters, final_parameters, [], 0,
         'http://root/upload/fake/fake-path/')
@@ -243,7 +250,8 @@ class Utilities(unittest.TestCase):
     valid_method_desc = {'mediaUpload': {'accept': ['*/*'], 'maxSize': '10GB'}}
     initial_parameters = {'body': {}}
     final_parameters = {'body': {'required': False},
-                        'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE}
+                        'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
+                        'media_mime_type': MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE}
     ten_gb = 10 * 2**30
     self._base_fix_up_method_description_test(
         valid_method_desc, initial_parameters, final_parameters, ['*/*'],
@@ -501,8 +509,8 @@ class DictCache(Cache):
 class DiscoveryFromFileCache(unittest.TestCase):
   def test_file_based_cache(self):
     cache = mock.Mock(wraps=DictCache())
-    with mock.patch('googleapiclient.discovery_cache.file_cache.cache',
-                    new=cache):
+    with mock.patch('googleapiclient.discovery_cache.autodetect',
+                    return_value=cache):
       self.http = HttpMock(datafile('plus.json'), {'status': '200'})
 
       plus = build('plus', 'v1', http=self.http)
@@ -767,6 +775,24 @@ class Discovery(unittest.TestCase):
     zoo = build('zoo', 'v1', http=self.http)
 
     request = zoo.animals().insert(media_body=datafile('small.png'))
+    self.assertEquals('image/png', request.headers['content-type'])
+    self.assertEquals(b'PNG', request.body[1:4])
+    assertUrisEqual(self,
+        'https://www.googleapis.com/upload/zoo/v1/animals?uploadType=media&alt=json',
+        request.uri)
+
+  def test_simple_media_unknown_mimetype(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http=self.http)
+
+    try:
+      zoo.animals().insert(media_body=datafile('small-png'))
+      self.fail("should throw exception if mimetype is unknown.")
+    except UnknownFileType:
+      pass
+
+    request = zoo.animals().insert(media_body=datafile('small-png'),
+                                   media_mime_type='image/png')
     self.assertEquals('image/png', request.headers['content-type'])
     self.assertEquals(b'PNG', request.body[1:4])
     assertUrisEqual(self,

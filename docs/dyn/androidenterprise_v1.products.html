@@ -85,13 +85,16 @@ h1, h2, h3 {
 <p class="firstline">Retrieves details of a product for display to an enterprise admin.</p>
 <p class="toc_element">
   <code><a href="#getAppRestrictionsSchema">getAppRestrictionsSchema(enterpriseId, productId, language=None)</a></code></p>
-<p class="firstline">Retrieves the schema defining app restrictions configurable for this product. All products have a schema, but this may be empty if no app restrictions are defined.</p>
+<p class="firstline">Retrieves the schema that defines the configurable properties for this product. All products have a schema, but this schema may be empty if no managed configurations have been defined. This schema can be used to populate a UI that allows an administrator to configure the product. To apply a managed configuration based on the schema obtained using this API, see Managed Configurations through Play.</p>
 <p class="toc_element">
   <code><a href="#getPermissions">getPermissions(enterpriseId, productId)</a></code></p>
 <p class="firstline">Retrieves the Android app permissions required by this app.</p>
 <p class="toc_element">
   <code><a href="#list">list(enterpriseId, language=None, maxResults=None, token=None, query=None, approved=None)</a></code></p>
-<p class="firstline">Finds approved products that match a query.</p>
+<p class="firstline">Finds approved products that match a query, or all approved products if there is no query.</p>
+<p class="toc_element">
+  <code><a href="#unapprove">unapprove(enterpriseId, productId)</a></code></p>
+<p class="firstline">Unapproves the specified product (and the relevant app permissions, if any)</p>
 <p class="toc_element">
   <code><a href="#updatePermissions">updatePermissions(enterpriseId, productId, body)</a></code></p>
 <p class="firstline">This method has been deprecated. To programmatically approve applications, you must use the iframe mechanism via the  generateApprovalUrl and  approve methods of the Products resource. For more information, see the  Play EMM API usage requirements.</p>
@@ -149,7 +152,7 @@ Args:
 Returns:
   An object of the form:
 
-    { # A product represents an app in the Google Play Store that is available to at least some users in the enterprise. (Some apps are restricted to a single enterprise, and no information about them is made available outside that enterprise.)
+    { # A Products resource represents an app in the Google Play Store that is available to at least some users in the enterprise. (Some apps are restricted to a single enterprise, and no information about them is made available outside that enterprise.)
       #
       # The information provided for each product (localized name, icon, link to the full Google Play details page) is intended to allow a basic representation of the product within an EMM user interface.
     "smallIconUrl": "A String", # A link to a smaller image that can be used as an icon for the product. This image is suitable for use at up to 128px x 128px.
@@ -163,7 +166,7 @@ Returns:
         "versionString": "A String", # The string used in the Play Store by the app developer to identify the version. The string is not necessarily unique or localized (for example, the string could be "1.4").
       },
     ],
-    "productPricing": "A String", # Whether this product is free, free with in-app purchases, or paid.
+    "productPricing": "A String", # Whether this product is free, free with in-app purchases, or paid. If the pricing is unknown, this means the product is not generally available anymore (even though it might still be available to people who own it).
     "iconUrl": "A String", # A link to an image that can be used as an icon for the product. This image is suitable for use at up to 512px x 512px.
     "authorName": "A String", # The name of the author of the product (e.g. the app developer).
     "requiresContainerApp": True or False, # Whether this app can only be installed on devices using the Android for Work container app.
@@ -174,7 +177,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="getAppRestrictionsSchema">getAppRestrictionsSchema(enterpriseId, productId, language=None)</code>
-  <pre>Retrieves the schema defining app restrictions configurable for this product. All products have a schema, but this may be empty if no app restrictions are defined.
+  <pre>Retrieves the schema that defines the configurable properties for this product. All products have a schema, but this schema may be empty if no managed configurations have been defined. This schema can be used to populate a UI that allows an administrator to configure the product. To apply a managed configuration based on the schema obtained using this API, see Managed Configurations through Play.
 
 Args:
   enterpriseId: string, The ID of the enterprise. (required)
@@ -187,9 +190,9 @@ Returns:
     { # Represents the list of app restrictions available to be pre-configured for the product.
     "restrictions": [ # The set of restrictions that make up this schema.
       { # A restriction in the App Restriction Schema represents a piece of configuration that may be pre-applied.
-        "restrictionType": "A String", # The type of the restriction.
+        "description": "A String", # A longer description of the restriction, giving more detail of what it affects.
         "title": "A String", # The name of the restriction.
-        "defaultValue": { # A typed value for the restriction. # The default value of the restriction.
+        "defaultValue": { # A typed value for the restriction. # The default value of the restriction. bundle and bundleArray restrictions never have a default value.
           "valueBool": True or False, # The boolean value - this will only be present if type is bool.
           "valueString": "A String", # The string value - this will be present for types string, choice and hidden.
           "type": "A String", # The type of the value being provided.
@@ -198,14 +201,17 @@ Returns:
           ],
           "valueInteger": 42, # The integer value - this will only be present if type is integer.
         },
-        "entryValue": [ # For choice or multiselect restrictions, the list of possible entries' machine-readable values.
+        "nestedRestriction": [ # For bundle or bundleArray restrictions, the list of nested restrictions. A bundle restriction is always nested within a bundleArray restriction, and a bundleArray restriction is at most two levels deep.
+          # Object with schema name: AppRestrictionsSchemaRestriction
+        ],
+        "entryValue": [ # For choice or multiselect restrictions, the list of possible entries' machine-readable values. These values should be used in the configuration, either as a single string value for a choice restriction or in a stringArray for a multiselect restriction.
           "A String",
         ],
         "key": "A String", # The unique key that the product uses to identify the restriction, e.g. "com.google.android.gm.fieldname".
         "entry": [ # For choice or multiselect restrictions, the list of possible entries' human-readable names.
           "A String",
         ],
-        "description": "A String", # A longer description of the restriction, giving more detail of what it affects.
+        "restrictionType": "A String", # The type of the restriction.
       },
     ],
     "kind": "androidenterprise#appRestrictionsSchema", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#appRestrictionsSchema".
@@ -239,14 +245,14 @@ Returns:
 
 <div class="method">
     <code class="details" id="list">list(enterpriseId, language=None, maxResults=None, token=None, query=None, approved=None)</code>
-  <pre>Finds approved products that match a query.
+  <pre>Finds approved products that match a query, or all approved products if there is no query.
 
 Args:
   enterpriseId: string, The ID of the enterprise. (required)
   language: string, The BCP47 tag for the user's preferred language (e.g. "en-US", "de"). Results are returned in the language best matching the preferred language.
   maxResults: integer, Specifies the maximum number of products that can be returned per request. If not specified, uses a default value of 100, which is also the maximum retrievable within a single response.
   token: string, A pagination token is contained in a requests response when there are more products. The token can be used in a subsequent request to obtain more products, and so forth. This parameter cannot be used in the initial request.
-  query: string, The search query as typed in the Google Play Store search box. If omitted, all approved apps will be returned (using the pagination parameters).
+  query: string, The search query as typed in the Google Play Store search box. If omitted, all approved apps will be returned (using the pagination parameters), including apps that are not available in the store (e.g. unpublished apps).
   approved: boolean, Specifies whether to search among all products (false) or among only products that have been approved (true). Only "true" is supported, and should be specified.
 
 Returns:
@@ -254,7 +260,7 @@ Returns:
 
     { # The matching products.
     "product": [ # Information about a product (e.g. an app) in the Google Play Store, for display to an enterprise admin.
-      { # A product represents an app in the Google Play Store that is available to at least some users in the enterprise. (Some apps are restricted to a single enterprise, and no information about them is made available outside that enterprise.)
+      { # A Products resource represents an app in the Google Play Store that is available to at least some users in the enterprise. (Some apps are restricted to a single enterprise, and no information about them is made available outside that enterprise.)
           #
           # The information provided for each product (localized name, icon, link to the full Google Play details page) is intended to allow a basic representation of the product within an EMM user interface.
         "smallIconUrl": "A String", # A link to a smaller image that can be used as an icon for the product. This image is suitable for use at up to 128px x 128px.
@@ -268,7 +274,7 @@ Returns:
             "versionString": "A String", # The string used in the Play Store by the app developer to identify the version. The string is not necessarily unique or localized (for example, the string could be "1.4").
           },
         ],
-        "productPricing": "A String", # Whether this product is free, free with in-app purchases, or paid.
+        "productPricing": "A String", # Whether this product is free, free with in-app purchases, or paid. If the pricing is unknown, this means the product is not generally available anymore (even though it might still be available to people who own it).
         "iconUrl": "A String", # A link to an image that can be used as an icon for the product. This image is suitable for use at up to 512px x 512px.
         "authorName": "A String", # The name of the author of the product (e.g. the app developer).
         "requiresContainerApp": True or False, # Whether this app can only be installed on devices using the Android for Work container app.
@@ -287,6 +293,16 @@ Returns:
       "resultPerPage": 42,
     },
   }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="unapprove">unapprove(enterpriseId, productId)</code>
+  <pre>Unapproves the specified product (and the relevant app permissions, if any)
+
+Args:
+  enterpriseId: string, The ID of the enterprise. (required)
+  productId: string, The ID of the product. (required)
+</pre>
 </div>
 
 <div class="method">

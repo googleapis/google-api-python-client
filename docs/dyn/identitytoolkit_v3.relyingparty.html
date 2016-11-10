@@ -135,15 +135,21 @@ Args:
     The object takes the form of:
 
 { # Request to get the IDP authentication URL.
+    "sessionId": "A String", # The session_id passed by client.
+    "hostedDomain": "A String", # The hosted domain to restrict sign-in to accounts at that domain for Google Apps hosted accounts.
     "openidRealm": "A String", # Optional realm for OpenID protocol. The sub string "scheme://domain:port" of the param "continueUri" is used if this is not set.
-    "oauthScope": "A String", # Additional oauth scopes, beyond the basid user profile, that the user would be prompted to grant
-    "clientId": "A String", # The relying party OAuth client ID.
-    "otaApp": "A String", # The native app package for OTA installation.
     "oauthConsumerKey": "A String", # The developer's consumer key for OpenId OAuth Extension
+    "clientId": "A String", # The relying party OAuth client ID.
+    "oauthScope": "A String", # Additional oauth scopes, beyond the basid user profile, that the user would be prompted to grant
+    "otaApp": "A String", # The native app package for OTA installation.
+    "authFlowType": "A String", # Explicitly specify the auth flow type. Currently only support "CODE_FLOW" type. The field is only used for Google provider.
     "providerId": "A String", # The IdP ID. For white listed IdPs it's a short domain name e.g. google.com, aol.com, live.net and yahoo.com. For other OpenID IdPs it's the OP identifier.
     "context": "A String", # The opaque value used by the client to maintain context info between the authentication request and the IDP callback.
     "appId": "A String", # The app ID of the mobile app, base64(CERT_SHA1):PACKAGE_NAME for Android, BUNDLE_ID for iOS.
     "continueUri": "A String", # The URI to which the IDP redirects the user after the federated login flow.
+    "customParameter": { # The query parameter that client can customize by themselves in auth url. The following parameters are reserved for server so that they cannot be customized by clients: client_id, response_type, scope, redirect_uri, state, oauth_token.
+      "a_key": "A String", # The customized query parameter.
+    },
     "identifier": "A String", # The email or federated ID of the user.
   }
 
@@ -211,12 +217,14 @@ Returns:
     "kind": "identitytoolkit#DownloadAccountResponse", # The fixed string "identitytoolkit#DownloadAccountResponse".
     "users": [ # The user accounts data.
       { # Template for an individual account info.
+        "passwordHash": "A String", # The user's hashed password.
         "displayName": "A String", # The name of the user.
         "localId": "A String", # The local ID of the user.
         "validSince": "A String", # Timestamp in seconds for valid login token.
         "photoUrl": "A String", # The URL of the user profile photo.
         "emailVerified": True or False, # Whether the email has been verified.
-        "passwordHash": "A String", # The user's hashed password.
+        "lastLoginAt": "A String", # last login timestamp.
+        "customAuth": True or False, # Whether the user is authenticated by the developer.
         "disabled": True or False, # Whether the user is disabled.
         "version": 42, # Version of the user's password.
         "providerUserInfo": [ # The IDP of the user.
@@ -224,14 +232,18 @@ Returns:
             "federatedId": "A String", # User's identifier at IDP.
             "displayName": "A String", # The user's display name at the IDP.
             "photoUrl": "A String", # The user's photo url at the IDP.
+            "rawUserInfo": "A String", # Raw IDP-returned user info.
             "providerId": "A String", # The IdP ID. For white listed IdPs it's a short domain name, e.g., google.com, aol.com, live.net and yahoo.com. For other OpenID IdPs it's the OP identifier.
             "rawId": "A String", # User's raw identifier directly returned from IDP.
             "email": "A String", # User's email at IDP.
+            "screenName": "A String", # User's screen name at Twitter or login name at Github.
           },
         ],
         "passwordUpdatedAt": 3.14, # The timestamp when the password was last updated.
         "salt": "A String", # The user's password salt.
         "email": "A String", # The email of the user.
+        "createdAt": "A String", # User creation timestamp.
+        "screenName": "A String", # User's screen name at Twitter or login name at Github.
       },
     ],
   }</pre>
@@ -264,12 +276,14 @@ Returns:
     "kind": "identitytoolkit#GetAccountInfoResponse", # The fixed string "identitytoolkit#GetAccountInfoResponse".
     "users": [ # The info of the users.
       { # Template for an individual account info.
+        "passwordHash": "A String", # The user's hashed password.
         "displayName": "A String", # The name of the user.
         "localId": "A String", # The local ID of the user.
         "validSince": "A String", # Timestamp in seconds for valid login token.
         "photoUrl": "A String", # The URL of the user profile photo.
         "emailVerified": True or False, # Whether the email has been verified.
-        "passwordHash": "A String", # The user's hashed password.
+        "lastLoginAt": "A String", # last login timestamp.
+        "customAuth": True or False, # Whether the user is authenticated by the developer.
         "disabled": True or False, # Whether the user is disabled.
         "version": 42, # Version of the user's password.
         "providerUserInfo": [ # The IDP of the user.
@@ -277,14 +291,18 @@ Returns:
             "federatedId": "A String", # User's identifier at IDP.
             "displayName": "A String", # The user's display name at the IDP.
             "photoUrl": "A String", # The user's photo url at the IDP.
+            "rawUserInfo": "A String", # Raw IDP-returned user info.
             "providerId": "A String", # The IdP ID. For white listed IdPs it's a short domain name, e.g., google.com, aol.com, live.net and yahoo.com. For other OpenID IdPs it's the OP identifier.
             "rawId": "A String", # User's raw identifier directly returned from IDP.
             "email": "A String", # User's email at IDP.
+            "screenName": "A String", # User's screen name at Twitter or login name at Github.
           },
         ],
         "passwordUpdatedAt": 3.14, # The timestamp when the password was last updated.
         "salt": "A String", # The user's password salt.
         "email": "A String", # The email of the user.
+        "createdAt": "A String", # User creation timestamp.
+        "screenName": "A String", # User's screen name at Twitter or login name at Github.
       },
     ],
   }</pre>
@@ -374,11 +392,14 @@ Returns:
     },
     "idpConfig": [ # OAuth2 provider configuration.
       { # Template for a single idp configuration.
-        "experimentPercent": 42, # Percent of users who will be prompted/redirected federated login for this IDP.
-        "secret": "A String", # OAuth2 client secret.
+        "whitelistedAudiences": [ # Whitelisted client IDs for audience check.
+          "A String",
+        ],
         "enabled": True or False, # Whether this IDP is enabled.
         "clientId": "A String", # OAuth2 client ID.
+        "secret": "A String", # OAuth2 client secret.
         "provider": "A String", # OAuth2 provider.
+        "experimentPercent": 42, # Percent of users who will be prompted/redirected federated login for this IDP.
       },
     ],
   }</pre>
@@ -434,8 +455,10 @@ Returns:
   An object of the form:
 
     { # Response of resetting the password.
+    "requestType": "A String", # The request type.
     "kind": "identitytoolkit#ResetPasswordResponse", # The fixed string "identitytoolkit#ResetPasswordResponse".
-    "email": "A String", # The user's email.
+    "email": "A String", # The user's email. If the out-of-band code is for email recovery, the user's original email.
+    "newEmail": "A String", # If the out-of-band code is for email recovery, the user's new email.
   }</pre>
 </div>
 
@@ -458,21 +481,23 @@ Args:
     "photoUrl": "A String", # The photo url of the user.
     "captchaResponse": "A String", # Response to the captcha.
     "emailVerified": True or False, # Mark the email as verified or not.
+    "lastLoginAt": "A String", # Last login timestamp.
     "provider": [ # The associated IDPs of the user.
       "A String",
     ],
-    "upgradeToFederatedLogin": True or False, # Mark the user to upgrade to federated login.
     "disableUser": True or False, # Whether to disable the user.
     "deleteProvider": [ # The IDPs the user request to delete.
       "A String",
     ],
     "captchaChallenge": "A String", # The captcha challenge.
+    "oobCode": "A String", # The out-of-band code of the change email request.
+    "upgradeToFederatedLogin": True or False, # Mark the user to upgrade to federated login.
     "idToken": "A String", # The GITKit token of the authenticated user.
     "returnSecureToken": True or False, # Whether return sts id token and refresh token instead of gitkit token.
     "displayName": "A String", # The name of the user.
     "password": "A String", # The new password of the user.
     "email": "A String", # The email of the user.
-    "oobCode": "A String", # The out-of-band code of the change email request.
+    "createdAt": "A String", # The timestamp when the account is created.
   }
 
 
@@ -552,11 +577,14 @@ Args:
     },
     "idpConfig": [ # Oauth2 provider configuration.
       { # Template for a single idp configuration.
-        "experimentPercent": 42, # Percent of users who will be prompted/redirected federated login for this IDP.
-        "secret": "A String", # OAuth2 client secret.
+        "whitelistedAudiences": [ # Whitelisted client IDs for audience check.
+          "A String",
+        ],
         "enabled": True or False, # Whether this IDP is enabled.
         "clientId": "A String", # OAuth2 client ID.
+        "secret": "A String", # OAuth2 client secret.
         "provider": "A String", # OAuth2 provider.
+        "experimentPercent": 42, # Percent of users who will be prompted/redirected federated login for this IDP.
       },
     ],
   }
@@ -638,12 +666,14 @@ Args:
     "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
     "users": [ # The account info to be stored.
       { # Template for an individual account info.
+        "passwordHash": "A String", # The user's hashed password.
         "displayName": "A String", # The name of the user.
         "localId": "A String", # The local ID of the user.
         "validSince": "A String", # Timestamp in seconds for valid login token.
         "photoUrl": "A String", # The URL of the user profile photo.
         "emailVerified": True or False, # Whether the email has been verified.
-        "passwordHash": "A String", # The user's hashed password.
+        "lastLoginAt": "A String", # last login timestamp.
+        "customAuth": True or False, # Whether the user is authenticated by the developer.
         "disabled": True or False, # Whether the user is disabled.
         "version": 42, # Version of the user's password.
         "providerUserInfo": [ # The IDP of the user.
@@ -651,19 +681,25 @@ Args:
             "federatedId": "A String", # User's identifier at IDP.
             "displayName": "A String", # The user's display name at the IDP.
             "photoUrl": "A String", # The user's photo url at the IDP.
+            "rawUserInfo": "A String", # Raw IDP-returned user info.
             "providerId": "A String", # The IdP ID. For white listed IdPs it's a short domain name, e.g., google.com, aol.com, live.net and yahoo.com. For other OpenID IdPs it's the OP identifier.
             "rawId": "A String", # User's raw identifier directly returned from IDP.
             "email": "A String", # User's email at IDP.
+            "screenName": "A String", # User's screen name at Twitter or login name at Github.
           },
         ],
         "passwordUpdatedAt": 3.14, # The timestamp when the password was last updated.
         "salt": "A String", # The user's password salt.
         "email": "A String", # The email of the user.
+        "createdAt": "A String", # User creation timestamp.
+        "screenName": "A String", # User's screen name at Twitter or login name at Github.
       },
     ],
+    "sanityCheck": True or False, # If true, backend will do sanity check(including duplicate email and federated id) when uploading account.
     "signerKey": "A String", # The key for to hash the password.
     "memoryCost": 42, # Memory cost for hash calculation. Used by scrypt similar algorithms.
     "saltSeparator": "A String", # The salt separator.
+    "targetProjectId": "A String", # Specify which project (field value is actually project id) to operate. Only used when provided credential.
     "rounds": 42, # Rounds for hash calculation. Used by scrypt and similar algorithms.
   }
 
@@ -700,6 +736,7 @@ Args:
     "requestUri": "A String", # The URI to which the IDP redirects the user back. It may contain federated login result params added by the IDP.
     "returnSecureToken": True or False, # Whether return sts id token and refresh token instead of gitkit token.
     "returnRefreshToken": True or False, # Whether to return refresh tokens.
+    "returnIdpCredential": True or False, # Whether return 200 and IDP credential rather than throw exception when federated id is already linked.
   }
 
 
@@ -711,6 +748,7 @@ Returns:
     "localId": "A String", # The RP local ID if it's already been mapped to the IdP account identified by the federated ID.
     "photoUrl": "A String", # The URI of the public accessible profiel picture.
     "inputEmail": "A String", # It's the identifier param in the createAuthUri request if the identifier is an email. It can be used to check whether the user input email is different from the asserted email.
+    "rawUserInfo": "A String", # Raw IDP-returned user info.
     "appScheme": "A String", # The custom scheme used by mobile app.
     "expiresIn": "A String", # If idToken is STS id token, then this field will be expiration time of STS id token in seconds.
     "refreshToken": "A String", # If idToken is STS id token, then this field will be refresh token.
@@ -719,31 +757,33 @@ Returns:
     ],
     "needEmail": True or False, # Whether need client to supply email to complete the federated login flow.
     "dateOfBirth": "A String", # The birth date of the IdP account.
-    "nickName": "A String", # The nick name of the user.
-    "email": "A String", # The email returned by the IdP. NOTE: The federated login user may not own the email.
     "oauthAccessToken": "A String", # The OAuth2 access token.
+    "emailRecycled": True or False, # It's true if the email is recycled.
+    "email": "A String", # The email returned by the IdP. NOTE: The federated login user may not own the email.
+    "screenName": "A String", # The screen_name of a Twitter user or the login name at Github.
+    "nickName": "A String", # The nick name of the user.
+    "errorMessage": "A String", # Client error code.
     "oauthTokenSecret": "A String", # The OAuth1 access token secret.
     "language": "A String", # The language preference of the user.
     "needConfirmation": True or False, # Whether the assertion is from a non-trusted IDP and need account linking confirmation.
     "oauthIdToken": "A String", # The OIDC id token.
     "fullName": "A String", # The full name of the user.
     "kind": "identitytoolkit#VerifyAssertionResponse", # The fixed string "identitytoolkit#VerifyAssertionResponse".
-    "idToken": "A String", # The ID token.
     "displayName": "A String", # The display name of the user.
     "appInstallationUrl": "A String", # URL for OTA app installation.
     "firstName": "A String", # The first name of the user.
     "oauthExpireIn": 42, # The lifetime in seconds of the OAuth2 access token.
     "emailVerified": True or False, # The value is true if the IDP is also the email provider. It means the user owns the email.
+    "lastName": "A String", # The last name of the user.
     "oauthScope": "A String", # The scope for the OpenID OAuth extension.
     "oauthRequestToken": "A String", # The user approved request token for the OpenID OAuth extension.
     "oauthAuthorizationCode": "A String", # The OAuth2 authorization code.
     "originalEmail": "A String", # The original email stored in the mapping storage. It's returned when the federated ID is associated to a different email.
     "providerId": "A String", # The IdP ID. For white listed IdPs it's a short domain name e.g. google.com, aol.com, live.net and yahoo.com. If the "providerId" param is set to OpenID OP identifer other than the whilte listed IdPs the OP identifier is returned. If the "identifier" param is federated ID in the createAuthUri request. The domain part of the federated ID is returned.
     "context": "A String", # The opaque value used by the client to maintain context info between the authentication request and the IDP callback.
-    "lastName": "A String", # The last name of the user.
+    "idToken": "A String", # The ID token.
     "action": "A String", # The action code.
     "timeZone": "A String", # The timezone of the user.
-    "emailRecycled": True or False, # It's true if the email is recycled.
   }</pre>
 </div>
 

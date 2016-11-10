@@ -75,7 +75,7 @@ h1, h2, h3 {
 <h1><a href="compute_v1.html">Compute Engine API</a> . <a href="compute_v1.autoscalers.html">autoscalers</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#aggregatedList">aggregatedList(project, maxResults=None, pageToken=None, filter=None)</a></code></p>
+  <code><a href="#aggregatedList">aggregatedList(project, orderBy=None, maxResults=None, pageToken=None, filter=None)</a></code></p>
 <p class="firstline">Retrieves an aggregated list of autoscalers.</p>
 <p class="toc_element">
   <code><a href="#aggregatedList_next">aggregatedList_next(previous_request, previous_response)</a></code></p>
@@ -90,7 +90,7 @@ h1, h2, h3 {
   <code><a href="#insert">insert(project, zone, body)</a></code></p>
 <p class="firstline">Creates an autoscaler in the specified project using the data included in the request.</p>
 <p class="toc_element">
-  <code><a href="#list">list(project, zone, maxResults=None, pageToken=None, filter=None)</a></code></p>
+  <code><a href="#list">list(project, zone, orderBy=None, maxResults=None, pageToken=None, filter=None)</a></code></p>
 <p class="firstline">Retrieves a list of autoscalers contained within the specified zone.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -103,11 +103,16 @@ h1, h2, h3 {
 <p class="firstline">Updates an autoscaler in the specified project using the data included in the request.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="aggregatedList">aggregatedList(project, maxResults=None, pageToken=None, filter=None)</code>
+    <code class="details" id="aggregatedList">aggregatedList(project, orderBy=None, maxResults=None, pageToken=None, filter=None)</code>
   <pre>Retrieves an aggregated list of autoscalers.
 
 Args:
   project: string, Project ID for this request. (required)
+  orderBy: string, Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name.
+
+You can also sort results in descending order based on the creation timestamp using orderBy="creationTimestamp desc". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.
+
+Currently, only sorting by name or creationTimestamp desc is supported.
   maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
   filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
@@ -116,9 +121,9 @@ The field_name is the name of the field you want to compare. Only atomic field t
 
 For example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.
 
-Compute Engine Beta API Only: When filtering in the Beta API, you can also filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
+You can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
 
-The Beta API also supports filtering on multiple expressions by providing each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
+To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
 
 Returns:
   An object of the form:
@@ -142,10 +147,11 @@ Returns:
           { # Represents an Autoscaler resource. Autoscalers allow you to automatically scale virtual machine instances in managed instance groups according to an autoscaling policy that you define. For more information, read Autoscaling Groups of Instances.
               "kind": "compute#autoscaler", # [Output Only] Type of the resource. Always compute#autoscaler for autoscalers.
               "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-              "zone": "A String", # [Output Only] URL of the zone where the instance group resides.
+              "zone": "A String", # [Output Only] URL of the zone where the instance group resides (for autoscalers living in zonal scope).
+              "region": "A String", # [Output Only] URL of the region where the instance group resides (for autoscalers living in regional scope).
               "autoscalingPolicy": { # Cloud Autoscaler policy. # The configuration parameters for the autoscaling algorithm. You can define one or more of the policies for an autoscaler: cpuUtilization, customMetricUtilizations, and loadBalancingUtilization.
                   #
-                  # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.8 or 80%.
+                  # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.6 or 60%.
                 "maxNumReplicas": 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
                 "coolDownPeriodSec": 42, # The number of seconds that the autoscaler should wait before it starts collecting information from a new instance. This prevents the autoscaler from collecting information when the instance is initializing, during which the collected usage would not be reliable. The default time autoscaler waits is 60 seconds.
                     #
@@ -155,20 +161,18 @@ Returns:
                 },
                 "customMetricUtilizations": [ # Configuration parameters of autoscaling based on a custom metric.
                   { # Custom utilization metric policy.
-                    "metric": "A String", # The identifier of the Cloud Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
+                    "metric": "A String", # The identifier of the Stackdriver Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
                         #
                         # For example, the following is a valid metric:
                         # compute.googleapis.com/instance/network/received_bytes_count
-                        #
-                        #
                         # The following is not a valid metric because it does not increase or decrease based on usage:
                         # compute.googleapis.com/instance/cpu/reserved_cores
-                    "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Cloud Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
+                    "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
                     "utilizationTarget": 3.14, # Target value of the metric which autoscaler should maintain. Must be a positive value.
                   },
                 ],
                 "cpuUtilization": { # CPU utilization policy. # Defines the CPU utilization policy that allows the autoscaler to scale based on the average CPU utilization of a managed instance group.
-                  "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.8.
+                  "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.6.
                       #
                       # If the CPU level is below the target utilization, the autoscaler scales down the number of instances until it reaches the minimum number of instances you specified or until the average CPU of your instances reaches the target utilization.
                       #
@@ -260,7 +264,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -279,10 +283,11 @@ Returns:
     { # Represents an Autoscaler resource. Autoscalers allow you to automatically scale virtual machine instances in managed instance groups according to an autoscaling policy that you define. For more information, read Autoscaling Groups of Instances.
       "kind": "compute#autoscaler", # [Output Only] Type of the resource. Always compute#autoscaler for autoscalers.
       "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-      "zone": "A String", # [Output Only] URL of the zone where the instance group resides.
+      "zone": "A String", # [Output Only] URL of the zone where the instance group resides (for autoscalers living in zonal scope).
+      "region": "A String", # [Output Only] URL of the region where the instance group resides (for autoscalers living in regional scope).
       "autoscalingPolicy": { # Cloud Autoscaler policy. # The configuration parameters for the autoscaling algorithm. You can define one or more of the policies for an autoscaler: cpuUtilization, customMetricUtilizations, and loadBalancingUtilization.
           #
-          # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.8 or 80%.
+          # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.6 or 60%.
         "maxNumReplicas": 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
         "coolDownPeriodSec": 42, # The number of seconds that the autoscaler should wait before it starts collecting information from a new instance. This prevents the autoscaler from collecting information when the instance is initializing, during which the collected usage would not be reliable. The default time autoscaler waits is 60 seconds.
             #
@@ -292,20 +297,18 @@ Returns:
         },
         "customMetricUtilizations": [ # Configuration parameters of autoscaling based on a custom metric.
           { # Custom utilization metric policy.
-            "metric": "A String", # The identifier of the Cloud Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
+            "metric": "A String", # The identifier of the Stackdriver Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
                 #
                 # For example, the following is a valid metric:
                 # compute.googleapis.com/instance/network/received_bytes_count
-                #
-                #
                 # The following is not a valid metric because it does not increase or decrease based on usage:
                 # compute.googleapis.com/instance/cpu/reserved_cores
-            "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Cloud Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
+            "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
             "utilizationTarget": 3.14, # Target value of the metric which autoscaler should maintain. Must be a positive value.
           },
         ],
         "cpuUtilization": { # CPU utilization policy. # Defines the CPU utilization policy that allows the autoscaler to scale based on the average CPU utilization of a managed instance group.
-          "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.8.
+          "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.6.
               #
               # If the CPU level is below the target utilization, the autoscaler scales down the number of instances until it reaches the minimum number of instances you specified or until the average CPU of your instances reaches the target utilization.
               #
@@ -334,10 +337,11 @@ Args:
 { # Represents an Autoscaler resource. Autoscalers allow you to automatically scale virtual machine instances in managed instance groups according to an autoscaling policy that you define. For more information, read Autoscaling Groups of Instances.
     "kind": "compute#autoscaler", # [Output Only] Type of the resource. Always compute#autoscaler for autoscalers.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-    "zone": "A String", # [Output Only] URL of the zone where the instance group resides.
+    "zone": "A String", # [Output Only] URL of the zone where the instance group resides (for autoscalers living in zonal scope).
+    "region": "A String", # [Output Only] URL of the region where the instance group resides (for autoscalers living in regional scope).
     "autoscalingPolicy": { # Cloud Autoscaler policy. # The configuration parameters for the autoscaling algorithm. You can define one or more of the policies for an autoscaler: cpuUtilization, customMetricUtilizations, and loadBalancingUtilization.
         # 
-        # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.8 or 80%.
+        # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.6 or 60%.
       "maxNumReplicas": 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
       "coolDownPeriodSec": 42, # The number of seconds that the autoscaler should wait before it starts collecting information from a new instance. This prevents the autoscaler from collecting information when the instance is initializing, during which the collected usage would not be reliable. The default time autoscaler waits is 60 seconds.
           #
@@ -347,20 +351,18 @@ Args:
       },
       "customMetricUtilizations": [ # Configuration parameters of autoscaling based on a custom metric.
         { # Custom utilization metric policy.
-          "metric": "A String", # The identifier of the Cloud Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
+          "metric": "A String", # The identifier of the Stackdriver Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
               #
               # For example, the following is a valid metric:
               # compute.googleapis.com/instance/network/received_bytes_count
-              #
-              #
               # The following is not a valid metric because it does not increase or decrease based on usage:
               # compute.googleapis.com/instance/cpu/reserved_cores
-          "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Cloud Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
+          "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
           "utilizationTarget": 3.14, # Target value of the metric which autoscaler should maintain. Must be a positive value.
         },
       ],
       "cpuUtilization": { # CPU utilization policy. # Defines the CPU utilization policy that allows the autoscaler to scale based on the average CPU utilization of a managed instance group.
-        "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.8.
+        "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.6.
             #
             # If the CPU level is below the target utilization, the autoscaler scales down the number of instances until it reaches the minimum number of instances you specified or until the average CPU of your instances reaches the target utilization.
             #
@@ -422,17 +424,22 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(project, zone, maxResults=None, pageToken=None, filter=None)</code>
+    <code class="details" id="list">list(project, zone, orderBy=None, maxResults=None, pageToken=None, filter=None)</code>
   <pre>Retrieves a list of autoscalers contained within the specified zone.
 
 Args:
   project: string, Project ID for this request. (required)
   zone: string, Name of the zone for this request. (required)
+  orderBy: string, Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name.
+
+You can also sort results in descending order based on the creation timestamp using orderBy="creationTimestamp desc". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.
+
+Currently, only sorting by name or creationTimestamp desc is supported.
   maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
   filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
@@ -441,9 +448,9 @@ The field_name is the name of the field you want to compare. Only atomic field t
 
 For example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.
 
-Compute Engine Beta API Only: When filtering in the Beta API, you can also filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
+You can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
 
-The Beta API also supports filtering on multiple expressions by providing each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
+To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
 
 Returns:
   An object of the form:
@@ -454,10 +461,11 @@ Returns:
       { # Represents an Autoscaler resource. Autoscalers allow you to automatically scale virtual machine instances in managed instance groups according to an autoscaling policy that you define. For more information, read Autoscaling Groups of Instances.
           "kind": "compute#autoscaler", # [Output Only] Type of the resource. Always compute#autoscaler for autoscalers.
           "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-          "zone": "A String", # [Output Only] URL of the zone where the instance group resides.
+          "zone": "A String", # [Output Only] URL of the zone where the instance group resides (for autoscalers living in zonal scope).
+          "region": "A String", # [Output Only] URL of the region where the instance group resides (for autoscalers living in regional scope).
           "autoscalingPolicy": { # Cloud Autoscaler policy. # The configuration parameters for the autoscaling algorithm. You can define one or more of the policies for an autoscaler: cpuUtilization, customMetricUtilizations, and loadBalancingUtilization.
               #
-              # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.8 or 80%.
+              # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.6 or 60%.
             "maxNumReplicas": 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
             "coolDownPeriodSec": 42, # The number of seconds that the autoscaler should wait before it starts collecting information from a new instance. This prevents the autoscaler from collecting information when the instance is initializing, during which the collected usage would not be reliable. The default time autoscaler waits is 60 seconds.
                 #
@@ -467,20 +475,18 @@ Returns:
             },
             "customMetricUtilizations": [ # Configuration parameters of autoscaling based on a custom metric.
               { # Custom utilization metric policy.
-                "metric": "A String", # The identifier of the Cloud Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
+                "metric": "A String", # The identifier of the Stackdriver Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
                     #
                     # For example, the following is a valid metric:
                     # compute.googleapis.com/instance/network/received_bytes_count
-                    #
-                    #
                     # The following is not a valid metric because it does not increase or decrease based on usage:
                     # compute.googleapis.com/instance/cpu/reserved_cores
-                "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Cloud Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
+                "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
                 "utilizationTarget": 3.14, # Target value of the metric which autoscaler should maintain. Must be a positive value.
               },
             ],
             "cpuUtilization": { # CPU utilization policy. # Defines the CPU utilization policy that allows the autoscaler to scale based on the average CPU utilization of a managed instance group.
-              "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.8.
+              "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.6.
                   #
                   # If the CPU level is below the target utilization, the autoscaler scales down the number of instances until it reaches the minimum number of instances you specified or until the average CPU of your instances reaches the target utilization.
                   #
@@ -529,10 +535,11 @@ Args:
 { # Represents an Autoscaler resource. Autoscalers allow you to automatically scale virtual machine instances in managed instance groups according to an autoscaling policy that you define. For more information, read Autoscaling Groups of Instances.
     "kind": "compute#autoscaler", # [Output Only] Type of the resource. Always compute#autoscaler for autoscalers.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-    "zone": "A String", # [Output Only] URL of the zone where the instance group resides.
+    "zone": "A String", # [Output Only] URL of the zone where the instance group resides (for autoscalers living in zonal scope).
+    "region": "A String", # [Output Only] URL of the region where the instance group resides (for autoscalers living in regional scope).
     "autoscalingPolicy": { # Cloud Autoscaler policy. # The configuration parameters for the autoscaling algorithm. You can define one or more of the policies for an autoscaler: cpuUtilization, customMetricUtilizations, and loadBalancingUtilization.
         # 
-        # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.8 or 80%.
+        # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.6 or 60%.
       "maxNumReplicas": 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
       "coolDownPeriodSec": 42, # The number of seconds that the autoscaler should wait before it starts collecting information from a new instance. This prevents the autoscaler from collecting information when the instance is initializing, during which the collected usage would not be reliable. The default time autoscaler waits is 60 seconds.
           #
@@ -542,20 +549,18 @@ Args:
       },
       "customMetricUtilizations": [ # Configuration parameters of autoscaling based on a custom metric.
         { # Custom utilization metric policy.
-          "metric": "A String", # The identifier of the Cloud Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
+          "metric": "A String", # The identifier of the Stackdriver Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
               #
               # For example, the following is a valid metric:
               # compute.googleapis.com/instance/network/received_bytes_count
-              #
-              #
               # The following is not a valid metric because it does not increase or decrease based on usage:
               # compute.googleapis.com/instance/cpu/reserved_cores
-          "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Cloud Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
+          "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
           "utilizationTarget": 3.14, # Target value of the metric which autoscaler should maintain. Must be a positive value.
         },
       ],
       "cpuUtilization": { # CPU utilization policy. # Defines the CPU utilization policy that allows the autoscaler to scale based on the average CPU utilization of a managed instance group.
-        "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.8.
+        "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.6.
             #
             # If the CPU level is below the target utilization, the autoscaler scales down the number of instances until it reaches the minimum number of instances you specified or until the average CPU of your instances reaches the target utilization.
             #
@@ -617,7 +622,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -634,10 +639,11 @@ Args:
 { # Represents an Autoscaler resource. Autoscalers allow you to automatically scale virtual machine instances in managed instance groups according to an autoscaling policy that you define. For more information, read Autoscaling Groups of Instances.
     "kind": "compute#autoscaler", # [Output Only] Type of the resource. Always compute#autoscaler for autoscalers.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-    "zone": "A String", # [Output Only] URL of the zone where the instance group resides.
+    "zone": "A String", # [Output Only] URL of the zone where the instance group resides (for autoscalers living in zonal scope).
+    "region": "A String", # [Output Only] URL of the region where the instance group resides (for autoscalers living in regional scope).
     "autoscalingPolicy": { # Cloud Autoscaler policy. # The configuration parameters for the autoscaling algorithm. You can define one or more of the policies for an autoscaler: cpuUtilization, customMetricUtilizations, and loadBalancingUtilization.
         # 
-        # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.8 or 80%.
+        # If none of these are specified, the default will be to autoscale based on cpuUtilization to 0.6 or 60%.
       "maxNumReplicas": 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
       "coolDownPeriodSec": 42, # The number of seconds that the autoscaler should wait before it starts collecting information from a new instance. This prevents the autoscaler from collecting information when the instance is initializing, during which the collected usage would not be reliable. The default time autoscaler waits is 60 seconds.
           #
@@ -647,20 +653,18 @@ Args:
       },
       "customMetricUtilizations": [ # Configuration parameters of autoscaling based on a custom metric.
         { # Custom utilization metric policy.
-          "metric": "A String", # The identifier of the Cloud Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
+          "metric": "A String", # The identifier of the Stackdriver Monitoring metric. The metric cannot have negative values and should be a utilization metric, which means that the number of virtual machines handling requests should increase or decrease proportionally to the metric. The metric must also have a label of compute.googleapis.com/resource_id with the value of the instance's unique ID, although this alone does not guarantee that the metric is valid.
               #
               # For example, the following is a valid metric:
               # compute.googleapis.com/instance/network/received_bytes_count
-              #
-              #
               # The following is not a valid metric because it does not increase or decrease based on usage:
               # compute.googleapis.com/instance/cpu/reserved_cores
-          "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Cloud Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
+          "utilizationTargetType": "A String", # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE. If not specified, the default is GAUGE.
           "utilizationTarget": 3.14, # Target value of the metric which autoscaler should maintain. Must be a positive value.
         },
       ],
       "cpuUtilization": { # CPU utilization policy. # Defines the CPU utilization policy that allows the autoscaler to scale based on the average CPU utilization of a managed instance group.
-        "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.8.
+        "utilizationTarget": 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.6.
             #
             # If the CPU level is below the target utilization, the autoscaler scales down the number of instances until it reaches the minimum number of instances you specified or until the average CPU of your instances reaches the target utilization.
             #
@@ -723,7 +727,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 

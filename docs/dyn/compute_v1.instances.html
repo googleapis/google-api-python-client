@@ -78,7 +78,7 @@ h1, h2, h3 {
   <code><a href="#addAccessConfig">addAccessConfig(project, zone, instance, networkInterface, body)</a></code></p>
 <p class="firstline">Adds an access config to an instance's network interface.</p>
 <p class="toc_element">
-  <code><a href="#aggregatedList">aggregatedList(project, maxResults=None, pageToken=None, filter=None)</a></code></p>
+  <code><a href="#aggregatedList">aggregatedList(project, orderBy=None, maxResults=None, pageToken=None, filter=None)</a></code></p>
 <p class="firstline">Retrieves aggregated list of instances.</p>
 <p class="toc_element">
   <code><a href="#aggregatedList_next">aggregatedList_next(previous_request, previous_response)</a></code></p>
@@ -105,7 +105,7 @@ h1, h2, h3 {
   <code><a href="#insert">insert(project, zone, body)</a></code></p>
 <p class="firstline">Creates an instance resource in the specified project using the data included in the request.</p>
 <p class="toc_element">
-  <code><a href="#list">list(project, zone, maxResults=None, pageToken=None, filter=None)</a></code></p>
+  <code><a href="#list">list(project, zone, orderBy=None, maxResults=None, pageToken=None, filter=None)</a></code></p>
 <p class="firstline">Retrieves the list of instances contained within the specified zone.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -132,6 +132,9 @@ h1, h2, h3 {
   <code><a href="#start">start(project, zone, instance)</a></code></p>
 <p class="firstline">Starts an instance that was stopped using the using the instances().stop method. For more information, see Restart an instance.</p>
 <p class="toc_element">
+  <code><a href="#startWithEncryptionKey">startWithEncryptionKey(project, zone, instance, body)</a></code></p>
+<p class="firstline">Starts an instance that was stopped using the using the instances().stop method. For more information, see Restart an instance.</p>
+<p class="toc_element">
   <code><a href="#stop">stop(project, zone, instance)</a></code></p>
 <p class="firstline">Stops a running instance, shutting it down cleanly, and allows you to restart the instance at a later time. Stopped instances do not incur per-minute, virtual machine usage charges while they are stopped, but any resources that the virtual machine is using, such as persistent disks and static IP addresses, will continue to be charged until they are deleted. For more information, see Stopping an instance.</p>
 <h3>Method Details</h3>
@@ -147,7 +150,7 @@ Args:
   body: object, The request body. (required)
     The object takes the form of:
 
-{ # An access configuration attached to an instance's network interface.
+{ # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
   "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
   "type": "ONE_TO_ONE_NAT", # The type of configuration. The default and only option is ONE_TO_ONE_NAT.
   "name": "A String", # Name of this access configuration.
@@ -201,16 +204,21 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="aggregatedList">aggregatedList(project, maxResults=None, pageToken=None, filter=None)</code>
+    <code class="details" id="aggregatedList">aggregatedList(project, orderBy=None, maxResults=None, pageToken=None, filter=None)</code>
   <pre>Retrieves aggregated list of instances.
 
 Args:
   project: string, Project ID for this request. (required)
+  orderBy: string, Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name.
+
+You can also sort results in descending order based on the creation timestamp using orderBy="creationTimestamp desc". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.
+
+Currently, only sorting by name or creationTimestamp desc is supported.
   maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
   filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
@@ -219,9 +227,9 @@ The field_name is the name of the field you want to compare. Only atomic field t
 
 For example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.
 
-Compute Engine Beta API Only: When filtering in the Beta API, you can also filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
+You can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
 
-The Beta API also supports filtering on multiple expressions by providing each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
+To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
 
 Returns:
   An object of the form:
@@ -233,7 +241,7 @@ Returns:
         "instances": [ # [Output Only] List of instances contained in this scope.
           { # An Instance resource.
             "cpuPlatform": "A String", # [Output Only] The CPU platform used by this instance.
-            "status": "A String", # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, and TERMINATED.
+            "status": "A String", # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, SUSPENDING, SUSPENDED, and TERMINATED.
             "kind": "compute#instance", # [Output Only] Type of the resource. Always compute#instance for instances.
             "canIpForward": True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
             "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
@@ -248,6 +256,18 @@ Returns:
             },
             "disks": [ # Array of disks associated with this instance. Persistent disks must be created before you can assign them.
               { # An instance-attached disk resource.
+                "diskEncryptionKey": { # Represents a customer-supplied encryption key # Encrypts or decrypts a disk using a customer-supplied encryption key.
+                    #
+                    # If you are creating a new disk, this field encrypts the new disk using an encryption key that you provide. If you are attaching an existing disk that is already encrypted, this field decrypts the disk using the customer-supplied encryption key.
+                    #
+                    # If you encrypt a disk using a customer-supplied key, you must provide the same key again when you attempt to use this resource at a later time. For example, you must provide the key when you create a snapshot or an image from the disk or when you attach the disk to a virtual machine instance.
+                    #
+                    # If you do not provide an encryption key, then the disk will be encrypted using an automatically generated key and you do not need to provide a key to use the disk later.
+                    #
+                    # Instance templates do not store customer-supplied encryption keys, so you cannot use your own keys to encrypt disks in a managed instance group.
+                  "rawKey": "A String", # Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource.
+                  "sha256": "A String", # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
+                },
                 "deviceName": "A String", # Specifies a unique device name of your choice that is reflected into the /dev/disk/by-id/google-* tree of a Linux operating system running within the instance. This name can be used to reference the device for mounting, resizing, and so on, from within the instance.
                     #
                     # If not specified, the server chooses a default device name to apply to this disk, in the form persistent-disks-x, where x is a number assigned by Google Compute Engine. This field is only applicable for persistent disks.
@@ -257,6 +277,12 @@ Returns:
                     # This property is mutually exclusive with the source property; you can only define one or the other, but not both.
                     #
                     # This property is mutually exclusive with the source property; you can only define one or the other, but not both.
+                  "sourceImageEncryptionKey": { # Represents a customer-supplied encryption key # The customer-supplied encryption key of the source image. Required if the source image is protected by a customer-supplied encryption key.
+                      #
+                      # Instance templates do not store customer-supplied encryption keys, so you cannot create disks for instances in a managed instance group if the source images are encrypted with your own keys.
+                    "rawKey": "A String", # Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource.
+                    "sha256": "A String", # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
+                  },
                   "diskSizeGb": "A String", # Specifies the size of the disk in base-2 GB.
                   "diskName": "A String", # Specifies the disk name. If not specified, the default is to use the name of the instance.
                   "sourceImage": "A String", # The source image used to create this disk. If the source image is deleted, this field will not be set.
@@ -283,7 +309,7 @@ Returns:
                       # Other values include pd-ssd and local-ssd. If you define this field, you can provide either the full or partial URL. For example, the following are valid values:
                       # - https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/diskType
                       # - projects/project/zones/zone/diskTypes/diskType
-                      # - zones/zone/diskTypes/diskType
+                      # - zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this is the name of the disk type, not URL.
                 },
                 "autoDelete": True or False, # Specifies whether the disk will be auto-deleted when the instance is deleted (but not when the disk is detached from the instance).
                 "index": 42, # Assigns a zero-based index to this disk, where 0 is reserved for the boot disk. For example, if you have many disks attached to an instance, each disk would have a unique index number. If not specified, the server will choose an appropriate value.
@@ -294,7 +320,7 @@ Returns:
                 "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
                 "interface": "A String", # Specifies the disk interface to use for attaching this disk, which is either SCSI or NVME. The default is SCSI. Persistent disks must always use SCSI and the request will fail if you attempt to attach a persistent disk in any other format than SCSI. Local SSDs can use either NVME or SCSI. For performance characteristics of SCSI over NVMe, see Local SSD performance.
                 "type": "A String", # Specifies the type of the disk, either SCRATCH or PERSISTENT. If not specified, the default is PERSISTENT.
-                "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks.
+                "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks. Note that for InstanceTemplate, it is just disk name, not URL for the disk.
               },
             ],
             "name": "A String", # The name of the resource, provided by the client when initially creating the resource. The resource name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
@@ -315,7 +341,7 @@ Returns:
                 # For example: zones/us-central1-f/machineTypes/custom-4-5120
                 #
                 # For a full list of restrictions, read the Specifications for custom machine types.
-            "serviceAccounts": [ # A list of service accounts, with their specified scopes, authorized for this instance. Service accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Authenticating from Google Compute Engine for more information.
+            "serviceAccounts": [ # A list of service accounts, with their specified scopes, authorized for this instance. Service accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Service Accounts for more information.
               { # A service account.
                 "scopes": [ # The list of scopes to be made available for this service account.
                   "A String",
@@ -323,10 +349,10 @@ Returns:
                 "email": "A String", # Email address of the service account.
               },
             ],
-            "networkInterfaces": [ # An array of configurations for this interface. This specifies how this interface is configured to interact with other network services, such as connecting to the internet.
+            "networkInterfaces": [ # An array of configurations for this interface. This specifies how this interface is configured to interact with other network services, such as connecting to the internet. Only one interface is supported per instance.
               { # A network interface resource attached to an instance.
-                "accessConfigs": [ # An array of configurations for this interface. Currently, ONE_TO_ONE_NAT is the only access config supported. If there are no accessConfigs specified, then this instance will have no external internet access.
-                  { # An access configuration attached to an instance's network interface.
+                "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
+                  { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
                     "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
                     "type": "ONE_TO_ONE_NAT", # The type of configuration. The default and only option is ONE_TO_ONE_NAT.
                     "name": "A String", # Name of this access configuration.
@@ -408,6 +434,18 @@ Args:
     The object takes the form of:
 
 { # An instance-attached disk resource.
+  "diskEncryptionKey": { # Represents a customer-supplied encryption key # Encrypts or decrypts a disk using a customer-supplied encryption key.
+      # 
+      # If you are creating a new disk, this field encrypts the new disk using an encryption key that you provide. If you are attaching an existing disk that is already encrypted, this field decrypts the disk using the customer-supplied encryption key.
+      # 
+      # If you encrypt a disk using a customer-supplied key, you must provide the same key again when you attempt to use this resource at a later time. For example, you must provide the key when you create a snapshot or an image from the disk or when you attach the disk to a virtual machine instance.
+      # 
+      # If you do not provide an encryption key, then the disk will be encrypted using an automatically generated key and you do not need to provide a key to use the disk later.
+      # 
+      # Instance templates do not store customer-supplied encryption keys, so you cannot use your own keys to encrypt disks in a managed instance group.
+    "rawKey": "A String", # Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource.
+    "sha256": "A String", # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
+  },
   "deviceName": "A String", # Specifies a unique device name of your choice that is reflected into the /dev/disk/by-id/google-* tree of a Linux operating system running within the instance. This name can be used to reference the device for mounting, resizing, and so on, from within the instance.
       # 
       # If not specified, the server chooses a default device name to apply to this disk, in the form persistent-disks-x, where x is a number assigned by Google Compute Engine. This field is only applicable for persistent disks.
@@ -417,6 +455,12 @@ Args:
       # This property is mutually exclusive with the source property; you can only define one or the other, but not both.
       #
       # This property is mutually exclusive with the source property; you can only define one or the other, but not both.
+    "sourceImageEncryptionKey": { # Represents a customer-supplied encryption key # The customer-supplied encryption key of the source image. Required if the source image is protected by a customer-supplied encryption key.
+        #
+        # Instance templates do not store customer-supplied encryption keys, so you cannot create disks for instances in a managed instance group if the source images are encrypted with your own keys.
+      "rawKey": "A String", # Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource.
+      "sha256": "A String", # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
+    },
     "diskSizeGb": "A String", # Specifies the size of the disk in base-2 GB.
     "diskName": "A String", # Specifies the disk name. If not specified, the default is to use the name of the instance.
     "sourceImage": "A String", # The source image used to create this disk. If the source image is deleted, this field will not be set.
@@ -443,7 +487,7 @@ Args:
         # Other values include pd-ssd and local-ssd. If you define this field, you can provide either the full or partial URL. For example, the following are valid values:
         # - https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/diskType
         # - projects/project/zones/zone/diskTypes/diskType
-        # - zones/zone/diskTypes/diskType
+        # - zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this is the name of the disk type, not URL.
   },
   "autoDelete": True or False, # Specifies whether the disk will be auto-deleted when the instance is deleted (but not when the disk is detached from the instance).
   "index": 42, # Assigns a zero-based index to this disk, where 0 is reserved for the boot disk. For example, if you have many disks attached to an instance, each disk would have a unique index number. If not specified, the server will choose an appropriate value.
@@ -454,7 +498,7 @@ Args:
   "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
   "interface": "A String", # Specifies the disk interface to use for attaching this disk, which is either SCSI or NVME. The default is SCSI. Persistent disks must always use SCSI and the request will fail if you attempt to attach a persistent disk in any other format than SCSI. Local SSDs can use either NVME or SCSI. For performance characteristics of SCSI over NVMe, see Local SSD performance.
   "type": "A String", # Specifies the type of the disk, either SCRATCH or PERSISTENT. If not specified, the default is PERSISTENT.
-  "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks.
+  "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks. Note that for InstanceTemplate, it is just disk name, not URL for the disk.
 }
 
 
@@ -504,7 +548,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -563,7 +607,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -624,7 +668,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -684,7 +728,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -702,7 +746,7 @@ Returns:
 
     { # An Instance resource.
     "cpuPlatform": "A String", # [Output Only] The CPU platform used by this instance.
-    "status": "A String", # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, and TERMINATED.
+    "status": "A String", # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, SUSPENDING, SUSPENDED, and TERMINATED.
     "kind": "compute#instance", # [Output Only] Type of the resource. Always compute#instance for instances.
     "canIpForward": True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
@@ -717,6 +761,18 @@ Returns:
     },
     "disks": [ # Array of disks associated with this instance. Persistent disks must be created before you can assign them.
       { # An instance-attached disk resource.
+        "diskEncryptionKey": { # Represents a customer-supplied encryption key # Encrypts or decrypts a disk using a customer-supplied encryption key.
+            #
+            # If you are creating a new disk, this field encrypts the new disk using an encryption key that you provide. If you are attaching an existing disk that is already encrypted, this field decrypts the disk using the customer-supplied encryption key.
+            #
+            # If you encrypt a disk using a customer-supplied key, you must provide the same key again when you attempt to use this resource at a later time. For example, you must provide the key when you create a snapshot or an image from the disk or when you attach the disk to a virtual machine instance.
+            #
+            # If you do not provide an encryption key, then the disk will be encrypted using an automatically generated key and you do not need to provide a key to use the disk later.
+            #
+            # Instance templates do not store customer-supplied encryption keys, so you cannot use your own keys to encrypt disks in a managed instance group.
+          "rawKey": "A String", # Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource.
+          "sha256": "A String", # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
+        },
         "deviceName": "A String", # Specifies a unique device name of your choice that is reflected into the /dev/disk/by-id/google-* tree of a Linux operating system running within the instance. This name can be used to reference the device for mounting, resizing, and so on, from within the instance.
             #
             # If not specified, the server chooses a default device name to apply to this disk, in the form persistent-disks-x, where x is a number assigned by Google Compute Engine. This field is only applicable for persistent disks.
@@ -726,6 +782,12 @@ Returns:
             # This property is mutually exclusive with the source property; you can only define one or the other, but not both.
             #
             # This property is mutually exclusive with the source property; you can only define one or the other, but not both.
+          "sourceImageEncryptionKey": { # Represents a customer-supplied encryption key # The customer-supplied encryption key of the source image. Required if the source image is protected by a customer-supplied encryption key.
+              #
+              # Instance templates do not store customer-supplied encryption keys, so you cannot create disks for instances in a managed instance group if the source images are encrypted with your own keys.
+            "rawKey": "A String", # Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource.
+            "sha256": "A String", # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
+          },
           "diskSizeGb": "A String", # Specifies the size of the disk in base-2 GB.
           "diskName": "A String", # Specifies the disk name. If not specified, the default is to use the name of the instance.
           "sourceImage": "A String", # The source image used to create this disk. If the source image is deleted, this field will not be set.
@@ -752,7 +814,7 @@ Returns:
               # Other values include pd-ssd and local-ssd. If you define this field, you can provide either the full or partial URL. For example, the following are valid values:
               # - https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/diskType
               # - projects/project/zones/zone/diskTypes/diskType
-              # - zones/zone/diskTypes/diskType
+              # - zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this is the name of the disk type, not URL.
         },
         "autoDelete": True or False, # Specifies whether the disk will be auto-deleted when the instance is deleted (but not when the disk is detached from the instance).
         "index": 42, # Assigns a zero-based index to this disk, where 0 is reserved for the boot disk. For example, if you have many disks attached to an instance, each disk would have a unique index number. If not specified, the server will choose an appropriate value.
@@ -763,7 +825,7 @@ Returns:
         "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
         "interface": "A String", # Specifies the disk interface to use for attaching this disk, which is either SCSI or NVME. The default is SCSI. Persistent disks must always use SCSI and the request will fail if you attempt to attach a persistent disk in any other format than SCSI. Local SSDs can use either NVME or SCSI. For performance characteristics of SCSI over NVMe, see Local SSD performance.
         "type": "A String", # Specifies the type of the disk, either SCRATCH or PERSISTENT. If not specified, the default is PERSISTENT.
-        "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks.
+        "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks. Note that for InstanceTemplate, it is just disk name, not URL for the disk.
       },
     ],
     "name": "A String", # The name of the resource, provided by the client when initially creating the resource. The resource name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
@@ -784,7 +846,7 @@ Returns:
         # For example: zones/us-central1-f/machineTypes/custom-4-5120
         #
         # For a full list of restrictions, read the Specifications for custom machine types.
-    "serviceAccounts": [ # A list of service accounts, with their specified scopes, authorized for this instance. Service accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Authenticating from Google Compute Engine for more information.
+    "serviceAccounts": [ # A list of service accounts, with their specified scopes, authorized for this instance. Service accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Service Accounts for more information.
       { # A service account.
         "scopes": [ # The list of scopes to be made available for this service account.
           "A String",
@@ -792,10 +854,10 @@ Returns:
         "email": "A String", # Email address of the service account.
       },
     ],
-    "networkInterfaces": [ # An array of configurations for this interface. This specifies how this interface is configured to interact with other network services, such as connecting to the internet.
+    "networkInterfaces": [ # An array of configurations for this interface. This specifies how this interface is configured to interact with other network services, such as connecting to the internet. Only one interface is supported per instance.
       { # A network interface resource attached to an instance.
-        "accessConfigs": [ # An array of configurations for this interface. Currently, ONE_TO_ONE_NAT is the only access config supported. If there are no accessConfigs specified, then this instance will have no external internet access.
-          { # An access configuration attached to an instance's network interface.
+        "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
+          { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
             "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
             "type": "ONE_TO_ONE_NAT", # The type of configuration. The default and only option is ONE_TO_ONE_NAT.
             "name": "A String", # Name of this access configuration.
@@ -848,7 +910,7 @@ Returns:
 
     { # An instance's serial console output.
     "kind": "compute#serialPortOutput", # [Output Only] Type of the resource. Always compute#serialPortOutput for serial port output.
-    "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
+    "selfLink": "A String", # [Output Only] Server-defined URL for this resource.
     "contents": "A String", # [Output Only] The contents of the console output.
   }</pre>
 </div>
@@ -865,7 +927,7 @@ Args:
 
 { # An Instance resource.
   "cpuPlatform": "A String", # [Output Only] The CPU platform used by this instance.
-  "status": "A String", # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, and TERMINATED.
+  "status": "A String", # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, SUSPENDING, SUSPENDED, and TERMINATED.
   "kind": "compute#instance", # [Output Only] Type of the resource. Always compute#instance for instances.
   "canIpForward": True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
   "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
@@ -880,6 +942,18 @@ Args:
   },
   "disks": [ # Array of disks associated with this instance. Persistent disks must be created before you can assign them.
     { # An instance-attached disk resource.
+      "diskEncryptionKey": { # Represents a customer-supplied encryption key # Encrypts or decrypts a disk using a customer-supplied encryption key.
+          #
+          # If you are creating a new disk, this field encrypts the new disk using an encryption key that you provide. If you are attaching an existing disk that is already encrypted, this field decrypts the disk using the customer-supplied encryption key.
+          #
+          # If you encrypt a disk using a customer-supplied key, you must provide the same key again when you attempt to use this resource at a later time. For example, you must provide the key when you create a snapshot or an image from the disk or when you attach the disk to a virtual machine instance.
+          #
+          # If you do not provide an encryption key, then the disk will be encrypted using an automatically generated key and you do not need to provide a key to use the disk later.
+          #
+          # Instance templates do not store customer-supplied encryption keys, so you cannot use your own keys to encrypt disks in a managed instance group.
+        "rawKey": "A String", # Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource.
+        "sha256": "A String", # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
+      },
       "deviceName": "A String", # Specifies a unique device name of your choice that is reflected into the /dev/disk/by-id/google-* tree of a Linux operating system running within the instance. This name can be used to reference the device for mounting, resizing, and so on, from within the instance.
           #
           # If not specified, the server chooses a default device name to apply to this disk, in the form persistent-disks-x, where x is a number assigned by Google Compute Engine. This field is only applicable for persistent disks.
@@ -889,6 +963,12 @@ Args:
           # This property is mutually exclusive with the source property; you can only define one or the other, but not both.
           #
           # This property is mutually exclusive with the source property; you can only define one or the other, but not both.
+        "sourceImageEncryptionKey": { # Represents a customer-supplied encryption key # The customer-supplied encryption key of the source image. Required if the source image is protected by a customer-supplied encryption key.
+            #
+            # Instance templates do not store customer-supplied encryption keys, so you cannot create disks for instances in a managed instance group if the source images are encrypted with your own keys.
+          "rawKey": "A String", # Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource.
+          "sha256": "A String", # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
+        },
         "diskSizeGb": "A String", # Specifies the size of the disk in base-2 GB.
         "diskName": "A String", # Specifies the disk name. If not specified, the default is to use the name of the instance.
         "sourceImage": "A String", # The source image used to create this disk. If the source image is deleted, this field will not be set.
@@ -915,7 +995,7 @@ Args:
             # Other values include pd-ssd and local-ssd. If you define this field, you can provide either the full or partial URL. For example, the following are valid values:
             # - https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/diskType
             # - projects/project/zones/zone/diskTypes/diskType
-            # - zones/zone/diskTypes/diskType
+            # - zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this is the name of the disk type, not URL.
       },
       "autoDelete": True or False, # Specifies whether the disk will be auto-deleted when the instance is deleted (but not when the disk is detached from the instance).
       "index": 42, # Assigns a zero-based index to this disk, where 0 is reserved for the boot disk. For example, if you have many disks attached to an instance, each disk would have a unique index number. If not specified, the server will choose an appropriate value.
@@ -926,7 +1006,7 @@ Args:
       "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
       "interface": "A String", # Specifies the disk interface to use for attaching this disk, which is either SCSI or NVME. The default is SCSI. Persistent disks must always use SCSI and the request will fail if you attempt to attach a persistent disk in any other format than SCSI. Local SSDs can use either NVME or SCSI. For performance characteristics of SCSI over NVMe, see Local SSD performance.
       "type": "A String", # Specifies the type of the disk, either SCRATCH or PERSISTENT. If not specified, the default is PERSISTENT.
-      "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks.
+      "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks. Note that for InstanceTemplate, it is just disk name, not URL for the disk.
     },
   ],
   "name": "A String", # The name of the resource, provided by the client when initially creating the resource. The resource name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
@@ -947,7 +1027,7 @@ Args:
       # For example: zones/us-central1-f/machineTypes/custom-4-5120
       # 
       # For a full list of restrictions, read the Specifications for custom machine types.
-  "serviceAccounts": [ # A list of service accounts, with their specified scopes, authorized for this instance. Service accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Authenticating from Google Compute Engine for more information.
+  "serviceAccounts": [ # A list of service accounts, with their specified scopes, authorized for this instance. Service accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Service Accounts for more information.
     { # A service account.
       "scopes": [ # The list of scopes to be made available for this service account.
         "A String",
@@ -955,10 +1035,10 @@ Args:
       "email": "A String", # Email address of the service account.
     },
   ],
-  "networkInterfaces": [ # An array of configurations for this interface. This specifies how this interface is configured to interact with other network services, such as connecting to the internet.
+  "networkInterfaces": [ # An array of configurations for this interface. This specifies how this interface is configured to interact with other network services, such as connecting to the internet. Only one interface is supported per instance.
     { # A network interface resource attached to an instance.
-      "accessConfigs": [ # An array of configurations for this interface. Currently, ONE_TO_ONE_NAT is the only access config supported. If there are no accessConfigs specified, then this instance will have no external internet access.
-        { # An access configuration attached to an instance's network interface.
+      "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
+        { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
           "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
           "type": "ONE_TO_ONE_NAT", # The type of configuration. The default and only option is ONE_TO_ONE_NAT.
           "name": "A String", # Name of this access configuration.
@@ -1042,17 +1122,22 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(project, zone, maxResults=None, pageToken=None, filter=None)</code>
+    <code class="details" id="list">list(project, zone, orderBy=None, maxResults=None, pageToken=None, filter=None)</code>
   <pre>Retrieves the list of instances contained within the specified zone.
 
 Args:
   project: string, Project ID for this request. (required)
   zone: string, The name of the zone for this request. (required)
+  orderBy: string, Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name.
+
+You can also sort results in descending order based on the creation timestamp using orderBy="creationTimestamp desc". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.
+
+Currently, only sorting by name or creationTimestamp desc is supported.
   maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
   filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
@@ -1061,9 +1146,9 @@ The field_name is the name of the field you want to compare. Only atomic field t
 
 For example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.
 
-Compute Engine Beta API Only: When filtering in the Beta API, you can also filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
+You can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
 
-The Beta API also supports filtering on multiple expressions by providing each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
+To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
 
 Returns:
   An object of the form:
@@ -1073,7 +1158,7 @@ Returns:
     "items": [ # [Output Only] A list of instances.
       { # An Instance resource.
         "cpuPlatform": "A String", # [Output Only] The CPU platform used by this instance.
-        "status": "A String", # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, and TERMINATED.
+        "status": "A String", # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, SUSPENDING, SUSPENDED, and TERMINATED.
         "kind": "compute#instance", # [Output Only] Type of the resource. Always compute#instance for instances.
         "canIpForward": True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
         "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
@@ -1088,6 +1173,18 @@ Returns:
         },
         "disks": [ # Array of disks associated with this instance. Persistent disks must be created before you can assign them.
           { # An instance-attached disk resource.
+            "diskEncryptionKey": { # Represents a customer-supplied encryption key # Encrypts or decrypts a disk using a customer-supplied encryption key.
+                #
+                # If you are creating a new disk, this field encrypts the new disk using an encryption key that you provide. If you are attaching an existing disk that is already encrypted, this field decrypts the disk using the customer-supplied encryption key.
+                #
+                # If you encrypt a disk using a customer-supplied key, you must provide the same key again when you attempt to use this resource at a later time. For example, you must provide the key when you create a snapshot or an image from the disk or when you attach the disk to a virtual machine instance.
+                #
+                # If you do not provide an encryption key, then the disk will be encrypted using an automatically generated key and you do not need to provide a key to use the disk later.
+                #
+                # Instance templates do not store customer-supplied encryption keys, so you cannot use your own keys to encrypt disks in a managed instance group.
+              "rawKey": "A String", # Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource.
+              "sha256": "A String", # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
+            },
             "deviceName": "A String", # Specifies a unique device name of your choice that is reflected into the /dev/disk/by-id/google-* tree of a Linux operating system running within the instance. This name can be used to reference the device for mounting, resizing, and so on, from within the instance.
                 #
                 # If not specified, the server chooses a default device name to apply to this disk, in the form persistent-disks-x, where x is a number assigned by Google Compute Engine. This field is only applicable for persistent disks.
@@ -1097,6 +1194,12 @@ Returns:
                 # This property is mutually exclusive with the source property; you can only define one or the other, but not both.
                 #
                 # This property is mutually exclusive with the source property; you can only define one or the other, but not both.
+              "sourceImageEncryptionKey": { # Represents a customer-supplied encryption key # The customer-supplied encryption key of the source image. Required if the source image is protected by a customer-supplied encryption key.
+                  #
+                  # Instance templates do not store customer-supplied encryption keys, so you cannot create disks for instances in a managed instance group if the source images are encrypted with your own keys.
+                "rawKey": "A String", # Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource.
+                "sha256": "A String", # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
+              },
               "diskSizeGb": "A String", # Specifies the size of the disk in base-2 GB.
               "diskName": "A String", # Specifies the disk name. If not specified, the default is to use the name of the instance.
               "sourceImage": "A String", # The source image used to create this disk. If the source image is deleted, this field will not be set.
@@ -1123,7 +1226,7 @@ Returns:
                   # Other values include pd-ssd and local-ssd. If you define this field, you can provide either the full or partial URL. For example, the following are valid values:
                   # - https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/diskType
                   # - projects/project/zones/zone/diskTypes/diskType
-                  # - zones/zone/diskTypes/diskType
+                  # - zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this is the name of the disk type, not URL.
             },
             "autoDelete": True or False, # Specifies whether the disk will be auto-deleted when the instance is deleted (but not when the disk is detached from the instance).
             "index": 42, # Assigns a zero-based index to this disk, where 0 is reserved for the boot disk. For example, if you have many disks attached to an instance, each disk would have a unique index number. If not specified, the server will choose an appropriate value.
@@ -1134,7 +1237,7 @@ Returns:
             "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
             "interface": "A String", # Specifies the disk interface to use for attaching this disk, which is either SCSI or NVME. The default is SCSI. Persistent disks must always use SCSI and the request will fail if you attempt to attach a persistent disk in any other format than SCSI. Local SSDs can use either NVME or SCSI. For performance characteristics of SCSI over NVMe, see Local SSD performance.
             "type": "A String", # Specifies the type of the disk, either SCRATCH or PERSISTENT. If not specified, the default is PERSISTENT.
-            "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks.
+            "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks. Note that for InstanceTemplate, it is just disk name, not URL for the disk.
           },
         ],
         "name": "A String", # The name of the resource, provided by the client when initially creating the resource. The resource name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
@@ -1155,7 +1258,7 @@ Returns:
             # For example: zones/us-central1-f/machineTypes/custom-4-5120
             #
             # For a full list of restrictions, read the Specifications for custom machine types.
-        "serviceAccounts": [ # A list of service accounts, with their specified scopes, authorized for this instance. Service accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Authenticating from Google Compute Engine for more information.
+        "serviceAccounts": [ # A list of service accounts, with their specified scopes, authorized for this instance. Service accounts generate access tokens that can be accessed through the metadata server and used to authenticate applications on the instance. See Service Accounts for more information.
           { # A service account.
             "scopes": [ # The list of scopes to be made available for this service account.
               "A String",
@@ -1163,10 +1266,10 @@ Returns:
             "email": "A String", # Email address of the service account.
           },
         ],
-        "networkInterfaces": [ # An array of configurations for this interface. This specifies how this interface is configured to interact with other network services, such as connecting to the internet.
+        "networkInterfaces": [ # An array of configurations for this interface. This specifies how this interface is configured to interact with other network services, such as connecting to the internet. Only one interface is supported per instance.
           { # A network interface resource attached to an instance.
-            "accessConfigs": [ # An array of configurations for this interface. Currently, ONE_TO_ONE_NAT is the only access config supported. If there are no accessConfigs specified, then this instance will have no external internet access.
-              { # An access configuration attached to an instance's network interface.
+            "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
+              { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
                 "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
                 "type": "ONE_TO_ONE_NAT", # The type of configuration. The default and only option is ONE_TO_ONE_NAT.
                 "name": "A String", # Name of this access configuration.
@@ -1278,7 +1381,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -1339,7 +1442,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -1405,7 +1508,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -1478,7 +1581,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -1546,7 +1649,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -1617,7 +1720,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -1676,7 +1779,85 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+  }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="startWithEncryptionKey">startWithEncryptionKey(project, zone, instance, body)</code>
+  <pre>Starts an instance that was stopped using the using the instances().stop method. For more information, see Restart an instance.
+
+Args:
+  project: string, Project ID for this request. (required)
+  zone: string, The name of the zone for this request. (required)
+  instance: string, Name of the instance resource to start. (required)
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{
+    "disks": [ # Array of disks associated with this instance that are protected with a customer-supplied encryption key.
+        # 
+        # In order to start the instance, the disk url and its corresponding key must be provided.
+        # 
+        # If the disk is not protected with a customer-supplied encryption key it should not be specified.
+      {
+        "diskEncryptionKey": { # Represents a customer-supplied encryption key # Decrypts data associated with the disk with a customer-supplied encryption key.
+          "rawKey": "A String", # Specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648 base64 to either encrypt or decrypt this resource.
+          "sha256": "A String", # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
+        },
+        "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks.
+      },
+    ],
+  }
+
+
+Returns:
+  An object of the form:
+
+    { # An Operation resource, used to manage asynchronous API requests.
+    "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
+    "clientOperationId": "A String", # [Output Only] Reserved for future use.
+    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
+    "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
+    "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
+    "operationType": "A String", # [Output Only] The type of operation, such as insert, update, or delete, and so on.
+    "httpErrorMessage": "A String", # [Output Only] If the operation fails, this field contains the HTTP error message that was returned, such as NOT FOUND.
+    "progress": 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
+    "httpErrorStatusCode": 42, # [Output Only] If the operation fails, this field contains the HTTP error status code that was returned. For example, a 404 means the resource was not found.
+    "statusMessage": "A String", # [Output Only] An optional textual description of the current status of the operation.
+    "status": "A String", # [Output Only] The status of the operation, which can be one of the following: PENDING, RUNNING, or DONE.
+    "description": "A String", # [Output Only] A textual description of the operation, which is set when the operation is created.
+    "warnings": [ # [Output Only] If warning messages are generated during processing of the operation, this field will be populated.
+      {
+        "message": "A String", # [Output Only] A human-readable description of the warning code.
+        "code": "A String", # [Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.
+        "data": [ # [Output Only] Metadata about this warning in key: value format. For example:
+            # "data": [ { "key": "scope", "value": "zones/us-east1-d" }
+          {
+            "value": "A String", # [Output Only] A warning data value corresponding to the key.
+            "key": "A String", # [Output Only] A key that provides more detail on the warning being returned. For example, for warnings where there are no results in a list request for a particular zone, this key might be scope and the key value might be the zone name. Other examples might be a key indicating a deprecated resource and a suggested replacement, or a warning about invalid network settings (for example, if an instance attempts to perform IP forwarding but is not enabled for IP forwarding).
+          },
+        ],
+      },
+    ],
+    "user": "A String", # [Output Only] User who requested the operation, for example: user@example.com.
+    "startTime": "A String", # [Output Only] The time that this operation was started by the server. This value is in RFC3339 text format.
+    "kind": "compute#operation", # [Output Only] Type of the resource. Always compute#operation for Operation resources.
+    "name": "A String", # [Output Only] Name of the resource.
+    "region": "A String", # [Output Only] The URL of the region where the operation resides. Only available when performing regional operations.
+    "error": { # [Output Only] If errors are generated during processing of the operation, this field will be populated.
+      "errors": [ # [Output Only] The array of errors encountered while processing this operation.
+        {
+          "message": "A String", # [Output Only] An optional, human-readable error message.
+          "code": "A String", # [Output Only] The error type identifier for this error.
+          "location": "A String", # [Output Only] Indicates the field in the request that caused the error. This property is optional.
+        },
+      ],
+    },
+    "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
+    "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -1735,7 +1916,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
