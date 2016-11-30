@@ -887,7 +887,7 @@ class Discovery(unittest.TestCase):
     # updated for each one.
     self.assertEquals(request.resumable_uri, 'http://upload.example.com/2')
     self.assertEquals(media_upload, request.resumable)
-    self.assertEquals(1, request.resumable_progress)
+    self.assertEquals(0, request.resumable_progress)
     
     # This next chuck call should ask for the first chuck size
     status, body = request.next_chunk(http=http)
