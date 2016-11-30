@@ -868,7 +868,7 @@ class Discovery(unittest.TestCase):
       ({'status': '200',
         'location': 'http://upload.example.com'}, ''),
       ({'status': '308',
-        'location': 'http://upload.example.com/2', ''}),
+        'location': 'http://upload.example.com/2'}, ''),
       ({'status': '308',
         'location': 'http://upload.example.com/3',
         'range': '0-12'}, ''),
