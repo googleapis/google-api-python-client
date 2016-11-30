@@ -873,6 +873,8 @@ class Discovery(unittest.TestCase):
       ({'status': '308',
         'location': 'http://upload.example.com/3',
         'range': '0-%d' % (media_upload.size() - 2)}, ''),
+      ({'status': '308',
+        'location': 'http://upload.example.com/4'}, ''),
       ({'status': '200'}, '{"foo": "bar"}'),
       ])
 
