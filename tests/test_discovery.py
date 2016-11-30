@@ -881,7 +881,7 @@ class Discovery(unittest.TestCase):
     status, body = request.next_chunk(http=http)
     self.assertEquals(None, body)
     self.assertTrue(isinstance(status, MediaUploadProgress))
-    self.assertEquals(13, status.resumable_progress)
+    self.assertEquals(0, status.resumable_progress)
 
     # Two requests should have been made and the resumable_uri should have been
     # updated for each one.
@@ -889,12 +889,13 @@ class Discovery(unittest.TestCase):
     self.assertEquals(media_upload, request.resumable)
     self.assertEquals(0, request.resumable_progress)
     
-    # This next chuck call should ask for the first chuck size
+    # This next chuck call should upload the first chunk
     status, body = request.next_chunk(http=http)
     self.assertEquals(request.resumable_uri, 'http://upload.example.com/3')
     self.assertEquals(media_upload, request.resumable)
     self.assertEquals(13, request.resumable_progress)
 
+    # This call will upload the next chunk
     status, body = request.next_chunk(http=http)
     self.assertEquals(request.resumable_uri, 'http://upload.example.com/4')
     self.assertEquals(media_upload.size()-1, request.resumable_progress)
