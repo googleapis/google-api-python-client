@@ -18,9 +18,7 @@ See the [Developers Guide](https://developers.google.com/api-client-library/pyth
 # Python Version
 Python 2.6 or 2.7 are fully supported.
 
-Python 3.3+ is also now supported! However, this library has not yet been used
-as thoroughly with Python 3, so we'd recommend testing before deploying with
-Python 3 in production.
+Python 3.3 and 3.4 are supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions.
 
 # Third Party Libraries and Dependencies
 The following libraries will be installed when you install the client library:
