@@ -1108,6 +1108,10 @@ class BatchHttpRequest(object):
     # A map of id(Credentials) that have been refreshed.
     self._refreshed_credentials = {}
 
+    # stubs for testing
+    self._sleep = time.sleep
+    self._rand = random.random
+
   def _refresh_and_apply_credentials(self, request, http):
     """Refresh the credentials and apply to the request.
 
@@ -1370,13 +1374,16 @@ class BatchHttpRequest(object):
       self._responses[request_id] = (response, content)
 
   @util.positional(1)
-  def execute(self, http=None):
+  def execute(self, http=None, num_retries=1):
     """Execute all the requests as a single batched HTTP request.
 
     Args:
       http: httplib2.Http, an http object to be used in place of the one the
         HttpRequest request object was constructed with. If one isn't supplied
         then use a http object from the requests in this batch.
+      num_retries: number of times to retry failed (401, 429, 500) using
+        exponential backoff. 1 by default for handling 401 consistently with
+        previous version, though with additional sleep.
 
     Returns:
       None
@@ -1408,23 +1415,34 @@ class BatchHttpRequest(object):
         LOGGER.info('Attempting refresh to obtain initial access_token')
         creds.refresh(http)
 
-    self._execute(http, self._order, self._requests)
+    order = self._order
+    requests = self._requests
 
-    # Loop over all the requests and check for 401s. For each 401 request the
-    # credentials should be refreshed and then sent again in a separate batch.
-    redo_requests = {}
-    redo_order = []
+    for retry_num in range(num_retries + 1):
+      if retry_num:
+        sleep_time = self._rand() + 2 ** (retry_num - 1)
+        LOGGER.info(
+          'Sleeping %.2f seconds before retry %d of %d, batch with %d requests',
+          sleep_time, retry_num, num_retries, len(order))
+        self._sleep(sleep_time)
 
-    for request_id in self._order:
-      resp, content = self._responses[request_id]
-      if resp['status'] == '401':
-        redo_order.append(request_id)
-        request = self._requests[request_id]
-        self._refresh_and_apply_credentials(request, http)
-        redo_requests[request_id] = request
+      self._execute(http, order, requests)
 
-    if redo_requests:
-      self._execute(http, redo_order, redo_requests)
+      order = []
+      requests = {}
+      for request_id in self._order:
+        resp, content = self._responses[request_id]
+        if resp['status'] == '401':
+          order.append(request_id)
+          request = self._requests[request_id]
+          self._refresh_and_apply_credentials(request, http)
+          requests[request_id] = request
+        elif resp['status'] in ['429', '500']:
+          order.append(request_id)
+          requests[request_id] = self._requests[request_id]
+
+      if not order:
+        break
 
     # Now process all callbacks that are erroring, and raise an exception for
     # ones that return a non-2xx response? Or add extra parameter to callback

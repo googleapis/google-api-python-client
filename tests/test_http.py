@@ -632,6 +632,77 @@ ETag: "etag/sheep"\r\n\r\n{
 --batch_foobarbaz--"""
 
 
+BATCH_WITH_500_ERROR = b"""--batch_foobarbaz
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: <randomness+1>
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 14
+ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
+
+--batch_foobarbaz
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: <randomness+2>
+
+HTTP/1.1 500 Backend Error
+Content-Type: application/json
+Content-Length: 177
+ETag: "etag/sheep"\r\n\r\n{
+ "error": {
+  "errors": [
+   {
+    "domain": "global",
+    "reason": "backendError",
+    "message": "Backend Error"
+   }
+  ],
+  "code": 500,
+  "message": "Backend Error"
+ }
+}
+
+
+--batch_foobarbaz--"""
+
+
+BATCH_RETRIED_DUE_500_RESPONSE_SUCCESS = b"""--batch_foobarbaz
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: <randomness+2>
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 14
+ETag: "etag/pony"\r\n\r\n{"foo": 42}
+--batch_foobarbaz--"""
+
+
+BATCH_RETRIED_DUE_500_RESPONSE_FAILURE = b"""--batch_foobarbaz
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: <randomness+2>
+
+HTTP/1.1 500 Backend Error
+Content-Type: application/json
+Content-Length: 177
+ETag: "etag/sheep"\r\n\r\n{
+ "error": {
+  "errors": [
+   {
+    "domain": "global",
+    "reason": "backendError",
+    "message": "Backend Error"
+   }
+  ],
+  "code": 500,
+  "message": "Backend Error"
+ }
+}
+--batch_foobarbaz--"""
+
 BATCH_RESPONSE_WITH_401 = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
@@ -1079,6 +1150,61 @@ class TestBatch(unittest.TestCase):
     self.assertEqual({'baz': 'qux'}, callbacks.responses['2'])
     self.assertEqual(None, callbacks.exceptions['2'])
 
+  def test_execute_with_exponential_backoff_success(self):
+    batch = BatchHttpRequest()
+    callbacks = Callbacks()
+    batch._sleep = mock.MagicMock()
+    batch._rand = lambda: 1
+
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_WITH_500_ERROR),
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_RETRIED_DUE_500_RESPONSE_SUCCESS),
+    ])
+
+    batch.add(self.request1, callback=callbacks.f)
+    batch.add(self.request2, callback=callbacks.f)
+    batch.execute(http=http, num_retries=1)
+
+    batch._sleep.assert_called_once_with(2)
+    self.assertEquals({'baz': 'qux'}, callbacks.responses['1'])
+    self.assertEquals(None, callbacks.exceptions['1'])
+    self.assertEquals({'foo': 42}, callbacks.responses['2'])
+    self.assertEquals(None, callbacks.exceptions['2'])
+
+  def test_execute_with_exponential_backoff_failure(self):
+    batch = BatchHttpRequest()
+    callbacks = Callbacks()
+    batch._sleep = mock.MagicMock()
+    batch._rand = lambda: 1
+
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_WITH_500_ERROR),
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_RETRIED_DUE_500_RESPONSE_FAILURE),
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_RETRIED_DUE_500_RESPONSE_FAILURE),
+    ])
+
+    batch.add(self.request1, callback=callbacks.f)
+    batch.add(self.request2, callback=callbacks.f)
+    batch.execute(http=http, num_retries=2)
+
+    self.assertEquals(batch._sleep.call_count, 2)
+    self.assertEquals({'baz': 'qux'}, callbacks.responses['1'])
+    self.assertEquals(None, callbacks.exceptions['1'])
+    self.assertEqual(None, callbacks.responses['2'])
+    self.assertEqual(500, callbacks.exceptions['2'].resp.status)
+    self.assertEqual(
+      'Backend Error', callbacks.exceptions['2'].resp.reason)
+
   def test_execute_request_body(self):
     batch = BatchHttpRequest()
 
@@ -1136,6 +1262,9 @@ class TestBatch(unittest.TestCase):
     cred_1 = MockCredentials('Foo')
     cred_2 = MockCredentials('Bar')
 
+    batch._sleep = mock.MagicMock()
+    batch._rand = lambda: 1
+
     http = HttpMockSequence([
       ({'status': '200',
         'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
@@ -1158,6 +1287,7 @@ class TestBatch(unittest.TestCase):
     batch.add(self.request2, callback=callbacks.f)
     batch.execute(http=http)
 
+    batch._sleep.assert_called_once_with(2)
     self.assertEqual({'foo': 42}, callbacks.responses['1'])
     self.assertEqual(None, callbacks.exceptions['1'])
     self.assertEqual({'baz': 'qux'}, callbacks.responses['2'])
@@ -1177,6 +1307,9 @@ class TestBatch(unittest.TestCase):
     callbacks = Callbacks()
     cred_1 = MockCredentials('Foo')
     cred_2 = MockCredentials('Bar')
+
+    batch._sleep = mock.MagicMock()
+    batch._rand = lambda: 1
 
     http = HttpMockSequence([
       ({'status': '200',
@@ -1200,6 +1333,7 @@ class TestBatch(unittest.TestCase):
     batch.add(self.request2, callback=callbacks.f)
     batch.execute(http=http)
 
+    batch._sleep.assert_called_once_with(2)
     self.assertEqual(None, callbacks.responses['1'])
     self.assertEqual(401, callbacks.exceptions['1'].resp.status)
     self.assertEqual(
