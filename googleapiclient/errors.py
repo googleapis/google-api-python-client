@@ -116,6 +116,10 @@ class InvalidNotificationError(Error):
   """The channel Notification is invalid."""
   pass
 
+class ParameterRequiredError(Error):
+  """The url parameter is not present in the input message."""
+  pass
+
 class BatchError(HttpError):
   """Error occured during batch operations."""
 
