@@ -868,10 +868,12 @@ class Discovery(unittest.TestCase):
       ({'status': '200',
         'location': 'http://upload.example.com'}, ''),
       ({'status': '308',
-        'location': 'http://upload.example.com/2',
-        'range': '0-12'}, ''),
+        'location': 'http://upload.example.com/2'}, ''),
       ({'status': '308',
         'location': 'http://upload.example.com/3',
+        'range': '0-12'}, ''),
+      ({'status': '308',
+        'location': 'http://upload.example.com/4',
         'range': '0-%d' % (media_upload.size() - 2)}, ''),
       ({'status': '200'}, '{"foo": "bar"}'),
       ])
@@ -879,17 +881,23 @@ class Discovery(unittest.TestCase):
     status, body = request.next_chunk(http=http)
     self.assertEquals(None, body)
     self.assertTrue(isinstance(status, MediaUploadProgress))
-    self.assertEquals(13, status.resumable_progress)
+    self.assertEquals(0, status.resumable_progress)
 
     # Two requests should have been made and the resumable_uri should have been
     # updated for each one.
     self.assertEquals(request.resumable_uri, 'http://upload.example.com/2')
-
+    self.assertEquals(media_upload, request.resumable)
+    self.assertEquals(0, request.resumable_progress)
+    
+    # This next chuck call should upload the first chunk
+    status, body = request.next_chunk(http=http)
+    self.assertEquals(request.resumable_uri, 'http://upload.example.com/3')
     self.assertEquals(media_upload, request.resumable)
     self.assertEquals(13, request.resumable_progress)
 
+    # This call will upload the next chunk
     status, body = request.next_chunk(http=http)
-    self.assertEquals(request.resumable_uri, 'http://upload.example.com/3')
+    self.assertEquals(request.resumable_uri, 'http://upload.example.com/4')
     self.assertEquals(media_upload.size()-1, request.resumable_progress)
     self.assertEquals('{"data": {}}', request.body)
 

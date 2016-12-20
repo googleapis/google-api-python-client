@@ -996,7 +996,11 @@ class HttpRequest(object):
     elif resp.status == 308:
       self._in_error_state = False
       # A "308 Resume Incomplete" indicates we are not done.
-      self.resumable_progress = int(resp['range'].split('-')[1]) + 1
+      try:
+        self.resumable_progress = int(resp['range'].split('-')[1]) + 1
+      except KeyError:
+        # If resp doesn't contain range header, resumable progress is 0
+        self.resumable_progress = 0
       if 'location' in resp:
         self.resumable_uri = resp['location']
     else:
