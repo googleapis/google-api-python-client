@@ -41,7 +41,7 @@ def default_credentials():
     else:
         raise EnvironmentError(
             'No authentication library is available. Please install either '
-            'oauth2client or google-auth.')
+            'google-auth or oauth2client.')
 
 
 def with_scopes(credentials, scopes):
