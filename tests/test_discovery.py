@@ -41,6 +41,8 @@ import unittest2 as unittest
 
 import mock
 
+import google.auth.credentials
+import google_auth_httplib2
 from googleapiclient.discovery import _fix_up_media_upload
 from googleapiclient.discovery import _fix_up_method_description
 from googleapiclient.discovery import _fix_up_parameters
@@ -72,7 +74,7 @@ from googleapiclient.http import MediaUpload
 from googleapiclient.http import MediaUploadProgress
 from googleapiclient.http import tunnel_patch
 from oauth2client import GOOGLE_TOKEN_URI
-from oauth2client.client import OAuth2Credentials
+from oauth2client.client import OAuth2Credentials, GoogleCredentials
 
 try:
   from oauth2client import util
@@ -365,6 +367,12 @@ class DiscoveryErrors(unittest.TestCase):
       with self.assertRaises(UnknownApiNameOrVersion):
         plus = build('plus', 'v1', http=http, cache_discovery=False)
 
+  def test_credentials_and_http_mutually_exclusive(self):
+    http = HttpMock(datafile('plus.json'), {'status': '200'})
+    with self.assertRaises(ValueError):
+      build(
+        'plus', 'v1', http=http, credentials=mock.sentinel.credentials)
+
 
 class DiscoveryFromDocument(unittest.TestCase):
 
@@ -391,7 +399,8 @@ class DiscoveryFromDocument(unittest.TestCase):
   def test_building_with_optional_http(self):
     discovery = open(datafile('plus.json')).read()
     plus = build_from_document(discovery, base="https://www.googleapis.com/")
-    self.assertTrue(isinstance(plus._http, httplib2.Http))
+    self.assertIsInstance(
+      plus._http, (httplib2.Http, google_auth_httplib2.AuthorizedHttp))
 
   def test_building_with_explicit_http(self):
     http = HttpMock()
@@ -687,19 +696,28 @@ class Discovery(unittest.TestCase):
     self.assertTrue(getattr(plus, 'activities'))
     self.assertTrue(getattr(plus, 'people'))
 
-  def test_credentials(self):
-    class CredentialsMock:
-      def create_scoped_required(self):
-        return False
+  def test_oauth2client_credentials(self):
+    credentials = mock.Mock(spec=GoogleCredentials)
+    credentials.create_scoped_required.return_value = False
 
-      def authorize(self, http):
-        http.orest = True
+    discovery = open(datafile('plus.json')).read()
+    service = build_from_document(discovery, credentials=credentials)
+    self.assertEqual(service._http, credentials.authorize.return_value)
 
-    self.http = HttpMock(datafile('plus.json'), {'status': '200'})
-    build('plus', 'v1', http=self.http, credentials=None)
-    self.assertFalse(hasattr(self.http, 'orest'))
-    build('plus', 'v1', http=self.http, credentials=CredentialsMock())
-    self.assertTrue(hasattr(self.http, 'orest'))
+  def test_google_auth_credentials(self):
+    credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+    discovery = open(datafile('plus.json')).read()
+    service = build_from_document(discovery, credentials=credentials)
+
+    self.assertIsInstance(service._http, google_auth_httplib2.AuthorizedHttp)
+    self.assertEqual(service._http.credentials, credentials)
+
+  def test_no_scopes_no_credentials(self):
+    # Zoo doesn't have scopes
+    discovery = open(datafile('zoo.json')).read()
+    service = build_from_document(discovery)
+    # Should be an ordinary httplib2.Http instance and not AuthorizedHttp.
+    self.assertIsInstance(service._http, httplib2.Http)
 
   def test_full_featured(self):
     # Zoo should exercise all discovery facets

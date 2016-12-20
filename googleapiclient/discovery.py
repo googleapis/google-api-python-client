@@ -53,6 +53,7 @@ import httplib2
 import uritemplate
 
 # Local imports
+from googleapiclient import _auth
 from googleapiclient import mimeparse
 from googleapiclient.errors import HttpError
 from googleapiclient.errors import InvalidJsonError
@@ -211,15 +212,14 @@ def build(serviceName,
       'apiVersion': version
       }
 
-  if http is None:
-    http = httplib2.Http()
+  discovery_http = http if http is not None else httplib2.Http()
 
   for discovery_url in (discoveryServiceUrl, V2_DISCOVERY_URI,):
     requested_url = uritemplate.expand(discovery_url, params)
 
     try:
-      content = _retrieve_discovery_doc(requested_url, http, cache_discovery,
-                                        cache)
+      content = _retrieve_discovery_doc(
+        requested_url, discovery_http, cache_discovery, cache)
       return build_from_document(content, base=discovery_url, http=http,
           developerKey=developerKey, model=model, requestBuilder=requestBuilder,
           credentials=credentials)
@@ -322,11 +322,8 @@ def build_from_document(
     A Resource object with methods for interacting with the service.
   """
 
-  if http is None:
-    http = httplib2.Http()
-
-  # future is no longer used.
-  future = {}
+  if http is not None and credentials is not None:
+    raise ValueError('Arguments http and credentials are mutually exclusive.')
 
   if isinstance(service, six.string_types):
     service = json.loads(service)
@@ -342,31 +339,36 @@ def build_from_document(
   base = urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
 
-  if credentials:
-    # If credentials were passed in, we could have two cases:
-    # 1. the scopes were specified, in which case the given credentials
-    #    are used for authorizing the http;
-    # 2. the scopes were not provided (meaning the Application Default
-    #    Credentials are to be used). In this case, the Application Default
-    #    Credentials are built and used instead of the original credentials.
-    #    If there are no scopes found (meaning the given service requires no
-    #    authentication), there is no authorization of the http.
-    if (isinstance(credentials, GoogleCredentials) and
-        credentials.create_scoped_required()):
-      scopes = service.get('auth', {}).get('oauth2', {}).get('scopes', {})
-      if scopes:
-        credentials = credentials.create_scoped(list(scopes.keys()))
-      else:
-        # No need to authorize the http object
-        # if the service does not require authentication.
-        credentials = None
+  # If the http client is not specified, then we must construct an http client
+  # to make requests. If the service has scopes, then we also need to setup
+  # authentication.
+  if http is None:
+    # Does the service require scopes?
+    scopes = list(
+      service.get('auth', {}).get('oauth2', {}).get('scopes', {}).keys())
 
-    if credentials:
-      http = credentials.authorize(http)
+    # If so, then the we need to setup authentication.
+    if scopes:
+      # If the user didn't pass in credentials, attempt to acquire application
+      # default credentials.
+      if credentials is None:
+        credentials = _auth.default_credentials()
+
+      # The credentials need to be scoped.
+      credentials = _auth.with_scopes(credentials, scopes)
+
+      # Create an authorized http instance
+      http = _auth.authorized_http(credentials)
+
+    # If the service doesn't require scopes then there is no need for
+    # authentication.
+    else:
+      http = httplib2.Http()
 
   if model is None:
     features = service.get('features', [])
     model = JsonModel('dataWrapper' in features)
+
   return Resource(http=http, baseUrl=base, model=model,
                   developerKey=developerKey, requestBuilder=requestBuilder,
                   resourceDesc=service, rootDesc=service, schema=schema)
