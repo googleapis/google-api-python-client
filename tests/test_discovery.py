@@ -375,17 +375,22 @@ class DiscoveryErrors(unittest.TestCase):
 
 
 class DiscoveryFromDocument(unittest.TestCase):
+  MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
 
   def test_can_build_from_local_document(self):
     discovery = open(datafile('plus.json')).read()
-    plus = build_from_document(discovery, base="https://www.googleapis.com/")
+    plus = build_from_document(
+      discovery, base="https://www.googleapis.com/",
+      credentials=self.MOCK_CREDENTIALS)
     self.assertTrue(plus is not None)
     self.assertTrue(hasattr(plus, 'activities'))
 
   def test_can_build_from_local_deserialized_document(self):
     discovery = open(datafile('plus.json')).read()
     discovery = json.loads(discovery)
-    plus = build_from_document(discovery, base="https://www.googleapis.com/")
+    plus = build_from_document(
+      discovery, base="https://www.googleapis.com/",
+      credentials=self.MOCK_CREDENTIALS)
     self.assertTrue(plus is not None)
     self.assertTrue(hasattr(plus, 'activities'))
 
@@ -393,12 +398,15 @@ class DiscoveryFromDocument(unittest.TestCase):
     discovery = open(datafile('plus.json')).read()
 
     base = "https://www.example.com/"
-    plus = build_from_document(discovery, base=base)
+    plus = build_from_document(
+      discovery, base=base, credentials=self.MOCK_CREDENTIALS)
     self.assertEquals("https://www.googleapis.com/plus/v1/", plus._baseUrl)
 
   def test_building_with_optional_http(self):
     discovery = open(datafile('plus.json')).read()
-    plus = build_from_document(discovery, base="https://www.googleapis.com/")
+    plus = build_from_document(
+      discovery, base="https://www.googleapis.com/",
+      credentials=self.MOCK_CREDENTIALS)
     self.assertIsInstance(
       plus._http, (httplib2.Http, google_auth_httplib2.AuthorizedHttp))
 
