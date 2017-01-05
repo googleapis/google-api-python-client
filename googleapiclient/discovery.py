@@ -198,7 +198,8 @@ def build(serviceName,
     model: googleapiclient.Model, converts to and from the wire format.
     requestBuilder: googleapiclient.http.HttpRequest, encapsulator for an HTTP
       request.
-    credentials: oauth2client.Credentials, credentials to be used for
+    credentials: oauth2client.Credentials or
+      google.auth.credentials.Credentials, credentials to be used for
       authentication.
     cache_discovery: Boolean, whether or not to cache the discovery doc.
     cache: googleapiclient.discovery_cache.base.CacheBase, an optional
@@ -316,7 +317,9 @@ def build_from_document(
     model: Model class instance that serializes and de-serializes requests and
       responses.
     requestBuilder: Takes an http request and packages it up to be executed.
-    credentials: object, credentials to be used for authentication.
+    credentials: oauth2client.Credentials or
+      google.auth.credentials.Credentials, credentials to be used for
+      authentication.
 
   Returns:
     A Resource object with methods for interacting with the service.
