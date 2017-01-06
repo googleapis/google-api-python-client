@@ -99,7 +99,7 @@ h1, h2, h3 {
   <code><a href="#get_media">get_media(fileId, projection=None, revisionId=None, acknowledgeAbuse=None, updateViewedDate=None)</a></code></p>
 <p class="firstline">Gets a file's metadata by ID.</p>
 <p class="toc_element">
-  <code><a href="#insert">insert(body=None, media_body=None, convert=None, useContentAsIndexableText=None, visibility=None, ocrLanguage=None, ocr=None, timedTextLanguage=None, timedTextTrackName=None, pinned=None)</a></code></p>
+  <code><a href="#insert">insert(body=None, media_body=None, ocrLanguage=None, ocr=None, pinned=None, visibility=None, timedTextTrackName=None, convert=None, useContentAsIndexableText=None, media_mime_type=None, timedTextLanguage=None)</a></code></p>
 <p class="firstline">Insert a new file.</p>
 <p class="toc_element">
   <code><a href="#list">list(orderBy=None, q=None, projection=None, pageToken=None, maxResults=None, spaces=None, corpus=None)</a></code></p>
@@ -120,7 +120,7 @@ h1, h2, h3 {
   <code><a href="#untrash">untrash(fileId)</a></code></p>
 <p class="firstline">Restores a file from the trash.</p>
 <p class="toc_element">
-  <code><a href="#update">update(fileId, body=None, newRevision=None, modifiedDateBehavior=None, media_body=None, ocrLanguage=None, ocr=None, pinned=None, addParents=None, removeParents=None, updateViewedDate=None, timedTextTrackName=None, convert=None, useContentAsIndexableText=None, setModifiedDate=None, timedTextLanguage=None)</a></code></p>
+  <code><a href="#update">update(fileId, body=None, newRevision=None, modifiedDateBehavior=None, media_body=None, ocrLanguage=None, ocr=None, pinned=None, addParents=None, removeParents=None, updateViewedDate=None, timedTextTrackName=None, convert=None, useContentAsIndexableText=None, media_mime_type=None, setModifiedDate=None, timedTextLanguage=None)</a></code></p>
 <p class="firstline">Updates file metadata and/or content.</p>
 <p class="toc_element">
   <code><a href="#watch">watch(fileId, body, projection=None, revisionId=None, acknowledgeAbuse=None, updateViewedDate=None)</a></code></p>
@@ -139,21 +139,23 @@ Args:
     The object takes the form of:
 
 { # The metadata for a file.
-  "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+  "hasThumbnail": True or False, # Whether this file has a thumbnail.
   "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
   "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
   "appDataContents": True or False, # Whether this file is in the Application Data folder.
-  "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+  "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
   "labels": { # A group of labels for the file.
     "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-    "hidden": True or False, # Deprecated.
-    "viewed": True or False, # Whether this file has been viewed by this user.
-    "starred": True or False, # Whether this file is starred by the user.
+    "modified": True or False, # Whether the file has been modified by this user.
     "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+    "hidden": True or False, # Deprecated.
+    "starred": True or False, # Whether this file is starred by the user.
+    "viewed": True or False, # Whether this file has been viewed by this user.
   },
   "indexableText": { # Indexable text attributes for the file (can only be written)
     "text": "A String", # The text to be indexed for this file.
   },
+  "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
   "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
   "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
   "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -182,11 +184,7 @@ Args:
     "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
     "emailAddress": "A String", # The email address of the user.
   },
-  "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-    "width": 42, # The width of the video in pixels.
-    "durationMillis": "A String", # The duration of the video in milliseconds.
-    "height": 42, # The height of the video in pixels.
-  },
+  "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
   "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
@@ -226,8 +224,8 @@ Args:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -282,6 +280,11 @@ Args:
   },
   "description": "A String", # A short description of the file.
   "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+  "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+    "width": 42, # The width of the video in pixels.
+    "durationMillis": "A String", # The duration of the video in milliseconds.
+    "height": 42, # The height of the video in pixels.
+  },
   "editable": True or False, # Whether the file can be edited by the current user.
   "kind": "drive#file", # The type of file. This is always drive#file.
   "canComment": True or False, # Whether the current user can comment on the file.
@@ -310,7 +313,7 @@ Args:
   "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
   "title": "A String", # The title of this file.
   "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-  "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+  "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
     "mimeType": "A String", # The MIME type of the thumbnail.
     "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
   },
@@ -320,8 +323,8 @@ Args:
     "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
     "name": "A String", # The name for this permission.
     "kind": "drive#permission", # This is always drive#permission.
-    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
     "authKey": "A String", # The authkey parameter required for this permission.
     "etag": "A String", # The ETag of the permission.
     "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -367,21 +370,23 @@ Returns:
   An object of the form:
 
     { # The metadata for a file.
-    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+    "hasThumbnail": True or False, # Whether this file has a thumbnail.
     "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
     "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
     "appDataContents": True or False, # Whether this file is in the Application Data folder.
-    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
     "labels": { # A group of labels for the file.
       "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-      "hidden": True or False, # Deprecated.
-      "viewed": True or False, # Whether this file has been viewed by this user.
-      "starred": True or False, # Whether this file is starred by the user.
+      "modified": True or False, # Whether the file has been modified by this user.
       "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+      "hidden": True or False, # Deprecated.
+      "starred": True or False, # Whether this file is starred by the user.
+      "viewed": True or False, # Whether this file has been viewed by this user.
     },
     "indexableText": { # Indexable text attributes for the file (can only be written)
       "text": "A String", # The text to be indexed for this file.
     },
+    "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
     "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -410,11 +415,7 @@ Returns:
       "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
       "emailAddress": "A String", # The email address of the user.
     },
-    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-      "width": 42, # The width of the video in pixels.
-      "durationMillis": "A String", # The duration of the video in milliseconds.
-      "height": 42, # The height of the video in pixels.
-    },
+    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
     "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
@@ -454,8 +455,8 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -510,6 +511,11 @@ Returns:
     },
     "description": "A String", # A short description of the file.
     "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+      "width": 42, # The width of the video in pixels.
+      "durationMillis": "A String", # The duration of the video in milliseconds.
+      "height": 42, # The height of the video in pixels.
+    },
     "editable": True or False, # Whether the file can be edited by the current user.
     "kind": "drive#file", # The type of file. This is always drive#file.
     "canComment": True or False, # Whether the current user can comment on the file.
@@ -538,7 +544,7 @@ Returns:
     "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
     "title": "A String", # The title of this file.
     "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-    "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+    "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
       "mimeType": "A String", # The MIME type of the thumbnail.
       "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
     },
@@ -548,8 +554,8 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -656,21 +662,23 @@ Returns:
   An object of the form:
 
     { # The metadata for a file.
-    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+    "hasThumbnail": True or False, # Whether this file has a thumbnail.
     "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
     "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
     "appDataContents": True or False, # Whether this file is in the Application Data folder.
-    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
     "labels": { # A group of labels for the file.
       "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-      "hidden": True or False, # Deprecated.
-      "viewed": True or False, # Whether this file has been viewed by this user.
-      "starred": True or False, # Whether this file is starred by the user.
+      "modified": True or False, # Whether the file has been modified by this user.
       "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+      "hidden": True or False, # Deprecated.
+      "starred": True or False, # Whether this file is starred by the user.
+      "viewed": True or False, # Whether this file has been viewed by this user.
     },
     "indexableText": { # Indexable text attributes for the file (can only be written)
       "text": "A String", # The text to be indexed for this file.
     },
+    "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
     "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -699,11 +707,7 @@ Returns:
       "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
       "emailAddress": "A String", # The email address of the user.
     },
-    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-      "width": 42, # The width of the video in pixels.
-      "durationMillis": "A String", # The duration of the video in milliseconds.
-      "height": 42, # The height of the video in pixels.
-    },
+    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
     "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
@@ -743,8 +747,8 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -799,6 +803,11 @@ Returns:
     },
     "description": "A String", # A short description of the file.
     "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+      "width": 42, # The width of the video in pixels.
+      "durationMillis": "A String", # The duration of the video in milliseconds.
+      "height": 42, # The height of the video in pixels.
+    },
     "editable": True or False, # Whether the file can be edited by the current user.
     "kind": "drive#file", # The type of file. This is always drive#file.
     "canComment": True or False, # Whether the current user can comment on the file.
@@ -827,7 +836,7 @@ Returns:
     "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
     "title": "A String", # The title of this file.
     "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-    "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+    "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
       "mimeType": "A String", # The MIME type of the thumbnail.
       "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
     },
@@ -837,8 +846,8 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -891,7 +900,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="insert">insert(body=None, media_body=None, convert=None, useContentAsIndexableText=None, visibility=None, ocrLanguage=None, ocr=None, timedTextLanguage=None, timedTextTrackName=None, pinned=None)</code>
+    <code class="details" id="insert">insert(body=None, media_body=None, ocrLanguage=None, ocr=None, pinned=None, visibility=None, timedTextTrackName=None, convert=None, useContentAsIndexableText=None, media_mime_type=None, timedTextLanguage=None)</code>
   <pre>Insert a new file.
 
 Args:
@@ -899,21 +908,23 @@ Args:
     The object takes the form of:
 
 { # The metadata for a file.
-  "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+  "hasThumbnail": True or False, # Whether this file has a thumbnail.
   "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
   "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
   "appDataContents": True or False, # Whether this file is in the Application Data folder.
-  "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+  "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
   "labels": { # A group of labels for the file.
     "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-    "hidden": True or False, # Deprecated.
-    "viewed": True or False, # Whether this file has been viewed by this user.
-    "starred": True or False, # Whether this file is starred by the user.
+    "modified": True or False, # Whether the file has been modified by this user.
     "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+    "hidden": True or False, # Deprecated.
+    "starred": True or False, # Whether this file is starred by the user.
+    "viewed": True or False, # Whether this file has been viewed by this user.
   },
   "indexableText": { # Indexable text attributes for the file (can only be written)
     "text": "A String", # The text to be indexed for this file.
   },
+  "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
   "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
   "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
   "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -942,11 +953,7 @@ Args:
     "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
     "emailAddress": "A String", # The email address of the user.
   },
-  "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-    "width": 42, # The width of the video in pixels.
-    "durationMillis": "A String", # The duration of the video in milliseconds.
-    "height": 42, # The height of the video in pixels.
-  },
+  "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
   "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
@@ -986,8 +993,8 @@ Args:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -1042,6 +1049,11 @@ Args:
   },
   "description": "A String", # A short description of the file.
   "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+  "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+    "width": 42, # The width of the video in pixels.
+    "durationMillis": "A String", # The duration of the video in milliseconds.
+    "height": 42, # The height of the video in pixels.
+  },
   "editable": True or False, # Whether the file can be edited by the current user.
   "kind": "drive#file", # The type of file. This is always drive#file.
   "canComment": True or False, # Whether the current user can comment on the file.
@@ -1070,7 +1082,7 @@ Args:
   "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
   "title": "A String", # The title of this file.
   "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-  "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+  "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
     "mimeType": "A String", # The MIME type of the thumbnail.
     "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
   },
@@ -1080,8 +1092,8 @@ Args:
     "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
     "name": "A String", # The name for this permission.
     "kind": "drive#permission", # This is always drive#permission.
-    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
     "authKey": "A String", # The authkey parameter required for this permission.
     "etag": "A String", # The ETag of the permission.
     "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -1113,37 +1125,40 @@ Args:
 }
 
   media_body: string, The filename of the media request body, or an instance of a MediaUpload object.
-  convert: boolean, Whether to convert this file to the corresponding Google Docs format.
-  useContentAsIndexableText: boolean, Whether to use the content as indexable text.
+  ocrLanguage: string, If ocr is true, hints at the language to use. Valid values are BCP 47 codes.
+  ocr: boolean, Whether to attempt OCR on .jpg, .png, .gif, or .pdf uploads.
+  pinned: boolean, Whether to pin the head revision of the uploaded file. A file can have a maximum of 200 pinned revisions.
   visibility: string, The visibility of the new file. This parameter is only relevant when convert=false.
     Allowed values
       DEFAULT - The visibility of the new file is determined by the user's default visibility/sharing policies.
       PRIVATE - The new file will be visible to only the owner.
-  ocrLanguage: string, If ocr is true, hints at the language to use. Valid values are BCP 47 codes.
-  ocr: boolean, Whether to attempt OCR on .jpg, .png, .gif, or .pdf uploads.
-  timedTextLanguage: string, The language of the timed text.
   timedTextTrackName: string, The timed text track name.
-  pinned: boolean, Whether to pin the head revision of the uploaded file. A file can have a maximum of 200 pinned revisions.
+  convert: boolean, Whether to convert this file to the corresponding Google Docs format.
+  useContentAsIndexableText: boolean, Whether to use the content as indexable text.
+  media_mime_type: string, The MIME type of the media request body, or an instance of a MediaUpload object.
+  timedTextLanguage: string, The language of the timed text.
 
 Returns:
   An object of the form:
 
     { # The metadata for a file.
-    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+    "hasThumbnail": True or False, # Whether this file has a thumbnail.
     "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
     "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
     "appDataContents": True or False, # Whether this file is in the Application Data folder.
-    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
     "labels": { # A group of labels for the file.
       "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-      "hidden": True or False, # Deprecated.
-      "viewed": True or False, # Whether this file has been viewed by this user.
-      "starred": True or False, # Whether this file is starred by the user.
+      "modified": True or False, # Whether the file has been modified by this user.
       "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+      "hidden": True or False, # Deprecated.
+      "starred": True or False, # Whether this file is starred by the user.
+      "viewed": True or False, # Whether this file has been viewed by this user.
     },
     "indexableText": { # Indexable text attributes for the file (can only be written)
       "text": "A String", # The text to be indexed for this file.
     },
+    "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
     "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -1172,11 +1187,7 @@ Returns:
       "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
       "emailAddress": "A String", # The email address of the user.
     },
-    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-      "width": 42, # The width of the video in pixels.
-      "durationMillis": "A String", # The duration of the video in milliseconds.
-      "height": 42, # The height of the video in pixels.
-    },
+    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
     "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
@@ -1216,8 +1227,8 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -1272,6 +1283,11 @@ Returns:
     },
     "description": "A String", # A short description of the file.
     "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+      "width": 42, # The width of the video in pixels.
+      "durationMillis": "A String", # The duration of the video in milliseconds.
+      "height": 42, # The height of the video in pixels.
+    },
     "editable": True or False, # Whether the file can be edited by the current user.
     "kind": "drive#file", # The type of file. This is always drive#file.
     "canComment": True or False, # Whether the current user can comment on the file.
@@ -1300,7 +1316,7 @@ Returns:
     "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
     "title": "A String", # The title of this file.
     "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-    "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+    "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
       "mimeType": "A String", # The MIME type of the thumbnail.
       "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
     },
@@ -1310,8 +1326,8 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -1370,21 +1386,23 @@ Returns:
     "kind": "drive#fileList", # This is always drive#fileList.
     "items": [ # The actual list of files.
       { # The metadata for a file.
-        "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+        "hasThumbnail": True or False, # Whether this file has a thumbnail.
         "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
         "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
         "appDataContents": True or False, # Whether this file is in the Application Data folder.
-        "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+        "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
         "labels": { # A group of labels for the file.
           "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-          "hidden": True or False, # Deprecated.
-          "viewed": True or False, # Whether this file has been viewed by this user.
-          "starred": True or False, # Whether this file is starred by the user.
+          "modified": True or False, # Whether the file has been modified by this user.
           "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+          "hidden": True or False, # Deprecated.
+          "starred": True or False, # Whether this file is starred by the user.
+          "viewed": True or False, # Whether this file has been viewed by this user.
         },
         "indexableText": { # Indexable text attributes for the file (can only be written)
           "text": "A String", # The text to be indexed for this file.
         },
+        "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
         "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
         "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
         "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -1413,11 +1431,7 @@ Returns:
           "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
           "emailAddress": "A String", # The email address of the user.
         },
-        "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-          "width": 42, # The width of the video in pixels.
-          "durationMillis": "A String", # The duration of the video in milliseconds.
-          "height": 42, # The height of the video in pixels.
-        },
+        "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
         "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
           "picture": { # The user's profile picture.
             "url": "A String", # A URL that points to a profile picture of this user.
@@ -1457,8 +1471,8 @@ Returns:
             "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
             "name": "A String", # The name for this permission.
             "kind": "drive#permission", # This is always drive#permission.
-            "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-            "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+            "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+            "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
             "authKey": "A String", # The authkey parameter required for this permission.
             "etag": "A String", # The ETag of the permission.
             "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -1513,6 +1527,11 @@ Returns:
         },
         "description": "A String", # A short description of the file.
         "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+        "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+          "width": 42, # The width of the video in pixels.
+          "durationMillis": "A String", # The duration of the video in milliseconds.
+          "height": 42, # The height of the video in pixels.
+        },
         "editable": True or False, # Whether the file can be edited by the current user.
         "kind": "drive#file", # The type of file. This is always drive#file.
         "canComment": True or False, # Whether the current user can comment on the file.
@@ -1541,7 +1560,7 @@ Returns:
         "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
         "title": "A String", # The title of this file.
         "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-        "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+        "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
           "mimeType": "A String", # The MIME type of the thumbnail.
           "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
         },
@@ -1551,8 +1570,8 @@ Returns:
           "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
           "name": "A String", # The name for this permission.
           "kind": "drive#permission", # This is always drive#permission.
-          "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-          "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+          "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+          "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
           "authKey": "A String", # The authkey parameter required for this permission.
           "etag": "A String", # The ETag of the permission.
           "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -1613,21 +1632,23 @@ Args:
     The object takes the form of:
 
 { # The metadata for a file.
-  "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+  "hasThumbnail": True or False, # Whether this file has a thumbnail.
   "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
   "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
   "appDataContents": True or False, # Whether this file is in the Application Data folder.
-  "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+  "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
   "labels": { # A group of labels for the file.
     "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-    "hidden": True or False, # Deprecated.
-    "viewed": True or False, # Whether this file has been viewed by this user.
-    "starred": True or False, # Whether this file is starred by the user.
+    "modified": True or False, # Whether the file has been modified by this user.
     "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+    "hidden": True or False, # Deprecated.
+    "starred": True or False, # Whether this file is starred by the user.
+    "viewed": True or False, # Whether this file has been viewed by this user.
   },
   "indexableText": { # Indexable text attributes for the file (can only be written)
     "text": "A String", # The text to be indexed for this file.
   },
+  "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
   "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
   "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
   "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -1656,11 +1677,7 @@ Args:
     "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
     "emailAddress": "A String", # The email address of the user.
   },
-  "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-    "width": 42, # The width of the video in pixels.
-    "durationMillis": "A String", # The duration of the video in milliseconds.
-    "height": 42, # The height of the video in pixels.
-  },
+  "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
   "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
@@ -1700,8 +1717,8 @@ Args:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -1756,6 +1773,11 @@ Args:
   },
   "description": "A String", # A short description of the file.
   "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+  "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+    "width": 42, # The width of the video in pixels.
+    "durationMillis": "A String", # The duration of the video in milliseconds.
+    "height": 42, # The height of the video in pixels.
+  },
   "editable": True or False, # Whether the file can be edited by the current user.
   "kind": "drive#file", # The type of file. This is always drive#file.
   "canComment": True or False, # Whether the current user can comment on the file.
@@ -1784,7 +1806,7 @@ Args:
   "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
   "title": "A String", # The title of this file.
   "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-  "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+  "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
     "mimeType": "A String", # The MIME type of the thumbnail.
     "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
   },
@@ -1794,8 +1816,8 @@ Args:
     "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
     "name": "A String", # The name for this permission.
     "kind": "drive#permission", # This is always drive#permission.
-    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
     "authKey": "A String", # The authkey parameter required for this permission.
     "etag": "A String", # The ETag of the permission.
     "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -1851,21 +1873,23 @@ Returns:
   An object of the form:
 
     { # The metadata for a file.
-    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+    "hasThumbnail": True or False, # Whether this file has a thumbnail.
     "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
     "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
     "appDataContents": True or False, # Whether this file is in the Application Data folder.
-    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
     "labels": { # A group of labels for the file.
       "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-      "hidden": True or False, # Deprecated.
-      "viewed": True or False, # Whether this file has been viewed by this user.
-      "starred": True or False, # Whether this file is starred by the user.
+      "modified": True or False, # Whether the file has been modified by this user.
       "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+      "hidden": True or False, # Deprecated.
+      "starred": True or False, # Whether this file is starred by the user.
+      "viewed": True or False, # Whether this file has been viewed by this user.
     },
     "indexableText": { # Indexable text attributes for the file (can only be written)
       "text": "A String", # The text to be indexed for this file.
     },
+    "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
     "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -1894,11 +1918,7 @@ Returns:
       "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
       "emailAddress": "A String", # The email address of the user.
     },
-    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-      "width": 42, # The width of the video in pixels.
-      "durationMillis": "A String", # The duration of the video in milliseconds.
-      "height": 42, # The height of the video in pixels.
-    },
+    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
     "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
@@ -1938,8 +1958,8 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -1994,6 +2014,11 @@ Returns:
     },
     "description": "A String", # A short description of the file.
     "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+      "width": 42, # The width of the video in pixels.
+      "durationMillis": "A String", # The duration of the video in milliseconds.
+      "height": 42, # The height of the video in pixels.
+    },
     "editable": True or False, # Whether the file can be edited by the current user.
     "kind": "drive#file", # The type of file. This is always drive#file.
     "canComment": True or False, # Whether the current user can comment on the file.
@@ -2022,7 +2047,7 @@ Returns:
     "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
     "title": "A String", # The title of this file.
     "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-    "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+    "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
       "mimeType": "A String", # The MIME type of the thumbnail.
       "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
     },
@@ -2032,8 +2057,8 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -2076,21 +2101,23 @@ Returns:
   An object of the form:
 
     { # The metadata for a file.
-    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+    "hasThumbnail": True or False, # Whether this file has a thumbnail.
     "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
     "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
     "appDataContents": True or False, # Whether this file is in the Application Data folder.
-    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
     "labels": { # A group of labels for the file.
       "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-      "hidden": True or False, # Deprecated.
-      "viewed": True or False, # Whether this file has been viewed by this user.
-      "starred": True or False, # Whether this file is starred by the user.
+      "modified": True or False, # Whether the file has been modified by this user.
       "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+      "hidden": True or False, # Deprecated.
+      "starred": True or False, # Whether this file is starred by the user.
+      "viewed": True or False, # Whether this file has been viewed by this user.
     },
     "indexableText": { # Indexable text attributes for the file (can only be written)
       "text": "A String", # The text to be indexed for this file.
     },
+    "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
     "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -2119,11 +2146,7 @@ Returns:
       "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
       "emailAddress": "A String", # The email address of the user.
     },
-    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-      "width": 42, # The width of the video in pixels.
-      "durationMillis": "A String", # The duration of the video in milliseconds.
-      "height": 42, # The height of the video in pixels.
-    },
+    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
     "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
@@ -2163,8 +2186,8 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -2219,6 +2242,11 @@ Returns:
     },
     "description": "A String", # A short description of the file.
     "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+      "width": 42, # The width of the video in pixels.
+      "durationMillis": "A String", # The duration of the video in milliseconds.
+      "height": 42, # The height of the video in pixels.
+    },
     "editable": True or False, # Whether the file can be edited by the current user.
     "kind": "drive#file", # The type of file. This is always drive#file.
     "canComment": True or False, # Whether the current user can comment on the file.
@@ -2247,7 +2275,7 @@ Returns:
     "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
     "title": "A String", # The title of this file.
     "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-    "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+    "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
       "mimeType": "A String", # The MIME type of the thumbnail.
       "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
     },
@@ -2257,8 +2285,8 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -2301,21 +2329,23 @@ Returns:
   An object of the form:
 
     { # The metadata for a file.
-    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+    "hasThumbnail": True or False, # Whether this file has a thumbnail.
     "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
     "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
     "appDataContents": True or False, # Whether this file is in the Application Data folder.
-    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
     "labels": { # A group of labels for the file.
       "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-      "hidden": True or False, # Deprecated.
-      "viewed": True or False, # Whether this file has been viewed by this user.
-      "starred": True or False, # Whether this file is starred by the user.
+      "modified": True or False, # Whether the file has been modified by this user.
       "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+      "hidden": True or False, # Deprecated.
+      "starred": True or False, # Whether this file is starred by the user.
+      "viewed": True or False, # Whether this file has been viewed by this user.
     },
     "indexableText": { # Indexable text attributes for the file (can only be written)
       "text": "A String", # The text to be indexed for this file.
     },
+    "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
     "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -2344,11 +2374,7 @@ Returns:
       "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
       "emailAddress": "A String", # The email address of the user.
     },
-    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-      "width": 42, # The width of the video in pixels.
-      "durationMillis": "A String", # The duration of the video in milliseconds.
-      "height": 42, # The height of the video in pixels.
-    },
+    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
     "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
@@ -2388,8 +2414,8 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -2444,6 +2470,11 @@ Returns:
     },
     "description": "A String", # A short description of the file.
     "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+      "width": 42, # The width of the video in pixels.
+      "durationMillis": "A String", # The duration of the video in milliseconds.
+      "height": 42, # The height of the video in pixels.
+    },
     "editable": True or False, # Whether the file can be edited by the current user.
     "kind": "drive#file", # The type of file. This is always drive#file.
     "canComment": True or False, # Whether the current user can comment on the file.
@@ -2472,7 +2503,7 @@ Returns:
     "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
     "title": "A String", # The title of this file.
     "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-    "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+    "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
       "mimeType": "A String", # The MIME type of the thumbnail.
       "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
     },
@@ -2482,8 +2513,8 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -2526,21 +2557,23 @@ Returns:
   An object of the form:
 
     { # The metadata for a file.
-    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+    "hasThumbnail": True or False, # Whether this file has a thumbnail.
     "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
     "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
     "appDataContents": True or False, # Whether this file is in the Application Data folder.
-    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
     "labels": { # A group of labels for the file.
       "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-      "hidden": True or False, # Deprecated.
-      "viewed": True or False, # Whether this file has been viewed by this user.
-      "starred": True or False, # Whether this file is starred by the user.
+      "modified": True or False, # Whether the file has been modified by this user.
       "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+      "hidden": True or False, # Deprecated.
+      "starred": True or False, # Whether this file is starred by the user.
+      "viewed": True or False, # Whether this file has been viewed by this user.
     },
     "indexableText": { # Indexable text attributes for the file (can only be written)
       "text": "A String", # The text to be indexed for this file.
     },
+    "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
     "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -2569,11 +2602,7 @@ Returns:
       "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
       "emailAddress": "A String", # The email address of the user.
     },
-    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-      "width": 42, # The width of the video in pixels.
-      "durationMillis": "A String", # The duration of the video in milliseconds.
-      "height": 42, # The height of the video in pixels.
-    },
+    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
     "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
@@ -2613,8 +2642,8 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -2669,6 +2698,11 @@ Returns:
     },
     "description": "A String", # A short description of the file.
     "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+      "width": 42, # The width of the video in pixels.
+      "durationMillis": "A String", # The duration of the video in milliseconds.
+      "height": 42, # The height of the video in pixels.
+    },
     "editable": True or False, # Whether the file can be edited by the current user.
     "kind": "drive#file", # The type of file. This is always drive#file.
     "canComment": True or False, # Whether the current user can comment on the file.
@@ -2697,7 +2731,7 @@ Returns:
     "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
     "title": "A String", # The title of this file.
     "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-    "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+    "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
       "mimeType": "A String", # The MIME type of the thumbnail.
       "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
     },
@@ -2707,8 +2741,8 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -2741,7 +2775,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="update">update(fileId, body=None, newRevision=None, modifiedDateBehavior=None, media_body=None, ocrLanguage=None, ocr=None, pinned=None, addParents=None, removeParents=None, updateViewedDate=None, timedTextTrackName=None, convert=None, useContentAsIndexableText=None, setModifiedDate=None, timedTextLanguage=None)</code>
+    <code class="details" id="update">update(fileId, body=None, newRevision=None, modifiedDateBehavior=None, media_body=None, ocrLanguage=None, ocr=None, pinned=None, addParents=None, removeParents=None, updateViewedDate=None, timedTextTrackName=None, convert=None, useContentAsIndexableText=None, media_mime_type=None, setModifiedDate=None, timedTextLanguage=None)</code>
   <pre>Updates file metadata and/or content.
 
 Args:
@@ -2750,21 +2784,23 @@ Args:
     The object takes the form of:
 
 { # The metadata for a file.
-  "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+  "hasThumbnail": True or False, # Whether this file has a thumbnail.
   "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
   "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
   "appDataContents": True or False, # Whether this file is in the Application Data folder.
-  "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+  "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
   "labels": { # A group of labels for the file.
     "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-    "hidden": True or False, # Deprecated.
-    "viewed": True or False, # Whether this file has been viewed by this user.
-    "starred": True or False, # Whether this file is starred by the user.
+    "modified": True or False, # Whether the file has been modified by this user.
     "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+    "hidden": True or False, # Deprecated.
+    "starred": True or False, # Whether this file is starred by the user.
+    "viewed": True or False, # Whether this file has been viewed by this user.
   },
   "indexableText": { # Indexable text attributes for the file (can only be written)
     "text": "A String", # The text to be indexed for this file.
   },
+  "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
   "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
   "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
   "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -2793,11 +2829,7 @@ Args:
     "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
     "emailAddress": "A String", # The email address of the user.
   },
-  "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-    "width": 42, # The width of the video in pixels.
-    "durationMillis": "A String", # The duration of the video in milliseconds.
-    "height": 42, # The height of the video in pixels.
-  },
+  "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
   "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
     "picture": { # The user's profile picture.
       "url": "A String", # A URL that points to a profile picture of this user.
@@ -2837,8 +2869,8 @@ Args:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -2893,6 +2925,11 @@ Args:
   },
   "description": "A String", # A short description of the file.
   "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+  "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+    "width": 42, # The width of the video in pixels.
+    "durationMillis": "A String", # The duration of the video in milliseconds.
+    "height": 42, # The height of the video in pixels.
+  },
   "editable": True or False, # Whether the file can be edited by the current user.
   "kind": "drive#file", # The type of file. This is always drive#file.
   "canComment": True or False, # Whether the current user can comment on the file.
@@ -2921,7 +2958,7 @@ Args:
   "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
   "title": "A String", # The title of this file.
   "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-  "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+  "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
     "mimeType": "A String", # The MIME type of the thumbnail.
     "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
   },
@@ -2931,8 +2968,8 @@ Args:
     "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
     "name": "A String", # The name for this permission.
     "kind": "drive#permission", # This is always drive#permission.
-    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+    "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+    "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
     "authKey": "A String", # The authkey parameter required for this permission.
     "etag": "A String", # The ETag of the permission.
     "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -2982,6 +3019,7 @@ Args:
   timedTextTrackName: string, The timed text track name.
   convert: boolean, This parameter is deprecated and has no function.
   useContentAsIndexableText: boolean, Whether to use the content as indexable text.
+  media_mime_type: string, The MIME type of the media request body, or an instance of a MediaUpload object.
   setModifiedDate: boolean, Whether to set the modified date with the supplied modified date.
   timedTextLanguage: string, The language of the timed text.
 
@@ -2989,21 +3027,23 @@ Returns:
   An object of the form:
 
     { # The metadata for a file.
-    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
+    "hasThumbnail": True or False, # Whether this file has a thumbnail.
     "lastViewedByMeDate": "A String", # Last time this file was viewed by the user (formatted RFC 3339 timestamp).
     "version": "A String", # A monotonically increasing version number for the file. This reflects every change made to the file on the server, even those not visible to the requesting user.
     "appDataContents": True or False, # Whether this file is in the Application Data folder.
-    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours.
+    "thumbnailLink": "A String", # A short-lived link to the file's thumbnail. Typically lasts on the order of hours. Only populated when the requesting app can access the file's content.
     "labels": { # A group of labels for the file.
       "restricted": True or False, # Whether viewers and commenters are prevented from downloading, printing, and copying this file.
-      "hidden": True or False, # Deprecated.
-      "viewed": True or False, # Whether this file has been viewed by this user.
-      "starred": True or False, # Whether this file is starred by the user.
+      "modified": True or False, # Whether the file has been modified by this user.
       "trashed": True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+      "hidden": True or False, # Deprecated.
+      "starred": True or False, # Whether this file is starred by the user.
+      "viewed": True or False, # Whether this file has been viewed by this user.
     },
     "indexableText": { # Indexable text attributes for the file (can only be written)
       "text": "A String", # The text to be indexed for this file.
     },
+    "thumbnailVersion": "A String", # The thumbnail version for use in client-contructable thumbnail URLs or thumbnail cache invalidation.
     "explicitlyTrashed": True or False, # Whether this file has been explicitly trashed, as opposed to recursively trashed.
     "isAppAuthorized": True or False, # Whether the file was created or opened by the requesting app.
     "lastModifyingUserName": "A String", # Name of the last user to modify this file.
@@ -3032,11 +3072,7 @@ Returns:
       "isAuthenticatedUser": True or False, # Whether this user is the same as the authenticated user for whom the request was made.
       "emailAddress": "A String", # The email address of the user.
     },
-    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
-      "width": 42, # The width of the video in pixels.
-      "durationMillis": "A String", # The duration of the video in milliseconds.
-      "height": 42, # The height of the video in pixels.
-    },
+    "mimeType": "A String", # The MIME type of the file. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type.
     "lastModifyingUser": { # Information about a Drive user. # The last user to modify this file.
       "picture": { # The user's profile picture.
         "url": "A String", # A URL that points to a profile picture of this user.
@@ -3076,8 +3112,8 @@ Returns:
         "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
         "name": "A String", # The name for this permission.
         "kind": "drive#permission", # This is always drive#permission.
-        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+        "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+        "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
         "authKey": "A String", # The authkey parameter required for this permission.
         "etag": "A String", # The ETag of the permission.
         "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.
@@ -3132,6 +3168,11 @@ Returns:
     },
     "description": "A String", # A short description of the file.
     "webContentLink": "A String", # A link for downloading the content of the file in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials.
+    "videoMediaMetadata": { # Metadata about video media. This will only be present for video types.
+      "width": 42, # The width of the video in pixels.
+      "durationMillis": "A String", # The duration of the video in milliseconds.
+      "height": 42, # The height of the video in pixels.
+    },
     "editable": True or False, # Whether the file can be edited by the current user.
     "kind": "drive#file", # The type of file. This is always drive#file.
     "canComment": True or False, # Whether the current user can comment on the file.
@@ -3160,7 +3201,7 @@ Returns:
     "alternateLink": "A String", # A link for opening the file in a relevant Google editor or viewer.
     "title": "A String", # The title of this file.
     "modifiedByMeDate": "A String", # Last time this file was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.
-    "thumbnail": { # Thumbnail for the file. Only accepted on upload and for files that are not already thumbnailed by Google.
+    "thumbnail": { # A thumbnail for the file. This will only be used if Drive cannot generate a standard thumbnail.
       "mimeType": "A String", # The MIME type of the thumbnail.
       "image": "A String", # The URL-safe Base64 encoded bytes of the thumbnail image. It should conform to RFC 4648 section 5.
     },
@@ -3170,8 +3211,8 @@ Returns:
       "domain": "A String", # The domain name of the entity this permission refers to. This is an output-only field which is present when the permission type is user, group or domain.
       "name": "A String", # The name for this permission.
       "kind": "drive#permission", # This is always drive#permission.
-      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
-      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type anyone, in which case both id and value are ignored.
+      "value": "A String", # The email address or domain name for the entity. This is used during inserts and is not populated in responses. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
+      "id": "A String", # The ID of the user this permission refers to, and identical to the permissionId in the About and Files resources. When making a drive.permissions.insert request, exactly one of the id or value fields must be specified unless the permission type is anyone, in which case both id and value are ignored.
       "authKey": "A String", # The authkey parameter required for this permission.
       "etag": "A String", # The ETag of the permission.
       "emailAddress": "A String", # The email address of the user or group this permission refers to. This is an output-only field which is present when the permission type is user or group.

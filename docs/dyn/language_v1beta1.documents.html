@@ -81,6 +81,9 @@ h1, h2, h3 {
   <code><a href="#analyzeSentiment">analyzeSentiment(body, x__xgafv=None)</a></code></p>
 <p class="firstline">Analyzes the sentiment of the provided text.</p>
 <p class="toc_element">
+  <code><a href="#analyzeSyntax">analyzeSyntax(body, x__xgafv=None)</a></code></p>
+<p class="firstline">Analyzes the syntax of the text and provides sentence boundaries and</p>
+<p class="toc_element">
   <code><a href="#annotateText">annotateText(body, x__xgafv=None)</a></code></p>
 <p class="firstline">A convenience method that provides all the features that analyzeSentiment,</p>
 <h3>Method Details</h3>
@@ -105,13 +108,14 @@ Args:
           # accepted.<br>
           # **Current Language Restrictions:**
           #
-          #  * Only English, Spanish, and Japanese textual content
-          #    are supported, with the following additional restriction:
-          #    * `analyzeSentiment` only supports English text.
+          #  * Only English, Spanish, and Japanese textual content are supported.
           # If the language (either specified by the caller or automatically detected)
           # is not supported by the called API method, an `INVALID_ARGUMENT` error
           # is returned.
       "gcsContentUri": "A String", # The Google Cloud Storage URI where the file content is located.
+          # This URI must be of the form: gs://bucket_name/object_name. For more
+          # details, see https://cloud.google.com/storage/docs/reference-uris.
+          # NOTE: Cloud Storage object versioning is not supported.
     },
     "encodingType": "A String", # The encoding type used by the API to calculate offsets.
   }
@@ -139,6 +143,7 @@ Returns:
               "beginOffset": 42, # The API calculates the beginning offset of the content in the original
                   # document according to the EncodingType specified in the API request.
             },
+            "type": "A String", # The type of the entity mention.
           },
         ],
         "salience": 3.14, # The salience score associated with the entity in the [0, 1.0] range.
@@ -150,8 +155,8 @@ Returns:
         "name": "A String", # The representative name for the entity.
         "metadata": { # Metadata associated with the entity.
             #
-            # Currently, only Wikipedia URLs are provided, if available.
-            # The associated key is "wikipedia_url".
+            # Currently, Wikipedia URLs and Knowledge Graph MIDs are provided, if
+            # available. The associated keys are "wikipedia_url" and "mid", respectively.
           "a_key": "A String",
         },
       },
@@ -183,14 +188,17 @@ Args:
           # accepted.<br>
           # **Current Language Restrictions:**
           #
-          #  * Only English, Spanish, and Japanese textual content
-          #    are supported, with the following additional restriction:
-          #    * `analyzeSentiment` only supports English text.
+          #  * Only English, Spanish, and Japanese textual content are supported.
           # If the language (either specified by the caller or automatically detected)
           # is not supported by the called API method, an `INVALID_ARGUMENT` error
           # is returned.
       "gcsContentUri": "A String", # The Google Cloud Storage URI where the file content is located.
+          # This URI must be of the form: gs://bucket_name/object_name. For more
+          # details, see https://cloud.google.com/storage/docs/reference-uris.
+          # NOTE: Cloud Storage object versioning is not supported.
     },
+    "encodingType": "A String", # The encoding type used by the API to calculate sentence offsets for the
+        # sentence sentiment.
   }
 
   x__xgafv: string, V1 error format.
@@ -204,14 +212,142 @@ Returns:
     { # The sentiment analysis response message.
     "documentSentiment": { # Represents the feeling associated with the entire text or entities in # The overall sentiment of the input document.
         # the text.
-      "polarity": 3.14, # Polarity of the sentiment in the [-1.0, 1.0] range. Larger numbers
-          # represent more positive sentiments.
+      "polarity": 3.14, # DEPRECATED FIELD - This field is being deprecated in
+          # favor of score. Please refer to our documentation at
+          # https://cloud.google.com/natural-language/docs for more information.
+      "score": 3.14, # Sentiment score between -1.0 (negative sentiment) and 1.0
+          # (positive sentiment).
       "magnitude": 3.14, # A non-negative number in the [0, +inf) range, which represents
-          # the absolute magnitude of sentiment regardless of polarity (positive or
+          # the absolute magnitude of sentiment regardless of score (positive or
           # negative).
     },
     "language": "A String", # The language of the text, which will be the same as the language specified
         # in the request or, if not specified, the automatically-detected language.
+    "sentences": [ # The sentiment for all the sentences in the document.
+      { # Represents a sentence in the input document.
+        "text": { # Represents an output piece of text. # The sentence text.
+          "content": "A String", # The content of the output text.
+          "beginOffset": 42, # The API calculates the beginning offset of the content in the original
+              # document according to the EncodingType specified in the API request.
+        },
+        "sentiment": { # Represents the feeling associated with the entire text or entities in # For calls to AnalyzeSentiment or if
+            # AnnotateTextRequest.Features.extract_document_sentiment is set to
+            # true, this field will contain the sentiment for the sentence.
+            # the text.
+          "polarity": 3.14, # DEPRECATED FIELD - This field is being deprecated in
+              # favor of score. Please refer to our documentation at
+              # https://cloud.google.com/natural-language/docs for more information.
+          "score": 3.14, # Sentiment score between -1.0 (negative sentiment) and 1.0
+              # (positive sentiment).
+          "magnitude": 3.14, # A non-negative number in the [0, +inf) range, which represents
+              # the absolute magnitude of sentiment regardless of score (positive or
+              # negative).
+        },
+      },
+    ],
+  }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="analyzeSyntax">analyzeSyntax(body, x__xgafv=None)</code>
+  <pre>Analyzes the syntax of the text and provides sentence boundaries and
+tokenization along with part of speech tags, dependency trees, and other
+properties.
+
+Args:
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # The syntax analysis request message.
+    "document": { # ################################################################ # # Input document.
+        #
+        # Represents the input to API methods.
+      "content": "A String", # The content of the input in string format.
+      "type": "A String", # Required. If the type is not set or is `TYPE_UNSPECIFIED`,
+          # returns an `INVALID_ARGUMENT` error.
+      "language": "A String", # The language of the document (if not specified, the language is
+          # automatically detected). Both ISO and BCP-47 language codes are
+          # accepted.<br>
+          # **Current Language Restrictions:**
+          #
+          #  * Only English, Spanish, and Japanese textual content are supported.
+          # If the language (either specified by the caller or automatically detected)
+          # is not supported by the called API method, an `INVALID_ARGUMENT` error
+          # is returned.
+      "gcsContentUri": "A String", # The Google Cloud Storage URI where the file content is located.
+          # This URI must be of the form: gs://bucket_name/object_name. For more
+          # details, see https://cloud.google.com/storage/docs/reference-uris.
+          # NOTE: Cloud Storage object versioning is not supported.
+    },
+    "encodingType": "A String", # The encoding type used by the API to calculate offsets.
+  }
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # The syntax analysis response message.
+    "tokens": [ # Tokens, along with their syntactic information, in the input document.
+      { # Represents the smallest syntactic building block of the text.
+        "text": { # Represents an output piece of text. # The token text.
+          "content": "A String", # The content of the output text.
+          "beginOffset": 42, # The API calculates the beginning offset of the content in the original
+              # document according to the EncodingType specified in the API request.
+        },
+        "dependencyEdge": { # Represents dependency parse tree information for a token. # Dependency tree parse for this token.
+          "headTokenIndex": 42, # Represents the head of this token in the dependency tree.
+              # This is the index of the token which has an arc going to this token.
+              # The index is the position of the token in the array of tokens returned
+              # by the API method. If this token is a root token, then the
+              # `head_token_index` is its own index.
+          "label": "A String", # The parse label for the token.
+        },
+        "partOfSpeech": { # Represents part of speech information for a token. # Parts of speech tag for this token.
+          "case": "A String", # The grammatical case.
+          "reciprocity": "A String", # The grammatical reciprocity.
+          "mood": "A String", # The grammatical mood.
+          "form": "A String", # The grammatical form.
+          "gender": "A String", # The grammatical gender.
+          "number": "A String", # The grammatical number.
+          "person": "A String", # The grammatical person.
+          "tag": "A String", # The part of speech tag.
+          "tense": "A String", # The grammatical tense.
+          "aspect": "A String", # The grammatical aspect.
+          "proper": "A String", # The grammatical properness.
+          "voice": "A String", # The grammatical voice.
+        },
+        "lemma": "A String", # [Lemma](https://en.wikipedia.org/wiki/Lemma_%28morphology%29) of the token.
+      },
+    ],
+    "language": "A String", # The language of the text, which will be the same as the language specified
+        # in the request or, if not specified, the automatically-detected language.
+        # See Document.language field for more details.
+    "sentences": [ # Sentences in the input document.
+      { # Represents a sentence in the input document.
+        "text": { # Represents an output piece of text. # The sentence text.
+          "content": "A String", # The content of the output text.
+          "beginOffset": 42, # The API calculates the beginning offset of the content in the original
+              # document according to the EncodingType specified in the API request.
+        },
+        "sentiment": { # Represents the feeling associated with the entire text or entities in # For calls to AnalyzeSentiment or if
+            # AnnotateTextRequest.Features.extract_document_sentiment is set to
+            # true, this field will contain the sentiment for the sentence.
+            # the text.
+          "polarity": 3.14, # DEPRECATED FIELD - This field is being deprecated in
+              # favor of score. Please refer to our documentation at
+              # https://cloud.google.com/natural-language/docs for more information.
+          "score": 3.14, # Sentiment score between -1.0 (negative sentiment) and 1.0
+              # (positive sentiment).
+          "magnitude": 3.14, # A non-negative number in the [0, +inf) range, which represents
+              # the absolute magnitude of sentiment regardless of score (positive or
+              # negative).
+        },
+      },
+    ],
   }</pre>
 </div>
 
@@ -237,13 +373,14 @@ Args:
           # accepted.<br>
           # **Current Language Restrictions:**
           #
-          #  * Only English, Spanish, and Japanese textual content
-          #    are supported, with the following additional restriction:
-          #    * `analyzeSentiment` only supports English text.
+          #  * Only English, Spanish, and Japanese textual content are supported.
           # If the language (either specified by the caller or automatically detected)
           # is not supported by the called API method, an `INVALID_ARGUMENT` error
           # is returned.
       "gcsContentUri": "A String", # The Google Cloud Storage URI where the file content is located.
+          # This URI must be of the form: gs://bucket_name/object_name. For more
+          # details, see https://cloud.google.com/storage/docs/reference-uris.
+          # NOTE: Cloud Storage object versioning is not supported.
     },
     "encodingType": "A String", # The encoding type used by the API to calculate offsets.
     "features": { # All available features for sentiment, syntax, and semantic analysis. # The enabled features.
@@ -281,10 +418,20 @@ Returns:
           "label": "A String", # The parse label for the token.
         },
         "partOfSpeech": { # Represents part of speech information for a token. # Parts of speech tag for this token.
+          "case": "A String", # The grammatical case.
+          "reciprocity": "A String", # The grammatical reciprocity.
+          "mood": "A String", # The grammatical mood.
+          "form": "A String", # The grammatical form.
+          "gender": "A String", # The grammatical gender.
+          "number": "A String", # The grammatical number.
+          "person": "A String", # The grammatical person.
           "tag": "A String", # The part of speech tag.
+          "tense": "A String", # The grammatical tense.
+          "aspect": "A String", # The grammatical aspect.
+          "proper": "A String", # The grammatical properness.
+          "voice": "A String", # The grammatical voice.
         },
-        "lemma": "A String", # [Lemma](https://en.wikipedia.org/wiki/Lemma_(morphology))
-            # of the token.
+        "lemma": "A String", # [Lemma](https://en.wikipedia.org/wiki/Lemma_%28morphology%29) of the token.
       },
     ],
     "entities": [ # Entities, along with their semantic information, in the input document.
@@ -303,6 +450,7 @@ Returns:
               "beginOffset": 42, # The API calculates the beginning offset of the content in the original
                   # document according to the EncodingType specified in the API request.
             },
+            "type": "A String", # The type of the entity mention.
           },
         ],
         "salience": 3.14, # The salience score associated with the entity in the [0, 1.0] range.
@@ -314,8 +462,8 @@ Returns:
         "name": "A String", # The representative name for the entity.
         "metadata": { # Metadata associated with the entity.
             #
-            # Currently, only Wikipedia URLs are provided, if available.
-            # The associated key is "wikipedia_url".
+            # Currently, Wikipedia URLs and Knowledge Graph MIDs are provided, if
+            # available. The associated keys are "wikipedia_url" and "mid", respectively.
           "a_key": "A String",
         },
       },
@@ -323,10 +471,13 @@ Returns:
     "documentSentiment": { # Represents the feeling associated with the entire text or entities in # The overall sentiment for the document. Populated if the user enables
         # AnnotateTextRequest.Features.extract_document_sentiment.
         # the text.
-      "polarity": 3.14, # Polarity of the sentiment in the [-1.0, 1.0] range. Larger numbers
-          # represent more positive sentiments.
+      "polarity": 3.14, # DEPRECATED FIELD - This field is being deprecated in
+          # favor of score. Please refer to our documentation at
+          # https://cloud.google.com/natural-language/docs for more information.
+      "score": 3.14, # Sentiment score between -1.0 (negative sentiment) and 1.0
+          # (positive sentiment).
       "magnitude": 3.14, # A non-negative number in the [0, +inf) range, which represents
-          # the absolute magnitude of sentiment regardless of polarity (positive or
+          # the absolute magnitude of sentiment regardless of score (positive or
           # negative).
     },
     "language": "A String", # The language of the text, which will be the same as the language specified
@@ -339,6 +490,19 @@ Returns:
           "content": "A String", # The content of the output text.
           "beginOffset": 42, # The API calculates the beginning offset of the content in the original
               # document according to the EncodingType specified in the API request.
+        },
+        "sentiment": { # Represents the feeling associated with the entire text or entities in # For calls to AnalyzeSentiment or if
+            # AnnotateTextRequest.Features.extract_document_sentiment is set to
+            # true, this field will contain the sentiment for the sentence.
+            # the text.
+          "polarity": 3.14, # DEPRECATED FIELD - This field is being deprecated in
+              # favor of score. Please refer to our documentation at
+              # https://cloud.google.com/natural-language/docs for more information.
+          "score": 3.14, # Sentiment score between -1.0 (negative sentiment) and 1.0
+              # (positive sentiment).
+          "magnitude": 3.14, # A non-negative number in the [0, +inf) range, which represents
+              # the absolute magnitude of sentiment regardless of score (positive or
+              # negative).
         },
       },
     ],

@@ -117,10 +117,15 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
     #     title: Google Calendar API
     #     apis:
     #     - name: google.calendar.v3.Calendar
-    #     backend:
+    #     authentication:
+    #       providers:
+    #       - id: google_calendar_auth
+    #         jwks_uri: https://www.googleapis.com/oauth2/v1/certs
+    #         issuer: https://securetoken.google.com
     #       rules:
-    #       - selector: "google.calendar.v3.*"
-    #         address: calendar.example.com
+    #       - selector: "*"
+    #         requirements:
+    #           provider_id: google_calendar_auth
   "control": { # Selects and configures the service controller used by the service.  The # Configuration for the service control plane.
       # service controller handles features like abuse, quota, billing, logging,
       # monitoring, etc.
@@ -192,56 +197,6 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           # slash, underscore, hyphen, period [/_-.].
     },
   ],
-  "analytics": { # Analytics configuration of the service. # WARNING: DO NOT USE UNTIL THIS MESSAGE IS REMOVED.
-      # 
-      # Analytics configuration.
-      #
-      # The example below shows how to configure monitored resources and metrics
-      # for analytics. In the example, a monitored resource and two metrics are
-      # defined. The `library.googleapis.com/book/returned_count` and
-      # `library.googleapis.com/book/overdue_count` metric are sent
-      # to the analytics.
-      #
-      #     monitored_resources:
-      #     - type: library.googleapis.com/branch
-      #       labels:
-      #       - key: /city
-      #         description: The city where the library branch is located in.
-      #       - key: /name
-      #         description: The name of the branch.
-      #     metrics:
-      #     - name: library.googleapis.com/book/returned_count
-      #       metric_kind: DELTA
-      #       value_type: INT64
-      #       labels:
-      #       - key: /customer_id
-      #     - name: library.googleapis.com/book/overdue_count
-      #       metric_kind: GAUGE
-      #       value_type: INT64
-      #       labels:
-      #       - key: /customer_id
-      #     analytics:
-      #       producer_destinations:
-      #       - monitored_resource: library.googleapis.com/branch
-      #         metrics:
-      #         - library.googleapis.com/book/returned_count
-      #         - library.googleapis.com/book/overdue_count
-    "producerDestinations": [ # Analytics configurations for sending metrics to the analytics backend.
-        # There can be multiple producer destinations, each one must have a
-        # different monitored resource type. A metric can be used in at most
-        # one producer destination.
-      { # Configuration of a specific analytics destination.
-        "monitoredResource": "A String", # The monitored resource type. The type must be defined in
-            # Service.monitored_resources section.
-        "metrics": [ # Names of the metrics to report to this analytics destination.
-            # Each name must be defined in Service.metrics section. Metrics
-            # with value type BOOL and STRING must be of GUAGE kind, metrics with
-            # value type INT64, DOUBLE and MONEY must be of DELTA kind.
-          "A String",
-        ],
-      },
-    ],
-  },
   "systemParameters": { # ### System parameter configuration # System parameter configuration.
       #
       # A system parameter is a special kind of parameter defined by the API
@@ -255,27 +210,26 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
         # config, default system parameters will be used. Default system parameters
         # and names is implementation-dependent.
         #
-        # Example: define api key and alt name for all methods
+        # Example: define api key for all methods
         #
-        # system_parameters
-        #   rules:
-        #     - selector: "*"
-        #       parameters:
-        #         - name: api_key
-        #           url_query_parameter: api_key
-        #         - name: alt
-        #           http_header: Response-Content-Type
+        #     system_parameters
+        #       rules:
+        #         - selector: "*"
+        #           parameters:
+        #             - name: api_key
+        #               url_query_parameter: api_key
+        #
         #
         # Example: define 2 api key names for a specific method.
         #
-        # system_parameters
-        #   rules:
-        #     - selector: "/ListShelves"
-        #       parameters:
-        #         - name: api_key
-        #           http_header: Api-Key1
-        #         - name: api_key
-        #           http_header: Api-Key2
+        #     system_parameters
+        #       rules:
+        #         - selector: "/ListShelves"
+        #           parameters:
+        #             - name: api_key
+        #               http_header: Api-Key1
+        #             - name: api_key
+        #               http_header: Api-Key2
         #
         # **NOTE:** All service configuration rules follow "last one wins" order.
       { # Define a system parameter rule mapping system parameter definitions to
@@ -290,8 +244,7 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
               # is implementation-dependent.
             "urlQueryParameter": "A String", # Define the URL query parameter name to use for the parameter. It is case
                 # sensitive.
-            "name": "A String", # Define the name of the parameter, such as "api_key", "alt", "callback",
-                # and etc. It is case sensitive.
+            "name": "A String", # Define the name of the parameter, such as "api_key" . It is case sensitive.
             "httpHeader": "A String", # Define the HTTP header name to use for the parameter. It is case
                 # insensitive.
           },
@@ -393,14 +346,14 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
       #
       #     name: calendar.googleapis.com
       #     authentication:
+      #       providers:
+      #       - id: google_calendar_auth
+      #         jwks_uri: https://www.googleapis.com/oauth2/v1/certs
+      #         issuer: https://securetoken.google.com
       #       rules:
       #       - selector: "*"
-      #         oauth:
-      #           canonical_scopes: https://www.googleapis.com/auth/calendar
-      #
-      #       - selector: google.calendar.Delegate
-      #         oauth:
-      #           canonical_scopes: https://www.googleapis.com/auth/calendar.read
+      #         requirements:
+      #           provider_id: google_calendar_auth
     "rules": [ # A list of authentication rules that apply to individual API methods.
         #
         # **NOTE:** All service configuration rules follow "last one wins" order.
@@ -447,7 +400,10 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
                 # Example:
                 #
                 #     provider_id: bookstore_auth
-            "audiences": "A String", # The list of JWT
+            "audiences": "A String", # NOTE: This will be deprecated soon, once AuthProvider.audiences is
+                # implemented and accepted in all the runtime components.
+                #
+                # The list of JWT
                 # [audiences](https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#section-4.1.3).
                 # that are allowed to access. A JWT containing any of these audiences will
                 # be accepted. When this setting is absent, only JWTs with audience
@@ -486,6 +442,19 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
             #  - can be inferred from the email domain of the issuer (e.g. a Google service account).
             #
             # Example: https://www.googleapis.com/oauth2/v1/certs
+        "audiences": "A String", # The list of JWT
+            # [audiences](https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#section-4.1.3).
+            # that are allowed to access. A JWT containing any of these audiences will
+            # be accepted. When this setting is absent, only JWTs with audience
+            # "https://Service_name/API_name"
+            # will be accepted. For example, if no audiences are in the setting,
+            # LibraryService API will only accept JWTs with the following audience
+            # "https://library-example.googleapis.com/google.example.library.v1.LibraryService".
+            #
+            # Example:
+            #
+            #     audiences: bookstore_android.apps.googleusercontent.com,
+            #                bookstore_web.apps.googleusercontent.com
         "id": "A String", # The unique identifier of the auth provider. It will be referred to by
             # `AuthRequirement.provider_id`.
             #
@@ -535,6 +504,14 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
         "allowUnregisteredCalls": True or False, # True, if the method allows unregistered calls; false otherwise.
       },
     ],
+    "producerNotificationChannel": "A String", # The full resource name of a channel used for sending notifications to the
+        # service producer.
+        #
+        # Google Service Management currently only supports
+        # [Google Cloud Pub/Sub](https://cloud.google.com/pubsub) as a notification
+        # channel. To use Google Cloud Pub/Sub as the channel, this must be the name
+        # of a Cloud Pub/Sub topic that uses the Cloud Pub/Sub topic name format
+        # documented in https://cloud.google.com/pubsub/docs/overview.
     "requirements": [ # Requirements that must be satisfied before a consumer project can use the
         # service. Each requirement is of the form <service.name>/<requirement-id>;
         # for example 'serviceusage.googleapis.com/billing-enabled'.
@@ -566,23 +543,30 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           # message, as in the example below which describes a REST GET
           # operation on a resource collection of messages:
           #
-          # ```proto
-          # service Messaging {
-          #   rpc GetMessage(GetMessageRequest) returns (Message) {
-          #     option (google.api.http).get = "/v1/messages/{message_id}/{sub.subfield}";
-          #   }
-          # }
-          # message GetMessageRequest {
-          #   message SubMessage {
-          #     string subfield = 1;
-          #   }
-          #   string message_id = 1; // mapped to the URL
-          #   SubMessage sub = 2;    // `sub.subfield` is url-mapped
-          # }
-          # message Message {
-          #   string text = 1; // content of the resource
-          # }
-          # ```
+          #
+          #     service Messaging {
+          #       rpc GetMessage(GetMessageRequest) returns (Message) {
+          #         option (google.api.http).get = "/v1/messages/{message_id}/{sub.subfield}";
+          #       }
+          #     }
+          #     message GetMessageRequest {
+          #       message SubMessage {
+          #         string subfield = 1;
+          #       }
+          #       string message_id = 1; // mapped to the URL
+          #       SubMessage sub = 2;    // `sub.subfield` is url-mapped
+          #     }
+          #     message Message {
+          #       string text = 1; // content of the resource
+          #     }
+          #
+          # The same http annotation can alternatively be expressed inside the
+          # `GRPC API Configuration` YAML file.
+          #
+          #     http:
+          #       rules:
+          #         - selector: <proto_package_name>.Messaging.GetMessage
+          #           get: /v1/messages/{message_id}/{sub.subfield}
           #
           # This definition enables an automatic, bidrectional mapping of HTTP
           # JSON to RPC. Example:
@@ -599,16 +583,16 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           # pattern automatically become (optional) HTTP query
           # parameters. Assume the following definition of the request message:
           #
-          # ```proto
-          # message GetMessageRequest {
-          #   message SubMessage {
-          #     string subfield = 1;
-          #   }
-          #   string message_id = 1; // mapped to the URL
-          #   int64 revision = 2;    // becomes a parameter
-          #   SubMessage sub = 3;    // `sub.subfield` becomes a parameter
-          # }
-          # ```
+          #
+          #     message GetMessageRequest {
+          #       message SubMessage {
+          #         string subfield = 1;
+          #       }
+          #       string message_id = 1; // mapped to the URL
+          #       int64 revision = 2;    // becomes a parameter
+          #       SubMessage sub = 3;    // `sub.subfield` becomes a parameter
+          #     }
+          #
           #
           # This enables a HTTP JSON to RPC mapping as below:
           #
@@ -625,20 +609,20 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           # specifies the mapping. Consider a REST update method on the
           # message resource collection:
           #
-          # ```proto
-          # service Messaging {
-          #   rpc UpdateMessage(UpdateMessageRequest) returns (Message) {
-          #     option (google.api.http) = {
-          #       put: "/v1/messages/{message_id}"
-          #       body: "message"
-          #     };
-          #   }
-          # }
-          # message UpdateMessageRequest {
-          #   string message_id = 1; // mapped to the URL
-          #   Message message = 2;   // mapped to the body
-          # }
-          # ```
+          #
+          #     service Messaging {
+          #       rpc UpdateMessage(UpdateMessageRequest) returns (Message) {
+          #         option (google.api.http) = {
+          #           put: "/v1/messages/{message_id}"
+          #           body: "message"
+          #         };
+          #       }
+          #     }
+          #     message UpdateMessageRequest {
+          #       string message_id = 1; // mapped to the URL
+          #       Message message = 2;   // mapped to the body
+          #     }
+          #
           #
           # The following HTTP JSON to RPC mapping is enabled, where the
           # representation of the JSON in the request body is determined by
@@ -653,20 +637,19 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           # request body.  This enables the following alternative definition of
           # the update method:
           #
-          # ```proto
-          # service Messaging {
-          #   rpc UpdateMessage(Message) returns (Message) {
-          #     option (google.api.http) = {
-          #       put: "/v1/messages/{message_id}"
-          #       body: "*"
-          #     };
-          #   }
-          # }
-          # message Message {
-          #   string message_id = 1;
-          #   string text = 2;
-          # }
-          # ```
+          #     service Messaging {
+          #       rpc UpdateMessage(Message) returns (Message) {
+          #         option (google.api.http) = {
+          #           put: "/v1/messages/{message_id}"
+          #           body: "*"
+          #         };
+          #       }
+          #     }
+          #     message Message {
+          #       string message_id = 1;
+          #       string text = 2;
+          #     }
+          #
           #
           # The following HTTP JSON to RPC mapping is enabled:
           #
@@ -683,22 +666,21 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           # It is possible to define multiple HTTP methods for one RPC by using
           # the `additional_bindings` option. Example:
           #
-          # ```proto
-          # service Messaging {
-          #   rpc GetMessage(GetMessageRequest) returns (Message) {
-          #     option (google.api.http) = {
-          #       get: "/v1/messages/{message_id}"
-          #       additional_bindings {
-          #         get: "/v1/users/{user_id}/messages/{message_id}"
+          #     service Messaging {
+          #       rpc GetMessage(GetMessageRequest) returns (Message) {
+          #         option (google.api.http) = {
+          #           get: "/v1/messages/{message_id}"
+          #           additional_bindings {
+          #             get: "/v1/users/{user_id}/messages/{message_id}"
+          #           }
+          #         };
           #       }
-          #     };
-          #   }
-          # }
-          # message GetMessageRequest {
-          #   string message_id = 1;
-          #   string user_id = 2;
-          # }
-          # ```
+          #     }
+          #     message GetMessageRequest {
+          #       string message_id = 1;
+          #       string user_id = 2;
+          #     }
+          #
           #
           # This enables the following two alternative HTTP JSON to RPC
           # mappings:
@@ -739,7 +721,7 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           #
           # The syntax `**` matches zero or more path segments. It follows the semantics
           # of [RFC 6570](https://tools.ietf.org/html/rfc6570) Section 3.2.3 Reserved
-          # Expansion.
+          # Expansion. NOTE: it must be the last segment in the path except the Verb.
           #
           # The syntax `LITERAL` matches literal text in the URL path.
           #
@@ -758,7 +740,7 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
         "body": "A String", # The name of the request field whose value is mapped to the HTTP body, or
             # `*` for mapping all fields not captured by the path pattern to the HTTP
             # body. NOTE: the referred field must not be a repeated field and must be
-            # present at the top-level of response message type.
+            # present at the top-level of request message type.
         "get": "A String", # Used for listing and getting information about resources.
         "mediaDownload": { # Do not use this. For media support, add instead # Do not use this. For media support, add instead
             # [][google.bytestream.RestByteStream] as an API to your
@@ -815,8 +797,14 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           "options": [ # Any metadata attached to the method.
             { # A protocol buffer option, which can be attached to a message, field,
                 # enumeration, etc.
-              "name": "A String", # The option's name. For example, `"java_package"`.
-              "value": { # The option's value. For example, `"com.google.protobuf"`.
+              "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                  # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                  # For custom options, it should be the fully-qualified name. For example,
+                  # `"google.api.http"`.
+              "value": { # The option's value packed in an Any message. If the value is a primitive,
+                  # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                  # should be used. If the value is an enum, it should be stored as an int32
+                  # value using the google.protobuf.Int32Value type.
                 "a_key": "", # Properties of the object. Contains field @type with type URL.
               },
             },
@@ -936,8 +924,14 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
       "options": [ # Any metadata attached to the API.
         { # A protocol buffer option, which can be attached to a message, field,
             # enumeration, etc.
-          "name": "A String", # The option's name. For example, `"java_package"`.
-          "value": { # The option's value. For example, `"com.google.protobuf"`.
+          "name": "A String", # The option's name. For protobuf built-in options (options defined in
+              # descriptor.proto), this is the short name. For example, `"map_entry"`.
+              # For custom options, it should be the fully-qualified name. For example,
+              # `"google.api.http"`.
+          "value": { # The option's value packed in an Any message. If the value is a primitive,
+              # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+              # should be used. If the value is an enum, it should be stored as an int32
+              # value using the google.protobuf.Int32Value type.
             "a_key": "", # Properties of the object. Contains field @type with type URL.
           },
         },
@@ -1020,7 +1014,9 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
     ],
   },
   "metrics": [ # Defines the metrics used by this service.
-    { # Defines a metric type and its schema.
+    { # Defines a metric type and its schema. Once a metric descriptor is created,
+        # deleting or altering it stops data collection and makes the metric type's
+        # existing data unusable.
       "displayName": "A String", # A concise name for the metric, which can be displayed in user interfaces.
           # Use sentence case without an ending period, for example "Request count".
       "description": "A String", # A detailed description of the metric, which can be used in documentation.
@@ -1028,29 +1024,25 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           # Some combinations of `metric_kind` and `value_type` might not be supported.
       "valueType": "A String", # Whether the measurement is an integer, a floating-point number, etc.
           # Some combinations of `metric_kind` and `value_type` might not be supported.
-      "labels": [ # The set of labels that can be used to describe a specific instance of this
-          # metric type. For example, the
-          # `compute.googleapis.com/instance/network/received_bytes_count` metric type
-          # has a label, `loadbalanced`, that specifies whether the traffic was
-          # received through a load balanced IP address.
+      "labels": [ # The set of labels that can be used to describe a specific
+          # instance of this metric type. For example, the
+          # `appengine.googleapis.com/http/server/response_latencies` metric
+          # type has a label for the HTTP response code, `response_code`, so
+          # you can look at latencies for successful responses or just
+          # for responses that failed.
         { # A description of a label.
           "valueType": "A String", # The type of data that can be assigned to the label.
           "description": "A String", # A human-readable description for the label.
           "key": "A String", # The label key.
         },
       ],
-      "type": "A String", # The metric type including a DNS name prefix, for example
-          # `"compute.googleapis.com/instance/cpu/utilization"`. Metric types
-          # should use a natural hierarchical grouping such as the following:
+      "type": "A String", # The metric type, including its DNS name prefix. The type is not
+          # URL-encoded.  All user-defined metric types have the DNS name
+          # `custom.googleapis.com`.  Metric types should use a natural hierarchical
+          # grouping. For example:
           #
-          #     compute.googleapis.com/instance/cpu/utilization
-          #     compute.googleapis.com/instance/disk/read_ops_count
-          #     compute.googleapis.com/instance/network/received_bytes_count
-          #
-          # Note that if the metric type changes, the monitoring data will be
-          # discontinued, and anything depends on it will break, such as monitoring
-          # dashboards, alerting rules and quota limits. Therefore, once a metric has
-          # been published, its type should be immutable.
+          #     "custom.googleapis.com/invoice/paid/amount"
+          #     "appengine.googleapis.com/http/server/response_latencies"
       "unit": "A String", # The unit in which the metric value is reported. It is only applicable
           # if the `value_type` is `INT64`, `DOUBLE`, or `DISTRIBUTION`. The
           # supported units are a subset of [The Unified Code for Units of
@@ -1115,11 +1107,14 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           #    `{requests}/s == 1/s`, `By{transmitted}/s == By/s`.
           # * `NAME` is a sequence of non-blank printable ASCII characters not
           #    containing '{' or '}'.
-      "name": "A String", # Resource name. The format of the name may vary between different
-          # implementations. For examples:
+      "name": "A String", # The resource name of the metric descriptor. Depending on the
+          # implementation, the name typically includes: (1) the parent resource name
+          # that defines the scope of the metric type or of its data; and (2) the
+          # metric's URL-encoded type, which also appears in the `type` field of this
+          # descriptor. For example, following is the resource name of a custom
+          # metric within the GCP project 123456789:
           #
-          #     projects/{project_id}/metricDescriptors/{type=**}
-          #     metricDescriptors/{type=**}
+          #     "projects/123456789/metricDescriptors/custom.googleapis.com%2Finvoice%2Fpaid%2Famount"
     },
   ],
   "enums": [ # A list of all enum types included in this API service.  Enums
@@ -1141,8 +1136,14 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           "options": [ # Protocol buffer options.
             { # A protocol buffer option, which can be attached to a message, field,
                 # enumeration, etc.
-              "name": "A String", # The option's name. For example, `"java_package"`.
-              "value": { # The option's value. For example, `"com.google.protobuf"`.
+              "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                  # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                  # For custom options, it should be the fully-qualified name. For example,
+                  # `"google.api.http"`.
+              "value": { # The option's value packed in an Any message. If the value is a primitive,
+                  # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                  # should be used. If the value is an enum, it should be stored as an int32
+                  # value using the google.protobuf.Int32Value type.
                 "a_key": "", # Properties of the object. Contains field @type with type URL.
               },
             },
@@ -1153,8 +1154,14 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
       "options": [ # Protocol buffer options.
         { # A protocol buffer option, which can be attached to a message, field,
             # enumeration, etc.
-          "name": "A String", # The option's name. For example, `"java_package"`.
-          "value": { # The option's value. For example, `"com.google.protobuf"`.
+          "name": "A String", # The option's name. For protobuf built-in options (options defined in
+              # descriptor.proto), this is the short name. For example, `"map_entry"`.
+              # For custom options, it should be the fully-qualified name. For example,
+              # `"google.api.http"`.
+          "value": { # The option's value packed in an Any message. If the value is a primitive,
+              # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+              # should be used. If the value is an enum, it should be stored as an int32
+              # value using the google.protobuf.Int32Value type.
             "a_key": "", # Properties of the object. Contains field @type with type URL.
           },
         },
@@ -1197,8 +1204,14 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           "options": [ # The protocol buffer options.
             { # A protocol buffer option, which can be attached to a message, field,
                 # enumeration, etc.
-              "name": "A String", # The option's name. For example, `"java_package"`.
-              "value": { # The option's value. For example, `"com.google.protobuf"`.
+              "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                  # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                  # For custom options, it should be the fully-qualified name. For example,
+                  # `"google.api.http"`.
+              "value": { # The option's value packed in an Any message. If the value is a primitive,
+                  # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                  # should be used. If the value is an enum, it should be stored as an int32
+                  # value using the google.protobuf.Int32Value type.
                 "a_key": "", # Properties of the object. Contains field @type with type URL.
               },
             },
@@ -1209,8 +1222,14 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
       "options": [ # The protocol buffer options.
         { # A protocol buffer option, which can be attached to a message, field,
             # enumeration, etc.
-          "name": "A String", # The option's name. For example, `"java_package"`.
-          "value": { # The option's value. For example, `"com.google.protobuf"`.
+          "name": "A String", # The option's name. For protobuf built-in options (options defined in
+              # descriptor.proto), this is the short name. For example, `"map_entry"`.
+              # For custom options, it should be the fully-qualified name. For example,
+              # `"google.api.http"`.
+          "value": { # The option's value packed in an Any message. If the value is a primitive,
+              # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+              # should be used. If the value is an enum, it should be stored as an int32
+              # value using the google.protobuf.Int32Value type.
             "a_key": "", # Properties of the object. Contains field @type with type URL.
           },
         },
@@ -1426,8 +1445,14 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
           "options": [ # The protocol buffer options.
             { # A protocol buffer option, which can be attached to a message, field,
                 # enumeration, etc.
-              "name": "A String", # The option's name. For example, `"java_package"`.
-              "value": { # The option's value. For example, `"com.google.protobuf"`.
+              "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                  # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                  # For custom options, it should be the fully-qualified name. For example,
+                  # `"google.api.http"`.
+              "value": { # The option's value packed in an Any message. If the value is a primitive,
+                  # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                  # should be used. If the value is an enum, it should be stored as an int32
+                  # value using the google.protobuf.Int32Value type.
                 "a_key": "", # Properties of the object. Contains field @type with type URL.
               },
             },
@@ -1438,8 +1463,14 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
       "options": [ # The protocol buffer options.
         { # A protocol buffer option, which can be attached to a message, field,
             # enumeration, etc.
-          "name": "A String", # The option's name. For example, `"java_package"`.
-          "value": { # The option's value. For example, `"com.google.protobuf"`.
+          "name": "A String", # The option's name. For protobuf built-in options (options defined in
+              # descriptor.proto), this is the short name. For example, `"map_entry"`.
+              # For custom options, it should be the fully-qualified name. For example,
+              # `"google.api.http"`.
+          "value": { # The option's value packed in an Any message. If the value is a primitive,
+              # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+              # should be used. If the value is an enum, it should be stored as an int32
+              # value using the google.protobuf.Int32Value type.
             "a_key": "", # Properties of the object. Contains field @type with type URL.
           },
         },
@@ -1498,29 +1529,7 @@ for naming requirements.  For example: `example.googleapis.com`. (required)
         #       # it to decide whether the subsequent cross-origin request is
         #       # allowed to proceed.
         #     - name: library-example.googleapis.com
-        #       apis: google.example.library.v1.Library
         #       allow_cors: true
-        #       # Below entry makes 'google.example.library.v1.Library'
-        #       # API be served from endpoint address
-        #       # google.example.library-example.v1.LibraryManager.
-        #     - name: library-manager.googleapis.com
-        #       apis: google.example.library.v1.LibraryManager
-        #       # BNS address for a borg job. Can specify a task by appending
-        #       # "/taskId" (e.g. "/0") to the job spec.
-        #
-        # Example OpenAPI extension for endpoint with allow_cors set to true:
-        #
-        #     {
-        #       "swagger": "2.0",
-        #       "info": {
-        #         "description": "A simple..."
-        #       },
-        #       "host": "MY_PROJECT_ID.appspot.com",
-        #       "x-google-endpoints": [{
-        #         "name": "MY_PROJECT_ID.appspot.com",
-        #         "allow_cors": "true"
-        #       }]
-        #     }
       "allowCors": True or False, # Allowing
           # [CORS](https://en.wikipedia.org/wiki/Cross-origin_resource_sharing), aka
           # cross-domain traffic, would allow the backends served from this endpoint to
@@ -1567,10 +1576,15 @@ Returns:
       #     title: Google Calendar API
       #     apis:
       #     - name: google.calendar.v3.Calendar
-      #     backend:
+      #     authentication:
+      #       providers:
+      #       - id: google_calendar_auth
+      #         jwks_uri: https://www.googleapis.com/oauth2/v1/certs
+      #         issuer: https://securetoken.google.com
       #       rules:
-      #       - selector: "google.calendar.v3.*"
-      #         address: calendar.example.com
+      #       - selector: "*"
+      #         requirements:
+      #           provider_id: google_calendar_auth
     "control": { # Selects and configures the service controller used by the service.  The # Configuration for the service control plane.
         # service controller handles features like abuse, quota, billing, logging,
         # monitoring, etc.
@@ -1642,56 +1656,6 @@ Returns:
             # slash, underscore, hyphen, period [/_-.].
       },
     ],
-    "analytics": { # Analytics configuration of the service. # WARNING: DO NOT USE UNTIL THIS MESSAGE IS REMOVED.
-        #
-        # Analytics configuration.
-        #
-        # The example below shows how to configure monitored resources and metrics
-        # for analytics. In the example, a monitored resource and two metrics are
-        # defined. The `library.googleapis.com/book/returned_count` and
-        # `library.googleapis.com/book/overdue_count` metric are sent
-        # to the analytics.
-        #
-        #     monitored_resources:
-        #     - type: library.googleapis.com/branch
-        #       labels:
-        #       - key: /city
-        #         description: The city where the library branch is located in.
-        #       - key: /name
-        #         description: The name of the branch.
-        #     metrics:
-        #     - name: library.googleapis.com/book/returned_count
-        #       metric_kind: DELTA
-        #       value_type: INT64
-        #       labels:
-        #       - key: /customer_id
-        #     - name: library.googleapis.com/book/overdue_count
-        #       metric_kind: GAUGE
-        #       value_type: INT64
-        #       labels:
-        #       - key: /customer_id
-        #     analytics:
-        #       producer_destinations:
-        #       - monitored_resource: library.googleapis.com/branch
-        #         metrics:
-        #         - library.googleapis.com/book/returned_count
-        #         - library.googleapis.com/book/overdue_count
-      "producerDestinations": [ # Analytics configurations for sending metrics to the analytics backend.
-          # There can be multiple producer destinations, each one must have a
-          # different monitored resource type. A metric can be used in at most
-          # one producer destination.
-        { # Configuration of a specific analytics destination.
-          "monitoredResource": "A String", # The monitored resource type. The type must be defined in
-              # Service.monitored_resources section.
-          "metrics": [ # Names of the metrics to report to this analytics destination.
-              # Each name must be defined in Service.metrics section. Metrics
-              # with value type BOOL and STRING must be of GUAGE kind, metrics with
-              # value type INT64, DOUBLE and MONEY must be of DELTA kind.
-            "A String",
-          ],
-        },
-      ],
-    },
     "systemParameters": { # ### System parameter configuration # System parameter configuration.
         #
         # A system parameter is a special kind of parameter defined by the API
@@ -1705,27 +1669,26 @@ Returns:
           # config, default system parameters will be used. Default system parameters
           # and names is implementation-dependent.
           #
-          # Example: define api key and alt name for all methods
+          # Example: define api key for all methods
           #
-          # system_parameters
-          #   rules:
-          #     - selector: "*"
-          #       parameters:
-          #         - name: api_key
-          #           url_query_parameter: api_key
-          #         - name: alt
-          #           http_header: Response-Content-Type
+          #     system_parameters
+          #       rules:
+          #         - selector: "*"
+          #           parameters:
+          #             - name: api_key
+          #               url_query_parameter: api_key
+          #
           #
           # Example: define 2 api key names for a specific method.
           #
-          # system_parameters
-          #   rules:
-          #     - selector: "/ListShelves"
-          #       parameters:
-          #         - name: api_key
-          #           http_header: Api-Key1
-          #         - name: api_key
-          #           http_header: Api-Key2
+          #     system_parameters
+          #       rules:
+          #         - selector: "/ListShelves"
+          #           parameters:
+          #             - name: api_key
+          #               http_header: Api-Key1
+          #             - name: api_key
+          #               http_header: Api-Key2
           #
           # **NOTE:** All service configuration rules follow "last one wins" order.
         { # Define a system parameter rule mapping system parameter definitions to
@@ -1740,8 +1703,7 @@ Returns:
                 # is implementation-dependent.
               "urlQueryParameter": "A String", # Define the URL query parameter name to use for the parameter. It is case
                   # sensitive.
-              "name": "A String", # Define the name of the parameter, such as "api_key", "alt", "callback",
-                  # and etc. It is case sensitive.
+              "name": "A String", # Define the name of the parameter, such as "api_key" . It is case sensitive.
               "httpHeader": "A String", # Define the HTTP header name to use for the parameter. It is case
                   # insensitive.
             },
@@ -1843,14 +1805,14 @@ Returns:
         #
         #     name: calendar.googleapis.com
         #     authentication:
+        #       providers:
+        #       - id: google_calendar_auth
+        #         jwks_uri: https://www.googleapis.com/oauth2/v1/certs
+        #         issuer: https://securetoken.google.com
         #       rules:
         #       - selector: "*"
-        #         oauth:
-        #           canonical_scopes: https://www.googleapis.com/auth/calendar
-        #
-        #       - selector: google.calendar.Delegate
-        #         oauth:
-        #           canonical_scopes: https://www.googleapis.com/auth/calendar.read
+        #         requirements:
+        #           provider_id: google_calendar_auth
       "rules": [ # A list of authentication rules that apply to individual API methods.
           #
           # **NOTE:** All service configuration rules follow "last one wins" order.
@@ -1897,7 +1859,10 @@ Returns:
                   # Example:
                   #
                   #     provider_id: bookstore_auth
-              "audiences": "A String", # The list of JWT
+              "audiences": "A String", # NOTE: This will be deprecated soon, once AuthProvider.audiences is
+                  # implemented and accepted in all the runtime components.
+                  #
+                  # The list of JWT
                   # [audiences](https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#section-4.1.3).
                   # that are allowed to access. A JWT containing any of these audiences will
                   # be accepted. When this setting is absent, only JWTs with audience
@@ -1936,6 +1901,19 @@ Returns:
               #  - can be inferred from the email domain of the issuer (e.g. a Google service account).
               #
               # Example: https://www.googleapis.com/oauth2/v1/certs
+          "audiences": "A String", # The list of JWT
+              # [audiences](https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#section-4.1.3).
+              # that are allowed to access. A JWT containing any of these audiences will
+              # be accepted. When this setting is absent, only JWTs with audience
+              # "https://Service_name/API_name"
+              # will be accepted. For example, if no audiences are in the setting,
+              # LibraryService API will only accept JWTs with the following audience
+              # "https://library-example.googleapis.com/google.example.library.v1.LibraryService".
+              #
+              # Example:
+              #
+              #     audiences: bookstore_android.apps.googleusercontent.com,
+              #                bookstore_web.apps.googleusercontent.com
           "id": "A String", # The unique identifier of the auth provider. It will be referred to by
               # `AuthRequirement.provider_id`.
               #
@@ -1985,6 +1963,14 @@ Returns:
           "allowUnregisteredCalls": True or False, # True, if the method allows unregistered calls; false otherwise.
         },
       ],
+      "producerNotificationChannel": "A String", # The full resource name of a channel used for sending notifications to the
+          # service producer.
+          #
+          # Google Service Management currently only supports
+          # [Google Cloud Pub/Sub](https://cloud.google.com/pubsub) as a notification
+          # channel. To use Google Cloud Pub/Sub as the channel, this must be the name
+          # of a Cloud Pub/Sub topic that uses the Cloud Pub/Sub topic name format
+          # documented in https://cloud.google.com/pubsub/docs/overview.
       "requirements": [ # Requirements that must be satisfied before a consumer project can use the
           # service. Each requirement is of the form <service.name>/<requirement-id>;
           # for example 'serviceusage.googleapis.com/billing-enabled'.
@@ -2016,23 +2002,30 @@ Returns:
             # message, as in the example below which describes a REST GET
             # operation on a resource collection of messages:
             #
-            # ```proto
-            # service Messaging {
-            #   rpc GetMessage(GetMessageRequest) returns (Message) {
-            #     option (google.api.http).get = "/v1/messages/{message_id}/{sub.subfield}";
-            #   }
-            # }
-            # message GetMessageRequest {
-            #   message SubMessage {
-            #     string subfield = 1;
-            #   }
-            #   string message_id = 1; // mapped to the URL
-            #   SubMessage sub = 2;    // `sub.subfield` is url-mapped
-            # }
-            # message Message {
-            #   string text = 1; // content of the resource
-            # }
-            # ```
+            #
+            #     service Messaging {
+            #       rpc GetMessage(GetMessageRequest) returns (Message) {
+            #         option (google.api.http).get = "/v1/messages/{message_id}/{sub.subfield}";
+            #       }
+            #     }
+            #     message GetMessageRequest {
+            #       message SubMessage {
+            #         string subfield = 1;
+            #       }
+            #       string message_id = 1; // mapped to the URL
+            #       SubMessage sub = 2;    // `sub.subfield` is url-mapped
+            #     }
+            #     message Message {
+            #       string text = 1; // content of the resource
+            #     }
+            #
+            # The same http annotation can alternatively be expressed inside the
+            # `GRPC API Configuration` YAML file.
+            #
+            #     http:
+            #       rules:
+            #         - selector: <proto_package_name>.Messaging.GetMessage
+            #           get: /v1/messages/{message_id}/{sub.subfield}
             #
             # This definition enables an automatic, bidrectional mapping of HTTP
             # JSON to RPC. Example:
@@ -2049,16 +2042,16 @@ Returns:
             # pattern automatically become (optional) HTTP query
             # parameters. Assume the following definition of the request message:
             #
-            # ```proto
-            # message GetMessageRequest {
-            #   message SubMessage {
-            #     string subfield = 1;
-            #   }
-            #   string message_id = 1; // mapped to the URL
-            #   int64 revision = 2;    // becomes a parameter
-            #   SubMessage sub = 3;    // `sub.subfield` becomes a parameter
-            # }
-            # ```
+            #
+            #     message GetMessageRequest {
+            #       message SubMessage {
+            #         string subfield = 1;
+            #       }
+            #       string message_id = 1; // mapped to the URL
+            #       int64 revision = 2;    // becomes a parameter
+            #       SubMessage sub = 3;    // `sub.subfield` becomes a parameter
+            #     }
+            #
             #
             # This enables a HTTP JSON to RPC mapping as below:
             #
@@ -2075,20 +2068,20 @@ Returns:
             # specifies the mapping. Consider a REST update method on the
             # message resource collection:
             #
-            # ```proto
-            # service Messaging {
-            #   rpc UpdateMessage(UpdateMessageRequest) returns (Message) {
-            #     option (google.api.http) = {
-            #       put: "/v1/messages/{message_id}"
-            #       body: "message"
-            #     };
-            #   }
-            # }
-            # message UpdateMessageRequest {
-            #   string message_id = 1; // mapped to the URL
-            #   Message message = 2;   // mapped to the body
-            # }
-            # ```
+            #
+            #     service Messaging {
+            #       rpc UpdateMessage(UpdateMessageRequest) returns (Message) {
+            #         option (google.api.http) = {
+            #           put: "/v1/messages/{message_id}"
+            #           body: "message"
+            #         };
+            #       }
+            #     }
+            #     message UpdateMessageRequest {
+            #       string message_id = 1; // mapped to the URL
+            #       Message message = 2;   // mapped to the body
+            #     }
+            #
             #
             # The following HTTP JSON to RPC mapping is enabled, where the
             # representation of the JSON in the request body is determined by
@@ -2103,20 +2096,19 @@ Returns:
             # request body.  This enables the following alternative definition of
             # the update method:
             #
-            # ```proto
-            # service Messaging {
-            #   rpc UpdateMessage(Message) returns (Message) {
-            #     option (google.api.http) = {
-            #       put: "/v1/messages/{message_id}"
-            #       body: "*"
-            #     };
-            #   }
-            # }
-            # message Message {
-            #   string message_id = 1;
-            #   string text = 2;
-            # }
-            # ```
+            #     service Messaging {
+            #       rpc UpdateMessage(Message) returns (Message) {
+            #         option (google.api.http) = {
+            #           put: "/v1/messages/{message_id}"
+            #           body: "*"
+            #         };
+            #       }
+            #     }
+            #     message Message {
+            #       string message_id = 1;
+            #       string text = 2;
+            #     }
+            #
             #
             # The following HTTP JSON to RPC mapping is enabled:
             #
@@ -2133,22 +2125,21 @@ Returns:
             # It is possible to define multiple HTTP methods for one RPC by using
             # the `additional_bindings` option. Example:
             #
-            # ```proto
-            # service Messaging {
-            #   rpc GetMessage(GetMessageRequest) returns (Message) {
-            #     option (google.api.http) = {
-            #       get: "/v1/messages/{message_id}"
-            #       additional_bindings {
-            #         get: "/v1/users/{user_id}/messages/{message_id}"
+            #     service Messaging {
+            #       rpc GetMessage(GetMessageRequest) returns (Message) {
+            #         option (google.api.http) = {
+            #           get: "/v1/messages/{message_id}"
+            #           additional_bindings {
+            #             get: "/v1/users/{user_id}/messages/{message_id}"
+            #           }
+            #         };
             #       }
-            #     };
-            #   }
-            # }
-            # message GetMessageRequest {
-            #   string message_id = 1;
-            #   string user_id = 2;
-            # }
-            # ```
+            #     }
+            #     message GetMessageRequest {
+            #       string message_id = 1;
+            #       string user_id = 2;
+            #     }
+            #
             #
             # This enables the following two alternative HTTP JSON to RPC
             # mappings:
@@ -2189,7 +2180,7 @@ Returns:
             #
             # The syntax `**` matches zero or more path segments. It follows the semantics
             # of [RFC 6570](https://tools.ietf.org/html/rfc6570) Section 3.2.3 Reserved
-            # Expansion.
+            # Expansion. NOTE: it must be the last segment in the path except the Verb.
             #
             # The syntax `LITERAL` matches literal text in the URL path.
             #
@@ -2208,7 +2199,7 @@ Returns:
           "body": "A String", # The name of the request field whose value is mapped to the HTTP body, or
               # `*` for mapping all fields not captured by the path pattern to the HTTP
               # body. NOTE: the referred field must not be a repeated field and must be
-              # present at the top-level of response message type.
+              # present at the top-level of request message type.
           "get": "A String", # Used for listing and getting information about resources.
           "mediaDownload": { # Do not use this. For media support, add instead # Do not use this. For media support, add instead
               # [][google.bytestream.RestByteStream] as an API to your
@@ -2265,8 +2256,14 @@ Returns:
             "options": [ # Any metadata attached to the method.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -2386,8 +2383,14 @@ Returns:
         "options": [ # Any metadata attached to the API.
           { # A protocol buffer option, which can be attached to a message, field,
               # enumeration, etc.
-            "name": "A String", # The option's name. For example, `"java_package"`.
-            "value": { # The option's value. For example, `"com.google.protobuf"`.
+            "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                # For custom options, it should be the fully-qualified name. For example,
+                # `"google.api.http"`.
+            "value": { # The option's value packed in an Any message. If the value is a primitive,
+                # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                # should be used. If the value is an enum, it should be stored as an int32
+                # value using the google.protobuf.Int32Value type.
               "a_key": "", # Properties of the object. Contains field @type with type URL.
             },
           },
@@ -2470,7 +2473,9 @@ Returns:
       ],
     },
     "metrics": [ # Defines the metrics used by this service.
-      { # Defines a metric type and its schema.
+      { # Defines a metric type and its schema. Once a metric descriptor is created,
+          # deleting or altering it stops data collection and makes the metric type's
+          # existing data unusable.
         "displayName": "A String", # A concise name for the metric, which can be displayed in user interfaces.
             # Use sentence case without an ending period, for example "Request count".
         "description": "A String", # A detailed description of the metric, which can be used in documentation.
@@ -2478,29 +2483,25 @@ Returns:
             # Some combinations of `metric_kind` and `value_type` might not be supported.
         "valueType": "A String", # Whether the measurement is an integer, a floating-point number, etc.
             # Some combinations of `metric_kind` and `value_type` might not be supported.
-        "labels": [ # The set of labels that can be used to describe a specific instance of this
-            # metric type. For example, the
-            # `compute.googleapis.com/instance/network/received_bytes_count` metric type
-            # has a label, `loadbalanced`, that specifies whether the traffic was
-            # received through a load balanced IP address.
+        "labels": [ # The set of labels that can be used to describe a specific
+            # instance of this metric type. For example, the
+            # `appengine.googleapis.com/http/server/response_latencies` metric
+            # type has a label for the HTTP response code, `response_code`, so
+            # you can look at latencies for successful responses or just
+            # for responses that failed.
           { # A description of a label.
             "valueType": "A String", # The type of data that can be assigned to the label.
             "description": "A String", # A human-readable description for the label.
             "key": "A String", # The label key.
           },
         ],
-        "type": "A String", # The metric type including a DNS name prefix, for example
-            # `"compute.googleapis.com/instance/cpu/utilization"`. Metric types
-            # should use a natural hierarchical grouping such as the following:
+        "type": "A String", # The metric type, including its DNS name prefix. The type is not
+            # URL-encoded.  All user-defined metric types have the DNS name
+            # `custom.googleapis.com`.  Metric types should use a natural hierarchical
+            # grouping. For example:
             #
-            #     compute.googleapis.com/instance/cpu/utilization
-            #     compute.googleapis.com/instance/disk/read_ops_count
-            #     compute.googleapis.com/instance/network/received_bytes_count
-            #
-            # Note that if the metric type changes, the monitoring data will be
-            # discontinued, and anything depends on it will break, such as monitoring
-            # dashboards, alerting rules and quota limits. Therefore, once a metric has
-            # been published, its type should be immutable.
+            #     "custom.googleapis.com/invoice/paid/amount"
+            #     "appengine.googleapis.com/http/server/response_latencies"
         "unit": "A String", # The unit in which the metric value is reported. It is only applicable
             # if the `value_type` is `INT64`, `DOUBLE`, or `DISTRIBUTION`. The
             # supported units are a subset of [The Unified Code for Units of
@@ -2565,11 +2566,14 @@ Returns:
             #    `{requests}/s == 1/s`, `By{transmitted}/s == By/s`.
             # * `NAME` is a sequence of non-blank printable ASCII characters not
             #    containing '{' or '}'.
-        "name": "A String", # Resource name. The format of the name may vary between different
-            # implementations. For examples:
+        "name": "A String", # The resource name of the metric descriptor. Depending on the
+            # implementation, the name typically includes: (1) the parent resource name
+            # that defines the scope of the metric type or of its data; and (2) the
+            # metric's URL-encoded type, which also appears in the `type` field of this
+            # descriptor. For example, following is the resource name of a custom
+            # metric within the GCP project 123456789:
             #
-            #     projects/{project_id}/metricDescriptors/{type=**}
-            #     metricDescriptors/{type=**}
+            #     "projects/123456789/metricDescriptors/custom.googleapis.com%2Finvoice%2Fpaid%2Famount"
       },
     ],
     "enums": [ # A list of all enum types included in this API service.  Enums
@@ -2591,8 +2595,14 @@ Returns:
             "options": [ # Protocol buffer options.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -2603,8 +2613,14 @@ Returns:
         "options": [ # Protocol buffer options.
           { # A protocol buffer option, which can be attached to a message, field,
               # enumeration, etc.
-            "name": "A String", # The option's name. For example, `"java_package"`.
-            "value": { # The option's value. For example, `"com.google.protobuf"`.
+            "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                # For custom options, it should be the fully-qualified name. For example,
+                # `"google.api.http"`.
+            "value": { # The option's value packed in an Any message. If the value is a primitive,
+                # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                # should be used. If the value is an enum, it should be stored as an int32
+                # value using the google.protobuf.Int32Value type.
               "a_key": "", # Properties of the object. Contains field @type with type URL.
             },
           },
@@ -2647,8 +2663,14 @@ Returns:
             "options": [ # The protocol buffer options.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -2659,8 +2681,14 @@ Returns:
         "options": [ # The protocol buffer options.
           { # A protocol buffer option, which can be attached to a message, field,
               # enumeration, etc.
-            "name": "A String", # The option's name. For example, `"java_package"`.
-            "value": { # The option's value. For example, `"com.google.protobuf"`.
+            "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                # For custom options, it should be the fully-qualified name. For example,
+                # `"google.api.http"`.
+            "value": { # The option's value packed in an Any message. If the value is a primitive,
+                # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                # should be used. If the value is an enum, it should be stored as an int32
+                # value using the google.protobuf.Int32Value type.
               "a_key": "", # Properties of the object. Contains field @type with type URL.
             },
           },
@@ -2876,8 +2904,14 @@ Returns:
             "options": [ # The protocol buffer options.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -2888,8 +2922,14 @@ Returns:
         "options": [ # The protocol buffer options.
           { # A protocol buffer option, which can be attached to a message, field,
               # enumeration, etc.
-            "name": "A String", # The option's name. For example, `"java_package"`.
-            "value": { # The option's value. For example, `"com.google.protobuf"`.
+            "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                # For custom options, it should be the fully-qualified name. For example,
+                # `"google.api.http"`.
+            "value": { # The option's value packed in an Any message. If the value is a primitive,
+                # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                # should be used. If the value is an enum, it should be stored as an int32
+                # value using the google.protobuf.Int32Value type.
               "a_key": "", # Properties of the object. Contains field @type with type URL.
             },
           },
@@ -2948,29 +2988,7 @@ Returns:
           #       # it to decide whether the subsequent cross-origin request is
           #       # allowed to proceed.
           #     - name: library-example.googleapis.com
-          #       apis: google.example.library.v1.Library
           #       allow_cors: true
-          #       # Below entry makes 'google.example.library.v1.Library'
-          #       # API be served from endpoint address
-          #       # google.example.library-example.v1.LibraryManager.
-          #     - name: library-manager.googleapis.com
-          #       apis: google.example.library.v1.LibraryManager
-          #       # BNS address for a borg job. Can specify a task by appending
-          #       # "/taskId" (e.g. "/0") to the job spec.
-          #
-          # Example OpenAPI extension for endpoint with allow_cors set to true:
-          #
-          #     {
-          #       "swagger": "2.0",
-          #       "info": {
-          #         "description": "A simple..."
-          #       },
-          #       "host": "MY_PROJECT_ID.appspot.com",
-          #       "x-google-endpoints": [{
-          #         "name": "MY_PROJECT_ID.appspot.com",
-          #         "allow_cors": "true"
-          #       }]
-          #     }
         "allowCors": True or False, # Allowing
             # [CORS](https://en.wikipedia.org/wiki/Cross-origin_resource_sharing), aka
             # cross-domain traffic, would allow the backends served from this endpoint to
@@ -3003,7 +3021,7 @@ Returns:
 Args:
   serviceName: string, The name of the service.  See the [overview](/service-management/overview)
 for naming requirements.  For example: `example.googleapis.com`. (required)
-  configId: string, A parameter (required)
+  configId: string, The id of the service configuration resource. (required)
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -3026,10 +3044,15 @@ Returns:
       #     title: Google Calendar API
       #     apis:
       #     - name: google.calendar.v3.Calendar
-      #     backend:
+      #     authentication:
+      #       providers:
+      #       - id: google_calendar_auth
+      #         jwks_uri: https://www.googleapis.com/oauth2/v1/certs
+      #         issuer: https://securetoken.google.com
       #       rules:
-      #       - selector: "google.calendar.v3.*"
-      #         address: calendar.example.com
+      #       - selector: "*"
+      #         requirements:
+      #           provider_id: google_calendar_auth
     "control": { # Selects and configures the service controller used by the service.  The # Configuration for the service control plane.
         # service controller handles features like abuse, quota, billing, logging,
         # monitoring, etc.
@@ -3101,56 +3124,6 @@ Returns:
             # slash, underscore, hyphen, period [/_-.].
       },
     ],
-    "analytics": { # Analytics configuration of the service. # WARNING: DO NOT USE UNTIL THIS MESSAGE IS REMOVED.
-        #
-        # Analytics configuration.
-        #
-        # The example below shows how to configure monitored resources and metrics
-        # for analytics. In the example, a monitored resource and two metrics are
-        # defined. The `library.googleapis.com/book/returned_count` and
-        # `library.googleapis.com/book/overdue_count` metric are sent
-        # to the analytics.
-        #
-        #     monitored_resources:
-        #     - type: library.googleapis.com/branch
-        #       labels:
-        #       - key: /city
-        #         description: The city where the library branch is located in.
-        #       - key: /name
-        #         description: The name of the branch.
-        #     metrics:
-        #     - name: library.googleapis.com/book/returned_count
-        #       metric_kind: DELTA
-        #       value_type: INT64
-        #       labels:
-        #       - key: /customer_id
-        #     - name: library.googleapis.com/book/overdue_count
-        #       metric_kind: GAUGE
-        #       value_type: INT64
-        #       labels:
-        #       - key: /customer_id
-        #     analytics:
-        #       producer_destinations:
-        #       - monitored_resource: library.googleapis.com/branch
-        #         metrics:
-        #         - library.googleapis.com/book/returned_count
-        #         - library.googleapis.com/book/overdue_count
-      "producerDestinations": [ # Analytics configurations for sending metrics to the analytics backend.
-          # There can be multiple producer destinations, each one must have a
-          # different monitored resource type. A metric can be used in at most
-          # one producer destination.
-        { # Configuration of a specific analytics destination.
-          "monitoredResource": "A String", # The monitored resource type. The type must be defined in
-              # Service.monitored_resources section.
-          "metrics": [ # Names of the metrics to report to this analytics destination.
-              # Each name must be defined in Service.metrics section. Metrics
-              # with value type BOOL and STRING must be of GUAGE kind, metrics with
-              # value type INT64, DOUBLE and MONEY must be of DELTA kind.
-            "A String",
-          ],
-        },
-      ],
-    },
     "systemParameters": { # ### System parameter configuration # System parameter configuration.
         #
         # A system parameter is a special kind of parameter defined by the API
@@ -3164,27 +3137,26 @@ Returns:
           # config, default system parameters will be used. Default system parameters
           # and names is implementation-dependent.
           #
-          # Example: define api key and alt name for all methods
+          # Example: define api key for all methods
           #
-          # system_parameters
-          #   rules:
-          #     - selector: "*"
-          #       parameters:
-          #         - name: api_key
-          #           url_query_parameter: api_key
-          #         - name: alt
-          #           http_header: Response-Content-Type
+          #     system_parameters
+          #       rules:
+          #         - selector: "*"
+          #           parameters:
+          #             - name: api_key
+          #               url_query_parameter: api_key
+          #
           #
           # Example: define 2 api key names for a specific method.
           #
-          # system_parameters
-          #   rules:
-          #     - selector: "/ListShelves"
-          #       parameters:
-          #         - name: api_key
-          #           http_header: Api-Key1
-          #         - name: api_key
-          #           http_header: Api-Key2
+          #     system_parameters
+          #       rules:
+          #         - selector: "/ListShelves"
+          #           parameters:
+          #             - name: api_key
+          #               http_header: Api-Key1
+          #             - name: api_key
+          #               http_header: Api-Key2
           #
           # **NOTE:** All service configuration rules follow "last one wins" order.
         { # Define a system parameter rule mapping system parameter definitions to
@@ -3199,8 +3171,7 @@ Returns:
                 # is implementation-dependent.
               "urlQueryParameter": "A String", # Define the URL query parameter name to use for the parameter. It is case
                   # sensitive.
-              "name": "A String", # Define the name of the parameter, such as "api_key", "alt", "callback",
-                  # and etc. It is case sensitive.
+              "name": "A String", # Define the name of the parameter, such as "api_key" . It is case sensitive.
               "httpHeader": "A String", # Define the HTTP header name to use for the parameter. It is case
                   # insensitive.
             },
@@ -3302,14 +3273,14 @@ Returns:
         #
         #     name: calendar.googleapis.com
         #     authentication:
+        #       providers:
+        #       - id: google_calendar_auth
+        #         jwks_uri: https://www.googleapis.com/oauth2/v1/certs
+        #         issuer: https://securetoken.google.com
         #       rules:
         #       - selector: "*"
-        #         oauth:
-        #           canonical_scopes: https://www.googleapis.com/auth/calendar
-        #
-        #       - selector: google.calendar.Delegate
-        #         oauth:
-        #           canonical_scopes: https://www.googleapis.com/auth/calendar.read
+        #         requirements:
+        #           provider_id: google_calendar_auth
       "rules": [ # A list of authentication rules that apply to individual API methods.
           #
           # **NOTE:** All service configuration rules follow "last one wins" order.
@@ -3356,7 +3327,10 @@ Returns:
                   # Example:
                   #
                   #     provider_id: bookstore_auth
-              "audiences": "A String", # The list of JWT
+              "audiences": "A String", # NOTE: This will be deprecated soon, once AuthProvider.audiences is
+                  # implemented and accepted in all the runtime components.
+                  #
+                  # The list of JWT
                   # [audiences](https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#section-4.1.3).
                   # that are allowed to access. A JWT containing any of these audiences will
                   # be accepted. When this setting is absent, only JWTs with audience
@@ -3395,6 +3369,19 @@ Returns:
               #  - can be inferred from the email domain of the issuer (e.g. a Google service account).
               #
               # Example: https://www.googleapis.com/oauth2/v1/certs
+          "audiences": "A String", # The list of JWT
+              # [audiences](https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#section-4.1.3).
+              # that are allowed to access. A JWT containing any of these audiences will
+              # be accepted. When this setting is absent, only JWTs with audience
+              # "https://Service_name/API_name"
+              # will be accepted. For example, if no audiences are in the setting,
+              # LibraryService API will only accept JWTs with the following audience
+              # "https://library-example.googleapis.com/google.example.library.v1.LibraryService".
+              #
+              # Example:
+              #
+              #     audiences: bookstore_android.apps.googleusercontent.com,
+              #                bookstore_web.apps.googleusercontent.com
           "id": "A String", # The unique identifier of the auth provider. It will be referred to by
               # `AuthRequirement.provider_id`.
               #
@@ -3444,6 +3431,14 @@ Returns:
           "allowUnregisteredCalls": True or False, # True, if the method allows unregistered calls; false otherwise.
         },
       ],
+      "producerNotificationChannel": "A String", # The full resource name of a channel used for sending notifications to the
+          # service producer.
+          #
+          # Google Service Management currently only supports
+          # [Google Cloud Pub/Sub](https://cloud.google.com/pubsub) as a notification
+          # channel. To use Google Cloud Pub/Sub as the channel, this must be the name
+          # of a Cloud Pub/Sub topic that uses the Cloud Pub/Sub topic name format
+          # documented in https://cloud.google.com/pubsub/docs/overview.
       "requirements": [ # Requirements that must be satisfied before a consumer project can use the
           # service. Each requirement is of the form <service.name>/<requirement-id>;
           # for example 'serviceusage.googleapis.com/billing-enabled'.
@@ -3475,23 +3470,30 @@ Returns:
             # message, as in the example below which describes a REST GET
             # operation on a resource collection of messages:
             #
-            # ```proto
-            # service Messaging {
-            #   rpc GetMessage(GetMessageRequest) returns (Message) {
-            #     option (google.api.http).get = "/v1/messages/{message_id}/{sub.subfield}";
-            #   }
-            # }
-            # message GetMessageRequest {
-            #   message SubMessage {
-            #     string subfield = 1;
-            #   }
-            #   string message_id = 1; // mapped to the URL
-            #   SubMessage sub = 2;    // `sub.subfield` is url-mapped
-            # }
-            # message Message {
-            #   string text = 1; // content of the resource
-            # }
-            # ```
+            #
+            #     service Messaging {
+            #       rpc GetMessage(GetMessageRequest) returns (Message) {
+            #         option (google.api.http).get = "/v1/messages/{message_id}/{sub.subfield}";
+            #       }
+            #     }
+            #     message GetMessageRequest {
+            #       message SubMessage {
+            #         string subfield = 1;
+            #       }
+            #       string message_id = 1; // mapped to the URL
+            #       SubMessage sub = 2;    // `sub.subfield` is url-mapped
+            #     }
+            #     message Message {
+            #       string text = 1; // content of the resource
+            #     }
+            #
+            # The same http annotation can alternatively be expressed inside the
+            # `GRPC API Configuration` YAML file.
+            #
+            #     http:
+            #       rules:
+            #         - selector: <proto_package_name>.Messaging.GetMessage
+            #           get: /v1/messages/{message_id}/{sub.subfield}
             #
             # This definition enables an automatic, bidrectional mapping of HTTP
             # JSON to RPC. Example:
@@ -3508,16 +3510,16 @@ Returns:
             # pattern automatically become (optional) HTTP query
             # parameters. Assume the following definition of the request message:
             #
-            # ```proto
-            # message GetMessageRequest {
-            #   message SubMessage {
-            #     string subfield = 1;
-            #   }
-            #   string message_id = 1; // mapped to the URL
-            #   int64 revision = 2;    // becomes a parameter
-            #   SubMessage sub = 3;    // `sub.subfield` becomes a parameter
-            # }
-            # ```
+            #
+            #     message GetMessageRequest {
+            #       message SubMessage {
+            #         string subfield = 1;
+            #       }
+            #       string message_id = 1; // mapped to the URL
+            #       int64 revision = 2;    // becomes a parameter
+            #       SubMessage sub = 3;    // `sub.subfield` becomes a parameter
+            #     }
+            #
             #
             # This enables a HTTP JSON to RPC mapping as below:
             #
@@ -3534,20 +3536,20 @@ Returns:
             # specifies the mapping. Consider a REST update method on the
             # message resource collection:
             #
-            # ```proto
-            # service Messaging {
-            #   rpc UpdateMessage(UpdateMessageRequest) returns (Message) {
-            #     option (google.api.http) = {
-            #       put: "/v1/messages/{message_id}"
-            #       body: "message"
-            #     };
-            #   }
-            # }
-            # message UpdateMessageRequest {
-            #   string message_id = 1; // mapped to the URL
-            #   Message message = 2;   // mapped to the body
-            # }
-            # ```
+            #
+            #     service Messaging {
+            #       rpc UpdateMessage(UpdateMessageRequest) returns (Message) {
+            #         option (google.api.http) = {
+            #           put: "/v1/messages/{message_id}"
+            #           body: "message"
+            #         };
+            #       }
+            #     }
+            #     message UpdateMessageRequest {
+            #       string message_id = 1; // mapped to the URL
+            #       Message message = 2;   // mapped to the body
+            #     }
+            #
             #
             # The following HTTP JSON to RPC mapping is enabled, where the
             # representation of the JSON in the request body is determined by
@@ -3562,20 +3564,19 @@ Returns:
             # request body.  This enables the following alternative definition of
             # the update method:
             #
-            # ```proto
-            # service Messaging {
-            #   rpc UpdateMessage(Message) returns (Message) {
-            #     option (google.api.http) = {
-            #       put: "/v1/messages/{message_id}"
-            #       body: "*"
-            #     };
-            #   }
-            # }
-            # message Message {
-            #   string message_id = 1;
-            #   string text = 2;
-            # }
-            # ```
+            #     service Messaging {
+            #       rpc UpdateMessage(Message) returns (Message) {
+            #         option (google.api.http) = {
+            #           put: "/v1/messages/{message_id}"
+            #           body: "*"
+            #         };
+            #       }
+            #     }
+            #     message Message {
+            #       string message_id = 1;
+            #       string text = 2;
+            #     }
+            #
             #
             # The following HTTP JSON to RPC mapping is enabled:
             #
@@ -3592,22 +3593,21 @@ Returns:
             # It is possible to define multiple HTTP methods for one RPC by using
             # the `additional_bindings` option. Example:
             #
-            # ```proto
-            # service Messaging {
-            #   rpc GetMessage(GetMessageRequest) returns (Message) {
-            #     option (google.api.http) = {
-            #       get: "/v1/messages/{message_id}"
-            #       additional_bindings {
-            #         get: "/v1/users/{user_id}/messages/{message_id}"
+            #     service Messaging {
+            #       rpc GetMessage(GetMessageRequest) returns (Message) {
+            #         option (google.api.http) = {
+            #           get: "/v1/messages/{message_id}"
+            #           additional_bindings {
+            #             get: "/v1/users/{user_id}/messages/{message_id}"
+            #           }
+            #         };
             #       }
-            #     };
-            #   }
-            # }
-            # message GetMessageRequest {
-            #   string message_id = 1;
-            #   string user_id = 2;
-            # }
-            # ```
+            #     }
+            #     message GetMessageRequest {
+            #       string message_id = 1;
+            #       string user_id = 2;
+            #     }
+            #
             #
             # This enables the following two alternative HTTP JSON to RPC
             # mappings:
@@ -3648,7 +3648,7 @@ Returns:
             #
             # The syntax `**` matches zero or more path segments. It follows the semantics
             # of [RFC 6570](https://tools.ietf.org/html/rfc6570) Section 3.2.3 Reserved
-            # Expansion.
+            # Expansion. NOTE: it must be the last segment in the path except the Verb.
             #
             # The syntax `LITERAL` matches literal text in the URL path.
             #
@@ -3667,7 +3667,7 @@ Returns:
           "body": "A String", # The name of the request field whose value is mapped to the HTTP body, or
               # `*` for mapping all fields not captured by the path pattern to the HTTP
               # body. NOTE: the referred field must not be a repeated field and must be
-              # present at the top-level of response message type.
+              # present at the top-level of request message type.
           "get": "A String", # Used for listing and getting information about resources.
           "mediaDownload": { # Do not use this. For media support, add instead # Do not use this. For media support, add instead
               # [][google.bytestream.RestByteStream] as an API to your
@@ -3724,8 +3724,14 @@ Returns:
             "options": [ # Any metadata attached to the method.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -3845,8 +3851,14 @@ Returns:
         "options": [ # Any metadata attached to the API.
           { # A protocol buffer option, which can be attached to a message, field,
               # enumeration, etc.
-            "name": "A String", # The option's name. For example, `"java_package"`.
-            "value": { # The option's value. For example, `"com.google.protobuf"`.
+            "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                # For custom options, it should be the fully-qualified name. For example,
+                # `"google.api.http"`.
+            "value": { # The option's value packed in an Any message. If the value is a primitive,
+                # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                # should be used. If the value is an enum, it should be stored as an int32
+                # value using the google.protobuf.Int32Value type.
               "a_key": "", # Properties of the object. Contains field @type with type URL.
             },
           },
@@ -3929,7 +3941,9 @@ Returns:
       ],
     },
     "metrics": [ # Defines the metrics used by this service.
-      { # Defines a metric type and its schema.
+      { # Defines a metric type and its schema. Once a metric descriptor is created,
+          # deleting or altering it stops data collection and makes the metric type's
+          # existing data unusable.
         "displayName": "A String", # A concise name for the metric, which can be displayed in user interfaces.
             # Use sentence case without an ending period, for example "Request count".
         "description": "A String", # A detailed description of the metric, which can be used in documentation.
@@ -3937,29 +3951,25 @@ Returns:
             # Some combinations of `metric_kind` and `value_type` might not be supported.
         "valueType": "A String", # Whether the measurement is an integer, a floating-point number, etc.
             # Some combinations of `metric_kind` and `value_type` might not be supported.
-        "labels": [ # The set of labels that can be used to describe a specific instance of this
-            # metric type. For example, the
-            # `compute.googleapis.com/instance/network/received_bytes_count` metric type
-            # has a label, `loadbalanced`, that specifies whether the traffic was
-            # received through a load balanced IP address.
+        "labels": [ # The set of labels that can be used to describe a specific
+            # instance of this metric type. For example, the
+            # `appengine.googleapis.com/http/server/response_latencies` metric
+            # type has a label for the HTTP response code, `response_code`, so
+            # you can look at latencies for successful responses or just
+            # for responses that failed.
           { # A description of a label.
             "valueType": "A String", # The type of data that can be assigned to the label.
             "description": "A String", # A human-readable description for the label.
             "key": "A String", # The label key.
           },
         ],
-        "type": "A String", # The metric type including a DNS name prefix, for example
-            # `"compute.googleapis.com/instance/cpu/utilization"`. Metric types
-            # should use a natural hierarchical grouping such as the following:
+        "type": "A String", # The metric type, including its DNS name prefix. The type is not
+            # URL-encoded.  All user-defined metric types have the DNS name
+            # `custom.googleapis.com`.  Metric types should use a natural hierarchical
+            # grouping. For example:
             #
-            #     compute.googleapis.com/instance/cpu/utilization
-            #     compute.googleapis.com/instance/disk/read_ops_count
-            #     compute.googleapis.com/instance/network/received_bytes_count
-            #
-            # Note that if the metric type changes, the monitoring data will be
-            # discontinued, and anything depends on it will break, such as monitoring
-            # dashboards, alerting rules and quota limits. Therefore, once a metric has
-            # been published, its type should be immutable.
+            #     "custom.googleapis.com/invoice/paid/amount"
+            #     "appengine.googleapis.com/http/server/response_latencies"
         "unit": "A String", # The unit in which the metric value is reported. It is only applicable
             # if the `value_type` is `INT64`, `DOUBLE`, or `DISTRIBUTION`. The
             # supported units are a subset of [The Unified Code for Units of
@@ -4024,11 +4034,14 @@ Returns:
             #    `{requests}/s == 1/s`, `By{transmitted}/s == By/s`.
             # * `NAME` is a sequence of non-blank printable ASCII characters not
             #    containing '{' or '}'.
-        "name": "A String", # Resource name. The format of the name may vary between different
-            # implementations. For examples:
+        "name": "A String", # The resource name of the metric descriptor. Depending on the
+            # implementation, the name typically includes: (1) the parent resource name
+            # that defines the scope of the metric type or of its data; and (2) the
+            # metric's URL-encoded type, which also appears in the `type` field of this
+            # descriptor. For example, following is the resource name of a custom
+            # metric within the GCP project 123456789:
             #
-            #     projects/{project_id}/metricDescriptors/{type=**}
-            #     metricDescriptors/{type=**}
+            #     "projects/123456789/metricDescriptors/custom.googleapis.com%2Finvoice%2Fpaid%2Famount"
       },
     ],
     "enums": [ # A list of all enum types included in this API service.  Enums
@@ -4050,8 +4063,14 @@ Returns:
             "options": [ # Protocol buffer options.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -4062,8 +4081,14 @@ Returns:
         "options": [ # Protocol buffer options.
           { # A protocol buffer option, which can be attached to a message, field,
               # enumeration, etc.
-            "name": "A String", # The option's name. For example, `"java_package"`.
-            "value": { # The option's value. For example, `"com.google.protobuf"`.
+            "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                # For custom options, it should be the fully-qualified name. For example,
+                # `"google.api.http"`.
+            "value": { # The option's value packed in an Any message. If the value is a primitive,
+                # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                # should be used. If the value is an enum, it should be stored as an int32
+                # value using the google.protobuf.Int32Value type.
               "a_key": "", # Properties of the object. Contains field @type with type URL.
             },
           },
@@ -4106,8 +4131,14 @@ Returns:
             "options": [ # The protocol buffer options.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -4118,8 +4149,14 @@ Returns:
         "options": [ # The protocol buffer options.
           { # A protocol buffer option, which can be attached to a message, field,
               # enumeration, etc.
-            "name": "A String", # The option's name. For example, `"java_package"`.
-            "value": { # The option's value. For example, `"com.google.protobuf"`.
+            "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                # For custom options, it should be the fully-qualified name. For example,
+                # `"google.api.http"`.
+            "value": { # The option's value packed in an Any message. If the value is a primitive,
+                # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                # should be used. If the value is an enum, it should be stored as an int32
+                # value using the google.protobuf.Int32Value type.
               "a_key": "", # Properties of the object. Contains field @type with type URL.
             },
           },
@@ -4335,8 +4372,14 @@ Returns:
             "options": [ # The protocol buffer options.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -4347,8 +4390,14 @@ Returns:
         "options": [ # The protocol buffer options.
           { # A protocol buffer option, which can be attached to a message, field,
               # enumeration, etc.
-            "name": "A String", # The option's name. For example, `"java_package"`.
-            "value": { # The option's value. For example, `"com.google.protobuf"`.
+            "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                # For custom options, it should be the fully-qualified name. For example,
+                # `"google.api.http"`.
+            "value": { # The option's value packed in an Any message. If the value is a primitive,
+                # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                # should be used. If the value is an enum, it should be stored as an int32
+                # value using the google.protobuf.Int32Value type.
               "a_key": "", # Properties of the object. Contains field @type with type URL.
             },
           },
@@ -4407,29 +4456,7 @@ Returns:
           #       # it to decide whether the subsequent cross-origin request is
           #       # allowed to proceed.
           #     - name: library-example.googleapis.com
-          #       apis: google.example.library.v1.Library
           #       allow_cors: true
-          #       # Below entry makes 'google.example.library.v1.Library'
-          #       # API be served from endpoint address
-          #       # google.example.library-example.v1.LibraryManager.
-          #     - name: library-manager.googleapis.com
-          #       apis: google.example.library.v1.LibraryManager
-          #       # BNS address for a borg job. Can specify a task by appending
-          #       # "/taskId" (e.g. "/0") to the job spec.
-          #
-          # Example OpenAPI extension for endpoint with allow_cors set to true:
-          #
-          #     {
-          #       "swagger": "2.0",
-          #       "info": {
-          #         "description": "A simple..."
-          #       },
-          #       "host": "MY_PROJECT_ID.appspot.com",
-          #       "x-google-endpoints": [{
-          #         "name": "MY_PROJECT_ID.appspot.com",
-          #         "allow_cors": "true"
-          #       }]
-          #     }
         "allowCors": True or False, # Allowing
             # [CORS](https://en.wikipedia.org/wiki/Cross-origin_resource_sharing), aka
             # cross-domain traffic, would allow the backends served from this endpoint to
@@ -4490,10 +4517,15 @@ Returns:
           #     title: Google Calendar API
           #     apis:
           #     - name: google.calendar.v3.Calendar
-          #     backend:
+          #     authentication:
+          #       providers:
+          #       - id: google_calendar_auth
+          #         jwks_uri: https://www.googleapis.com/oauth2/v1/certs
+          #         issuer: https://securetoken.google.com
           #       rules:
-          #       - selector: "google.calendar.v3.*"
-          #         address: calendar.example.com
+          #       - selector: "*"
+          #         requirements:
+          #           provider_id: google_calendar_auth
         "control": { # Selects and configures the service controller used by the service.  The # Configuration for the service control plane.
             # service controller handles features like abuse, quota, billing, logging,
             # monitoring, etc.
@@ -4565,56 +4597,6 @@ Returns:
                 # slash, underscore, hyphen, period [/_-.].
           },
         ],
-        "analytics": { # Analytics configuration of the service. # WARNING: DO NOT USE UNTIL THIS MESSAGE IS REMOVED.
-            #
-            # Analytics configuration.
-            #
-            # The example below shows how to configure monitored resources and metrics
-            # for analytics. In the example, a monitored resource and two metrics are
-            # defined. The `library.googleapis.com/book/returned_count` and
-            # `library.googleapis.com/book/overdue_count` metric are sent
-            # to the analytics.
-            #
-            #     monitored_resources:
-            #     - type: library.googleapis.com/branch
-            #       labels:
-            #       - key: /city
-            #         description: The city where the library branch is located in.
-            #       - key: /name
-            #         description: The name of the branch.
-            #     metrics:
-            #     - name: library.googleapis.com/book/returned_count
-            #       metric_kind: DELTA
-            #       value_type: INT64
-            #       labels:
-            #       - key: /customer_id
-            #     - name: library.googleapis.com/book/overdue_count
-            #       metric_kind: GAUGE
-            #       value_type: INT64
-            #       labels:
-            #       - key: /customer_id
-            #     analytics:
-            #       producer_destinations:
-            #       - monitored_resource: library.googleapis.com/branch
-            #         metrics:
-            #         - library.googleapis.com/book/returned_count
-            #         - library.googleapis.com/book/overdue_count
-          "producerDestinations": [ # Analytics configurations for sending metrics to the analytics backend.
-              # There can be multiple producer destinations, each one must have a
-              # different monitored resource type. A metric can be used in at most
-              # one producer destination.
-            { # Configuration of a specific analytics destination.
-              "monitoredResource": "A String", # The monitored resource type. The type must be defined in
-                  # Service.monitored_resources section.
-              "metrics": [ # Names of the metrics to report to this analytics destination.
-                  # Each name must be defined in Service.metrics section. Metrics
-                  # with value type BOOL and STRING must be of GUAGE kind, metrics with
-                  # value type INT64, DOUBLE and MONEY must be of DELTA kind.
-                "A String",
-              ],
-            },
-          ],
-        },
         "systemParameters": { # ### System parameter configuration # System parameter configuration.
             #
             # A system parameter is a special kind of parameter defined by the API
@@ -4628,27 +4610,26 @@ Returns:
               # config, default system parameters will be used. Default system parameters
               # and names is implementation-dependent.
               #
-              # Example: define api key and alt name for all methods
+              # Example: define api key for all methods
               #
-              # system_parameters
-              #   rules:
-              #     - selector: "*"
-              #       parameters:
-              #         - name: api_key
-              #           url_query_parameter: api_key
-              #         - name: alt
-              #           http_header: Response-Content-Type
+              #     system_parameters
+              #       rules:
+              #         - selector: "*"
+              #           parameters:
+              #             - name: api_key
+              #               url_query_parameter: api_key
+              #
               #
               # Example: define 2 api key names for a specific method.
               #
-              # system_parameters
-              #   rules:
-              #     - selector: "/ListShelves"
-              #       parameters:
-              #         - name: api_key
-              #           http_header: Api-Key1
-              #         - name: api_key
-              #           http_header: Api-Key2
+              #     system_parameters
+              #       rules:
+              #         - selector: "/ListShelves"
+              #           parameters:
+              #             - name: api_key
+              #               http_header: Api-Key1
+              #             - name: api_key
+              #               http_header: Api-Key2
               #
               # **NOTE:** All service configuration rules follow "last one wins" order.
             { # Define a system parameter rule mapping system parameter definitions to
@@ -4663,8 +4644,7 @@ Returns:
                     # is implementation-dependent.
                   "urlQueryParameter": "A String", # Define the URL query parameter name to use for the parameter. It is case
                       # sensitive.
-                  "name": "A String", # Define the name of the parameter, such as "api_key", "alt", "callback",
-                      # and etc. It is case sensitive.
+                  "name": "A String", # Define the name of the parameter, such as "api_key" . It is case sensitive.
                   "httpHeader": "A String", # Define the HTTP header name to use for the parameter. It is case
                       # insensitive.
                 },
@@ -4766,14 +4746,14 @@ Returns:
             #
             #     name: calendar.googleapis.com
             #     authentication:
+            #       providers:
+            #       - id: google_calendar_auth
+            #         jwks_uri: https://www.googleapis.com/oauth2/v1/certs
+            #         issuer: https://securetoken.google.com
             #       rules:
             #       - selector: "*"
-            #         oauth:
-            #           canonical_scopes: https://www.googleapis.com/auth/calendar
-            #
-            #       - selector: google.calendar.Delegate
-            #         oauth:
-            #           canonical_scopes: https://www.googleapis.com/auth/calendar.read
+            #         requirements:
+            #           provider_id: google_calendar_auth
           "rules": [ # A list of authentication rules that apply to individual API methods.
               #
               # **NOTE:** All service configuration rules follow "last one wins" order.
@@ -4820,7 +4800,10 @@ Returns:
                       # Example:
                       #
                       #     provider_id: bookstore_auth
-                  "audiences": "A String", # The list of JWT
+                  "audiences": "A String", # NOTE: This will be deprecated soon, once AuthProvider.audiences is
+                      # implemented and accepted in all the runtime components.
+                      #
+                      # The list of JWT
                       # [audiences](https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#section-4.1.3).
                       # that are allowed to access. A JWT containing any of these audiences will
                       # be accepted. When this setting is absent, only JWTs with audience
@@ -4859,6 +4842,19 @@ Returns:
                   #  - can be inferred from the email domain of the issuer (e.g. a Google service account).
                   #
                   # Example: https://www.googleapis.com/oauth2/v1/certs
+              "audiences": "A String", # The list of JWT
+                  # [audiences](https://tools.ietf.org/html/draft-ietf-oauth-json-web-token-32#section-4.1.3).
+                  # that are allowed to access. A JWT containing any of these audiences will
+                  # be accepted. When this setting is absent, only JWTs with audience
+                  # "https://Service_name/API_name"
+                  # will be accepted. For example, if no audiences are in the setting,
+                  # LibraryService API will only accept JWTs with the following audience
+                  # "https://library-example.googleapis.com/google.example.library.v1.LibraryService".
+                  #
+                  # Example:
+                  #
+                  #     audiences: bookstore_android.apps.googleusercontent.com,
+                  #                bookstore_web.apps.googleusercontent.com
               "id": "A String", # The unique identifier of the auth provider. It will be referred to by
                   # `AuthRequirement.provider_id`.
                   #
@@ -4908,6 +4904,14 @@ Returns:
               "allowUnregisteredCalls": True or False, # True, if the method allows unregistered calls; false otherwise.
             },
           ],
+          "producerNotificationChannel": "A String", # The full resource name of a channel used for sending notifications to the
+              # service producer.
+              #
+              # Google Service Management currently only supports
+              # [Google Cloud Pub/Sub](https://cloud.google.com/pubsub) as a notification
+              # channel. To use Google Cloud Pub/Sub as the channel, this must be the name
+              # of a Cloud Pub/Sub topic that uses the Cloud Pub/Sub topic name format
+              # documented in https://cloud.google.com/pubsub/docs/overview.
           "requirements": [ # Requirements that must be satisfied before a consumer project can use the
               # service. Each requirement is of the form <service.name>/<requirement-id>;
               # for example 'serviceusage.googleapis.com/billing-enabled'.
@@ -4939,23 +4943,30 @@ Returns:
                 # message, as in the example below which describes a REST GET
                 # operation on a resource collection of messages:
                 #
-                # ```proto
-                # service Messaging {
-                #   rpc GetMessage(GetMessageRequest) returns (Message) {
-                #     option (google.api.http).get = "/v1/messages/{message_id}/{sub.subfield}";
-                #   }
-                # }
-                # message GetMessageRequest {
-                #   message SubMessage {
-                #     string subfield = 1;
-                #   }
-                #   string message_id = 1; // mapped to the URL
-                #   SubMessage sub = 2;    // `sub.subfield` is url-mapped
-                # }
-                # message Message {
-                #   string text = 1; // content of the resource
-                # }
-                # ```
+                #
+                #     service Messaging {
+                #       rpc GetMessage(GetMessageRequest) returns (Message) {
+                #         option (google.api.http).get = "/v1/messages/{message_id}/{sub.subfield}";
+                #       }
+                #     }
+                #     message GetMessageRequest {
+                #       message SubMessage {
+                #         string subfield = 1;
+                #       }
+                #       string message_id = 1; // mapped to the URL
+                #       SubMessage sub = 2;    // `sub.subfield` is url-mapped
+                #     }
+                #     message Message {
+                #       string text = 1; // content of the resource
+                #     }
+                #
+                # The same http annotation can alternatively be expressed inside the
+                # `GRPC API Configuration` YAML file.
+                #
+                #     http:
+                #       rules:
+                #         - selector: <proto_package_name>.Messaging.GetMessage
+                #           get: /v1/messages/{message_id}/{sub.subfield}
                 #
                 # This definition enables an automatic, bidrectional mapping of HTTP
                 # JSON to RPC. Example:
@@ -4972,16 +4983,16 @@ Returns:
                 # pattern automatically become (optional) HTTP query
                 # parameters. Assume the following definition of the request message:
                 #
-                # ```proto
-                # message GetMessageRequest {
-                #   message SubMessage {
-                #     string subfield = 1;
-                #   }
-                #   string message_id = 1; // mapped to the URL
-                #   int64 revision = 2;    // becomes a parameter
-                #   SubMessage sub = 3;    // `sub.subfield` becomes a parameter
-                # }
-                # ```
+                #
+                #     message GetMessageRequest {
+                #       message SubMessage {
+                #         string subfield = 1;
+                #       }
+                #       string message_id = 1; // mapped to the URL
+                #       int64 revision = 2;    // becomes a parameter
+                #       SubMessage sub = 3;    // `sub.subfield` becomes a parameter
+                #     }
+                #
                 #
                 # This enables a HTTP JSON to RPC mapping as below:
                 #
@@ -4998,20 +5009,20 @@ Returns:
                 # specifies the mapping. Consider a REST update method on the
                 # message resource collection:
                 #
-                # ```proto
-                # service Messaging {
-                #   rpc UpdateMessage(UpdateMessageRequest) returns (Message) {
-                #     option (google.api.http) = {
-                #       put: "/v1/messages/{message_id}"
-                #       body: "message"
-                #     };
-                #   }
-                # }
-                # message UpdateMessageRequest {
-                #   string message_id = 1; // mapped to the URL
-                #   Message message = 2;   // mapped to the body
-                # }
-                # ```
+                #
+                #     service Messaging {
+                #       rpc UpdateMessage(UpdateMessageRequest) returns (Message) {
+                #         option (google.api.http) = {
+                #           put: "/v1/messages/{message_id}"
+                #           body: "message"
+                #         };
+                #       }
+                #     }
+                #     message UpdateMessageRequest {
+                #       string message_id = 1; // mapped to the URL
+                #       Message message = 2;   // mapped to the body
+                #     }
+                #
                 #
                 # The following HTTP JSON to RPC mapping is enabled, where the
                 # representation of the JSON in the request body is determined by
@@ -5026,20 +5037,19 @@ Returns:
                 # request body.  This enables the following alternative definition of
                 # the update method:
                 #
-                # ```proto
-                # service Messaging {
-                #   rpc UpdateMessage(Message) returns (Message) {
-                #     option (google.api.http) = {
-                #       put: "/v1/messages/{message_id}"
-                #       body: "*"
-                #     };
-                #   }
-                # }
-                # message Message {
-                #   string message_id = 1;
-                #   string text = 2;
-                # }
-                # ```
+                #     service Messaging {
+                #       rpc UpdateMessage(Message) returns (Message) {
+                #         option (google.api.http) = {
+                #           put: "/v1/messages/{message_id}"
+                #           body: "*"
+                #         };
+                #       }
+                #     }
+                #     message Message {
+                #       string message_id = 1;
+                #       string text = 2;
+                #     }
+                #
                 #
                 # The following HTTP JSON to RPC mapping is enabled:
                 #
@@ -5056,22 +5066,21 @@ Returns:
                 # It is possible to define multiple HTTP methods for one RPC by using
                 # the `additional_bindings` option. Example:
                 #
-                # ```proto
-                # service Messaging {
-                #   rpc GetMessage(GetMessageRequest) returns (Message) {
-                #     option (google.api.http) = {
-                #       get: "/v1/messages/{message_id}"
-                #       additional_bindings {
-                #         get: "/v1/users/{user_id}/messages/{message_id}"
+                #     service Messaging {
+                #       rpc GetMessage(GetMessageRequest) returns (Message) {
+                #         option (google.api.http) = {
+                #           get: "/v1/messages/{message_id}"
+                #           additional_bindings {
+                #             get: "/v1/users/{user_id}/messages/{message_id}"
+                #           }
+                #         };
                 #       }
-                #     };
-                #   }
-                # }
-                # message GetMessageRequest {
-                #   string message_id = 1;
-                #   string user_id = 2;
-                # }
-                # ```
+                #     }
+                #     message GetMessageRequest {
+                #       string message_id = 1;
+                #       string user_id = 2;
+                #     }
+                #
                 #
                 # This enables the following two alternative HTTP JSON to RPC
                 # mappings:
@@ -5112,7 +5121,7 @@ Returns:
                 #
                 # The syntax `**` matches zero or more path segments. It follows the semantics
                 # of [RFC 6570](https://tools.ietf.org/html/rfc6570) Section 3.2.3 Reserved
-                # Expansion.
+                # Expansion. NOTE: it must be the last segment in the path except the Verb.
                 #
                 # The syntax `LITERAL` matches literal text in the URL path.
                 #
@@ -5131,7 +5140,7 @@ Returns:
               "body": "A String", # The name of the request field whose value is mapped to the HTTP body, or
                   # `*` for mapping all fields not captured by the path pattern to the HTTP
                   # body. NOTE: the referred field must not be a repeated field and must be
-                  # present at the top-level of response message type.
+                  # present at the top-level of request message type.
               "get": "A String", # Used for listing and getting information about resources.
               "mediaDownload": { # Do not use this. For media support, add instead # Do not use this. For media support, add instead
                   # [][google.bytestream.RestByteStream] as an API to your
@@ -5188,8 +5197,14 @@ Returns:
                 "options": [ # Any metadata attached to the method.
                   { # A protocol buffer option, which can be attached to a message, field,
                       # enumeration, etc.
-                    "name": "A String", # The option's name. For example, `"java_package"`.
-                    "value": { # The option's value. For example, `"com.google.protobuf"`.
+                    "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                        # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                        # For custom options, it should be the fully-qualified name. For example,
+                        # `"google.api.http"`.
+                    "value": { # The option's value packed in an Any message. If the value is a primitive,
+                        # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                        # should be used. If the value is an enum, it should be stored as an int32
+                        # value using the google.protobuf.Int32Value type.
                       "a_key": "", # Properties of the object. Contains field @type with type URL.
                     },
                   },
@@ -5309,8 +5324,14 @@ Returns:
             "options": [ # Any metadata attached to the API.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -5393,7 +5414,9 @@ Returns:
           ],
         },
         "metrics": [ # Defines the metrics used by this service.
-          { # Defines a metric type and its schema.
+          { # Defines a metric type and its schema. Once a metric descriptor is created,
+              # deleting or altering it stops data collection and makes the metric type's
+              # existing data unusable.
             "displayName": "A String", # A concise name for the metric, which can be displayed in user interfaces.
                 # Use sentence case without an ending period, for example "Request count".
             "description": "A String", # A detailed description of the metric, which can be used in documentation.
@@ -5401,29 +5424,25 @@ Returns:
                 # Some combinations of `metric_kind` and `value_type` might not be supported.
             "valueType": "A String", # Whether the measurement is an integer, a floating-point number, etc.
                 # Some combinations of `metric_kind` and `value_type` might not be supported.
-            "labels": [ # The set of labels that can be used to describe a specific instance of this
-                # metric type. For example, the
-                # `compute.googleapis.com/instance/network/received_bytes_count` metric type
-                # has a label, `loadbalanced`, that specifies whether the traffic was
-                # received through a load balanced IP address.
+            "labels": [ # The set of labels that can be used to describe a specific
+                # instance of this metric type. For example, the
+                # `appengine.googleapis.com/http/server/response_latencies` metric
+                # type has a label for the HTTP response code, `response_code`, so
+                # you can look at latencies for successful responses or just
+                # for responses that failed.
               { # A description of a label.
                 "valueType": "A String", # The type of data that can be assigned to the label.
                 "description": "A String", # A human-readable description for the label.
                 "key": "A String", # The label key.
               },
             ],
-            "type": "A String", # The metric type including a DNS name prefix, for example
-                # `"compute.googleapis.com/instance/cpu/utilization"`. Metric types
-                # should use a natural hierarchical grouping such as the following:
+            "type": "A String", # The metric type, including its DNS name prefix. The type is not
+                # URL-encoded.  All user-defined metric types have the DNS name
+                # `custom.googleapis.com`.  Metric types should use a natural hierarchical
+                # grouping. For example:
                 #
-                #     compute.googleapis.com/instance/cpu/utilization
-                #     compute.googleapis.com/instance/disk/read_ops_count
-                #     compute.googleapis.com/instance/network/received_bytes_count
-                #
-                # Note that if the metric type changes, the monitoring data will be
-                # discontinued, and anything depends on it will break, such as monitoring
-                # dashboards, alerting rules and quota limits. Therefore, once a metric has
-                # been published, its type should be immutable.
+                #     "custom.googleapis.com/invoice/paid/amount"
+                #     "appengine.googleapis.com/http/server/response_latencies"
             "unit": "A String", # The unit in which the metric value is reported. It is only applicable
                 # if the `value_type` is `INT64`, `DOUBLE`, or `DISTRIBUTION`. The
                 # supported units are a subset of [The Unified Code for Units of
@@ -5488,11 +5507,14 @@ Returns:
                 #    `{requests}/s == 1/s`, `By{transmitted}/s == By/s`.
                 # * `NAME` is a sequence of non-blank printable ASCII characters not
                 #    containing '{' or '}'.
-            "name": "A String", # Resource name. The format of the name may vary between different
-                # implementations. For examples:
+            "name": "A String", # The resource name of the metric descriptor. Depending on the
+                # implementation, the name typically includes: (1) the parent resource name
+                # that defines the scope of the metric type or of its data; and (2) the
+                # metric's URL-encoded type, which also appears in the `type` field of this
+                # descriptor. For example, following is the resource name of a custom
+                # metric within the GCP project 123456789:
                 #
-                #     projects/{project_id}/metricDescriptors/{type=**}
-                #     metricDescriptors/{type=**}
+                #     "projects/123456789/metricDescriptors/custom.googleapis.com%2Finvoice%2Fpaid%2Famount"
           },
         ],
         "enums": [ # A list of all enum types included in this API service.  Enums
@@ -5514,8 +5536,14 @@ Returns:
                 "options": [ # Protocol buffer options.
                   { # A protocol buffer option, which can be attached to a message, field,
                       # enumeration, etc.
-                    "name": "A String", # The option's name. For example, `"java_package"`.
-                    "value": { # The option's value. For example, `"com.google.protobuf"`.
+                    "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                        # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                        # For custom options, it should be the fully-qualified name. For example,
+                        # `"google.api.http"`.
+                    "value": { # The option's value packed in an Any message. If the value is a primitive,
+                        # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                        # should be used. If the value is an enum, it should be stored as an int32
+                        # value using the google.protobuf.Int32Value type.
                       "a_key": "", # Properties of the object. Contains field @type with type URL.
                     },
                   },
@@ -5526,8 +5554,14 @@ Returns:
             "options": [ # Protocol buffer options.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -5570,8 +5604,14 @@ Returns:
                 "options": [ # The protocol buffer options.
                   { # A protocol buffer option, which can be attached to a message, field,
                       # enumeration, etc.
-                    "name": "A String", # The option's name. For example, `"java_package"`.
-                    "value": { # The option's value. For example, `"com.google.protobuf"`.
+                    "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                        # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                        # For custom options, it should be the fully-qualified name. For example,
+                        # `"google.api.http"`.
+                    "value": { # The option's value packed in an Any message. If the value is a primitive,
+                        # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                        # should be used. If the value is an enum, it should be stored as an int32
+                        # value using the google.protobuf.Int32Value type.
                       "a_key": "", # Properties of the object. Contains field @type with type URL.
                     },
                   },
@@ -5582,8 +5622,14 @@ Returns:
             "options": [ # The protocol buffer options.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -5799,8 +5845,14 @@ Returns:
                 "options": [ # The protocol buffer options.
                   { # A protocol buffer option, which can be attached to a message, field,
                       # enumeration, etc.
-                    "name": "A String", # The option's name. For example, `"java_package"`.
-                    "value": { # The option's value. For example, `"com.google.protobuf"`.
+                    "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                        # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                        # For custom options, it should be the fully-qualified name. For example,
+                        # `"google.api.http"`.
+                    "value": { # The option's value packed in an Any message. If the value is a primitive,
+                        # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                        # should be used. If the value is an enum, it should be stored as an int32
+                        # value using the google.protobuf.Int32Value type.
                       "a_key": "", # Properties of the object. Contains field @type with type URL.
                     },
                   },
@@ -5811,8 +5863,14 @@ Returns:
             "options": [ # The protocol buffer options.
               { # A protocol buffer option, which can be attached to a message, field,
                   # enumeration, etc.
-                "name": "A String", # The option's name. For example, `"java_package"`.
-                "value": { # The option's value. For example, `"com.google.protobuf"`.
+                "name": "A String", # The option's name. For protobuf built-in options (options defined in
+                    # descriptor.proto), this is the short name. For example, `"map_entry"`.
+                    # For custom options, it should be the fully-qualified name. For example,
+                    # `"google.api.http"`.
+                "value": { # The option's value packed in an Any message. If the value is a primitive,
+                    # the corresponding wrapper type defined in google/protobuf/wrappers.proto
+                    # should be used. If the value is an enum, it should be stored as an int32
+                    # value using the google.protobuf.Int32Value type.
                   "a_key": "", # Properties of the object. Contains field @type with type URL.
                 },
               },
@@ -5871,29 +5929,7 @@ Returns:
               #       # it to decide whether the subsequent cross-origin request is
               #       # allowed to proceed.
               #     - name: library-example.googleapis.com
-              #       apis: google.example.library.v1.Library
               #       allow_cors: true
-              #       # Below entry makes 'google.example.library.v1.Library'
-              #       # API be served from endpoint address
-              #       # google.example.library-example.v1.LibraryManager.
-              #     - name: library-manager.googleapis.com
-              #       apis: google.example.library.v1.LibraryManager
-              #       # BNS address for a borg job. Can specify a task by appending
-              #       # "/taskId" (e.g. "/0") to the job spec.
-              #
-              # Example OpenAPI extension for endpoint with allow_cors set to true:
-              #
-              #     {
-              #       "swagger": "2.0",
-              #       "info": {
-              #         "description": "A simple..."
-              #       },
-              #       "host": "MY_PROJECT_ID.appspot.com",
-              #       "x-google-endpoints": [{
-              #         "name": "MY_PROJECT_ID.appspot.com",
-              #         "allow_cors": "true"
-              #       }]
-              #     }
             "allowCors": True or False, # Allowing
                 # [CORS](https://en.wikipedia.org/wiki/Cross-origin_resource_sharing), aka
                 # cross-domain traffic, would allow the backends served from this endpoint to
