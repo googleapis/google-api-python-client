@@ -98,7 +98,7 @@ V2_DISCOVERY_URI = ('https://{api}.googleapis.com/$discovery/rest?'
                     'version={apiVersion}')
 DEFAULT_METHOD_DOC = 'A description of how to use this function'
 HTTP_PAYLOAD_METHODS = frozenset(['PUT', 'POST', 'PATCH'])
-DEFAULT_HTTP_TIMEOUT_SEC = 300 # 5 minutes
+DEFAULT_HTTP_TIMEOUT_SEC = 60
 _MEDIA_SIZE_BIT_SHIFTS = {'KB': 10, 'MB': 20, 'GB': 30, 'TB': 40}
 BODY_PARAMETER_DEFAULT_VALUE = {
     'description': 'The request body.',
