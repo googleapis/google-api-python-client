@@ -348,7 +348,7 @@ class ProtocolBufferModel(BaseModel):
 def makepatch(original, modified):
   """Create a patch object.
 
-  Some methods support PATCH, an efficient way to send updates to a resource.
+  Some methods support PATCH, an efficient way to send updates to a presource.
   This method allows the easy construction of patch bodies by looking at the
   differences between a resource before and after it was modified.
 

@@ -718,7 +718,11 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
 
     for name in parameters.required_params:
       if name not in kwargs:
-        raise TypeError('Missing required parameter "%s"' % name)
+        # temporary workaround for non-paging methods incorrectly requiring
+        # page token parameter (cf. drive.changes.watch vs. drive.changes.list)
+        if name not in pageTokenNames or pageTokenName(
+            methodProperties(methodDesc, schema, 'response')):
+          raise TypeError('Missing required parameter "%s"' % name)
 
     for name, regex in six.iteritems(parameters.pattern_params):
       if name in kwargs:
@@ -921,13 +925,18 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
   return (methodName, method)
 
 
-def createNextMethod(methodName):
+def createNextMethod(methodName, pageToken, nextPageToken,
+                     isPageTokenParameter):
   """Creates any _next methods for attaching to a Resource.
 
   The _next methods allow for easy iteration through list() responses.
 
   Args:
     methodName: string, name of the method to use.
+    pageToken: string, name of request page token field.
+    nextPageToken: string, name of response page token field.
+    isPageTokenParameter: Boolean, True if request page token is a query
+        parameter, False if request page token is a field of the request body.
   """
   methodName = fix_method_name(methodName)
 
@@ -945,24 +954,30 @@ Returns:
     # Retrieve nextPageToken from previous_response
     # Use as pageToken in previous_request to create new request.
 
-    if 'nextPageToken' not in previous_response or not previous_response['nextPageToken']:
+    if nextPageToken not in previous_response or not previous_response[nextPageToken]:
       return None
 
     request = copy.copy(previous_request)
 
-    pageToken = previous_response['nextPageToken']
-    parsed = list(urlparse(request.uri))
-    q = parse_qsl(parsed[4])
+    token = previous_response[nextPageToken]
 
-    # Find and remove old 'pageToken' value from URI
-    newq = [(key, value) for (key, value) in q if key != 'pageToken']
-    newq.append(('pageToken', pageToken))
-    parsed[4] = urlencode(newq)
-    uri = urlunparse(parsed)
-
-    request.uri = uri
-
-    logger.info('URL being requested: %s %s' % (methodName,uri))
+    if isPageTokenParameter:
+        # Replace pageToken value in URI
+        parsed = list(urlparse(request.uri))
+        q = parse_qsl(parsed[4])
+        newq = [(key, value) for (key, value) in q if key != pageToken]
+        newq.append((pageToken, token))
+        parsed[4] = urlencode(newq)
+        uri = urlunparse(parsed)
+        request.uri = uri
+        logger.info('Next page request URL: %s %s' % (methodName, uri))
+    else:
+        # Replace pageToken value in request body
+        model = self._model
+        body = model.deserialize(request.body)
+        body[pageToken] = token
+        request.body = model.serialize(body)
+        logger.info('Next page request body: %s %s' % (methodName, body))
 
     return request
 
@@ -1110,19 +1125,36 @@ class Resource(object):
                                method.__get__(self, self.__class__))
 
   def _add_next_methods(self, resourceDesc, schema):
-    # Add _next() methods
-    # Look for response bodies in schema that contain nextPageToken, and methods
-    # that take a pageToken parameter.
+    # Add _next() methods iff one of the names 'pageToken' or 'nextPageToken'
+    # occurs among the fields of both the method's response type and either the
+    # method's request (query parameters) or request body.
     if 'methods' in resourceDesc:
       for methodName, methodDesc in six.iteritems(resourceDesc['methods']):
-        if 'response' in methodDesc:
-          responseSchema = methodDesc['response']
-          if '$ref' in responseSchema:
-            responseSchema = schema.get(responseSchema['$ref'])
-          hasNextPageToken = 'nextPageToken' in responseSchema.get('properties',
-                                                                   {})
-          hasPageToken = 'pageToken' in methodDesc.get('parameters', {})
-          if hasNextPageToken and hasPageToken:
-            fixedMethodName, method = createNextMethod(methodName + '_next')
+        nextPageToken = pageTokenName(
+            methodProperties(methodDesc, schema, 'response'))
+        if nextPageToken:
+          isPageTokenParameter = True
+          pageToken = pageTokenName(methodDesc.get('parameters', {}))
+          if not pageToken:
+            isPageTokenParameter = False
+            pageToken = pageTokenName(
+                methodProperties(methodDesc, schema, 'request'))
+          if pageToken:
+            fixedMethodName, method = createNextMethod(
+                methodName + '_next', pageToken, nextPageToken,
+                isPageTokenParameter)
             self._set_dynamic_attr(fixedMethodName,
                                    method.__get__(self, self.__class__))
+
+
+pageTokenNames = ('pageToken', 'nextPageToken')
+
+def pageTokenName(fields):
+  return next((tokenName for tokenName in pageTokenNames
+              if tokenName in fields), None)
+
+def methodProperties(methodDesc, schema, name):
+  desc = methodDesc.get(name, {})
+  if '$ref' in desc:
+    desc = schema.get(desc['$ref'], {})
+  return desc.get('properties', {})

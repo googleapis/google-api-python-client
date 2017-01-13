@@ -73,6 +73,7 @@ from googleapiclient.http import MediaIoBaseUpload
 from googleapiclient.http import MediaUpload
 from googleapiclient.http import MediaUploadProgress
 from googleapiclient.http import tunnel_patch
+from googleapiclient.model import JsonModel
 from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.client import OAuth2Credentials, GoogleCredentials
 
@@ -1378,10 +1379,45 @@ class Next(unittest.TestCase):
     q = parse_qs(parsed[4])
     self.assertEqual(q['pageToken'][0], '123abc')
 
+  def test_next_successful_with_next_page_token_alternate_name(self):
+    self.http = HttpMock(datafile('bigquery.json'), {'status': '200'})
+    bigquery = build('bigquery', 'v2', http=self.http)
+    request = bigquery.tabledata().list(datasetId='', projectId='', tableId='')
+    next_request = bigquery.tabledata().list_next(
+        request, {'pageToken': '123abc'})
+    parsed = list(urlparse(next_request.uri))
+    q = parse_qs(parsed[4])
+    self.assertEqual(q['pageToken'][0], '123abc')
+
+  def test_next_successful_with_next_page_token_in_body(self):
+    self.http = HttpMock(datafile('logging.json'), {'status': '200'})
+    logging = build('logging', 'v2', http=self.http)
+    request = logging.entries().list(body={})
+    next_request = logging.entries().list_next(
+        request, {'nextPageToken': '123abc'})
+    body = JsonModel().deserialize(next_request.body)
+    self.assertEqual(body['pageToken'], '123abc')
+
   def test_next_with_method_with_no_properties(self):
     self.http = HttpMock(datafile('latitude.json'), {'status': '200'})
     service = build('latitude', 'v1', http=self.http)
-    request = service.currentLocation().get()
+    service.currentLocation().get()
+
+  def test_next_nonexistent_with_no_next_page_token(self):
+    self.http = HttpMock(datafile('drive.json'), {'status': '200'})
+    drive = build('drive', 'v3', http=self.http)
+    drive.changes().watch(body={})
+    self.assertFalse(callable(getattr(drive.changes(), 'watch_next', None)))
+
+  def test_next_successful_with_next_page_token_required(self):
+    self.http = HttpMock(datafile('drive.json'), {'status': '200'})
+    drive = build('drive', 'v3', http=self.http)
+    request = drive.changes().list(pageToken='startPageToken')
+    next_request = drive.changes().list_next(
+        request, {'nextPageToken': '123abc'})
+    parsed = list(urlparse(next_request.uri))
+    q = parse_qs(parsed[4])
+    self.assertEqual(q['pageToken'][0], '123abc')
 
 
 class MediaGet(unittest.TestCase):
