@@ -166,6 +166,7 @@ class Schemas(object):
 
     Args:
       name: string, Schema name.
+      default: object, return value if name not found.
     """
     return self.schemas.get(name, default)
 

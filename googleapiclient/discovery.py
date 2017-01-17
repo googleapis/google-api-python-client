@@ -721,8 +721,8 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
       if name not in kwargs:
         # temporary workaround for non-paging methods incorrectly requiring
         # page token parameter (cf. drive.changes.watch vs. drive.changes.list)
-        if name not in _PAGE_TOKEN_NAMES or findPageTokenName(
-            methodProperties(methodDesc, schema, 'response')):
+        if name not in _PAGE_TOKEN_NAMES or _findPageTokenName(
+            _methodProperties(methodDesc, schema, 'response')):
           raise TypeError('Missing required parameter "%s"' % name)
 
     for name, regex in six.iteritems(parameters.pattern_params):
@@ -1130,16 +1130,16 @@ class Resource(object):
     if 'methods' not in resourceDesc:
       return
     for methodName, methodDesc in six.iteritems(resourceDesc['methods']):
-      nextPageTokenName = findPageTokenName(
-          methodProperties(methodDesc, schema, 'response'))
+      nextPageTokenName = _findPageTokenName(
+          _methodProperties(methodDesc, schema, 'response'))
       if not nextPageTokenName:
         continue
       isPageTokenParameter = True
-      pageTokenName = findPageTokenName(methodDesc.get('parameters', {}))
+      pageTokenName = _findPageTokenName(methodDesc.get('parameters', {}))
       if not pageTokenName:
         isPageTokenParameter = False
-        pageTokenName = findPageTokenName(
-            methodProperties(methodDesc, schema, 'request'))
+        pageTokenName = _findPageTokenName(
+            _methodProperties(methodDesc, schema, 'request'))
       if not pageTokenName:
         continue
       fixedMethodName, method = createNextMethod(
@@ -1149,7 +1149,7 @@ class Resource(object):
                              method.__get__(self, self.__class__))
 
 
-def findPageTokenName(fields):
+def _findPageTokenName(fields):
   """Search field names for one like a page token.
 
   Args:
@@ -1162,7 +1162,7 @@ def findPageTokenName(fields):
   return next((tokenName for tokenName in _PAGE_TOKEN_NAMES
               if tokenName in fields), None)
 
-def methodProperties(methodDesc, schema, name):
+def _methodProperties(methodDesc, schema, name):
   """Get properties of a field in a method description.
 
   Args:
