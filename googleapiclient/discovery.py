@@ -115,6 +115,7 @@ MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE = {
     'type': 'string',
     'required': False,
 }
+_PAGE_TOKEN_NAMES = ('pageToken', 'nextPageToken')
 
 # Parameters accepted by the stack, but not visible via discovery.
 # TODO(dhermes): Remove 'userip' in 'v2'.
@@ -720,7 +721,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
       if name not in kwargs:
         # temporary workaround for non-paging methods incorrectly requiring
         # page token parameter (cf. drive.changes.watch vs. drive.changes.list)
-        if name not in pageTokenNames or pageTokenName(
+        if name not in _PAGE_TOKEN_NAMES or findPageTokenName(
             methodProperties(methodDesc, schema, 'response')):
           raise TypeError('Missing required parameter "%s"' % name)
 
@@ -925,16 +926,18 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
   return (methodName, method)
 
 
-def createNextMethod(methodName, pageToken, nextPageToken,
-                     isPageTokenParameter):
+def createNextMethod(methodName,
+                     pageTokenName='pageToken',
+                     nextPageTokenName='nextPageToken',
+                     isPageTokenParameter=True):
   """Creates any _next methods for attaching to a Resource.
 
   The _next methods allow for easy iteration through list() responses.
 
   Args:
     methodName: string, name of the method to use.
-    pageToken: string, name of request page token field.
-    nextPageToken: string, name of response page token field.
+    pageTokenName: string, name of request page token field.
+    nextPageTokenName: string, name of response page token field.
     isPageTokenParameter: Boolean, True if request page token is a query
         parameter, False if request page token is a field of the request body.
   """
@@ -954,28 +957,24 @@ Returns:
     # Retrieve nextPageToken from previous_response
     # Use as pageToken in previous_request to create new request.
 
-    if nextPageToken not in previous_response or not previous_response[nextPageToken]:
+    if (nextPageTokenName not in previous_response or
+        not previous_response[nextPageTokenName]):
       return None
 
     request = copy.copy(previous_request)
 
-    token = previous_response[nextPageToken]
+    nextPageToken = previous_response[nextPageTokenName]
 
     if isPageTokenParameter:
         # Replace pageToken value in URI
-        parsed = list(urlparse(request.uri))
-        q = parse_qsl(parsed[4])
-        newq = [(key, value) for (key, value) in q if key != pageToken]
-        newq.append((pageToken, token))
-        parsed[4] = urlencode(newq)
-        uri = urlunparse(parsed)
-        request.uri = uri
-        logger.info('Next page request URL: %s %s' % (methodName, uri))
+        request.uri = _add_query_parameter(
+            request.uri, pageTokenName, nextPageToken)
+        logger.info('Next page request URL: %s %s' % (methodName, request.uri))
     else:
         # Replace pageToken value in request body
         model = self._model
         body = model.deserialize(request.body)
-        body[pageToken] = token
+        body[pageTokenName] = nextPageToken
         request.body = model.serialize(body)
         logger.info('Next page request body: %s %s' % (methodName, body))
 
@@ -1125,35 +1124,58 @@ class Resource(object):
                                method.__get__(self, self.__class__))
 
   def _add_next_methods(self, resourceDesc, schema):
-    # Add _next() methods iff one of the names 'pageToken' or 'nextPageToken'
-    # occurs among the fields of both the method's response type and either the
-    # method's request (query parameters) or request body.
-    if 'methods' in resourceDesc:
-      for methodName, methodDesc in six.iteritems(resourceDesc['methods']):
-        nextPageToken = pageTokenName(
-            methodProperties(methodDesc, schema, 'response'))
-        if nextPageToken:
-          isPageTokenParameter = True
-          pageToken = pageTokenName(methodDesc.get('parameters', {}))
-          if not pageToken:
-            isPageTokenParameter = False
-            pageToken = pageTokenName(
-                methodProperties(methodDesc, schema, 'request'))
-          if pageToken:
-            fixedMethodName, method = createNextMethod(
-                methodName + '_next', pageToken, nextPageToken,
-                isPageTokenParameter)
-            self._set_dynamic_attr(fixedMethodName,
-                                   method.__get__(self, self.__class__))
+    # Add _next() methods if and only if one of the names 'pageToken' or
+    # 'nextPageToken' occurs among the fields of both the method's response
+    # type either the method's request (query parameters) or request body.
+    if 'methods' not in resourceDesc:
+      return
+    for methodName, methodDesc in six.iteritems(resourceDesc['methods']):
+      nextPageTokenName = findPageTokenName(
+          methodProperties(methodDesc, schema, 'response'))
+      if not nextPageTokenName:
+        continue
+      isPageTokenParameter = True
+      pageTokenName = findPageTokenName(methodDesc.get('parameters', {}))
+      if not pageTokenName:
+        isPageTokenParameter = False
+        pageTokenName = findPageTokenName(
+            methodProperties(methodDesc, schema, 'request'))
+      if not pageTokenName:
+        continue
+      fixedMethodName, method = createNextMethod(
+          methodName + '_next', pageTokenName, nextPageTokenName,
+          isPageTokenParameter)
+      self._set_dynamic_attr(fixedMethodName,
+                             method.__get__(self, self.__class__))
 
 
-pageTokenNames = ('pageToken', 'nextPageToken')
+def findPageTokenName(fields):
+  """Search field names for one like a page token.
 
-def pageTokenName(fields):
-  return next((tokenName for tokenName in pageTokenNames
+  Args:
+    fields: iterable, names of fields.
+
+  Returns:
+    First name that is either 'pageToken' or 'nextPageToken' if one exists,
+    otherwise None.
+  """
+  return next((tokenName for tokenName in _PAGE_TOKEN_NAMES
               if tokenName in fields), None)
 
 def methodProperties(methodDesc, schema, name):
+  """Get properties of a field in a method description.
+
+  Args:
+    methodDesc: object, fragment of deserialized discovery document that
+      describes the method.
+    schema: object, mapping of schema names to schema descriptions.
+    name: string, name of top-level field in method description.
+
+  Returns:
+    Object representing fragment of deserialized discovery document
+    corresponding to 'properties' field of object corresponding to named field
+    in method description, if it exists, otherwise empty dict.
+  """
   desc = methodDesc.get(name, {})
   if '$ref' in desc:
     desc = schema.get(desc['$ref'], {})
