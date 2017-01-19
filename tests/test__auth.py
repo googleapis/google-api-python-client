@@ -66,10 +66,13 @@ class TestAuthWithGoogleAuth(unittest2.TestCase):
     def test_authorized_http(self):
         credentials = mock.Mock(spec=google.auth.credentials.Credentials)
 
-        http = _auth.authorized_http(credentials)
+        authorized_http = _auth.authorized_http(credentials)
 
-        self.assertIsInstance(http, google_auth_httplib2.AuthorizedHttp)
-        self.assertEqual(http.credentials, credentials)
+        self.assertIsInstance(authorized_http, google_auth_httplib2.AuthorizedHttp)
+        self.assertEqual(authorized_http.credentials, credentials)
+        self.assertIsInstance(authorized_http.http, httplib2.Http)
+        self.assertIsInstance(authorized_http.http.timeout, int)
+        self.assertGreater(authorized_http.http.timeout, 0)
 
 
 class TestAuthWithOAuth2Client(unittest2.TestCase):
@@ -112,11 +115,14 @@ class TestAuthWithOAuth2Client(unittest2.TestCase):
     def test_authorized_http(self):
         credentials = mock.Mock(spec=oauth2client.client.Credentials)
 
-        http = _auth.authorized_http(credentials)
+        authorized_http = _auth.authorized_http(credentials)
 
-        self.assertEqual(http, credentials.authorize.return_value)
-        self.assertIsInstance(
-            credentials.authorize.call_args[0][0], httplib2.Http)
+        http = credentials.authorize.call_args[0][0]
+
+        self.assertEqual(authorized_http, credentials.authorize.return_value)
+        self.assertIsInstance(http, httplib2.Http)
+        self.assertIsInstance(http.timeout, int)
+        self.assertGreater(http.timeout, 0)
 
 
 class TestAuthWithoutAuth(unittest2.TestCase):

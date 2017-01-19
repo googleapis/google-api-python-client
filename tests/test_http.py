@@ -43,6 +43,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import BatchError
 from googleapiclient.errors import HttpError
 from googleapiclient.errors import InvalidChunkSizeError
+from googleapiclient.http import build_http
 from googleapiclient.http import BatchHttpRequest
 from googleapiclient.http import HttpMock
 from googleapiclient.http import HttpMockSequence
@@ -235,7 +236,7 @@ class TestMediaUpload(unittest.TestCase):
     def _postproc(*kwargs):
       pass
 
-    http = httplib2.Http()
+    http = build_http()
     media_upload = MediaFileUpload(
         datafile('small.png'), chunksize=500, resumable=True)
     req = HttpRequest(
@@ -1339,6 +1340,34 @@ class TestHttpMock(unittest.TestCase):
         method='GET',
         headers={})
     self.assertRaises(HttpError, request.execute)
+
+
+class TestHttpBuild(unittest.TestCase):
+  original_socket_default_timeout = None
+
+  @classmethod
+  def setUpClass(cls):
+    cls.original_socket_default_timeout = socket.getdefaulttimeout()
+
+  @classmethod
+  def tearDownClass(cls):
+    socket.setdefaulttimeout(cls.original_socket_default_timeout)
+
+  def test_build_http_sets_default_timeout_if_none_specified(self):
+    socket.setdefaulttimeout(None)
+    http = build_http()
+    self.assertIsInstance(http.timeout, int)
+    self.assertGreater(http.timeout, 0)
+
+  def test_build_http_default_timeout_can_be_overridden(self):
+    socket.setdefaulttimeout(1.5)
+    http = build_http()
+    self.assertAlmostEqual(http.timeout, 1.5, delta=0.001)
+
+  def test_build_http_default_timeout_can_be_set_to_zero(self):
+    socket.setdefaulttimeout(0)
+    http = build_http()
+    self.assertEquals(http.timeout, 0)
 
 
 if __name__ == '__main__':

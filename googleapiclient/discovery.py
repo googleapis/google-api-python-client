@@ -47,7 +47,6 @@ import logging
 import mimetypes
 import os
 import re
-import socket
 
 # Third-party imports
 import httplib2
@@ -62,6 +61,7 @@ from googleapiclient.errors import MediaUploadSizeError
 from googleapiclient.errors import UnacceptableMimeTypeError
 from googleapiclient.errors import UnknownApiNameOrVersion
 from googleapiclient.errors import UnknownFileType
+from googleapiclient.http import build_http
 from googleapiclient.http import BatchHttpRequest
 from googleapiclient.http import HttpMock
 from googleapiclient.http import HttpMockSequence
@@ -98,7 +98,7 @@ V2_DISCOVERY_URI = ('https://{api}.googleapis.com/$discovery/rest?'
                     'version={apiVersion}')
 DEFAULT_METHOD_DOC = 'A description of how to use this function'
 HTTP_PAYLOAD_METHODS = frozenset(['PUT', 'POST', 'PATCH'])
-DEFAULT_HTTP_TIMEOUT_SEC = 60
+
 _MEDIA_SIZE_BIT_SHIFTS = {'KB': 10, 'MB': 20, 'GB': 30, 'TB': 40}
 BODY_PARAMETER_DEFAULT_VALUE = {
     'description': 'The request body.',
@@ -216,8 +216,7 @@ def build(serviceName,
       }
 
   if http is None:
-    http_timeout = socket.getdefaulttimeout() if socket.getdefaulttimeout() else DEFAULT_HTTP_TIMEOUT_SEC
-    discovery_http = httplib2.Http(timeout=http_timeout)
+    discovery_http = build_http()
   else:
     discovery_http = http
 
@@ -372,7 +371,7 @@ def build_from_document(
     # If the service doesn't require scopes then there is no need for
     # authentication.
     else:
-      http = httplib2.Http()
+      http = build_http()
 
   if model is None:
     features = service.get('features', [])

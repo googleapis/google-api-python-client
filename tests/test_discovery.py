@@ -65,6 +65,7 @@ from googleapiclient.errors import ResumableUploadError
 from googleapiclient.errors import UnacceptableMimeTypeError
 from googleapiclient.errors import UnknownApiNameOrVersion
 from googleapiclient.errors import UnknownFileType
+from googleapiclient.http import build_http
 from googleapiclient.http import BatchHttpRequest
 from googleapiclient.http import HttpMock
 from googleapiclient.http import HttpMockSequence
@@ -402,13 +403,32 @@ class DiscoveryFromDocument(unittest.TestCase):
       discovery, base=base, credentials=self.MOCK_CREDENTIALS)
     self.assertEquals("https://www.googleapis.com/plus/v1/", plus._baseUrl)
 
-  def test_building_with_optional_http(self):
+  def test_building_with_optional_http_with_authorization(self):
     discovery = open(datafile('plus.json')).read()
     plus = build_from_document(
       discovery, base="https://www.googleapis.com/",
       credentials=self.MOCK_CREDENTIALS)
-    self.assertIsInstance(
-      plus._http, (httplib2.Http, google_auth_httplib2.AuthorizedHttp))
+
+    # plus service requires Authorization, hence we expect to see AuthorizedHttp object here
+    self.assertIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
+    self.assertIsInstance(plus._http.http, httplib2.Http)
+    self.assertIsInstance(plus._http.http.timeout, int)
+    self.assertGreater(plus._http.http.timeout, 0)
+
+  def test_building_with_optional_http_with_no_authorization(self):
+    discovery = open(datafile('plus.json')).read()
+    # Cleanup auth field, so we would use plain http client
+    discovery = json.loads(discovery)
+    discovery['auth'] = {}
+    discovery = json.dumps(discovery)
+
+    plus = build_from_document(
+      discovery, base="https://www.googleapis.com/",
+      credentials=self.MOCK_CREDENTIALS)
+    # plus service requires Authorization
+    self.assertIsInstance(plus._http, httplib2.Http)
+    self.assertIsInstance(plus._http.timeout, int)
+    self.assertGreater(plus._http.timeout, 0)
 
   def test_building_with_explicit_http(self):
     http = HttpMock()
@@ -1316,7 +1336,7 @@ class Discovery(unittest.TestCase):
         zoo_uri = util._add_query_parameter(zoo_uri, 'userIp',
                                             os.environ['REMOTE_ADDR'])
 
-    http = httplib2.Http()
+    http = build_http()
     original_request = http.request
     def wrapped_request(uri, method='GET', *args, **kwargs):
         if uri == zoo_uri:

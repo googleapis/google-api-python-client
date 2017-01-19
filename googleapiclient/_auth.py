@@ -14,8 +14,6 @@
 
 """Helpers for authentication using oauth2client or google-auth."""
 
-import httplib2
-
 try:
     import google.auth
     import google_auth_httplib2
@@ -29,6 +27,8 @@ try:
     HAS_OAUTH2CLIENT = True
 except ImportError:  # pragma: NO COVER
     HAS_OAUTH2CLIENT = False
+
+from googleapiclient.http import build_http
 
 
 def default_credentials():
@@ -85,6 +85,7 @@ def authorized_http(credentials):
     """
     if HAS_GOOGLE_AUTH and isinstance(
             credentials, google.auth.credentials.Credentials):
-        return google_auth_httplib2.AuthorizedHttp(credentials)
+        return google_auth_httplib2.AuthorizedHttp(credentials,
+                                                   http=build_http())
     else:
-        return credentials.authorize(httplib2.Http())
+        return credentials.authorize(build_http())
