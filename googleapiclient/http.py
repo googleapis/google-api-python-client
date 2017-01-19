@@ -80,6 +80,8 @@ MAX_URI_LENGTH = 2048
 
 _TOO_MANY_REQUESTS = 429
 
+DEFAULT_HTTP_TIMEOUT_SEC = 60
+
 
 def _should_retry_response(resp_status, content):
   """Determines whether a response should be retried.
@@ -1732,3 +1734,21 @@ def tunnel_patch(http):
 
   http.request = new_request
   return http
+
+
+def build_http():
+  """Builds httplib2.Http object
+
+  Returns:
+  A httplib2.Http object, which is used to make http requests, and which has timeout set by default.
+  To override default timeout call
+
+    socket.setdefaulttimeout(timeout_in_sec)
+
+  before interacting with this method.
+  """
+  if socket.getdefaulttimeout() is not None:
+    http_timeout = socket.getdefaulttimeout()
+  else:
+    http_timeout = DEFAULT_HTTP_TIMEOUT_SEC
+  return httplib2.Http(timeout=http_timeout)
