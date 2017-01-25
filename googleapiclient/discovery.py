@@ -1153,7 +1153,7 @@ def _findPageTokenName(fields):
   """Search field names for one like a page token.
 
   Args:
-    fields: iterable, names of fields.
+    fields: container of string, names of fields.
 
   Returns:
     First name that is either 'pageToken' or 'nextPageToken' if one exists,
