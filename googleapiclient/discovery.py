@@ -708,7 +708,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
 
   parameters = ResourceMethodParameters(methodDesc)
 
-  def method(self, **kwargs):
+  def method(self, user_agent=None, **kwargs):
     # Don't bother with doc string, it will be over-written by createMethod.
 
     for name in six.iterkeys(kwargs):
@@ -780,6 +780,8 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
       model = RawModel()
 
     headers = {}
+    if user_agent is not None:
+      headers['user-agent'] = user_agent
     headers, params, query, body = model.request(headers,
         actual_path_params, actual_query_params, body_value)
 
