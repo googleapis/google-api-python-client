@@ -355,8 +355,9 @@ def build_from_document(
     scopes = list(
       service.get('auth', {}).get('oauth2', {}).get('scopes', {}).keys())
 
-    # If so, then the we need to setup authentication.
-    if scopes:
+    # If so, then the we need to setup authentication if no developerKey is
+    # specified.
+    if scopes and not developerKey:
       # If the user didn't pass in credentials, attempt to acquire application
       # default credentials.
       if credentials is None:

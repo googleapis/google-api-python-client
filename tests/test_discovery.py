@@ -437,6 +437,16 @@ class DiscoveryFromDocument(unittest.TestCase):
       discovery, base="https://www.googleapis.com/", http=http)
     self.assertEquals(plus._http, http)
 
+  def test_building_with_developer_key_skips_adc(self):
+    discovery = open(datafile('plus.json')).read()
+    plus = build_from_document(
+      discovery, base="https://www.googleapis.com/", developerKey='123')
+    self.assertIsInstance(plus._http, httplib2.Http)
+    # It should not be an AuthorizedHttp, because that would indicate that
+    # application default credentials were used.
+    self.assertNotIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
+
+
 class DiscoveryFromHttp(unittest.TestCase):
   def setUp(self):
     self.old_environ = os.environ.copy()
