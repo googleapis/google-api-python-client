@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "1.6.1"
+__version__ = "1.6.2"
 
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
