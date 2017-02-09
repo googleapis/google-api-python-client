@@ -957,13 +957,11 @@ Returns:
     # Retrieve nextPageToken from previous_response
     # Use as pageToken in previous_request to create new request.
 
-    if (nextPageTokenName not in previous_response or
-        not previous_response[nextPageTokenName]):
+    nextPageToken = previous_response.get(nextPageTokenName, None)
+    if not nextPageToken:
       return None
 
     request = copy.copy(previous_request)
-
-    nextPageToken = previous_response[nextPageTokenName]
 
     if isPageTokenParameter:
         # Replace pageToken value in URI
