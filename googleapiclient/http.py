@@ -817,6 +817,7 @@ class HttpRequest(object):
     if 'content-length' not in self.headers:
       self.headers['content-length'] = str(self.body_size)
     # If the request URI is too long then turn it into a POST request.
+    # Assume that a GET request never contains a request body.
     if len(self.uri) > MAX_URI_LENGTH and self.method == 'GET':
       self.method = 'POST'
       self.headers['x-http-method-override'] = 'GET'
