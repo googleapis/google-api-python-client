@@ -88,7 +88,7 @@ def _should_retry_response(resp_status, content):
 
   Args:
     resp_status: The response status received.
-    content: The response content body. 
+    content: The response content body.
 
   Returns:
     True if the response should be retried, otherwise False.
