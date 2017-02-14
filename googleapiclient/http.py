@@ -1202,7 +1202,17 @@ class BatchHttpRequest(object):
 
     if request.http is not None and hasattr(request.http.request,
         'credentials'):
-      request.http.request.credentials.apply(headers)
+      credentials = request.http.request.credentials
+      if (hasattr(credentials, 'access_token') and
+          credentials.access_token is None):
+        # It is possible to have credentials and still not have an access token.
+        # (e.g. with application default credentials on GAE).  If that is the
+        # case, do not serialize the authentication headers with this request.
+        # Instead, assume that the batch has an authorization header which will
+        # trickle down to all of the individual requests.
+        pass
+      else:
+        credentials.apply(headers)
 
     # MIMENonMultipart adds its own Content-Type header.
     if 'content-type' in headers:
