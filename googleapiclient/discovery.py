@@ -334,6 +334,10 @@ def build_from_document(
   if http is not None and credentials is not None:
     raise ValueError('Arguments http and credentials are mutually exclusive.')
 
+  if developerKey is not None and credentials is not None:
+    raise ValueError(
+      'Arguments developerKey and credentials are mutually exclusive.')
+
   if isinstance(service, six.string_types):
     service = json.loads(service)
 

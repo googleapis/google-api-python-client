@@ -375,6 +375,13 @@ class DiscoveryErrors(unittest.TestCase):
       build(
         'plus', 'v1', http=http, credentials=mock.sentinel.credentials)
 
+  def test_credentials_and_developer_key_mutually_exclusive(self):
+    http = HttpMock(datafile('plus.json'), {'status': '200'})
+    with self.assertRaises(ValueError):
+      build(
+        'plus', 'v1', credentials=mock.sentinel.credentials,
+        developerKey=mock.sentinel.credentials)
+
 
 class DiscoveryFromDocument(unittest.TestCase):
   MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
