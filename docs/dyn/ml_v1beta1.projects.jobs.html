@@ -72,7 +72,7 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="ml_v1beta1.html">Google Cloud Machine Learning</a> . <a href="ml_v1beta1.projects.html">projects</a> . <a href="ml_v1beta1.projects.jobs.html">jobs</a></h1>
+<h1><a href="ml_v1beta1.html">Google Cloud Machine Learning Engine</a> . <a href="ml_v1beta1.projects.html">projects</a> . <a href="ml_v1beta1.projects.jobs.html">jobs</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="#cancel">cancel(name=None, body, x__xgafv=None)</a></code></p>
@@ -136,9 +136,12 @@ Authorization: requires `Editor` role on the specified project. (required)
     The object takes the form of:
 
 { # Represents a training or prediction job.
-    "trainingOutput": { # Represents results of a training job. # The current training job result.
-      "consumedMLUnits": 3.14, # The amount of ML units consumed by the job.
+    "trainingOutput": { # Represents results of a training job. Output only. # The current training job result.
+      "completedTrialCount": "A String", # The number of hyperparameter tuning trials that completed successfully.
+          # Only set for hyperparameter tuning jobs.
+      "isHyperparameterTuningJob": True or False, # Whether this job is a hyperparameter tuning job.
       "trials": [ # Results for individual Hyperparameter trials.
+          # Only set for hyperparameter tuning jobs.
         { # Represents the result of a single hyperparameter tuning trial from a
             # training job. The TrainingOutput object that is returned on successful
             # completion of a training job with hyperparameter tuning includes a list
@@ -159,23 +162,26 @@ Authorization: requires `Editor` role on the specified project. (required)
           },
         },
       ],
-      "completedTrialCount": "A String", # The number of hyperparameter tuning trials that completed successfully.
+      "consumedMLUnits": 3.14, # The amount of ML units consumed by the job.
     },
-    "startTime": "A String", # Output only. When the job processing was started.
-    "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
-    "jobId": "A String", # Required. The user-specified id of the job.
-    "state": "A String", # Output only. The detailed state of a job.
     "predictionInput": { # Represents input parameters for a prediction job. # Input parameters to create a prediction job.
       "modelName": "A String", # Use this field if you want to use the default version for the specified
           # model. The string must use the following format:
           #
           # `"projects/<var>[YOUR_PROJECT]</var>/models/<var>[YOUR_MODEL]</var>"`
+      "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for this batch
+          # prediction. If not set, Google Cloud ML will pick the runtime version used
+          # during the CreateVersion request for this model version, or choose the
+          # latest stable version when model version information is not available
+          # such as when the model is specified by uri.
       "inputPaths": [ # Required. The Google Cloud Storage location of the input data files.
           # May contain wildcards.
         "A String",
       ],
       "maxWorkerCount": "A String", # Optional. The maximum number of workers to be used for parallel processing.
           # Defaults to 10 if not specified.
+      "uri": "A String", # Use this field if you want to specify a Google Cloud Storage path for
+          # the model to use.
       "outputPath": "A String", # Required. The output Google Cloud Storage location.
       "dataFormat": "A String", # Required. The format of the input data files.
       "versionName": "A String", # Use this field if you want to specify a version of the model to use. The
@@ -185,6 +191,10 @@ Authorization: requires `Editor` role on the specified project. (required)
           # `"projects/<var>[YOUR_PROJECT]</var>/models/<var>YOUR_MODEL/versions/<var>[YOUR_VERSION]</var>"`
       "region": "A String", # Required. The Google Compute Engine region to run the prediction job in.
     },
+    "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
+    "jobId": "A String", # Required. The user-specified id of the job.
+    "state": "A String", # Output only. The detailed state of a job.
+    "startTime": "A String", # Output only. When the job processing was started.
     "trainingInput": { # Represents input parameters for a training job. # Input parameters to create a training job.
       "workerType": "A String", # Optional. Specifies the type of virtual machine to use for your training
           # job's worker nodes.
@@ -194,6 +204,8 @@ Authorization: requires `Editor` role on the specified project. (required)
           #
           # This value must be present when `scaleTier` is set to `CUSTOM` and
           # `workerCount` is greater than zero.
+      "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for training.  If not
+          # set, Google Cloud ML will choose the latest stable version.
       "scaleTier": "A String", # Required. Specifies the machine types, the number of replicas for workers
           # and parameter servers.
       "masterType": "A String", # Optional. Specifies the type of virtual machine to use for your training
@@ -229,6 +241,19 @@ Authorization: requires `Editor` role on the specified project. (required)
           #   A machine with roughly twice the number of cores and roughly double the
           #   memory of <code suppresswarning="true">complex_model_m</code>.
           #   </dd>
+          #   <dt>standard_gpu</dt>
+          #   <dd>
+          #   A machine equivalent to <code suppresswarning="true">standard</code> that
+          #   also includes a
+          #   <a href="ml/docs/how-tos/using-gpus">
+          #   GPU that you can use in your trainer</a>.
+          #   </dd>
+          #   <dt>complex_model_m_gpu</dt>
+          #   <dd>
+          #   A machine equivalent to
+          #   <code suppresswarning="true">coplex_model_m</code> that also includes
+          #   four GPUs.
+          #   </dd>
           # </dl>
           #
           # You must set this value when `scaleTier` is set to `CUSTOM`.
@@ -237,14 +262,19 @@ Authorization: requires `Editor` role on the specified project. (required)
             # the specified hyperparameters.
             #
             # Defaults to one.
+        "hyperparameterMetricTag": "A String", # Optional. The Tensorflow summary tag name to use for optimizing trials. For
+            # current versions of Tensorflow, this tag name should exactly match what is
+            # shown in Tensorboard, including all scopes.  For versions of Tensorflow
+            # prior to 0.12, this should be only the tag passed to tf.Summary.
+            # By default, "training/hptuning/metric" will be used.
         "params": [ # Required. The set of parameters to tune.
           { # Represents a single hyperparameter to optimize.
             "maxValue": 3.14, # Required if typeis `DOUBLE` or `INTEGER`. This field
                 # should be unset if type is `CATEGORICAL`. This value should be integers if
                 # type is `INTEGER`.
-            "minValue": 3.14, # Required if type is `DOUBLE` or `INTEGER`. This field
-                # should be unset if type is `CATEGORICAL`. This value should be integers if
-                # type is INTEGER.
+            "categoricalValues": [ # Required if type is `CATEGORICAL`. The list of possible categories.
+              "A String",
+            ],
             "discreteValues": [ # Required if type is `DISCRETE`.
                 # A list of feasible points.
                 # The list should be in strictly increasing order. For instance, this
@@ -254,9 +284,9 @@ Authorization: requires `Editor` role on the specified project. (required)
             ],
             "parameterName": "A String", # Required. The parameter name must be unique amongst all ParameterConfigs in
                 # a HyperparameterSpec message. E.g., "learning_rate".
-            "categoricalValues": [ # Required if type is `CATEGORICAL`. The list of possible categories.
-              "A String",
-            ],
+            "minValue": 3.14, # Required if type is `DOUBLE` or `INTEGER`. This field
+                # should be unset if type is `CATEGORICAL`. This value should be integers if
+                # type is INTEGER.
             "type": "A String", # Required. The type of the parameter.
             "scaleType": "A String", # Optional. How the parameter should be scaled to the hypercube.
                 # Leave unset for categorical parameters.
@@ -264,6 +294,10 @@ Authorization: requires `Editor` role on the specified project. (required)
                 # parameters (e.g., `UNIT_LINEAR_SCALE`).
           },
         ],
+        "goal": "A String", # Required. The type of goal to use for tuning. Available types are
+            # `MAXIMIZE` and `MINIMIZE`.
+            #
+            # Defaults to `MAXIMIZE`.
         "maxParallelTrials": 42, # Optional. The number of training trials to run concurrently.
             # You can reduce the time it takes to perform hyperparameter tuning by adding
             # trials in parallel. However, each trail only benefits from the information
@@ -274,16 +308,16 @@ Authorization: requires `Editor` role on the specified project. (required)
             # Each trial will use the same scale tier and machine types.
             #
             # Defaults to one.
-        "goal": "A String", # Required. The type of goal to use for tuning. Available types are
-            # `MAXIMIZE` and `MINIMIZE`.
-            #
-            # Defaults to `MAXIMIZE`.
       },
       "region": "A String", # Required. The Google Compute Engine region to run the training job in.
       "args": [ # Optional. Command line arguments to pass to the program.
         "A String",
       ],
       "pythonModule": "A String", # Required. The Python module name to run after installing the packages.
+      "jobDir": "A String", # Optional. A Google Cloud Storage path in which to store training outputs
+          # and other data needed for training. This path is passed to your TensorFlow
+          # program as the 'job_dir' command-line argument. The benefit of specifying
+          # this field is that Cloud ML validates the path for use in training.
       "packageUris": [ # Required. The Google Cloud Storage location of the packages with
           # the training program and any additional dependencies.
         "A String",
@@ -311,6 +345,7 @@ Authorization: requires `Editor` role on the specified project. (required)
     "endTime": "A String", # Output only. When the job processing was completed.
     "predictionOutput": { # Represents results of a prediction job. # The current prediction job result.
       "outputPath": "A String", # The output Google Cloud Storage location provided at the job creation time.
+      "nodeHours": 3.14, # Node hours used by the batch prediction job.
       "predictionCount": "A String", # The number of generated predictions.
       "errorCount": "A String", # The number of data instances which resulted in errors.
     },
@@ -326,9 +361,12 @@ Returns:
   An object of the form:
 
     { # Represents a training or prediction job.
-      "trainingOutput": { # Represents results of a training job. # The current training job result.
-        "consumedMLUnits": 3.14, # The amount of ML units consumed by the job.
+      "trainingOutput": { # Represents results of a training job. Output only. # The current training job result.
+        "completedTrialCount": "A String", # The number of hyperparameter tuning trials that completed successfully.
+            # Only set for hyperparameter tuning jobs.
+        "isHyperparameterTuningJob": True or False, # Whether this job is a hyperparameter tuning job.
         "trials": [ # Results for individual Hyperparameter trials.
+            # Only set for hyperparameter tuning jobs.
           { # Represents the result of a single hyperparameter tuning trial from a
               # training job. The TrainingOutput object that is returned on successful
               # completion of a training job with hyperparameter tuning includes a list
@@ -349,23 +387,26 @@ Returns:
             },
           },
         ],
-        "completedTrialCount": "A String", # The number of hyperparameter tuning trials that completed successfully.
+        "consumedMLUnits": 3.14, # The amount of ML units consumed by the job.
       },
-      "startTime": "A String", # Output only. When the job processing was started.
-      "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
-      "jobId": "A String", # Required. The user-specified id of the job.
-      "state": "A String", # Output only. The detailed state of a job.
       "predictionInput": { # Represents input parameters for a prediction job. # Input parameters to create a prediction job.
         "modelName": "A String", # Use this field if you want to use the default version for the specified
             # model. The string must use the following format:
             #
             # `"projects/<var>[YOUR_PROJECT]</var>/models/<var>[YOUR_MODEL]</var>"`
+        "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for this batch
+            # prediction. If not set, Google Cloud ML will pick the runtime version used
+            # during the CreateVersion request for this model version, or choose the
+            # latest stable version when model version information is not available
+            # such as when the model is specified by uri.
         "inputPaths": [ # Required. The Google Cloud Storage location of the input data files.
             # May contain wildcards.
           "A String",
         ],
         "maxWorkerCount": "A String", # Optional. The maximum number of workers to be used for parallel processing.
             # Defaults to 10 if not specified.
+        "uri": "A String", # Use this field if you want to specify a Google Cloud Storage path for
+            # the model to use.
         "outputPath": "A String", # Required. The output Google Cloud Storage location.
         "dataFormat": "A String", # Required. The format of the input data files.
         "versionName": "A String", # Use this field if you want to specify a version of the model to use. The
@@ -375,6 +416,10 @@ Returns:
             # `"projects/<var>[YOUR_PROJECT]</var>/models/<var>YOUR_MODEL/versions/<var>[YOUR_VERSION]</var>"`
         "region": "A String", # Required. The Google Compute Engine region to run the prediction job in.
       },
+      "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
+      "jobId": "A String", # Required. The user-specified id of the job.
+      "state": "A String", # Output only. The detailed state of a job.
+      "startTime": "A String", # Output only. When the job processing was started.
       "trainingInput": { # Represents input parameters for a training job. # Input parameters to create a training job.
         "workerType": "A String", # Optional. Specifies the type of virtual machine to use for your training
             # job's worker nodes.
@@ -384,6 +429,8 @@ Returns:
             #
             # This value must be present when `scaleTier` is set to `CUSTOM` and
             # `workerCount` is greater than zero.
+        "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for training.  If not
+            # set, Google Cloud ML will choose the latest stable version.
         "scaleTier": "A String", # Required. Specifies the machine types, the number of replicas for workers
             # and parameter servers.
         "masterType": "A String", # Optional. Specifies the type of virtual machine to use for your training
@@ -419,6 +466,19 @@ Returns:
             #   A machine with roughly twice the number of cores and roughly double the
             #   memory of <code suppresswarning="true">complex_model_m</code>.
             #   </dd>
+            #   <dt>standard_gpu</dt>
+            #   <dd>
+            #   A machine equivalent to <code suppresswarning="true">standard</code> that
+            #   also includes a
+            #   <a href="ml/docs/how-tos/using-gpus">
+            #   GPU that you can use in your trainer</a>.
+            #   </dd>
+            #   <dt>complex_model_m_gpu</dt>
+            #   <dd>
+            #   A machine equivalent to
+            #   <code suppresswarning="true">coplex_model_m</code> that also includes
+            #   four GPUs.
+            #   </dd>
             # </dl>
             #
             # You must set this value when `scaleTier` is set to `CUSTOM`.
@@ -427,14 +487,19 @@ Returns:
               # the specified hyperparameters.
               #
               # Defaults to one.
+          "hyperparameterMetricTag": "A String", # Optional. The Tensorflow summary tag name to use for optimizing trials. For
+              # current versions of Tensorflow, this tag name should exactly match what is
+              # shown in Tensorboard, including all scopes.  For versions of Tensorflow
+              # prior to 0.12, this should be only the tag passed to tf.Summary.
+              # By default, "training/hptuning/metric" will be used.
           "params": [ # Required. The set of parameters to tune.
             { # Represents a single hyperparameter to optimize.
               "maxValue": 3.14, # Required if typeis `DOUBLE` or `INTEGER`. This field
                   # should be unset if type is `CATEGORICAL`. This value should be integers if
                   # type is `INTEGER`.
-              "minValue": 3.14, # Required if type is `DOUBLE` or `INTEGER`. This field
-                  # should be unset if type is `CATEGORICAL`. This value should be integers if
-                  # type is INTEGER.
+              "categoricalValues": [ # Required if type is `CATEGORICAL`. The list of possible categories.
+                "A String",
+              ],
               "discreteValues": [ # Required if type is `DISCRETE`.
                   # A list of feasible points.
                   # The list should be in strictly increasing order. For instance, this
@@ -444,9 +509,9 @@ Returns:
               ],
               "parameterName": "A String", # Required. The parameter name must be unique amongst all ParameterConfigs in
                   # a HyperparameterSpec message. E.g., "learning_rate".
-              "categoricalValues": [ # Required if type is `CATEGORICAL`. The list of possible categories.
-                "A String",
-              ],
+              "minValue": 3.14, # Required if type is `DOUBLE` or `INTEGER`. This field
+                  # should be unset if type is `CATEGORICAL`. This value should be integers if
+                  # type is INTEGER.
               "type": "A String", # Required. The type of the parameter.
               "scaleType": "A String", # Optional. How the parameter should be scaled to the hypercube.
                   # Leave unset for categorical parameters.
@@ -454,6 +519,10 @@ Returns:
                   # parameters (e.g., `UNIT_LINEAR_SCALE`).
             },
           ],
+          "goal": "A String", # Required. The type of goal to use for tuning. Available types are
+              # `MAXIMIZE` and `MINIMIZE`.
+              #
+              # Defaults to `MAXIMIZE`.
           "maxParallelTrials": 42, # Optional. The number of training trials to run concurrently.
               # You can reduce the time it takes to perform hyperparameter tuning by adding
               # trials in parallel. However, each trail only benefits from the information
@@ -464,16 +533,16 @@ Returns:
               # Each trial will use the same scale tier and machine types.
               #
               # Defaults to one.
-          "goal": "A String", # Required. The type of goal to use for tuning. Available types are
-              # `MAXIMIZE` and `MINIMIZE`.
-              #
-              # Defaults to `MAXIMIZE`.
         },
         "region": "A String", # Required. The Google Compute Engine region to run the training job in.
         "args": [ # Optional. Command line arguments to pass to the program.
           "A String",
         ],
         "pythonModule": "A String", # Required. The Python module name to run after installing the packages.
+        "jobDir": "A String", # Optional. A Google Cloud Storage path in which to store training outputs
+            # and other data needed for training. This path is passed to your TensorFlow
+            # program as the 'job_dir' command-line argument. The benefit of specifying
+            # this field is that Cloud ML validates the path for use in training.
         "packageUris": [ # Required. The Google Cloud Storage location of the packages with
             # the training program and any additional dependencies.
           "A String",
@@ -501,6 +570,7 @@ Returns:
       "endTime": "A String", # Output only. When the job processing was completed.
       "predictionOutput": { # Represents results of a prediction job. # The current prediction job result.
         "outputPath": "A String", # The output Google Cloud Storage location provided at the job creation time.
+        "nodeHours": 3.14, # Node hours used by the batch prediction job.
         "predictionCount": "A String", # The number of generated predictions.
         "errorCount": "A String", # The number of data instances which resulted in errors.
       },
@@ -525,9 +595,12 @@ Returns:
   An object of the form:
 
     { # Represents a training or prediction job.
-      "trainingOutput": { # Represents results of a training job. # The current training job result.
-        "consumedMLUnits": 3.14, # The amount of ML units consumed by the job.
+      "trainingOutput": { # Represents results of a training job. Output only. # The current training job result.
+        "completedTrialCount": "A String", # The number of hyperparameter tuning trials that completed successfully.
+            # Only set for hyperparameter tuning jobs.
+        "isHyperparameterTuningJob": True or False, # Whether this job is a hyperparameter tuning job.
         "trials": [ # Results for individual Hyperparameter trials.
+            # Only set for hyperparameter tuning jobs.
           { # Represents the result of a single hyperparameter tuning trial from a
               # training job. The TrainingOutput object that is returned on successful
               # completion of a training job with hyperparameter tuning includes a list
@@ -548,23 +621,26 @@ Returns:
             },
           },
         ],
-        "completedTrialCount": "A String", # The number of hyperparameter tuning trials that completed successfully.
+        "consumedMLUnits": 3.14, # The amount of ML units consumed by the job.
       },
-      "startTime": "A String", # Output only. When the job processing was started.
-      "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
-      "jobId": "A String", # Required. The user-specified id of the job.
-      "state": "A String", # Output only. The detailed state of a job.
       "predictionInput": { # Represents input parameters for a prediction job. # Input parameters to create a prediction job.
         "modelName": "A String", # Use this field if you want to use the default version for the specified
             # model. The string must use the following format:
             #
             # `"projects/<var>[YOUR_PROJECT]</var>/models/<var>[YOUR_MODEL]</var>"`
+        "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for this batch
+            # prediction. If not set, Google Cloud ML will pick the runtime version used
+            # during the CreateVersion request for this model version, or choose the
+            # latest stable version when model version information is not available
+            # such as when the model is specified by uri.
         "inputPaths": [ # Required. The Google Cloud Storage location of the input data files.
             # May contain wildcards.
           "A String",
         ],
         "maxWorkerCount": "A String", # Optional. The maximum number of workers to be used for parallel processing.
             # Defaults to 10 if not specified.
+        "uri": "A String", # Use this field if you want to specify a Google Cloud Storage path for
+            # the model to use.
         "outputPath": "A String", # Required. The output Google Cloud Storage location.
         "dataFormat": "A String", # Required. The format of the input data files.
         "versionName": "A String", # Use this field if you want to specify a version of the model to use. The
@@ -574,6 +650,10 @@ Returns:
             # `"projects/<var>[YOUR_PROJECT]</var>/models/<var>YOUR_MODEL/versions/<var>[YOUR_VERSION]</var>"`
         "region": "A String", # Required. The Google Compute Engine region to run the prediction job in.
       },
+      "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
+      "jobId": "A String", # Required. The user-specified id of the job.
+      "state": "A String", # Output only. The detailed state of a job.
+      "startTime": "A String", # Output only. When the job processing was started.
       "trainingInput": { # Represents input parameters for a training job. # Input parameters to create a training job.
         "workerType": "A String", # Optional. Specifies the type of virtual machine to use for your training
             # job's worker nodes.
@@ -583,6 +663,8 @@ Returns:
             #
             # This value must be present when `scaleTier` is set to `CUSTOM` and
             # `workerCount` is greater than zero.
+        "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for training.  If not
+            # set, Google Cloud ML will choose the latest stable version.
         "scaleTier": "A String", # Required. Specifies the machine types, the number of replicas for workers
             # and parameter servers.
         "masterType": "A String", # Optional. Specifies the type of virtual machine to use for your training
@@ -618,6 +700,19 @@ Returns:
             #   A machine with roughly twice the number of cores and roughly double the
             #   memory of <code suppresswarning="true">complex_model_m</code>.
             #   </dd>
+            #   <dt>standard_gpu</dt>
+            #   <dd>
+            #   A machine equivalent to <code suppresswarning="true">standard</code> that
+            #   also includes a
+            #   <a href="ml/docs/how-tos/using-gpus">
+            #   GPU that you can use in your trainer</a>.
+            #   </dd>
+            #   <dt>complex_model_m_gpu</dt>
+            #   <dd>
+            #   A machine equivalent to
+            #   <code suppresswarning="true">coplex_model_m</code> that also includes
+            #   four GPUs.
+            #   </dd>
             # </dl>
             #
             # You must set this value when `scaleTier` is set to `CUSTOM`.
@@ -626,14 +721,19 @@ Returns:
               # the specified hyperparameters.
               #
               # Defaults to one.
+          "hyperparameterMetricTag": "A String", # Optional. The Tensorflow summary tag name to use for optimizing trials. For
+              # current versions of Tensorflow, this tag name should exactly match what is
+              # shown in Tensorboard, including all scopes.  For versions of Tensorflow
+              # prior to 0.12, this should be only the tag passed to tf.Summary.
+              # By default, "training/hptuning/metric" will be used.
           "params": [ # Required. The set of parameters to tune.
             { # Represents a single hyperparameter to optimize.
               "maxValue": 3.14, # Required if typeis `DOUBLE` or `INTEGER`. This field
                   # should be unset if type is `CATEGORICAL`. This value should be integers if
                   # type is `INTEGER`.
-              "minValue": 3.14, # Required if type is `DOUBLE` or `INTEGER`. This field
-                  # should be unset if type is `CATEGORICAL`. This value should be integers if
-                  # type is INTEGER.
+              "categoricalValues": [ # Required if type is `CATEGORICAL`. The list of possible categories.
+                "A String",
+              ],
               "discreteValues": [ # Required if type is `DISCRETE`.
                   # A list of feasible points.
                   # The list should be in strictly increasing order. For instance, this
@@ -643,9 +743,9 @@ Returns:
               ],
               "parameterName": "A String", # Required. The parameter name must be unique amongst all ParameterConfigs in
                   # a HyperparameterSpec message. E.g., "learning_rate".
-              "categoricalValues": [ # Required if type is `CATEGORICAL`. The list of possible categories.
-                "A String",
-              ],
+              "minValue": 3.14, # Required if type is `DOUBLE` or `INTEGER`. This field
+                  # should be unset if type is `CATEGORICAL`. This value should be integers if
+                  # type is INTEGER.
               "type": "A String", # Required. The type of the parameter.
               "scaleType": "A String", # Optional. How the parameter should be scaled to the hypercube.
                   # Leave unset for categorical parameters.
@@ -653,6 +753,10 @@ Returns:
                   # parameters (e.g., `UNIT_LINEAR_SCALE`).
             },
           ],
+          "goal": "A String", # Required. The type of goal to use for tuning. Available types are
+              # `MAXIMIZE` and `MINIMIZE`.
+              #
+              # Defaults to `MAXIMIZE`.
           "maxParallelTrials": 42, # Optional. The number of training trials to run concurrently.
               # You can reduce the time it takes to perform hyperparameter tuning by adding
               # trials in parallel. However, each trail only benefits from the information
@@ -663,16 +767,16 @@ Returns:
               # Each trial will use the same scale tier and machine types.
               #
               # Defaults to one.
-          "goal": "A String", # Required. The type of goal to use for tuning. Available types are
-              # `MAXIMIZE` and `MINIMIZE`.
-              #
-              # Defaults to `MAXIMIZE`.
         },
         "region": "A String", # Required. The Google Compute Engine region to run the training job in.
         "args": [ # Optional. Command line arguments to pass to the program.
           "A String",
         ],
         "pythonModule": "A String", # Required. The Python module name to run after installing the packages.
+        "jobDir": "A String", # Optional. A Google Cloud Storage path in which to store training outputs
+            # and other data needed for training. This path is passed to your TensorFlow
+            # program as the 'job_dir' command-line argument. The benefit of specifying
+            # this field is that Cloud ML validates the path for use in training.
         "packageUris": [ # Required. The Google Cloud Storage location of the packages with
             # the training program and any additional dependencies.
           "A String",
@@ -700,6 +804,7 @@ Returns:
       "endTime": "A String", # Output only. When the job processing was completed.
       "predictionOutput": { # Represents results of a prediction job. # The current prediction job result.
         "outputPath": "A String", # The output Google Cloud Storage location provided at the job creation time.
+        "nodeHours": 3.14, # Node hours used by the batch prediction job.
         "predictionCount": "A String", # The number of generated predictions.
         "errorCount": "A String", # The number of data instances which resulted in errors.
       },
@@ -738,9 +843,12 @@ Returns:
         # subsequent call.
     "jobs": [ # The list of jobs.
       { # Represents a training or prediction job.
-          "trainingOutput": { # Represents results of a training job. # The current training job result.
-            "consumedMLUnits": 3.14, # The amount of ML units consumed by the job.
+          "trainingOutput": { # Represents results of a training job. Output only. # The current training job result.
+            "completedTrialCount": "A String", # The number of hyperparameter tuning trials that completed successfully.
+                # Only set for hyperparameter tuning jobs.
+            "isHyperparameterTuningJob": True or False, # Whether this job is a hyperparameter tuning job.
             "trials": [ # Results for individual Hyperparameter trials.
+                # Only set for hyperparameter tuning jobs.
               { # Represents the result of a single hyperparameter tuning trial from a
                   # training job. The TrainingOutput object that is returned on successful
                   # completion of a training job with hyperparameter tuning includes a list
@@ -761,23 +869,26 @@ Returns:
                 },
               },
             ],
-            "completedTrialCount": "A String", # The number of hyperparameter tuning trials that completed successfully.
+            "consumedMLUnits": 3.14, # The amount of ML units consumed by the job.
           },
-          "startTime": "A String", # Output only. When the job processing was started.
-          "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
-          "jobId": "A String", # Required. The user-specified id of the job.
-          "state": "A String", # Output only. The detailed state of a job.
           "predictionInput": { # Represents input parameters for a prediction job. # Input parameters to create a prediction job.
             "modelName": "A String", # Use this field if you want to use the default version for the specified
                 # model. The string must use the following format:
                 #
                 # `"projects/<var>[YOUR_PROJECT]</var>/models/<var>[YOUR_MODEL]</var>"`
+            "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for this batch
+                # prediction. If not set, Google Cloud ML will pick the runtime version used
+                # during the CreateVersion request for this model version, or choose the
+                # latest stable version when model version information is not available
+                # such as when the model is specified by uri.
             "inputPaths": [ # Required. The Google Cloud Storage location of the input data files.
                 # May contain wildcards.
               "A String",
             ],
             "maxWorkerCount": "A String", # Optional. The maximum number of workers to be used for parallel processing.
                 # Defaults to 10 if not specified.
+            "uri": "A String", # Use this field if you want to specify a Google Cloud Storage path for
+                # the model to use.
             "outputPath": "A String", # Required. The output Google Cloud Storage location.
             "dataFormat": "A String", # Required. The format of the input data files.
             "versionName": "A String", # Use this field if you want to specify a version of the model to use. The
@@ -787,6 +898,10 @@ Returns:
                 # `"projects/<var>[YOUR_PROJECT]</var>/models/<var>YOUR_MODEL/versions/<var>[YOUR_VERSION]</var>"`
             "region": "A String", # Required. The Google Compute Engine region to run the prediction job in.
           },
+          "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
+          "jobId": "A String", # Required. The user-specified id of the job.
+          "state": "A String", # Output only. The detailed state of a job.
+          "startTime": "A String", # Output only. When the job processing was started.
           "trainingInput": { # Represents input parameters for a training job. # Input parameters to create a training job.
             "workerType": "A String", # Optional. Specifies the type of virtual machine to use for your training
                 # job's worker nodes.
@@ -796,6 +911,8 @@ Returns:
                 #
                 # This value must be present when `scaleTier` is set to `CUSTOM` and
                 # `workerCount` is greater than zero.
+            "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for training.  If not
+                # set, Google Cloud ML will choose the latest stable version.
             "scaleTier": "A String", # Required. Specifies the machine types, the number of replicas for workers
                 # and parameter servers.
             "masterType": "A String", # Optional. Specifies the type of virtual machine to use for your training
@@ -831,6 +948,19 @@ Returns:
                 #   A machine with roughly twice the number of cores and roughly double the
                 #   memory of <code suppresswarning="true">complex_model_m</code>.
                 #   </dd>
+                #   <dt>standard_gpu</dt>
+                #   <dd>
+                #   A machine equivalent to <code suppresswarning="true">standard</code> that
+                #   also includes a
+                #   <a href="ml/docs/how-tos/using-gpus">
+                #   GPU that you can use in your trainer</a>.
+                #   </dd>
+                #   <dt>complex_model_m_gpu</dt>
+                #   <dd>
+                #   A machine equivalent to
+                #   <code suppresswarning="true">coplex_model_m</code> that also includes
+                #   four GPUs.
+                #   </dd>
                 # </dl>
                 #
                 # You must set this value when `scaleTier` is set to `CUSTOM`.
@@ -839,14 +969,19 @@ Returns:
                   # the specified hyperparameters.
                   #
                   # Defaults to one.
+              "hyperparameterMetricTag": "A String", # Optional. The Tensorflow summary tag name to use for optimizing trials. For
+                  # current versions of Tensorflow, this tag name should exactly match what is
+                  # shown in Tensorboard, including all scopes.  For versions of Tensorflow
+                  # prior to 0.12, this should be only the tag passed to tf.Summary.
+                  # By default, "training/hptuning/metric" will be used.
               "params": [ # Required. The set of parameters to tune.
                 { # Represents a single hyperparameter to optimize.
                   "maxValue": 3.14, # Required if typeis `DOUBLE` or `INTEGER`. This field
                       # should be unset if type is `CATEGORICAL`. This value should be integers if
                       # type is `INTEGER`.
-                  "minValue": 3.14, # Required if type is `DOUBLE` or `INTEGER`. This field
-                      # should be unset if type is `CATEGORICAL`. This value should be integers if
-                      # type is INTEGER.
+                  "categoricalValues": [ # Required if type is `CATEGORICAL`. The list of possible categories.
+                    "A String",
+                  ],
                   "discreteValues": [ # Required if type is `DISCRETE`.
                       # A list of feasible points.
                       # The list should be in strictly increasing order. For instance, this
@@ -856,9 +991,9 @@ Returns:
                   ],
                   "parameterName": "A String", # Required. The parameter name must be unique amongst all ParameterConfigs in
                       # a HyperparameterSpec message. E.g., "learning_rate".
-                  "categoricalValues": [ # Required if type is `CATEGORICAL`. The list of possible categories.
-                    "A String",
-                  ],
+                  "minValue": 3.14, # Required if type is `DOUBLE` or `INTEGER`. This field
+                      # should be unset if type is `CATEGORICAL`. This value should be integers if
+                      # type is INTEGER.
                   "type": "A String", # Required. The type of the parameter.
                   "scaleType": "A String", # Optional. How the parameter should be scaled to the hypercube.
                       # Leave unset for categorical parameters.
@@ -866,6 +1001,10 @@ Returns:
                       # parameters (e.g., `UNIT_LINEAR_SCALE`).
                 },
               ],
+              "goal": "A String", # Required. The type of goal to use for tuning. Available types are
+                  # `MAXIMIZE` and `MINIMIZE`.
+                  #
+                  # Defaults to `MAXIMIZE`.
               "maxParallelTrials": 42, # Optional. The number of training trials to run concurrently.
                   # You can reduce the time it takes to perform hyperparameter tuning by adding
                   # trials in parallel. However, each trail only benefits from the information
@@ -876,16 +1015,16 @@ Returns:
                   # Each trial will use the same scale tier and machine types.
                   #
                   # Defaults to one.
-              "goal": "A String", # Required. The type of goal to use for tuning. Available types are
-                  # `MAXIMIZE` and `MINIMIZE`.
-                  #
-                  # Defaults to `MAXIMIZE`.
             },
             "region": "A String", # Required. The Google Compute Engine region to run the training job in.
             "args": [ # Optional. Command line arguments to pass to the program.
               "A String",
             ],
             "pythonModule": "A String", # Required. The Python module name to run after installing the packages.
+            "jobDir": "A String", # Optional. A Google Cloud Storage path in which to store training outputs
+                # and other data needed for training. This path is passed to your TensorFlow
+                # program as the 'job_dir' command-line argument. The benefit of specifying
+                # this field is that Cloud ML validates the path for use in training.
             "packageUris": [ # Required. The Google Cloud Storage location of the packages with
                 # the training program and any additional dependencies.
               "A String",
@@ -913,6 +1052,7 @@ Returns:
           "endTime": "A String", # Output only. When the job processing was completed.
           "predictionOutput": { # Represents results of a prediction job. # The current prediction job result.
             "outputPath": "A String", # The output Google Cloud Storage location provided at the job creation time.
+            "nodeHours": 3.14, # Node hours used by the batch prediction job.
             "predictionCount": "A String", # The number of generated predictions.
             "errorCount": "A String", # The number of data instances which resulted in errors.
           },
