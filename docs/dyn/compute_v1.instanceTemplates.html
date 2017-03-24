@@ -84,7 +84,7 @@ h1, h2, h3 {
   <code><a href="#insert">insert(project, body)</a></code></p>
 <p class="firstline">Creates an instance template in the specified project using the data that is included in the request. If you are creating a new template to update an existing instance group, your new instance template must use the same network or, if applicable, the same subnetwork as the original template.</p>
 <p class="toc_element">
-  <code><a href="#list">list(project, maxResults=None, pageToken=None, filter=None)</a></code></p>
+  <code><a href="#list">list(project, orderBy=None, maxResults=None, pageToken=None, filter=None)</a></code></p>
 <p class="firstline">Retrieves a list of instance templates that are contained within the specified project and zone.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -104,7 +104,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -144,7 +144,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -206,7 +206,7 @@ Returns:
               },
               "diskSizeGb": "A String", # Specifies the size of the disk in base-2 GB.
               "diskName": "A String", # Specifies the disk name. If not specified, the default is to use the name of the instance.
-              "sourceImage": "A String", # The source image used to create this disk. If the source image is deleted, this field will not be set.
+              "sourceImage": "A String", # The source image to create this disk. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
                   #
                   # To create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:
                   #
@@ -223,6 +223,8 @@ Returns:
                   # You can also specify a private image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:
                   #
                   # global/images/family/my-private-family
+                  #
+                  # If the source image is deleted later, this field will not be set.
               "diskType": "A String", # Specifies the disk type to use to create the instance. If not specified, the default is pd-standard, specified using the full URL. For example:
                   #
                   # https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/pd-standard
@@ -241,7 +243,11 @@ Returns:
             "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
             "interface": "A String", # Specifies the disk interface to use for attaching this disk, which is either SCSI or NVME. The default is SCSI. Persistent disks must always use SCSI and the request will fail if you attempt to attach a persistent disk in any other format than SCSI. Local SSDs can use either NVME or SCSI. For performance characteristics of SCSI over NVMe, see Local SSD performance.
             "type": "A String", # Specifies the type of the disk, either SCRATCH or PERSISTENT. If not specified, the default is PERSISTENT.
-            "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks. Note that for InstanceTemplate, it is just disk name, not URL for the disk.
+            "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
+                #
+                # If desired, you can also attach existing non-root persistent disks using this property. This field is only applicable for persistent disks.
+                #
+                # Note that for InstanceTemplate, specify the disk name, not the URL for the disk.
           },
         ],
         "scheduling": { # Sets the scheduling options for an Instance. # Specifies the scheduling options for the instances that are created from this template.
@@ -270,6 +276,15 @@ Returns:
         },
         "networkInterfaces": [ # An array of network access configurations for this interface.
           { # A network interface resource attached to an instance.
+            "kind": "compute#networkInterface", # [Output Only] Type of the resource. Always compute#networkInterface for network interfaces.
+            "network": "A String", # URL of the network resource for this instance. When creating an instance, if neither the network nor the subnetwork is specified, the default network global/networks/default is used; if the network is not specified but the subnetwork is specified, the network is inferred.
+                #
+                # This field is optional when creating a firewall rule. If not specified when creating a firewall rule, the default network global/networks/default is used.
+                #
+                # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
+                # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
+                # - projects/project/global/networks/network
+                # - global/networks/default
             "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
               { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
                 "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
@@ -279,18 +294,10 @@ Returns:
               },
             ],
             "networkIP": "A String", # An IPv4 internal network address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
-            "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
             "subnetwork": "A String", # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not provide this property. If the network is in auto subnet mode, providing the subnetwork is optional. If the network is in custom subnet mode, then this field should be specified. If you specify this property, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
                 # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
                 # - regions/region/subnetworks/subnetwork
-            "network": "A String", # URL of the network resource for this instance. This is required for creating an instance but optional when creating a firewall rule. If not specified when creating a firewall rule, the default network is used:
-                #
-                # global/networks/default
-                #
-                # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
-                # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
-                # - projects/project/global/networks/network
-                # - global/networks/default
+            "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
           },
         ],
       },
@@ -355,7 +362,7 @@ Args:
             },
             "diskSizeGb": "A String", # Specifies the size of the disk in base-2 GB.
             "diskName": "A String", # Specifies the disk name. If not specified, the default is to use the name of the instance.
-            "sourceImage": "A String", # The source image used to create this disk. If the source image is deleted, this field will not be set.
+            "sourceImage": "A String", # The source image to create this disk. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
                 #
                 # To create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:
                 #
@@ -372,6 +379,8 @@ Args:
                 # You can also specify a private image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:
                 #
                 # global/images/family/my-private-family
+                #
+                # If the source image is deleted later, this field will not be set.
             "diskType": "A String", # Specifies the disk type to use to create the instance. If not specified, the default is pd-standard, specified using the full URL. For example:
                 #
                 # https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/pd-standard
@@ -390,7 +399,11 @@ Args:
           "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
           "interface": "A String", # Specifies the disk interface to use for attaching this disk, which is either SCSI or NVME. The default is SCSI. Persistent disks must always use SCSI and the request will fail if you attempt to attach a persistent disk in any other format than SCSI. Local SSDs can use either NVME or SCSI. For performance characteristics of SCSI over NVMe, see Local SSD performance.
           "type": "A String", # Specifies the type of the disk, either SCRATCH or PERSISTENT. If not specified, the default is PERSISTENT.
-          "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks. Note that for InstanceTemplate, it is just disk name, not URL for the disk.
+          "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
+              #
+              # If desired, you can also attach existing non-root persistent disks using this property. This field is only applicable for persistent disks.
+              #
+              # Note that for InstanceTemplate, specify the disk name, not the URL for the disk.
         },
       ],
       "scheduling": { # Sets the scheduling options for an Instance. # Specifies the scheduling options for the instances that are created from this template.
@@ -419,6 +432,15 @@ Args:
       },
       "networkInterfaces": [ # An array of network access configurations for this interface.
         { # A network interface resource attached to an instance.
+          "kind": "compute#networkInterface", # [Output Only] Type of the resource. Always compute#networkInterface for network interfaces.
+          "network": "A String", # URL of the network resource for this instance. When creating an instance, if neither the network nor the subnetwork is specified, the default network global/networks/default is used; if the network is not specified but the subnetwork is specified, the network is inferred.
+              #
+              # This field is optional when creating a firewall rule. If not specified when creating a firewall rule, the default network global/networks/default is used.
+              #
+              # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
+              # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
+              # - projects/project/global/networks/network
+              # - global/networks/default
           "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
             { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
               "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
@@ -428,18 +450,10 @@ Args:
             },
           ],
           "networkIP": "A String", # An IPv4 internal network address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
-          "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
           "subnetwork": "A String", # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not provide this property. If the network is in auto subnet mode, providing the subnetwork is optional. If the network is in custom subnet mode, then this field should be specified. If you specify this property, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
               # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
               # - regions/region/subnetworks/subnetwork
-          "network": "A String", # URL of the network resource for this instance. This is required for creating an instance but optional when creating a firewall rule. If not specified when creating a firewall rule, the default network is used:
-              #
-              # global/networks/default
-              #
-              # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
-              # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
-              # - projects/project/global/networks/network
-              # - global/networks/default
+          "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
         },
       ],
     },
@@ -454,7 +468,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -494,17 +508,22 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(project, maxResults=None, pageToken=None, filter=None)</code>
+    <code class="details" id="list">list(project, orderBy=None, maxResults=None, pageToken=None, filter=None)</code>
   <pre>Retrieves a list of instance templates that are contained within the specified project and zone.
 
 Args:
   project: string, Project ID for this request. (required)
-  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.
+  orderBy: string, Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name.
+
+You can also sort results in descending order based on the creation timestamp using orderBy="creationTimestamp desc". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.
+
+Currently, only sorting by name or creationTimestamp desc is supported.
+  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
   filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
 
@@ -569,7 +588,7 @@ Returns:
                   },
                   "diskSizeGb": "A String", # Specifies the size of the disk in base-2 GB.
                   "diskName": "A String", # Specifies the disk name. If not specified, the default is to use the name of the instance.
-                  "sourceImage": "A String", # The source image used to create this disk. If the source image is deleted, this field will not be set.
+                  "sourceImage": "A String", # The source image to create this disk. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
                       #
                       # To create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:
                       #
@@ -586,6 +605,8 @@ Returns:
                       # You can also specify a private image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:
                       #
                       # global/images/family/my-private-family
+                      #
+                      # If the source image is deleted later, this field will not be set.
                   "diskType": "A String", # Specifies the disk type to use to create the instance. If not specified, the default is pd-standard, specified using the full URL. For example:
                       #
                       # https://www.googleapis.com/compute/v1/projects/project/zones/zone/diskTypes/pd-standard
@@ -604,7 +625,11 @@ Returns:
                 "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
                 "interface": "A String", # Specifies the disk interface to use for attaching this disk, which is either SCSI or NVME. The default is SCSI. Persistent disks must always use SCSI and the request will fail if you attempt to attach a persistent disk in any other format than SCSI. Local SSDs can use either NVME or SCSI. For performance characteristics of SCSI over NVMe, see Local SSD performance.
                 "type": "A String", # Specifies the type of the disk, either SCRATCH or PERSISTENT. If not specified, the default is PERSISTENT.
-                "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks. Note that for InstanceTemplate, it is just disk name, not URL for the disk.
+                "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
+                    #
+                    # If desired, you can also attach existing non-root persistent disks using this property. This field is only applicable for persistent disks.
+                    #
+                    # Note that for InstanceTemplate, specify the disk name, not the URL for the disk.
               },
             ],
             "scheduling": { # Sets the scheduling options for an Instance. # Specifies the scheduling options for the instances that are created from this template.
@@ -633,6 +658,15 @@ Returns:
             },
             "networkInterfaces": [ # An array of network access configurations for this interface.
               { # A network interface resource attached to an instance.
+                "kind": "compute#networkInterface", # [Output Only] Type of the resource. Always compute#networkInterface for network interfaces.
+                "network": "A String", # URL of the network resource for this instance. When creating an instance, if neither the network nor the subnetwork is specified, the default network global/networks/default is used; if the network is not specified but the subnetwork is specified, the network is inferred.
+                    #
+                    # This field is optional when creating a firewall rule. If not specified when creating a firewall rule, the default network global/networks/default is used.
+                    #
+                    # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
+                    # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
+                    # - projects/project/global/networks/network
+                    # - global/networks/default
                 "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
                   { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
                     "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
@@ -642,18 +676,10 @@ Returns:
                   },
                 ],
                 "networkIP": "A String", # An IPv4 internal network address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
-                "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
                 "subnetwork": "A String", # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not provide this property. If the network is in auto subnet mode, providing the subnetwork is optional. If the network is in custom subnet mode, then this field should be specified. If you specify this property, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
                     # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
                     # - regions/region/subnetworks/subnetwork
-                "network": "A String", # URL of the network resource for this instance. This is required for creating an instance but optional when creating a firewall rule. If not specified when creating a firewall rule, the default network is used:
-                    #
-                    # global/networks/default
-                    #
-                    # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
-                    # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
-                    # - projects/project/global/networks/network
-                    # - global/networks/default
+                "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
               },
             ],
           },

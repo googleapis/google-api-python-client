@@ -81,6 +81,9 @@ h1, h2, h3 {
   <code><a href="#get">get(bucket, projection=None, ifMetagenerationMatch=None, ifMetagenerationNotMatch=None)</a></code></p>
 <p class="firstline">Returns metadata for the specified bucket.</p>
 <p class="toc_element">
+  <code><a href="#getIamPolicy">getIamPolicy(bucket)</a></code></p>
+<p class="firstline">Returns an IAM policy for the specified bucket.</p>
+<p class="toc_element">
   <code><a href="#insert">insert(project, body, projection=None, predefinedDefaultObjectAcl=None, predefinedAcl=None)</a></code></p>
 <p class="firstline">Creates a new bucket.</p>
 <p class="toc_element">
@@ -91,10 +94,16 @@ h1, h2, h3 {
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(bucket, body, projection=None, ifMetagenerationMatch=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, ifMetagenerationNotMatch=None)</a></code></p>
-<p class="firstline">Updates a bucket. This method supports patch semantics.</p>
+<p class="firstline">Updates a bucket. Changes to the bucket will be readable immediately after writing, but configuration changes may take time to propagate. This method supports patch semantics.</p>
+<p class="toc_element">
+  <code><a href="#setIamPolicy">setIamPolicy(bucket, body)</a></code></p>
+<p class="firstline">Updates an IAM policy for the specified bucket.</p>
+<p class="toc_element">
+  <code><a href="#testIamPermissions">testIamPermissions(bucket, permissions)</a></code></p>
+<p class="firstline">Tests a set of permissions on the given bucket to see which, if any, are held by the caller.</p>
 <p class="toc_element">
   <code><a href="#update">update(bucket, body, projection=None, ifMetagenerationMatch=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, ifMetagenerationNotMatch=None)</a></code></p>
-<p class="firstline">Updates a bucket.</p>
+<p class="firstline">Updates a bucket. Changes to the bucket will be readable immediately after writing, but configuration changes may take time to propagate.</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="delete">delete(bucket, ifMetagenerationMatch=None, ifMetagenerationNotMatch=None)</code>
@@ -137,9 +146,6 @@ Returns:
       "name": "A String", # The name of the bucket.
       "metageneration": "A String", # The metadata generation of this bucket.
       "timeCreated": "A String", # The creation time of the bucket in RFC 3339 format.
-      "encryption": { # Encryption configuration used by default for newly inserted objects, when no encryption config is specified.
-        "default_kms_key_name": "A String",
-      },
       "updated": "A String", # The modification time of the bucket in RFC 3339 format.
       "versioning": { # The bucket's versioning configuration.
         "enabled": True or False, # While set to true, versioning is fully enabled for this bucket.
@@ -176,8 +182,8 @@ Returns:
       "defaultObjectAcl": [ # Default access controls to apply to new objects when no ACL is provided.
         { # An access-control entry.
           "domain": "A String", # The domain associated with the entity, if any.
-          "generation": "A String", # The content generation of the object.
-          "object": "A String", # The name of the object.
+          "generation": "A String", # The content generation of the object, if applied to an object.
+          "object": "A String", # The name of the object, if applied to an object.
           "bucket": "A String", # The name of the bucket.
           "kind": "storage#objectAccessControl", # The kind of item this is. For object access control entries, this is always storage#objectAccessControl.
           "entity": "A String", # The entity holding the permission, in one of the following forms:
@@ -228,21 +234,69 @@ Returns:
         "rule": [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
           {
             "action": { # The action to take.
-              "type": "A String", # Type of the action. Currently, only Delete is supported.
+              "type": "A String", # Type of the action. Currently, only Delete and SetStorageClass are supported.
+              "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
             },
             "condition": { # The condition(s) under which the action will be taken.
               "isLive": True or False, # Relevant only for versioned objects. If the value is true, this condition matches live objects; if the value is false, it matches archived objects.
-              "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
+              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+                "A String",
+              ],
               "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+              "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
               "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
             },
           },
         ],
       },
-      "id": "A String", # The ID of the bucket.
+      "id": "A String", # The ID of the bucket. For buckets, the id and name properities are the same.
       "projectNumber": "A String", # The project number of the project the bucket belongs to.
-      "storageClass": "A String", # The bucket's storage class. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include STANDARD, NEARLINE and DURABLE_REDUCED_AVAILABILITY. Defaults to STANDARD. For more information, see storage classes.
+      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
     }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="getIamPolicy">getIamPolicy(bucket)</code>
+  <pre>Returns an IAM policy for the specified bucket.
+
+Args:
+  bucket: string, Name of a bucket. (required)
+
+Returns:
+  An object of the form:
+
+    { # A bucket/object IAM policy.
+    "resourceId": "A String", # The ID of the resource to which this policy belongs. Will be of the form buckets/bucket for buckets, and buckets/bucket/objects/object for objects. A specific generation may be specified by appending #generationNumber to the end of the object name, e.g. buckets/my-bucket/objects/data.txt#17. The current generation can be denoted with #0. This field is ignored on input.
+    "bindings": [ # An association between a role, which comes with a set of permissions, and members who may assume that role.
+      {
+        "role": "A String", # The role to which members belong. Two types of roles are supported: new IAM roles, which grant permissions that do not map directly to those provided by ACLs, and legacy IAM roles, which do map directly to ACL permissions. All roles are of the format roles/storage.specificRole.
+            # The new IAM roles are:
+            # - roles/storage.admin — Full control of Google Cloud Storage resources.
+            # - roles/storage.objectViewer — Read-Only access to Google Cloud Storage objects.
+            # - roles/storage.objectCreator — Access to create objects in Google Cloud Storage.
+            # - roles/storage.objectAdmin — Full control of Google Cloud Storage objects.   The legacy IAM roles are:
+            # - roles/storage.legacyObjectReader — Read-only access to objects without listing. Equivalent to an ACL entry on an object with the READER role.
+            # - roles/storage.legacyObjectOwner — Read/write access to existing objects without listing. Equivalent to an ACL entry on an object with the OWNER role.
+            # - roles/storage.legacyBucketReader — Read access to buckets with object listing. Equivalent to an ACL entry on a bucket with the READER role.
+            # - roles/storage.legacyBucketWriter — Read access to buckets with object listing/creation/deletion. Equivalent to an ACL entry on a bucket with the WRITER role.
+            # - roles/storage.legacyBucketOwner — Read and write access to existing buckets with object listing/creation/deletion. Equivalent to an ACL entry on a bucket with the OWNER role.
+        "members": [ # A collection of identifiers for members who may assume the provided role. Recognized identifiers are as follows:
+            # - allUsers — A special identifier that represents anyone on the internet; with or without a Google account.
+            # - allAuthenticatedUsers — A special identifier that represents anyone who is authenticated with a Google account or a service account.
+            # - user:emailid — An email address that represents a specific account. For example, user:alice@gmail.com or user:joe@example.com.
+            # - serviceAccount:emailid — An email address that represents a service account. For example,  serviceAccount:my-other-app@appspot.gserviceaccount.com .
+            # - group:emailid — An email address that represents a Google group. For example, group:admins@example.com.
+            # - domain:domain — A Google Apps domain name that represents all the users of that domain. For example, domain:google.com or domain:example.com.
+            # - projectOwner:projectid — Owners of the given project. For example, projectOwner:my-example-project
+            # - projectEditor:projectid — Editors of the given project. For example, projectEditor:my-example-project
+            # - projectViewer:projectid — Viewers of the given project. For example, projectViewer:my-example-project
+          "A String",
+        ],
+      },
+    ],
+    "etag": "A String", # HTTP 1.1  Entity tag for the policy.
+    "kind": "storage#policy", # The kind of item this is. For policies, this is always storage#policy. This field is ignored on input.
+  }</pre>
 </div>
 
 <div class="method">
@@ -268,9 +322,6 @@ Args:
     "name": "A String", # The name of the bucket.
     "metageneration": "A String", # The metadata generation of this bucket.
     "timeCreated": "A String", # The creation time of the bucket in RFC 3339 format.
-    "encryption": { # Encryption configuration used by default for newly inserted objects, when no encryption config is specified.
-      "default_kms_key_name": "A String",
-    },
     "updated": "A String", # The modification time of the bucket in RFC 3339 format.
     "versioning": { # The bucket's versioning configuration.
       "enabled": True or False, # While set to true, versioning is fully enabled for this bucket.
@@ -307,8 +358,8 @@ Args:
     "defaultObjectAcl": [ # Default access controls to apply to new objects when no ACL is provided.
       { # An access-control entry.
         "domain": "A String", # The domain associated with the entity, if any.
-        "generation": "A String", # The content generation of the object.
-        "object": "A String", # The name of the object.
+        "generation": "A String", # The content generation of the object, if applied to an object.
+        "object": "A String", # The name of the object, if applied to an object.
         "bucket": "A String", # The name of the bucket.
         "kind": "storage#objectAccessControl", # The kind of item this is. For object access control entries, this is always storage#objectAccessControl.
         "entity": "A String", # The entity holding the permission, in one of the following forms:
@@ -359,20 +410,24 @@ Args:
       "rule": [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
         {
           "action": { # The action to take.
-            "type": "A String", # Type of the action. Currently, only Delete is supported.
+            "type": "A String", # Type of the action. Currently, only Delete and SetStorageClass are supported.
+            "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
           },
           "condition": { # The condition(s) under which the action will be taken.
             "isLive": True or False, # Relevant only for versioned objects. If the value is true, this condition matches live objects; if the value is false, it matches archived objects.
-            "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
+            "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+              "A String",
+            ],
             "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+            "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
             "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
           },
         },
       ],
     },
-    "id": "A String", # The ID of the bucket.
+    "id": "A String", # The ID of the bucket. For buckets, the id and name properities are the same.
     "projectNumber": "A String", # The project number of the project the bucket belongs to.
-    "storageClass": "A String", # The bucket's storage class. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include STANDARD, NEARLINE and DURABLE_REDUCED_AVAILABILITY. Defaults to STANDARD. For more information, see storage classes.
+    "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
   }
 
   projection: string, Set of properties to return. Defaults to noAcl, unless the bucket resource specifies acl or defaultObjectAcl properties, when it defaults to full.
@@ -412,9 +467,6 @@ Returns:
       "name": "A String", # The name of the bucket.
       "metageneration": "A String", # The metadata generation of this bucket.
       "timeCreated": "A String", # The creation time of the bucket in RFC 3339 format.
-      "encryption": { # Encryption configuration used by default for newly inserted objects, when no encryption config is specified.
-        "default_kms_key_name": "A String",
-      },
       "updated": "A String", # The modification time of the bucket in RFC 3339 format.
       "versioning": { # The bucket's versioning configuration.
         "enabled": True or False, # While set to true, versioning is fully enabled for this bucket.
@@ -451,8 +503,8 @@ Returns:
       "defaultObjectAcl": [ # Default access controls to apply to new objects when no ACL is provided.
         { # An access-control entry.
           "domain": "A String", # The domain associated with the entity, if any.
-          "generation": "A String", # The content generation of the object.
-          "object": "A String", # The name of the object.
+          "generation": "A String", # The content generation of the object, if applied to an object.
+          "object": "A String", # The name of the object, if applied to an object.
           "bucket": "A String", # The name of the bucket.
           "kind": "storage#objectAccessControl", # The kind of item this is. For object access control entries, this is always storage#objectAccessControl.
           "entity": "A String", # The entity holding the permission, in one of the following forms:
@@ -503,20 +555,24 @@ Returns:
         "rule": [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
           {
             "action": { # The action to take.
-              "type": "A String", # Type of the action. Currently, only Delete is supported.
+              "type": "A String", # Type of the action. Currently, only Delete and SetStorageClass are supported.
+              "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
             },
             "condition": { # The condition(s) under which the action will be taken.
               "isLive": True or False, # Relevant only for versioned objects. If the value is true, this condition matches live objects; if the value is false, it matches archived objects.
-              "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
+              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+                "A String",
+              ],
               "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+              "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
               "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
             },
           },
         ],
       },
-      "id": "A String", # The ID of the bucket.
+      "id": "A String", # The ID of the bucket. For buckets, the id and name properities are the same.
       "projectNumber": "A String", # The project number of the project the bucket belongs to.
-      "storageClass": "A String", # The bucket's storage class. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include STANDARD, NEARLINE and DURABLE_REDUCED_AVAILABILITY. Defaults to STANDARD. For more information, see storage classes.
+      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
     }</pre>
 </div>
 
@@ -532,7 +588,7 @@ Args:
       noAcl - Omit owner, acl and defaultObjectAcl properties.
   pageToken: string, A previously-returned page token representing part of the larger set of results to view.
   prefix: string, Filter results to buckets whose names begin with this prefix.
-  maxResults: integer, Maximum number of buckets to return.
+  maxResults: integer, Maximum number of buckets to return in a single response. The service will use this parameter or 1,000 items, whichever is smaller.
 
 Returns:
   An object of the form:
@@ -554,9 +610,6 @@ Returns:
           "name": "A String", # The name of the bucket.
           "metageneration": "A String", # The metadata generation of this bucket.
           "timeCreated": "A String", # The creation time of the bucket in RFC 3339 format.
-          "encryption": { # Encryption configuration used by default for newly inserted objects, when no encryption config is specified.
-            "default_kms_key_name": "A String",
-          },
           "updated": "A String", # The modification time of the bucket in RFC 3339 format.
           "versioning": { # The bucket's versioning configuration.
             "enabled": True or False, # While set to true, versioning is fully enabled for this bucket.
@@ -593,8 +646,8 @@ Returns:
           "defaultObjectAcl": [ # Default access controls to apply to new objects when no ACL is provided.
             { # An access-control entry.
               "domain": "A String", # The domain associated with the entity, if any.
-              "generation": "A String", # The content generation of the object.
-              "object": "A String", # The name of the object.
+              "generation": "A String", # The content generation of the object, if applied to an object.
+              "object": "A String", # The name of the object, if applied to an object.
               "bucket": "A String", # The name of the bucket.
               "kind": "storage#objectAccessControl", # The kind of item this is. For object access control entries, this is always storage#objectAccessControl.
               "entity": "A String", # The entity holding the permission, in one of the following forms:
@@ -645,20 +698,24 @@ Returns:
             "rule": [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
               {
                 "action": { # The action to take.
-                  "type": "A String", # Type of the action. Currently, only Delete is supported.
+                  "type": "A String", # Type of the action. Currently, only Delete and SetStorageClass are supported.
+                  "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
                 },
                 "condition": { # The condition(s) under which the action will be taken.
                   "isLive": True or False, # Relevant only for versioned objects. If the value is true, this condition matches live objects; if the value is false, it matches archived objects.
-                  "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
+                  "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+                    "A String",
+                  ],
                   "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+                  "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
                   "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
                 },
               },
             ],
           },
-          "id": "A String", # The ID of the bucket.
+          "id": "A String", # The ID of the bucket. For buckets, the id and name properities are the same.
           "projectNumber": "A String", # The project number of the project the bucket belongs to.
-          "storageClass": "A String", # The bucket's storage class. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include STANDARD, NEARLINE and DURABLE_REDUCED_AVAILABILITY. Defaults to STANDARD. For more information, see storage classes.
+          "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
         },
     ],
     "kind": "storage#buckets", # The kind of item this is. For lists of buckets, this is always storage#buckets.
@@ -681,7 +738,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="patch">patch(bucket, body, projection=None, ifMetagenerationMatch=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, ifMetagenerationNotMatch=None)</code>
-  <pre>Updates a bucket. This method supports patch semantics.
+  <pre>Updates a bucket. Changes to the bucket will be readable immediately after writing, but configuration changes may take time to propagate. This method supports patch semantics.
 
 Args:
   bucket: string, Name of a bucket. (required)
@@ -702,9 +759,6 @@ Args:
     "name": "A String", # The name of the bucket.
     "metageneration": "A String", # The metadata generation of this bucket.
     "timeCreated": "A String", # The creation time of the bucket in RFC 3339 format.
-    "encryption": { # Encryption configuration used by default for newly inserted objects, when no encryption config is specified.
-      "default_kms_key_name": "A String",
-    },
     "updated": "A String", # The modification time of the bucket in RFC 3339 format.
     "versioning": { # The bucket's versioning configuration.
       "enabled": True or False, # While set to true, versioning is fully enabled for this bucket.
@@ -741,8 +795,8 @@ Args:
     "defaultObjectAcl": [ # Default access controls to apply to new objects when no ACL is provided.
       { # An access-control entry.
         "domain": "A String", # The domain associated with the entity, if any.
-        "generation": "A String", # The content generation of the object.
-        "object": "A String", # The name of the object.
+        "generation": "A String", # The content generation of the object, if applied to an object.
+        "object": "A String", # The name of the object, if applied to an object.
         "bucket": "A String", # The name of the bucket.
         "kind": "storage#objectAccessControl", # The kind of item this is. For object access control entries, this is always storage#objectAccessControl.
         "entity": "A String", # The entity holding the permission, in one of the following forms:
@@ -793,20 +847,24 @@ Args:
       "rule": [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
         {
           "action": { # The action to take.
-            "type": "A String", # Type of the action. Currently, only Delete is supported.
+            "type": "A String", # Type of the action. Currently, only Delete and SetStorageClass are supported.
+            "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
           },
           "condition": { # The condition(s) under which the action will be taken.
             "isLive": True or False, # Relevant only for versioned objects. If the value is true, this condition matches live objects; if the value is false, it matches archived objects.
-            "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
+            "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+              "A String",
+            ],
             "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+            "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
             "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
           },
         },
       ],
     },
-    "id": "A String", # The ID of the bucket.
+    "id": "A String", # The ID of the bucket. For buckets, the id and name properities are the same.
     "projectNumber": "A String", # The project number of the project the bucket belongs to.
-    "storageClass": "A String", # The bucket's storage class. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include STANDARD, NEARLINE and DURABLE_REDUCED_AVAILABILITY. Defaults to STANDARD. For more information, see storage classes.
+    "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
   }
 
   projection: string, Set of properties to return. Defaults to full.
@@ -848,9 +906,6 @@ Returns:
       "name": "A String", # The name of the bucket.
       "metageneration": "A String", # The metadata generation of this bucket.
       "timeCreated": "A String", # The creation time of the bucket in RFC 3339 format.
-      "encryption": { # Encryption configuration used by default for newly inserted objects, when no encryption config is specified.
-        "default_kms_key_name": "A String",
-      },
       "updated": "A String", # The modification time of the bucket in RFC 3339 format.
       "versioning": { # The bucket's versioning configuration.
         "enabled": True or False, # While set to true, versioning is fully enabled for this bucket.
@@ -887,8 +942,8 @@ Returns:
       "defaultObjectAcl": [ # Default access controls to apply to new objects when no ACL is provided.
         { # An access-control entry.
           "domain": "A String", # The domain associated with the entity, if any.
-          "generation": "A String", # The content generation of the object.
-          "object": "A String", # The name of the object.
+          "generation": "A String", # The content generation of the object, if applied to an object.
+          "object": "A String", # The name of the object, if applied to an object.
           "bucket": "A String", # The name of the bucket.
           "kind": "storage#objectAccessControl", # The kind of item this is. For object access control entries, this is always storage#objectAccessControl.
           "entity": "A String", # The entity holding the permission, in one of the following forms:
@@ -939,26 +994,143 @@ Returns:
         "rule": [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
           {
             "action": { # The action to take.
-              "type": "A String", # Type of the action. Currently, only Delete is supported.
+              "type": "A String", # Type of the action. Currently, only Delete and SetStorageClass are supported.
+              "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
             },
             "condition": { # The condition(s) under which the action will be taken.
               "isLive": True or False, # Relevant only for versioned objects. If the value is true, this condition matches live objects; if the value is false, it matches archived objects.
-              "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
+              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+                "A String",
+              ],
               "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+              "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
               "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
             },
           },
         ],
       },
-      "id": "A String", # The ID of the bucket.
+      "id": "A String", # The ID of the bucket. For buckets, the id and name properities are the same.
       "projectNumber": "A String", # The project number of the project the bucket belongs to.
-      "storageClass": "A String", # The bucket's storage class. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include STANDARD, NEARLINE and DURABLE_REDUCED_AVAILABILITY. Defaults to STANDARD. For more information, see storage classes.
+      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
     }</pre>
 </div>
 
 <div class="method">
+    <code class="details" id="setIamPolicy">setIamPolicy(bucket, body)</code>
+  <pre>Updates an IAM policy for the specified bucket.
+
+Args:
+  bucket: string, Name of a bucket. (required)
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # A bucket/object IAM policy.
+  "resourceId": "A String", # The ID of the resource to which this policy belongs. Will be of the form buckets/bucket for buckets, and buckets/bucket/objects/object for objects. A specific generation may be specified by appending #generationNumber to the end of the object name, e.g. buckets/my-bucket/objects/data.txt#17. The current generation can be denoted with #0. This field is ignored on input.
+  "bindings": [ # An association between a role, which comes with a set of permissions, and members who may assume that role.
+    {
+      "role": "A String", # The role to which members belong. Two types of roles are supported: new IAM roles, which grant permissions that do not map directly to those provided by ACLs, and legacy IAM roles, which do map directly to ACL permissions. All roles are of the format roles/storage.specificRole.
+          # The new IAM roles are:
+          # - roles/storage.admin — Full control of Google Cloud Storage resources.
+          # - roles/storage.objectViewer — Read-Only access to Google Cloud Storage objects.
+          # - roles/storage.objectCreator — Access to create objects in Google Cloud Storage.
+          # - roles/storage.objectAdmin — Full control of Google Cloud Storage objects.   The legacy IAM roles are:
+          # - roles/storage.legacyObjectReader — Read-only access to objects without listing. Equivalent to an ACL entry on an object with the READER role.
+          # - roles/storage.legacyObjectOwner — Read/write access to existing objects without listing. Equivalent to an ACL entry on an object with the OWNER role.
+          # - roles/storage.legacyBucketReader — Read access to buckets with object listing. Equivalent to an ACL entry on a bucket with the READER role.
+          # - roles/storage.legacyBucketWriter — Read access to buckets with object listing/creation/deletion. Equivalent to an ACL entry on a bucket with the WRITER role.
+          # - roles/storage.legacyBucketOwner — Read and write access to existing buckets with object listing/creation/deletion. Equivalent to an ACL entry on a bucket with the OWNER role.
+      "members": [ # A collection of identifiers for members who may assume the provided role. Recognized identifiers are as follows:
+          # - allUsers — A special identifier that represents anyone on the internet; with or without a Google account.
+          # - allAuthenticatedUsers — A special identifier that represents anyone who is authenticated with a Google account or a service account.
+          # - user:emailid — An email address that represents a specific account. For example, user:alice@gmail.com or user:joe@example.com.
+          # - serviceAccount:emailid — An email address that represents a service account. For example,  serviceAccount:my-other-app@appspot.gserviceaccount.com .
+          # - group:emailid — An email address that represents a Google group. For example, group:admins@example.com.
+          # - domain:domain — A Google Apps domain name that represents all the users of that domain. For example, domain:google.com or domain:example.com.
+          # - projectOwner:projectid — Owners of the given project. For example, projectOwner:my-example-project
+          # - projectEditor:projectid — Editors of the given project. For example, projectEditor:my-example-project
+          # - projectViewer:projectid — Viewers of the given project. For example, projectViewer:my-example-project
+        "A String",
+      ],
+    },
+  ],
+  "etag": "A String", # HTTP 1.1  Entity tag for the policy.
+  "kind": "storage#policy", # The kind of item this is. For policies, this is always storage#policy. This field is ignored on input.
+}
+
+
+Returns:
+  An object of the form:
+
+    { # A bucket/object IAM policy.
+    "resourceId": "A String", # The ID of the resource to which this policy belongs. Will be of the form buckets/bucket for buckets, and buckets/bucket/objects/object for objects. A specific generation may be specified by appending #generationNumber to the end of the object name, e.g. buckets/my-bucket/objects/data.txt#17. The current generation can be denoted with #0. This field is ignored on input.
+    "bindings": [ # An association between a role, which comes with a set of permissions, and members who may assume that role.
+      {
+        "role": "A String", # The role to which members belong. Two types of roles are supported: new IAM roles, which grant permissions that do not map directly to those provided by ACLs, and legacy IAM roles, which do map directly to ACL permissions. All roles are of the format roles/storage.specificRole.
+            # The new IAM roles are:
+            # - roles/storage.admin — Full control of Google Cloud Storage resources.
+            # - roles/storage.objectViewer — Read-Only access to Google Cloud Storage objects.
+            # - roles/storage.objectCreator — Access to create objects in Google Cloud Storage.
+            # - roles/storage.objectAdmin — Full control of Google Cloud Storage objects.   The legacy IAM roles are:
+            # - roles/storage.legacyObjectReader — Read-only access to objects without listing. Equivalent to an ACL entry on an object with the READER role.
+            # - roles/storage.legacyObjectOwner — Read/write access to existing objects without listing. Equivalent to an ACL entry on an object with the OWNER role.
+            # - roles/storage.legacyBucketReader — Read access to buckets with object listing. Equivalent to an ACL entry on a bucket with the READER role.
+            # - roles/storage.legacyBucketWriter — Read access to buckets with object listing/creation/deletion. Equivalent to an ACL entry on a bucket with the WRITER role.
+            # - roles/storage.legacyBucketOwner — Read and write access to existing buckets with object listing/creation/deletion. Equivalent to an ACL entry on a bucket with the OWNER role.
+        "members": [ # A collection of identifiers for members who may assume the provided role. Recognized identifiers are as follows:
+            # - allUsers — A special identifier that represents anyone on the internet; with or without a Google account.
+            # - allAuthenticatedUsers — A special identifier that represents anyone who is authenticated with a Google account or a service account.
+            # - user:emailid — An email address that represents a specific account. For example, user:alice@gmail.com or user:joe@example.com.
+            # - serviceAccount:emailid — An email address that represents a service account. For example,  serviceAccount:my-other-app@appspot.gserviceaccount.com .
+            # - group:emailid — An email address that represents a Google group. For example, group:admins@example.com.
+            # - domain:domain — A Google Apps domain name that represents all the users of that domain. For example, domain:google.com or domain:example.com.
+            # - projectOwner:projectid — Owners of the given project. For example, projectOwner:my-example-project
+            # - projectEditor:projectid — Editors of the given project. For example, projectEditor:my-example-project
+            # - projectViewer:projectid — Viewers of the given project. For example, projectViewer:my-example-project
+          "A String",
+        ],
+      },
+    ],
+    "etag": "A String", # HTTP 1.1  Entity tag for the policy.
+    "kind": "storage#policy", # The kind of item this is. For policies, this is always storage#policy. This field is ignored on input.
+  }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="testIamPermissions">testIamPermissions(bucket, permissions)</code>
+  <pre>Tests a set of permissions on the given bucket to see which, if any, are held by the caller.
+
+Args:
+  bucket: string, Name of a bucket. (required)
+  permissions: string, Permissions to test. (required) (repeated)
+
+Returns:
+  An object of the form:
+
+    { # A storage.(buckets|objects).testIamPermissions response.
+    "kind": "storage#testIamPermissionsResponse", # The kind of item this is.
+    "permissions": [ # The permissions held by the caller. Permissions are always of the format storage.resource.capability, where resource is one of buckets or objects. The supported permissions are as follows:
+        # - storage.buckets.delete — Delete bucket.
+        # - storage.buckets.get — Read bucket metadata.
+        # - storage.buckets.getIamPolicy — Read bucket IAM policy.
+        # - storage.buckets.create — Create bucket.
+        # - storage.buckets.list — List buckets.
+        # - storage.buckets.setIamPolicy — Update bucket IAM policy.
+        # - storage.buckets.update — Update bucket metadata.
+        # - storage.objects.delete — Delete object.
+        # - storage.objects.get — Read object data and metadata.
+        # - storage.objects.getIamPolicy — Read object IAM policy.
+        # - storage.objects.create — Create object.
+        # - storage.objects.list — List objects.
+        # - storage.objects.setIamPolicy — Update object IAM policy.
+        # - storage.objects.update — Update object metadata.
+      "A String",
+    ],
+  }</pre>
+</div>
+
+<div class="method">
     <code class="details" id="update">update(bucket, body, projection=None, ifMetagenerationMatch=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, ifMetagenerationNotMatch=None)</code>
-  <pre>Updates a bucket.
+  <pre>Updates a bucket. Changes to the bucket will be readable immediately after writing, but configuration changes may take time to propagate.
 
 Args:
   bucket: string, Name of a bucket. (required)
@@ -979,9 +1151,6 @@ Args:
     "name": "A String", # The name of the bucket.
     "metageneration": "A String", # The metadata generation of this bucket.
     "timeCreated": "A String", # The creation time of the bucket in RFC 3339 format.
-    "encryption": { # Encryption configuration used by default for newly inserted objects, when no encryption config is specified.
-      "default_kms_key_name": "A String",
-    },
     "updated": "A String", # The modification time of the bucket in RFC 3339 format.
     "versioning": { # The bucket's versioning configuration.
       "enabled": True or False, # While set to true, versioning is fully enabled for this bucket.
@@ -1018,8 +1187,8 @@ Args:
     "defaultObjectAcl": [ # Default access controls to apply to new objects when no ACL is provided.
       { # An access-control entry.
         "domain": "A String", # The domain associated with the entity, if any.
-        "generation": "A String", # The content generation of the object.
-        "object": "A String", # The name of the object.
+        "generation": "A String", # The content generation of the object, if applied to an object.
+        "object": "A String", # The name of the object, if applied to an object.
         "bucket": "A String", # The name of the bucket.
         "kind": "storage#objectAccessControl", # The kind of item this is. For object access control entries, this is always storage#objectAccessControl.
         "entity": "A String", # The entity holding the permission, in one of the following forms:
@@ -1070,20 +1239,24 @@ Args:
       "rule": [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
         {
           "action": { # The action to take.
-            "type": "A String", # Type of the action. Currently, only Delete is supported.
+            "type": "A String", # Type of the action. Currently, only Delete and SetStorageClass are supported.
+            "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
           },
           "condition": { # The condition(s) under which the action will be taken.
             "isLive": True or False, # Relevant only for versioned objects. If the value is true, this condition matches live objects; if the value is false, it matches archived objects.
-            "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
+            "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+              "A String",
+            ],
             "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+            "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
             "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
           },
         },
       ],
     },
-    "id": "A String", # The ID of the bucket.
+    "id": "A String", # The ID of the bucket. For buckets, the id and name properities are the same.
     "projectNumber": "A String", # The project number of the project the bucket belongs to.
-    "storageClass": "A String", # The bucket's storage class. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include STANDARD, NEARLINE and DURABLE_REDUCED_AVAILABILITY. Defaults to STANDARD. For more information, see storage classes.
+    "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
   }
 
   projection: string, Set of properties to return. Defaults to full.
@@ -1125,9 +1298,6 @@ Returns:
       "name": "A String", # The name of the bucket.
       "metageneration": "A String", # The metadata generation of this bucket.
       "timeCreated": "A String", # The creation time of the bucket in RFC 3339 format.
-      "encryption": { # Encryption configuration used by default for newly inserted objects, when no encryption config is specified.
-        "default_kms_key_name": "A String",
-      },
       "updated": "A String", # The modification time of the bucket in RFC 3339 format.
       "versioning": { # The bucket's versioning configuration.
         "enabled": True or False, # While set to true, versioning is fully enabled for this bucket.
@@ -1164,8 +1334,8 @@ Returns:
       "defaultObjectAcl": [ # Default access controls to apply to new objects when no ACL is provided.
         { # An access-control entry.
           "domain": "A String", # The domain associated with the entity, if any.
-          "generation": "A String", # The content generation of the object.
-          "object": "A String", # The name of the object.
+          "generation": "A String", # The content generation of the object, if applied to an object.
+          "object": "A String", # The name of the object, if applied to an object.
           "bucket": "A String", # The name of the bucket.
           "kind": "storage#objectAccessControl", # The kind of item this is. For object access control entries, this is always storage#objectAccessControl.
           "entity": "A String", # The entity holding the permission, in one of the following forms:
@@ -1216,20 +1386,24 @@ Returns:
         "rule": [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
           {
             "action": { # The action to take.
-              "type": "A String", # Type of the action. Currently, only Delete is supported.
+              "type": "A String", # Type of the action. Currently, only Delete and SetStorageClass are supported.
+              "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
             },
             "condition": { # The condition(s) under which the action will be taken.
               "isLive": True or False, # Relevant only for versioned objects. If the value is true, this condition matches live objects; if the value is false, it matches archived objects.
-              "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
+              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+                "A String",
+              ],
               "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+              "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
               "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
             },
           },
         ],
       },
-      "id": "A String", # The ID of the bucket.
+      "id": "A String", # The ID of the bucket. For buckets, the id and name properities are the same.
       "projectNumber": "A String", # The project number of the project the bucket belongs to.
-      "storageClass": "A String", # The bucket's storage class. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include STANDARD, NEARLINE and DURABLE_REDUCED_AVAILABILITY. Defaults to STANDARD. For more information, see storage classes.
+      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
     }</pre>
 </div>
 

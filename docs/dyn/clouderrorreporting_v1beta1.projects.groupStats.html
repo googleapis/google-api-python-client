@@ -75,14 +75,14 @@ h1, h2, h3 {
 <h1><a href="clouderrorreporting_v1beta1.html">Stackdriver Error Reporting API</a> . <a href="clouderrorreporting_v1beta1.projects.html">projects</a> . <a href="clouderrorreporting_v1beta1.projects.groupStats.html">groupStats</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#list">list(projectName=None, alignmentTime=None, pageSize=None, x__xgafv=None, alignment=None, timedCountDuration=None, timeRange_period=None, pageToken=None, serviceFilter_version=None, serviceFilter_service=None, groupId=None, order=None)</a></code></p>
+  <code><a href="#list">list(projectName=None, alignmentTime=None, pageSize=None, x__xgafv=None, alignment=None, serviceFilter_resourceType=None, timedCountDuration=None, timeRange_period=None, pageToken=None, serviceFilter_version=None, serviceFilter_service=None, groupId=None, order=None)</a></code></p>
 <p class="firstline">Lists the specified groups.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="list">list(projectName=None, alignmentTime=None, pageSize=None, x__xgafv=None, alignment=None, timedCountDuration=None, timeRange_period=None, pageToken=None, serviceFilter_version=None, serviceFilter_service=None, groupId=None, order=None)</code>
+    <code class="details" id="list">list(projectName=None, alignmentTime=None, pageSize=None, x__xgafv=None, alignment=None, serviceFilter_resourceType=None, timedCountDuration=None, timeRange_period=None, pageToken=None, serviceFilter_version=None, serviceFilter_service=None, groupId=None, order=None)</code>
   <pre>Lists the specified groups.
 
 Args:
@@ -102,6 +102,8 @@ Default is 20.
       2 - v2 error format
   alignment: string, [Optional] The alignment of the timed counts to be returned.
 Default is `ALIGNMENT_EQUAL_AT_END`.
+  serviceFilter_resourceType: string, [Optional] The exact value to match against
+[`ServiceContext.resource_type`](/error-reporting/reference/rest/v1beta1/ServiceContext#FIELDS.resource_type).
   timedCountDuration: string, [Optional] The preferred duration for a single returned `TimedCount`.
 If not set, no timed counts are returned.
   timeRange_period: string, Restricts the query to the specified time range.
@@ -112,9 +114,7 @@ parameters as the first request.
 [`ServiceContext.version`](/error-reporting/reference/rest/v1beta1/ServiceContext#FIELDS.version).
   serviceFilter_service: string, [Optional] The exact value to match against
 [`ServiceContext.service`](/error-reporting/reference/rest/v1beta1/ServiceContext#FIELDS.service).
-  groupId: string, [Optional] List all <code>ErrorGroupStats</code> with these IDs.
-If not specified, all error group stats with a non-zero error count
-for the given selection criteria are returned. (repeated)
+  groupId: string, [Optional] List all <code>ErrorGroupStats</code> with these IDs. (repeated)
   order: string, [Optional] The sort order in which the results are returned.
 Default is `COUNT_DESC`.
 
@@ -126,14 +126,15 @@ Returns:
         # Pass this token, along with the same query parameters as the first
         # request, to view the next page of results.
     "errorGroupStats": [ # The error group stats which match the given request.
-      { # Data extracted for a specific group based on certain selection criteria,
+      { # Data extracted for a specific group based on certain filter criteria,
           # such as a given time period and/or service filter.
         "count": "A String", # Approximate total number of events in the given group that match
-            # the selection criteria.
-        "firstSeenTime": "A String", # Approximate first occurrence that was seen for this group and
-            # which matches the given selection criteria.
+            # the filter criteria.
+        "firstSeenTime": "A String", # Approximate first occurrence that was ever seen for this group
+            # and which matches the given filter criteria, ignoring the
+            # time_range that was specified in the request.
         "affectedUsersCount": "A String", # Approximate number of affected users in the given group that
-            # match the selection criteria.
+            # match the filter criteria.
             # Users are distinguished by data in the `ErrorContext` of the
             # individual error events, such as their login name or their remote
             # IP address in case of HTTP requests.
@@ -144,17 +145,17 @@ Returns:
             # context that was provided in the error report. If more users are
             # implicitly affected, such as due to a crash of the whole service,
             # this is not reflected here.
-        "group": { # Description of a group of similar error events. # Group data that is independent of the selection criteria.
+        "group": { # Description of a group of similar error events. # Group data that is independent of the filter criteria.
           "trackingIssues": [ # Associated tracking issues.
             { # Information related to tracking the progress on resolving the error.
               "url": "A String", # A URL pointing to a related entry in an issue tracking system.
                   # Example: https://github.com/user/project/issues/4
             },
           ],
-          "groupId": "A String", # Group IDs are unique for a given project. If the same kind of error
-              # occurs in different service contexts, it will receive the same group ID.
           "name": "A String", # The group resource name.
               # Example: <code>projects/my-project-123/groups/my-groupid</code>
+          "groupId": "A String", # Group IDs are unique for a given project. If the same kind of error
+              # occurs in different service contexts, it will receive the same group ID.
         },
         "timedCounts": [ # Approximate number of occurrences over time.
             # Timed counts returned by ListGroups are guaranteed to be:
@@ -170,8 +171,9 @@ Returns:
             "startTime": "A String", # Start of the time period to which `count` refers (included).
           },
         ],
-        "lastSeenTime": "A String", # Approximate last occurrence that was seen for this group
-            # and which matches the given selection criteria.
+        "lastSeenTime": "A String", # Approximate last occurrence that was ever seen for this group and
+            # which matches the given filter criteria, ignoring the time_range
+            # that was specified in the request.
         "representative": { # An error event which is returned by the Error Reporting system. # An arbitrary event that is chosen as representative for the whole group.
             # The representative event is intended to be used as a quick preview for
             # the whole group. Events in the group are usually sufficiently similar
@@ -179,6 +181,11 @@ Returns:
             # insight into the characteristics of the group as a whole.
           "serviceContext": { # Describes a running service that sends errors. # The `ServiceContext` for which this error was reported.
               # Its version changes over time and multiple versions can run in parallel.
+            "resourceType": "A String", # Type of the MonitoredResource. List of possible values:
+                # https://cloud.google.com/monitoring/api/resources
+                #
+                # Value is set automatically for incoming errors and must not be set when
+                # reporting errors.
             "version": "A String", # Represents the source code version that the developer provided,
                 # which could represent a version label or a Git SHA-1 hash, for example.
             "service": "A String", # An identifier of the service, such as the name of the
@@ -189,10 +196,10 @@ Returns:
                 # Contains the service name for error reports extracted from Google
                 # App Engine logs or `default` if the App Engine default service is used.
           },
+          "message": "A String", # The stack trace that was reported or logged by the service.
           "eventTime": "A String", # Time when the event occurred as provided in the error report.
               # If the report did not contain a timestamp, the time the error was received
               # by the Error Reporting system is used.
-          "message": "A String", # The stack trace that was reported or logged by the service.
           "context": { # A description of the context in which an error occurred. # Data about the context in which the error occurred.
               # This data should be provided by the application when reporting an error,
               # unless the
@@ -212,6 +219,14 @@ Returns:
               "userAgent": "A String", # The user agent information that is provided with the request.
               "method": "A String", # The type of HTTP request, such as `GET`, `POST`, etc.
             },
+            "user": "A String", # The user who caused or was affected by the crash.
+                # This can be a user ID, an email address, or an arbitrary token that
+                # uniquely identifies the user.
+                # When sending an error report, leave this field empty if the user was not
+                # logged in. In this case the
+                # Error Reporting system will use other data, such as remote IP address, to
+                # distinguish affected users. See `affected_users_count` in
+                # `ErrorGroupStats`.
             "reportLocation": { # Indicates a location in the source code of the service for which # The location in the source code where the decision was made to
                 # report the error, usually the place where it was logged.
                 # For a logged exception this would be the source line where the
@@ -229,23 +244,20 @@ Returns:
               "filePath": "A String", # The source code filename, which can include a truncated relative
                   # path, or a full path from a production machine.
             },
-            "user": "A String", # The user who caused or was affected by the crash.
-                # This can be a user ID, an email address, or an arbitrary token that
-                # uniquely identifies the user.
-                # When sending an error report, leave this field empty if the user was not
-                # logged in. In this case the
-                # Error Reporting system will use other data, such as remote IP address, to
-                # distinguish affected users. See `affected_users_count` in
-                # `ErrorGroupStats`.
           },
         },
         "numAffectedServices": 42, # The total number of services with a non-zero error count for the given
-            # selection criteria.
-        "affectedServices": [ # Service contexts with a non-zero error count for the given selection
+            # filter criteria.
+        "affectedServices": [ # Service contexts with a non-zero error count for the given filter
             # criteria. This list can be truncated if multiple services are affected.
             # Refer to `num_affected_services` for the total count.
           { # Describes a running service that sends errors.
               # Its version changes over time and multiple versions can run in parallel.
+            "resourceType": "A String", # Type of the MonitoredResource. List of possible values:
+                # https://cloud.google.com/monitoring/api/resources
+                #
+                # Value is set automatically for incoming errors and must not be set when
+                # reporting errors.
             "version": "A String", # Represents the source code version that the developer provided,
                 # which could represent a version label or a Git SHA-1 hash, for example.
             "service": "A String", # An identifier of the service, such as the name of the
@@ -259,6 +271,10 @@ Returns:
         ],
       },
     ],
+    "timeRangeBegin": "A String", # The timestamp specifies the start time to which the request was restricted.
+        # The start time is set based on the requested time range. It may be adjusted
+        # to a later time if a project has exceeded the storage quota and older data
+        # has been deleted.
   }</pre>
 </div>
 
