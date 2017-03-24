@@ -124,14 +124,14 @@ Returns:
       { # An individual entry in a log.
         "httpRequest": { # A common proto for logging HTTP requests. Only contains semantics defined by the HTTP specification. Product-specific logging information MUST be defined in a separate message. # Optional. Information about the HTTP request associated with this log entry, if applicable.
           "status": 42, # The response code indicating the status of response. Examples: 200, 404.
-          "cacheValidatedWithOriginServer": True or False, # Whether or not the response was validated with the origin server before being served from cache. This field is only meaningful if cache_hit is True.
-          "requestMethod": "A String", # The request method. Examples: "GET", "HEAD", "PUT", "POST".
           "latency": "A String", # The request processing latency on the server, from the time the request was received until the response was sent.
+          "cacheHit": True or False, # Whether or not an entity was served from cache (with or without validation).
           "cacheFillBytes": "A String", # The number of HTTP response bytes inserted into cache. Set only when a cache fill was attempted.
           "requestUrl": "A String", # The scheme (http, https), the host name, the path and the query portion of the URL that was requested. Example: "http://example.com/some/info?color=red".
           "serverIp": "A String", # The IP address (IPv4 or IPv6) of the origin server that the request was sent to.
           "cacheLookup": True or False, # Whether or not a cache lookup was attempted.
-          "cacheHit": True or False, # Whether or not an entity was served from cache (with or without validation).
+          "requestMethod": "A String", # The request method. Examples: "GET", "HEAD", "PUT", "POST".
+          "cacheValidatedWithOriginServer": True or False, # Whether or not the response was validated with the origin server before being served from cache. This field is only meaningful if cache_hit is True.
           "referer": "A String", # The referer URL of the request, as defined in HTTP/1.1 Header Field Definitions (http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html).
           "remoteIp": "A String", # The IP address (IPv4 or IPv6) of the client that issued the HTTP request. Examples: "192.168.1.1", "FE80::0202:B3FF:FE1E:8329".
           "userAgent": "A String", # The user agent sent by the client. Example: "Mozilla/4.0 (compatible; MSIE 6.0; Windows 98; Q312461; .NET CLR 1.0.3705)".
@@ -154,7 +154,9 @@ Returns:
         "labels": { # Optional. A set of user-defined (key, value) data that provides additional information about the log entry.
           "a_key": "A String",
         },
-        "insertId": "A String", # Optional. A unique identifier for the log entry. If you provide a value, then Stackdriver Logging considers other log entries in the same project, with the same timestamp, and with the same insert_id to be duplicates which can be removed. If omitted in new log entries, then Stackdriver Logging will insert its own unique identifier. The insert_id is used to order log entries that have the same timestamp value.
+        "protoPayload": { # The log entry payload, represented as a protocol buffer. Some Google Cloud Platform services use this field for their log entry payloads.
+          "a_key": "", # Properties of the object. Contains field @type with type URL.
+        },
         "jsonPayload": { # The log entry payload, represented as a structure that is expressed as a JSON object.
           "a_key": "", # Properties of the object.
         },
@@ -164,9 +166,7 @@ Returns:
             # "billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]"
             # "folders/[FOLDER_ID]/logs/[LOG_ID]"
             # [LOG_ID] must be URL-encoded within log_name. Example: "organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity". [LOG_ID] must be less than 512 characters long and can only include the following characters: upper and lower case alphanumeric characters, forward-slash, underscore, hyphen, and period.For backward compatibility, if log_name begins with a forward-slash, such as /projects/..., then the log entry is ingested as usual but the forward-slash is removed. Listing the log entry will not show the leading slash and filtering for a log name with a leading slash will never return any results.
-        "protoPayload": { # The log entry payload, represented as a protocol buffer. Some Google Cloud Platform services use this field for their log entry payloads.
-          "a_key": "", # Properties of the object. Contains field @type with type URL.
-        },
+        "insertId": "A String", # Optional. A unique identifier for the log entry. If you provide a value, then Stackdriver Logging considers other log entries in the same project, with the same timestamp, and with the same insert_id to be duplicates which can be removed. If omitted in new log entries, then Stackdriver Logging will insert its own unique identifier. The insert_id is used to order log entries that have the same timestamp value.
         "operation": { # Additional information about a potentially long-running operation with which a log entry is associated. # Optional. Information about an operation associated with the log entry, if applicable.
           "last": True or False, # Optional. Set this to True if this is the last log entry in the operation.
           "id": "A String", # Optional. An arbitrary operation identifier. Log entries with the same identifier are assumed to be part of the same operation.
@@ -206,16 +206,6 @@ Args:
     The object takes the form of:
 
 { # The parameters to WriteLogEntries.
-    "logName": "A String", # Optional. A default log resource name that is assigned to all log entries in entries that do not specify a value for log_name:
-        # "projects/[PROJECT_ID]/logs/[LOG_ID]"
-        # "organizations/[ORGANIZATION_ID]/logs/[LOG_ID]"
-        # "billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]"
-        # "folders/[FOLDER_ID]/logs/[LOG_ID]"
-        # [LOG_ID] must be URL-encoded. For example, "projects/my-project-id/logs/syslog" or "organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity". For more information about log names, see LogEntry.
-    "partialSuccess": True or False, # Optional. Whether valid entries should be written even if some other entries fail due to INVALID_ARGUMENT or PERMISSION_DENIED errors. If any entry is not written, then the response status is the error associated with one of the failed entries and the response includes error details keyed by the entries' zero-based index in the entries.write method.
-    "labels": { # Optional. Default labels that are added to the labels field of all log entries in entries. If a log entry already has a label with the same key as a label in this parameter, then the log entry's label is not changed. See LogEntry.
-      "a_key": "A String",
-    },
     "resource": { # An object representing a resource that can be used for monitoring, logging, billing, or other purposes. Examples include virtual machine instances, databases, and storage devices such as disks. The type field identifies a MonitoredResourceDescriptor object that describes the resource's schema. Information in the labels field identifies the actual resource and its attributes according to the schema. For example, a particular Compute Engine VM instance could be represented by the following object, because the MonitoredResourceDescriptor for "gce_instance" has labels "instance_id" and "zone": # Optional. A default monitored resource object that is assigned to all log entries in entries that do not specify a value for resource. Example:
         # { "type": "gce_instance",
         #   "labels": {
@@ -229,18 +219,28 @@ Args:
       },
       "type": "A String", # Required. The monitored resource type. This field must match the type field of a MonitoredResourceDescriptor object. For example, the type of a Cloud SQL database is "cloudsql_database".
     },
+    "partialSuccess": True or False, # Optional. Whether valid entries should be written even if some other entries fail due to INVALID_ARGUMENT or PERMISSION_DENIED errors. If any entry is not written, then the response status is the error associated with one of the failed entries and the response includes error details keyed by the entries' zero-based index in the entries.write method.
+    "labels": { # Optional. Default labels that are added to the labels field of all log entries in entries. If a log entry already has a label with the same key as a label in this parameter, then the log entry's label is not changed. See LogEntry.
+      "a_key": "A String",
+    },
+    "logName": "A String", # Optional. A default log resource name that is assigned to all log entries in entries that do not specify a value for log_name:
+        # "projects/[PROJECT_ID]/logs/[LOG_ID]"
+        # "organizations/[ORGANIZATION_ID]/logs/[LOG_ID]"
+        # "billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]"
+        # "folders/[FOLDER_ID]/logs/[LOG_ID]"
+        # [LOG_ID] must be URL-encoded. For example, "projects/my-project-id/logs/syslog" or "organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity". For more information about log names, see LogEntry.
     "entries": [ # Required. The log entries to write. Values supplied for the fields log_name, resource, and labels in this entries.write request are inserted into those log entries in this list that do not provide their own values.Stackdriver Logging also creates and inserts values for timestamp and insert_id if the entries do not provide them. The created insert_id for the N'th entry in this list will be greater than earlier entries and less than later entries. Otherwise, the order of log entries in this list does not matter.To improve throughput and to avoid exceeding the quota limit for calls to entries.write, you should write multiple log entries at once rather than calling this method for each individual log entry.
       { # An individual entry in a log.
         "httpRequest": { # A common proto for logging HTTP requests. Only contains semantics defined by the HTTP specification. Product-specific logging information MUST be defined in a separate message. # Optional. Information about the HTTP request associated with this log entry, if applicable.
           "status": 42, # The response code indicating the status of response. Examples: 200, 404.
-          "cacheValidatedWithOriginServer": True or False, # Whether or not the response was validated with the origin server before being served from cache. This field is only meaningful if cache_hit is True.
-          "requestMethod": "A String", # The request method. Examples: "GET", "HEAD", "PUT", "POST".
           "latency": "A String", # The request processing latency on the server, from the time the request was received until the response was sent.
+          "cacheHit": True or False, # Whether or not an entity was served from cache (with or without validation).
           "cacheFillBytes": "A String", # The number of HTTP response bytes inserted into cache. Set only when a cache fill was attempted.
           "requestUrl": "A String", # The scheme (http, https), the host name, the path and the query portion of the URL that was requested. Example: "http://example.com/some/info?color=red".
           "serverIp": "A String", # The IP address (IPv4 or IPv6) of the origin server that the request was sent to.
           "cacheLookup": True or False, # Whether or not a cache lookup was attempted.
-          "cacheHit": True or False, # Whether or not an entity was served from cache (with or without validation).
+          "requestMethod": "A String", # The request method. Examples: "GET", "HEAD", "PUT", "POST".
+          "cacheValidatedWithOriginServer": True or False, # Whether or not the response was validated with the origin server before being served from cache. This field is only meaningful if cache_hit is True.
           "referer": "A String", # The referer URL of the request, as defined in HTTP/1.1 Header Field Definitions (http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html).
           "remoteIp": "A String", # The IP address (IPv4 or IPv6) of the client that issued the HTTP request. Examples: "192.168.1.1", "FE80::0202:B3FF:FE1E:8329".
           "userAgent": "A String", # The user agent sent by the client. Example: "Mozilla/4.0 (compatible; MSIE 6.0; Windows 98; Q312461; .NET CLR 1.0.3705)".
@@ -263,7 +263,9 @@ Args:
         "labels": { # Optional. A set of user-defined (key, value) data that provides additional information about the log entry.
           "a_key": "A String",
         },
-        "insertId": "A String", # Optional. A unique identifier for the log entry. If you provide a value, then Stackdriver Logging considers other log entries in the same project, with the same timestamp, and with the same insert_id to be duplicates which can be removed. If omitted in new log entries, then Stackdriver Logging will insert its own unique identifier. The insert_id is used to order log entries that have the same timestamp value.
+        "protoPayload": { # The log entry payload, represented as a protocol buffer. Some Google Cloud Platform services use this field for their log entry payloads.
+          "a_key": "", # Properties of the object. Contains field @type with type URL.
+        },
         "jsonPayload": { # The log entry payload, represented as a structure that is expressed as a JSON object.
           "a_key": "", # Properties of the object.
         },
@@ -273,9 +275,7 @@ Args:
             # "billingAccounts/[BILLING_ACCOUNT_ID]/logs/[LOG_ID]"
             # "folders/[FOLDER_ID]/logs/[LOG_ID]"
             # [LOG_ID] must be URL-encoded within log_name. Example: "organizations/1234567890/logs/cloudresourcemanager.googleapis.com%2Factivity". [LOG_ID] must be less than 512 characters long and can only include the following characters: upper and lower case alphanumeric characters, forward-slash, underscore, hyphen, and period.For backward compatibility, if log_name begins with a forward-slash, such as /projects/..., then the log entry is ingested as usual but the forward-slash is removed. Listing the log entry will not show the leading slash and filtering for a log name with a leading slash will never return any results.
-        "protoPayload": { # The log entry payload, represented as a protocol buffer. Some Google Cloud Platform services use this field for their log entry payloads.
-          "a_key": "", # Properties of the object. Contains field @type with type URL.
-        },
+        "insertId": "A String", # Optional. A unique identifier for the log entry. If you provide a value, then Stackdriver Logging considers other log entries in the same project, with the same timestamp, and with the same insert_id to be duplicates which can be removed. If omitted in new log entries, then Stackdriver Logging will insert its own unique identifier. The insert_id is used to order log entries that have the same timestamp value.
         "operation": { # Additional information about a potentially long-running operation with which a log entry is associated. # Optional. Information about an operation associated with the log entry, if applicable.
           "last": True or False, # Optional. Set this to True if this is the last log entry in the operation.
           "id": "A String", # Optional. An arbitrary operation identifier. Log entries with the same identifier are assumed to be part of the same operation.

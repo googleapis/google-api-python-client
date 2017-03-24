@@ -84,7 +84,7 @@ h1, h2, h3 {
   <code><a href="#list">list(parent, orderBy=None, startTime=None, pageSize=None, x__xgafv=None, pageToken=None, filter=None, endTime=None)</a></code></p>
 <p class="firstline">Returns of a list of traces that match the specified filter conditions.</p>
 <p class="toc_element">
-  <code><a href="#listSpans">listSpans(name, pageToken=None, x__xgafv=None)</a></code></p>
+  <code><a href="#listSpans">listSpans(name=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Returns a list of spans within a trace.</p>
 <p class="toc_element">
   <code><a href="#listSpans_next">listSpans_next(previous_request, previous_response)</a></code></p>
@@ -111,11 +111,12 @@ Args:
       "a_key": { # Collection of spans to update.
         "spans": [ # A collection of spans.
           { # A span represents a single operation within a trace. Spans can be nested
-              # and form a trace tree. Often, a trace contains a root span that describes the
-              # end-to-end latency and, optionally, one or more subspans for
-              # its sub-operations. Spans do not need to be contiguous. There may be gaps
-              # between spans in a trace.
-            "status": { # The `Status` type defines a logical error model that is suitable for different # The final status of the Span. This is optional.
+              # to form a trace tree. Often, a trace contains a root span that
+              # describes the end-to-end latency and, optionally, one or more subspans for
+              # its sub-operations. (A trace could alternatively contain multiple root spans,
+              # or none at all.) Spans do not need to be contiguous. There may be gaps
+              # and/or overlaps between spans in a trace.
+            "status": { # The `Status` type defines a logical error model that is suitable for different # An optional final status for this span.
                 # programming environments, including REST APIs and RPC APIs. It is used by
                 # [gRPC](https://github.com/grpc). The error model is designed to be:
                 #
@@ -178,21 +179,24 @@ Args:
                 },
               ],
             },
-            "stackTrace": { # StackTrace collected in a trace. # Stack trace captured at the start of the span. This is optional.
-              "stackTraceHashId": "A String", # User can choose to use their own hash function to hash large attributes to
-                  # save network bandwidth and storage.
-                  # Typical usage is to pass both stack_frame and stack_trace_hash_id initially
-                  # to inform the storage of the mapping. And in subsequent calls, pass in
-                  # stack_trace_hash_id only. User shall verify the hash value is
-                  # successfully stored.
+            "stackTrace": { # StackTrace collected in a trace. # Stack trace captured at the start of the span.
+              "stackTraceHashId": "A String", # The hash ID is used to conserve network bandwidth for duplicate
+                  # stack traces within a single trace.
+                  #
+                  # Often multiple spans will have identical stack traces.
+                  # The first occurance of a stack trace should contain both the
+                  # `stackFrame` content and a value in `stackTraceHashId`.
+                  #
+                  # Subsequent spans within the same request can refer
+                  # to that stack trace by only setting `stackTraceHashId`.
               "stackFrame": [ # Stack frames of this stack trace.
-                { # Presents a single stack frame in a stack trace.
-                  "columnNumber": "A String", # Column number is important in JavaScript(anonymous functions),
-                      # Might not be available in some languages.
-                  "functionName": "A String", # Fully qualified names which uniquely identify function/method/etc.
-                  "fileName": "A String", # File name of the frame.
-                  "sourceVersion": "A String", # source_version is deployment specific. It might be
-                      # better to be stored in deployment metadata.
+                { # Represents a single stack frame in a stack trace.
+                  "columnNumber": "A String", # Column number is important in JavaScript (anonymous functions).
+                      # May not be available in some languages.
+                  "functionName": "A String", # The fully-qualified name that uniquely identifies this function or
+                      # method.
+                  "fileName": "A String", # The filename of the file containing this frame.
+                  "sourceVersion": "A String", # The version of the deployed source code.
                   "loadModule": { # Binary module. # Binary module the code is loaded from.
                     "buildId": "A String", # Build_id is a unique identifier for the module,
                         # usually a hash of its contents
@@ -200,85 +204,92 @@ Args:
                         # such as libc.so, sharedlib.so
                   },
                   "lineNumber": "A String", # Line number of the frame.
-                  "originalFunctionName": "A String", # Used when function name is ‘mangled’. Not guaranteed to be fully
-                      # qualified but usually it is.
+                  "originalFunctionName": "A String", # Used when the function name is
+                      # [mangled](http://www.avabodh.com/cxxin/namemangling.html). May be
+                      # fully-qualified.
                 },
               ],
             },
-            "hasRemoteParent": True or False, # True if this Span has a remote parent (is an RPC server Span).
-            "links": [ # A collection of links.
-              { # Link one span with another which may be in a different Trace. Used (for
-                  # example) in batching operations, where a single batch handler processes
-                  # multiple requests from different traces.
-                "spanId": "A String", # The span identifier of the linked span.
-                "traceId": "A String", # The trace identifier of the linked span.
-                "type": "A String", # The type of the link.
-              },
-            ],
-            "parentId": "A String", # ID of parent span. 0 or missing if this is a root span.
-            "localEndTime": "A String", # Local machine clock time from the UNIX epoch,
-                # at which span execution ended.
-                # On the server side these are the times when the server application
-                # handler finishes running.
-            "attributes": { # Properties of a span. Attributes at the span level.
-                # E.g.
-                # "/instance_id": "my-instance"
-                # "/zone": "us-central1-a"
-                # "/grpc/peer_address": "ip:port" (dns, etc.)
-                # "/grpc/deadline": "Duration"
-                # "/http/user_agent"
-                # "/http/request_bytes": 300
-                # "/http/response_bytes": 1200
-                # "/http/url": google.com/apis
-                # "/pid"
-                # "abc.com/myattribute": "my attribute value"
-                #
-                # Maximum length for attribute key is 128 characters, for string attribute
-                # value is 2K characters.
-              "a_key": { # Allowed attribute values.
-                "stringValue": "A String", # A string value.
-                "boolValue": True or False, # A boolean value.
-                "intValue": "A String", # An integer value.
-              },
-            },
-            "timeEvents": [ # A collection of time-stamped events.
-              { # A time-stamped annotation in the Span.
-                "networkEvent": { # An event describing an RPC message sent/received on the network. # Optional field that can be used only for network events.
-                  "messageSize": "A String", # Number of bytes send/receive.
-                  "type": "A String", # Type of a NetworkEvent.
-                  "kernelTime": "A String", # If available, this is the kernel time:
-                      # For sent messages, this is the time at which the first bit was sent.
-                      # For received messages, this is the time at which the last bit was
-                      # received.
-                  "messageId": "A String", # Every message has an identifier, which must be different from all the
-                      # network messages in this span.
-                      # This is especially important when the request/response are streamed.
-                },
-                "annotation": { # Text annotation with a set of attributes. # Optional field for user supplied <string, AttributeValue> map
-                  "attributes": { # A set of attributes on the annotation.
-                    "a_key": { # Allowed attribute values.
-                      "stringValue": "A String", # A string value.
-                      "boolValue": True or False, # A boolean value.
-                      "intValue": "A String", # An integer value.
-                    },
-                  },
-                  "description": "A String", # A user-supplied message describing the event.
-                },
-                "localTime": "A String", # The local machine absolute timestamp when this event happened.
-              },
-            ],
-            "id": "A String", # Identifier for the span. Must be a 64-bit integer other than 0 and
-                # unique within a trace.
-            "localStartTime": "A String", # Local machine clock time from the UNIX epoch,
-                # at which span execution started.
-                # On the server side these are the times when the server application
-                # handler starts running.
             "name": "A String", # Name of the span. The span name is sanitized and displayed in the
                 # Stackdriver Trace tool in the {% dynamic print site_values.console_name %}.
                 # The name may be a method name or some other per-call site name.
                 # For the same executable and the same call point, a best practice is
                 # to use a consistent name, which makes it easier to correlate
                 # cross-trace spans.
+            "links": [ # A collection of links, which are references from this span to another span
+                # in a different trace.
+              { # A pointer from this span to another span in a different `Trace`. Used
+                  # (for example) in batching operations, where a single batch handler
+                  # processes multiple requests from different traces.
+                "spanId": "A String", # The `id` of the linked span.
+                "traceId": "A String", # The ID of the parent trace of the linked span.
+                "type": "A String", # The relationship of the current span relative to the linked span.
+              },
+            ],
+            "parentId": "A String", # ID of the parent span. If this is a root span, the value must be `0` or
+                # empty.
+            "localEndTime": "A String", # End time of the span.
+                # On the client side, this is the local machine clock time at which the span
+                # execution was ended; on the server
+                # side, this is the time at which the server application handler stopped
+                # running.
+            "attributes": { # Properties of a span in key:value format. The maximum length for the
+                # key is 128 characters. The value can be a string (up to 2000 characters),
+                # int, or boolean.
+                #
+                # Some common pair examples:
+                #
+                #     "/instance_id": "my-instance"
+                #     "/zone": "us-central1-a"
+                #     "/grpc/peer_address": "ip:port" (dns, etc.)
+                #     "/grpc/deadline": "Duration"
+                #     "/http/user_agent"
+                #     "/http/request_bytes": 300
+                #     "/http/response_bytes": 1200
+                #     "/http/url": google.com/apis
+                #     "abc.com/myattribute": true
+              "a_key": { # The allowed types for the value side of an attribute key:value pair.
+                "stringValue": "A String", # A string value.
+                "intValue": "A String", # An integer value.
+                "boolValue": True or False, # A boolean value.
+              },
+            },
+            "timeEvents": [ # A collection of `TimeEvent`s. A `TimeEvent` is a time-stamped annotation
+                # on the span, consisting of either user-supplied key:value pairs, or
+                # details of an RPC message sent/received on the network.
+              { # A time-stamped annotation in the Span.
+                "networkEvent": { # An event describing an RPC message sent/received on the network. # An event describing an RPC message sent/received on the network.
+                  "messageSize": "A String", # The number of bytes sent or received.
+                  "type": "A String", # Type of NetworkEvent. Indicates whether the RPC message was sent or
+                      # received.
+                  "kernelTime": "A String", # If available, this is the kernel time:
+                      #
+                      # *  For sent messages, this is the time at which the first bit was sent.
+                      # *  For received messages, this is the time at which the last bit was
+                      #    received.
+                  "messageId": "A String", # An identifier for the message, which must be unique in this span.
+                },
+                "annotation": { # Text annotation with a set of attributes. # One or more key:value pairs.
+                  "attributes": { # A set of attributes on the annotation.
+                    "a_key": { # The allowed types for the value side of an attribute key:value pair.
+                      "stringValue": "A String", # A string value.
+                      "intValue": "A String", # An integer value.
+                      "boolValue": True or False, # A boolean value.
+                    },
+                  },
+                  "description": "A String", # A user-supplied message describing the event.
+                },
+                "localTime": "A String", # The timestamp indicating the time the event occurred.
+              },
+            ],
+            "id": "A String", # Identifier for the span. Must be a 64-bit integer other than 0 and
+                # unique within a trace.
+            "localStartTime": "A String", # Start time of the span.
+                # On the client side, this is the local machine clock time at which the span
+                # execution was started; on the server
+                # side, this is the time at which the server application handler started
+                # running.
+            "hasRemoteParent": True or False, # True if this span has a remote parent (is an RPC server span).
           },
         ],
       },
@@ -310,7 +321,7 @@ Returns:
   <pre>Returns a specific trace.
 
 Args:
-  name: string, ID of the trace which is "projects/<project_id>/traces/<trace_id>". (required)
+  name: string, ID of the trace. Format is `projects/PROJECT_ID/traces/TRACE_ID`. (required)
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -320,11 +331,11 @@ Returns:
   An object of the form:
 
     { # A trace describes how long it takes for an application to perform some
-      # operations. It consists of a set of spans, each of which contains details
-      # about an operation with time information and operation details.
-    "name": "A String", # ID of the trace which is "projects/<project_id>/traces/<trace_id>".
-        # trace_id is globally unique identifier for the trace. Common to all the
-        # spans. It is conceptually a 128-bit hex-encoded value.
+      # operations. It consists of a set of spans, each representing
+      # an operation and including time information and operation details.
+    "name": "A String", # A globally unique identifier for the trace in the format
+        # `projects/PROJECT_NUMBER/traces/TRACE_ID`. `TRACE_ID` is a base16-encoded
+        # string of a 128-bit number and is required to be 32 char long.
   }</pre>
 </div>
 
@@ -350,7 +361,7 @@ Only one sort field is permitted.
   startTime: string, Start of the time interval (inclusive) during which the trace data was
 collected from the application.
   pageSize: integer, Maximum number of traces to return. If not specified or <= 0, the
-implementation selects a reasonable value.  The implementation may
+implementation selects a reasonable value. The implementation may
 return fewer traces than the requested page size. Optional.
   x__xgafv: string, V1 error format.
     Allowed values
@@ -360,8 +371,8 @@ return fewer traces than the requested page size. Optional.
 value of the `next_page_token` field from a previous request. Optional.
   filter: string, An optional filter for the request.
 Example:
-"version_label_key:a some_label:some_label_key"
-returns traces from version a and has some_label with some_label_key.
+`version_label_key:a some_label:some_label_key`
+returns traces from version `a` and has `some_label` with `some_label_key`.
   endTime: string, End of the time interval (inclusive) during which the trace data was
 collected from the application.
 
@@ -374,24 +385,25 @@ Returns:
         # retrieving additional traces.
     "traces": [ # List of trace records returned.
       { # A trace describes how long it takes for an application to perform some
-          # operations. It consists of a set of spans, each of which contains details
-          # about an operation with time information and operation details.
-        "name": "A String", # ID of the trace which is "projects/<project_id>/traces/<trace_id>".
-            # trace_id is globally unique identifier for the trace. Common to all the
-            # spans. It is conceptually a 128-bit hex-encoded value.
+          # operations. It consists of a set of spans, each representing
+          # an operation and including time information and operation details.
+        "name": "A String", # A globally unique identifier for the trace in the format
+            # `projects/PROJECT_NUMBER/traces/TRACE_ID`. `TRACE_ID` is a base16-encoded
+            # string of a 128-bit number and is required to be 32 char long.
       },
     ],
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="listSpans">listSpans(name, pageToken=None, x__xgafv=None)</code>
+    <code class="details" id="listSpans">listSpans(name=None, pageToken=None, x__xgafv=None)</code>
   <pre>Returns a list of spans within a trace.
 
 Args:
-  name: string, ID of the span set where is "projects/<project_id>/traces/<trace_id>". (required)
+  name: string, ID of the trace for which to list child spans. Format is
+`projects/PROJECT_ID/traces/TRACE_ID`. (required)
   pageToken: string, Token identifying the page of results to return. If provided, use the
-value of the `page_token` field from a previous request. Optional.
+value of the `nextPageToken` field from a previous request. Optional.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -400,17 +412,18 @@ value of the `page_token` field from a previous request. Optional.
 Returns:
   An object of the form:
 
-    { # The response message for the 'ListSpans' method.
-    "nextPageToken": "A String", # If defined, indicates that there are more spans that match the request
-        # and that this value should be passed to the next request to continue
-        # retrieving additional spans.
-    "spans": [ # The requested spans if they are any in the specified trace.
+    { # The response message for the `ListSpans` method.
+    "nextPageToken": "A String", # If defined, indicates that there are more spans that match the request.
+        # Pass this as the value of `pageToken` in a subsequent request to retrieve
+        # additional spans.
+    "spans": [ # The requested spans if there are any in the specified trace.
       { # A span represents a single operation within a trace. Spans can be nested
-          # and form a trace tree. Often, a trace contains a root span that describes the
-          # end-to-end latency and, optionally, one or more subspans for
-          # its sub-operations. Spans do not need to be contiguous. There may be gaps
-          # between spans in a trace.
-        "status": { # The `Status` type defines a logical error model that is suitable for different # The final status of the Span. This is optional.
+          # to form a trace tree. Often, a trace contains a root span that
+          # describes the end-to-end latency and, optionally, one or more subspans for
+          # its sub-operations. (A trace could alternatively contain multiple root spans,
+          # or none at all.) Spans do not need to be contiguous. There may be gaps
+          # and/or overlaps between spans in a trace.
+        "status": { # The `Status` type defines a logical error model that is suitable for different # An optional final status for this span.
             # programming environments, including REST APIs and RPC APIs. It is used by
             # [gRPC](https://github.com/grpc). The error model is designed to be:
             #
@@ -473,21 +486,24 @@ Returns:
             },
           ],
         },
-        "stackTrace": { # StackTrace collected in a trace. # Stack trace captured at the start of the span. This is optional.
-          "stackTraceHashId": "A String", # User can choose to use their own hash function to hash large attributes to
-              # save network bandwidth and storage.
-              # Typical usage is to pass both stack_frame and stack_trace_hash_id initially
-              # to inform the storage of the mapping. And in subsequent calls, pass in
-              # stack_trace_hash_id only. User shall verify the hash value is
-              # successfully stored.
+        "stackTrace": { # StackTrace collected in a trace. # Stack trace captured at the start of the span.
+          "stackTraceHashId": "A String", # The hash ID is used to conserve network bandwidth for duplicate
+              # stack traces within a single trace.
+              #
+              # Often multiple spans will have identical stack traces.
+              # The first occurance of a stack trace should contain both the
+              # `stackFrame` content and a value in `stackTraceHashId`.
+              #
+              # Subsequent spans within the same request can refer
+              # to that stack trace by only setting `stackTraceHashId`.
           "stackFrame": [ # Stack frames of this stack trace.
-            { # Presents a single stack frame in a stack trace.
-              "columnNumber": "A String", # Column number is important in JavaScript(anonymous functions),
-                  # Might not be available in some languages.
-              "functionName": "A String", # Fully qualified names which uniquely identify function/method/etc.
-              "fileName": "A String", # File name of the frame.
-              "sourceVersion": "A String", # source_version is deployment specific. It might be
-                  # better to be stored in deployment metadata.
+            { # Represents a single stack frame in a stack trace.
+              "columnNumber": "A String", # Column number is important in JavaScript (anonymous functions).
+                  # May not be available in some languages.
+              "functionName": "A String", # The fully-qualified name that uniquely identifies this function or
+                  # method.
+              "fileName": "A String", # The filename of the file containing this frame.
+              "sourceVersion": "A String", # The version of the deployed source code.
               "loadModule": { # Binary module. # Binary module the code is loaded from.
                 "buildId": "A String", # Build_id is a unique identifier for the module,
                     # usually a hash of its contents
@@ -495,85 +511,92 @@ Returns:
                     # such as libc.so, sharedlib.so
               },
               "lineNumber": "A String", # Line number of the frame.
-              "originalFunctionName": "A String", # Used when function name is ‘mangled’. Not guaranteed to be fully
-                  # qualified but usually it is.
+              "originalFunctionName": "A String", # Used when the function name is
+                  # [mangled](http://www.avabodh.com/cxxin/namemangling.html). May be
+                  # fully-qualified.
             },
           ],
         },
-        "hasRemoteParent": True or False, # True if this Span has a remote parent (is an RPC server Span).
-        "links": [ # A collection of links.
-          { # Link one span with another which may be in a different Trace. Used (for
-              # example) in batching operations, where a single batch handler processes
-              # multiple requests from different traces.
-            "spanId": "A String", # The span identifier of the linked span.
-            "traceId": "A String", # The trace identifier of the linked span.
-            "type": "A String", # The type of the link.
-          },
-        ],
-        "parentId": "A String", # ID of parent span. 0 or missing if this is a root span.
-        "localEndTime": "A String", # Local machine clock time from the UNIX epoch,
-            # at which span execution ended.
-            # On the server side these are the times when the server application
-            # handler finishes running.
-        "attributes": { # Properties of a span. Attributes at the span level.
-            # E.g.
-            # "/instance_id": "my-instance"
-            # "/zone": "us-central1-a"
-            # "/grpc/peer_address": "ip:port" (dns, etc.)
-            # "/grpc/deadline": "Duration"
-            # "/http/user_agent"
-            # "/http/request_bytes": 300
-            # "/http/response_bytes": 1200
-            # "/http/url": google.com/apis
-            # "/pid"
-            # "abc.com/myattribute": "my attribute value"
-            #
-            # Maximum length for attribute key is 128 characters, for string attribute
-            # value is 2K characters.
-          "a_key": { # Allowed attribute values.
-            "stringValue": "A String", # A string value.
-            "boolValue": True or False, # A boolean value.
-            "intValue": "A String", # An integer value.
-          },
-        },
-        "timeEvents": [ # A collection of time-stamped events.
-          { # A time-stamped annotation in the Span.
-            "networkEvent": { # An event describing an RPC message sent/received on the network. # Optional field that can be used only for network events.
-              "messageSize": "A String", # Number of bytes send/receive.
-              "type": "A String", # Type of a NetworkEvent.
-              "kernelTime": "A String", # If available, this is the kernel time:
-                  # For sent messages, this is the time at which the first bit was sent.
-                  # For received messages, this is the time at which the last bit was
-                  # received.
-              "messageId": "A String", # Every message has an identifier, which must be different from all the
-                  # network messages in this span.
-                  # This is especially important when the request/response are streamed.
-            },
-            "annotation": { # Text annotation with a set of attributes. # Optional field for user supplied <string, AttributeValue> map
-              "attributes": { # A set of attributes on the annotation.
-                "a_key": { # Allowed attribute values.
-                  "stringValue": "A String", # A string value.
-                  "boolValue": True or False, # A boolean value.
-                  "intValue": "A String", # An integer value.
-                },
-              },
-              "description": "A String", # A user-supplied message describing the event.
-            },
-            "localTime": "A String", # The local machine absolute timestamp when this event happened.
-          },
-        ],
-        "id": "A String", # Identifier for the span. Must be a 64-bit integer other than 0 and
-            # unique within a trace.
-        "localStartTime": "A String", # Local machine clock time from the UNIX epoch,
-            # at which span execution started.
-            # On the server side these are the times when the server application
-            # handler starts running.
         "name": "A String", # Name of the span. The span name is sanitized and displayed in the
             # Stackdriver Trace tool in the {% dynamic print site_values.console_name %}.
             # The name may be a method name or some other per-call site name.
             # For the same executable and the same call point, a best practice is
             # to use a consistent name, which makes it easier to correlate
             # cross-trace spans.
+        "links": [ # A collection of links, which are references from this span to another span
+            # in a different trace.
+          { # A pointer from this span to another span in a different `Trace`. Used
+              # (for example) in batching operations, where a single batch handler
+              # processes multiple requests from different traces.
+            "spanId": "A String", # The `id` of the linked span.
+            "traceId": "A String", # The ID of the parent trace of the linked span.
+            "type": "A String", # The relationship of the current span relative to the linked span.
+          },
+        ],
+        "parentId": "A String", # ID of the parent span. If this is a root span, the value must be `0` or
+            # empty.
+        "localEndTime": "A String", # End time of the span.
+            # On the client side, this is the local machine clock time at which the span
+            # execution was ended; on the server
+            # side, this is the time at which the server application handler stopped
+            # running.
+        "attributes": { # Properties of a span in key:value format. The maximum length for the
+            # key is 128 characters. The value can be a string (up to 2000 characters),
+            # int, or boolean.
+            #
+            # Some common pair examples:
+            #
+            #     "/instance_id": "my-instance"
+            #     "/zone": "us-central1-a"
+            #     "/grpc/peer_address": "ip:port" (dns, etc.)
+            #     "/grpc/deadline": "Duration"
+            #     "/http/user_agent"
+            #     "/http/request_bytes": 300
+            #     "/http/response_bytes": 1200
+            #     "/http/url": google.com/apis
+            #     "abc.com/myattribute": true
+          "a_key": { # The allowed types for the value side of an attribute key:value pair.
+            "stringValue": "A String", # A string value.
+            "intValue": "A String", # An integer value.
+            "boolValue": True or False, # A boolean value.
+          },
+        },
+        "timeEvents": [ # A collection of `TimeEvent`s. A `TimeEvent` is a time-stamped annotation
+            # on the span, consisting of either user-supplied key:value pairs, or
+            # details of an RPC message sent/received on the network.
+          { # A time-stamped annotation in the Span.
+            "networkEvent": { # An event describing an RPC message sent/received on the network. # An event describing an RPC message sent/received on the network.
+              "messageSize": "A String", # The number of bytes sent or received.
+              "type": "A String", # Type of NetworkEvent. Indicates whether the RPC message was sent or
+                  # received.
+              "kernelTime": "A String", # If available, this is the kernel time:
+                  #
+                  # *  For sent messages, this is the time at which the first bit was sent.
+                  # *  For received messages, this is the time at which the last bit was
+                  #    received.
+              "messageId": "A String", # An identifier for the message, which must be unique in this span.
+            },
+            "annotation": { # Text annotation with a set of attributes. # One or more key:value pairs.
+              "attributes": { # A set of attributes on the annotation.
+                "a_key": { # The allowed types for the value side of an attribute key:value pair.
+                  "stringValue": "A String", # A string value.
+                  "intValue": "A String", # An integer value.
+                  "boolValue": True or False, # A boolean value.
+                },
+              },
+              "description": "A String", # A user-supplied message describing the event.
+            },
+            "localTime": "A String", # The timestamp indicating the time the event occurred.
+          },
+        ],
+        "id": "A String", # Identifier for the span. Must be a 64-bit integer other than 0 and
+            # unique within a trace.
+        "localStartTime": "A String", # Start time of the span.
+            # On the client side, this is the local machine clock time at which the span
+            # execution was started; on the server
+            # side, this is the time at which the server application handler started
+            # running.
+        "hasRemoteParent": True or False, # True if this span has a remote parent (is an RPC server span).
       },
     ],
   }</pre>
