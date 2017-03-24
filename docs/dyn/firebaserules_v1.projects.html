@@ -86,18 +86,17 @@ h1, h2, h3 {
 
 <p class="toc_element">
   <code><a href="#test">test(name=None, body, x__xgafv=None)</a></code></p>
-<p class="firstline">Test `Source` for syntactic and semantic correctness. Issues present in the</p>
+<p class="firstline">Test `Source` for syntactic and semantic correctness. Issues present, if</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="test">test(name=None, body, x__xgafv=None)</code>
-  <pre>Test `Source` for syntactic and semantic correctness. Issues present in the
-rules, if any, will be returned to the caller with a description, severity,
-and source location.
+  <pre>Test `Source` for syntactic and semantic correctness. Issues present, if
+any, will be returned to the caller with a description, severity, and
+source location.
 
-The test method will typically be executed with a developer provided
-`Source`, but if regression testing is desired, this method may be
-executed against a `Ruleset` resource name and the `Source` will be
-retrieved from the persisted `Ruleset`.
+The test method may be executed with `Source` or a `Ruleset` name.
+Passing `Source` is useful for unit testing new rules. Passing a `Ruleset`
+name is useful for regression testing an existing rule.
 
 The following is an example of `Source` that permits users to upload images
 to a bucket bearing their user id and matching the correct metadata:
@@ -107,21 +106,28 @@ _*Example*_
     // Users are allowed to subscribe and unsubscribe to the blog.
     service firebase.storage {
       match /users/{userId}/images/{imageName} {
-          allow write: if userId == request.userId
-              && (imageName.endsWith('.png') || imageName.endsWith('.jpg'))
-              && resource.mimeType.startsWith('image/')
+          allow write: if userId == request.auth.uid
+              && (imageName.matches('*.png$')
+              || imageName.matches('*.jpg$'))
+              && resource.mimeType.matches('^image/')
       }
     }
 
 Args:
-  name: string, Name of the project.
+  name: string, Tests may either provide `source` or a `Ruleset` resource name.
 
-Format: `projects/{project_id}` (required)
+For tests against `source`, the resource name must refer to the project:
+Format: `projects/{project_id}`
+
+For tests against a `Ruleset`, this must be the `Ruleset` resource name:
+Format: `projects/{project_id}/rulesets/{ruleset_id}` (required)
   body: object, The request body. (required)
     The object takes the form of:
 
 { # The request for FirebaseRulesService.TestRuleset.
-    "source": { # `Source` is one or more `File` messages comprising a logical set of rules. # `Source` to be checked for correctness.
+    "source": { # `Source` is one or more `File` messages comprising a logical set of rules. # Optional `Source` to be checked for correctness.
+        # 
+        # This field must not be set when the resource name refers to a `Ruleset`.
       "files": [ # `File` set constituting the `Source` bundle.
         { # `File` containing source content.
           "content": "A String", # Textual Content.
@@ -141,6 +147,49 @@ Returns:
   An object of the form:
 
     { # The response for FirebaseRulesService.TestRuleset.
+    "testResults": [ # The set of test results given the test cases in the `TestSuite`.
+        # The results will appear in the same order as the test cases appear in the
+        # `TestSuite`.
+      { # Test result message containing the state of the test as well as a
+          # description and source position for test failures.
+        "debugMessages": [ # Debug messages related to test execution issues encountered during
+            # evaluation.
+            #
+            # Debug messages may be related to too many or too few invocations of
+            # function mocks or to runtime errors that occur during evaluation.
+            #
+            # For example: ```Unable to read variable [name: "resource"]```
+          "A String",
+        ],
+        "state": "A String", # State of the test.
+        "errorPosition": { # Position in the `Source` content including its line, column number, and an # Position in the `Source` or `Ruleset` where the principle runtime error
+            # occurs.
+            #
+            # Evaluation of an expression may result in an error. Rules are deny by
+            # default, so a `DENY` expectation when an error is generated is valid.
+            # When there is a `DENY` with an error, the `SourcePosition` is returned.
+            #
+            # E.g. `error_position { line: 19 column: 37 }`
+            # index of the `File` in the `Source` message. Used for debug purposes.
+          "column": 42, # First column on the source line associated with the source fragment.
+          "line": 42, # Line number of the source fragment. 1-based.
+          "fileName": "A String", # Name of the `File`.
+        },
+        "functionCalls": [ # The set of function calls made to service-defined methods.
+            #
+            # Function calls are included in the order in which they are encountered
+            # during evaluation, are provided for both mocked and unmocked functions,
+            # and included on the response regardless of the test `state`.
+          { # Represents a service-defined function call that was invoked during test
+              # execution.
+            "function": "A String", # Name of the function invoked.
+            "args": [ # The arguments that were provided to the function.
+              "",
+            ],
+          },
+        ],
+      },
+    ],
     "issues": [ # Syntactic and semantic `Source` issues of varying severity. Issues of
         # `ERROR` severity will prevent tests from executing.
       { # Issues include warnings, errors, and deprecation notices.
@@ -150,8 +199,8 @@ Returns:
           "line": 42, # Line number of the source fragment. 1-based.
           "fileName": "A String", # Name of the `File`.
         },
-        "description": "A String", # Short error description.
         "severity": "A String", # The severity of the issue.
+        "description": "A String", # Short error description.
       },
     ],
   }</pre>

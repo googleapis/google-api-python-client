@@ -111,6 +111,13 @@ Args:
         ],
         "hideTotals": True or False, # If set to true, hides the total of all metrics for all the matching rows,
             # for every date range. The default false and will return the totals.
+        "filtersExpression": "A String", # Dimension or metric filters that restrict the data returned for your
+            # request. To use the `filtersExpression`, supply a dimension or metric on
+            # which to filter, followed by the filter expression. For example, the
+            # following expression selects `ga:browser` dimension which starts with
+            # Firefox; `ga:browser=~^Firefox`. For more information on dimensions
+            # and metric filters, see
+            # [Filters reference](https://developers.google.com/analytics/devguides/reporting/core/v3/reference#filters).
         "pageSize": 42, # Page size is for paging and specifies the maximum number of returned rows.
             # Page size should be >= 0. A query returns the default of 1,000 rows.
             # The Analytics Core Reporting API returns a maximum of 10,000 rows per
@@ -119,13 +126,6 @@ Args:
             # For instance, there are fewer than 300 possible values for `ga:country`,
             # so when segmenting only by country, you can't get more than 300 rows,
             # even if you set `pageSize` to a higher value.
-        "filtersExpression": "A String", # Dimension or metric filters that restrict the data returned for your
-            # request. To use the `filtersExpression`, supply a dimension or metric on
-            # which to filter, followed by the filter expression. For example, the
-            # following expression selects `ga:browser` dimension which starts with
-            # Firefox; `ga:browser=~^Firefox`. For more information on dimensions
-            # and metric filters, see
-            # [Filters reference](https://developers.google.com/analytics/devguides/reporting/core/v3/reference#filters).
         "pivots": [ # The pivot definitions. Requests can have a maximum of 2 pivots.
           { # The Pivot describes the pivot section in the request.
               # The Pivot helps rearrange the information in the table for certain reports
@@ -152,8 +152,19 @@ Args:
                     # `INTEGER`.
               },
             ],
-            "maxGroupCount": 42, # Specifies the maximum number of groups to return.
-                # The default value is 10, also the maximum value is 1,000.
+            "startGroup": 42, # If k metrics were requested, then the response will contain some
+                # data-dependent multiple of k columns in the report.  E.g., if you pivoted
+                # on the dimension `ga:browser` then you'd get k columns for "Firefox", k
+                # columns for "IE", k columns for "Chrome", etc. The ordering of the groups
+                # of columns is determined by descending order of "total" for the first of
+                # the k values.  Ties are broken by lexicographic ordering of the first
+                # pivot dimension, then lexicographic ordering of the second pivot
+                # dimension, and so on.  E.g., if the totals for the first value for
+                # Firefox, IE, and Chrome were 8, 2, 8, respectively, the order of columns
+                # would be Chrome, Firefox, IE.
+                #
+                # The following let you choose which of the groups of k columns are
+                # included in the response.
             "dimensions": [ # A list of dimensions to show as pivot columns. A Pivot can have a maximum
                 # of 4 dimensions. Pivot dimensions are part of the restriction on the
                 # total number of dimensions allowed in the request.
@@ -226,54 +237,17 @@ Args:
                 ],
               },
             ],
-            "startGroup": 42, # If k metrics were requested, then the response will contain some
-                # data-dependent multiple of k columns in the report.  E.g., if you pivoted
-                # on the dimension `ga:browser` then you'd get k columns for "Firefox", k
-                # columns for "IE", k columns for "Chrome", etc. The ordering of the groups
-                # of columns is determined by descending order of "total" for the first of
-                # the k values.  Ties are broken by lexicographic ordering of the first
-                # pivot dimension, then lexicographic ordering of the second pivot
-                # dimension, and so on.  E.g., if the totals for the first value for
-                # Firefox, IE, and Chrome were 8, 2, 8, respectively, the order of columns
-                # would be Chrome, Firefox, IE.
-                #
-                # The following let you choose which of the groups of k columns are
-                # included in the response.
+            "maxGroupCount": 42, # Specifies the maximum number of groups to return.
+                # The default value is 10, also the maximum value is 1,000.
           },
         ],
-        "dimensionFilterClauses": [ # The dimension filter clauses for filtering Dimension Values. They are
-            # logically combined with the `AND` operator. Note that filtering occurs
-            # before any dimensions are aggregated, so that the returned metrics
-            # represent the total for only the relevant dimensions.
-          { # A group of dimension filters. Set the operator value to specify how
-              # the filters are logically combined.
-            "operator": "A String", # The operator for combining multiple dimension filters. If unspecified, it
-                # is treated as an `OR`.
-            "filters": [ # The repeated set of filters. They are logically combined based on the
-                # operator specified.
-              { # Dimension filter specifies the filtering options on a dimension.
-                "dimensionName": "A String", # The dimension to filter on. A DimensionFilter must contain a dimension.
-                "caseSensitive": True or False, # Should the match be case sensitive? Default is false.
-                "expressions": [ # Strings or regular expression to match against. Only the first value of
-                    # the list is used for comparison unless the operator is `IN_LIST`.
-                    # If `IN_LIST` operator, then the entire list is used to filter the
-                    # dimensions as explained in the description of the `IN_LIST` operator.
-                  "A String",
-                ],
-                "not": True or False, # Logical `NOT` operator. If this boolean is set to true, then the matching
-                    # dimension values will be excluded in the report. The default is false.
-                "operator": "A String", # How to match the dimension to the expression. The default is REGEXP.
-              },
-            ],
-          },
-        ],
+        "includeEmptyRows": True or False, # If set to false, the response does not include rows if all the retrieved
+            # metrics are equal to zero. The default is false which will exclude these
+            # rows.
         "viewId": "A String", # The Analytics
             # [view ID](https://support.google.com/analytics/answer/1009618)
             # from which to retrieve data. Every [ReportRequest](#ReportRequest)
             # within a `batchGet` method must contain the same `viewId`.
-        "includeEmptyRows": True or False, # If set to false, the response does not include rows if all the retrieved
-            # metrics are equal to zero. The default is false which will exclude these
-            # rows.
         "samplingLevel": "A String", # The desired report
             # [sample](https://support.google.com/analytics/answer/2637192) size.
             # If the the `samplingLevel` field is unspecified the `DEFAULT` sampling
@@ -396,6 +370,32 @@ Args:
             # the GetReports request.
         "hideValueRanges": True or False, # If set to true, hides the minimum and maximum across all matching rows.
             # The default is false and the value ranges are returned.
+        "dimensionFilterClauses": [ # The dimension filter clauses for filtering Dimension Values. They are
+            # logically combined with the `AND` operator. Note that filtering occurs
+            # before any dimensions are aggregated, so that the returned metrics
+            # represent the total for only the relevant dimensions.
+          { # A group of dimension filters. Set the operator value to specify how
+              # the filters are logically combined.
+            "operator": "A String", # The operator for combining multiple dimension filters. If unspecified, it
+                # is treated as an `OR`.
+            "filters": [ # The repeated set of filters. They are logically combined based on the
+                # operator specified.
+              { # Dimension filter specifies the filtering options on a dimension.
+                "dimensionName": "A String", # The dimension to filter on. A DimensionFilter must contain a dimension.
+                "caseSensitive": True or False, # Should the match be case sensitive? Default is false.
+                "expressions": [ # Strings or regular expression to match against. Only the first value of
+                    # the list is used for comparison unless the operator is `IN_LIST`.
+                    # If `IN_LIST` operator, then the entire list is used to filter the
+                    # dimensions as explained in the description of the `IN_LIST` operator.
+                  "A String",
+                ],
+                "not": True or False, # Logical `NOT` operator. If this boolean is set to true, then the matching
+                    # dimension values will be excluded in the report. The default is false.
+                "operator": "A String", # How to match the dimension to the expression. The default is REGEXP.
+              },
+            ],
+          },
+        ],
         "metricFilterClauses": [ # The metric filter clauses. They are logically combined with the `AND`
             # operator.  Metric filters look at only the first date range and not the
             # comparing date range. Note that filtering on metrics occurs after the
@@ -502,6 +502,8 @@ Args:
                         # be combined with special sequence operators.
                         # by one or more dimension/metric conditions. Multiple steps can be combined
                         # with special sequence operators.
+                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
+                          # the date range).
                       "segmentSequenceSteps": [ # The list of steps in the sequence.
                         { # A segment sequence definition.
                           "matchType": "A String", # Specifies if the step immediately precedes or can be any time before the
@@ -543,8 +545,6 @@ Args:
                           ],
                         },
                       ],
-                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
-                          # the date range).
                     },
                   },
                 ],
@@ -621,6 +621,8 @@ Args:
                         # be combined with special sequence operators.
                         # by one or more dimension/metric conditions. Multiple steps can be combined
                         # with special sequence operators.
+                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
+                          # the date range).
                       "segmentSequenceSteps": [ # The list of steps in the sequence.
                         { # A segment sequence definition.
                           "matchType": "A String", # Specifies if the step immediately precedes or can be any time before the
@@ -662,8 +664,6 @@ Args:
                           ],
                         },
                       ],
-                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
-                          # the date range).
                     },
                   },
                 ],
@@ -839,6 +839,12 @@ Returns:
             "A String",
           ],
           "metricHeader": { # The headers for the metrics. # Metric headers for the metrics in the response.
+            "metricHeaderEntries": [ # Headers for the metrics in the response.
+              { # Header for the metrics.
+                "type": "A String", # The type of the metric, for example `INTEGER`.
+                "name": "A String", # The name of the header.
+              },
+            ],
             "pivotHeaders": [ # Headers for the pivots in the response.
               { # The headers for each of the pivot sections defined in the request.
                 "totalPivotGroupsCount": 42, # The total number of groups for this pivot.
@@ -857,12 +863,6 @@ Returns:
                     },
                   },
                 ],
-              },
-            ],
-            "metricHeaderEntries": [ # Headers for the metrics in the response.
-              { # Header for the metrics.
-                "type": "A String", # The type of the metric, for example `INTEGER`.
-                "name": "A String", # The name of the header.
               },
             ],
           },
