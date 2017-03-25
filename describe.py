@@ -200,15 +200,23 @@ def method_params(doc):
       args = doclines[begin+1:]
 
     parameters = []
-    for line in args:
-      m = re.search('^\s+([a-zA-Z0-9_]+): (.*)', line)
-      if m is None:
-        continue
-      pname = m.group(1)
-      desc = m.group(2)
+    pname = None
+    desc = ''
+    def add_param(pname, desc):
+      if pname is None:
+        return
       if '(required)' not in desc:
         pname = pname + '=None'
       parameters.append(pname)
+    for line in args:
+      m = re.search('^\s+([a-zA-Z0-9_]+): (.*)', line)
+      if m is None:
+        desc += line
+        continue
+      add_param(pname, desc)
+      pname = m.group(1)
+      desc = m.group(2)
+    add_param(pname, desc)
     parameters = ', '.join(parameters)
   else:
     parameters = ''
