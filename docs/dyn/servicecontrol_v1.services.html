@@ -75,26 +75,26 @@ h1, h2, h3 {
 <h1><a href="servicecontrol_v1.html">Google Service Control API</a> . <a href="servicecontrol_v1.services.html">services</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#allocateQuota">allocateQuota(serviceName=None, body, x__xgafv=None)</a></code></p>
+  <code><a href="#allocateQuota">allocateQuota(serviceName, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Attempts to allocate quota for the specified consumer. It should be called</p>
 <p class="toc_element">
-  <code><a href="#check">check(serviceName=None, body, x__xgafv=None)</a></code></p>
+  <code><a href="#check">check(serviceName, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Checks an operation with Google Service Control to decide whether</p>
 <p class="toc_element">
-  <code><a href="#endReconciliation">endReconciliation(serviceName=None, body, x__xgafv=None)</a></code></p>
+  <code><a href="#endReconciliation">endReconciliation(serviceName, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Signals the quota controller that service ends the ongoing usage</p>
 <p class="toc_element">
-  <code><a href="#releaseQuota">releaseQuota(serviceName=None, body, x__xgafv=None)</a></code></p>
+  <code><a href="#releaseQuota">releaseQuota(serviceName, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Releases previously allocated quota done through AllocateQuota method.</p>
 <p class="toc_element">
-  <code><a href="#report">report(serviceName=None, body, x__xgafv=None)</a></code></p>
+  <code><a href="#report">report(serviceName, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Reports operation results to Google Service Control, such as logs and</p>
 <p class="toc_element">
-  <code><a href="#startReconciliation">startReconciliation(serviceName=None, body, x__xgafv=None)</a></code></p>
+  <code><a href="#startReconciliation">startReconciliation(serviceName, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Unlike rate quota, allocation quota does not get refilled periodically.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="allocateQuota">allocateQuota(serviceName=None, body, x__xgafv=None)</code>
+    <code class="details" id="allocateQuota">allocateQuota(serviceName, body, x__xgafv=None)</code>
   <pre>Attempts to allocate quota for the specified consumer. It should be called
 before the operation is executed.
 
@@ -286,6 +286,15 @@ Returns:
   An object of the form:
 
     { # Response message for the AllocateQuota method.
+    "allocateErrors": [ # Indicates the decision of the allocate.
+      {
+        "code": "A String", # Error code.
+        "description": "A String", # Free-form text that provides details on the cause of the error.
+        "subject": "A String", # Subject to whom this error applies. See the specific enum for more details
+            # on this field. For example, "clientip:<ip address of client>" or
+            # "project:<Google developer project id>".
+      },
+    ],
     "serviceConfigId": "A String", # ID of the actual config used to process the request.
     "quotaMetrics": [ # Quota metrics to indicate the result of allocation. Depending on the
         # request, one or more of the following metrics will be included:
@@ -416,22 +425,13 @@ Returns:
         "metricName": "A String", # The metric name defined in the service configuration.
       },
     ],
-    "allocateErrors": [ # Indicates the decision of the allocate.
-      {
-        "code": "A String", # Error code.
-        "description": "A String", # Free-form text that provides details on the cause of the error.
-        "subject": "A String", # Subject to whom this error applies. See the specific enum for more details
-            # on this field. For example, "clientip:<ip address of client>" or
-            # "project:<Google developer project id>".
-      },
-    ],
     "operationId": "A String", # The same operation_id value used in the AllocateQuotaRequest. Used for
         # logging and diagnostics purposes.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="check">check(serviceName=None, body, x__xgafv=None)</code>
+    <code class="details" id="check">check(serviceName, body, x__xgafv=None)</code>
   <pre>Checks an operation with Google Service Control to decide whether
 the given operation should proceed. It should be called before the
 operation is executed.
@@ -603,6 +603,12 @@ See google.api.Service for the definition of a service name. (required)
       ],
       "importance": "A String", # DO NOT USE. This is an experimental field.
       "operationName": "A String", # Fully qualified name of the operation. Reserved for future use.
+      "resourceContainer": "A String", # The resource name of the parent of a resource in the resource hierarchy.
+          #
+          # This can be in one of the following formats:
+          #     - “projects/<project-id or project-number>”
+          #     - “folders/<folder-id>”
+          #     - “organizations/<organization-id>”
       "quotaProperties": { # Represents the properties needed for quota operations. # Represents the properties needed for quota check. Applicable only if this
           # operation is for a quota check request.
         "quotaMode": "A String", # Quota mode for this operation.
@@ -620,12 +626,15 @@ See google.api.Service for the definition of a service name. (required)
           "a_key": "A String",
         },
       },
-      "resourceContainer": "A String", # The resource name of the parent of a resource in the resource hierarchy.
+      "consumerId": "A String", # Identity of the consumer who is using the service.
+          # This field should be filled in for the operations initiated by a
+          # consumer, but not for service-initiated operations that are
+          # not related to a specific consumer.
           #
           # This can be in one of the following formats:
-          #     - “projects/<project-id or project-number>”
-          #     - “folders/<folder-id>”
-          #     - “organizations/<organization-id>”
+          #   project:<project_id>,
+          #   project_number:<project_number>,
+          #   api_key:<api_key>.
       "userLabels": { # User defined labels for the resource that this operation is associated
           # with.
         "a_key": "A String",
@@ -656,15 +665,6 @@ See google.api.Service for the definition of a service name. (required)
               # `"book_log"`.
         },
       ],
-      "consumerId": "A String", # Identity of the consumer who is using the service.
-          # This field should be filled in for the operations initiated by a
-          # consumer, but not for service-initiated operations that are
-          # not related to a specific consumer.
-          #
-          # This can be in one of the following formats:
-          #   project:<project_id>,
-          #   project_number:<project_number>,
-          #   api_key:<api_key>.
       "startTime": "A String", # Required. Start time of the operation.
       "endTime": "A String", # End time of the operation.
           # Required when the operation is used in ServiceController.Report,
@@ -856,7 +856,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="endReconciliation">endReconciliation(serviceName=None, body, x__xgafv=None)</code>
+    <code class="details" id="endReconciliation">endReconciliation(serviceName, body, x__xgafv=None)</code>
   <pre>Signals the quota controller that service ends the ongoing usage
 reconciliation.
 
@@ -1183,7 +1183,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="releaseQuota">releaseQuota(serviceName=None, body, x__xgafv=None)</code>
+    <code class="details" id="releaseQuota">releaseQuota(serviceName, body, x__xgafv=None)</code>
   <pre>Releases previously allocated quota done through AllocateQuota method.
 
 This method requires the `servicemanagement.services.quota`
@@ -1513,7 +1513,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="report">report(serviceName=None, body, x__xgafv=None)</code>
+    <code class="details" id="report">report(serviceName, body, x__xgafv=None)</code>
   <pre>Reports operation results to Google Service Control, such as logs and
 metrics. It should be called after an operation is completed.
 
@@ -1689,6 +1689,12 @@ See google.api.Service for the definition of a service name. (required)
         ],
         "importance": "A String", # DO NOT USE. This is an experimental field.
         "operationName": "A String", # Fully qualified name of the operation. Reserved for future use.
+        "resourceContainer": "A String", # The resource name of the parent of a resource in the resource hierarchy.
+            #
+            # This can be in one of the following formats:
+            #     - “projects/<project-id or project-number>”
+            #     - “folders/<folder-id>”
+            #     - “organizations/<organization-id>”
         "quotaProperties": { # Represents the properties needed for quota operations. # Represents the properties needed for quota check. Applicable only if this
             # operation is for a quota check request.
           "quotaMode": "A String", # Quota mode for this operation.
@@ -1706,12 +1712,15 @@ See google.api.Service for the definition of a service name. (required)
             "a_key": "A String",
           },
         },
-        "resourceContainer": "A String", # The resource name of the parent of a resource in the resource hierarchy.
+        "consumerId": "A String", # Identity of the consumer who is using the service.
+            # This field should be filled in for the operations initiated by a
+            # consumer, but not for service-initiated operations that are
+            # not related to a specific consumer.
             #
             # This can be in one of the following formats:
-            #     - “projects/<project-id or project-number>”
-            #     - “folders/<folder-id>”
-            #     - “organizations/<organization-id>”
+            #   project:<project_id>,
+            #   project_number:<project_number>,
+            #   api_key:<api_key>.
         "userLabels": { # User defined labels for the resource that this operation is associated
             # with.
           "a_key": "A String",
@@ -1742,15 +1751,6 @@ See google.api.Service for the definition of a service name. (required)
                 # `"book_log"`.
           },
         ],
-        "consumerId": "A String", # Identity of the consumer who is using the service.
-            # This field should be filled in for the operations initiated by a
-            # consumer, but not for service-initiated operations that are
-            # not related to a specific consumer.
-            #
-            # This can be in one of the following formats:
-            #   project:<project_id>,
-            #   project_number:<project_number>,
-            #   api_key:<api_key>.
         "startTime": "A String", # Required. Start time of the operation.
         "endTime": "A String", # End time of the operation.
             # Required when the operation is used in ServiceController.Report,
@@ -2020,7 +2020,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="startReconciliation">startReconciliation(serviceName=None, body, x__xgafv=None)</code>
+    <code class="details" id="startReconciliation">startReconciliation(serviceName, body, x__xgafv=None)</code>
   <pre>Unlike rate quota, allocation quota does not get refilled periodically.
 So, it is possible that the quota usage as seen by the service differs from
 what the One Platform considers the usage is. This is expected to happen
