@@ -90,3 +90,36 @@ def authorized_http(credentials):
                                                    http=build_http())
     else:
         return credentials.authorize(build_http())
+
+
+def refresh_credentials(credentials, http):
+    if HAS_GOOGLE_AUTH and isinstance(
+            credentials, google.auth.credentials.Credentials):
+        request = google_auth_httplib2.Request(http)
+        return credentials.refresh(request)
+    else:
+        return credentials.refresh(http)
+
+
+def apply_credentials(credentials, headers):
+    # oauth2client and google-auth have the same interface for this.
+    return credentials.apply(headers)
+
+
+def has_access_token(credentials):
+    if HAS_GOOGLE_AUTH and isinstance(
+            credentials, google.auth.credentials.Credentials):
+        return credentials.token
+    else:
+        return getattr(credentials, 'access_token', None)
+
+
+def get_credentials_from_http(http):
+    if http is None:
+        return None
+    elif hasattr(http.request, 'credentials'):
+        return http.request.credentials
+    elif hasattr(http, 'credentials'):
+        return http.credentials
+    else:
+        return None

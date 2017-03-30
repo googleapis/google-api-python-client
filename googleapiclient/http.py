@@ -62,6 +62,7 @@ try:
 except ImportError:
   from oauth2client import _helpers as util
 
+from googleapiclient import _auth
 from googleapiclient import mimeparse
 from googleapiclient.errors import BatchError
 from googleapiclient.errors import HttpError
@@ -1126,21 +1127,25 @@ class BatchHttpRequest(object):
     # If there is no http per the request then refresh the http passed in
     # via execute()
     creds = None
-    if request.http is not None and hasattr(request.http.request,
-        'credentials'):
-      creds = request.http.request.credentials
-    elif http is not None and hasattr(http.request, 'credentials'):
-      creds = http.request.credentials
+    request_credentials = False
+
+    if request.http is not None:
+      creds = _auth.get_credentials_from_http(request.http)
+      request_credentials = True
+
+    if creds is None and http is not None:
+      creds = _auth.get_credentials_from_http(http)
+
     if creds is not None:
       if id(creds) not in self._refreshed_credentials:
-        creds.refresh(http)
+        _auth.refresh_credentials(creds, http)
         self._refreshed_credentials[id(creds)] = 1
 
     # Only apply the credentials if we are using the http object passed in,
     # otherwise apply() will get called during _serialize_request().
-    if request.http is None or not hasattr(request.http.request,
-        'credentials'):
-      creds.apply(request.headers)
+    if request.http is None or not request_credentials:
+      _auth.apply_credentials(creds, request.headers)
+
 
   def _id_to_header(self, id_):
     """Convert an id to a Content-ID header value.
@@ -1409,11 +1414,11 @@ class BatchHttpRequest(object):
 
     # Special case for OAuth2Credentials-style objects which have not yet been
     # refreshed with an initial access_token.
-    if getattr(http.request, 'credentials', None) is not None:
-      creds = http.request.credentials
-      if not getattr(creds, 'access_token', None):
+    creds = _auth.get_credentials_from_http(http)
+    if creds is not None:
+      if not _auth.has_access_token(creds):
         LOGGER.info('Attempting refresh to obtain initial access_token')
-        creds.refresh(http)
+        _auth.refresh_credentials(creds, http)
 
     self._execute(http, self._order, self._requests)
 
