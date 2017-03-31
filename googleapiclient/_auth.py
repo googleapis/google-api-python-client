@@ -29,8 +29,6 @@ try:
 except ImportError:  # pragma: NO COVER
     HAS_OAUTH2CLIENT = False
 
-from googleapiclient.http import build_http
-
 
 def default_credentials():
     """Returns Application Default Credentials."""
@@ -84,6 +82,8 @@ def authorized_http(credentials):
         Union[httplib2.Http, google_auth_httplib2.AuthorizedHttp]: An
             authorized http client.
     """
+    from googleapiclient.http import build_http
+
     if HAS_GOOGLE_AUTH and isinstance(
             credentials, google.auth.credentials.Credentials):
         return google_auth_httplib2.AuthorizedHttp(credentials,

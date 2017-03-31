@@ -1205,9 +1205,10 @@ class BatchHttpRequest(object):
     msg = MIMENonMultipart(major, minor)
     headers = request.headers.copy()
 
-    if request.http is not None and hasattr(request.http.request,
-        'credentials'):
-      request.http.request.credentials.apply(headers)
+    if request.http is not None:
+      credentials = _auth.get_credentials_from_http(request.http)
+      if credentials is not None:
+        _auth.apply_credentials(credentials, headers)
 
     # MIMENonMultipart adds its own Content-Type header.
     if 'content-type' in headers:
