@@ -1389,6 +1389,30 @@ class Discovery(unittest.TestCase):
     new_http = new_zoo._http
     self.assertFalse(hasattr(new_http.request, 'credentials'))
 
+  def test_resumable_media_upload_no_content(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http=self.http)
+
+    media_upload = MediaFileUpload(datafile('empty'), resumable=True)
+    request = zoo.animals().insert(media_body=media_upload, body=None)
+
+    self.assertEquals(media_upload, request.resumable)
+    self.assertEquals(request.body, None)
+    self.assertEquals(request.resumable_uri, None)
+
+    http = HttpMockSequence([
+      ({'status': '200',
+        'location': 'http://upload.example.com'}, ''),
+      ({'status': '308',
+        'location': 'http://upload.example.com/2',
+        'range': '0-0'}, ''),
+    ])
+
+    status, body = request.next_chunk(http=http)
+    self.assertEquals(None, body)
+    self.assertTrue(isinstance(status, MediaUploadProgress))
+    self.assertEquals(0, status.progress())
+
 
 class Next(unittest.TestCase):
 
