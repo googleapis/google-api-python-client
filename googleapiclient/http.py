@@ -203,7 +203,7 @@ class MediaUploadProgress(object):
       the percentage complete as a float, returning 0.0 if the total size of
       the upload is unknown.
     """
-    if self.total_size is not None:
+    if self.total_size is not None and self.total_size != 0:
       return float(self.resumable_progress) / float(self.total_size)
     else:
       return 0.0
@@ -229,7 +229,7 @@ class MediaDownloadProgress(object):
       the percentage complete as a float, returning 0.0 if the total size of
       the download is unknown.
     """
-    if self.total_size is not None:
+    if self.total_size is not None and self.total_size != 0:
       return float(self.resumable_progress) / float(self.total_size)
     else:
       return 0.0
