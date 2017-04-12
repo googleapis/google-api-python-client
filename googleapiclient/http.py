@@ -750,7 +750,7 @@ class HttpRequest(object):
                 on an error.
       uri: string, the absolute URI to send the request to
       method: string, the HTTP method to use
-      body: string, the request body of the HTTP request,
+      body: dict, the request body of the HTTP request,
       headers: dict, the HTTP request headers
       methodId: string, a unique identifier for the API method being called.
       resumable: MediaUpload, None if this is not a resumbale request.
