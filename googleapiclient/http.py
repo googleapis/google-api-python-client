@@ -838,6 +838,8 @@ class HttpRequest(object):
     for callback in self.response_callbacks:
       callback(resp)
     if resp.status >= 300:
+      if six.PY3:
+        content = content.decode()
       raise HttpError(resp, content, uri=self.uri)
     return self.postproc(resp, content)
 
