@@ -278,10 +278,8 @@ def _retrieve_discovery_doc(url, http, cache_discovery, cache=None):
   if resp.status >= 400:
     raise HttpError(resp, content, uri=actual_url)
 
-  try:
+  if isinstance(content, bytes):
     content = content.decode('utf-8')
-  except AttributeError:
-    pass
 
   try:
     service = json.loads(content)

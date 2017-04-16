@@ -787,14 +787,13 @@ class Discovery(unittest.TestCase):
     q = parse_qs(parsed[4])
     self.assertEqual(q['max-results'], ['5'])
 
-  @unittest.skipIf(six.PY3, 'print is not a reserved name in Python 3')
   def test_methods_with_reserved_names(self):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
     zoo = build('zoo', 'v1', http=self.http)
     self.assertTrue(getattr(zoo, 'animals'))
-    request = zoo.global_().print_().assert_(max_results="5")
+    request = zoo.global_().from_().assert_(max_results="5")
     parsed = urlparse(request.uri)
-    self.assertEqual(parsed[2], '/zoo/v1/global/print/assert')
+    self.assertEqual(parsed[2], '/zoo/v1/global/from/assert')
 
   def test_top_level_functions(self):
     self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
