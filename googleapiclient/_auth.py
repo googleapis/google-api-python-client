@@ -14,6 +14,8 @@
 
 """Helpers for authentication using oauth2client or google-auth."""
 
+import httplib2
+
 try:
     import google.auth
     import google.auth.credentials
@@ -92,13 +94,18 @@ def authorized_http(credentials):
         return credentials.authorize(build_http())
 
 
-def refresh_credentials(credentials, http):
+def refresh_credentials(credentials):
+    # Refresh must use a new http instance, as the one associated with the
+    # credentials could be a AuthorizedHttp or an oauth2client-decorated
+    # Http instance which would cause a weird recursive loop of refreshing
+    # and likely tear a hole in spacetime.
+    refresh_http = httplib2.Http()
     if HAS_GOOGLE_AUTH and isinstance(
             credentials, google.auth.credentials.Credentials):
-        request = google_auth_httplib2.Request(http)
+        request = google_auth_httplib2.Request(refresh_http)
         return credentials.refresh(request)
     else:
-        return credentials.refresh(http)
+        return credentials.refresh(refresh_http)
 
 
 def apply_credentials(credentials, headers):
@@ -106,12 +113,12 @@ def apply_credentials(credentials, headers):
     return credentials.apply(headers)
 
 
-def has_access_token(credentials):
+def is_valid(credentials):
     if HAS_GOOGLE_AUTH and isinstance(
             credentials, google.auth.credentials.Credentials):
-        return credentials.token
+        return credentials.valid
     else:
-        return getattr(credentials, 'access_token', None)
+        return not credentials.access_token_expired
 
 
 def get_credentials_from_http(http):

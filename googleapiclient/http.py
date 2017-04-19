@@ -1138,7 +1138,7 @@ class BatchHttpRequest(object):
 
     if creds is not None:
       if id(creds) not in self._refreshed_credentials:
-        _auth.refresh_credentials(creds, http)
+        _auth.refresh_credentials(creds)
         self._refreshed_credentials[id(creds)] = 1
 
     # Only apply the credentials if we are using the http object passed in,
@@ -1208,8 +1208,7 @@ class BatchHttpRequest(object):
     if request.http is not None:
       credentials = _auth.get_credentials_from_http(request.http)
       if credentials is not None:
-        if _auth.has_access_token(credentials):
-          _auth.apply_credentials(credentials, headers)
+        _auth.apply_credentials(credentials, headers)
 
     # MIMENonMultipart adds its own Content-Type header.
     if 'content-type' in headers:
@@ -1418,9 +1417,9 @@ class BatchHttpRequest(object):
     # refreshed with an initial access_token.
     creds = _auth.get_credentials_from_http(http)
     if creds is not None:
-      if not _auth.has_access_token(creds):
+      if not _auth.is_valid(creds):
         LOGGER.info('Attempting refresh to obtain initial access_token')
-        _auth.refresh_credentials(creds, http)
+        _auth.refresh_credentials(creds)
 
     self._execute(http, self._order, self._requests)
 
