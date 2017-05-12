@@ -1,6 +1,8 @@
 # About
 This is the Python client library for Google's discovery based APIs. To get started, please see the [full documentation for this library](http://google.github.io/google-api-python-client). Additionally, [dynamically generated documentation](http://api-python-client-doc.appspot.com/) is available for all of the APIs supported by this library.
 
+## Google Cloud Platform APIs
+If you're working with **Google Cloud Platform** APIs such as Datastore or Pub/Sub, consider using the [Cloud Client Libraries for Python](https://github.com/GoogleCloudPlatform/google-cloud-python) instead. These are the new and idiomatic Python libraries targeted specifically at Google Cloud Platform Services.
 
 # Installation
 To install, simply use `pip` or `easy_install`:
