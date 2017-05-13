@@ -303,6 +303,14 @@ class Utilities(unittest.TestCase):
       self.assertEqual(final_url, _urljoin(base, url))
 
 
+  def test_user_agent_headers(self):
+    self.http = HttpMock(datafile('zoo.json'), {'status': '200'})
+    zoo = build('zoo', 'v1', http=self.http)
+
+    request = zoo.animals().insert(body={}, user_agent='zookeeper')
+    self.assertTrue(request.headers['user-agent'].startswith('zookeeper'))
+
+
   def test_ResourceMethodParameters_zoo_get(self):
     parameters = ResourceMethodParameters(self.zoo_get_method_desc)
 
@@ -952,7 +960,6 @@ class Discovery(unittest.TestCase):
     self.assertEquals(request.resumable_uri, 'http://upload.example.com/2')
     self.assertEquals(media_upload, request.resumable)
     self.assertEquals(0, request.resumable_progress)
-    
     # This next chuck call should upload the first chunk
     status, body = request.next_chunk(http=http)
     self.assertEquals(request.resumable_uri, 'http://upload.example.com/3')
