@@ -95,10 +95,10 @@ Args:
         # considered "related" unless inspect_config.independent_inputs is true.
         # Up to 100 are allowed per request.
       { # Container structure for the content to inspect.
+        "data": "A String", # Content data to inspect or redact.
         "type": "A String", # Type of the content, as defined in Content-Type HTTP header.
             # Supported types are: all "text" types, octet streams, PNG images,
             # JPEG images.
-        "data": "A String", # Content data to inspect or redact.
         "value": "A String", # String data to inspect or redact.
       },
     ],
@@ -106,14 +106,17 @@ Args:
         # When used with redactContent only info_types and min_likelihood are currently
         # used.
       "minLikelihood": "A String", # Only return findings equal or above this threshold.
-      "includeQuote": True or False, # When true, a contextual quote from the data that triggered a finding will
-          # be included in the response; see Finding.quote.
+      "includeQuote": True or False, # When true, a contextual quote from the data that triggered a finding is
+          # included in the response; see Finding.quote.
       "excludeTypes": True or False, # When true, exclude type information of the findings.
       "infoTypes": [ # Restrict what info_types to look for. The values must correspond to
           # InfoType values returned by ListInfoTypes or found in documentation.
           # Empty info_types runs all enabled detectors.
         { # Type of information detected by the API.
-          "name": "A String", # Name of the information type, provided by the API call ListInfoTypes.
+          "name": "A String", # Name of the information type. For built-in info types, this is provided by
+              # the API call ListInfoTypes. For user-defined info types, this is
+              # provided by the user. All user-defined info types must have unique names,
+              # and cannot conflict with built-in info type names.
         },
       ],
       "maxFindings": 42, # Limit the number of findings per content item.
@@ -129,7 +132,7 @@ Returns:
   An object of the form:
 
     { # Results of inspecting a list of items.
-    "results": [ # Each content_item from the request will have a result in this list, in the
+    "results": [ # Each content_item from the request has a result in this list, in the
         # same order as the request.
       { # All the findings for a single scanned item.
         "findingsTruncated": True or False, # If true, then this item might have more findings than were returned,
@@ -140,9 +143,15 @@ Returns:
             # smaller batches.
         "findings": [ # List of findings for an item.
           { # Container structure describing a single finding within a string or image.
+            "quote": "A String", # The specific string that may be potentially sensitive info.
+            "likelihood": "A String", # Estimate of how likely it is that the info_type is correct.
             "infoType": { # Type of information detected by the API. # The specific type of info the string might be.
-              "name": "A String", # Name of the information type, provided by the API call ListInfoTypes.
+              "name": "A String", # Name of the information type. For built-in info types, this is provided by
+                  # the API call ListInfoTypes. For user-defined info types, this is
+                  # provided by the user. All user-defined info types must have unique names,
+                  # and cannot conflict with built-in info type names.
             },
+            "createTime": "A String", # Timestamp when finding was detected.
             "location": { # Specifies the location of a finding within its source item. # Location of the info found.
               "fieldId": { # General identifier of a data field in a storage service. # Field id of the field containing the finding.
                 "columnName": "A String", # Column name describing the field.
@@ -161,10 +170,6 @@ Returns:
                 "end": "A String", # Index of the last character of the range (exclusive).
               },
               "recordKey": { # Message for a unique key indicating a record that contains a finding. # Key of the finding.
-                "cloudStorageKey": { # Record key for a finding in a Cloud Storage file.
-                  "startOffset": "A String", # Byte offset of the referenced data in the file.
-                  "filePath": "A String", # Path to the file.
-                },
                 "datastoreKey": { # Record key for a finding in Cloud Datastore.
                   "entityKey": { # A unique identifier for a Datastore entity. # Datastore entity key.
                       # If a key's partition ID or any of its path kinds or names are
@@ -205,11 +210,13 @@ Returns:
                         # A partition ID contains several dimensions:
                         # project ID and namespace ID.
                       "projectId": "A String", # The ID of the project to which the entities belong.
-                      "databaseId": "A String", # If not empty, the ID of the database to which the entities
-                          # belong.
                       "namespaceId": "A String", # If not empty, the ID of the namespace to which the entities belong.
                     },
                   },
+                },
+                "cloudStorageKey": { # Record key for a finding in a Cloud Storage file.
+                  "startOffset": "A String", # Byte offset of the referenced data in the file.
+                  "filePath": "A String", # Path to the file.
                 },
               },
               "byteRange": { # Generic half-open interval [start, end) # Zero-based byte offsets within a content item.
@@ -217,9 +224,6 @@ Returns:
                 "end": "A String", # Index of the last character of the range (exclusive).
               },
             },
-            "likelihood": "A String", # Estimate of how likely it is that the info_type is correct.
-            "createTime": "A String", # Timestamp when finding was detected.
-            "quote": "A String", # The specific string that may be potentially sensitive info.
           },
         ],
       },
@@ -240,40 +244,46 @@ Args:
       # and replace it with a default or provided content.
     "items": [ # The list of items to inspect. Up to 100 are allowed per request.
       { # Container structure for the content to inspect.
+        "data": "A String", # Content data to inspect or redact.
         "type": "A String", # Type of the content, as defined in Content-Type HTTP header.
             # Supported types are: all "text" types, octet streams, PNG images,
             # JPEG images.
-        "data": "A String", # Content data to inspect or redact.
         "value": "A String", # String data to inspect or redact.
-      },
-    ],
-    "replaceConfigs": [ # The strings to replace findings with. Must specify at least one.
-      {
-        "replaceWith": "A String", # Content replacing sensitive information of given type. Max 256 chars.
-        "infoType": { # Type of information detected by the API. # Type of information to replace. Only one ReplaceConfig per info_type
-            # should be provided. If ReplaceConfig does not have an info_type, we'll
-            # match it against all info_types that are found but not specified in
-            # another ReplaceConfig.
-          "name": "A String", # Name of the information type, provided by the API call ListInfoTypes.
-        },
       },
     ],
     "inspectConfig": { # Configuration description of the scanning process. # Configuration for the inspector.
         # When used with redactContent only info_types and min_likelihood are currently
         # used.
       "minLikelihood": "A String", # Only return findings equal or above this threshold.
-      "includeQuote": True or False, # When true, a contextual quote from the data that triggered a finding will
-          # be included in the response; see Finding.quote.
+      "includeQuote": True or False, # When true, a contextual quote from the data that triggered a finding is
+          # included in the response; see Finding.quote.
       "excludeTypes": True or False, # When true, exclude type information of the findings.
       "infoTypes": [ # Restrict what info_types to look for. The values must correspond to
           # InfoType values returned by ListInfoTypes or found in documentation.
           # Empty info_types runs all enabled detectors.
         { # Type of information detected by the API.
-          "name": "A String", # Name of the information type, provided by the API call ListInfoTypes.
+          "name": "A String", # Name of the information type. For built-in info types, this is provided by
+              # the API call ListInfoTypes. For user-defined info types, this is
+              # provided by the user. All user-defined info types must have unique names,
+              # and cannot conflict with built-in info type names.
         },
       ],
       "maxFindings": 42, # Limit the number of findings per content item.
     },
+    "replaceConfigs": [ # The strings to replace findings with. Must specify at least one.
+      {
+        "replaceWith": "A String", # Content replacing sensitive information of given type. Max 256 chars.
+        "infoType": { # Type of information detected by the API. # Type of information to replace. Only one ReplaceConfig per info_type
+            # should be provided. If ReplaceConfig does not have an info_type, the DLP
+            # API matches it against all info_types that are found but not specified in
+            # another ReplaceConfig.
+          "name": "A String", # Name of the information type. For built-in info types, this is provided by
+              # the API call ListInfoTypes. For user-defined info types, this is
+              # provided by the user. All user-defined info types must have unique names,
+              # and cannot conflict with built-in info type names.
+        },
+      },
+    ],
   }
 
   x__xgafv: string, V1 error format.
@@ -284,13 +294,13 @@ Args:
 Returns:
   An object of the form:
 
-    { # Results of deidentifying a list of items.
+    { # Results of redacting a list of items.
     "items": [ # The redacted content.
       { # Container structure for the content to inspect.
+        "data": "A String", # Content data to inspect or redact.
         "type": "A String", # Type of the content, as defined in Content-Type HTTP header.
             # Supported types are: all "text" types, octet streams, PNG images,
             # JPEG images.
-        "data": "A String", # Content data to inspect or redact.
         "value": "A String", # String data to inspect or redact.
       },
     ],

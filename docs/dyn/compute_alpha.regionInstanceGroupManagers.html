@@ -103,7 +103,7 @@ h1, h2, h3 {
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(project, region, instanceGroupManager, body, requestId=None)</a></code></p>
-<p class="firstline">Updates a managed instance group using the information that you specify in the request. This operation is marked as DONE when the group is updated even if the instances in the group have not yet been updated. You must separately verify the status of the individual instances with the listmanagedinstances method. This method supports patch semantics.</p>
+<p class="firstline">Updates a managed instance group using the information that you specify in the request. This operation is marked as DONE when the group is patched even if the instances in the group are still in the process of being patched. You must separately verify the status of the individual instances with the listmanagedinstances method. This method supports patch semantics.</p>
 <p class="toc_element">
   <code><a href="#recreateInstances">recreateInstances(project, region, instanceGroupManager, body, requestId=None)</a></code></p>
 <p class="firstline">Schedules a group action to recreate the specified instances in the managed instance group. The instances are deleted and recreated using the current instance template for the managed instance group. This operation is marked as DONE when the action is scheduled even if the instances have not yet been recreated. You must separately verify the status of the recreating action with the listmanagedinstances method.</p>
@@ -130,6 +130,10 @@ h1, h2, h3 {
     <code class="details" id="abandonInstances">abandonInstances(project, region, instanceGroupManager, body, requestId=None)</code>
   <pre>Schedules a group action to remove the specified instances from the managed instance group. Abandoning an instance does not delete the instance, but it does remove the instance from any target pools that are applied by the managed instance group. This method reduces the targetSize of the managed instance group by the number of instances that you abandon. This operation is marked as DONE when the action is scheduled even if the instances have not yet been removed from the group. You must separately verify the status of the abandoning action with the listmanagedinstances method.
 
+If the group is part of a backend service that has enabled connection draining, it can take up to 60 seconds after the connection draining duration has elapsed before the VM instance is removed or deleted.
+
+You can specify a maximum of 1000 instances with this method per request.
+
 Args:
   project: string, Project ID for this request. (required)
   region: string, Name of the region scoping this request. (required)
@@ -138,7 +142,7 @@ Args:
     The object takes the form of:
 
 {
-    "instances": [ # The names of one or more instances to abandon.
+    "instances": [ # The URLs of one or more instances to abandon. This can be a full URL or a partial URL, such as zones/[ZONE]/instances/[INSTANCE_NAME].
       "A String",
     ],
   }
@@ -259,6 +263,10 @@ Returns:
     <code class="details" id="deleteInstances">deleteInstances(project, region, instanceGroupManager, body, requestId=None)</code>
   <pre>Schedules a group action to delete the specified instances in the managed instance group. The instances are also removed from any target pools of which they were a member. This method reduces the targetSize of the managed instance group by the number of instances that you delete. This operation is marked as DONE when the action is scheduled even if the instances are still being deleted. You must separately verify the status of the deleting action with the listmanagedinstances method.
 
+If the group is part of a backend service that has enabled connection draining, it can take up to 60 seconds after the connection draining duration has elapsed before the VM instance is removed or deleted.
+
+You can specify a maximum of 1000 instances with this method per request.
+
 Args:
   project: string, Project ID for this request. (required)
   region: string, Name of the region scoping this request. (required)
@@ -267,7 +275,7 @@ Args:
     The object takes the form of:
 
 {
-    "instances": [ # The names of one or more instances to delete.
+    "instances": [ # The URLs of one or more instances to delete. This can be a full URL or a partial URL, such as zones/[ZONE]/instances/[INSTANCE_NAME].
       "A String",
     ],
   }
@@ -424,20 +432,22 @@ Returns:
           },
         ],
       },
-      "selfLink": "A String", # [Output Only] The URL for this managed instance group. The server defines this URL.
-      "spreadingPolicy": { # Deprecated in favor of distribution policy. # Policy valid only for regional managed instance groups. Deprecated in favor of distribution_policy.
-        "zones": [
+      "statefulPolicy": { # Stateful configuration for this Instanced Group Manager
+        "preservedDisks": [ # Disks created on the instances that will be preserved on instance delete, resize down, etc.
           {
-            "zone": "A String", # URL of the zone where managed instance group is spawning instances (for regional resources). Zone has to belong to the region where managed instance group is located.
+            "deviceName": "A String", # Device name of the disk to be preserved
           },
         ],
       },
+      "selfLink": "A String", # [Output Only] The URL for this managed instance group. The server defines this URL.
     }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="insert">insert(project, region, body, requestId=None)</code>
   <pre>Creates a managed instance group using the information that you specify in the request. After the group is created, it schedules an action to create instances in the group using the specified instance template. This operation is marked as DONE when the group is created even if the instances in the group have not yet been created. You must separately verify the status of the individual instances with the listmanagedinstances method.
+
+A regional managed instance group can contain up to 2000 instances.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -533,14 +543,14 @@ Args:
         },
       ],
     },
-    "selfLink": "A String", # [Output Only] The URL for this managed instance group. The server defines this URL.
-    "spreadingPolicy": { # Deprecated in favor of distribution policy. # Policy valid only for regional managed instance groups. Deprecated in favor of distribution_policy.
-      "zones": [
+    "statefulPolicy": { # Stateful configuration for this Instanced Group Manager
+      "preservedDisks": [ # Disks created on the instances that will be preserved on instance delete, resize down, etc.
         {
-          "zone": "A String", # URL of the zone where managed instance group is spawning instances (for regional resources). Zone has to belong to the region where managed instance group is located.
+          "deviceName": "A String", # Device name of the disk to be preserved
         },
       ],
     },
+    "selfLink": "A String", # [Output Only] The URL for this managed instance group. The server defines this URL.
   }
 
   requestId: string, begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.
@@ -713,14 +723,14 @@ Returns:
               },
             ],
           },
-          "selfLink": "A String", # [Output Only] The URL for this managed instance group. The server defines this URL.
-          "spreadingPolicy": { # Deprecated in favor of distribution policy. # Policy valid only for regional managed instance groups. Deprecated in favor of distribution_policy.
-            "zones": [
+          "statefulPolicy": { # Stateful configuration for this Instanced Group Manager
+            "preservedDisks": [ # Disks created on the instances that will be preserved on instance delete, resize down, etc.
               {
-                "zone": "A String", # URL of the zone where managed instance group is spawning instances (for regional resources). Zone has to belong to the region where managed instance group is located.
+                "deviceName": "A String", # Device name of the disk to be preserved
               },
             ],
           },
+          "selfLink": "A String", # [Output Only] The URL for this managed instance group. The server defines this URL.
         },
     ],
     "kind": "compute#regionInstanceGroupManagerList", # [Output Only] The resource type, which is always compute#instanceGroupManagerList for a list of managed instance groups that exist in th regional scope.
@@ -769,6 +779,16 @@ Returns:
         "instance": "A String", # [Output Only] The URL of the instance. The URL can exist even if the instance has not yet been created.
         "instanceTemplate": "A String", # [Output Only] The intended template of the instance. This field is empty when current_action is one of { DELETING, ABANDONING }.
         "standbyMode": "A String", # [Output Only] Standby mode of the instance. This field is non-empty iff the instance is a standby.
+        "override": { # Overrides of stateful properties for a given instance # [Output Only] Override defined for this instance.
+          "instance": "A String", # The URL of the instance.
+          "disks": [ # The disk overrides defined for this instance
+            {
+              "deviceName": "A String", # The name of the device on the VM
+              "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
+              "source": "A String", # The disk that is/will be mounted
+            },
+          ],
+        },
         "currentAction": "A String", # [Output Only] The current action that the managed instance group has scheduled for the instance. Possible values:
             # - NONE The instance is running, and the managed instance group does not have any scheduled actions for this instance.
             # - CREATING The managed instance group is creating this instance. If the group fails to create this instance, it will try again until it is successful.
@@ -814,7 +834,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="patch">patch(project, region, instanceGroupManager, body, requestId=None)</code>
-  <pre>Updates a managed instance group using the information that you specify in the request. This operation is marked as DONE when the group is updated even if the instances in the group have not yet been updated. You must separately verify the status of the individual instances with the listmanagedinstances method. This method supports patch semantics.
+  <pre>Updates a managed instance group using the information that you specify in the request. This operation is marked as DONE when the group is patched even if the instances in the group are still in the process of being patched. You must separately verify the status of the individual instances with the listmanagedinstances method. This method supports patch semantics.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -911,14 +931,14 @@ Args:
         },
       ],
     },
-    "selfLink": "A String", # [Output Only] The URL for this managed instance group. The server defines this URL.
-    "spreadingPolicy": { # Deprecated in favor of distribution policy. # Policy valid only for regional managed instance groups. Deprecated in favor of distribution_policy.
-      "zones": [
+    "statefulPolicy": { # Stateful configuration for this Instanced Group Manager
+      "preservedDisks": [ # Disks created on the instances that will be preserved on instance delete, resize down, etc.
         {
-          "zone": "A String", # URL of the zone where managed instance group is spawning instances (for regional resources). Zone has to belong to the region where managed instance group is located.
+          "deviceName": "A String", # Device name of the disk to be preserved
         },
       ],
     },
+    "selfLink": "A String", # [Output Only] The URL for this managed instance group. The server defines this URL.
   }
 
   requestId: string, begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.
@@ -977,6 +997,10 @@ Returns:
     <code class="details" id="recreateInstances">recreateInstances(project, region, instanceGroupManager, body, requestId=None)</code>
   <pre>Schedules a group action to recreate the specified instances in the managed instance group. The instances are deleted and recreated using the current instance template for the managed instance group. This operation is marked as DONE when the action is scheduled even if the instances have not yet been recreated. You must separately verify the status of the recreating action with the listmanagedinstances method.
 
+If the group is part of a backend service that has enabled connection draining, it can take up to 60 seconds after the connection draining duration has elapsed before the VM instance is removed or deleted.
+
+You can specify a maximum of 1000 instances with this method per request.
+
 Args:
   project: string, Project ID for this request. (required)
   region: string, Name of the region scoping this request. (required)
@@ -985,7 +1009,7 @@ Args:
     The object takes the form of:
 
 {
-    "instances": [ # The URL for one or more instances to recreate.
+    "instances": [ # The URLs of one or more instances to recreate. This can be a full URL or a partial URL, such as zones/[ZONE]/instances/[INSTANCE_NAME].
       "A String",
     ],
   }
@@ -1045,6 +1069,8 @@ Returns:
 <div class="method">
     <code class="details" id="resize">resize(project, region, instanceGroupManager, size, requestId=None)</code>
   <pre>Changes the intended size for the managed instance group. If you increase the size, the group schedules actions to create new instances using the current instance template. If you decrease the size, the group schedules delete actions on one or more instances. The resize operation is marked DONE when the resize actions are scheduled even if the group has not yet added or deleted any instances. You must separately verify the status of the creating or deleting actions with the listmanagedinstances method.
+
+If the group is part of a backend service that has enabled connection draining, it can take up to 60 seconds after the connection draining duration has elapsed before the VM instance is removed or deleted.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -1444,14 +1470,14 @@ Args:
         },
       ],
     },
-    "selfLink": "A String", # [Output Only] The URL for this managed instance group. The server defines this URL.
-    "spreadingPolicy": { # Deprecated in favor of distribution policy. # Policy valid only for regional managed instance groups. Deprecated in favor of distribution_policy.
-      "zones": [
+    "statefulPolicy": { # Stateful configuration for this Instanced Group Manager
+      "preservedDisks": [ # Disks created on the instances that will be preserved on instance delete, resize down, etc.
         {
-          "zone": "A String", # URL of the zone where managed instance group is spawning instances (for regional resources). Zone has to belong to the region where managed instance group is located.
+          "deviceName": "A String", # Device name of the disk to be preserved
         },
       ],
     },
+    "selfLink": "A String", # [Output Only] The URL for this managed instance group. The server defines this URL.
   }
 
   requestId: string, begin_interface: MixerMutationRequestBuilder Request ID to support idempotency.
