@@ -100,7 +100,7 @@ h1, h2, h3 {
 <p class="firstline">Returns a service account and credentials. The service account can be bound to the enterprise by calling setAccount. The service account is unique to this enterprise and EMM, and will be deleted if the enterprise is unbound. The credentials contain private key data and are not stored server-side.</p>
 <p class="toc_element">
   <code><a href="#getStoreLayout">getStoreLayout(enterpriseId)</a></code></p>
-<p class="firstline">Returns the store layout for the enterprise. If the store layout has not been set, or if the store layout has no homepageId set, returns a NOT_FOUND error.</p>
+<p class="firstline">Returns the store layout for the enterprise. If the store layout has not been set, returns "basic" as the store layout type and no homepage.</p>
 <p class="toc_element">
   <code><a href="#insert">insert(token, body)</a></code></p>
 <p class="firstline">Establishes the binding between the EMM and an enterprise. This is now deprecated; use enroll instead.</p>
@@ -118,7 +118,7 @@ h1, h2, h3 {
 <p class="firstline">Sets the account that will be used to authenticate to the API as the enterprise.</p>
 <p class="toc_element">
   <code><a href="#setStoreLayout">setStoreLayout(enterpriseId, body)</a></code></p>
-<p class="firstline">Sets the store layout for the enterprise. By default, storeLayoutType is set to "basic" and the basic store layout is enabled. The basic layout only contains apps approved by the admin, and that have been added to the available product set for a user (using the  setAvailableProductSet call). Apps on the page are sorted in order of their product ID value. If you create a custom store layout (by setting storeLayoutType = "custom"), the basic store layout is disabled.</p>
+<p class="firstline">Sets the store layout for the enterprise. By default, storeLayoutType is set to "basic" and the basic store layout is enabled. The basic layout only contains apps approved by the admin, and that have been added to the available product set for a user (using the  setAvailableProductSet call). Apps on the page are sorted in order of their product ID value. If you create a custom store layout (by setting storeLayoutType = "custom" and setting a homepage), the basic store layout is disabled.</p>
 <p class="toc_element">
   <code><a href="#unenroll">unenroll(enterpriseId)</a></code></p>
 <p class="firstline">Unenrolls an enterprise from the calling EMM.</p>
@@ -314,7 +314,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="getStoreLayout">getStoreLayout(enterpriseId)</code>
-  <pre>Returns the store layout for the enterprise. If the store layout has not been set, or if the store layout has no homepageId set, returns a NOT_FOUND error.
+  <pre>Returns the store layout for the enterprise. If the store layout has not been set, returns "basic" as the store layout type and no homepage.
 
 Args:
   enterpriseId: string, The ID of the enterprise. (required)
@@ -323,13 +323,11 @@ Returns:
   An object of the form:
 
     { # General setting for the managed Google Play store layout, currently only specifying the page to display the first time the store is opened.
-    "homepageId": "A String", # The ID of the store page to be used as the homepage. The homepage will be used as the first page shown in the managed Google Play store.
+    "homepageId": "A String", # The ID of the store page to be used as the homepage. The homepage is the first page shown in the managed Google Play Store.
         #
-        # If a homepage has not been set, the Play store shown on devices will be empty. Not specifying a homepage on a store layout effectively empties the store.
-        #
-        # If there exists at least one page, this field must be set to the ID of a valid page.
+        # Not specifying a homepage is equivalent to setting the store layout type to "basic".
     "kind": "androidenterprise#storeLayout", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#storeLayout".
-    "storeLayoutType": "A String", # The store layout type. By default, this value is set to "basic". If set to "custom", "homepageId" must be specified. If set to "basic", the layout will consist of all approved apps accessible by the user, split in pages of 100 each; in this case, "homepageId" must not be specified. The "basic" setting takes precedence over any existing collections setup for this enterprise (if any). Should the enterprise use collectionViewers for controlling access rights, these will still be respected.
+    "storeLayoutType": "A String", # The store layout type. By default, this value is set to "basic" if the homepageId field is not set, and to "custom" otherwise. If set to "basic", the layout will consist of all approved apps that have been whitelisted for the user.
   }</pre>
 </div>
 
@@ -440,6 +438,7 @@ Returns:
           ],
           "productId": "A String", # The id of the product (e.g. "app:com.google.android.gm") for which new permissions were added. This field will always be present.
         },
+        "notificationType": "A String", # Type of the notification.
         "productAvailabilityChangeEvent": { # An event generated whenever a product's availability changes. # Notifications about product availability changes.
           "availabilityStatus": "A String", # The new state of the product. This field will always be present.
           "productId": "A String", # The id of the product (e.g. "app:com.google.android.gm") for which the product availability changed. This field will always be present.
@@ -518,7 +517,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="setStoreLayout">setStoreLayout(enterpriseId, body)</code>
-  <pre>Sets the store layout for the enterprise. By default, storeLayoutType is set to "basic" and the basic store layout is enabled. The basic layout only contains apps approved by the admin, and that have been added to the available product set for a user (using the  setAvailableProductSet call). Apps on the page are sorted in order of their product ID value. If you create a custom store layout (by setting storeLayoutType = "custom"), the basic store layout is disabled.
+  <pre>Sets the store layout for the enterprise. By default, storeLayoutType is set to "basic" and the basic store layout is enabled. The basic layout only contains apps approved by the admin, and that have been added to the available product set for a user (using the  setAvailableProductSet call). Apps on the page are sorted in order of their product ID value. If you create a custom store layout (by setting storeLayoutType = "custom" and setting a homepage), the basic store layout is disabled.
 
 Args:
   enterpriseId: string, The ID of the enterprise. (required)
@@ -526,13 +525,11 @@ Args:
     The object takes the form of:
 
 { # General setting for the managed Google Play store layout, currently only specifying the page to display the first time the store is opened.
-  "homepageId": "A String", # The ID of the store page to be used as the homepage. The homepage will be used as the first page shown in the managed Google Play store.
+  "homepageId": "A String", # The ID of the store page to be used as the homepage. The homepage is the first page shown in the managed Google Play Store.
       # 
-      # If a homepage has not been set, the Play store shown on devices will be empty. Not specifying a homepage on a store layout effectively empties the store.
-      # 
-      # If there exists at least one page, this field must be set to the ID of a valid page.
+      # Not specifying a homepage is equivalent to setting the store layout type to "basic".
   "kind": "androidenterprise#storeLayout", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#storeLayout".
-  "storeLayoutType": "A String", # The store layout type. By default, this value is set to "basic". If set to "custom", "homepageId" must be specified. If set to "basic", the layout will consist of all approved apps accessible by the user, split in pages of 100 each; in this case, "homepageId" must not be specified. The "basic" setting takes precedence over any existing collections setup for this enterprise (if any). Should the enterprise use collectionViewers for controlling access rights, these will still be respected.
+  "storeLayoutType": "A String", # The store layout type. By default, this value is set to "basic" if the homepageId field is not set, and to "custom" otherwise. If set to "basic", the layout will consist of all approved apps that have been whitelisted for the user.
 }
 
 
@@ -540,13 +537,11 @@ Returns:
   An object of the form:
 
     { # General setting for the managed Google Play store layout, currently only specifying the page to display the first time the store is opened.
-    "homepageId": "A String", # The ID of the store page to be used as the homepage. The homepage will be used as the first page shown in the managed Google Play store.
+    "homepageId": "A String", # The ID of the store page to be used as the homepage. The homepage is the first page shown in the managed Google Play Store.
         #
-        # If a homepage has not been set, the Play store shown on devices will be empty. Not specifying a homepage on a store layout effectively empties the store.
-        #
-        # If there exists at least one page, this field must be set to the ID of a valid page.
+        # Not specifying a homepage is equivalent to setting the store layout type to "basic".
     "kind": "androidenterprise#storeLayout", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#storeLayout".
-    "storeLayoutType": "A String", # The store layout type. By default, this value is set to "basic". If set to "custom", "homepageId" must be specified. If set to "basic", the layout will consist of all approved apps accessible by the user, split in pages of 100 each; in this case, "homepageId" must not be specified. The "basic" setting takes precedence over any existing collections setup for this enterprise (if any). Should the enterprise use collectionViewers for controlling access rights, these will still be respected.
+    "storeLayoutType": "A String", # The store layout type. By default, this value is set to "basic" if the homepageId field is not set, and to "custom" otherwise. If set to "basic", the layout will consist of all approved apps that have been whitelisted for the user.
   }</pre>
 </div>
 

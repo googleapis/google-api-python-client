@@ -130,18 +130,18 @@ Returns:
     "items": { # A map of scoped forwarding rule lists.
       "a_key": { # Name of the scope containing this set of addresses.
         "forwardingRules": [ # List of forwarding rules contained in this scope.
-          { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, portRange] tuple.
+          { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple.
               "kind": "compute#forwardingRule", # [Output Only] Type of the resource. Always compute#forwardingRule for Forwarding Rule resources.
               "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
               "IPAddress": "A String", # The IP address that this forwarding rule is serving on behalf of.
                   #
-                  # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IP from the same scope (global or regional) will be assigned.
+                  # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
                   #
-                  # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule. Only IPv4 is supported.
+                  # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule.
               "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules.
-              "ports": [ # This field is not used for external load balancing.
+              "ports": [ # This field is used along with the backend_service field for internal load balancing.
                   #
-                  # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule. If the port list is not provided then all ports are allowed to pass through.
+                  # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
                   #
                   # You may specify a maximum of up to 5 ports.
                 "A String",
@@ -150,12 +150,19 @@ Returns:
                   #
                   # For internal load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
               "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, EXTERNAL The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
-              "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object. For example, TargetHttpProxy requires HTTP traffic, and TargetHttpsProxy requires HTTPS traffic.
+              "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object.
                   #
                   # This field is not used for internal load balancing.
-              "portRange": "A String", # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
+              "portRange": "A String", # This field is used along with the target field for TargetHttpProxy, TargetHttpsProxy, TargetSslProxy, TargetTcpProxy, TargetVpnGateway, TargetPool, TargetInstance.
                   #
-                  # This field is not used for internal load balancing.
+                  # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
+                  #
+                  # Some types of forwarding target have constraints on the acceptable ports:
+                  # - TargetHttpProxy: 80, 8080
+                  # - TargetHttpsProxy: 443
+                  # - TargetSslProxy: 443
+                  # - TargetVpnGateway: 500, 4500
+                  # -
               "backendService": "A String", # This field is not used for external load balancing.
                   #
                   # For internal load balancing, this field identifies the BackendService resource to receive the matched traffic.
@@ -277,18 +284,18 @@ Args:
 Returns:
   An object of the form:
 
-    { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, portRange] tuple.
+    { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple.
       "kind": "compute#forwardingRule", # [Output Only] Type of the resource. Always compute#forwardingRule for Forwarding Rule resources.
       "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
       "IPAddress": "A String", # The IP address that this forwarding rule is serving on behalf of.
           #
-          # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IP from the same scope (global or regional) will be assigned.
+          # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
           #
-          # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule. Only IPv4 is supported.
+          # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule.
       "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules.
-      "ports": [ # This field is not used for external load balancing.
+      "ports": [ # This field is used along with the backend_service field for internal load balancing.
           #
-          # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule. If the port list is not provided then all ports are allowed to pass through.
+          # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
           #
           # You may specify a maximum of up to 5 ports.
         "A String",
@@ -297,12 +304,19 @@ Returns:
           #
           # For internal load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
       "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, EXTERNAL The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
-      "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object. For example, TargetHttpProxy requires HTTP traffic, and TargetHttpsProxy requires HTTPS traffic.
+      "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object.
           #
           # This field is not used for internal load balancing.
-      "portRange": "A String", # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
+      "portRange": "A String", # This field is used along with the target field for TargetHttpProxy, TargetHttpsProxy, TargetSslProxy, TargetTcpProxy, TargetVpnGateway, TargetPool, TargetInstance.
           #
-          # This field is not used for internal load balancing.
+          # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
+          #
+          # Some types of forwarding target have constraints on the acceptable ports:
+          # - TargetHttpProxy: 80, 8080
+          # - TargetHttpsProxy: 443
+          # - TargetSslProxy: 443
+          # - TargetVpnGateway: 500, 4500
+          # -
       "backendService": "A String", # This field is not used for external load balancing.
           #
           # For internal load balancing, this field identifies the BackendService resource to receive the matched traffic.
@@ -331,18 +345,18 @@ Args:
   body: object, The request body. (required)
     The object takes the form of:
 
-{ # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, portRange] tuple.
+{ # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple.
     "kind": "compute#forwardingRule", # [Output Only] Type of the resource. Always compute#forwardingRule for Forwarding Rule resources.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
     "IPAddress": "A String", # The IP address that this forwarding rule is serving on behalf of.
         # 
-        # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IP from the same scope (global or regional) will be assigned.
+        # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
         # 
-        # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule. Only IPv4 is supported.
+        # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule.
     "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules.
-    "ports": [ # This field is not used for external load balancing.
+    "ports": [ # This field is used along with the backend_service field for internal load balancing.
         # 
-        # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule. If the port list is not provided then all ports are allowed to pass through.
+        # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
         # 
         # You may specify a maximum of up to 5 ports.
       "A String",
@@ -351,12 +365,19 @@ Args:
         # 
         # For internal load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
     "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, EXTERNAL The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
-    "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object. For example, TargetHttpProxy requires HTTP traffic, and TargetHttpsProxy requires HTTPS traffic.
+    "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object.
         # 
         # This field is not used for internal load balancing.
-    "portRange": "A String", # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
+    "portRange": "A String", # This field is used along with the target field for TargetHttpProxy, TargetHttpsProxy, TargetSslProxy, TargetTcpProxy, TargetVpnGateway, TargetPool, TargetInstance.
         # 
-        # This field is not used for internal load balancing.
+        # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
+        # 
+        # Some types of forwarding target have constraints on the acceptable ports:
+        # - TargetHttpProxy: 80, 8080
+        # - TargetHttpsProxy: 443
+        # - TargetSslProxy: 443
+        # - TargetVpnGateway: 500, 4500
+        # -
     "backendService": "A String", # This field is not used for external load balancing.
         # 
         # For internal load balancing, this field identifies the BackendService resource to receive the matched traffic.
@@ -455,18 +476,18 @@ Returns:
     { # Contains a list of ForwardingRule resources.
     "nextPageToken": "A String", # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
     "items": [ # A list of ForwardingRule resources.
-      { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, portRange] tuple.
+      { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple.
           "kind": "compute#forwardingRule", # [Output Only] Type of the resource. Always compute#forwardingRule for Forwarding Rule resources.
           "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
           "IPAddress": "A String", # The IP address that this forwarding rule is serving on behalf of.
               #
-              # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IP from the same scope (global or regional) will be assigned.
+              # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
               #
-              # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule. Only IPv4 is supported.
+              # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule.
           "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules.
-          "ports": [ # This field is not used for external load balancing.
+          "ports": [ # This field is used along with the backend_service field for internal load balancing.
               #
-              # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule. If the port list is not provided then all ports are allowed to pass through.
+              # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
               #
               # You may specify a maximum of up to 5 ports.
             "A String",
@@ -475,12 +496,19 @@ Returns:
               #
               # For internal load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
           "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, EXTERNAL The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
-          "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object. For example, TargetHttpProxy requires HTTP traffic, and TargetHttpsProxy requires HTTPS traffic.
+          "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object.
               #
               # This field is not used for internal load balancing.
-          "portRange": "A String", # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
+          "portRange": "A String", # This field is used along with the target field for TargetHttpProxy, TargetHttpsProxy, TargetSslProxy, TargetTcpProxy, TargetVpnGateway, TargetPool, TargetInstance.
               #
-              # This field is not used for internal load balancing.
+              # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
+              #
+              # Some types of forwarding target have constraints on the acceptable ports:
+              # - TargetHttpProxy: 80, 8080
+              # - TargetHttpsProxy: 443
+              # - TargetSslProxy: 443
+              # - TargetVpnGateway: 500, 4500
+              # -
           "backendService": "A String", # This field is not used for external load balancing.
               #
               # For internal load balancing, this field identifies the BackendService resource to receive the matched traffic.
