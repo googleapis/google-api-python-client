@@ -123,7 +123,7 @@ class HttpMockWithErrors(object):
           ex = TimeoutError()
         else:
           ex = socket.error()
-        
+
         if self.num_errors == 2:
           #first try a broken pipe error (#218)
           ex.errno = socket.errno.EPIPE
@@ -951,6 +951,7 @@ class TestHttpRequest(unittest.TestCase):
       request.execute()
     request._sleep.assert_not_called()
 
+
 class TestBatch(unittest.TestCase):
 
   def setUp(self):
@@ -1152,6 +1153,41 @@ class TestBatch(unittest.TestCase):
     self.assertEqual(1, cred._authorized)
 
     self.assertEqual(1, cred._applied)
+
+  def test_execute_request_http_not_applied_if_no_access_token(self):
+    batch = BatchHttpRequest()
+    cred_1 = MockCredentials('Foo')
+    cred_2 = MockCredentials('Bar')
+
+    # Pretend that the credentials are OAuth2Credentials instances.
+    cred_1.access_token = None  # AssertionCredentials instance.
+    cred_2.access_token = 'NotNone'  # vanilla OAuth2Credentials instance.
+
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_RESPONSE_WITH_401),
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_SINGLE_RESPONSE),
+      ])
+
+    creds_http_1 = HttpMockSequence([])
+    creds_http_2 = HttpMockSequence([])
+
+    cred_1.authorize(creds_http_1)
+    cred_2.authorize(creds_http_2)
+
+    self.request1.http = creds_http_1
+    self.request2.http = creds_http_2
+
+    batch.add(self.request1)
+    batch.add(self.request2)
+
+    batch.execute(http=http)
+
+    self.assertEqual(cred_1._applied, 0)
+    self.assertEqual(cred_2._applied, 1)
 
   def test_execute_refresh_and_retry_on_401(self):
     batch = BatchHttpRequest()
