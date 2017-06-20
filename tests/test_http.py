@@ -62,12 +62,17 @@ from oauth2client.client import Credentials
 
 class MockCredentials(Credentials):
   """Mock class for all Credentials objects."""
-  def __init__(self, bearer_token):
+  def __init__(self, bearer_token, expired=False):
     super(MockCredentials, self).__init__()
     self._authorized = 0
     self._refreshed = 0
     self._applied = 0
     self._bearer_token = bearer_token
+    self._access_token_expired = expired
+
+  @property
+  def access_token_expired(self):
+    return self._access_token_expired
 
   def authorize(self, http):
     self._authorized += 1
@@ -1128,10 +1133,7 @@ class TestBatch(unittest.TestCase):
   def test_execute_initial_refresh_oauth2(self):
     batch = BatchHttpRequest()
     callbacks = Callbacks()
-    cred = MockCredentials('Foo')
-
-    # Pretend this is a OAuth2Credentials object
-    cred.access_token = None
+    cred = MockCredentials('Foo', expired=True)
 
     http = HttpMockSequence([
       ({'status': '200',
