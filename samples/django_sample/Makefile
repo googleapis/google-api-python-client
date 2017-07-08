@@ -1,4 +1,3 @@
-
 pip: 
 	@pip install -r requirements.txt
 
@@ -16,3 +15,7 @@ setup: pip syncdb run
 
 shell: 
 	@python manage.py shell
+
+
+test:
+	@python manage.py test
