@@ -140,6 +140,17 @@ def main(argv):
   response = execute_request(service, flags.property_uri, request)
   print_table(response, 'Group by country and device')
 
+  # Group by total number of Search Appearance count.
+  # Note: It is not possible to use searchAppearance with other
+  # dimensions.
+  request = {
+      'startDate': flags.start_date,
+      'endDate': flags.end_date,
+      'dimensions': ['searchAppearance'],
+      'rowLimit': 10
+  }
+  response = execute_request(service, flags.property_uri, request)
+  print_table(response, 'Search Appearance Features')
 
 def execute_request(service, property_uri, request):
   """Executes a searchAnalytics.query request.
@@ -165,7 +176,7 @@ def print_table(response, title):
     response: The server response to be printed as a table.
     title: The title of the table.
   """
-  print title + ':'
+  print '\n --' + title + ':'
 
   if 'rows' not in response:
     print 'Empty response'
