@@ -41,7 +41,8 @@ JSON_ERROR_CONTENT = b"""
    }
   ],
   "code": 400,
-  "message": "country is required"
+  "message": "country is required",
+  "details": "error details"
  }
 }
 """
@@ -61,7 +62,7 @@ class Error(unittest.TestCase):
         {'status':'400', 'content-type': 'application/json'},
         reason='Failed')
     error = HttpError(resp, content, uri='http://example.org')
-    self.assertEqual(str(error), '<HttpError 400 when requesting http://example.org returned "country is required">')
+    self.assertEqual(str(error), '<HttpError 400 when requesting http://example.org returned "country is required". Details: "error details">')
 
   def test_bad_json_body(self):
     """Test handling of bodies with invalid json."""
