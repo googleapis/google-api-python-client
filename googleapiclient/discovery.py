@@ -331,9 +331,6 @@ def build_from_document(
     A Resource object with methods for interacting with the service.
   """
 
-  if http is not None and credentials is not None:
-    raise ValueError('Arguments http and credentials are mutually exclusive.')
-
   if developerKey is not None and credentials is not None:
     raise ValueError(
       'Arguments developerKey and credentials are mutually exclusive.')
@@ -352,32 +349,25 @@ def build_from_document(
   base = urljoin(service['rootUrl'], service['servicePath'])
   schema = Schemas(service)
 
-  # If the http client is not specified, then we must construct an http client
-  # to make requests. If the service has scopes, then we also need to setup
-  # authentication.
-  if http is None:
-    # Does the service require scopes?
-    scopes = list(
+  # Does the service require scopes?
+  scopes = list(
       service.get('auth', {}).get('oauth2', {}).get('scopes', {}).keys())
 
-    # If so, then the we need to setup authentication if no developerKey is
-    # specified.
-    if scopes and not developerKey:
-      # If the user didn't pass in credentials, attempt to acquire application
-      # default credentials.
-      if credentials is None:
-        credentials = _auth.default_credentials()
+  if http is None:
+    http = build_http()
 
-      # The credentials need to be scoped.
-      credentials = _auth.with_scopes(credentials, scopes)
+  # If the service has scopes, then we also need to setup authentication.
+  if scopes and not developerKey:
+    # If the user didn't pass in credentials, attempt to acquire application
+    # default credentials.
+    if credentials is None:
+      credentials = _auth.default_credentials()
 
-      # Create an authorized http instance
-      http = _auth.authorized_http(credentials)
+    # The credentials need to be scoped.
+    credentials = _auth.with_scopes(credentials, scopes)
 
-    # If the service doesn't require scopes then there is no need for
-    # authentication.
-    else:
-      http = build_http()
+    # Create an authorized http instance
+    http = _auth.authorized_http(credentials, http)
 
   if model is None:
     features = service.get('features', [])

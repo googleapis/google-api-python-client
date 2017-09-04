@@ -72,26 +72,29 @@ def with_scopes(credentials, scopes):
             return credentials
 
 
-def authorized_http(credentials):
+def authorized_http(credentials, http=None):
     """Returns an http client that is authorized with the given credentials.
 
     Args:
         credentials (Union[
             google.auth.credentials.Credentials,
             oauth2client.client.Credentials]): The credentials to use.
+        http (httplib2.Http): A httplib2 object or one similar enough to
+            provide authentication and tansport interfaces.
 
     Returns:
         Union[httplib2.Http, google_auth_httplib2.AuthorizedHttp]: An
             authorized http client.
     """
-    from googleapiclient.http import build_http
+    if http is None:
+      from googleapiclient.http import build_http
+      http = build_http()
 
     if HAS_GOOGLE_AUTH and isinstance(
             credentials, google.auth.credentials.Credentials):
-        return google_auth_httplib2.AuthorizedHttp(credentials,
-                                                   http=build_http())
+        return google_auth_httplib2.AuthorizedHttp(credentials, http=http)
     else:
-        return credentials.authorize(build_http())
+        return credentials.authorize(http)
 
 
 def refresh_credentials(credentials):

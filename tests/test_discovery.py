@@ -89,6 +89,12 @@ import uritemplate
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 
+def skip_if_travis():
+  return unittest.skipIf(
+      os.environ.get('TRAVISTEST') == 'yes',
+      'Skipping this test on Travis CI.')
+
+
 def assertUrisEqual(testcase, expected, actual):
   """Test that URIs are the same, up to reordering of query parameters."""
   expected = urlparse(expected)
@@ -369,12 +375,6 @@ class DiscoveryErrors(unittest.TestCase):
       with self.assertRaises(UnknownApiNameOrVersion):
         plus = build('plus', 'v1', http=http, cache_discovery=False)
 
-  def test_credentials_and_http_mutually_exclusive(self):
-    http = HttpMock(datafile('plus.json'), {'status': '200'})
-    with self.assertRaises(ValueError):
-      build(
-        'plus', 'v1', http=http, credentials=mock.sentinel.credentials)
-
   def test_credentials_and_developer_key_mutually_exclusive(self):
     http = HttpMock(datafile('plus.json'), {'status': '200'})
     with self.assertRaises(ValueError):
@@ -405,19 +405,28 @@ class DiscoveryFromDocument(unittest.TestCase):
 
   def test_building_with_base_remembers_base(self):
     discovery = open(datafile('plus.json')).read()
-
     base = "https://www.example.com/"
     plus = build_from_document(
       discovery, base=base, credentials=self.MOCK_CREDENTIALS)
     self.assertEquals("https://www.googleapis.com/plus/v1/", plus._baseUrl)
+
+  def test_building_include_both_http_and_credentials(self):
+    http_object = HttpMock()
+    discovery = open(datafile('plus.json')).read()
+    plus = build_from_document(
+      discovery, base="https://www.googleapis.com/", http=http_object,
+      credentials=self.MOCK_CREDENTIALS)
+    # Plus service requires Authorization, hence we expect to see AuthorizedHttp object here.
+    # The AuthorizedHttp will wrap our mock http object.
+    self.assertIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
+    self.assertEqual(plus._http.http, http_object)
 
   def test_building_with_optional_http_with_authorization(self):
     discovery = open(datafile('plus.json')).read()
     plus = build_from_document(
       discovery, base="https://www.googleapis.com/",
       credentials=self.MOCK_CREDENTIALS)
-
-    # plus service requires Authorization, hence we expect to see AuthorizedHttp object here
+    # Plus service requires Authorization, hence we expect to see AuthorizedHttp object here
     self.assertIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
     self.assertIsInstance(plus._http.http, httplib2.Http)
     self.assertIsInstance(plus._http.http.timeout, int)
@@ -438,12 +447,14 @@ class DiscoveryFromDocument(unittest.TestCase):
     self.assertIsInstance(plus._http.timeout, int)
     self.assertGreater(plus._http.timeout, 0)
 
+  @skip_if_travis()
   def test_building_with_explicit_http(self):
     http = HttpMock()
     discovery = open(datafile('plus.json')).read()
     plus = build_from_document(
       discovery, base="https://www.googleapis.com/", http=http)
-    self.assertEquals(plus._http, http)
+    # The http object will be wrapped by google_auth_httplib2.AuthorizedHttp.
+    self.assertEquals(plus._http.http, http)
 
   def test_building_with_developer_key_skips_adc(self):
     discovery = open(datafile('plus.json')).read()
@@ -498,6 +509,8 @@ class DiscoveryFromHttp(unittest.TestCase):
       self.assertTrue(hasattr(zoo, 'animals'))
 
 class DiscoveryFromAppEngineCache(unittest.TestCase):
+
+  @skip_if_travis()
   def test_appengine_memcache(self):
     # Hack module import
     self.orig_import = __import__
@@ -562,6 +575,8 @@ class DictCache(Cache):
 
 
 class DiscoveryFromFileCache(unittest.TestCase):
+
+  @skip_if_travis()
   def test_file_based_cache(self):
     cache = mock.Mock(wraps=DictCache())
     with mock.patch('googleapiclient.discovery_cache.autodetect',
@@ -597,6 +612,7 @@ class DiscoveryFromFileCache(unittest.TestCase):
 
 class Discovery(unittest.TestCase):
 
+  @skip_if_travis()
   def test_method_error_checking(self):
     self.http = HttpMock(datafile('plus.json'), {'status': '200'})
     plus = build('plus', 'v1', http=self.http)
@@ -716,6 +732,7 @@ class Discovery(unittest.TestCase):
     self.assertEqual(batch_request._batch_uri,
                      "https://www.googleapis.com/batchZoo")
 
+  @skip_if_travis()
   def test_batch_request_from_default(self):
     self.http = HttpMock(datafile('plus.json'), {'status': '200'})
     # plus does not define a batchPath
@@ -736,6 +753,7 @@ class Discovery(unittest.TestCase):
 
     self.assertTrue('x-http-method-override' in resp)
 
+  @skip_if_travis()
   def test_plus_resources(self):
     self.http = HttpMock(datafile('plus.json'), {'status': '200'})
     plus = build('plus', 'v1', http=self.http)
@@ -1416,12 +1434,14 @@ class Discovery(unittest.TestCase):
 
 class Next(unittest.TestCase):
 
+  @skip_if_travis()
   def test_next_successful_none_on_no_next_page_token(self):
     self.http = HttpMock(datafile('tasks.json'), {'status': '200'})
     tasks = build('tasks', 'v1', http=self.http)
     request = tasks.tasklists().list()
     self.assertEqual(None, tasks.tasklists().list_next(request, {}))
 
+  @skip_if_travis()
   def test_next_successful_none_on_empty_page_token(self):
     self.http = HttpMock(datafile('tasks.json'), {'status': '200'})
     tasks = build('tasks', 'v1', http=self.http)
@@ -1430,6 +1450,7 @@ class Next(unittest.TestCase):
         request, {'nextPageToken': ''})
     self.assertEqual(None, next_request)
 
+  @skip_if_travis()
   def test_next_successful_with_next_page_token(self):
     self.http = HttpMock(datafile('tasks.json'), {'status': '200'})
     tasks = build('tasks', 'v1', http=self.http)
@@ -1440,6 +1461,7 @@ class Next(unittest.TestCase):
     q = parse_qs(parsed[4])
     self.assertEqual(q['pageToken'][0], '123abc')
 
+  @skip_if_travis()
   def test_next_successful_with_next_page_token_alternate_name(self):
     self.http = HttpMock(datafile('bigquery.json'), {'status': '200'})
     bigquery = build('bigquery', 'v2', http=self.http)
@@ -1450,6 +1472,7 @@ class Next(unittest.TestCase):
     q = parse_qs(parsed[4])
     self.assertEqual(q['pageToken'][0], '123abc')
 
+  @skip_if_travis()
   def test_next_successful_with_next_page_token_in_body(self):
     self.http = HttpMock(datafile('logging.json'), {'status': '200'})
     logging = build('logging', 'v2', http=self.http)
@@ -1459,17 +1482,20 @@ class Next(unittest.TestCase):
     body = JsonModel().deserialize(next_request.body)
     self.assertEqual(body['pageToken'], '123abc')
 
+  @skip_if_travis()
   def test_next_with_method_with_no_properties(self):
     self.http = HttpMock(datafile('latitude.json'), {'status': '200'})
     service = build('latitude', 'v1', http=self.http)
     service.currentLocation().get()
 
+  @skip_if_travis()
   def test_next_nonexistent_with_no_next_page_token(self):
     self.http = HttpMock(datafile('drive.json'), {'status': '200'})
     drive = build('drive', 'v3', http=self.http)
     drive.changes().watch(body={})
     self.assertFalse(callable(getattr(drive.changes(), 'watch_next', None)))
 
+  @skip_if_travis()
   def test_next_successful_with_next_page_token_required(self):
     self.http = HttpMock(datafile('drive.json'), {'status': '200'})
     drive = build('drive', 'v3', http=self.http)
