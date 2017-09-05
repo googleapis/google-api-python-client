@@ -369,12 +369,6 @@ class DiscoveryErrors(unittest.TestCase):
       with self.assertRaises(UnknownApiNameOrVersion):
         plus = build('plus', 'v1', http=http, cache_discovery=False)
 
-  def test_credentials_and_http_mutually_exclusive(self):
-    http = HttpMock(datafile('plus.json'), {'status': '200'})
-    with self.assertRaises(ValueError):
-      build(
-        'plus', 'v1', http=http, credentials=mock.sentinel.credentials)
-
   def test_credentials_and_developer_key_mutually_exclusive(self):
     http = HttpMock(datafile('plus.json'), {'status': '200'})
     with self.assertRaises(ValueError):
@@ -405,18 +399,27 @@ class DiscoveryFromDocument(unittest.TestCase):
 
   def test_building_with_base_remembers_base(self):
     discovery = open(datafile('plus.json')).read()
-
     base = "https://www.example.com/"
     plus = build_from_document(
       discovery, base=base, credentials=self.MOCK_CREDENTIALS)
     self.assertEquals("https://www.googleapis.com/plus/v1/", plus._baseUrl)
+
+  def test_building_include_both_http_and_credentials(self):
+    http_object = HttpMock()
+    discovery = open(datafile('plus.json')).read()
+    plus = build_from_document(
+      discovery, base="https://www.googleapis.com/", http=http_object,
+      credentials=self.MOCK_CREDENTIALS)
+    # Plus service requires Authorization, hence we expect to see AuthorizedHttp object here.
+    # The AuthorizedHttp will wrap our mock http object.
+    self.assertIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
+    self.assertEqual(plus._http.http, http_object)
 
   def test_building_with_optional_http_with_authorization(self):
     discovery = open(datafile('plus.json')).read()
     plus = build_from_document(
       discovery, base="https://www.googleapis.com/",
       credentials=self.MOCK_CREDENTIALS)
-
     # plus service requires Authorization, hence we expect to see AuthorizedHttp object here
     self.assertIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
     self.assertIsInstance(plus._http.http, httplib2.Http)
