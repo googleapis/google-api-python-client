@@ -19,10 +19,14 @@ import httplib2
 try:
     import google.auth
     import google.auth.credentials
-    import google_auth_httplib2
     HAS_GOOGLE_AUTH = True
 except ImportError:  # pragma: NO COVER
     HAS_GOOGLE_AUTH = False
+
+try:
+    import google_auth_httplib2
+except ImportError:  # pragma: NO COVER
+    google_auth_httplib2 = None
 
 try:
     import oauth2client
@@ -88,6 +92,12 @@ def authorized_http(credentials):
 
     if HAS_GOOGLE_AUTH and isinstance(
             credentials, google.auth.credentials.Credentials):
+        if google_auth_httplib2 is None:
+            raise ValueError(
+                'Credentials from google.auth specified, but '
+                'google-api-python-client is unable to use these credentials '
+                'unless google-auth-httplib2 is installed. Please install '
+                'google-auth-httplib2.')
         return google_auth_httplib2.AuthorizedHttp(credentials,
                                                    http=build_http())
     else:
