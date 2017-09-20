@@ -68,7 +68,9 @@ class TestAuthWithGoogleAuth(unittest2.TestCase):
 
         authorized_http = _auth.authorized_http(credentials)
 
-        self.assertIsInstance(authorized_http, google_auth_httplib2.AuthorizedHttp)
+        self.assertIsInstance(
+            authorized_http,
+            google_auth_httplib2.AuthorizedHttp)
         self.assertEqual(authorized_http.credentials, credentials)
         self.assertIsInstance(authorized_http.http, httplib2.Http)
         self.assertIsInstance(authorized_http.http.timeout, int)
@@ -138,3 +140,16 @@ class TestAuthWithoutAuth(unittest2.TestCase):
     def test_default_credentials(self):
         with self.assertRaises(EnvironmentError):
             print(_auth.default_credentials())
+
+
+class TestGoogleAuthWithoutHttplib2(unittest2.TestCase):
+    def setUp(self):
+        _auth.google_auth_httplib2 = None
+
+    def tearDown(self):
+        _auth.google_auth_httplib2 = google_auth_httplib2
+
+    def test_default_credentials(self):
+        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+        with self.assertRaises(ValueError):
+            _auth.authorized_http(credentials)
