@@ -459,7 +459,7 @@ def _media_path_url_from_info(root_desc, path_url):
   }
 
 
-def _fix_up_parameters(method_desc, root_desc, http_method):
+def _fix_up_parameters(method_desc, root_desc, http_method, schema):
   """Updates parameters of an API method with values specific to this library.
 
   Specifically, adds whatever global parameters are specified by the API to the
@@ -477,6 +477,7 @@ def _fix_up_parameters(method_desc, root_desc, http_method):
     root_desc: Dictionary; the entire original deserialized discovery document.
     http_method: String; the HTTP method used to call the API method described
         in method_desc.
+    schema: Object, mapping of schema names to schema descriptions.
 
   Returns:
     The updated Dictionary stored in the 'parameters' key of the method
@@ -497,6 +498,9 @@ def _fix_up_parameters(method_desc, root_desc, http_method):
   if http_method in HTTP_PAYLOAD_METHODS and 'request' in method_desc:
     body = BODY_PARAMETER_DEFAULT_VALUE.copy()
     body.update(method_desc['request'])
+    # Make body optional for requests with no parameters.
+    if not _methodProperties(method_desc, schema, 'request'):
+      body['required'] = False
     parameters['body'] = body
 
   return parameters
@@ -547,7 +551,7 @@ def _fix_up_media_upload(method_desc, root_desc, path_url, parameters):
   return accept, max_size, media_path_url
 
 
-def _fix_up_method_description(method_desc, root_desc):
+def _fix_up_method_description(method_desc, root_desc, schema):
   """Updates a method description in a discovery document.
 
   SIDE EFFECTS: Changes the parameters dictionary in the method description with
@@ -558,6 +562,7 @@ def _fix_up_method_description(method_desc, root_desc):
         from the dictionary of methods stored in the 'methods' key in the
         deserialized discovery document.
     root_desc: Dictionary; the entire original deserialized discovery document.
+    schema: Object, mapping of schema names to schema descriptions.
 
   Returns:
     Tuple (path_url, http_method, method_id, accept, max_size, media_path_url)
@@ -582,7 +587,7 @@ def _fix_up_method_description(method_desc, root_desc):
   http_method = method_desc['httpMethod']
   method_id = method_desc['id']
 
-  parameters = _fix_up_parameters(method_desc, root_desc, http_method)
+  parameters = _fix_up_parameters(method_desc, root_desc, http_method, schema)
   # Order is important. `_fix_up_media_upload` needs `method_desc` to have a
   # 'parameters' key and needs to know if there is a 'body' parameter because it
   # also sets a 'media_body' parameter.
@@ -710,7 +715,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
   """
   methodName = fix_method_name(methodName)
   (pathUrl, httpMethod, methodId, accept,
-   maxSize, mediaPathUrl) = _fix_up_method_description(methodDesc, rootDesc)
+   maxSize, mediaPathUrl) = _fix_up_method_description(methodDesc, rootDesc, schema)
 
   parameters = ResourceMethodParameters(methodDesc)
 
