@@ -654,7 +654,7 @@ class MediaIoBaseDownload(object):
             request only once.
 
     Returns:
-      (status, done): (MediaDownloadStatus, boolean)
+      (status, done): (MediaDownloadProgress, boolean)
          The value of 'done' will be True when the media has been fully
          downloaded.
 
