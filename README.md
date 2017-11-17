@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/google/google-api-python-client.svg?branch=master)](https://travis-ci.org/google/google-api-python-client)
+[![PyPI version](https://badge.fury.io/py/google-api-python-client.svg)](https://badge.fury.io/py/google-api-python-client)
+
 # Library maintenance
 This client library is supported but in maintenance mode only.  We are fixing necessary bugs and adding essential features to ensure this library continues to meet your needs for accessing Google APIs.  Non-critical issues will be closed.  Any issue may be reopened if it is causing ongoing problems.
 
