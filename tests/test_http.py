@@ -128,7 +128,6 @@ class HttpMockWithErrors(object):
           ex = TimeoutError()
         else:
           ex = socket.error()
-
         if self.num_errors == 2:
           #first try a broken pipe error (#218)
           ex.errno = socket.errno.EPIPE
