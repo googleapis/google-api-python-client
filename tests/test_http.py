@@ -128,7 +128,6 @@ class HttpMockWithErrors(object):
           ex = TimeoutError()
         else:
           ex = socket.error()
-        
         if self.num_errors == 2:
           #first try a broken pipe error (#218)
           ex.errno = socket.errno.EPIPE
@@ -739,6 +738,20 @@ NOT_CONFIGURED_RESPONSE = """{
  }
 }"""
 
+LIST_NOT_CONFIGURED_RESPONSE = """[
+ "error": {
+  "errors": [
+   {
+    "domain": "usageLimits",
+    "reason": "accessNotConfigured",
+    "message": "Access Not Configured"
+   }
+  ],
+  "code": 403,
+  "message": "Access Not Configured"
+ }
+]"""
+
 class Callbacks(object):
   def __init__(self):
     self.responses = {}
@@ -936,6 +949,29 @@ class TestHttpRequest(unittest.TestCase):
   def test_no_retry_401_fails_fast(self):
     http = HttpMockSequence([
         ({'status': '401'}, ''),
+        ({'status': '200'}, '{}')
+        ])
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/collection/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        body=u'{}',
+        headers={'content-type': 'application/json'})
+
+    request._rand = lambda: 1.0
+    request._sleep =  mock.MagicMock()
+
+    with self.assertRaises(HttpError):
+      request.execute()
+    request._sleep.assert_not_called()
+
+  def test_no_retry_403_list_fails(self):
+    http = HttpMockSequence([
+        ({'status': '403'}, LIST_NOT_CONFIGURED_RESPONSE),
         ({'status': '200'}, '{}')
         ])
     model = JsonModel()
