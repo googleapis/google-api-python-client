@@ -513,7 +513,6 @@ class MediaFileUpload(MediaIoBaseUpload):
   Construct a MediaFileUpload and pass as the media_body parameter of the
   method. For example, if we had a service that allowed uploading images:
 
-
     media = MediaFileUpload('cow.png', mimetype='image/png',
       chunksize=1024*1024, resumable=True)
     farm.animals().insert(
