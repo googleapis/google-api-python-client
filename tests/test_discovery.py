@@ -48,11 +48,13 @@ from googleapiclient.discovery import _fix_up_method_description
 from googleapiclient.discovery import _fix_up_parameters
 from googleapiclient.discovery import _urljoin
 from googleapiclient.discovery import build
+from googleapiclient.discovery import build_subresource
 from googleapiclient.discovery import build_from_document
 from googleapiclient.discovery import DISCOVERY_URI
 from googleapiclient.discovery import key2param
 from googleapiclient.discovery import MEDIA_BODY_PARAMETER_DEFAULT_VALUE
 from googleapiclient.discovery import MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE
+from googleapiclient.discovery import Resource
 from googleapiclient.discovery import ResourceMethodParameters
 from googleapiclient.discovery import STACK_QUERY_PARAMETERS
 from googleapiclient.discovery import STACK_QUERY_PARAMETER_DEFAULT_VALUE
@@ -1479,6 +1481,26 @@ class Next(unittest.TestCase):
     parsed = list(urlparse(next_request.uri))
     q = parse_qs(parsed[4])
     self.assertEqual(q['pageToken'][0], '123abc')
+
+
+class DiscoverySubresources(unittest.TestCase):
+
+  def test_build_valid_subresources(self):
+    self.http = HttpMock(datafile('iam.json'), {'status': '200'})
+
+    client = build_subresource('iam.roles', 'v1', http=self.http)
+    self.assertTrue(client)
+    self.assertIsInstance(client, Resource)
+
+    client = build_subresource('iam.projects.roles', 'v1', http=self.http)
+    self.assertTrue(client)
+    self.assertIsInstance(client, Resource)
+
+  def test_build_nonexistent_subresource(self):
+    self.http = HttpMock(datafile('iam.json'), {'status': '200'})
+
+    with self.assertRaises(AttributeError):
+      build_subresource('iam.bogus_subresource', 'v1', http=self.http)
 
 
 class MediaGet(unittest.TestCase):

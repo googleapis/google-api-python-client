@@ -23,6 +23,7 @@ from six.moves import zip
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 __all__ = [
     'build',
+    'build_subresource',
     'build_from_document',
     'fix_method_name',
     'key2param',
@@ -238,6 +239,47 @@ def build(serviceName,
 
   raise UnknownApiNameOrVersion(
         "name: %s  version: %s" % (serviceName, version))
+
+
+@positional(2)
+def build_subresource(servicePath,
+                      version,
+                      **kargs):
+  """Construct a Resource for interacting with an API's subresources.
+
+  Construct a Resource object for interacting with an API. The
+  servicePath is a dot-delimited string.  The first element is the
+  serviceName from the Discovery service.  Subsequent elements are the
+  names of subresources accessed via the resulting client.  The
+  version is the version of the serviceName from the Discovery
+  service.
+
+  Some example servicePaths:
+    iam.roles
+    iam.projects.serviceAccounts.keys
+    cloudresourcemanager
+    cloudresourcemanager.projects
+
+  Args:
+    servicePath: string, see above description.
+    version: string, the version of the service.
+    kargs: all other arguments are passed on to build
+
+  Returns:
+    A Resource object with methods for interacting with the service.
+
+  """
+  splits = servicePath.split('.')
+  serviceName = splits[0]
+  subresources = splits[1:]
+
+  client = build(serviceName, version, **kargs)
+
+  for subresource in subresources:
+    subresource_fn = getattr(client, subresource)
+    client = subresource_fn()
+
+  return client
 
 
 def _retrieve_discovery_doc(url, http, cache_discovery, cache=None):
