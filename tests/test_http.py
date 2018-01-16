@@ -576,6 +576,29 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     self.assertEqual(0, download._total_size)
     self.assertEqual(0, status.progress())
 
+  def test_media_io_base_download_unknown_media_size(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '200'}, b'123')
+    ])
+
+    download = MediaIoBaseDownload(
+      fd=self.fd, request=self.request, chunksize=3)
+
+    self.assertEqual(self.fd, download._fd)
+    self.assertEqual(0, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(False, download._done)
+    self.assertEqual(self.request.uri, download._uri)
+
+    status, done = download.next_chunk()
+
+    self.assertEqual(self.fd.getvalue(), b'123')
+    self.assertEqual(True, done)
+    self.assertEqual(3, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(0, status.progress())
+
+
 EXPECTED = """POST /someapi/v1/collection/?foo=bar HTTP/1.1
 Content-Type: application/json
 MIME-Version: 1.0
