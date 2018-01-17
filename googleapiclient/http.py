@@ -63,7 +63,6 @@ except ImportError:
   from oauth2client import _helpers as util
 
 from googleapiclient import _auth
-from googleapiclient import mimeparse
 from googleapiclient.errors import BatchError
 from googleapiclient.errors import HttpError
 from googleapiclient.errors import InvalidChunkSizeError
@@ -768,10 +767,6 @@ class HttpRequest(object):
     self.resumable = resumable
     self.response_callbacks = []
     self._in_error_state = False
-
-    # Pull the multipart boundary out of the content-type header.
-    major, minor, params = mimeparse.parse_mime_type(
-        self.headers.get('content-type', 'application/json'))
 
     # The size of the non-media part of the request.
     self.body_size = len(self.body or '')
