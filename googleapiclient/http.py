@@ -154,7 +154,7 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
   for retry_num in range(num_retries + 1):
     if retry_num > 0:
       # Sleep before retrying.
-      sleep_time = rand() * 2 ** retry_num
+      sleep_time = (1 + rand()) * 2 ** (retry_num - 1)
       LOGGER.warning(
           'Sleeping %.2f seconds before retry %d of %d for %s: %s %s, after %s',
           sleep_time, retry_num, num_retries, req_type, method, uri,
