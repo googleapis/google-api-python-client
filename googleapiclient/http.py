@@ -1209,7 +1209,7 @@ class BatchHttpRequest(object):
 
     if request.http is not None:
       credentials = _auth.get_credentials_from_http(request.http)
-      if credentials is not None:
+      if credentials is not None and getattr(credentials, 'access_token', None):
         _auth.apply_credentials(credentials, headers)
 
     # MIMENonMultipart adds its own Content-Type header.
