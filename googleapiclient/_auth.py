@@ -120,6 +120,8 @@ def refresh_credentials(credentials):
 
 def apply_credentials(credentials, headers):
     # oauth2client and google-auth have the same interface for this.
+    if not is_valid(credentials):
+        refresh_credentials(credentials)
     return credentials.apply(headers)
 
 
@@ -128,7 +130,9 @@ def is_valid(credentials):
             credentials, google.auth.credentials.Credentials):
         return credentials.valid
     else:
-        return not credentials.access_token_expired
+        return (
+            credentials.access_token is not None and
+            not credentials.access_token_expired)
 
 
 def get_credentials_from_http(http):

@@ -71,6 +71,10 @@ class MockCredentials(Credentials):
     self._access_token_expired = expired
 
   @property
+  def access_token(self):
+    return self._bearer_token
+
+  @property
   def access_token_expired(self):
     return self._access_token_expired
 
