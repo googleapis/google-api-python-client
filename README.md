@@ -281,7 +281,7 @@ Documentation for the YouTube Data API in
 Lets you view and manage and build smart apps using Google Spreadsheet.
 
 Documentation for the Sheets API in
-[PyDoc](https://developers.google.com/`s/api/quickstart/python).
+[PyDoc](https://developers.google.com/sheets/api/quickstart/python).
 
 <table>
   <tr>
