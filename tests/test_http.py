@@ -176,6 +176,10 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 def datafile(filename):
   return os.path.join(DATA_DIR, filename)
 
+def _postproc_none(*kwargs):
+  pass
+
+
 class TestUserAgent(unittest.TestCase):
 
   def test_set_user_agent(self):
@@ -240,16 +244,12 @@ class TestMediaUpload(unittest.TestCase):
     self.assertEqual(6, media.size())
 
   def test_http_request_to_from_json(self):
-
-    def _postproc(*kwargs):
-      pass
-
     http = build_http()
     media_upload = MediaFileUpload(
         datafile('small.png'), chunksize=500, resumable=True)
     req = HttpRequest(
         http,
-        _postproc,
+        _postproc_none,
         'http://example.com',
         method='POST',
         body='{}',
@@ -258,7 +258,7 @@ class TestMediaUpload(unittest.TestCase):
         resumable=media_upload)
 
     json = req.to_json()
-    new_req = HttpRequest.from_json(json, http, _postproc)
+    new_req = HttpRequest.from_json(json, http, _postproc_none)
 
     self.assertEqual({'content-type':
                        'multipart/related; boundary="---flubber"'},
@@ -808,6 +808,20 @@ class TestHttpRequest(unittest.TestCase):
     self.assertEqual(method, http.method)
     self.assertEqual(str, type(http.method))
 
+  def test_empty_content_type(self):
+    """Test for #284"""
+    http = HttpMock(None, headers={'status': 200})
+    uri = u'https://www.googleapis.com/someapi/v1/upload/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        _postproc_none,
+        uri,
+        method=method,
+        headers={'content-type': ''})
+    request.execute()
+    self.assertEqual('', http.headers.get('content-type'))
+  
   def test_no_retry_connection_errors(self):
     model = JsonModel()
     request = HttpRequest(
