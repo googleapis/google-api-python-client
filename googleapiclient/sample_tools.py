@@ -72,7 +72,7 @@ def init(argv, name, version, doc, filename, scope=None, parents=[], discovery_f
   # application, including client_id and client_secret, which are found
   # on the API Access tab on the Google APIs
   # Console <http://code.google.com/apis/console>.
-  client_secrets = os.path.join(os.path.dirname(filename),
+  client_secrets = os.path.join(os.path.dirname(filename), os.getcwd(),
                                 'client_secrets.json')
 
   # Set up a Flow object to be used if we need to authenticate.
