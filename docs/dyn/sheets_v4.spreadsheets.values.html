@@ -75,13 +75,13 @@ h1, h2, h3 {
 <h1><a href="sheets_v4.html">Google Sheets API</a> . <a href="sheets_v4.spreadsheets.html">spreadsheets</a> . <a href="sheets_v4.spreadsheets.values.html">values</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#append">append(spreadsheetId, range=None, body, insertDataOption=None, valueInputOption=None, x__xgafv=None)</a></code></p>
+  <code><a href="#append">append(spreadsheetId, range, body, valueInputOption=None, x__xgafv=None, responseValueRenderOption=None, insertDataOption=None, includeValuesInResponse=None, responseDateTimeRenderOption=None)</a></code></p>
 <p class="firstline">Appends values to a spreadsheet. The input range is used to search for</p>
 <p class="toc_element">
   <code><a href="#batchClear">batchClear(spreadsheetId, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Clears one or more ranges of values from a spreadsheet.</p>
 <p class="toc_element">
-  <code><a href="#batchGet">batchGet(spreadsheetId, valueRenderOption=None, majorDimension=None, ranges=None, dateTimeRenderOption=None, x__xgafv=None)</a></code></p>
+  <code><a href="#batchGet">batchGet(spreadsheetId, majorDimension=None, ranges=None, dateTimeRenderOption=None, valueRenderOption=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Returns one or more ranges of values from a spreadsheet.</p>
 <p class="toc_element">
   <code><a href="#batchUpdate">batchUpdate(spreadsheetId, body, x__xgafv=None)</a></code></p>
@@ -90,21 +90,21 @@ h1, h2, h3 {
   <code><a href="#clear">clear(spreadsheetId, range, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Clears values from a spreadsheet.</p>
 <p class="toc_element">
-  <code><a href="#get">get(spreadsheetId, range, valueRenderOption=None, majorDimension=None, dateTimeRenderOption=None, x__xgafv=None)</a></code></p>
+  <code><a href="#get">get(spreadsheetId, range, majorDimension=None, dateTimeRenderOption=None, valueRenderOption=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Returns a range of values from a spreadsheet.</p>
 <p class="toc_element">
-  <code><a href="#update">update(spreadsheetId, range, body, valueInputOption=None, x__xgafv=None)</a></code></p>
+  <code><a href="#update">update(spreadsheetId, range, body, valueInputOption=None, x__xgafv=None, responseValueRenderOption=None, includeValuesInResponse=None, responseDateTimeRenderOption=None)</a></code></p>
 <p class="firstline">Sets values in a range of a spreadsheet.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="append">append(spreadsheetId, range=None, body, insertDataOption=None, valueInputOption=None, x__xgafv=None)</code>
+    <code class="details" id="append">append(spreadsheetId, range, body, valueInputOption=None, x__xgafv=None, responseValueRenderOption=None, insertDataOption=None, includeValuesInResponse=None, responseDateTimeRenderOption=None)</code>
   <pre>Appends values to a spreadsheet. The input range is used to search for
 existing data and find a "table" within that range. Values will be
 appended to the next row of the table, starting with the first column of
 the table. See the
-[guide](/sheets/guides/values#appending_values)
+[guide](/sheets/api/guides/values#appending_values)
 and
-[sample code](/sheets/samples/writing#append_values)
+[sample code](/sheets/api/samples/writing#append_values)
 for specific details of how tables are detected and data is appended.
 
 The caller must specify the spreadsheet ID, range, and
@@ -155,12 +155,21 @@ Values will be appended after the last row of the table. (required)
       # When writing, if this field is not set, it defaults to ROWS.
 }
 
-  insertDataOption: string, How the input data should be inserted.
   valueInputOption: string, How the input data should be interpreted.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
       2 - v2 error format
+  responseValueRenderOption: string, Determines how values in the response should be rendered.
+The default render option is ValueRenderOption.FORMATTED_VALUE.
+  insertDataOption: string, How the input data should be inserted.
+  includeValuesInResponse: boolean, Determines if the update response should include the values
+of the cells that were appended. By default, responses
+do not include the updated values.
+  responseDateTimeRenderOption: string, Determines how dates, times, and durations in the response should be
+rendered. This is ignored if response_value_render_option is
+FORMATTED_VALUE.
+The default dateTime render option is [DateTimeRenderOption.SERIAL_NUMBER].
 
 Returns:
   An object of the form:
@@ -173,9 +182,45 @@ Returns:
     "updates": { # The response when updating a range of values in a spreadsheet. # Information about the updates that were applied.
       "updatedRange": "A String", # The range (in A1 notation) that updates were applied to.
       "updatedColumns": 42, # The number of columns where at least one cell in the column was updated.
-      "updatedCells": 42, # The number of cells updated.
       "updatedRows": 42, # The number of rows where at least one cell in the row was updated.
+      "updatedData": { # Data within a range of the spreadsheet. # The values of the cells after updates were applied.
+          # This is only included if the request's `includeValuesInResponse` field
+          # was `true`.
+        "range": "A String", # The range the values cover, in A1 notation.
+            # For output, this range indicates the entire requested range,
+            # even though the values will exclude trailing rows and columns.
+            # When appending values, this field represents the range to search for a
+            # table, after which values will be appended.
+        "values": [ # The data that was read or to be written.  This is an array of arrays,
+            # the outer array representing all the data and each inner array
+            # representing a major dimension. Each item in the inner array
+            # corresponds with one cell.
+            #
+            # For output, empty trailing rows and columns will not be included.
+            #
+            # For input, supported value types are: bool, string, and double.
+            # Null values will be skipped.
+            # To set a cell to an empty value, set the string value to an empty string.
+          [
+            "",
+          ],
+        ],
+        "majorDimension": "A String", # The major dimension of the values.
+            #
+            # For output, if the spreadsheet data is: `A1=1,B1=2,A2=3,B2=4`,
+            # then requesting `range=A1:B2,majorDimension=ROWS` will return
+            # `[[1,2],[3,4]]`,
+            # whereas requesting `range=A1:B2,majorDimension=COLUMNS` will return
+            # `[[1,3],[2,4]]`.
+            #
+            # For input, with `range=A1:B2,majorDimension=ROWS` then `[[1,2],[3,4]]`
+            # will set `A1=1,B1=2,A2=3,B2=4`. With `range=A1:B2,majorDimension=COLUMNS`
+            # then `[[1,2],[3,4]]` will set `A1=1,B1=3,A2=2,B2=4`.
+            #
+            # When writing, if this field is not set, it defaults to ROWS.
+      },
       "spreadsheetId": "A String", # The spreadsheet the updates were applied to.
+      "updatedCells": 42, # The number of cells updated.
     },
   }</pre>
 </div>
@@ -206,7 +251,7 @@ Args:
 Returns:
   An object of the form:
 
-    { # The response when updating a range of values in a spreadsheet.
+    { # The response when clearing a range of values in a spreadsheet.
     "spreadsheetId": "A String", # The spreadsheet the updates were applied to.
     "clearedRanges": [ # The ranges that were cleared, in A1 notation.
         # (If the requests were for an unbounded range or a ranger larger
@@ -218,13 +263,12 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="batchGet">batchGet(spreadsheetId, valueRenderOption=None, majorDimension=None, ranges=None, dateTimeRenderOption=None, x__xgafv=None)</code>
+    <code class="details" id="batchGet">batchGet(spreadsheetId, majorDimension=None, ranges=None, dateTimeRenderOption=None, valueRenderOption=None, x__xgafv=None)</code>
   <pre>Returns one or more ranges of values from a spreadsheet.
 The caller must specify the spreadsheet ID and one or more ranges.
 
 Args:
   spreadsheetId: string, The ID of the spreadsheet to retrieve data from. (required)
-  valueRenderOption: string, How values should be represented in the output.
   majorDimension: string, The major dimension that results should use.
 
 For example, if the spreadsheet data is: `A1=1,B1=2,A2=3,B2=4`,
@@ -236,6 +280,9 @@ whereas requesting `range=A1:B2,majorDimension=COLUMNS` will return
   dateTimeRenderOption: string, How dates, times, and durations should be represented in the output.
 This is ignored if value_render_option is
 FORMATTED_VALUE.
+The default dateTime render option is [DateTimeRenderOption.SERIAL_NUMBER].
+  valueRenderOption: string, How values should be represented in the output.
+The default render option is ValueRenderOption.FORMATTED_VALUE.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -299,6 +346,7 @@ Args:
     The object takes the form of:
 
 { # The request for updating more than one range of values in a spreadsheet.
+    "valueInputOption": "A String", # How the input data should be interpreted.
     "data": [ # The new values to apply to the spreadsheet.
       { # Data within a range of the spreadsheet.
         "range": "A String", # The range the values cover, in A1 notation.
@@ -335,7 +383,20 @@ Args:
             # When writing, if this field is not set, it defaults to ROWS.
       },
     ],
-    "valueInputOption": "A String", # How the input data should be interpreted.
+    "responseDateTimeRenderOption": "A String", # Determines how dates, times, and durations in the response should be
+        # rendered. This is ignored if response_value_render_option is
+        # FORMATTED_VALUE.
+        # The default dateTime render option is
+        # DateTimeRenderOption.SERIAL_NUMBER.
+    "responseValueRenderOption": "A String", # Determines how values in the response should be rendered.
+        # The default render option is ValueRenderOption.FORMATTED_VALUE.
+    "includeValuesInResponse": True or False, # Determines if the update response should include the values
+        # of the cells that were updated. By default, responses
+        # do not include the updated values. The `updatedData` field within
+        # each of the BatchUpdateValuesResponse.responses will contain
+        # the updated values. If the range to write was larger than than the range
+        # actually written, the response will include all values in the requested
+        # range (excluding trailing empty rows and columns).
   }
 
   x__xgafv: string, V1 error format.
@@ -352,16 +413,52 @@ Returns:
       { # The response when updating a range of values in a spreadsheet.
         "updatedRange": "A String", # The range (in A1 notation) that updates were applied to.
         "updatedColumns": 42, # The number of columns where at least one cell in the column was updated.
-        "updatedCells": 42, # The number of cells updated.
         "updatedRows": 42, # The number of rows where at least one cell in the row was updated.
+        "updatedData": { # Data within a range of the spreadsheet. # The values of the cells after updates were applied.
+            # This is only included if the request's `includeValuesInResponse` field
+            # was `true`.
+          "range": "A String", # The range the values cover, in A1 notation.
+              # For output, this range indicates the entire requested range,
+              # even though the values will exclude trailing rows and columns.
+              # When appending values, this field represents the range to search for a
+              # table, after which values will be appended.
+          "values": [ # The data that was read or to be written.  This is an array of arrays,
+              # the outer array representing all the data and each inner array
+              # representing a major dimension. Each item in the inner array
+              # corresponds with one cell.
+              #
+              # For output, empty trailing rows and columns will not be included.
+              #
+              # For input, supported value types are: bool, string, and double.
+              # Null values will be skipped.
+              # To set a cell to an empty value, set the string value to an empty string.
+            [
+              "",
+            ],
+          ],
+          "majorDimension": "A String", # The major dimension of the values.
+              #
+              # For output, if the spreadsheet data is: `A1=1,B1=2,A2=3,B2=4`,
+              # then requesting `range=A1:B2,majorDimension=ROWS` will return
+              # `[[1,2],[3,4]]`,
+              # whereas requesting `range=A1:B2,majorDimension=COLUMNS` will return
+              # `[[1,3],[2,4]]`.
+              #
+              # For input, with `range=A1:B2,majorDimension=ROWS` then `[[1,2],[3,4]]`
+              # will set `A1=1,B1=2,A2=3,B2=4`. With `range=A1:B2,majorDimension=COLUMNS`
+              # then `[[1,2],[3,4]]` will set `A1=1,B1=3,A2=2,B2=4`.
+              #
+              # When writing, if this field is not set, it defaults to ROWS.
+        },
         "spreadsheetId": "A String", # The spreadsheet the updates were applied to.
+        "updatedCells": 42, # The number of cells updated.
       },
     ],
-    "totalUpdatedCells": 42, # The total number of cells updated.
     "totalUpdatedColumns": 42, # The total number of columns where at least one cell in the column was
         # updated.
-    "totalUpdatedRows": 42, # The total number of rows where at least one cell in the row was updated.
+    "totalUpdatedCells": 42, # The total number of cells updated.
     "spreadsheetId": "A String", # The spreadsheet the updates were applied to.
+    "totalUpdatedRows": 42, # The total number of rows where at least one cell in the row was updated.
     "totalUpdatedSheets": 42, # The total number of sheets where at least one cell in the sheet was
         # updated.
   }</pre>
@@ -401,14 +498,13 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="get">get(spreadsheetId, range, valueRenderOption=None, majorDimension=None, dateTimeRenderOption=None, x__xgafv=None)</code>
+    <code class="details" id="get">get(spreadsheetId, range, majorDimension=None, dateTimeRenderOption=None, valueRenderOption=None, x__xgafv=None)</code>
   <pre>Returns a range of values from a spreadsheet.
 The caller must specify the spreadsheet ID and a range.
 
 Args:
   spreadsheetId: string, The ID of the spreadsheet to retrieve data from. (required)
   range: string, The A1 notation of the values to retrieve. (required)
-  valueRenderOption: string, How values should be represented in the output.
   majorDimension: string, The major dimension that results should use.
 
 For example, if the spreadsheet data is: `A1=1,B1=2,A2=3,B2=4`,
@@ -419,6 +515,9 @@ whereas requesting `range=A1:B2,majorDimension=COLUMNS` will return
   dateTimeRenderOption: string, How dates, times, and durations should be represented in the output.
 This is ignored if value_render_option is
 FORMATTED_VALUE.
+The default dateTime render option is [DateTimeRenderOption.SERIAL_NUMBER].
+  valueRenderOption: string, How values should be represented in the output.
+The default render option is ValueRenderOption.FORMATTED_VALUE.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -464,7 +563,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="update">update(spreadsheetId, range, body, valueInputOption=None, x__xgafv=None)</code>
+    <code class="details" id="update">update(spreadsheetId, range, body, valueInputOption=None, x__xgafv=None, responseValueRenderOption=None, includeValuesInResponse=None, responseDateTimeRenderOption=None)</code>
   <pre>Sets values in a range of a spreadsheet.
 The caller must specify the spreadsheet ID, range, and
 a valueInputOption.
@@ -515,6 +614,18 @@ Args:
     Allowed values
       1 - v1 error format
       2 - v2 error format
+  responseValueRenderOption: string, Determines how values in the response should be rendered.
+The default render option is ValueRenderOption.FORMATTED_VALUE.
+  includeValuesInResponse: boolean, Determines if the update response should include the values
+of the cells that were updated. By default, responses
+do not include the updated values.
+If the range to write was larger than than the range actually written,
+the response will include all values in the requested range (excluding
+trailing empty rows and columns).
+  responseDateTimeRenderOption: string, Determines how dates, times, and durations in the response should be
+rendered. This is ignored if response_value_render_option is
+FORMATTED_VALUE.
+The default dateTime render option is [DateTimeRenderOption.SERIAL_NUMBER].
 
 Returns:
   An object of the form:
@@ -522,9 +633,45 @@ Returns:
     { # The response when updating a range of values in a spreadsheet.
     "updatedRange": "A String", # The range (in A1 notation) that updates were applied to.
     "updatedColumns": 42, # The number of columns where at least one cell in the column was updated.
-    "updatedCells": 42, # The number of cells updated.
     "updatedRows": 42, # The number of rows where at least one cell in the row was updated.
+    "updatedData": { # Data within a range of the spreadsheet. # The values of the cells after updates were applied.
+        # This is only included if the request's `includeValuesInResponse` field
+        # was `true`.
+      "range": "A String", # The range the values cover, in A1 notation.
+          # For output, this range indicates the entire requested range,
+          # even though the values will exclude trailing rows and columns.
+          # When appending values, this field represents the range to search for a
+          # table, after which values will be appended.
+      "values": [ # The data that was read or to be written.  This is an array of arrays,
+          # the outer array representing all the data and each inner array
+          # representing a major dimension. Each item in the inner array
+          # corresponds with one cell.
+          #
+          # For output, empty trailing rows and columns will not be included.
+          #
+          # For input, supported value types are: bool, string, and double.
+          # Null values will be skipped.
+          # To set a cell to an empty value, set the string value to an empty string.
+        [
+          "",
+        ],
+      ],
+      "majorDimension": "A String", # The major dimension of the values.
+          #
+          # For output, if the spreadsheet data is: `A1=1,B1=2,A2=3,B2=4`,
+          # then requesting `range=A1:B2,majorDimension=ROWS` will return
+          # `[[1,2],[3,4]]`,
+          # whereas requesting `range=A1:B2,majorDimension=COLUMNS` will return
+          # `[[1,3],[2,4]]`.
+          #
+          # For input, with `range=A1:B2,majorDimension=ROWS` then `[[1,2],[3,4]]`
+          # will set `A1=1,B1=2,A2=3,B2=4`. With `range=A1:B2,majorDimension=COLUMNS`
+          # then `[[1,2],[3,4]]` will set `A1=1,B1=3,A2=2,B2=4`.
+          #
+          # When writing, if this field is not set, it defaults to ROWS.
+    },
     "spreadsheetId": "A String", # The spreadsheet the updates were applied to.
+    "updatedCells": 42, # The number of cells updated.
   }</pre>
 </div>
 

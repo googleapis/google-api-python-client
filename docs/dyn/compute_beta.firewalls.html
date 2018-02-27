@@ -97,7 +97,7 @@ h1, h2, h3 {
 <p class="firstline">Returns permissions that a caller has on the specified resource.</p>
 <p class="toc_element">
   <code><a href="#update">update(project, firewall, body)</a></code></p>
-<p class="firstline">Updates the specified firewall rule with the data included in the request.</p>
+<p class="firstline">Updates the specified firewall rule with the data included in the request. Using PUT method, can only update following fields of firewall rule: allowed, description, sourceRanges, sourceTags, targetTags.</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="delete">delete(project, firewall)</code>
@@ -113,7 +113,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -153,7 +153,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -169,14 +169,29 @@ Returns:
   An object of the form:
 
     { # Represents a Firewall resource.
-      "kind": "compute#firewall", # [Output Ony] Type of the resource. Always compute#firewall for firewall rules.
+      "direction": "A String", # Direction of traffic to which this firewall applies; default is INGRESS. Note: For INGRESS traffic, it is NOT supported to specify destinationRanges; For EGRESS traffic, it is NOT supported to specify sourceRanges OR sourceTags.
       "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
+      "destinationRanges": [ # If destination ranges are specified, the firewall will apply only to traffic that has destination IP address in these ranges. These ranges must be expressed in CIDR format. Only IPv4 is supported.
+        "A String",
+      ],
       "sourceTags": [ # If source tags are specified, the firewall will apply only to traffic with source IP that belongs to a tag listed in source tags. Source tags cannot be used to control traffic to an instance's external IP address. Because tags are associated with an instance, not an IP address. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply.
         "A String",
       ],
-      "sourceRanges": [ # If source ranges are specified, the firewall will apply only to traffic that has source IP address in these ranges. These ranges must be expressed in CIDR format. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply.
+      "allowed": [ # The list of ALLOW rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
+        {
+          "IPProtocol": "A String", # The IP protocol to which this rule applies. The protocol type is required when creating a firewall rule. This value can either be one of the following well known protocol strings (tcp, udp, icmp, esp, ah, sctp), or the IP protocol number.
+          "ports": [ # An optional list of ports to which this rule applies. This field is only applicable for UDP or TCP protocol. Each entry must be either an integer or a range. If not specified, this rule applies to connections through any port.
+              #
+              # Example inputs include: ["22"], ["80","443"], and ["12345-12349"].
+            "A String",
+          ],
+        },
+      ],
+      "kind": "compute#firewall", # [Output Only] Type of the resource. Always compute#firewall for firewall rules.
+      "sourceRanges": [ # If source ranges are specified, the firewall will apply only to traffic that has source IP address in these ranges. These ranges must be expressed in CIDR format. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply. Only IPv4 is supported.
         "A String",
       ],
+      "priority": 42, # Priority for this rule. This is an integer between 0 and 65535, both inclusive. When not specified, the value assumed is 1000. Relative priorities determine precedence of conflicting rules. Lower value of priority implies higher precedence (eg, a rule with priority 0 has higher precedence than a rule with priority 1). DENY rules take precedence over ALLOW rules having equal priority.
       "network": "A String", # URL of the network resource for this firewall rule. If not specified when creating a firewall rule, the default network is used:
           # global/networks/default
           # If you choose to specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
@@ -186,7 +201,7 @@ Returns:
       "targetTags": [ # A list of instance tags indicating sets of instances located in the network that may make network connections as specified in allowed[]. If no targetTags are specified, the firewall rule applies to all instances on the specified network.
         "A String",
       ],
-      "allowed": [ # The list of ALLOW rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
+      "denied": [ # The list of DENY rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
         {
           "IPProtocol": "A String", # The IP protocol to which this rule applies. The protocol type is required when creating a firewall rule. This value can either be one of the following well known protocol strings (tcp, udp, icmp, esp, ah, sctp), or the IP protocol number.
           "ports": [ # An optional list of ports to which this rule applies. This field is only applicable for UDP or TCP protocol. Each entry must be either an integer or a range. If not specified, this rule applies to connections through any port.
@@ -213,14 +228,29 @@ Args:
     The object takes the form of:
 
 { # Represents a Firewall resource.
-    "kind": "compute#firewall", # [Output Ony] Type of the resource. Always compute#firewall for firewall rules.
+    "direction": "A String", # Direction of traffic to which this firewall applies; default is INGRESS. Note: For INGRESS traffic, it is NOT supported to specify destinationRanges; For EGRESS traffic, it is NOT supported to specify sourceRanges OR sourceTags.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
+    "destinationRanges": [ # If destination ranges are specified, the firewall will apply only to traffic that has destination IP address in these ranges. These ranges must be expressed in CIDR format. Only IPv4 is supported.
+      "A String",
+    ],
     "sourceTags": [ # If source tags are specified, the firewall will apply only to traffic with source IP that belongs to a tag listed in source tags. Source tags cannot be used to control traffic to an instance's external IP address. Because tags are associated with an instance, not an IP address. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply.
       "A String",
     ],
-    "sourceRanges": [ # If source ranges are specified, the firewall will apply only to traffic that has source IP address in these ranges. These ranges must be expressed in CIDR format. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply.
+    "allowed": [ # The list of ALLOW rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
+      {
+        "IPProtocol": "A String", # The IP protocol to which this rule applies. The protocol type is required when creating a firewall rule. This value can either be one of the following well known protocol strings (tcp, udp, icmp, esp, ah, sctp), or the IP protocol number.
+        "ports": [ # An optional list of ports to which this rule applies. This field is only applicable for UDP or TCP protocol. Each entry must be either an integer or a range. If not specified, this rule applies to connections through any port.
+            # 
+            # Example inputs include: ["22"], ["80","443"], and ["12345-12349"].
+          "A String",
+        ],
+      },
+    ],
+    "kind": "compute#firewall", # [Output Only] Type of the resource. Always compute#firewall for firewall rules.
+    "sourceRanges": [ # If source ranges are specified, the firewall will apply only to traffic that has source IP address in these ranges. These ranges must be expressed in CIDR format. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply. Only IPv4 is supported.
       "A String",
     ],
+    "priority": 42, # Priority for this rule. This is an integer between 0 and 65535, both inclusive. When not specified, the value assumed is 1000. Relative priorities determine precedence of conflicting rules. Lower value of priority implies higher precedence (eg, a rule with priority 0 has higher precedence than a rule with priority 1). DENY rules take precedence over ALLOW rules having equal priority.
     "network": "A String", # URL of the network resource for this firewall rule. If not specified when creating a firewall rule, the default network is used:
         # global/networks/default
         # If you choose to specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
@@ -230,7 +260,7 @@ Args:
     "targetTags": [ # A list of instance tags indicating sets of instances located in the network that may make network connections as specified in allowed[]. If no targetTags are specified, the firewall rule applies to all instances on the specified network.
       "A String",
     ],
-    "allowed": [ # The list of ALLOW rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
+    "denied": [ # The list of DENY rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
       {
         "IPProtocol": "A String", # The IP protocol to which this rule applies. The protocol type is required when creating a firewall rule. This value can either be one of the following well known protocol strings (tcp, udp, icmp, esp, ah, sctp), or the IP protocol number.
         "ports": [ # An optional list of ports to which this rule applies. This field is only applicable for UDP or TCP protocol. Each entry must be either an integer or a range. If not specified, this rule applies to connections through any port.
@@ -253,7 +283,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -293,7 +323,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -308,7 +338,7 @@ Args:
 You can also sort results in descending order based on the creation timestamp using orderBy="creationTimestamp desc". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.
 
 Currently, only sorting by name or creationTimestamp desc is supported.
-  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.
+  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
   filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
 
@@ -327,14 +357,29 @@ Returns:
     "nextPageToken": "A String", # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
     "items": [ # [Output Only] A list of Firewall resources.
       { # Represents a Firewall resource.
-          "kind": "compute#firewall", # [Output Ony] Type of the resource. Always compute#firewall for firewall rules.
+          "direction": "A String", # Direction of traffic to which this firewall applies; default is INGRESS. Note: For INGRESS traffic, it is NOT supported to specify destinationRanges; For EGRESS traffic, it is NOT supported to specify sourceRanges OR sourceTags.
           "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
+          "destinationRanges": [ # If destination ranges are specified, the firewall will apply only to traffic that has destination IP address in these ranges. These ranges must be expressed in CIDR format. Only IPv4 is supported.
+            "A String",
+          ],
           "sourceTags": [ # If source tags are specified, the firewall will apply only to traffic with source IP that belongs to a tag listed in source tags. Source tags cannot be used to control traffic to an instance's external IP address. Because tags are associated with an instance, not an IP address. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply.
             "A String",
           ],
-          "sourceRanges": [ # If source ranges are specified, the firewall will apply only to traffic that has source IP address in these ranges. These ranges must be expressed in CIDR format. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply.
+          "allowed": [ # The list of ALLOW rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
+            {
+              "IPProtocol": "A String", # The IP protocol to which this rule applies. The protocol type is required when creating a firewall rule. This value can either be one of the following well known protocol strings (tcp, udp, icmp, esp, ah, sctp), or the IP protocol number.
+              "ports": [ # An optional list of ports to which this rule applies. This field is only applicable for UDP or TCP protocol. Each entry must be either an integer or a range. If not specified, this rule applies to connections through any port.
+                  #
+                  # Example inputs include: ["22"], ["80","443"], and ["12345-12349"].
+                "A String",
+              ],
+            },
+          ],
+          "kind": "compute#firewall", # [Output Only] Type of the resource. Always compute#firewall for firewall rules.
+          "sourceRanges": [ # If source ranges are specified, the firewall will apply only to traffic that has source IP address in these ranges. These ranges must be expressed in CIDR format. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply. Only IPv4 is supported.
             "A String",
           ],
+          "priority": 42, # Priority for this rule. This is an integer between 0 and 65535, both inclusive. When not specified, the value assumed is 1000. Relative priorities determine precedence of conflicting rules. Lower value of priority implies higher precedence (eg, a rule with priority 0 has higher precedence than a rule with priority 1). DENY rules take precedence over ALLOW rules having equal priority.
           "network": "A String", # URL of the network resource for this firewall rule. If not specified when creating a firewall rule, the default network is used:
               # global/networks/default
               # If you choose to specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
@@ -344,7 +389,7 @@ Returns:
           "targetTags": [ # A list of instance tags indicating sets of instances located in the network that may make network connections as specified in allowed[]. If no targetTags are specified, the firewall rule applies to all instances on the specified network.
             "A String",
           ],
-          "allowed": [ # The list of ALLOW rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
+          "denied": [ # The list of DENY rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
             {
               "IPProtocol": "A String", # The IP protocol to which this rule applies. The protocol type is required when creating a firewall rule. This value can either be one of the following well known protocol strings (tcp, udp, icmp, esp, ah, sctp), or the IP protocol number.
               "ports": [ # An optional list of ports to which this rule applies. This field is only applicable for UDP or TCP protocol. Each entry must be either an integer or a range. If not specified, this rule applies to connections through any port.
@@ -386,19 +431,34 @@ Returns:
 
 Args:
   project: string, Project ID for this request. (required)
-  firewall: string, Name of the firewall rule to update. (required)
+  firewall: string, Name of the firewall rule to patch. (required)
   body: object, The request body. (required)
     The object takes the form of:
 
 { # Represents a Firewall resource.
-    "kind": "compute#firewall", # [Output Ony] Type of the resource. Always compute#firewall for firewall rules.
+    "direction": "A String", # Direction of traffic to which this firewall applies; default is INGRESS. Note: For INGRESS traffic, it is NOT supported to specify destinationRanges; For EGRESS traffic, it is NOT supported to specify sourceRanges OR sourceTags.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
+    "destinationRanges": [ # If destination ranges are specified, the firewall will apply only to traffic that has destination IP address in these ranges. These ranges must be expressed in CIDR format. Only IPv4 is supported.
+      "A String",
+    ],
     "sourceTags": [ # If source tags are specified, the firewall will apply only to traffic with source IP that belongs to a tag listed in source tags. Source tags cannot be used to control traffic to an instance's external IP address. Because tags are associated with an instance, not an IP address. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply.
       "A String",
     ],
-    "sourceRanges": [ # If source ranges are specified, the firewall will apply only to traffic that has source IP address in these ranges. These ranges must be expressed in CIDR format. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply.
+    "allowed": [ # The list of ALLOW rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
+      {
+        "IPProtocol": "A String", # The IP protocol to which this rule applies. The protocol type is required when creating a firewall rule. This value can either be one of the following well known protocol strings (tcp, udp, icmp, esp, ah, sctp), or the IP protocol number.
+        "ports": [ # An optional list of ports to which this rule applies. This field is only applicable for UDP or TCP protocol. Each entry must be either an integer or a range. If not specified, this rule applies to connections through any port.
+            # 
+            # Example inputs include: ["22"], ["80","443"], and ["12345-12349"].
+          "A String",
+        ],
+      },
+    ],
+    "kind": "compute#firewall", # [Output Only] Type of the resource. Always compute#firewall for firewall rules.
+    "sourceRanges": [ # If source ranges are specified, the firewall will apply only to traffic that has source IP address in these ranges. These ranges must be expressed in CIDR format. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply. Only IPv4 is supported.
       "A String",
     ],
+    "priority": 42, # Priority for this rule. This is an integer between 0 and 65535, both inclusive. When not specified, the value assumed is 1000. Relative priorities determine precedence of conflicting rules. Lower value of priority implies higher precedence (eg, a rule with priority 0 has higher precedence than a rule with priority 1). DENY rules take precedence over ALLOW rules having equal priority.
     "network": "A String", # URL of the network resource for this firewall rule. If not specified when creating a firewall rule, the default network is used:
         # global/networks/default
         # If you choose to specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
@@ -408,7 +468,7 @@ Args:
     "targetTags": [ # A list of instance tags indicating sets of instances located in the network that may make network connections as specified in allowed[]. If no targetTags are specified, the firewall rule applies to all instances on the specified network.
       "A String",
     ],
-    "allowed": [ # The list of ALLOW rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
+    "denied": [ # The list of DENY rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
       {
         "IPProtocol": "A String", # The IP protocol to which this rule applies. The protocol type is required when creating a firewall rule. This value can either be one of the following well known protocol strings (tcp, udp, icmp, esp, ah, sctp), or the IP protocol number.
         "ports": [ # An optional list of ports to which this rule applies. This field is only applicable for UDP or TCP protocol. Each entry must be either an integer or a range. If not specified, this rule applies to connections through any port.
@@ -431,7 +491,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -471,7 +531,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -504,7 +564,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="update">update(project, firewall, body)</code>
-  <pre>Updates the specified firewall rule with the data included in the request.
+  <pre>Updates the specified firewall rule with the data included in the request. Using PUT method, can only update following fields of firewall rule: allowed, description, sourceRanges, sourceTags, targetTags.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -513,14 +573,29 @@ Args:
     The object takes the form of:
 
 { # Represents a Firewall resource.
-    "kind": "compute#firewall", # [Output Ony] Type of the resource. Always compute#firewall for firewall rules.
+    "direction": "A String", # Direction of traffic to which this firewall applies; default is INGRESS. Note: For INGRESS traffic, it is NOT supported to specify destinationRanges; For EGRESS traffic, it is NOT supported to specify sourceRanges OR sourceTags.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
+    "destinationRanges": [ # If destination ranges are specified, the firewall will apply only to traffic that has destination IP address in these ranges. These ranges must be expressed in CIDR format. Only IPv4 is supported.
+      "A String",
+    ],
     "sourceTags": [ # If source tags are specified, the firewall will apply only to traffic with source IP that belongs to a tag listed in source tags. Source tags cannot be used to control traffic to an instance's external IP address. Because tags are associated with an instance, not an IP address. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply.
       "A String",
     ],
-    "sourceRanges": [ # If source ranges are specified, the firewall will apply only to traffic that has source IP address in these ranges. These ranges must be expressed in CIDR format. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply.
+    "allowed": [ # The list of ALLOW rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
+      {
+        "IPProtocol": "A String", # The IP protocol to which this rule applies. The protocol type is required when creating a firewall rule. This value can either be one of the following well known protocol strings (tcp, udp, icmp, esp, ah, sctp), or the IP protocol number.
+        "ports": [ # An optional list of ports to which this rule applies. This field is only applicable for UDP or TCP protocol. Each entry must be either an integer or a range. If not specified, this rule applies to connections through any port.
+            # 
+            # Example inputs include: ["22"], ["80","443"], and ["12345-12349"].
+          "A String",
+        ],
+      },
+    ],
+    "kind": "compute#firewall", # [Output Only] Type of the resource. Always compute#firewall for firewall rules.
+    "sourceRanges": [ # If source ranges are specified, the firewall will apply only to traffic that has source IP address in these ranges. These ranges must be expressed in CIDR format. One or both of sourceRanges and sourceTags may be set. If both properties are set, the firewall will apply to traffic that has source IP address within sourceRanges OR the source IP that belongs to a tag listed in the sourceTags property. The connection does not need to match both properties for the firewall to apply. Only IPv4 is supported.
       "A String",
     ],
+    "priority": 42, # Priority for this rule. This is an integer between 0 and 65535, both inclusive. When not specified, the value assumed is 1000. Relative priorities determine precedence of conflicting rules. Lower value of priority implies higher precedence (eg, a rule with priority 0 has higher precedence than a rule with priority 1). DENY rules take precedence over ALLOW rules having equal priority.
     "network": "A String", # URL of the network resource for this firewall rule. If not specified when creating a firewall rule, the default network is used:
         # global/networks/default
         # If you choose to specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
@@ -530,7 +605,7 @@ Args:
     "targetTags": [ # A list of instance tags indicating sets of instances located in the network that may make network connections as specified in allowed[]. If no targetTags are specified, the firewall rule applies to all instances on the specified network.
       "A String",
     ],
-    "allowed": [ # The list of ALLOW rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
+    "denied": [ # The list of DENY rules specified by this firewall. Each rule specifies a protocol and port-range tuple that describes a permitted connection.
       {
         "IPProtocol": "A String", # The IP protocol to which this rule applies. The protocol type is required when creating a firewall rule. This value can either be one of the following well known protocol strings (tcp, udp, icmp, esp, ah, sctp), or the IP protocol number.
         "ports": [ # An optional list of ports to which this rule applies. This field is only applicable for UDP or TCP protocol. Each entry must be either an integer or a range. If not specified, this rule applies to connections through any port.
@@ -553,7 +628,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -593,7 +668,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 

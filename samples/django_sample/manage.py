@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from django.core.management import execute_manager
 try:
-    from . import settings # Assumed to be in the same directory.
+    import settings # Assumed to be in the same directory.
 except ImportError:
     import sys
     sys.stderr.write("""Error: Can't find the file 'settings.py' in the

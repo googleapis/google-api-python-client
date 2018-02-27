@@ -46,6 +46,7 @@ class HttpError(Error):
         raise TypeError("HTTP content should be bytes")
     self.content = content
     self.uri = uri
+    self.error_details = ''
 
   def _get_reason(self):
     """Calculate the reason for the error from the response content."""
@@ -54,9 +55,13 @@ class HttpError(Error):
       data = json.loads(self.content.decode('utf-8'))
       if isinstance(data, dict):
         reason = data['error']['message']
+        if 'details' in data['error']:
+            self.error_details = data['error']['details']
       elif isinstance(data, list) and len(data) > 0:
         first_error = data[0]
         reason = first_error['error']['message']
+        if 'details' in first_error['error']:
+            self.error_details = first_error['error']['details']
     except (ValueError, KeyError, TypeError):
       pass
     if reason is None:
@@ -64,7 +69,11 @@ class HttpError(Error):
     return reason
 
   def __repr__(self):
-    if self.uri:
+    reason = self._get_reason()
+    if self.error_details:
+      return '<HttpError %s when requesting %s returned "%s". Details: "%s">' % \
+             (self.resp.status, self.uri, reason.strip(), self.error_details)
+    elif self.uri:
       return '<HttpError %s when requesting %s returned "%s">' % (
           self.resp.status, self.uri, self._get_reason().strip())
     else:

@@ -43,6 +43,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import BatchError
 from googleapiclient.errors import HttpError
 from googleapiclient.errors import InvalidChunkSizeError
+from googleapiclient.http import build_http
 from googleapiclient.http import BatchHttpRequest
 from googleapiclient.http import HttpMock
 from googleapiclient.http import HttpMockSequence
@@ -61,12 +62,21 @@ from oauth2client.client import Credentials
 
 class MockCredentials(Credentials):
   """Mock class for all Credentials objects."""
-  def __init__(self, bearer_token):
+  def __init__(self, bearer_token, expired=False):
     super(MockCredentials, self).__init__()
     self._authorized = 0
     self._refreshed = 0
     self._applied = 0
     self._bearer_token = bearer_token
+    self._access_token_expired = expired
+
+  @property
+  def access_token(self):
+    return self._bearer_token
+
+  @property
+  def access_token_expired(self):
+    return self._access_token_expired
 
   def authorize(self, http):
     self._authorized += 1
@@ -122,7 +132,6 @@ class HttpMockWithErrors(object):
           ex = TimeoutError()
         else:
           ex = socket.error()
-        
         if self.num_errors == 2:
           #first try a broken pipe error (#218)
           ex.errno = socket.errno.EPIPE
@@ -166,6 +175,10 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 def datafile(filename):
   return os.path.join(DATA_DIR, filename)
+
+def _postproc_none(*kwargs):
+  pass
+
 
 class TestUserAgent(unittest.TestCase):
 
@@ -231,16 +244,12 @@ class TestMediaUpload(unittest.TestCase):
     self.assertEqual(6, media.size())
 
   def test_http_request_to_from_json(self):
-
-    def _postproc(*kwargs):
-      pass
-
-    http = httplib2.Http()
+    http = build_http()
     media_upload = MediaFileUpload(
         datafile('small.png'), chunksize=500, resumable=True)
     req = HttpRequest(
         http,
-        _postproc,
+        _postproc_none,
         'http://example.com',
         method='POST',
         body='{}',
@@ -249,7 +258,7 @@ class TestMediaUpload(unittest.TestCase):
         resumable=media_upload)
 
     json = req.to_json()
-    new_req = HttpRequest.from_json(json, http, _postproc)
+    new_req = HttpRequest.from_json(json, http, _postproc_none)
 
     self.assertEqual({'content-type':
                        'multipart/related; boundary="---flubber"'},
@@ -549,6 +558,51 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     self.assertEqual(5, download._progress)
     self.assertEqual(5, download._total_size)
 
+  def test_media_io_base_download_empty_file(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '200',
+        'content-range': '0-0/0'}, b''),
+    ])
+
+    download = MediaIoBaseDownload(
+      fd=self.fd, request=self.request, chunksize=3)
+
+    self.assertEqual(self.fd, download._fd)
+    self.assertEqual(0, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(False, download._done)
+    self.assertEqual(self.request.uri, download._uri)
+
+    status, done = download.next_chunk()
+
+    self.assertEqual(True, done)
+    self.assertEqual(0, download._progress)
+    self.assertEqual(0, download._total_size)
+    self.assertEqual(0, status.progress())
+
+  def test_media_io_base_download_unknown_media_size(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '200'}, b'123')
+    ])
+
+    download = MediaIoBaseDownload(
+      fd=self.fd, request=self.request, chunksize=3)
+
+    self.assertEqual(self.fd, download._fd)
+    self.assertEqual(0, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(False, download._done)
+    self.assertEqual(self.request.uri, download._uri)
+
+    status, done = download.next_chunk()
+
+    self.assertEqual(self.fd.getvalue(), b'123')
+    self.assertEqual(True, done)
+    self.assertEqual(3, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(0, status.progress())
+
+
 EXPECTED = """POST /someapi/v1/collection/?foo=bar HTTP/1.1
 Content-Type: application/json
 MIME-Version: 1.0
@@ -711,6 +765,20 @@ NOT_CONFIGURED_RESPONSE = """{
  }
 }"""
 
+LIST_NOT_CONFIGURED_RESPONSE = """[
+ "error": {
+  "errors": [
+   {
+    "domain": "usageLimits",
+    "reason": "accessNotConfigured",
+    "message": "Access Not Configured"
+   }
+  ],
+  "code": 403,
+  "message": "Access Not Configured"
+ }
+]"""
+
 class Callbacks(object):
   def __init__(self):
     self.responses = {}
@@ -740,6 +808,20 @@ class TestHttpRequest(unittest.TestCase):
     self.assertEqual(method, http.method)
     self.assertEqual(str, type(http.method))
 
+  def test_empty_content_type(self):
+    """Test for #284"""
+    http = HttpMock(None, headers={'status': 200})
+    uri = u'https://www.googleapis.com/someapi/v1/upload/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        _postproc_none,
+        uri,
+        method=method,
+        headers={'content-type': ''})
+    request.execute()
+    self.assertEqual('', http.headers.get('content-type'))
+  
   def test_no_retry_connection_errors(self):
     model = JsonModel()
     request = HttpRequest(
@@ -908,6 +990,29 @@ class TestHttpRequest(unittest.TestCase):
   def test_no_retry_401_fails_fast(self):
     http = HttpMockSequence([
         ({'status': '401'}, ''),
+        ({'status': '200'}, '{}')
+        ])
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/collection/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        body=u'{}',
+        headers={'content-type': 'application/json'})
+
+    request._rand = lambda: 1.0
+    request._sleep =  mock.MagicMock()
+
+    with self.assertRaises(HttpError):
+      request.execute()
+    request._sleep.assert_not_called()
+
+  def test_no_retry_403_list_fails(self):
+    http = HttpMockSequence([
+        ({'status': '403'}, LIST_NOT_CONFIGURED_RESPONSE),
         ({'status': '200'}, '{}')
         ])
     model = JsonModel()
@@ -1105,10 +1210,7 @@ class TestBatch(unittest.TestCase):
   def test_execute_initial_refresh_oauth2(self):
     batch = BatchHttpRequest()
     callbacks = Callbacks()
-    cred = MockCredentials('Foo')
-
-    # Pretend this is a OAuth2Credentials object
-    cred.access_token = None
+    cred = MockCredentials('Foo', expired=True)
 
     http = HttpMockSequence([
       ({'status': '200',
@@ -1339,6 +1441,34 @@ class TestHttpMock(unittest.TestCase):
         method='GET',
         headers={})
     self.assertRaises(HttpError, request.execute)
+
+
+class TestHttpBuild(unittest.TestCase):
+  original_socket_default_timeout = None
+
+  @classmethod
+  def setUpClass(cls):
+    cls.original_socket_default_timeout = socket.getdefaulttimeout()
+
+  @classmethod
+  def tearDownClass(cls):
+    socket.setdefaulttimeout(cls.original_socket_default_timeout)
+
+  def test_build_http_sets_default_timeout_if_none_specified(self):
+    socket.setdefaulttimeout(None)
+    http = build_http()
+    self.assertIsInstance(http.timeout, int)
+    self.assertGreater(http.timeout, 0)
+
+  def test_build_http_default_timeout_can_be_overridden(self):
+    socket.setdefaulttimeout(1.5)
+    http = build_http()
+    self.assertAlmostEqual(http.timeout, 1.5, delta=0.001)
+
+  def test_build_http_default_timeout_can_be_set_to_zero(self):
+    socket.setdefaulttimeout(0)
+    http = build_http()
+    self.assertEquals(http.timeout, 0)
 
 
 if __name__ == '__main__':

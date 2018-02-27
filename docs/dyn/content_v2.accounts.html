@@ -78,29 +78,32 @@ h1, h2, h3 {
   <code><a href="#authinfo">authinfo()</a></code></p>
 <p class="firstline">Returns information about the authenticated user.</p>
 <p class="toc_element">
+  <code><a href="#claimwebsite">claimwebsite(merchantId, accountId, overwrite=None)</a></code></p>
+<p class="firstline">Claims the website of a Merchant Center sub-account. This method can only be called for multi-client accounts.</p>
+<p class="toc_element">
   <code><a href="#custombatch">custombatch(body, dryRun=None)</a></code></p>
 <p class="firstline">Retrieves, inserts, updates, and deletes multiple Merchant Center (sub-)accounts in a single request.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(merchantId, accountId, dryRun=None)</a></code></p>
-<p class="firstline">Deletes a Merchant Center sub-account.</p>
+<p class="firstline">Deletes a Merchant Center sub-account. This method can only be called for multi-client accounts.</p>
 <p class="toc_element">
   <code><a href="#get">get(merchantId, accountId)</a></code></p>
-<p class="firstline">Retrieves a Merchant Center account.</p>
+<p class="firstline">Retrieves a Merchant Center account. This method can only be called for accounts to which the managing account has access: either the managing account itself or sub-accounts if the managing account is a multi-client account.</p>
 <p class="toc_element">
   <code><a href="#insert">insert(merchantId, body, dryRun=None)</a></code></p>
-<p class="firstline">Creates a Merchant Center sub-account.</p>
+<p class="firstline">Creates a Merchant Center sub-account. This method can only be called for multi-client accounts.</p>
 <p class="toc_element">
   <code><a href="#list">list(merchantId, pageToken=None, maxResults=None)</a></code></p>
-<p class="firstline">Lists the sub-accounts in your Merchant Center account.</p>
+<p class="firstline">Lists the sub-accounts in your Merchant Center account. This method can only be called for multi-client accounts.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(merchantId, accountId, body, dryRun=None)</a></code></p>
-<p class="firstline">Updates a Merchant Center account. This method supports patch semantics.</p>
+<p class="firstline">Updates a Merchant Center account. This method can only be called for accounts to which the managing account has access: either the managing account itself or sub-accounts if the managing account is a multi-client account. This method supports patch semantics.</p>
 <p class="toc_element">
   <code><a href="#update">update(merchantId, accountId, body, dryRun=None)</a></code></p>
-<p class="firstline">Updates a Merchant Center account.</p>
+<p class="firstline">Updates a Merchant Center account. This method can only be called for accounts to which the managing account has access: either the managing account itself or sub-accounts if the managing account is a multi-client account.</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="authinfo">authinfo()</code>
@@ -126,6 +129,23 @@ Returns:
 </div>
 
 <div class="method">
+    <code class="details" id="claimwebsite">claimwebsite(merchantId, accountId, overwrite=None)</code>
+  <pre>Claims the website of a Merchant Center sub-account. This method can only be called for multi-client accounts.
+
+Args:
+  merchantId: string, The ID of the managing account. (required)
+  accountId: string, The ID of the account whose website is claimed. (required)
+  overwrite: boolean, Flag to remove any existing claim on the requested website by another account and replace it with a claim from this account.
+
+Returns:
+  An object of the form:
+
+    {
+    "kind": "content#accountsClaimWebsiteResponse", # Identifies what kind of resource this is. Value: the fixed string "content#accountsClaimWebsiteResponse".
+  }</pre>
+</div>
+
+<div class="method">
     <code class="details" id="custombatch">custombatch(body, dryRun=None)</code>
   <pre>Retrieves, inserts, updates, and deletes multiple Merchant Center (sub-)accounts in a single request.
 
@@ -136,8 +156,6 @@ Args:
 {
     "entries": [ # The request entries to be processed in the batch.
       { # A batch entry encoding a single non-batch accounts request.
-        "batchId": 42, # An entry ID, unique within the batch request.
-        "method": "A String",
         "account": { # Account data. # The account to create or update. Only defined if the method is insert or update.
             "reviewsUrl": "A String", # URL for individual seller reviews, i.e., reviews for each child account.
             "kind": "content#account", # Identifies what kind of resource this is. Value: the fixed string "content#account".
@@ -146,7 +164,7 @@ Args:
             "id": "A String", # Merchant Center account ID.
             "websiteUrl": "A String", # The merchant's website.
             "sellerId": "A String", # Client-specific, locally-unique, internal ID for the child account.
-            "adwordsLinks": [ # List of linked AdWords accounts, active or pending approval. To create a new link request, add a new link with status active to the list. It will remain is state pending until approved or rejected in the AdWords interface. To delete an active link or to cancel a link request, remove it from the list.
+            "adwordsLinks": [ # List of linked AdWords accounts that are active or pending approval. To create a new link request, add a new link with status active to the list. It will remain in a pending state until approved or rejected either in the AdWords interface or through the  AdWords API. To delete an active link, or to cancel a link request, remove it from the list.
               {
                 "status": "A String", # Status of the link between this Merchant Center account and the AdWords account. Upon retrieval, it represents the actual status of the link and can be either active if it was approved in Google AdWords or pending if it's pending approval. Upon insertion, it represents the intended status of the link. Re-uploading a link with status active when it's still pending or with status pending when it's already active will have no effect: the status will remain unchanged. Re-uploading a link with deprecated status inactive is equivalent to not submitting the link at all and will delete the link if it was active or cancel the link request if it was pending.
                 "adwordsId": "A String", # Customer ID of the AdWords account.
@@ -160,7 +178,10 @@ Args:
             ],
           },
         "merchantId": "A String", # The ID of the managing account.
-        "accountId": "A String", # The ID of the account to get or delete. Only defined if the method is get or delete.
+        "batchId": 42, # An entry ID, unique within the batch request.
+        "method": "A String",
+        "overwrite": True or False, # Only applicable if the method is claimwebsite. Indicates whether or not to take the claim from another account in case there is a conflict.
+        "accountId": "A String", # The ID of the targeted account. Only defined if the method is get, delete or claimwebsite.
       },
     ],
   }
@@ -175,7 +196,7 @@ Returns:
     "entries": [ # The result of the execution of the batch requests.
       { # A batch entry encoding a single non-batch accounts response.
         "batchId": 42, # The ID of the request entry this entry responds to.
-        "account": { # Account data. # The retrieved, created, or updated account. Not defined if the method was delete.
+        "account": { # Account data. # The retrieved, created, or updated account. Not defined if the method was delete or claimwebsite.
             "reviewsUrl": "A String", # URL for individual seller reviews, i.e., reviews for each child account.
             "kind": "content#account", # Identifies what kind of resource this is. Value: the fixed string "content#account".
             "name": "A String", # Display name for the account.
@@ -183,7 +204,7 @@ Returns:
             "id": "A String", # Merchant Center account ID.
             "websiteUrl": "A String", # The merchant's website.
             "sellerId": "A String", # Client-specific, locally-unique, internal ID for the child account.
-            "adwordsLinks": [ # List of linked AdWords accounts, active or pending approval. To create a new link request, add a new link with status active to the list. It will remain is state pending until approved or rejected in the AdWords interface. To delete an active link or to cancel a link request, remove it from the list.
+            "adwordsLinks": [ # List of linked AdWords accounts that are active or pending approval. To create a new link request, add a new link with status active to the list. It will remain in a pending state until approved or rejected either in the AdWords interface or through the  AdWords API. To delete an active link, or to cancel a link request, remove it from the list.
               {
                 "status": "A String", # Status of the link between this Merchant Center account and the AdWords account. Upon retrieval, it represents the actual status of the link and can be either active if it was approved in Google AdWords or pending if it's pending approval. Upon insertion, it represents the intended status of the link. Re-uploading a link with status active when it's still pending or with status pending when it's already active will have no effect: the status will remain unchanged. Re-uploading a link with deprecated status inactive is equivalent to not submitting the link at all and will delete the link if it was active or cancel the link request if it was pending.
                 "adwordsId": "A String", # Customer ID of the AdWords account.
@@ -215,7 +236,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="delete">delete(merchantId, accountId, dryRun=None)</code>
-  <pre>Deletes a Merchant Center sub-account.
+  <pre>Deletes a Merchant Center sub-account. This method can only be called for multi-client accounts.
 
 Args:
   merchantId: string, The ID of the managing account. (required)
@@ -226,7 +247,7 @@ Args:
 
 <div class="method">
     <code class="details" id="get">get(merchantId, accountId)</code>
-  <pre>Retrieves a Merchant Center account.
+  <pre>Retrieves a Merchant Center account. This method can only be called for accounts to which the managing account has access: either the managing account itself or sub-accounts if the managing account is a multi-client account.
 
 Args:
   merchantId: string, The ID of the managing account. (required)
@@ -243,7 +264,7 @@ Returns:
       "id": "A String", # Merchant Center account ID.
       "websiteUrl": "A String", # The merchant's website.
       "sellerId": "A String", # Client-specific, locally-unique, internal ID for the child account.
-      "adwordsLinks": [ # List of linked AdWords accounts, active or pending approval. To create a new link request, add a new link with status active to the list. It will remain is state pending until approved or rejected in the AdWords interface. To delete an active link or to cancel a link request, remove it from the list.
+      "adwordsLinks": [ # List of linked AdWords accounts that are active or pending approval. To create a new link request, add a new link with status active to the list. It will remain in a pending state until approved or rejected either in the AdWords interface or through the  AdWords API. To delete an active link, or to cancel a link request, remove it from the list.
         {
           "status": "A String", # Status of the link between this Merchant Center account and the AdWords account. Upon retrieval, it represents the actual status of the link and can be either active if it was approved in Google AdWords or pending if it's pending approval. Upon insertion, it represents the intended status of the link. Re-uploading a link with status active when it's still pending or with status pending when it's already active will have no effect: the status will remain unchanged. Re-uploading a link with deprecated status inactive is equivalent to not submitting the link at all and will delete the link if it was active or cancel the link request if it was pending.
           "adwordsId": "A String", # Customer ID of the AdWords account.
@@ -260,7 +281,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="insert">insert(merchantId, body, dryRun=None)</code>
-  <pre>Creates a Merchant Center sub-account.
+  <pre>Creates a Merchant Center sub-account. This method can only be called for multi-client accounts.
 
 Args:
   merchantId: string, The ID of the managing account. (required)
@@ -275,7 +296,7 @@ Args:
     "id": "A String", # Merchant Center account ID.
     "websiteUrl": "A String", # The merchant's website.
     "sellerId": "A String", # Client-specific, locally-unique, internal ID for the child account.
-    "adwordsLinks": [ # List of linked AdWords accounts, active or pending approval. To create a new link request, add a new link with status active to the list. It will remain is state pending until approved or rejected in the AdWords interface. To delete an active link or to cancel a link request, remove it from the list.
+    "adwordsLinks": [ # List of linked AdWords accounts that are active or pending approval. To create a new link request, add a new link with status active to the list. It will remain in a pending state until approved or rejected either in the AdWords interface or through the  AdWords API. To delete an active link, or to cancel a link request, remove it from the list.
       {
         "status": "A String", # Status of the link between this Merchant Center account and the AdWords account. Upon retrieval, it represents the actual status of the link and can be either active if it was approved in Google AdWords or pending if it's pending approval. Upon insertion, it represents the intended status of the link. Re-uploading a link with status active when it's still pending or with status pending when it's already active will have no effect: the status will remain unchanged. Re-uploading a link with deprecated status inactive is equivalent to not submitting the link at all and will delete the link if it was active or cancel the link request if it was pending.
         "adwordsId": "A String", # Customer ID of the AdWords account.
@@ -302,7 +323,7 @@ Returns:
       "id": "A String", # Merchant Center account ID.
       "websiteUrl": "A String", # The merchant's website.
       "sellerId": "A String", # Client-specific, locally-unique, internal ID for the child account.
-      "adwordsLinks": [ # List of linked AdWords accounts, active or pending approval. To create a new link request, add a new link with status active to the list. It will remain is state pending until approved or rejected in the AdWords interface. To delete an active link or to cancel a link request, remove it from the list.
+      "adwordsLinks": [ # List of linked AdWords accounts that are active or pending approval. To create a new link request, add a new link with status active to the list. It will remain in a pending state until approved or rejected either in the AdWords interface or through the  AdWords API. To delete an active link, or to cancel a link request, remove it from the list.
         {
           "status": "A String", # Status of the link between this Merchant Center account and the AdWords account. Upon retrieval, it represents the actual status of the link and can be either active if it was approved in Google AdWords or pending if it's pending approval. Upon insertion, it represents the intended status of the link. Re-uploading a link with status active when it's still pending or with status pending when it's already active will have no effect: the status will remain unchanged. Re-uploading a link with deprecated status inactive is equivalent to not submitting the link at all and will delete the link if it was active or cancel the link request if it was pending.
           "adwordsId": "A String", # Customer ID of the AdWords account.
@@ -319,7 +340,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="list">list(merchantId, pageToken=None, maxResults=None)</code>
-  <pre>Lists the sub-accounts in your Merchant Center account.
+  <pre>Lists the sub-accounts in your Merchant Center account. This method can only be called for multi-client accounts.
 
 Args:
   merchantId: string, The ID of the managing account. (required)
@@ -341,7 +362,7 @@ Returns:
           "id": "A String", # Merchant Center account ID.
           "websiteUrl": "A String", # The merchant's website.
           "sellerId": "A String", # Client-specific, locally-unique, internal ID for the child account.
-          "adwordsLinks": [ # List of linked AdWords accounts, active or pending approval. To create a new link request, add a new link with status active to the list. It will remain is state pending until approved or rejected in the AdWords interface. To delete an active link or to cancel a link request, remove it from the list.
+          "adwordsLinks": [ # List of linked AdWords accounts that are active or pending approval. To create a new link request, add a new link with status active to the list. It will remain in a pending state until approved or rejected either in the AdWords interface or through the  AdWords API. To delete an active link, or to cancel a link request, remove it from the list.
             {
               "status": "A String", # Status of the link between this Merchant Center account and the AdWords account. Upon retrieval, it represents the actual status of the link and can be either active if it was approved in Google AdWords or pending if it's pending approval. Upon insertion, it represents the intended status of the link. Re-uploading a link with status active when it's still pending or with status pending when it's already active will have no effect: the status will remain unchanged. Re-uploading a link with deprecated status inactive is equivalent to not submitting the link at all and will delete the link if it was active or cancel the link request if it was pending.
               "adwordsId": "A String", # Customer ID of the AdWords account.
@@ -374,7 +395,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="patch">patch(merchantId, accountId, body, dryRun=None)</code>
-  <pre>Updates a Merchant Center account. This method supports patch semantics.
+  <pre>Updates a Merchant Center account. This method can only be called for accounts to which the managing account has access: either the managing account itself or sub-accounts if the managing account is a multi-client account. This method supports patch semantics.
 
 Args:
   merchantId: string, The ID of the managing account. (required)
@@ -390,7 +411,7 @@ Args:
     "id": "A String", # Merchant Center account ID.
     "websiteUrl": "A String", # The merchant's website.
     "sellerId": "A String", # Client-specific, locally-unique, internal ID for the child account.
-    "adwordsLinks": [ # List of linked AdWords accounts, active or pending approval. To create a new link request, add a new link with status active to the list. It will remain is state pending until approved or rejected in the AdWords interface. To delete an active link or to cancel a link request, remove it from the list.
+    "adwordsLinks": [ # List of linked AdWords accounts that are active or pending approval. To create a new link request, add a new link with status active to the list. It will remain in a pending state until approved or rejected either in the AdWords interface or through the  AdWords API. To delete an active link, or to cancel a link request, remove it from the list.
       {
         "status": "A String", # Status of the link between this Merchant Center account and the AdWords account. Upon retrieval, it represents the actual status of the link and can be either active if it was approved in Google AdWords or pending if it's pending approval. Upon insertion, it represents the intended status of the link. Re-uploading a link with status active when it's still pending or with status pending when it's already active will have no effect: the status will remain unchanged. Re-uploading a link with deprecated status inactive is equivalent to not submitting the link at all and will delete the link if it was active or cancel the link request if it was pending.
         "adwordsId": "A String", # Customer ID of the AdWords account.
@@ -417,7 +438,7 @@ Returns:
       "id": "A String", # Merchant Center account ID.
       "websiteUrl": "A String", # The merchant's website.
       "sellerId": "A String", # Client-specific, locally-unique, internal ID for the child account.
-      "adwordsLinks": [ # List of linked AdWords accounts, active or pending approval. To create a new link request, add a new link with status active to the list. It will remain is state pending until approved or rejected in the AdWords interface. To delete an active link or to cancel a link request, remove it from the list.
+      "adwordsLinks": [ # List of linked AdWords accounts that are active or pending approval. To create a new link request, add a new link with status active to the list. It will remain in a pending state until approved or rejected either in the AdWords interface or through the  AdWords API. To delete an active link, or to cancel a link request, remove it from the list.
         {
           "status": "A String", # Status of the link between this Merchant Center account and the AdWords account. Upon retrieval, it represents the actual status of the link and can be either active if it was approved in Google AdWords or pending if it's pending approval. Upon insertion, it represents the intended status of the link. Re-uploading a link with status active when it's still pending or with status pending when it's already active will have no effect: the status will remain unchanged. Re-uploading a link with deprecated status inactive is equivalent to not submitting the link at all and will delete the link if it was active or cancel the link request if it was pending.
           "adwordsId": "A String", # Customer ID of the AdWords account.
@@ -434,7 +455,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="update">update(merchantId, accountId, body, dryRun=None)</code>
-  <pre>Updates a Merchant Center account.
+  <pre>Updates a Merchant Center account. This method can only be called for accounts to which the managing account has access: either the managing account itself or sub-accounts if the managing account is a multi-client account.
 
 Args:
   merchantId: string, The ID of the managing account. (required)
@@ -450,7 +471,7 @@ Args:
     "id": "A String", # Merchant Center account ID.
     "websiteUrl": "A String", # The merchant's website.
     "sellerId": "A String", # Client-specific, locally-unique, internal ID for the child account.
-    "adwordsLinks": [ # List of linked AdWords accounts, active or pending approval. To create a new link request, add a new link with status active to the list. It will remain is state pending until approved or rejected in the AdWords interface. To delete an active link or to cancel a link request, remove it from the list.
+    "adwordsLinks": [ # List of linked AdWords accounts that are active or pending approval. To create a new link request, add a new link with status active to the list. It will remain in a pending state until approved or rejected either in the AdWords interface or through the  AdWords API. To delete an active link, or to cancel a link request, remove it from the list.
       {
         "status": "A String", # Status of the link between this Merchant Center account and the AdWords account. Upon retrieval, it represents the actual status of the link and can be either active if it was approved in Google AdWords or pending if it's pending approval. Upon insertion, it represents the intended status of the link. Re-uploading a link with status active when it's still pending or with status pending when it's already active will have no effect: the status will remain unchanged. Re-uploading a link with deprecated status inactive is equivalent to not submitting the link at all and will delete the link if it was active or cancel the link request if it was pending.
         "adwordsId": "A String", # Customer ID of the AdWords account.
@@ -477,7 +498,7 @@ Returns:
       "id": "A String", # Merchant Center account ID.
       "websiteUrl": "A String", # The merchant's website.
       "sellerId": "A String", # Client-specific, locally-unique, internal ID for the child account.
-      "adwordsLinks": [ # List of linked AdWords accounts, active or pending approval. To create a new link request, add a new link with status active to the list. It will remain is state pending until approved or rejected in the AdWords interface. To delete an active link or to cancel a link request, remove it from the list.
+      "adwordsLinks": [ # List of linked AdWords accounts that are active or pending approval. To create a new link request, add a new link with status active to the list. It will remain in a pending state until approved or rejected either in the AdWords interface or through the  AdWords API. To delete an active link, or to cancel a link request, remove it from the list.
         {
           "status": "A String", # Status of the link between this Merchant Center account and the AdWords account. Upon retrieval, it represents the actual status of the link and can be either active if it was approved in Google AdWords or pending if it's pending approval. Upon insertion, it represents the intended status of the link. Re-uploading a link with status active when it's still pending or with status pending when it's already active will have no effect: the status will remain unchanged. Re-uploading a link with deprecated status inactive is equivalent to not submitting the link at all and will delete the link if it was active or cancel the link request if it was pending.
           "adwordsId": "A String", # Customer ID of the AdWords account.

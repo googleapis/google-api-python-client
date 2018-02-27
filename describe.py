@@ -34,7 +34,7 @@ from googleapiclient.discovery import DISCOVERY_URI
 from googleapiclient.discovery import build
 from googleapiclient.discovery import build_from_document
 from googleapiclient.discovery import UnknownApiNameOrVersion
-import httplib2
+from googleapiclient.http import build_http
 import uritemplate
 
 CSS = """<style>
@@ -200,15 +200,23 @@ def method_params(doc):
       args = doclines[begin+1:]
 
     parameters = []
-    for line in args:
-      m = re.search('^\s+([a-zA-Z0-9_]+): (.*)', line)
-      if m is None:
-        continue
-      pname = m.group(1)
-      desc = m.group(2)
+    pname = None
+    desc = ''
+    def add_param(pname, desc):
+      if pname is None:
+        return
       if '(required)' not in desc:
         pname = pname + '=None'
       parameters.append(pname)
+    for line in args:
+      m = re.search('^\s+([a-zA-Z0-9_]+): (.*)', line)
+      if m is None:
+        desc += line
+        continue
+      add_param(pname, desc)
+      pname = m.group(1)
+      desc = m.group(2)
+    add_param(pname, desc)
     parameters = ', '.join(parameters)
   else:
     parameters = ''
@@ -346,6 +354,7 @@ def document_api(name, version):
     print 'Warning: {} {} found but could not be built.'.format(name, version)
     return
 
+  http = build_http()
   response, content = http.request(
       uritemplate.expand(
           FLAGS.discovery_uri_template, {
@@ -366,7 +375,7 @@ def document_api_from_discovery_document(uri):
   Args:
     uri: string, URI of discovery document.
   """
-  http = httplib2.Http()
+  http = build_http()
   response, content = http.request(FLAGS.discovery_uri)
   discovery = json.loads(content)
 
@@ -384,7 +393,7 @@ if __name__ == '__main__':
   if FLAGS.discovery_uri:
     document_api_from_discovery_document(FLAGS.discovery_uri)
   else:
-    http = httplib2.Http()
+    http = build_http()
     resp, content = http.request(
         FLAGS.directory_uri,
         headers={'X-User-IP': '0.0.0.0'})

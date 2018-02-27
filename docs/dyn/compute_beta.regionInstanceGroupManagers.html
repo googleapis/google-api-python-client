@@ -93,14 +93,17 @@ h1, h2, h3 {
   <code><a href="#list">list(project, region, orderBy=None, maxResults=None, pageToken=None, filter=None)</a></code></p>
 <p class="firstline">Retrieves the list of managed instance groups that are contained within the specified region.</p>
 <p class="toc_element">
-  <code><a href="#listManagedInstances">listManagedInstances(project, region, instanceGroupManager)</a></code></p>
+  <code><a href="#listManagedInstances">listManagedInstances(project, region, instanceGroupManager, order_by=None, maxResults=None, pageToken=None, filter=None)</a></code></p>
 <p class="firstline">Lists the instances in the managed instance group and instances that are scheduled to be created. The list includes any current actions that the group has scheduled for its instances.</p>
+<p class="toc_element">
+  <code><a href="#listManagedInstances_next">listManagedInstances_next(previous_request, previous_response)</a></code></p>
+<p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(project, region, instanceGroupManager, body)</a></code></p>
-<p class="firstline">Updates a managed instance group using the information that you specify in the request. This operation is marked as DONE when the group is updated even if the instances in the group have not yet been updated. You must separately verify the status of the individual instances with the listmanagedinstances method. This method supports patch semantics.</p>
+<p class="firstline">Updates a managed instance group using the information that you specify in the request. This operation is marked as DONE when the group is patched even if the instances in the group are still in the process of being patched. You must separately verify the status of the individual instances with the listmanagedinstances method. This method supports patch semantics.</p>
 <p class="toc_element">
   <code><a href="#recreateInstances">recreateInstances(project, region, instanceGroupManager, body)</a></code></p>
 <p class="firstline">Schedules a group action to recreate the specified instances in the managed instance group. The instances are deleted and recreated using the current instance template for the managed instance group. This operation is marked as DONE when the action is scheduled even if the instances have not yet been recreated. You must separately verify the status of the recreating action with the listmanagedinstances method.</p>
@@ -127,6 +130,10 @@ h1, h2, h3 {
     <code class="details" id="abandonInstances">abandonInstances(project, region, instanceGroupManager, body)</code>
   <pre>Schedules a group action to remove the specified instances from the managed instance group. Abandoning an instance does not delete the instance, but it does remove the instance from any target pools that are applied by the managed instance group. This method reduces the targetSize of the managed instance group by the number of instances that you abandon. This operation is marked as DONE when the action is scheduled even if the instances have not yet been removed from the group. You must separately verify the status of the abandoning action with the listmanagedinstances method.
 
+If the group is part of a backend service that has enabled connection draining, it can take up to 60 seconds after the connection draining duration has elapsed before the VM instance is removed or deleted.
+
+You can specify a maximum of 1000 instances with this method per request.
+
 Args:
   project: string, Project ID for this request. (required)
   region: string, Name of the region scoping this request. (required)
@@ -135,7 +142,7 @@ Args:
     The object takes the form of:
 
 {
-    "instances": [ # The names of one or more instances to abandon.
+    "instances": [ # The URLs of one or more instances to abandon. This can be a full URL or a partial URL, such as zones/[ZONE]/instances/[INSTANCE_NAME].
       "A String",
     ],
   }
@@ -147,7 +154,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -187,7 +194,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -206,7 +213,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -246,13 +253,17 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="deleteInstances">deleteInstances(project, region, instanceGroupManager, body)</code>
   <pre>Schedules a group action to delete the specified instances in the managed instance group. The instances are also removed from any target pools of which they were a member. This method reduces the targetSize of the managed instance group by the number of instances that you delete. This operation is marked as DONE when the action is scheduled even if the instances are still being deleted. You must separately verify the status of the deleting action with the listmanagedinstances method.
+
+If the group is part of a backend service that has enabled connection draining, it can take up to 60 seconds after the connection draining duration has elapsed before the VM instance is removed or deleted.
+
+You can specify a maximum of 1000 instances with this method per request.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -262,7 +273,7 @@ Args:
     The object takes the form of:
 
 {
-    "instances": [ # The names of one or more instances to delete.
+    "instances": [ # The URLs of one or more instances to delete. This can be a full URL or a partial URL, such as zones/[ZONE]/instances/[INSTANCE_NAME].
       "A String",
     ],
   }
@@ -274,7 +285,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -314,7 +325,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -347,13 +358,14 @@ Returns:
       "zone": "A String", # [Output Only] The URL of the zone where the managed instance group is located (for zonal resources).
       "autoHealingPolicies": [ # The autohealing policy for this managed instance group. You can specify only one value.
         {
-          "healthCheck": "A String", # The URL for the HealthCheck that signals autohealing.
+          "healthCheck": "A String", # The URL for the health check that signals autohealing.
           "initialDelaySec": 42, # The number of seconds that the managed instance group waits before it applies autohealing policies to new instances or recently recreated instances. This initial delay allows instances to initialize and run their startup scripts before the instance group determines that they are UNHEALTHY. This prevents the managed instance group from recreating its instances prematurely. This value must be from range [0, 3600].
         },
       ],
       "targetSize": 42, # The target number of running instances for this managed instance group. Deleting or abandoning instances reduces this number. Resizing the group changes this number.
       "failoverAction": "A String", # The action to perform in case of zone failure. Only one value is supported, NO_FAILOVER. The default is NO_FAILOVER.
       "instanceGroup": "A String", # [Output Only] The URL of the Instance Group resource.
+      "serviceAccount": "A String", # Service account will be used as credentials for all operations performed by managed instance group on instances. The service accounts needs all permissions required to create and delete instances. When not specified, the service account {projectNumber}@cloudservices.gserviceaccount.com will be used.
       "kind": "compute#instanceGroupManager", # [Output Only] The resource type, which is always compute#instanceGroupManager for managed instance groups.
       "targetPools": [ # The URLs for all TargetPool resources to which instances in the instanceGroup field are added. The target pools automatically apply to all of the instances in the managed instance group.
         "A String",
@@ -379,6 +391,8 @@ Returns:
     <code class="details" id="insert">insert(project, region, body)</code>
   <pre>Creates a managed instance group using the information that you specify in the request. After the group is created, it schedules an action to create instances in the group using the specified instance template. This operation is marked as DONE when the group is created even if the instances in the group have not yet been created. You must separately verify the status of the individual instances with the listmanagedinstances method.
 
+A regional managed instance group can contain up to 2000 instances.
+
 Args:
   project: string, Project ID for this request. (required)
   region: string, Name of the region scoping this request. (required)
@@ -402,13 +416,14 @@ Args:
     "zone": "A String", # [Output Only] The URL of the zone where the managed instance group is located (for zonal resources).
     "autoHealingPolicies": [ # The autohealing policy for this managed instance group. You can specify only one value.
       {
-        "healthCheck": "A String", # The URL for the HealthCheck that signals autohealing.
+        "healthCheck": "A String", # The URL for the health check that signals autohealing.
         "initialDelaySec": 42, # The number of seconds that the managed instance group waits before it applies autohealing policies to new instances or recently recreated instances. This initial delay allows instances to initialize and run their startup scripts before the instance group determines that they are UNHEALTHY. This prevents the managed instance group from recreating its instances prematurely. This value must be from range [0, 3600].
       },
     ],
     "targetSize": 42, # The target number of running instances for this managed instance group. Deleting or abandoning instances reduces this number. Resizing the group changes this number.
     "failoverAction": "A String", # The action to perform in case of zone failure. Only one value is supported, NO_FAILOVER. The default is NO_FAILOVER.
     "instanceGroup": "A String", # [Output Only] The URL of the Instance Group resource.
+    "serviceAccount": "A String", # Service account will be used as credentials for all operations performed by managed instance group on instances. The service accounts needs all permissions required to create and delete instances. When not specified, the service account {projectNumber}@cloudservices.gserviceaccount.com will be used.
     "kind": "compute#instanceGroupManager", # [Output Only] The resource type, which is always compute#instanceGroupManager for managed instance groups.
     "targetPools": [ # The URLs for all TargetPool resources to which instances in the instanceGroup field are added. The target pools automatically apply to all of the instances in the managed instance group.
       "A String",
@@ -436,7 +451,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -476,7 +491,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -492,7 +507,7 @@ Args:
 You can also sort results in descending order based on the creation timestamp using orderBy="creationTimestamp desc". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.
 
 Currently, only sorting by name or creationTimestamp desc is supported.
-  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.
+  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
   filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
 
@@ -527,13 +542,14 @@ Returns:
           "zone": "A String", # [Output Only] The URL of the zone where the managed instance group is located (for zonal resources).
           "autoHealingPolicies": [ # The autohealing policy for this managed instance group. You can specify only one value.
             {
-              "healthCheck": "A String", # The URL for the HealthCheck that signals autohealing.
+              "healthCheck": "A String", # The URL for the health check that signals autohealing.
               "initialDelaySec": 42, # The number of seconds that the managed instance group waits before it applies autohealing policies to new instances or recently recreated instances. This initial delay allows instances to initialize and run their startup scripts before the instance group determines that they are UNHEALTHY. This prevents the managed instance group from recreating its instances prematurely. This value must be from range [0, 3600].
             },
           ],
           "targetSize": 42, # The target number of running instances for this managed instance group. Deleting or abandoning instances reduces this number. Resizing the group changes this number.
           "failoverAction": "A String", # The action to perform in case of zone failure. Only one value is supported, NO_FAILOVER. The default is NO_FAILOVER.
           "instanceGroup": "A String", # [Output Only] The URL of the Instance Group resource.
+          "serviceAccount": "A String", # Service account will be used as credentials for all operations performed by managed instance group on instances. The service accounts needs all permissions required to create and delete instances. When not specified, the service account {projectNumber}@cloudservices.gserviceaccount.com will be used.
           "kind": "compute#instanceGroupManager", # [Output Only] The resource type, which is always compute#instanceGroupManager for managed instance groups.
           "targetPools": [ # The URLs for all TargetPool resources to which instances in the instanceGroup field are added. The target pools automatically apply to all of the instances in the managed instance group.
             "A String",
@@ -561,30 +577,26 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="listManagedInstances">listManagedInstances(project, region, instanceGroupManager)</code>
+    <code class="details" id="listManagedInstances">listManagedInstances(project, region, instanceGroupManager, order_by=None, maxResults=None, pageToken=None, filter=None)</code>
   <pre>Lists the instances in the managed instance group and instances that are scheduled to be created. The list includes any current actions that the group has scheduled for its instances.
 
 Args:
   project: string, Project ID for this request. (required)
   region: string, Name of the region scoping this request. (required)
   instanceGroupManager: string, The name of the managed instance group. (required)
+  order_by: string, A parameter
+  maxResults: integer, A parameter
+  pageToken: string, A parameter
+  filter: string, A parameter
 
 Returns:
   An object of the form:
 
     {
+    "nextPageToken": "A String", # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
     "managedInstances": [ # List of managed instances.
       {
-        "currentAction": "A String", # [Output Only] The current action that the managed instance group has scheduled for the instance. Possible values:
-            # - NONE The instance is running, and the managed instance group does not have any scheduled actions for this instance.
-            # - CREATING The managed instance group is creating this instance. If the group fails to create this instance, it will try again until it is successful.
-            # - CREATING_WITHOUT_RETRIES The managed instance group is attempting to create this instance only once. If the group fails to create this instance, it does not try again and the group's targetSize value is decreased instead.
-            # - RECREATING The managed instance group is recreating this instance.
-            # - DELETING The managed instance group is permanently deleting this instance.
-            # - ABANDONING The managed instance group is abandoning this instance. The instance will be removed from the instance group and from any target pools that are associated with this group.
-            # - RESTARTING The managed instance group is restarting the instance.
-            # - REFRESHING The managed instance group is applying configuration changes to the instance without stopping it. For example, the group can update the target pool list for an instance without stopping that instance.
-        "instance": "A String", # [Output Only] The URL of the instance. The URL can exist even if the instance has not yet been created.
+        "instanceStatus": "A String", # [Output Only] The status of the instance. This field is empty when the instance does not exist.
         "lastAttempt": { # [Output Only] Information about the last attempt to create or delete the instance.
           "errors": { # [Output Only] Encountered errors during the last attempt to create or delete the instance.
             "errors": [ # [Output Only] The array of errors encountered while processing this operation.
@@ -596,11 +608,38 @@ Returns:
             ],
           },
         },
+        "instance": "A String", # [Output Only] The URL of the instance. The URL can exist even if the instance has not yet been created.
+        "version": { # [Output Only] Intended version of this instance.
+          "instanceTemplate": "A String", # [Output Only] The intended template of the instance. This field is empty when current_action is one of { DELETING, ABANDONING }.
+          "name": "A String", # [Output Only] Name of the version.
+        },
+        "currentAction": "A String", # [Output Only] The current action that the managed instance group has scheduled for the instance. Possible values:
+            # - NONE The instance is running, and the managed instance group does not have any scheduled actions for this instance.
+            # - CREATING The managed instance group is creating this instance. If the group fails to create this instance, it will try again until it is successful.
+            # - CREATING_WITHOUT_RETRIES The managed instance group is attempting to create this instance only once. If the group fails to create this instance, it does not try again and the group's targetSize value is decreased instead.
+            # - RECREATING The managed instance group is recreating this instance.
+            # - DELETING The managed instance group is permanently deleting this instance.
+            # - ABANDONING The managed instance group is abandoning this instance. The instance will be removed from the instance group and from any target pools that are associated with this group.
+            # - RESTARTING The managed instance group is restarting the instance.
+            # - REFRESHING The managed instance group is applying configuration changes to the instance without stopping it. For example, the group can update the target pool list for an instance without stopping that instance.
         "id": "A String", # [Output only] The unique identifier for this resource. This field is empty when instance does not exist.
-        "instanceStatus": "A String", # [Output Only] The status of the instance. This field is empty when the instance does not exist.
       },
     ],
   }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="listManagedInstances_next">listManagedInstances_next(previous_request, previous_response)</code>
+  <pre>Retrieves the next page of results.
+
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
+
+Returns:
+  A request object that you can call 'execute()' on to request the next
+  page. Returns None if there are no more items in the collection.
+    </pre>
 </div>
 
 <div class="method">
@@ -619,7 +658,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="patch">patch(project, region, instanceGroupManager, body)</code>
-  <pre>Updates a managed instance group using the information that you specify in the request. This operation is marked as DONE when the group is updated even if the instances in the group have not yet been updated. You must separately verify the status of the individual instances with the listmanagedinstances method. This method supports patch semantics.
+  <pre>Updates a managed instance group using the information that you specify in the request. This operation is marked as DONE when the group is patched even if the instances in the group are still in the process of being patched. You must separately verify the status of the individual instances with the listmanagedinstances method. This method supports patch semantics.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -645,13 +684,14 @@ Args:
     "zone": "A String", # [Output Only] The URL of the zone where the managed instance group is located (for zonal resources).
     "autoHealingPolicies": [ # The autohealing policy for this managed instance group. You can specify only one value.
       {
-        "healthCheck": "A String", # The URL for the HealthCheck that signals autohealing.
+        "healthCheck": "A String", # The URL for the health check that signals autohealing.
         "initialDelaySec": 42, # The number of seconds that the managed instance group waits before it applies autohealing policies to new instances or recently recreated instances. This initial delay allows instances to initialize and run their startup scripts before the instance group determines that they are UNHEALTHY. This prevents the managed instance group from recreating its instances prematurely. This value must be from range [0, 3600].
       },
     ],
     "targetSize": 42, # The target number of running instances for this managed instance group. Deleting or abandoning instances reduces this number. Resizing the group changes this number.
     "failoverAction": "A String", # The action to perform in case of zone failure. Only one value is supported, NO_FAILOVER. The default is NO_FAILOVER.
     "instanceGroup": "A String", # [Output Only] The URL of the Instance Group resource.
+    "serviceAccount": "A String", # Service account will be used as credentials for all operations performed by managed instance group on instances. The service accounts needs all permissions required to create and delete instances. When not specified, the service account {projectNumber}@cloudservices.gserviceaccount.com will be used.
     "kind": "compute#instanceGroupManager", # [Output Only] The resource type, which is always compute#instanceGroupManager for managed instance groups.
     "targetPools": [ # The URLs for all TargetPool resources to which instances in the instanceGroup field are added. The target pools automatically apply to all of the instances in the managed instance group.
       "A String",
@@ -679,7 +719,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -719,13 +759,17 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="recreateInstances">recreateInstances(project, region, instanceGroupManager, body)</code>
   <pre>Schedules a group action to recreate the specified instances in the managed instance group. The instances are deleted and recreated using the current instance template for the managed instance group. This operation is marked as DONE when the action is scheduled even if the instances have not yet been recreated. You must separately verify the status of the recreating action with the listmanagedinstances method.
+
+If the group is part of a backend service that has enabled connection draining, it can take up to 60 seconds after the connection draining duration has elapsed before the VM instance is removed or deleted.
+
+You can specify a maximum of 1000 instances with this method per request.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -735,7 +779,7 @@ Args:
     The object takes the form of:
 
 {
-    "instances": [ # The URL for one or more instances to recreate.
+    "instances": [ # The URLs of one or more instances to recreate. This can be a full URL or a partial URL, such as zones/[ZONE]/instances/[INSTANCE_NAME].
       "A String",
     ],
   }
@@ -747,7 +791,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -787,13 +831,15 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="resize">resize(project, region, instanceGroupManager, size)</code>
   <pre>Changes the intended size for the managed instance group. If you increase the size, the group schedules actions to create new instances using the current instance template. If you decrease the size, the group schedules delete actions on one or more instances. The resize operation is marked DONE when the resize actions are scheduled even if the group has not yet added or deleted any instances. You must separately verify the status of the creating or deleting actions with the listmanagedinstances method.
+
+If the group is part of a backend service that has enabled connection draining, it can take up to 60 seconds after the connection draining duration has elapsed before the VM instance is removed or deleted.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -807,7 +853,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -847,7 +893,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -865,7 +911,7 @@ Args:
 {
     "autoHealingPolicies": [
       {
-        "healthCheck": "A String", # The URL for the HealthCheck that signals autohealing.
+        "healthCheck": "A String", # The URL for the health check that signals autohealing.
         "initialDelaySec": 42, # The number of seconds that the managed instance group waits before it applies autohealing policies to new instances or recently recreated instances. This initial delay allows instances to initialize and run their startup scripts before the instance group determines that they are UNHEALTHY. This prevents the managed instance group from recreating its instances prematurely. This value must be from range [0, 3600].
       },
     ],
@@ -878,7 +924,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -918,7 +964,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -944,7 +990,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -984,7 +1030,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -1013,7 +1059,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -1053,7 +1099,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -1113,13 +1159,14 @@ Args:
     "zone": "A String", # [Output Only] The URL of the zone where the managed instance group is located (for zonal resources).
     "autoHealingPolicies": [ # The autohealing policy for this managed instance group. You can specify only one value.
       {
-        "healthCheck": "A String", # The URL for the HealthCheck that signals autohealing.
+        "healthCheck": "A String", # The URL for the health check that signals autohealing.
         "initialDelaySec": 42, # The number of seconds that the managed instance group waits before it applies autohealing policies to new instances or recently recreated instances. This initial delay allows instances to initialize and run their startup scripts before the instance group determines that they are UNHEALTHY. This prevents the managed instance group from recreating its instances prematurely. This value must be from range [0, 3600].
       },
     ],
     "targetSize": 42, # The target number of running instances for this managed instance group. Deleting or abandoning instances reduces this number. Resizing the group changes this number.
     "failoverAction": "A String", # The action to perform in case of zone failure. Only one value is supported, NO_FAILOVER. The default is NO_FAILOVER.
     "instanceGroup": "A String", # [Output Only] The URL of the Instance Group resource.
+    "serviceAccount": "A String", # Service account will be used as credentials for all operations performed by managed instance group on instances. The service accounts needs all permissions required to create and delete instances. When not specified, the service account {projectNumber}@cloudservices.gserviceaccount.com will be used.
     "kind": "compute#instanceGroupManager", # [Output Only] The resource type, which is always compute#instanceGroupManager for managed instance groups.
     "targetPools": [ # The URLs for all TargetPool resources to which instances in the instanceGroup field are added. The target pools automatically apply to all of the instances in the managed instance group.
       "A String",
@@ -1147,7 +1194,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -1187,7 +1234,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 

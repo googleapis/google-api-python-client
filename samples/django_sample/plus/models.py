@@ -1,12 +1,8 @@
-import pickle
-import base64
-
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.db import models
 
-from oauth2client.contrib.django_orm import FlowField
-from oauth2client.contrib.django_orm import CredentialsField
+from oauth2client.contrib.django_util.models import CredentialsField
 
 
 class CredentialsModel(models.Model):
@@ -16,6 +12,3 @@ class CredentialsModel(models.Model):
 
 class CredentialsAdmin(admin.ModelAdmin):
     pass
-
-
-admin.site.register(CredentialsModel, CredentialsAdmin)

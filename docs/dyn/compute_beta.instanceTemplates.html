@@ -107,7 +107,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -147,7 +147,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -219,7 +219,7 @@ Returns:
                   # - projects/project/zones/zone/diskTypes/diskType
                   # - zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this is the name of the disk type, not URL.
               "diskSizeGb": "A String", # Specifies the size of the disk in base-2 GB.
-              "sourceImage": "A String", # The source image used to create this disk. If the source image is deleted, this field will not be set.
+              "sourceImage": "A String", # The source image to create this disk. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
                   #
                   # To create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:
                   #
@@ -236,6 +236,8 @@ Returns:
                   # You can also specify a private image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:
                   #
                   # global/images/family/my-private-family
+                  #
+                  # If the source image is deleted later, this field will not be set.
               "diskStorageType": "A String", # [Deprecated] Storage type of the disk.
             },
             "autoDelete": True or False, # Specifies whether the disk will be auto-deleted when the instance is deleted (but not when the disk is detached from the instance).
@@ -247,7 +249,11 @@ Returns:
             "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
             "interface": "A String", # Specifies the disk interface to use for attaching this disk, which is either SCSI or NVME. The default is SCSI. Persistent disks must always use SCSI and the request will fail if you attempt to attach a persistent disk in any other format than SCSI. Local SSDs can use either NVME or SCSI. For performance characteristics of SCSI over NVMe, see Local SSD performance.
             "type": "A String", # Specifies the type of the disk, either SCRATCH or PERSISTENT. If not specified, the default is PERSISTENT.
-            "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks. Note that for InstanceTemplate, it is just disk name, not URL for the disk.
+            "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
+                #
+                # If desired, you can also attach existing non-root persistent disks using this property. This field is only applicable for persistent disks.
+                #
+                # Note that for InstanceTemplate, specify the disk name, not the URL for the disk.
           },
         ],
         "machineType": "A String", # The machine type to use for instances that are created from this template.
@@ -260,46 +266,56 @@ Returns:
               #
               # To see the latest fingerprint, make get() request to the instance.
         },
-        "labels": { # Labels to apply to instances that are created from this template. Each label key/value pair must comply with RFC1035. Label values may be empty.
+        "labels": { # Labels to apply to instances that are created from this template.
           "a_key": "A String",
         },
+        "networkInterfaces": [ # An array of network access configurations for this interface.
+          { # A network interface resource attached to an instance.
+            "kind": "compute#networkInterface", # [Output Only] Type of the resource. Always compute#networkInterface for network interfaces.
+            "aliasIpRanges": [ # An array of alias IP ranges for this network interface. Can only be specified for network interfaces on subnet-mode networks.
+              { # An alias IP range attached to an instance's network interface.
+                "subnetworkRangeName": "A String", # Optional subnetwork secondary range name specifying the secondary range from which to allocate the IP CIDR range for this alias IP range. If left unspecified, the primary range of the subnetwork will be used.
+                "ipCidrRange": "A String", # The IP CIDR range represented by this alias IP range. This IP CIDR range must belong to the specified subnetwork and cannot contain IP addresses reserved by system or used by other network interfaces. This range may be a single IP address (e.g. 10.2.3.4), a netmask (e.g. /24) or a CIDR format string (e.g. 10.1.2.0/24).
+              },
+            ],
+            "network": "A String", # URL of the network resource for this instance. When creating an instance, if neither the network nor the subnetwork is specified, the default network global/networks/default is used; if the network is not specified but the subnetwork is specified, the network is inferred.
+                #
+                # This field is optional when creating a firewall rule. If not specified when creating a firewall rule, the default network global/networks/default is used.
+                #
+                # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
+                # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
+                # - projects/project/global/networks/network
+                # - global/networks/default
+            "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
+              { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
+                "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
+                "type": "ONE_TO_ONE_NAT", # The type of configuration. The default and only option is ONE_TO_ONE_NAT.
+                "name": "A String", # The name of this access configuration. The default and recommended name is External NAT but you can use any arbitrary string you would like. For example, My external IP or Network Access.
+                "natIP": "A String", # An external IP address associated with this instance. Specify an unused static external IP address available to the project or leave this field undefined to use an IP from a shared ephemeral IP address pool. If you specify a static external IP address, it must live in the same region as the zone of the instance.
+              },
+            ],
+            "networkIP": "A String", # An IPv4 internal network address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
+            "subnetwork": "A String", # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not provide this property. If the network is in auto subnet mode, providing the subnetwork is optional. If the network is in custom subnet mode, then this field should be specified. If you specify this property, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
+                # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
+                # - regions/region/subnetworks/subnetwork
+            "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
+          },
+        ],
+        "minCpuPlatform": "A String", # Minimum cpu/platform to be used by this instance. The instance may be scheduled on the specified or later cpu/platform.
         "scheduling": { # Sets the scheduling options for an Instance. # Specifies the scheduling options for the instances that are created from this template.
           "automaticRestart": True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
-          "preemptible": True or False, # Whether the instance is preemptible.
+              #
+              # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
+          "preemptible": True or False, # Defines whether the instance is preemptible. This can only be set during instance creation, it cannot be set or changed after the instance has been created.
           "onHostMaintenance": "A String", # Defines the maintenance behavior for this instance. For standard instances, the default behavior is MIGRATE. For preemptible instances, the default and only possible behavior is TERMINATE. For more information, see Setting Instance Scheduling Options.
         },
-        "canIpForward": True or False, # Enables instances created based on this template to send packets with source IP addresses other than their own and receive packets with destination IP addresses other than their own. If these instances will be used as an IP gateway or it will be set as the next-hop in a Route resource, specify true. If unsure, leave this set to false. See the Enable IP forwarding for instances documentation for more information.
+        "canIpForward": True or False, # Enables instances created based on this template to send packets with source IP addresses other than their own and receive packets with destination IP addresses other than their own. If these instances will be used as an IP gateway or it will be set as the next-hop in a Route resource, specify true. If unsure, leave this set to false. See the Enable IP forwarding documentation for more information.
         "serviceAccounts": [ # A list of service accounts with specified scopes. Access tokens for these service accounts are available to the instances that are created from this template. Use metadata queries to obtain the access tokens for these instances.
           { # A service account.
             "scopes": [ # The list of scopes to be made available for this service account.
               "A String",
             ],
             "email": "A String", # Email address of the service account.
-          },
-        ],
-        "networkInterfaces": [ # An array of network access configurations for this interface.
-          { # A network interface resource attached to an instance.
-            "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
-              { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
-                "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
-                "type": "ONE_TO_ONE_NAT", # The type of configuration. The default and only option is ONE_TO_ONE_NAT.
-                "name": "A String", # Name of this access configuration.
-                "natIP": "A String", # An external IP address associated with this instance. Specify an unused static external IP address available to the project or leave this field undefined to use an IP from a shared ephemeral IP address pool. If you specify a static external IP address, it must live in the same region as the zone of the instance.
-              },
-            ],
-            "networkIP": "A String", # An IPv4 internal network address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
-            "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
-            "subnetwork": "A String", # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not provide this property. If the network is in auto subnet mode, providing the subnetwork is optional. If the network is in custom subnet mode, then this field should be specified. If you specify this property, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
-                # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
-                # - regions/region/subnetworks/subnetwork
-            "network": "A String", # URL of the network resource for this instance. This is required for creating an instance but optional when creating a firewall rule. If not specified when creating a firewall rule, the default network is used:
-                #
-                # global/networks/default
-                #
-                # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
-                # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
-                # - projects/project/global/networks/network
-                # - global/networks/default
           },
         ],
         "metadata": { # A metadata key/value entry. # The metadata key/value pairs to assign to instances that are created from this template. These pairs can consist of custom metadata or predefined keys. See Project and instance metadata for more information.
@@ -312,6 +328,12 @@ Returns:
           "kind": "compute#metadata", # [Output Only] Type of the resource. Always compute#metadata for metadata.
           "fingerprint": "A String", # Specifies a fingerprint for this request, which is essentially a hash of the metadata's contents and used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update metadata. You must always provide an up-to-date fingerprint hash in order to update or change metadata.
         },
+        "guestAccelerators": [ # A list of guest accelerator cards' type and count to use for instances created from the instance template.
+          { # A specification of the type and number of accelerator cards attached to the instance.
+            "acceleratorCount": 42, # The number of the guest accelerator cards exposed to this instance.
+            "acceleratorType": "A String", # Full or partial URL of the accelerator type resource to expose to this instance.
+          },
+        ],
       },
       "selfLink": "A String", # [Output Only] The URL for this instance template. The server defines this URL.
       "name": "A String", # Name of the resource; provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
@@ -384,7 +406,7 @@ Args:
                 # - projects/project/zones/zone/diskTypes/diskType
                 # - zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this is the name of the disk type, not URL.
             "diskSizeGb": "A String", # Specifies the size of the disk in base-2 GB.
-            "sourceImage": "A String", # The source image used to create this disk. If the source image is deleted, this field will not be set.
+            "sourceImage": "A String", # The source image to create this disk. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
                 #
                 # To create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:
                 #
@@ -401,6 +423,8 @@ Args:
                 # You can also specify a private image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:
                 #
                 # global/images/family/my-private-family
+                #
+                # If the source image is deleted later, this field will not be set.
             "diskStorageType": "A String", # [Deprecated] Storage type of the disk.
           },
           "autoDelete": True or False, # Specifies whether the disk will be auto-deleted when the instance is deleted (but not when the disk is detached from the instance).
@@ -412,7 +436,11 @@ Args:
           "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
           "interface": "A String", # Specifies the disk interface to use for attaching this disk, which is either SCSI or NVME. The default is SCSI. Persistent disks must always use SCSI and the request will fail if you attempt to attach a persistent disk in any other format than SCSI. Local SSDs can use either NVME or SCSI. For performance characteristics of SCSI over NVMe, see Local SSD performance.
           "type": "A String", # Specifies the type of the disk, either SCRATCH or PERSISTENT. If not specified, the default is PERSISTENT.
-          "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks. Note that for InstanceTemplate, it is just disk name, not URL for the disk.
+          "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
+              #
+              # If desired, you can also attach existing non-root persistent disks using this property. This field is only applicable for persistent disks.
+              #
+              # Note that for InstanceTemplate, specify the disk name, not the URL for the disk.
         },
       ],
       "machineType": "A String", # The machine type to use for instances that are created from this template.
@@ -425,46 +453,56 @@ Args:
             #
             # To see the latest fingerprint, make get() request to the instance.
       },
-      "labels": { # Labels to apply to instances that are created from this template. Each label key/value pair must comply with RFC1035. Label values may be empty.
+      "labels": { # Labels to apply to instances that are created from this template.
         "a_key": "A String",
       },
+      "networkInterfaces": [ # An array of network access configurations for this interface.
+        { # A network interface resource attached to an instance.
+          "kind": "compute#networkInterface", # [Output Only] Type of the resource. Always compute#networkInterface for network interfaces.
+          "aliasIpRanges": [ # An array of alias IP ranges for this network interface. Can only be specified for network interfaces on subnet-mode networks.
+            { # An alias IP range attached to an instance's network interface.
+              "subnetworkRangeName": "A String", # Optional subnetwork secondary range name specifying the secondary range from which to allocate the IP CIDR range for this alias IP range. If left unspecified, the primary range of the subnetwork will be used.
+              "ipCidrRange": "A String", # The IP CIDR range represented by this alias IP range. This IP CIDR range must belong to the specified subnetwork and cannot contain IP addresses reserved by system or used by other network interfaces. This range may be a single IP address (e.g. 10.2.3.4), a netmask (e.g. /24) or a CIDR format string (e.g. 10.1.2.0/24).
+            },
+          ],
+          "network": "A String", # URL of the network resource for this instance. When creating an instance, if neither the network nor the subnetwork is specified, the default network global/networks/default is used; if the network is not specified but the subnetwork is specified, the network is inferred.
+              #
+              # This field is optional when creating a firewall rule. If not specified when creating a firewall rule, the default network global/networks/default is used.
+              #
+              # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
+              # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
+              # - projects/project/global/networks/network
+              # - global/networks/default
+          "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
+            { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
+              "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
+              "type": "ONE_TO_ONE_NAT", # The type of configuration. The default and only option is ONE_TO_ONE_NAT.
+              "name": "A String", # The name of this access configuration. The default and recommended name is External NAT but you can use any arbitrary string you would like. For example, My external IP or Network Access.
+              "natIP": "A String", # An external IP address associated with this instance. Specify an unused static external IP address available to the project or leave this field undefined to use an IP from a shared ephemeral IP address pool. If you specify a static external IP address, it must live in the same region as the zone of the instance.
+            },
+          ],
+          "networkIP": "A String", # An IPv4 internal network address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
+          "subnetwork": "A String", # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not provide this property. If the network is in auto subnet mode, providing the subnetwork is optional. If the network is in custom subnet mode, then this field should be specified. If you specify this property, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
+              # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
+              # - regions/region/subnetworks/subnetwork
+          "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
+        },
+      ],
+      "minCpuPlatform": "A String", # Minimum cpu/platform to be used by this instance. The instance may be scheduled on the specified or later cpu/platform.
       "scheduling": { # Sets the scheduling options for an Instance. # Specifies the scheduling options for the instances that are created from this template.
         "automaticRestart": True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
-        "preemptible": True or False, # Whether the instance is preemptible.
+            #
+            # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
+        "preemptible": True or False, # Defines whether the instance is preemptible. This can only be set during instance creation, it cannot be set or changed after the instance has been created.
         "onHostMaintenance": "A String", # Defines the maintenance behavior for this instance. For standard instances, the default behavior is MIGRATE. For preemptible instances, the default and only possible behavior is TERMINATE. For more information, see Setting Instance Scheduling Options.
       },
-      "canIpForward": True or False, # Enables instances created based on this template to send packets with source IP addresses other than their own and receive packets with destination IP addresses other than their own. If these instances will be used as an IP gateway or it will be set as the next-hop in a Route resource, specify true. If unsure, leave this set to false. See the Enable IP forwarding for instances documentation for more information.
+      "canIpForward": True or False, # Enables instances created based on this template to send packets with source IP addresses other than their own and receive packets with destination IP addresses other than their own. If these instances will be used as an IP gateway or it will be set as the next-hop in a Route resource, specify true. If unsure, leave this set to false. See the Enable IP forwarding documentation for more information.
       "serviceAccounts": [ # A list of service accounts with specified scopes. Access tokens for these service accounts are available to the instances that are created from this template. Use metadata queries to obtain the access tokens for these instances.
         { # A service account.
           "scopes": [ # The list of scopes to be made available for this service account.
             "A String",
           ],
           "email": "A String", # Email address of the service account.
-        },
-      ],
-      "networkInterfaces": [ # An array of network access configurations for this interface.
-        { # A network interface resource attached to an instance.
-          "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
-            { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
-              "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
-              "type": "ONE_TO_ONE_NAT", # The type of configuration. The default and only option is ONE_TO_ONE_NAT.
-              "name": "A String", # Name of this access configuration.
-              "natIP": "A String", # An external IP address associated with this instance. Specify an unused static external IP address available to the project or leave this field undefined to use an IP from a shared ephemeral IP address pool. If you specify a static external IP address, it must live in the same region as the zone of the instance.
-            },
-          ],
-          "networkIP": "A String", # An IPv4 internal network address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
-          "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
-          "subnetwork": "A String", # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not provide this property. If the network is in auto subnet mode, providing the subnetwork is optional. If the network is in custom subnet mode, then this field should be specified. If you specify this property, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
-              # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
-              # - regions/region/subnetworks/subnetwork
-          "network": "A String", # URL of the network resource for this instance. This is required for creating an instance but optional when creating a firewall rule. If not specified when creating a firewall rule, the default network is used:
-              #
-              # global/networks/default
-              #
-              # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
-              # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
-              # - projects/project/global/networks/network
-              # - global/networks/default
         },
       ],
       "metadata": { # A metadata key/value entry. # The metadata key/value pairs to assign to instances that are created from this template. These pairs can consist of custom metadata or predefined keys. See Project and instance metadata for more information.
@@ -477,6 +515,12 @@ Args:
         "kind": "compute#metadata", # [Output Only] Type of the resource. Always compute#metadata for metadata.
         "fingerprint": "A String", # Specifies a fingerprint for this request, which is essentially a hash of the metadata's contents and used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update metadata. You must always provide an up-to-date fingerprint hash in order to update or change metadata.
       },
+      "guestAccelerators": [ # A list of guest accelerator cards' type and count to use for instances created from the instance template.
+        { # A specification of the type and number of accelerator cards attached to the instance.
+          "acceleratorCount": 42, # The number of the guest accelerator cards exposed to this instance.
+          "acceleratorType": "A String", # Full or partial URL of the accelerator type resource to expose to this instance.
+        },
+      ],
     },
     "selfLink": "A String", # [Output Only] The URL for this instance template. The server defines this URL.
     "name": "A String", # Name of the resource; provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
@@ -489,7 +533,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -529,7 +573,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -544,7 +588,7 @@ Args:
 You can also sort results in descending order based on the creation timestamp using orderBy="creationTimestamp desc". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.
 
 Currently, only sorting by name or creationTimestamp desc is supported.
-  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.
+  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
   filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
 
@@ -619,7 +663,7 @@ Returns:
                       # - projects/project/zones/zone/diskTypes/diskType
                       # - zones/zone/diskTypes/diskType  Note that for InstanceTemplate, this is the name of the disk type, not URL.
                   "diskSizeGb": "A String", # Specifies the size of the disk in base-2 GB.
-                  "sourceImage": "A String", # The source image used to create this disk. If the source image is deleted, this field will not be set.
+                  "sourceImage": "A String", # The source image to create this disk. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
                       #
                       # To create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:
                       #
@@ -636,6 +680,8 @@ Returns:
                       # You can also specify a private image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:
                       #
                       # global/images/family/my-private-family
+                      #
+                      # If the source image is deleted later, this field will not be set.
                   "diskStorageType": "A String", # [Deprecated] Storage type of the disk.
                 },
                 "autoDelete": True or False, # Specifies whether the disk will be auto-deleted when the instance is deleted (but not when the disk is detached from the instance).
@@ -647,7 +693,11 @@ Returns:
                 "mode": "A String", # The mode in which to attach this disk, either READ_WRITE or READ_ONLY. If not specified, the default is to attach the disk in READ_WRITE mode.
                 "interface": "A String", # Specifies the disk interface to use for attaching this disk, which is either SCSI or NVME. The default is SCSI. Persistent disks must always use SCSI and the request will fail if you attempt to attach a persistent disk in any other format than SCSI. Local SSDs can use either NVME or SCSI. For performance characteristics of SCSI over NVMe, see Local SSD performance.
                 "type": "A String", # Specifies the type of the disk, either SCRATCH or PERSISTENT. If not specified, the default is PERSISTENT.
-                "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. This field is only applicable for persistent disks. Note that for InstanceTemplate, it is just disk name, not URL for the disk.
+                "source": "A String", # Specifies a valid partial or full URL to an existing Persistent Disk resource. When creating a new instance, one of initializeParams.sourceImage or disks.source is required.
+                    #
+                    # If desired, you can also attach existing non-root persistent disks using this property. This field is only applicable for persistent disks.
+                    #
+                    # Note that for InstanceTemplate, specify the disk name, not the URL for the disk.
               },
             ],
             "machineType": "A String", # The machine type to use for instances that are created from this template.
@@ -660,46 +710,56 @@ Returns:
                   #
                   # To see the latest fingerprint, make get() request to the instance.
             },
-            "labels": { # Labels to apply to instances that are created from this template. Each label key/value pair must comply with RFC1035. Label values may be empty.
+            "labels": { # Labels to apply to instances that are created from this template.
               "a_key": "A String",
             },
+            "networkInterfaces": [ # An array of network access configurations for this interface.
+              { # A network interface resource attached to an instance.
+                "kind": "compute#networkInterface", # [Output Only] Type of the resource. Always compute#networkInterface for network interfaces.
+                "aliasIpRanges": [ # An array of alias IP ranges for this network interface. Can only be specified for network interfaces on subnet-mode networks.
+                  { # An alias IP range attached to an instance's network interface.
+                    "subnetworkRangeName": "A String", # Optional subnetwork secondary range name specifying the secondary range from which to allocate the IP CIDR range for this alias IP range. If left unspecified, the primary range of the subnetwork will be used.
+                    "ipCidrRange": "A String", # The IP CIDR range represented by this alias IP range. This IP CIDR range must belong to the specified subnetwork and cannot contain IP addresses reserved by system or used by other network interfaces. This range may be a single IP address (e.g. 10.2.3.4), a netmask (e.g. /24) or a CIDR format string (e.g. 10.1.2.0/24).
+                  },
+                ],
+                "network": "A String", # URL of the network resource for this instance. When creating an instance, if neither the network nor the subnetwork is specified, the default network global/networks/default is used; if the network is not specified but the subnetwork is specified, the network is inferred.
+                    #
+                    # This field is optional when creating a firewall rule. If not specified when creating a firewall rule, the default network global/networks/default is used.
+                    #
+                    # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
+                    # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
+                    # - projects/project/global/networks/network
+                    # - global/networks/default
+                "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
+                  { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
+                    "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
+                    "type": "ONE_TO_ONE_NAT", # The type of configuration. The default and only option is ONE_TO_ONE_NAT.
+                    "name": "A String", # The name of this access configuration. The default and recommended name is External NAT but you can use any arbitrary string you would like. For example, My external IP or Network Access.
+                    "natIP": "A String", # An external IP address associated with this instance. Specify an unused static external IP address available to the project or leave this field undefined to use an IP from a shared ephemeral IP address pool. If you specify a static external IP address, it must live in the same region as the zone of the instance.
+                  },
+                ],
+                "networkIP": "A String", # An IPv4 internal network address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
+                "subnetwork": "A String", # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not provide this property. If the network is in auto subnet mode, providing the subnetwork is optional. If the network is in custom subnet mode, then this field should be specified. If you specify this property, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
+                    # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
+                    # - regions/region/subnetworks/subnetwork
+                "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
+              },
+            ],
+            "minCpuPlatform": "A String", # Minimum cpu/platform to be used by this instance. The instance may be scheduled on the specified or later cpu/platform.
             "scheduling": { # Sets the scheduling options for an Instance. # Specifies the scheduling options for the instances that are created from this template.
               "automaticRestart": True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
-              "preemptible": True or False, # Whether the instance is preemptible.
+                  #
+                  # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
+              "preemptible": True or False, # Defines whether the instance is preemptible. This can only be set during instance creation, it cannot be set or changed after the instance has been created.
               "onHostMaintenance": "A String", # Defines the maintenance behavior for this instance. For standard instances, the default behavior is MIGRATE. For preemptible instances, the default and only possible behavior is TERMINATE. For more information, see Setting Instance Scheduling Options.
             },
-            "canIpForward": True or False, # Enables instances created based on this template to send packets with source IP addresses other than their own and receive packets with destination IP addresses other than their own. If these instances will be used as an IP gateway or it will be set as the next-hop in a Route resource, specify true. If unsure, leave this set to false. See the Enable IP forwarding for instances documentation for more information.
+            "canIpForward": True or False, # Enables instances created based on this template to send packets with source IP addresses other than their own and receive packets with destination IP addresses other than their own. If these instances will be used as an IP gateway or it will be set as the next-hop in a Route resource, specify true. If unsure, leave this set to false. See the Enable IP forwarding documentation for more information.
             "serviceAccounts": [ # A list of service accounts with specified scopes. Access tokens for these service accounts are available to the instances that are created from this template. Use metadata queries to obtain the access tokens for these instances.
               { # A service account.
                 "scopes": [ # The list of scopes to be made available for this service account.
                   "A String",
                 ],
                 "email": "A String", # Email address of the service account.
-              },
-            ],
-            "networkInterfaces": [ # An array of network access configurations for this interface.
-              { # A network interface resource attached to an instance.
-                "accessConfigs": [ # An array of configurations for this interface. Currently, only one access config, ONE_TO_ONE_NAT, is supported. If there are no accessConfigs specified, then this instance will have no external internet access.
-                  { # An access configuration attached to an instance's network interface. Only one access config per instance is supported.
-                    "kind": "compute#accessConfig", # [Output Only] Type of the resource. Always compute#accessConfig for access configs.
-                    "type": "ONE_TO_ONE_NAT", # The type of configuration. The default and only option is ONE_TO_ONE_NAT.
-                    "name": "A String", # Name of this access configuration.
-                    "natIP": "A String", # An external IP address associated with this instance. Specify an unused static external IP address available to the project or leave this field undefined to use an IP from a shared ephemeral IP address pool. If you specify a static external IP address, it must live in the same region as the zone of the instance.
-                  },
-                ],
-                "networkIP": "A String", # An IPv4 internal network address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
-                "name": "A String", # [Output Only] The name of the network interface, generated by the server. For network devices, these are eth0, eth1, etc.
-                "subnetwork": "A String", # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not provide this property. If the network is in auto subnet mode, providing the subnetwork is optional. If the network is in custom subnet mode, then this field should be specified. If you specify this property, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
-                    # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
-                    # - regions/region/subnetworks/subnetwork
-                "network": "A String", # URL of the network resource for this instance. This is required for creating an instance but optional when creating a firewall rule. If not specified when creating a firewall rule, the default network is used:
-                    #
-                    # global/networks/default
-                    #
-                    # If you specify this property, you can specify the network as a full or partial URL. For example, the following are all valid URLs:
-                    # - https://www.googleapis.com/compute/v1/projects/project/global/networks/network
-                    # - projects/project/global/networks/network
-                    # - global/networks/default
               },
             ],
             "metadata": { # A metadata key/value entry. # The metadata key/value pairs to assign to instances that are created from this template. These pairs can consist of custom metadata or predefined keys. See Project and instance metadata for more information.
@@ -712,6 +772,12 @@ Returns:
               "kind": "compute#metadata", # [Output Only] Type of the resource. Always compute#metadata for metadata.
               "fingerprint": "A String", # Specifies a fingerprint for this request, which is essentially a hash of the metadata's contents and used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update metadata. You must always provide an up-to-date fingerprint hash in order to update or change metadata.
             },
+            "guestAccelerators": [ # A list of guest accelerator cards' type and count to use for instances created from the instance template.
+              { # A specification of the type and number of accelerator cards attached to the instance.
+                "acceleratorCount": 42, # The number of the guest accelerator cards exposed to this instance.
+                "acceleratorType": "A String", # Full or partial URL of the accelerator type resource to expose to this instance.
+              },
+            ],
           },
           "selfLink": "A String", # [Output Only] The URL for this instance template. The server defines this URL.
           "name": "A String", # Name of the resource; provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.

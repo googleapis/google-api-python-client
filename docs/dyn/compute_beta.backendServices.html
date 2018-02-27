@@ -100,7 +100,7 @@ h1, h2, h3 {
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(project, backendService, body)</a></code></p>
-<p class="firstline">Updates the specified BackendService resource with the data included in the request. There are several restrictions and guidelines to keep in mind when updating a backend service. Read  Restrictions and Guidelines for more information. This method supports patch semantics.</p>
+<p class="firstline">Patches the specified BackendService resource with the data included in the request. There are several restrictions and guidelines to keep in mind when updating a backend service. Read  Restrictions and Guidelines for more information. This method supports patch semantics.</p>
 <p class="toc_element">
   <code><a href="#testIamPermissions">testIamPermissions(project, resource, body)</a></code></p>
 <p class="firstline">Returns permissions that a caller has on the specified resource.</p>
@@ -119,7 +119,7 @@ Args:
 You can also sort results in descending order based on the creation timestamp using orderBy="creationTimestamp desc". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.
 
 Currently, only sorting by name or creationTimestamp desc is supported.
-  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.
+  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
   filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
 
@@ -157,11 +157,23 @@ Returns:
               "kind": "compute#backendService", # [Output Only] Type of resource. Always compute#backendService for backend services.
               "protocol": "A String", # The protocol this BackendService uses to communicate with backends.
                   #
-                  # Possible values are HTTP, HTTPS, HTTP2, TCP and SSL. The default is HTTP.
+                  # Possible values are HTTP, HTTPS, TCP, and SSL. The default is HTTP.
                   #
                   # For internal load balancing, the possible values are TCP and UDP, and the default is TCP.
               "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-              "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
+              "cdnPolicy": { # Message containing Cloud CDN configuration for a backend service. # Cloud CDN configuration for this BackendService.
+                "cacheKeyPolicy": { # Message containing what to include in the cache key for a request for Cloud CDN. # The CacheKeyPolicy for this CdnPolicy.
+                  "includeQueryString": True or False, # If true, include query string parameters in the cache key according to query_string_whitelist and query_string_blacklist. If neither is set, the entire query string will be included. If false, the query string will be excluded from the cache key entirely.
+                  "includeHost": True or False, # If true, requests to different hosts will be cached separately.
+                  "queryStringBlacklist": [ # Names of query string parameters to exclude in cache keys. All other parameters will be included. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+                    "A String",
+                  ],
+                  "queryStringWhitelist": [ # Names of query string parameters to include in cache keys. All other parameters will be excluded. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+                    "A String",
+                  ],
+                  "includeProtocol": True or False, # If true, http and https requests will be cached separately.
+                },
+              },
               "enableCDN": True or False, # If true, enable Cloud CDN for this BackendService.
                   #
                   # When the load balancing scheme is INTERNAL, this field is not used.
@@ -170,6 +182,7 @@ Returns:
               "affinityCookieTtlSec": 42, # Lifetime of cookies in seconds if session_affinity is GENERATED_COOKIE. If set to 0, the cookie is non-persistent and lasts only until the end of the browser session (or equivalent). The maximum allowed value for TTL is one day.
                   #
                   # When the load balancing scheme is INTERNAL, this field is not used.
+              "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
               "port": 42, # Deprecated in favor of portName. The TCP port to connect on the backend. The default value is 80.
                   #
                   # This cannot be used for internal load balancing.
@@ -184,7 +197,7 @@ Returns:
                   "maxUtilization": 3.14, # Used when balancingMode is UTILIZATION. This ratio defines the CPU utilization target for the group. The default is 0.8. Valid range is [0.0, 1.0].
                       #
                       # This cannot be used for internal load balancing.
-                  "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle.This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
+                  "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
                       #
                       # This cannot be used for internal load balancing.
                   "maxConnectionsPerInstance": 42, # The max number of simultaneous connections that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either CONNECTION or UTILIZATION balancing modes. For CONNECTION mode, either maxConnections or maxConnectionsPerInstance must be set.
@@ -204,6 +217,7 @@ Returns:
                       # This cannot be used for internal load balancing.
                 },
               ],
+              "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
               "fingerprint": "A String", # Fingerprint of this resource. A hash of the contents stored in this object. This field is used in optimistic locking. This field will be ignored when inserting a BackendService. An up-to-date fingerprint must be provided in order to update the BackendService.
               "portName": "A String", # Name of backend port. The same name should appear in the instance groups referenced by this service. Required when the load balancing scheme is EXTERNAL.
                   #
@@ -221,7 +235,12 @@ Returns:
                   #
                   # When the protocol is UDP, this field is not used.
               "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
-              "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
+              "iap": { # Identity-Aware Proxy
+                "oauth2ClientId": "A String",
+                "enabled": True or False,
+                "oauth2ClientSecret": "A String",
+                "oauth2ClientSecretSha256": "A String", # [Output Only] SHA256 hash value for the field oauth2_client_secret above.
+              },
               "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
               "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
             },
@@ -262,7 +281,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -302,7 +321,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -324,11 +343,23 @@ Returns:
       "kind": "compute#backendService", # [Output Only] Type of resource. Always compute#backendService for backend services.
       "protocol": "A String", # The protocol this BackendService uses to communicate with backends.
           #
-          # Possible values are HTTP, HTTPS, HTTP2, TCP and SSL. The default is HTTP.
+          # Possible values are HTTP, HTTPS, TCP, and SSL. The default is HTTP.
           #
           # For internal load balancing, the possible values are TCP and UDP, and the default is TCP.
       "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-      "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
+      "cdnPolicy": { # Message containing Cloud CDN configuration for a backend service. # Cloud CDN configuration for this BackendService.
+        "cacheKeyPolicy": { # Message containing what to include in the cache key for a request for Cloud CDN. # The CacheKeyPolicy for this CdnPolicy.
+          "includeQueryString": True or False, # If true, include query string parameters in the cache key according to query_string_whitelist and query_string_blacklist. If neither is set, the entire query string will be included. If false, the query string will be excluded from the cache key entirely.
+          "includeHost": True or False, # If true, requests to different hosts will be cached separately.
+          "queryStringBlacklist": [ # Names of query string parameters to exclude in cache keys. All other parameters will be included. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+            "A String",
+          ],
+          "queryStringWhitelist": [ # Names of query string parameters to include in cache keys. All other parameters will be excluded. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+            "A String",
+          ],
+          "includeProtocol": True or False, # If true, http and https requests will be cached separately.
+        },
+      },
       "enableCDN": True or False, # If true, enable Cloud CDN for this BackendService.
           #
           # When the load balancing scheme is INTERNAL, this field is not used.
@@ -337,6 +368,7 @@ Returns:
       "affinityCookieTtlSec": 42, # Lifetime of cookies in seconds if session_affinity is GENERATED_COOKIE. If set to 0, the cookie is non-persistent and lasts only until the end of the browser session (or equivalent). The maximum allowed value for TTL is one day.
           #
           # When the load balancing scheme is INTERNAL, this field is not used.
+      "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
       "port": 42, # Deprecated in favor of portName. The TCP port to connect on the backend. The default value is 80.
           #
           # This cannot be used for internal load balancing.
@@ -351,7 +383,7 @@ Returns:
           "maxUtilization": 3.14, # Used when balancingMode is UTILIZATION. This ratio defines the CPU utilization target for the group. The default is 0.8. Valid range is [0.0, 1.0].
               #
               # This cannot be used for internal load balancing.
-          "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle.This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
+          "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
               #
               # This cannot be used for internal load balancing.
           "maxConnectionsPerInstance": 42, # The max number of simultaneous connections that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either CONNECTION or UTILIZATION balancing modes. For CONNECTION mode, either maxConnections or maxConnectionsPerInstance must be set.
@@ -371,6 +403,7 @@ Returns:
               # This cannot be used for internal load balancing.
         },
       ],
+      "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
       "fingerprint": "A String", # Fingerprint of this resource. A hash of the contents stored in this object. This field is used in optimistic locking. This field will be ignored when inserting a BackendService. An up-to-date fingerprint must be provided in order to update the BackendService.
       "portName": "A String", # Name of backend port. The same name should appear in the instance groups referenced by this service. Required when the load balancing scheme is EXTERNAL.
           #
@@ -388,7 +421,12 @@ Returns:
           #
           # When the protocol is UDP, this field is not used.
       "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
-      "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
+      "iap": { # Identity-Aware Proxy
+        "oauth2ClientId": "A String",
+        "enabled": True or False,
+        "oauth2ClientSecret": "A String",
+        "oauth2ClientSecretSha256": "A String", # [Output Only] SHA256 hash value for the field oauth2_client_secret above.
+      },
       "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
       "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
     }</pre>
@@ -441,11 +479,23 @@ Args:
     "kind": "compute#backendService", # [Output Only] Type of resource. Always compute#backendService for backend services.
     "protocol": "A String", # The protocol this BackendService uses to communicate with backends.
         # 
-        # Possible values are HTTP, HTTPS, HTTP2, TCP and SSL. The default is HTTP.
+        # Possible values are HTTP, HTTPS, TCP, and SSL. The default is HTTP.
         # 
         # For internal load balancing, the possible values are TCP and UDP, and the default is TCP.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-    "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
+    "cdnPolicy": { # Message containing Cloud CDN configuration for a backend service. # Cloud CDN configuration for this BackendService.
+      "cacheKeyPolicy": { # Message containing what to include in the cache key for a request for Cloud CDN. # The CacheKeyPolicy for this CdnPolicy.
+        "includeQueryString": True or False, # If true, include query string parameters in the cache key according to query_string_whitelist and query_string_blacklist. If neither is set, the entire query string will be included. If false, the query string will be excluded from the cache key entirely.
+        "includeHost": True or False, # If true, requests to different hosts will be cached separately.
+        "queryStringBlacklist": [ # Names of query string parameters to exclude in cache keys. All other parameters will be included. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+          "A String",
+        ],
+        "queryStringWhitelist": [ # Names of query string parameters to include in cache keys. All other parameters will be excluded. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+          "A String",
+        ],
+        "includeProtocol": True or False, # If true, http and https requests will be cached separately.
+      },
+    },
     "enableCDN": True or False, # If true, enable Cloud CDN for this BackendService.
         # 
         # When the load balancing scheme is INTERNAL, this field is not used.
@@ -454,6 +504,7 @@ Args:
     "affinityCookieTtlSec": 42, # Lifetime of cookies in seconds if session_affinity is GENERATED_COOKIE. If set to 0, the cookie is non-persistent and lasts only until the end of the browser session (or equivalent). The maximum allowed value for TTL is one day.
         # 
         # When the load balancing scheme is INTERNAL, this field is not used.
+    "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "port": 42, # Deprecated in favor of portName. The TCP port to connect on the backend. The default value is 80.
         # 
         # This cannot be used for internal load balancing.
@@ -468,7 +519,7 @@ Args:
         "maxUtilization": 3.14, # Used when balancingMode is UTILIZATION. This ratio defines the CPU utilization target for the group. The default is 0.8. Valid range is [0.0, 1.0].
             #
             # This cannot be used for internal load balancing.
-        "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle.This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
+        "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
             #
             # This cannot be used for internal load balancing.
         "maxConnectionsPerInstance": 42, # The max number of simultaneous connections that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either CONNECTION or UTILIZATION balancing modes. For CONNECTION mode, either maxConnections or maxConnectionsPerInstance must be set.
@@ -488,6 +539,7 @@ Args:
             # This cannot be used for internal load balancing.
       },
     ],
+    "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
     "fingerprint": "A String", # Fingerprint of this resource. A hash of the contents stored in this object. This field is used in optimistic locking. This field will be ignored when inserting a BackendService. An up-to-date fingerprint must be provided in order to update the BackendService.
     "portName": "A String", # Name of backend port. The same name should appear in the instance groups referenced by this service. Required when the load balancing scheme is EXTERNAL.
         # 
@@ -505,7 +557,12 @@ Args:
         # 
         # When the protocol is UDP, this field is not used.
     "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
-    "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
+    "iap": { # Identity-Aware Proxy
+      "oauth2ClientId": "A String",
+      "enabled": True or False,
+      "oauth2ClientSecret": "A String",
+      "oauth2ClientSecretSha256": "A String", # [Output Only] SHA256 hash value for the field oauth2_client_secret above.
+    },
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
     "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
   }
@@ -517,7 +574,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -557,7 +614,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -572,7 +629,7 @@ Args:
 You can also sort results in descending order based on the creation timestamp using orderBy="creationTimestamp desc". This sorts results based on the creationTimestamp field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first.
 
 Currently, only sorting by name or creationTimestamp desc is supported.
-  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests.
+  maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
   filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
 
@@ -588,7 +645,7 @@ Returns:
   An object of the form:
 
     { # Contains a list of BackendService resources.
-    "nextPageToken": "A String", # [Output Only] A token used to continue a truncated list request.
+    "nextPageToken": "A String", # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
     "items": [ # A list of BackendService resources.
       { # A BackendService resource. This resource defines a group of backend virtual machines and their serving capacity.
           "connectionDraining": { # Message containing connection draining configuration.
@@ -597,11 +654,23 @@ Returns:
           "kind": "compute#backendService", # [Output Only] Type of resource. Always compute#backendService for backend services.
           "protocol": "A String", # The protocol this BackendService uses to communicate with backends.
               #
-              # Possible values are HTTP, HTTPS, HTTP2, TCP and SSL. The default is HTTP.
+              # Possible values are HTTP, HTTPS, TCP, and SSL. The default is HTTP.
               #
               # For internal load balancing, the possible values are TCP and UDP, and the default is TCP.
           "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-          "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
+          "cdnPolicy": { # Message containing Cloud CDN configuration for a backend service. # Cloud CDN configuration for this BackendService.
+            "cacheKeyPolicy": { # Message containing what to include in the cache key for a request for Cloud CDN. # The CacheKeyPolicy for this CdnPolicy.
+              "includeQueryString": True or False, # If true, include query string parameters in the cache key according to query_string_whitelist and query_string_blacklist. If neither is set, the entire query string will be included. If false, the query string will be excluded from the cache key entirely.
+              "includeHost": True or False, # If true, requests to different hosts will be cached separately.
+              "queryStringBlacklist": [ # Names of query string parameters to exclude in cache keys. All other parameters will be included. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+                "A String",
+              ],
+              "queryStringWhitelist": [ # Names of query string parameters to include in cache keys. All other parameters will be excluded. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+                "A String",
+              ],
+              "includeProtocol": True or False, # If true, http and https requests will be cached separately.
+            },
+          },
           "enableCDN": True or False, # If true, enable Cloud CDN for this BackendService.
               #
               # When the load balancing scheme is INTERNAL, this field is not used.
@@ -610,6 +679,7 @@ Returns:
           "affinityCookieTtlSec": 42, # Lifetime of cookies in seconds if session_affinity is GENERATED_COOKIE. If set to 0, the cookie is non-persistent and lasts only until the end of the browser session (or equivalent). The maximum allowed value for TTL is one day.
               #
               # When the load balancing scheme is INTERNAL, this field is not used.
+          "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
           "port": 42, # Deprecated in favor of portName. The TCP port to connect on the backend. The default value is 80.
               #
               # This cannot be used for internal load balancing.
@@ -624,7 +694,7 @@ Returns:
               "maxUtilization": 3.14, # Used when balancingMode is UTILIZATION. This ratio defines the CPU utilization target for the group. The default is 0.8. Valid range is [0.0, 1.0].
                   #
                   # This cannot be used for internal load balancing.
-              "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle.This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
+              "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
                   #
                   # This cannot be used for internal load balancing.
               "maxConnectionsPerInstance": 42, # The max number of simultaneous connections that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either CONNECTION or UTILIZATION balancing modes. For CONNECTION mode, either maxConnections or maxConnectionsPerInstance must be set.
@@ -644,6 +714,7 @@ Returns:
                   # This cannot be used for internal load balancing.
             },
           ],
+          "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
           "fingerprint": "A String", # Fingerprint of this resource. A hash of the contents stored in this object. This field is used in optimistic locking. This field will be ignored when inserting a BackendService. An up-to-date fingerprint must be provided in order to update the BackendService.
           "portName": "A String", # Name of backend port. The same name should appear in the instance groups referenced by this service. Required when the load balancing scheme is EXTERNAL.
               #
@@ -661,7 +732,12 @@ Returns:
               #
               # When the protocol is UDP, this field is not used.
           "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
-          "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
+          "iap": { # Identity-Aware Proxy
+            "oauth2ClientId": "A String",
+            "enabled": True or False,
+            "oauth2ClientSecret": "A String",
+            "oauth2ClientSecretSha256": "A String", # [Output Only] SHA256 hash value for the field oauth2_client_secret above.
+          },
           "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
           "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
         },
@@ -688,11 +764,11 @@ Returns:
 
 <div class="method">
     <code class="details" id="patch">patch(project, backendService, body)</code>
-  <pre>Updates the specified BackendService resource with the data included in the request. There are several restrictions and guidelines to keep in mind when updating a backend service. Read  Restrictions and Guidelines for more information. This method supports patch semantics.
+  <pre>Patches the specified BackendService resource with the data included in the request. There are several restrictions and guidelines to keep in mind when updating a backend service. Read  Restrictions and Guidelines for more information. This method supports patch semantics.
 
 Args:
   project: string, Project ID for this request. (required)
-  backendService: string, Name of the BackendService resource to update. (required)
+  backendService: string, Name of the BackendService resource to patch. (required)
   body: object, The request body. (required)
     The object takes the form of:
 
@@ -703,11 +779,23 @@ Args:
     "kind": "compute#backendService", # [Output Only] Type of resource. Always compute#backendService for backend services.
     "protocol": "A String", # The protocol this BackendService uses to communicate with backends.
         # 
-        # Possible values are HTTP, HTTPS, HTTP2, TCP and SSL. The default is HTTP.
+        # Possible values are HTTP, HTTPS, TCP, and SSL. The default is HTTP.
         # 
         # For internal load balancing, the possible values are TCP and UDP, and the default is TCP.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-    "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
+    "cdnPolicy": { # Message containing Cloud CDN configuration for a backend service. # Cloud CDN configuration for this BackendService.
+      "cacheKeyPolicy": { # Message containing what to include in the cache key for a request for Cloud CDN. # The CacheKeyPolicy for this CdnPolicy.
+        "includeQueryString": True or False, # If true, include query string parameters in the cache key according to query_string_whitelist and query_string_blacklist. If neither is set, the entire query string will be included. If false, the query string will be excluded from the cache key entirely.
+        "includeHost": True or False, # If true, requests to different hosts will be cached separately.
+        "queryStringBlacklist": [ # Names of query string parameters to exclude in cache keys. All other parameters will be included. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+          "A String",
+        ],
+        "queryStringWhitelist": [ # Names of query string parameters to include in cache keys. All other parameters will be excluded. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+          "A String",
+        ],
+        "includeProtocol": True or False, # If true, http and https requests will be cached separately.
+      },
+    },
     "enableCDN": True or False, # If true, enable Cloud CDN for this BackendService.
         # 
         # When the load balancing scheme is INTERNAL, this field is not used.
@@ -716,6 +804,7 @@ Args:
     "affinityCookieTtlSec": 42, # Lifetime of cookies in seconds if session_affinity is GENERATED_COOKIE. If set to 0, the cookie is non-persistent and lasts only until the end of the browser session (or equivalent). The maximum allowed value for TTL is one day.
         # 
         # When the load balancing scheme is INTERNAL, this field is not used.
+    "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "port": 42, # Deprecated in favor of portName. The TCP port to connect on the backend. The default value is 80.
         # 
         # This cannot be used for internal load balancing.
@@ -730,7 +819,7 @@ Args:
         "maxUtilization": 3.14, # Used when balancingMode is UTILIZATION. This ratio defines the CPU utilization target for the group. The default is 0.8. Valid range is [0.0, 1.0].
             #
             # This cannot be used for internal load balancing.
-        "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle.This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
+        "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
             #
             # This cannot be used for internal load balancing.
         "maxConnectionsPerInstance": 42, # The max number of simultaneous connections that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either CONNECTION or UTILIZATION balancing modes. For CONNECTION mode, either maxConnections or maxConnectionsPerInstance must be set.
@@ -750,6 +839,7 @@ Args:
             # This cannot be used for internal load balancing.
       },
     ],
+    "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
     "fingerprint": "A String", # Fingerprint of this resource. A hash of the contents stored in this object. This field is used in optimistic locking. This field will be ignored when inserting a BackendService. An up-to-date fingerprint must be provided in order to update the BackendService.
     "portName": "A String", # Name of backend port. The same name should appear in the instance groups referenced by this service. Required when the load balancing scheme is EXTERNAL.
         # 
@@ -767,7 +857,12 @@ Args:
         # 
         # When the protocol is UDP, this field is not used.
     "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
-    "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
+    "iap": { # Identity-Aware Proxy
+      "oauth2ClientId": "A String",
+      "enabled": True or False,
+      "oauth2ClientSecret": "A String",
+      "oauth2ClientSecretSha256": "A String", # [Output Only] SHA256 hash value for the field oauth2_client_secret above.
+    },
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
     "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
   }
@@ -779,7 +874,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -819,7 +914,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 
@@ -867,11 +962,23 @@ Args:
     "kind": "compute#backendService", # [Output Only] Type of resource. Always compute#backendService for backend services.
     "protocol": "A String", # The protocol this BackendService uses to communicate with backends.
         # 
-        # Possible values are HTTP, HTTPS, HTTP2, TCP and SSL. The default is HTTP.
+        # Possible values are HTTP, HTTPS, TCP, and SSL. The default is HTTP.
         # 
         # For internal load balancing, the possible values are TCP and UDP, and the default is TCP.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-    "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
+    "cdnPolicy": { # Message containing Cloud CDN configuration for a backend service. # Cloud CDN configuration for this BackendService.
+      "cacheKeyPolicy": { # Message containing what to include in the cache key for a request for Cloud CDN. # The CacheKeyPolicy for this CdnPolicy.
+        "includeQueryString": True or False, # If true, include query string parameters in the cache key according to query_string_whitelist and query_string_blacklist. If neither is set, the entire query string will be included. If false, the query string will be excluded from the cache key entirely.
+        "includeHost": True or False, # If true, requests to different hosts will be cached separately.
+        "queryStringBlacklist": [ # Names of query string parameters to exclude in cache keys. All other parameters will be included. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+          "A String",
+        ],
+        "queryStringWhitelist": [ # Names of query string parameters to include in cache keys. All other parameters will be excluded. Either specify query_string_whitelist or query_string_blacklist, not both. '&' and '=' will be percent encoded and not treated as delimiters.
+          "A String",
+        ],
+        "includeProtocol": True or False, # If true, http and https requests will be cached separately.
+      },
+    },
     "enableCDN": True or False, # If true, enable Cloud CDN for this BackendService.
         # 
         # When the load balancing scheme is INTERNAL, this field is not used.
@@ -880,6 +987,7 @@ Args:
     "affinityCookieTtlSec": 42, # Lifetime of cookies in seconds if session_affinity is GENERATED_COOKIE. If set to 0, the cookie is non-persistent and lasts only until the end of the browser session (or equivalent). The maximum allowed value for TTL is one day.
         # 
         # When the load balancing scheme is INTERNAL, this field is not used.
+    "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "port": 42, # Deprecated in favor of portName. The TCP port to connect on the backend. The default value is 80.
         # 
         # This cannot be used for internal load balancing.
@@ -894,7 +1002,7 @@ Args:
         "maxUtilization": 3.14, # Used when balancingMode is UTILIZATION. This ratio defines the CPU utilization target for the group. The default is 0.8. Valid range is [0.0, 1.0].
             #
             # This cannot be used for internal load balancing.
-        "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle.This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
+        "maxRatePerInstance": 3.14, # The max requests per second (RPS) that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either balancing mode. For RATE mode, either maxRate or maxRatePerInstance must be set.
             #
             # This cannot be used for internal load balancing.
         "maxConnectionsPerInstance": 42, # The max number of simultaneous connections that a single backend instance can handle. This is used to calculate the capacity of the group. Can be used in either CONNECTION or UTILIZATION balancing modes. For CONNECTION mode, either maxConnections or maxConnectionsPerInstance must be set.
@@ -914,6 +1022,7 @@ Args:
             # This cannot be used for internal load balancing.
       },
     ],
+    "timeoutSec": 42, # How many seconds to wait for the backend before considering it a failed request. Default is 30 seconds.
     "fingerprint": "A String", # Fingerprint of this resource. A hash of the contents stored in this object. This field is used in optimistic locking. This field will be ignored when inserting a BackendService. An up-to-date fingerprint must be provided in order to update the BackendService.
     "portName": "A String", # Name of backend port. The same name should appear in the instance groups referenced by this service. Required when the load balancing scheme is EXTERNAL.
         # 
@@ -931,7 +1040,12 @@ Args:
         # 
         # When the protocol is UDP, this field is not used.
     "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
-    "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
+    "iap": { # Identity-Aware Proxy
+      "oauth2ClientId": "A String",
+      "enabled": True or False,
+      "oauth2ClientSecret": "A String",
+      "oauth2ClientSecretSha256": "A String", # [Output Only] SHA256 hash value for the field oauth2_client_secret above.
+    },
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
     "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
   }
@@ -943,7 +1057,7 @@ Returns:
     { # An Operation resource, used to manage asynchronous API requests.
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
     "clientOperationId": "A String", # [Output Only] Reserved for future use.
-    "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
+    "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
@@ -983,7 +1097,7 @@ Returns:
     },
     "endTime": "A String", # [Output Only] The time that this operation was completed. This value is in RFC3339 text format.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. If creating a persistent disk snapshot, this points to the persistent disk that the snapshot was created from.
+    "targetLink": "A String", # [Output Only] The URL of the resource that the operation modifies. For operations related to creating a snapshot, this points to the persistent disk that the snapshot was created from.
   }</pre>
 </div>
 

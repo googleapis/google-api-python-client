@@ -117,19 +117,8 @@ Args:
                     # `INTEGER`.
               },
             ],
-            "startGroup": 42, # If k metrics were requested, then the response will contain some
-                # data-dependent multiple of k columns in the report.  E.g., if you pivoted
-                # on the dimension `ga:browser` then you'd get k columns for "Firefox", k
-                # columns for "IE", k columns for "Chrome", etc. The ordering of the groups
-                # of columns is determined by descending order of "total" for the first of
-                # the k values.  Ties are broken by lexicographic ordering of the first
-                # pivot dimension, then lexicographic ordering of the second pivot
-                # dimension, and so on.  E.g., if the totals for the first value for
-                # Firefox, IE, and Chrome were 8, 2, 8, respectively, the order of columns
-                # would be Chrome, Firefox, IE.
-                #
-                # The following let you choose which of the groups of k columns are
-                # included in the response.
+            "maxGroupCount": 42, # Specifies the maximum number of groups to return.
+                # The default value is 10, also the maximum value is 1,000.
             "dimensions": [ # A list of dimensions to show as pivot columns. A Pivot can have a maximum
                 # of 4 dimensions. Pivot dimensions are part of the restriction on the
                 # total number of dimensions allowed in the request.
@@ -202,8 +191,19 @@ Args:
                 ],
               },
             ],
-            "maxGroupCount": 42, # Specifies the maximum number of groups to return.
-                # The default value is 10, also the maximum value is 1,000.
+            "startGroup": 42, # If k metrics were requested, then the response will contain some
+                # data-dependent multiple of k columns in the report.  E.g., if you pivoted
+                # on the dimension `ga:browser` then you'd get k columns for "Firefox", k
+                # columns for "IE", k columns for "Chrome", etc. The ordering of the groups
+                # of columns is determined by descending order of "total" for the first of
+                # the k values.  Ties are broken by lexicographic ordering of the first
+                # pivot dimension, then lexicographic ordering of the second pivot
+                # dimension, and so on.  E.g., if the totals for the first value for
+                # Firefox, IE, and Chrome were 8, 2, 8, respectively, the order of columns
+                # would be Chrome, Firefox, IE.
+                #
+                # The following let you choose which of the groups of k columns are
+                # included in the response.
           },
         ],
         "hideTotals": True or False, # If set to true, hides the total of all metrics for all the matching rows,
@@ -273,32 +273,14 @@ Args:
             ],
           },
         ],
-        "dimensionFilterClauses": [ # The dimension filter clauses for filtering Dimension Values. They are
-            # logically combined with the `AND` operator. Note that filtering occurs
-            # before any dimensions are aggregated, so that the returned metrics
-            # represent the total for only the relevant dimensions.
-          { # A group of dimension filters. Set the operator value to specify how
-              # the filters are logically combined.
-            "operator": "A String", # The operator for combining multiple dimension filters. If unspecified, it
-                # is treated as an `OR`.
-            "filters": [ # The repeated set of filters. They are logically combined based on the
-                # operator specified.
-              { # Dimension filter specifies the filtering options on a dimension.
-                "dimensionName": "A String", # The dimension to filter on. A DimensionFilter must contain a dimension.
-                "operator": "A String", # How to match the dimension to the expression. The default is REGEXP.
-                "expressions": [ # Strings or regular expression to match against. Only the first value of
-                    # the list is used for comparison unless the operator is `IN_LIST`.
-                    # If `IN_LIST` operator, then the entire list is used to filter the
-                    # dimensions as explained in the description of the `IN_LIST` operator.
-                  "A String",
-                ],
-                "not": True or False, # Logical `NOT` operator. If this boolean is set to true, then the matching
-                    # dimension values will be excluded in the report. The default is false.
-                "caseSensitive": True or False, # Should the match be case sensitive? Default is false.
-              },
-            ],
-          },
-        ],
+        "pageSize": 42, # Page size is for paging and specifies the maximum number of returned rows.
+            # Page size should be >= 0. A query returns the default of 1,000 rows.
+            # The Analytics Core Reporting API returns a maximum of 10,000 rows per
+            # request, no matter how many you ask for. It can also return fewer rows
+            # than requested, if there aren't as many dimension segments as you expect.
+            # For instance, there are fewer than 300 possible values for `ga:country`,
+            # so when segmenting only by country, you can't get more than 300 rows,
+            # even if you set `pageSize` to a higher value.
         "includeEmptyRows": True or False, # If set to false, the response does not include rows if all the retrieved
             # metrics are equal to zero. The default is false which will exclude these
             # rows.
@@ -309,257 +291,10 @@ Args:
             # Firefox; `ga:browser=~^Firefox`. For more information on dimensions
             # and metric filters, see
             # [Filters reference](https://developers.google.com/analytics/devguides/reporting/core/v3/reference#filters).
-        "segments": [ # Segment the data returned for the request. A segment definition helps look
-            # at a subset of the segment request. A request can contain up to four
-            # segments. Every [ReportRequest](#ReportRequest) within a
-            # `batchGet` method must contain the same `segments` definition. Requests
-            # with segments must have the `ga:segment` dimension.
-          { # The segment definition, if the report needs to be segmented.
-              # A Segment is a subset of the Analytics data. For example, of the entire
-              # set of users, one Segment might be users from a particular country or city.
-            "dynamicSegment": { # Dynamic segment definition for defining the segment within the request. # A dynamic segment definition in the request.
-                # A segment can select users, sessions or both.
-              "sessionSegment": { # SegmentDefinition defines the segment to be a set of SegmentFilters which # Session Segment to select sessions to include in the segment.
-                  # are combined together with a logical `AND` operation.
-                "segmentFilters": [ # A segment is defined by a set of segment filters which are combined
-                    # together with a logical `AND` operation.
-                  { # SegmentFilter defines the segment to be either a simple or a sequence
-                      # segment. A simple segment condition contains dimension and metric conditions
-                      # to select the sessions or users. A sequence segment condition can be used to
-                      # select users or sessions based on sequential conditions.
-                    "not": True or False, # If true, match the complement of simple or sequence segment.
-                        # For example, to match all visits not from "New York", we can define the
-                        # segment as follows:
-                        #
-                        #       "sessionSegment": {
-                        #         "segmentFilters": [{
-                        #           "simpleSegment" :{
-                        #             "orFiltersForSegment": [{
-                        #               "segmentFilterClauses":[{
-                        #                 "dimensionFilter": {
-                        #                   "dimensionName": "ga:city",
-                        #                   "expressions": ["New York"]
-                        #                 }
-                        #               }]
-                        #             }]
-                        #           },
-                        #           "not": "True"
-                        #         }]
-                        #       },
-                    "simpleSegment": { # A Simple segment conditions consist of one or more dimension/metric # A Simple segment conditions consist of one or more dimension/metric
-                        # conditions that can be combined
-                        # conditions that can be combined.
-                      "orFiltersForSegment": [ # A list of segment filters groups which are combined with logical `AND`
-                          # operator.
-                        { # A list of segment filters in the `OR` group are combined with the logical OR
-                            # operator.
-                          "segmentFilterClauses": [ # List of segment filters to be combined with a `OR` operator.
-                            { # Filter Clause to be used in a segment definition, can be wither a metric or
-                                # a dimension filter.
-                              "not": True or False, # Matches the complement (`!`) of the filter.
-                              "dimensionFilter": { # Dimension filter specifies the filtering options on a dimension. # Dimension Filter for the segment definition.
-                                "minComparisonValue": "A String", # Minimum comparison values for `BETWEEN` match type.
-                                "maxComparisonValue": "A String", # Maximum comparison values for `BETWEEN` match type.
-                                "dimensionName": "A String", # Name of the dimension for which the filter is being applied.
-                                "caseSensitive": True or False, # Should the match be case sensitive, ignored for `IN_LIST` operator.
-                                "operator": "A String", # The operator to use to match the dimension with the expressions.
-                                "expressions": [ # The list of expressions, only the first element is used for all operators
-                                  "A String",
-                                ],
-                              },
-                              "metricFilter": { # Metric filter to be used in a segment filter clause. # Metric Filter for the segment definition.
-                                "operator": "A String", # Specifies is the operation to perform to compare the metric. The default
-                                    # is `EQUAL`.
-                                "scope": "A String", # Scope for a metric defines the level at which that metric is defined.  The
-                                    # specified metric scope must be equal to or greater than its primary scope
-                                    # as defined in the data model. The primary scope is defined by if the
-                                    # segment is selecting users or sessions.
-                                "comparisonValue": "A String", # The value to compare against. If the operator is `BETWEEN`, this value is
-                                    # treated as minimum comparison value.
-                                "maxComparisonValue": "A String", # Max comparison value is only used for `BETWEEN` operator.
-                                "metricName": "A String", # The metric that will be filtered on. A `metricFilter` must contain a
-                                    # metric name.
-                              },
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    "sequenceSegment": { # Sequence conditions consist of one or more steps, where each step is defined # Sequence conditions consist of one or more steps, where each step is
-                        # defined by one or more dimension/metric conditions. Multiple steps can
-                        # be combined with special sequence operators.
-                        # by one or more dimension/metric conditions. Multiple steps can be combined
-                        # with special sequence operators.
-                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
-                          # the date range).
-                      "segmentSequenceSteps": [ # The list of steps in the sequence.
-                        { # A segment sequence definition.
-                          "matchType": "A String", # Specifies if the step immediately precedes or can be any time before the
-                              # next step.
-                          "orFiltersForSegment": [ # A sequence is specified with a list of Or grouped filters which are
-                              # combined with `AND` operator.
-                            { # A list of segment filters in the `OR` group are combined with the logical OR
-                                # operator.
-                              "segmentFilterClauses": [ # List of segment filters to be combined with a `OR` operator.
-                                { # Filter Clause to be used in a segment definition, can be wither a metric or
-                                    # a dimension filter.
-                                  "not": True or False, # Matches the complement (`!`) of the filter.
-                                  "dimensionFilter": { # Dimension filter specifies the filtering options on a dimension. # Dimension Filter for the segment definition.
-                                    "minComparisonValue": "A String", # Minimum comparison values for `BETWEEN` match type.
-                                    "maxComparisonValue": "A String", # Maximum comparison values for `BETWEEN` match type.
-                                    "dimensionName": "A String", # Name of the dimension for which the filter is being applied.
-                                    "caseSensitive": True or False, # Should the match be case sensitive, ignored for `IN_LIST` operator.
-                                    "operator": "A String", # The operator to use to match the dimension with the expressions.
-                                    "expressions": [ # The list of expressions, only the first element is used for all operators
-                                      "A String",
-                                    ],
-                                  },
-                                  "metricFilter": { # Metric filter to be used in a segment filter clause. # Metric Filter for the segment definition.
-                                    "operator": "A String", # Specifies is the operation to perform to compare the metric. The default
-                                        # is `EQUAL`.
-                                    "scope": "A String", # Scope for a metric defines the level at which that metric is defined.  The
-                                        # specified metric scope must be equal to or greater than its primary scope
-                                        # as defined in the data model. The primary scope is defined by if the
-                                        # segment is selecting users or sessions.
-                                    "comparisonValue": "A String", # The value to compare against. If the operator is `BETWEEN`, this value is
-                                        # treated as minimum comparison value.
-                                    "maxComparisonValue": "A String", # Max comparison value is only used for `BETWEEN` operator.
-                                    "metricName": "A String", # The metric that will be filtered on. A `metricFilter` must contain a
-                                        # metric name.
-                                  },
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  },
-                ],
-              },
-              "name": "A String", # The name of the dynamic segment.
-              "userSegment": { # SegmentDefinition defines the segment to be a set of SegmentFilters which # User Segment to select users to include in the segment.
-                  # are combined together with a logical `AND` operation.
-                "segmentFilters": [ # A segment is defined by a set of segment filters which are combined
-                    # together with a logical `AND` operation.
-                  { # SegmentFilter defines the segment to be either a simple or a sequence
-                      # segment. A simple segment condition contains dimension and metric conditions
-                      # to select the sessions or users. A sequence segment condition can be used to
-                      # select users or sessions based on sequential conditions.
-                    "not": True or False, # If true, match the complement of simple or sequence segment.
-                        # For example, to match all visits not from "New York", we can define the
-                        # segment as follows:
-                        #
-                        #       "sessionSegment": {
-                        #         "segmentFilters": [{
-                        #           "simpleSegment" :{
-                        #             "orFiltersForSegment": [{
-                        #               "segmentFilterClauses":[{
-                        #                 "dimensionFilter": {
-                        #                   "dimensionName": "ga:city",
-                        #                   "expressions": ["New York"]
-                        #                 }
-                        #               }]
-                        #             }]
-                        #           },
-                        #           "not": "True"
-                        #         }]
-                        #       },
-                    "simpleSegment": { # A Simple segment conditions consist of one or more dimension/metric # A Simple segment conditions consist of one or more dimension/metric
-                        # conditions that can be combined
-                        # conditions that can be combined.
-                      "orFiltersForSegment": [ # A list of segment filters groups which are combined with logical `AND`
-                          # operator.
-                        { # A list of segment filters in the `OR` group are combined with the logical OR
-                            # operator.
-                          "segmentFilterClauses": [ # List of segment filters to be combined with a `OR` operator.
-                            { # Filter Clause to be used in a segment definition, can be wither a metric or
-                                # a dimension filter.
-                              "not": True or False, # Matches the complement (`!`) of the filter.
-                              "dimensionFilter": { # Dimension filter specifies the filtering options on a dimension. # Dimension Filter for the segment definition.
-                                "minComparisonValue": "A String", # Minimum comparison values for `BETWEEN` match type.
-                                "maxComparisonValue": "A String", # Maximum comparison values for `BETWEEN` match type.
-                                "dimensionName": "A String", # Name of the dimension for which the filter is being applied.
-                                "caseSensitive": True or False, # Should the match be case sensitive, ignored for `IN_LIST` operator.
-                                "operator": "A String", # The operator to use to match the dimension with the expressions.
-                                "expressions": [ # The list of expressions, only the first element is used for all operators
-                                  "A String",
-                                ],
-                              },
-                              "metricFilter": { # Metric filter to be used in a segment filter clause. # Metric Filter for the segment definition.
-                                "operator": "A String", # Specifies is the operation to perform to compare the metric. The default
-                                    # is `EQUAL`.
-                                "scope": "A String", # Scope for a metric defines the level at which that metric is defined.  The
-                                    # specified metric scope must be equal to or greater than its primary scope
-                                    # as defined in the data model. The primary scope is defined by if the
-                                    # segment is selecting users or sessions.
-                                "comparisonValue": "A String", # The value to compare against. If the operator is `BETWEEN`, this value is
-                                    # treated as minimum comparison value.
-                                "maxComparisonValue": "A String", # Max comparison value is only used for `BETWEEN` operator.
-                                "metricName": "A String", # The metric that will be filtered on. A `metricFilter` must contain a
-                                    # metric name.
-                              },
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                    "sequenceSegment": { # Sequence conditions consist of one or more steps, where each step is defined # Sequence conditions consist of one or more steps, where each step is
-                        # defined by one or more dimension/metric conditions. Multiple steps can
-                        # be combined with special sequence operators.
-                        # by one or more dimension/metric conditions. Multiple steps can be combined
-                        # with special sequence operators.
-                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
-                          # the date range).
-                      "segmentSequenceSteps": [ # The list of steps in the sequence.
-                        { # A segment sequence definition.
-                          "matchType": "A String", # Specifies if the step immediately precedes or can be any time before the
-                              # next step.
-                          "orFiltersForSegment": [ # A sequence is specified with a list of Or grouped filters which are
-                              # combined with `AND` operator.
-                            { # A list of segment filters in the `OR` group are combined with the logical OR
-                                # operator.
-                              "segmentFilterClauses": [ # List of segment filters to be combined with a `OR` operator.
-                                { # Filter Clause to be used in a segment definition, can be wither a metric or
-                                    # a dimension filter.
-                                  "not": True or False, # Matches the complement (`!`) of the filter.
-                                  "dimensionFilter": { # Dimension filter specifies the filtering options on a dimension. # Dimension Filter for the segment definition.
-                                    "minComparisonValue": "A String", # Minimum comparison values for `BETWEEN` match type.
-                                    "maxComparisonValue": "A String", # Maximum comparison values for `BETWEEN` match type.
-                                    "dimensionName": "A String", # Name of the dimension for which the filter is being applied.
-                                    "caseSensitive": True or False, # Should the match be case sensitive, ignored for `IN_LIST` operator.
-                                    "operator": "A String", # The operator to use to match the dimension with the expressions.
-                                    "expressions": [ # The list of expressions, only the first element is used for all operators
-                                      "A String",
-                                    ],
-                                  },
-                                  "metricFilter": { # Metric filter to be used in a segment filter clause. # Metric Filter for the segment definition.
-                                    "operator": "A String", # Specifies is the operation to perform to compare the metric. The default
-                                        # is `EQUAL`.
-                                    "scope": "A String", # Scope for a metric defines the level at which that metric is defined.  The
-                                        # specified metric scope must be equal to or greater than its primary scope
-                                        # as defined in the data model. The primary scope is defined by if the
-                                        # segment is selecting users or sessions.
-                                    "comparisonValue": "A String", # The value to compare against. If the operator is `BETWEEN`, this value is
-                                        # treated as minimum comparison value.
-                                    "maxComparisonValue": "A String", # Max comparison value is only used for `BETWEEN` operator.
-                                    "metricName": "A String", # The metric that will be filtered on. A `metricFilter` must contain a
-                                        # metric name.
-                                  },
-                                },
-                              ],
-                            },
-                          ],
-                        },
-                      ],
-                    },
-                  },
-                ],
-              },
-            },
-            "segmentId": "A String", # The segment ID of a built-in or custom segment, for example `gaid::-3`.
-          },
-        ],
+        "viewId": "A String", # The Analytics
+            # [view ID](https://support.google.com/analytics/answer/1009618)
+            # from which to retrieve data. Every [ReportRequest](#ReportRequest)
+            # within a `batchGet` method must contain the same `viewId`.
         "hideValueRanges": True or False, # If set to true, hides the minimum and maximum across all matching rows.
             # The default is false and the value ranges are returned.
         "orderBys": [ # Sort order on output rows. To compare two rows, the elements of the
@@ -677,14 +412,32 @@ Args:
             # `batchGet` method must contain the same `samplingLevel` definition. See
             # [developer guide](/analytics/devguides/reporting/core/v4/basics#sampling)
             #  for details.
-        "pageSize": 42, # Page size is for paging and specifies the maximum number of returned rows.
-            # Page size should be >= 0. A query returns the default of 1,000 rows.
-            # The Analytics Core Reporting API returns a maximum of 10,000 rows per
-            # request, no matter how many you ask for. It can also return fewer rows
-            # than requested, if there aren't as many dimension segments as you expect.
-            # For instance, there are fewer than 300 possible values for `ga:country`,
-            # so when segmenting only by country, you can't get more than 300 rows,
-            # even if you set `pageSize` to a higher value.
+        "dimensionFilterClauses": [ # The dimension filter clauses for filtering Dimension Values. They are
+            # logically combined with the `AND` operator. Note that filtering occurs
+            # before any dimensions are aggregated, so that the returned metrics
+            # represent the total for only the relevant dimensions.
+          { # A group of dimension filters. Set the operator value to specify how
+              # the filters are logically combined.
+            "operator": "A String", # The operator for combining multiple dimension filters. If unspecified, it
+                # is treated as an `OR`.
+            "filters": [ # The repeated set of filters. They are logically combined based on the
+                # operator specified.
+              { # Dimension filter specifies the filtering options on a dimension.
+                "dimensionName": "A String", # The dimension to filter on. A DimensionFilter must contain a dimension.
+                "operator": "A String", # How to match the dimension to the expression. The default is REGEXP.
+                "expressions": [ # Strings or regular expression to match against. Only the first value of
+                    # the list is used for comparison unless the operator is `IN_LIST`.
+                    # If `IN_LIST` operator, then the entire list is used to filter the
+                    # dimensions as explained in the description of the `IN_LIST` operator.
+                  "A String",
+                ],
+                "not": True or False, # Logical `NOT` operator. If this boolean is set to true, then the matching
+                    # dimension values will be excluded in the report. The default is false.
+                "caseSensitive": True or False, # Should the match be case sensitive? Default is false.
+              },
+            ],
+          },
+        ],
         "metricFilterClauses": [ # The metric filter clauses. They are logically combined with the `AND`
             # operator.  Metric filters look at only the first date range and not the
             # comparing date range. Note that filtering on metrics occurs after the
@@ -710,10 +463,257 @@ Args:
             ],
           },
         ],
-        "viewId": "A String", # The Analytics
-            # [view ID](https://support.google.com/analytics/answer/1009618)
-            # from which to retrieve data. Every [ReportRequest](#ReportRequest)
-            # within a `batchGet` method must contain the same `viewId`.
+        "segments": [ # Segment the data returned for the request. A segment definition helps look
+            # at a subset of the segment request. A request can contain up to four
+            # segments. Every [ReportRequest](#ReportRequest) within a
+            # `batchGet` method must contain the same `segments` definition. Requests
+            # with segments must have the `ga:segment` dimension.
+          { # The segment definition, if the report needs to be segmented.
+              # A Segment is a subset of the Analytics data. For example, of the entire
+              # set of users, one Segment might be users from a particular country or city.
+            "dynamicSegment": { # Dynamic segment definition for defining the segment within the request. # A dynamic segment definition in the request.
+                # A segment can select users, sessions or both.
+              "sessionSegment": { # SegmentDefinition defines the segment to be a set of SegmentFilters which # Session Segment to select sessions to include in the segment.
+                  # are combined together with a logical `AND` operation.
+                "segmentFilters": [ # A segment is defined by a set of segment filters which are combined
+                    # together with a logical `AND` operation.
+                  { # SegmentFilter defines the segment to be either a simple or a sequence
+                      # segment. A simple segment condition contains dimension and metric conditions
+                      # to select the sessions or users. A sequence segment condition can be used to
+                      # select users or sessions based on sequential conditions.
+                    "not": True or False, # If true, match the complement of simple or sequence segment.
+                        # For example, to match all visits not from "New York", we can define the
+                        # segment as follows:
+                        #
+                        #       "sessionSegment": {
+                        #         "segmentFilters": [{
+                        #           "simpleSegment" :{
+                        #             "orFiltersForSegment": [{
+                        #               "segmentFilterClauses":[{
+                        #                 "dimensionFilter": {
+                        #                   "dimensionName": "ga:city",
+                        #                   "expressions": ["New York"]
+                        #                 }
+                        #               }]
+                        #             }]
+                        #           },
+                        #           "not": "True"
+                        #         }]
+                        #       },
+                    "simpleSegment": { # A Simple segment conditions consist of one or more dimension/metric # A Simple segment conditions consist of one or more dimension/metric
+                        # conditions that can be combined
+                        # conditions that can be combined.
+                      "orFiltersForSegment": [ # A list of segment filters groups which are combined with logical `AND`
+                          # operator.
+                        { # A list of segment filters in the `OR` group are combined with the logical OR
+                            # operator.
+                          "segmentFilterClauses": [ # List of segment filters to be combined with a `OR` operator.
+                            { # Filter Clause to be used in a segment definition, can be wither a metric or
+                                # a dimension filter.
+                              "not": True or False, # Matches the complement (`!`) of the filter.
+                              "dimensionFilter": { # Dimension filter specifies the filtering options on a dimension. # Dimension Filter for the segment definition.
+                                "minComparisonValue": "A String", # Minimum comparison values for `BETWEEN` match type.
+                                "maxComparisonValue": "A String", # Maximum comparison values for `BETWEEN` match type.
+                                "dimensionName": "A String", # Name of the dimension for which the filter is being applied.
+                                "caseSensitive": True or False, # Should the match be case sensitive, ignored for `IN_LIST` operator.
+                                "operator": "A String", # The operator to use to match the dimension with the expressions.
+                                "expressions": [ # The list of expressions, only the first element is used for all operators
+                                  "A String",
+                                ],
+                              },
+                              "metricFilter": { # Metric filter to be used in a segment filter clause. # Metric Filter for the segment definition.
+                                "operator": "A String", # Specifies is the operation to perform to compare the metric. The default
+                                    # is `EQUAL`.
+                                "scope": "A String", # Scope for a metric defines the level at which that metric is defined.  The
+                                    # specified metric scope must be equal to or greater than its primary scope
+                                    # as defined in the data model. The primary scope is defined by if the
+                                    # segment is selecting users or sessions.
+                                "comparisonValue": "A String", # The value to compare against. If the operator is `BETWEEN`, this value is
+                                    # treated as minimum comparison value.
+                                "maxComparisonValue": "A String", # Max comparison value is only used for `BETWEEN` operator.
+                                "metricName": "A String", # The metric that will be filtered on. A `metricFilter` must contain a
+                                    # metric name.
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    "sequenceSegment": { # Sequence conditions consist of one or more steps, where each step is defined # Sequence conditions consist of one or more steps, where each step is
+                        # defined by one or more dimension/metric conditions. Multiple steps can
+                        # be combined with special sequence operators.
+                        # by one or more dimension/metric conditions. Multiple steps can be combined
+                        # with special sequence operators.
+                      "segmentSequenceSteps": [ # The list of steps in the sequence.
+                        { # A segment sequence definition.
+                          "matchType": "A String", # Specifies if the step immediately precedes or can be any time before the
+                              # next step.
+                          "orFiltersForSegment": [ # A sequence is specified with a list of Or grouped filters which are
+                              # combined with `AND` operator.
+                            { # A list of segment filters in the `OR` group are combined with the logical OR
+                                # operator.
+                              "segmentFilterClauses": [ # List of segment filters to be combined with a `OR` operator.
+                                { # Filter Clause to be used in a segment definition, can be wither a metric or
+                                    # a dimension filter.
+                                  "not": True or False, # Matches the complement (`!`) of the filter.
+                                  "dimensionFilter": { # Dimension filter specifies the filtering options on a dimension. # Dimension Filter for the segment definition.
+                                    "minComparisonValue": "A String", # Minimum comparison values for `BETWEEN` match type.
+                                    "maxComparisonValue": "A String", # Maximum comparison values for `BETWEEN` match type.
+                                    "dimensionName": "A String", # Name of the dimension for which the filter is being applied.
+                                    "caseSensitive": True or False, # Should the match be case sensitive, ignored for `IN_LIST` operator.
+                                    "operator": "A String", # The operator to use to match the dimension with the expressions.
+                                    "expressions": [ # The list of expressions, only the first element is used for all operators
+                                      "A String",
+                                    ],
+                                  },
+                                  "metricFilter": { # Metric filter to be used in a segment filter clause. # Metric Filter for the segment definition.
+                                    "operator": "A String", # Specifies is the operation to perform to compare the metric. The default
+                                        # is `EQUAL`.
+                                    "scope": "A String", # Scope for a metric defines the level at which that metric is defined.  The
+                                        # specified metric scope must be equal to or greater than its primary scope
+                                        # as defined in the data model. The primary scope is defined by if the
+                                        # segment is selecting users or sessions.
+                                    "comparisonValue": "A String", # The value to compare against. If the operator is `BETWEEN`, this value is
+                                        # treated as minimum comparison value.
+                                    "maxComparisonValue": "A String", # Max comparison value is only used for `BETWEEN` operator.
+                                    "metricName": "A String", # The metric that will be filtered on. A `metricFilter` must contain a
+                                        # metric name.
+                                  },
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
+                          # the date range).
+                    },
+                  },
+                ],
+              },
+              "name": "A String", # The name of the dynamic segment.
+              "userSegment": { # SegmentDefinition defines the segment to be a set of SegmentFilters which # User Segment to select users to include in the segment.
+                  # are combined together with a logical `AND` operation.
+                "segmentFilters": [ # A segment is defined by a set of segment filters which are combined
+                    # together with a logical `AND` operation.
+                  { # SegmentFilter defines the segment to be either a simple or a sequence
+                      # segment. A simple segment condition contains dimension and metric conditions
+                      # to select the sessions or users. A sequence segment condition can be used to
+                      # select users or sessions based on sequential conditions.
+                    "not": True or False, # If true, match the complement of simple or sequence segment.
+                        # For example, to match all visits not from "New York", we can define the
+                        # segment as follows:
+                        #
+                        #       "sessionSegment": {
+                        #         "segmentFilters": [{
+                        #           "simpleSegment" :{
+                        #             "orFiltersForSegment": [{
+                        #               "segmentFilterClauses":[{
+                        #                 "dimensionFilter": {
+                        #                   "dimensionName": "ga:city",
+                        #                   "expressions": ["New York"]
+                        #                 }
+                        #               }]
+                        #             }]
+                        #           },
+                        #           "not": "True"
+                        #         }]
+                        #       },
+                    "simpleSegment": { # A Simple segment conditions consist of one or more dimension/metric # A Simple segment conditions consist of one or more dimension/metric
+                        # conditions that can be combined
+                        # conditions that can be combined.
+                      "orFiltersForSegment": [ # A list of segment filters groups which are combined with logical `AND`
+                          # operator.
+                        { # A list of segment filters in the `OR` group are combined with the logical OR
+                            # operator.
+                          "segmentFilterClauses": [ # List of segment filters to be combined with a `OR` operator.
+                            { # Filter Clause to be used in a segment definition, can be wither a metric or
+                                # a dimension filter.
+                              "not": True or False, # Matches the complement (`!`) of the filter.
+                              "dimensionFilter": { # Dimension filter specifies the filtering options on a dimension. # Dimension Filter for the segment definition.
+                                "minComparisonValue": "A String", # Minimum comparison values for `BETWEEN` match type.
+                                "maxComparisonValue": "A String", # Maximum comparison values for `BETWEEN` match type.
+                                "dimensionName": "A String", # Name of the dimension for which the filter is being applied.
+                                "caseSensitive": True or False, # Should the match be case sensitive, ignored for `IN_LIST` operator.
+                                "operator": "A String", # The operator to use to match the dimension with the expressions.
+                                "expressions": [ # The list of expressions, only the first element is used for all operators
+                                  "A String",
+                                ],
+                              },
+                              "metricFilter": { # Metric filter to be used in a segment filter clause. # Metric Filter for the segment definition.
+                                "operator": "A String", # Specifies is the operation to perform to compare the metric. The default
+                                    # is `EQUAL`.
+                                "scope": "A String", # Scope for a metric defines the level at which that metric is defined.  The
+                                    # specified metric scope must be equal to or greater than its primary scope
+                                    # as defined in the data model. The primary scope is defined by if the
+                                    # segment is selecting users or sessions.
+                                "comparisonValue": "A String", # The value to compare against. If the operator is `BETWEEN`, this value is
+                                    # treated as minimum comparison value.
+                                "maxComparisonValue": "A String", # Max comparison value is only used for `BETWEEN` operator.
+                                "metricName": "A String", # The metric that will be filtered on. A `metricFilter` must contain a
+                                    # metric name.
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    "sequenceSegment": { # Sequence conditions consist of one or more steps, where each step is defined # Sequence conditions consist of one or more steps, where each step is
+                        # defined by one or more dimension/metric conditions. Multiple steps can
+                        # be combined with special sequence operators.
+                        # by one or more dimension/metric conditions. Multiple steps can be combined
+                        # with special sequence operators.
+                      "segmentSequenceSteps": [ # The list of steps in the sequence.
+                        { # A segment sequence definition.
+                          "matchType": "A String", # Specifies if the step immediately precedes or can be any time before the
+                              # next step.
+                          "orFiltersForSegment": [ # A sequence is specified with a list of Or grouped filters which are
+                              # combined with `AND` operator.
+                            { # A list of segment filters in the `OR` group are combined with the logical OR
+                                # operator.
+                              "segmentFilterClauses": [ # List of segment filters to be combined with a `OR` operator.
+                                { # Filter Clause to be used in a segment definition, can be wither a metric or
+                                    # a dimension filter.
+                                  "not": True or False, # Matches the complement (`!`) of the filter.
+                                  "dimensionFilter": { # Dimension filter specifies the filtering options on a dimension. # Dimension Filter for the segment definition.
+                                    "minComparisonValue": "A String", # Minimum comparison values for `BETWEEN` match type.
+                                    "maxComparisonValue": "A String", # Maximum comparison values for `BETWEEN` match type.
+                                    "dimensionName": "A String", # Name of the dimension for which the filter is being applied.
+                                    "caseSensitive": True or False, # Should the match be case sensitive, ignored for `IN_LIST` operator.
+                                    "operator": "A String", # The operator to use to match the dimension with the expressions.
+                                    "expressions": [ # The list of expressions, only the first element is used for all operators
+                                      "A String",
+                                    ],
+                                  },
+                                  "metricFilter": { # Metric filter to be used in a segment filter clause. # Metric Filter for the segment definition.
+                                    "operator": "A String", # Specifies is the operation to perform to compare the metric. The default
+                                        # is `EQUAL`.
+                                    "scope": "A String", # Scope for a metric defines the level at which that metric is defined.  The
+                                        # specified metric scope must be equal to or greater than its primary scope
+                                        # as defined in the data model. The primary scope is defined by if the
+                                        # segment is selecting users or sessions.
+                                    "comparisonValue": "A String", # The value to compare against. If the operator is `BETWEEN`, this value is
+                                        # treated as minimum comparison value.
+                                    "maxComparisonValue": "A String", # Max comparison value is only used for `BETWEEN` operator.
+                                    "metricName": "A String", # The metric that will be filtered on. A `metricFilter` must contain a
+                                        # metric name.
+                                  },
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
+                          # the date range).
+                    },
+                  },
+                ],
+              },
+            },
+            "segmentId": "A String", # The segment ID of a built-in or custom segment, for example `gaid::-3`.
+          },
+        ],
       },
     ],
   }
@@ -823,6 +823,8 @@ Returns:
             },
           ],
           "rowCount": 42, # Total number of matching rows for this query.
+          "dataLastRefreshed": "A String", # The last time the data in the report was refreshed. All the hits received
+              # before this timestamp are included in the calculation of the report.
           "samplesReadCounts": [ # If the results are
               # [sampled](https://support.google.com/analytics/answer/2637192),
               # this returns the total number of samples read, one entry per date range.
@@ -837,6 +839,12 @@ Returns:
             "A String",
           ],
           "metricHeader": { # The headers for the metrics. # Metric headers for the metrics in the response.
+            "metricHeaderEntries": [ # Headers for the metrics in the response.
+              { # Header for the metrics.
+                "type": "A String", # The type of the metric, for example `INTEGER`.
+                "name": "A String", # The name of the header.
+              },
+            ],
             "pivotHeaders": [ # Headers for the pivots in the response.
               { # The headers for each of the pivot sections defined in the request.
                 "totalPivotGroupsCount": 42, # The total number of groups for this pivot.
@@ -855,12 +863,6 @@ Returns:
                     },
                   },
                 ],
-              },
-            ],
-            "metricHeaderEntries": [ # Headers for the metrics in the response.
-              { # Header for the metrics.
-                "type": "A String", # The type of the metric, for example `INTEGER`.
-                "name": "A String", # The name of the header.
               },
             ],
           },

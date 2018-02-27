@@ -104,11 +104,14 @@ Args:
 { # Configuration for an automated build in response to source repository
       # changes.
     "description": "A String", # Human-readable description of this trigger.
+    "filename": "A String", # Path, from the source root, to a file whose contents is used for the
+        # template.
     "createTime": "A String", # Time when the trigger was created.
         # 
         # @OutputOnly
-    "filename": "A String", # Path, from the source root, to a file whose contents is used for the
-        # template.
+    "substitutions": { # Substitutions data for Build resource.
+      "a_key": "A String",
+    },
     "disabled": True or False, # If true, the trigger will never result in a build.
     "build": { # A build resource in the Container Builder API. # Contents of the build template.
         #
@@ -126,23 +129,24 @@ Args:
         # - $TAG_NAME: the tag name specified by RepoSource.
         # - $REVISION_ID or $COMMIT_SHA: the commit SHA specified by RepoSource or
         #   resolved from the specified branch or tag.
-      "status": "A String", # Status of the build.
-          # @OutputOnly
       "finishTime": "A String", # Time at which execution of the build was finished.
-          # @OutputOnly
-      "timeout": "A String", # Amount of time that this build should be allowed to run, to second
-          # granularity. If this amount of time elapses, work on the build will cease
-          # and the build status will be TIMEOUT.
           #
-          # Default time is ten minutes.
-      "statusDetail": "A String", # Customer-readable message about the current status.
+          # The difference between finish_time and start_time is the duration of the
+          # build's execution.
+          # @OutputOnly
+      "status": "A String", # Status of the build.
           # @OutputOnly
       "startTime": "A String", # Time at which execution of the build was started.
           # @OutputOnly
-      "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
-          # [Bucket Name
-          # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-          # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
+      "statusDetail": "A String", # Customer-readable message about the current status.
+          # @OutputOnly
+      "tags": [ # Tags for annotation of a Build. These are not docker tags.
+        "A String",
+      ],
+      "projectId": "A String", # ID of the project.
+          # @OutputOnly.
+      "id": "A String", # Unique identifier of the build.
+          # @OutputOnly
       "results": { # Results describes the artifacts created by the build pipeline. # Results of the build.
           # @OutputOnly
         "images": [ # Images that were built as a part of the build.
@@ -156,12 +160,25 @@ Args:
           "A String",
         ],
       },
-      "createTime": "A String", # Time at which the build was created.
-          # @OutputOnly
-      "id": "A String", # Unique identifier of the build.
-          # @OutputOnly
+      "timeout": "A String", # Amount of time that this build should be allowed to run, to second
+          # granularity. If this amount of time elapses, work on the build will cease
+          # and the build status will be TIMEOUT.
+          #
+          # Default time is ten minutes.
+      "substitutions": { # Substitutions data for Build resource.
+        "a_key": "A String",
+      },
       "source": { # Source describes the location of the source in a supported storage # Describes where to find the source files to build.
           # service.
+        "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
+            # Repository.
+          "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
+              # the build is assumed.
+          "branchName": "A String", # Name of the branch to build.
+          "commitSha": "A String", # Explicit commit SHA to build.
+          "tagName": "A String", # Name of the tag to build.
+          "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
+        },
         "storageSource": { # StorageSource describes the location of the source in an archive file in # If provided, get the source from this location in in Google Cloud
             # Storage.
             # Google Cloud Storage.
@@ -175,15 +192,15 @@ Args:
               # [Bucket Name
               # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
         },
-        "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
-            # Repository.
-          "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
-              # the build is assumed.
-          "branchName": "A String", # Name of the branch to build.
-          "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-          "tagName": "A String", # Name of the tag to build.
-          "commitSha": "A String", # Explicit commit SHA to build.
-        },
+      },
+      "buildTriggerId": "A String", # The ID of the BuildTrigger that triggered this build, if it was
+          # triggered automatically.
+          # @OutputOnly
+      "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
+        "requestedVerifyOption": "A String", # Requested verifiability options.
+        "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+          "A String",
+        ],
       },
       "steps": [ # Describes the operations to be performed on the workspace.
         { # BuildStep describes a step to perform in the build pipeline.
@@ -196,17 +213,16 @@ Args:
           ],
           "name": "A String", # The name of the container image that will run this particular build step.
               #
-              # If the image is already available in the host's
-              # Docker daemon's cache, it will be run directly. If not, the host will
-              # attempt to pull the image first, using the builder service account's
-              # credentials if necessary.
+              # If the image is already available in the host's Docker daemon's cache, it
+              # will be run directly. If not, the host will attempt to pull the image
+              # first, using the builder service account's credentials if necessary.
               #
               # The Docker daemon's cache will already have the latest versions of all of
               # the officially supported build steps
-              # (https://github.com/GoogleCloudPlatform/cloud-builders). The Docker daemon
-              # will also have cached many of the layers for some popular images, like
-              # "ubuntu", "debian", but they will be refreshed at the time you attempt to
-              # use them.
+              # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+              # The Docker daemon will also have cached many of the layers for some popular
+              # images, like "ubuntu", "debian", but they will be refreshed at the time you
+              # attempt to use them.
               #
               # If you built an image in a previous build step, it will be stored in the
               # host's Docker daemon's cache and is available to use as the name for a
@@ -219,6 +235,8 @@ Args:
               # and the remainder will be used as arguments.
             "A String",
           ],
+          "entrypoint": "A String", # Optional entrypoint to be used instead of the build step image's default
+              # If unset, the image's default will be used.
           "env": [ # A list of environment variable definitions to be used when running a step.
               #
               # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
@@ -240,9 +258,9 @@ Args:
           "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
               # the build is assumed.
           "branchName": "A String", # Name of the branch to build.
-          "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-          "tagName": "A String", # Name of the tag to build.
           "commitSha": "A String", # Explicit commit SHA to build.
+          "tagName": "A String", # Name of the tag to build.
+          "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
         },
         "fileHashes": { # Hash(es) of the build source, which can be used to verify that the original
             # source integrity was maintained in the build. Note that FileHashes will
@@ -278,13 +296,14 @@ Args:
               # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
         },
       },
-      "projectId": "A String", # ID of the project.
-          # @OutputOnly.
+      "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
+          # [Bucket Name
+          # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
+          # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
       "images": [ # A list of images to be pushed upon the successful completion of all build
           # steps.
           #
-          # The images will be pushed using the builder
-          # service account's credentials.
+          # The images will be pushed using the builder service account's credentials.
           #
           # The digests of the pushed images will be stored in the Build resource's
           # results field.
@@ -292,18 +311,11 @@ Args:
           # If any of the images fail to be pushed, the build is marked FAILURE.
         "A String",
       ],
-      "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
-        "requestedVerifyOption": "A String", # Requested verifiability options.
-        "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-          "A String",
-        ],
-      },
+      "createTime": "A String", # Time at which the request to create the build was received.
+          # @OutputOnly
       "logUrl": "A String", # URL to logs for this build in Google Cloud Logging.
           # @OutputOnly
     },
-    "id": "A String", # Unique identifier of the trigger.
-        # 
-        # @OutputOnly
     "triggerTemplate": { # RepoSource describes the location of the source in a Google Cloud Source # Template describing the types of source changes to trigger a build.
         # 
         # Branch and tag names in trigger templates are interpreted as regular
@@ -313,10 +325,13 @@ Args:
       "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
           # the build is assumed.
       "branchName": "A String", # Name of the branch to build.
-      "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-      "tagName": "A String", # Name of the tag to build.
       "commitSha": "A String", # Explicit commit SHA to build.
+      "tagName": "A String", # Name of the tag to build.
+      "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
     },
+    "id": "A String", # Unique identifier of the trigger.
+        # 
+        # @OutputOnly
   }
 
   x__xgafv: string, V1 error format.
@@ -330,11 +345,14 @@ Returns:
     { # Configuration for an automated build in response to source repository
         # changes.
       "description": "A String", # Human-readable description of this trigger.
+      "filename": "A String", # Path, from the source root, to a file whose contents is used for the
+          # template.
       "createTime": "A String", # Time when the trigger was created.
           #
           # @OutputOnly
-      "filename": "A String", # Path, from the source root, to a file whose contents is used for the
-          # template.
+      "substitutions": { # Substitutions data for Build resource.
+        "a_key": "A String",
+      },
       "disabled": True or False, # If true, the trigger will never result in a build.
       "build": { # A build resource in the Container Builder API. # Contents of the build template.
           #
@@ -352,23 +370,24 @@ Returns:
           # - $TAG_NAME: the tag name specified by RepoSource.
           # - $REVISION_ID or $COMMIT_SHA: the commit SHA specified by RepoSource or
           #   resolved from the specified branch or tag.
-        "status": "A String", # Status of the build.
-            # @OutputOnly
         "finishTime": "A String", # Time at which execution of the build was finished.
-            # @OutputOnly
-        "timeout": "A String", # Amount of time that this build should be allowed to run, to second
-            # granularity. If this amount of time elapses, work on the build will cease
-            # and the build status will be TIMEOUT.
             #
-            # Default time is ten minutes.
-        "statusDetail": "A String", # Customer-readable message about the current status.
+            # The difference between finish_time and start_time is the duration of the
+            # build's execution.
+            # @OutputOnly
+        "status": "A String", # Status of the build.
             # @OutputOnly
         "startTime": "A String", # Time at which execution of the build was started.
             # @OutputOnly
-        "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
-            # [Bucket Name
-            # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-            # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
+        "statusDetail": "A String", # Customer-readable message about the current status.
+            # @OutputOnly
+        "tags": [ # Tags for annotation of a Build. These are not docker tags.
+          "A String",
+        ],
+        "projectId": "A String", # ID of the project.
+            # @OutputOnly.
+        "id": "A String", # Unique identifier of the build.
+            # @OutputOnly
         "results": { # Results describes the artifacts created by the build pipeline. # Results of the build.
             # @OutputOnly
           "images": [ # Images that were built as a part of the build.
@@ -382,12 +401,25 @@ Returns:
             "A String",
           ],
         },
-        "createTime": "A String", # Time at which the build was created.
-            # @OutputOnly
-        "id": "A String", # Unique identifier of the build.
-            # @OutputOnly
+        "timeout": "A String", # Amount of time that this build should be allowed to run, to second
+            # granularity. If this amount of time elapses, work on the build will cease
+            # and the build status will be TIMEOUT.
+            #
+            # Default time is ten minutes.
+        "substitutions": { # Substitutions data for Build resource.
+          "a_key": "A String",
+        },
         "source": { # Source describes the location of the source in a supported storage # Describes where to find the source files to build.
             # service.
+          "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
+              # Repository.
+            "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
+                # the build is assumed.
+            "branchName": "A String", # Name of the branch to build.
+            "commitSha": "A String", # Explicit commit SHA to build.
+            "tagName": "A String", # Name of the tag to build.
+            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
+          },
           "storageSource": { # StorageSource describes the location of the source in an archive file in # If provided, get the source from this location in in Google Cloud
               # Storage.
               # Google Cloud Storage.
@@ -401,15 +433,15 @@ Returns:
                 # [Bucket Name
                 # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
           },
-          "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
-              # Repository.
-            "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
-                # the build is assumed.
-            "branchName": "A String", # Name of the branch to build.
-            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-            "tagName": "A String", # Name of the tag to build.
-            "commitSha": "A String", # Explicit commit SHA to build.
-          },
+        },
+        "buildTriggerId": "A String", # The ID of the BuildTrigger that triggered this build, if it was
+            # triggered automatically.
+            # @OutputOnly
+        "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
+          "requestedVerifyOption": "A String", # Requested verifiability options.
+          "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+            "A String",
+          ],
         },
         "steps": [ # Describes the operations to be performed on the workspace.
           { # BuildStep describes a step to perform in the build pipeline.
@@ -422,17 +454,16 @@ Returns:
             ],
             "name": "A String", # The name of the container image that will run this particular build step.
                 #
-                # If the image is already available in the host's
-                # Docker daemon's cache, it will be run directly. If not, the host will
-                # attempt to pull the image first, using the builder service account's
-                # credentials if necessary.
+                # If the image is already available in the host's Docker daemon's cache, it
+                # will be run directly. If not, the host will attempt to pull the image
+                # first, using the builder service account's credentials if necessary.
                 #
                 # The Docker daemon's cache will already have the latest versions of all of
                 # the officially supported build steps
-                # (https://github.com/GoogleCloudPlatform/cloud-builders). The Docker daemon
-                # will also have cached many of the layers for some popular images, like
-                # "ubuntu", "debian", but they will be refreshed at the time you attempt to
-                # use them.
+                # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+                # The Docker daemon will also have cached many of the layers for some popular
+                # images, like "ubuntu", "debian", but they will be refreshed at the time you
+                # attempt to use them.
                 #
                 # If you built an image in a previous build step, it will be stored in the
                 # host's Docker daemon's cache and is available to use as the name for a
@@ -445,6 +476,8 @@ Returns:
                 # and the remainder will be used as arguments.
               "A String",
             ],
+            "entrypoint": "A String", # Optional entrypoint to be used instead of the build step image's default
+                # If unset, the image's default will be used.
             "env": [ # A list of environment variable definitions to be used when running a step.
                 #
                 # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
@@ -466,9 +499,9 @@ Returns:
             "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
                 # the build is assumed.
             "branchName": "A String", # Name of the branch to build.
-            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-            "tagName": "A String", # Name of the tag to build.
             "commitSha": "A String", # Explicit commit SHA to build.
+            "tagName": "A String", # Name of the tag to build.
+            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
           },
           "fileHashes": { # Hash(es) of the build source, which can be used to verify that the original
               # source integrity was maintained in the build. Note that FileHashes will
@@ -504,13 +537,14 @@ Returns:
                 # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
           },
         },
-        "projectId": "A String", # ID of the project.
-            # @OutputOnly.
+        "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
+            # [Bucket Name
+            # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
+            # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
         "images": [ # A list of images to be pushed upon the successful completion of all build
             # steps.
             #
-            # The images will be pushed using the builder
-            # service account's credentials.
+            # The images will be pushed using the builder service account's credentials.
             #
             # The digests of the pushed images will be stored in the Build resource's
             # results field.
@@ -518,18 +552,11 @@ Returns:
             # If any of the images fail to be pushed, the build is marked FAILURE.
           "A String",
         ],
-        "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
-          "requestedVerifyOption": "A String", # Requested verifiability options.
-          "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-            "A String",
-          ],
-        },
+        "createTime": "A String", # Time at which the request to create the build was received.
+            # @OutputOnly
         "logUrl": "A String", # URL to logs for this build in Google Cloud Logging.
             # @OutputOnly
       },
-      "id": "A String", # Unique identifier of the trigger.
-          #
-          # @OutputOnly
       "triggerTemplate": { # RepoSource describes the location of the source in a Google Cloud Source # Template describing the types of source changes to trigger a build.
           #
           # Branch and tag names in trigger templates are interpreted as regular
@@ -539,10 +566,13 @@ Returns:
         "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
             # the build is assumed.
         "branchName": "A String", # Name of the branch to build.
-        "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-        "tagName": "A String", # Name of the tag to build.
         "commitSha": "A String", # Explicit commit SHA to build.
+        "tagName": "A String", # Name of the tag to build.
+        "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
       },
+      "id": "A String", # Unique identifier of the trigger.
+          #
+          # @OutputOnly
     }</pre>
 </div>
 
@@ -595,11 +625,14 @@ Returns:
     { # Configuration for an automated build in response to source repository
         # changes.
       "description": "A String", # Human-readable description of this trigger.
+      "filename": "A String", # Path, from the source root, to a file whose contents is used for the
+          # template.
       "createTime": "A String", # Time when the trigger was created.
           #
           # @OutputOnly
-      "filename": "A String", # Path, from the source root, to a file whose contents is used for the
-          # template.
+      "substitutions": { # Substitutions data for Build resource.
+        "a_key": "A String",
+      },
       "disabled": True or False, # If true, the trigger will never result in a build.
       "build": { # A build resource in the Container Builder API. # Contents of the build template.
           #
@@ -617,23 +650,24 @@ Returns:
           # - $TAG_NAME: the tag name specified by RepoSource.
           # - $REVISION_ID or $COMMIT_SHA: the commit SHA specified by RepoSource or
           #   resolved from the specified branch or tag.
-        "status": "A String", # Status of the build.
-            # @OutputOnly
         "finishTime": "A String", # Time at which execution of the build was finished.
-            # @OutputOnly
-        "timeout": "A String", # Amount of time that this build should be allowed to run, to second
-            # granularity. If this amount of time elapses, work on the build will cease
-            # and the build status will be TIMEOUT.
             #
-            # Default time is ten minutes.
-        "statusDetail": "A String", # Customer-readable message about the current status.
+            # The difference between finish_time and start_time is the duration of the
+            # build's execution.
+            # @OutputOnly
+        "status": "A String", # Status of the build.
             # @OutputOnly
         "startTime": "A String", # Time at which execution of the build was started.
             # @OutputOnly
-        "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
-            # [Bucket Name
-            # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-            # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
+        "statusDetail": "A String", # Customer-readable message about the current status.
+            # @OutputOnly
+        "tags": [ # Tags for annotation of a Build. These are not docker tags.
+          "A String",
+        ],
+        "projectId": "A String", # ID of the project.
+            # @OutputOnly.
+        "id": "A String", # Unique identifier of the build.
+            # @OutputOnly
         "results": { # Results describes the artifacts created by the build pipeline. # Results of the build.
             # @OutputOnly
           "images": [ # Images that were built as a part of the build.
@@ -647,12 +681,25 @@ Returns:
             "A String",
           ],
         },
-        "createTime": "A String", # Time at which the build was created.
-            # @OutputOnly
-        "id": "A String", # Unique identifier of the build.
-            # @OutputOnly
+        "timeout": "A String", # Amount of time that this build should be allowed to run, to second
+            # granularity. If this amount of time elapses, work on the build will cease
+            # and the build status will be TIMEOUT.
+            #
+            # Default time is ten minutes.
+        "substitutions": { # Substitutions data for Build resource.
+          "a_key": "A String",
+        },
         "source": { # Source describes the location of the source in a supported storage # Describes where to find the source files to build.
             # service.
+          "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
+              # Repository.
+            "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
+                # the build is assumed.
+            "branchName": "A String", # Name of the branch to build.
+            "commitSha": "A String", # Explicit commit SHA to build.
+            "tagName": "A String", # Name of the tag to build.
+            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
+          },
           "storageSource": { # StorageSource describes the location of the source in an archive file in # If provided, get the source from this location in in Google Cloud
               # Storage.
               # Google Cloud Storage.
@@ -666,15 +713,15 @@ Returns:
                 # [Bucket Name
                 # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
           },
-          "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
-              # Repository.
-            "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
-                # the build is assumed.
-            "branchName": "A String", # Name of the branch to build.
-            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-            "tagName": "A String", # Name of the tag to build.
-            "commitSha": "A String", # Explicit commit SHA to build.
-          },
+        },
+        "buildTriggerId": "A String", # The ID of the BuildTrigger that triggered this build, if it was
+            # triggered automatically.
+            # @OutputOnly
+        "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
+          "requestedVerifyOption": "A String", # Requested verifiability options.
+          "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+            "A String",
+          ],
         },
         "steps": [ # Describes the operations to be performed on the workspace.
           { # BuildStep describes a step to perform in the build pipeline.
@@ -687,17 +734,16 @@ Returns:
             ],
             "name": "A String", # The name of the container image that will run this particular build step.
                 #
-                # If the image is already available in the host's
-                # Docker daemon's cache, it will be run directly. If not, the host will
-                # attempt to pull the image first, using the builder service account's
-                # credentials if necessary.
+                # If the image is already available in the host's Docker daemon's cache, it
+                # will be run directly. If not, the host will attempt to pull the image
+                # first, using the builder service account's credentials if necessary.
                 #
                 # The Docker daemon's cache will already have the latest versions of all of
                 # the officially supported build steps
-                # (https://github.com/GoogleCloudPlatform/cloud-builders). The Docker daemon
-                # will also have cached many of the layers for some popular images, like
-                # "ubuntu", "debian", but they will be refreshed at the time you attempt to
-                # use them.
+                # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+                # The Docker daemon will also have cached many of the layers for some popular
+                # images, like "ubuntu", "debian", but they will be refreshed at the time you
+                # attempt to use them.
                 #
                 # If you built an image in a previous build step, it will be stored in the
                 # host's Docker daemon's cache and is available to use as the name for a
@@ -710,6 +756,8 @@ Returns:
                 # and the remainder will be used as arguments.
               "A String",
             ],
+            "entrypoint": "A String", # Optional entrypoint to be used instead of the build step image's default
+                # If unset, the image's default will be used.
             "env": [ # A list of environment variable definitions to be used when running a step.
                 #
                 # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
@@ -731,9 +779,9 @@ Returns:
             "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
                 # the build is assumed.
             "branchName": "A String", # Name of the branch to build.
-            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-            "tagName": "A String", # Name of the tag to build.
             "commitSha": "A String", # Explicit commit SHA to build.
+            "tagName": "A String", # Name of the tag to build.
+            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
           },
           "fileHashes": { # Hash(es) of the build source, which can be used to verify that the original
               # source integrity was maintained in the build. Note that FileHashes will
@@ -769,13 +817,14 @@ Returns:
                 # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
           },
         },
-        "projectId": "A String", # ID of the project.
-            # @OutputOnly.
+        "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
+            # [Bucket Name
+            # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
+            # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
         "images": [ # A list of images to be pushed upon the successful completion of all build
             # steps.
             #
-            # The images will be pushed using the builder
-            # service account's credentials.
+            # The images will be pushed using the builder service account's credentials.
             #
             # The digests of the pushed images will be stored in the Build resource's
             # results field.
@@ -783,18 +832,11 @@ Returns:
             # If any of the images fail to be pushed, the build is marked FAILURE.
           "A String",
         ],
-        "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
-          "requestedVerifyOption": "A String", # Requested verifiability options.
-          "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-            "A String",
-          ],
-        },
+        "createTime": "A String", # Time at which the request to create the build was received.
+            # @OutputOnly
         "logUrl": "A String", # URL to logs for this build in Google Cloud Logging.
             # @OutputOnly
       },
-      "id": "A String", # Unique identifier of the trigger.
-          #
-          # @OutputOnly
       "triggerTemplate": { # RepoSource describes the location of the source in a Google Cloud Source # Template describing the types of source changes to trigger a build.
           #
           # Branch and tag names in trigger templates are interpreted as regular
@@ -804,10 +846,13 @@ Returns:
         "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
             # the build is assumed.
         "branchName": "A String", # Name of the branch to build.
-        "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-        "tagName": "A String", # Name of the tag to build.
         "commitSha": "A String", # Explicit commit SHA to build.
+        "tagName": "A String", # Name of the tag to build.
+        "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
       },
+      "id": "A String", # Unique identifier of the trigger.
+          #
+          # @OutputOnly
     }</pre>
 </div>
 
@@ -832,11 +877,14 @@ Returns:
       { # Configuration for an automated build in response to source repository
             # changes.
           "description": "A String", # Human-readable description of this trigger.
+          "filename": "A String", # Path, from the source root, to a file whose contents is used for the
+              # template.
           "createTime": "A String", # Time when the trigger was created.
               #
               # @OutputOnly
-          "filename": "A String", # Path, from the source root, to a file whose contents is used for the
-              # template.
+          "substitutions": { # Substitutions data for Build resource.
+            "a_key": "A String",
+          },
           "disabled": True or False, # If true, the trigger will never result in a build.
           "build": { # A build resource in the Container Builder API. # Contents of the build template.
               #
@@ -854,23 +902,24 @@ Returns:
               # - $TAG_NAME: the tag name specified by RepoSource.
               # - $REVISION_ID or $COMMIT_SHA: the commit SHA specified by RepoSource or
               #   resolved from the specified branch or tag.
-            "status": "A String", # Status of the build.
-                # @OutputOnly
             "finishTime": "A String", # Time at which execution of the build was finished.
-                # @OutputOnly
-            "timeout": "A String", # Amount of time that this build should be allowed to run, to second
-                # granularity. If this amount of time elapses, work on the build will cease
-                # and the build status will be TIMEOUT.
                 #
-                # Default time is ten minutes.
-            "statusDetail": "A String", # Customer-readable message about the current status.
+                # The difference between finish_time and start_time is the duration of the
+                # build's execution.
+                # @OutputOnly
+            "status": "A String", # Status of the build.
                 # @OutputOnly
             "startTime": "A String", # Time at which execution of the build was started.
                 # @OutputOnly
-            "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
-                # [Bucket Name
-                # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-                # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
+            "statusDetail": "A String", # Customer-readable message about the current status.
+                # @OutputOnly
+            "tags": [ # Tags for annotation of a Build. These are not docker tags.
+              "A String",
+            ],
+            "projectId": "A String", # ID of the project.
+                # @OutputOnly.
+            "id": "A String", # Unique identifier of the build.
+                # @OutputOnly
             "results": { # Results describes the artifacts created by the build pipeline. # Results of the build.
                 # @OutputOnly
               "images": [ # Images that were built as a part of the build.
@@ -884,12 +933,25 @@ Returns:
                 "A String",
               ],
             },
-            "createTime": "A String", # Time at which the build was created.
-                # @OutputOnly
-            "id": "A String", # Unique identifier of the build.
-                # @OutputOnly
+            "timeout": "A String", # Amount of time that this build should be allowed to run, to second
+                # granularity. If this amount of time elapses, work on the build will cease
+                # and the build status will be TIMEOUT.
+                #
+                # Default time is ten minutes.
+            "substitutions": { # Substitutions data for Build resource.
+              "a_key": "A String",
+            },
             "source": { # Source describes the location of the source in a supported storage # Describes where to find the source files to build.
                 # service.
+              "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
+                  # Repository.
+                "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
+                    # the build is assumed.
+                "branchName": "A String", # Name of the branch to build.
+                "commitSha": "A String", # Explicit commit SHA to build.
+                "tagName": "A String", # Name of the tag to build.
+                "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
+              },
               "storageSource": { # StorageSource describes the location of the source in an archive file in # If provided, get the source from this location in in Google Cloud
                   # Storage.
                   # Google Cloud Storage.
@@ -903,15 +965,15 @@ Returns:
                     # [Bucket Name
                     # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
               },
-              "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
-                  # Repository.
-                "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
-                    # the build is assumed.
-                "branchName": "A String", # Name of the branch to build.
-                "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-                "tagName": "A String", # Name of the tag to build.
-                "commitSha": "A String", # Explicit commit SHA to build.
-              },
+            },
+            "buildTriggerId": "A String", # The ID of the BuildTrigger that triggered this build, if it was
+                # triggered automatically.
+                # @OutputOnly
+            "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
+              "requestedVerifyOption": "A String", # Requested verifiability options.
+              "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+                "A String",
+              ],
             },
             "steps": [ # Describes the operations to be performed on the workspace.
               { # BuildStep describes a step to perform in the build pipeline.
@@ -924,17 +986,16 @@ Returns:
                 ],
                 "name": "A String", # The name of the container image that will run this particular build step.
                     #
-                    # If the image is already available in the host's
-                    # Docker daemon's cache, it will be run directly. If not, the host will
-                    # attempt to pull the image first, using the builder service account's
-                    # credentials if necessary.
+                    # If the image is already available in the host's Docker daemon's cache, it
+                    # will be run directly. If not, the host will attempt to pull the image
+                    # first, using the builder service account's credentials if necessary.
                     #
                     # The Docker daemon's cache will already have the latest versions of all of
                     # the officially supported build steps
-                    # (https://github.com/GoogleCloudPlatform/cloud-builders). The Docker daemon
-                    # will also have cached many of the layers for some popular images, like
-                    # "ubuntu", "debian", but they will be refreshed at the time you attempt to
-                    # use them.
+                    # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+                    # The Docker daemon will also have cached many of the layers for some popular
+                    # images, like "ubuntu", "debian", but they will be refreshed at the time you
+                    # attempt to use them.
                     #
                     # If you built an image in a previous build step, it will be stored in the
                     # host's Docker daemon's cache and is available to use as the name for a
@@ -947,6 +1008,8 @@ Returns:
                     # and the remainder will be used as arguments.
                   "A String",
                 ],
+                "entrypoint": "A String", # Optional entrypoint to be used instead of the build step image's default
+                    # If unset, the image's default will be used.
                 "env": [ # A list of environment variable definitions to be used when running a step.
                     #
                     # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
@@ -968,9 +1031,9 @@ Returns:
                 "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
                     # the build is assumed.
                 "branchName": "A String", # Name of the branch to build.
-                "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-                "tagName": "A String", # Name of the tag to build.
                 "commitSha": "A String", # Explicit commit SHA to build.
+                "tagName": "A String", # Name of the tag to build.
+                "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
               },
               "fileHashes": { # Hash(es) of the build source, which can be used to verify that the original
                   # source integrity was maintained in the build. Note that FileHashes will
@@ -1006,13 +1069,14 @@ Returns:
                     # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
               },
             },
-            "projectId": "A String", # ID of the project.
-                # @OutputOnly.
+            "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
+                # [Bucket Name
+                # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
+                # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
             "images": [ # A list of images to be pushed upon the successful completion of all build
                 # steps.
                 #
-                # The images will be pushed using the builder
-                # service account's credentials.
+                # The images will be pushed using the builder service account's credentials.
                 #
                 # The digests of the pushed images will be stored in the Build resource's
                 # results field.
@@ -1020,18 +1084,11 @@ Returns:
                 # If any of the images fail to be pushed, the build is marked FAILURE.
               "A String",
             ],
-            "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
-              "requestedVerifyOption": "A String", # Requested verifiability options.
-              "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-                "A String",
-              ],
-            },
+            "createTime": "A String", # Time at which the request to create the build was received.
+                # @OutputOnly
             "logUrl": "A String", # URL to logs for this build in Google Cloud Logging.
                 # @OutputOnly
           },
-          "id": "A String", # Unique identifier of the trigger.
-              #
-              # @OutputOnly
           "triggerTemplate": { # RepoSource describes the location of the source in a Google Cloud Source # Template describing the types of source changes to trigger a build.
               #
               # Branch and tag names in trigger templates are interpreted as regular
@@ -1041,10 +1098,13 @@ Returns:
             "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
                 # the build is assumed.
             "branchName": "A String", # Name of the branch to build.
-            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-            "tagName": "A String", # Name of the tag to build.
             "commitSha": "A String", # Explicit commit SHA to build.
+            "tagName": "A String", # Name of the tag to build.
+            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
           },
+          "id": "A String", # Unique identifier of the trigger.
+              #
+              # @OutputOnly
         },
     ],
   }</pre>
@@ -1065,11 +1125,14 @@ Args:
 { # Configuration for an automated build in response to source repository
       # changes.
     "description": "A String", # Human-readable description of this trigger.
+    "filename": "A String", # Path, from the source root, to a file whose contents is used for the
+        # template.
     "createTime": "A String", # Time when the trigger was created.
         # 
         # @OutputOnly
-    "filename": "A String", # Path, from the source root, to a file whose contents is used for the
-        # template.
+    "substitutions": { # Substitutions data for Build resource.
+      "a_key": "A String",
+    },
     "disabled": True or False, # If true, the trigger will never result in a build.
     "build": { # A build resource in the Container Builder API. # Contents of the build template.
         #
@@ -1087,23 +1150,24 @@ Args:
         # - $TAG_NAME: the tag name specified by RepoSource.
         # - $REVISION_ID or $COMMIT_SHA: the commit SHA specified by RepoSource or
         #   resolved from the specified branch or tag.
-      "status": "A String", # Status of the build.
-          # @OutputOnly
       "finishTime": "A String", # Time at which execution of the build was finished.
-          # @OutputOnly
-      "timeout": "A String", # Amount of time that this build should be allowed to run, to second
-          # granularity. If this amount of time elapses, work on the build will cease
-          # and the build status will be TIMEOUT.
           #
-          # Default time is ten minutes.
-      "statusDetail": "A String", # Customer-readable message about the current status.
+          # The difference between finish_time and start_time is the duration of the
+          # build's execution.
+          # @OutputOnly
+      "status": "A String", # Status of the build.
           # @OutputOnly
       "startTime": "A String", # Time at which execution of the build was started.
           # @OutputOnly
-      "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
-          # [Bucket Name
-          # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-          # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
+      "statusDetail": "A String", # Customer-readable message about the current status.
+          # @OutputOnly
+      "tags": [ # Tags for annotation of a Build. These are not docker tags.
+        "A String",
+      ],
+      "projectId": "A String", # ID of the project.
+          # @OutputOnly.
+      "id": "A String", # Unique identifier of the build.
+          # @OutputOnly
       "results": { # Results describes the artifacts created by the build pipeline. # Results of the build.
           # @OutputOnly
         "images": [ # Images that were built as a part of the build.
@@ -1117,12 +1181,25 @@ Args:
           "A String",
         ],
       },
-      "createTime": "A String", # Time at which the build was created.
-          # @OutputOnly
-      "id": "A String", # Unique identifier of the build.
-          # @OutputOnly
+      "timeout": "A String", # Amount of time that this build should be allowed to run, to second
+          # granularity. If this amount of time elapses, work on the build will cease
+          # and the build status will be TIMEOUT.
+          #
+          # Default time is ten minutes.
+      "substitutions": { # Substitutions data for Build resource.
+        "a_key": "A String",
+      },
       "source": { # Source describes the location of the source in a supported storage # Describes where to find the source files to build.
           # service.
+        "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
+            # Repository.
+          "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
+              # the build is assumed.
+          "branchName": "A String", # Name of the branch to build.
+          "commitSha": "A String", # Explicit commit SHA to build.
+          "tagName": "A String", # Name of the tag to build.
+          "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
+        },
         "storageSource": { # StorageSource describes the location of the source in an archive file in # If provided, get the source from this location in in Google Cloud
             # Storage.
             # Google Cloud Storage.
@@ -1136,15 +1213,15 @@ Args:
               # [Bucket Name
               # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
         },
-        "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
-            # Repository.
-          "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
-              # the build is assumed.
-          "branchName": "A String", # Name of the branch to build.
-          "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-          "tagName": "A String", # Name of the tag to build.
-          "commitSha": "A String", # Explicit commit SHA to build.
-        },
+      },
+      "buildTriggerId": "A String", # The ID of the BuildTrigger that triggered this build, if it was
+          # triggered automatically.
+          # @OutputOnly
+      "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
+        "requestedVerifyOption": "A String", # Requested verifiability options.
+        "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+          "A String",
+        ],
       },
       "steps": [ # Describes the operations to be performed on the workspace.
         { # BuildStep describes a step to perform in the build pipeline.
@@ -1157,17 +1234,16 @@ Args:
           ],
           "name": "A String", # The name of the container image that will run this particular build step.
               #
-              # If the image is already available in the host's
-              # Docker daemon's cache, it will be run directly. If not, the host will
-              # attempt to pull the image first, using the builder service account's
-              # credentials if necessary.
+              # If the image is already available in the host's Docker daemon's cache, it
+              # will be run directly. If not, the host will attempt to pull the image
+              # first, using the builder service account's credentials if necessary.
               #
               # The Docker daemon's cache will already have the latest versions of all of
               # the officially supported build steps
-              # (https://github.com/GoogleCloudPlatform/cloud-builders). The Docker daemon
-              # will also have cached many of the layers for some popular images, like
-              # "ubuntu", "debian", but they will be refreshed at the time you attempt to
-              # use them.
+              # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+              # The Docker daemon will also have cached many of the layers for some popular
+              # images, like "ubuntu", "debian", but they will be refreshed at the time you
+              # attempt to use them.
               #
               # If you built an image in a previous build step, it will be stored in the
               # host's Docker daemon's cache and is available to use as the name for a
@@ -1180,6 +1256,8 @@ Args:
               # and the remainder will be used as arguments.
             "A String",
           ],
+          "entrypoint": "A String", # Optional entrypoint to be used instead of the build step image's default
+              # If unset, the image's default will be used.
           "env": [ # A list of environment variable definitions to be used when running a step.
               #
               # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
@@ -1201,9 +1279,9 @@ Args:
           "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
               # the build is assumed.
           "branchName": "A String", # Name of the branch to build.
-          "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-          "tagName": "A String", # Name of the tag to build.
           "commitSha": "A String", # Explicit commit SHA to build.
+          "tagName": "A String", # Name of the tag to build.
+          "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
         },
         "fileHashes": { # Hash(es) of the build source, which can be used to verify that the original
             # source integrity was maintained in the build. Note that FileHashes will
@@ -1239,13 +1317,14 @@ Args:
               # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
         },
       },
-      "projectId": "A String", # ID of the project.
-          # @OutputOnly.
+      "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
+          # [Bucket Name
+          # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
+          # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
       "images": [ # A list of images to be pushed upon the successful completion of all build
           # steps.
           #
-          # The images will be pushed using the builder
-          # service account's credentials.
+          # The images will be pushed using the builder service account's credentials.
           #
           # The digests of the pushed images will be stored in the Build resource's
           # results field.
@@ -1253,18 +1332,11 @@ Args:
           # If any of the images fail to be pushed, the build is marked FAILURE.
         "A String",
       ],
-      "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
-        "requestedVerifyOption": "A String", # Requested verifiability options.
-        "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-          "A String",
-        ],
-      },
+      "createTime": "A String", # Time at which the request to create the build was received.
+          # @OutputOnly
       "logUrl": "A String", # URL to logs for this build in Google Cloud Logging.
           # @OutputOnly
     },
-    "id": "A String", # Unique identifier of the trigger.
-        # 
-        # @OutputOnly
     "triggerTemplate": { # RepoSource describes the location of the source in a Google Cloud Source # Template describing the types of source changes to trigger a build.
         # 
         # Branch and tag names in trigger templates are interpreted as regular
@@ -1274,10 +1346,13 @@ Args:
       "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
           # the build is assumed.
       "branchName": "A String", # Name of the branch to build.
-      "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-      "tagName": "A String", # Name of the tag to build.
       "commitSha": "A String", # Explicit commit SHA to build.
+      "tagName": "A String", # Name of the tag to build.
+      "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
     },
+    "id": "A String", # Unique identifier of the trigger.
+        # 
+        # @OutputOnly
   }
 
   x__xgafv: string, V1 error format.
@@ -1291,11 +1366,14 @@ Returns:
     { # Configuration for an automated build in response to source repository
         # changes.
       "description": "A String", # Human-readable description of this trigger.
+      "filename": "A String", # Path, from the source root, to a file whose contents is used for the
+          # template.
       "createTime": "A String", # Time when the trigger was created.
           #
           # @OutputOnly
-      "filename": "A String", # Path, from the source root, to a file whose contents is used for the
-          # template.
+      "substitutions": { # Substitutions data for Build resource.
+        "a_key": "A String",
+      },
       "disabled": True or False, # If true, the trigger will never result in a build.
       "build": { # A build resource in the Container Builder API. # Contents of the build template.
           #
@@ -1313,23 +1391,24 @@ Returns:
           # - $TAG_NAME: the tag name specified by RepoSource.
           # - $REVISION_ID or $COMMIT_SHA: the commit SHA specified by RepoSource or
           #   resolved from the specified branch or tag.
-        "status": "A String", # Status of the build.
-            # @OutputOnly
         "finishTime": "A String", # Time at which execution of the build was finished.
-            # @OutputOnly
-        "timeout": "A String", # Amount of time that this build should be allowed to run, to second
-            # granularity. If this amount of time elapses, work on the build will cease
-            # and the build status will be TIMEOUT.
             #
-            # Default time is ten minutes.
-        "statusDetail": "A String", # Customer-readable message about the current status.
+            # The difference between finish_time and start_time is the duration of the
+            # build's execution.
+            # @OutputOnly
+        "status": "A String", # Status of the build.
             # @OutputOnly
         "startTime": "A String", # Time at which execution of the build was started.
             # @OutputOnly
-        "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
-            # [Bucket Name
-            # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-            # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
+        "statusDetail": "A String", # Customer-readable message about the current status.
+            # @OutputOnly
+        "tags": [ # Tags for annotation of a Build. These are not docker tags.
+          "A String",
+        ],
+        "projectId": "A String", # ID of the project.
+            # @OutputOnly.
+        "id": "A String", # Unique identifier of the build.
+            # @OutputOnly
         "results": { # Results describes the artifacts created by the build pipeline. # Results of the build.
             # @OutputOnly
           "images": [ # Images that were built as a part of the build.
@@ -1343,12 +1422,25 @@ Returns:
             "A String",
           ],
         },
-        "createTime": "A String", # Time at which the build was created.
-            # @OutputOnly
-        "id": "A String", # Unique identifier of the build.
-            # @OutputOnly
+        "timeout": "A String", # Amount of time that this build should be allowed to run, to second
+            # granularity. If this amount of time elapses, work on the build will cease
+            # and the build status will be TIMEOUT.
+            #
+            # Default time is ten minutes.
+        "substitutions": { # Substitutions data for Build resource.
+          "a_key": "A String",
+        },
         "source": { # Source describes the location of the source in a supported storage # Describes where to find the source files to build.
             # service.
+          "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
+              # Repository.
+            "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
+                # the build is assumed.
+            "branchName": "A String", # Name of the branch to build.
+            "commitSha": "A String", # Explicit commit SHA to build.
+            "tagName": "A String", # Name of the tag to build.
+            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
+          },
           "storageSource": { # StorageSource describes the location of the source in an archive file in # If provided, get the source from this location in in Google Cloud
               # Storage.
               # Google Cloud Storage.
@@ -1362,15 +1454,15 @@ Returns:
                 # [Bucket Name
                 # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
           },
-          "repoSource": { # RepoSource describes the location of the source in a Google Cloud Source # If provided, get source from this location in a Cloud Repo.
-              # Repository.
-            "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
-                # the build is assumed.
-            "branchName": "A String", # Name of the branch to build.
-            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-            "tagName": "A String", # Name of the tag to build.
-            "commitSha": "A String", # Explicit commit SHA to build.
-          },
+        },
+        "buildTriggerId": "A String", # The ID of the BuildTrigger that triggered this build, if it was
+            # triggered automatically.
+            # @OutputOnly
+        "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
+          "requestedVerifyOption": "A String", # Requested verifiability options.
+          "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+            "A String",
+          ],
         },
         "steps": [ # Describes the operations to be performed on the workspace.
           { # BuildStep describes a step to perform in the build pipeline.
@@ -1383,17 +1475,16 @@ Returns:
             ],
             "name": "A String", # The name of the container image that will run this particular build step.
                 #
-                # If the image is already available in the host's
-                # Docker daemon's cache, it will be run directly. If not, the host will
-                # attempt to pull the image first, using the builder service account's
-                # credentials if necessary.
+                # If the image is already available in the host's Docker daemon's cache, it
+                # will be run directly. If not, the host will attempt to pull the image
+                # first, using the builder service account's credentials if necessary.
                 #
                 # The Docker daemon's cache will already have the latest versions of all of
                 # the officially supported build steps
-                # (https://github.com/GoogleCloudPlatform/cloud-builders). The Docker daemon
-                # will also have cached many of the layers for some popular images, like
-                # "ubuntu", "debian", but they will be refreshed at the time you attempt to
-                # use them.
+                # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+                # The Docker daemon will also have cached many of the layers for some popular
+                # images, like "ubuntu", "debian", but they will be refreshed at the time you
+                # attempt to use them.
                 #
                 # If you built an image in a previous build step, it will be stored in the
                 # host's Docker daemon's cache and is available to use as the name for a
@@ -1406,6 +1497,8 @@ Returns:
                 # and the remainder will be used as arguments.
               "A String",
             ],
+            "entrypoint": "A String", # Optional entrypoint to be used instead of the build step image's default
+                # If unset, the image's default will be used.
             "env": [ # A list of environment variable definitions to be used when running a step.
                 #
                 # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
@@ -1427,9 +1520,9 @@ Returns:
             "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
                 # the build is assumed.
             "branchName": "A String", # Name of the branch to build.
-            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-            "tagName": "A String", # Name of the tag to build.
             "commitSha": "A String", # Explicit commit SHA to build.
+            "tagName": "A String", # Name of the tag to build.
+            "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
           },
           "fileHashes": { # Hash(es) of the build source, which can be used to verify that the original
               # source integrity was maintained in the build. Note that FileHashes will
@@ -1465,13 +1558,14 @@ Returns:
                 # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
           },
         },
-        "projectId": "A String", # ID of the project.
-            # @OutputOnly.
+        "logsBucket": "A String", # Google Cloud Storage bucket where logs should be written (see
+            # [Bucket Name
+            # Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
+            # Logs file names will be of the format `${logs_bucket}/log-${build_id}.txt`.
         "images": [ # A list of images to be pushed upon the successful completion of all build
             # steps.
             #
-            # The images will be pushed using the builder
-            # service account's credentials.
+            # The images will be pushed using the builder service account's credentials.
             #
             # The digests of the pushed images will be stored in the Build resource's
             # results field.
@@ -1479,18 +1573,11 @@ Returns:
             # If any of the images fail to be pushed, the build is marked FAILURE.
           "A String",
         ],
-        "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
-          "requestedVerifyOption": "A String", # Requested verifiability options.
-          "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-            "A String",
-          ],
-        },
+        "createTime": "A String", # Time at which the request to create the build was received.
+            # @OutputOnly
         "logUrl": "A String", # URL to logs for this build in Google Cloud Logging.
             # @OutputOnly
       },
-      "id": "A String", # Unique identifier of the trigger.
-          #
-          # @OutputOnly
       "triggerTemplate": { # RepoSource describes the location of the source in a Google Cloud Source # Template describing the types of source changes to trigger a build.
           #
           # Branch and tag names in trigger templates are interpreted as regular
@@ -1500,10 +1587,13 @@ Returns:
         "projectId": "A String", # ID of the project that owns the repo. If omitted, the project ID requesting
             # the build is assumed.
         "branchName": "A String", # Name of the branch to build.
-        "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
-        "tagName": "A String", # Name of the tag to build.
         "commitSha": "A String", # Explicit commit SHA to build.
+        "tagName": "A String", # Name of the tag to build.
+        "repoName": "A String", # Name of the repo. If omitted, the name "default" is assumed.
       },
+      "id": "A String", # Unique identifier of the trigger.
+          #
+          # @OutputOnly
     }</pre>
 </div>
 
