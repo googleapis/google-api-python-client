@@ -74,7 +74,7 @@ from googleapiclient.model import JsonModel
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_CHUNK_SIZE = 512*1024
+DEFAULT_CHUNK_SIZE = 100*1024*1024
 
 MAX_URI_LENGTH = 2048
 
