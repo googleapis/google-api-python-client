@@ -1430,6 +1430,7 @@ class BatchHttpRequest(object):
 
     # Loop over all the requests and check for 401s. For each 401 request the
     # credentials should be refreshed and then sent again in a separate batch.
+    # Otherwise retry any failed requests up to `num_retries` in new batches.
     retry_num = 0
     while True:
       redo_requests = {}
