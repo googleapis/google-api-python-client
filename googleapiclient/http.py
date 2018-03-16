@@ -1392,7 +1392,10 @@ class BatchHttpRequest(object):
       http: httplib2.Http, an http object to be used in place of the one the
         HttpRequest request object was constructed with. If one isn't supplied
         then use a http object from the requests in this batch.
-      num_retries: int, number of retries to attempt
+      num_retries: Integer, number of times to retry with randomized
+            exponential backoff. If all retries fail, the raised HttpError
+            represents the last request. If zero (default), we attempt the
+            request only once.
     Returns:
       None
 
