@@ -150,7 +150,6 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
   """
   resp = None
   content = None
-  exception = None
   for retry_num in range(num_retries + 1):
     if retry_num > 0:
       # Sleep before retrying.
@@ -162,6 +161,7 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
       sleep(sleep_time)
 
     try:
+      exception = None
       resp, content = http.request(uri, method, *args, **kwargs)
     # Retry on SSL errors and socket timeout errors.
     except _ssl_SSLError as ssl_error:
