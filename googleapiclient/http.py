@@ -1436,7 +1436,7 @@ class BatchHttpRequest(object):
       redo_requests = {}
       redo_order = []
 
-      if retry_num > num_retries:
+      if retry_num >= num_retries:
         break
 
       if retry_num > 0:

@@ -649,6 +649,27 @@ Content-Length: 14
 ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 --batch_foobarbaz--"""
 
+BATCH_ERROR_500_RESPONSE = b"""--batch_foobarbaz
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: <randomness+1>
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 14
+ETag: "etag/pony"\r\n\r\n{"foo": 42}
+
+--batch_foobarbaz
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+Content-ID: <randomness+2>
+
+HTTP/1.1 500 Internal Server Error
+Content-Type: application/json
+Content-Length: 14
+ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
+--batch_foobarbaz--"""
+
 
 BATCH_ERROR_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
@@ -1179,6 +1200,48 @@ class TestBatch(unittest.TestCase):
        BATCH_RESPONSE),
       ])
     batch.execute(http=http)
+    self.assertEqual({'foo': 42}, callbacks.responses['1'])
+    self.assertEqual(None, callbacks.exceptions['1'])
+    self.assertEqual({'baz': 'qux'}, callbacks.responses['2'])
+    self.assertEqual(None, callbacks.exceptions['2'])
+
+  def test_execute_outer_retry(self):
+    batch = BatchHttpRequest()
+    callbacks = Callbacks()
+
+    batch.add(self.request1, callback=callbacks.f)
+    batch.add(self.request2, callback=callbacks.f)
+    http = HttpMockSequence([
+      ({'status': '500',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_RESPONSE),
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_RESPONSE),
+      ]
+    )
+    batch.execute(http=http, num_retries=1)
+    self.assertEqual({'foo': 42}, callbacks.responses['1'])
+    self.assertEqual(None, callbacks.exceptions['1'])
+    self.assertEqual({'baz': 'qux'}, callbacks.responses['2'])
+    self.assertEqual(None, callbacks.exceptions['2'])
+
+  def test_execute_inner_retry(self):
+    batch = BatchHttpRequest()
+    callbacks = Callbacks()
+
+    batch.add(self.request1, callback=callbacks.f)
+    batch.add(self.request2, callback=callbacks.f)
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_ERROR_500_RESPONSE),
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+       BATCH_RESPONSE),
+      ]
+    )
+    batch.execute(http=http, num_retries=1)
     self.assertEqual({'foo': 42}, callbacks.responses['1'])
     self.assertEqual(None, callbacks.exceptions['1'])
     self.assertEqual({'baz': 'qux'}, callbacks.responses['2'])
