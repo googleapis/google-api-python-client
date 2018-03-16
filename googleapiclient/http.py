@@ -1438,6 +1438,15 @@ class BatchHttpRequest(object):
       if retry_num > num_retries:
         break
 
+      if retry_num > 0:
+        # Sleep before retrying.
+        sleep_time = self._rand() * 2 ** retry_num
+        LOGGER.warning(
+            'Sleeping %.2f seconds before retry %d of %d for %s: %s %s',
+            sleep_time, retry_num, num_retries, 'request', 'POST',
+            self._batch_uri)
+        self._sleep(sleep_time)
+
       for request_id in self._order:
         resp, content = self._responses[request_id]
 
