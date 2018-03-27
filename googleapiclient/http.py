@@ -82,6 +82,8 @@ _TOO_MANY_REQUESTS = 429
 
 DEFAULT_HTTP_TIMEOUT_SEC = 60
 
+_LEGACY_BATCH_URI = 'https://www.googleapis.com/batch'
+
 
 def _should_retry_response(resp_status, content):
   """Determines whether a response should be retried.
@@ -1086,7 +1088,17 @@ class BatchHttpRequest(object):
       batch_uri: string, URI to send batch requests to.
     """
     if batch_uri is None:
-      batch_uri = 'https://www.googleapis.com/batch'
+      batch_uri = _LEGACY_BATCH_URI
+
+    if batch_uri == _LEGACY_BATCH_URI:
+      LOGGER.warn(
+        "You have constructed a BatchHttpRequest using the legacy batch "
+        "endpoint %s. This endpoint will be turned down on March 25, 2019. "
+        "Please provide the API-specific endpoint or use "
+        "service.new_batch_http_request(). For more details see "
+        "https://developers.googleblog.com/2018/03/discontinuing-support-for-json-rpc-and.html"
+        "and https://developers.google.com/api-client-library/python/guide/batch.",
+        _LEGACY_BATCH_URI)
     self._batch_uri = batch_uri
 
     # Global callback to be called for each individual response in the batch.
