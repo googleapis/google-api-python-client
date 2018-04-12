@@ -1,11 +1,12 @@
-# Library maintenance
-This client library is supported but in maintenance mode only.  We are fixing necessary bugs and adding essential features to ensure this library continues to meet your needs for accessing Google APIs.  Non-critical issues will be closed.  Any issue may be reopened if it is causing ongoing problems.
+# Google API Client
 
-# About
 This is the Python client library for Google's discovery based APIs. To get started, please see the [full documentation for this library](http://google.github.io/google-api-python-client). Additionally, [dynamically generated documentation](http://api-python-client-doc.appspot.com/) is available for all of the APIs supported by this library.
 
-## Google Cloud Platform APIs
-If you're working with **Google Cloud Platform** APIs such as Datastore or Pub/Sub, consider using the [Cloud Client Libraries for Python](https://github.com/GoogleCloudPlatform/google-cloud-python) instead. These are the new and idiomatic Python libraries targeted specifically at Google Cloud Platform Services.
+These client libraries are officially supported by Google.  However, the libraries are considered complete and are in maintenance mode. This means that we will address critical bugs and security issues but will not add any new features.
+
+## Google Cloud Platform
+
+For Google Cloud Platform APIs such as Datastore, Cloud Storage or Pub/Sub, we recommend using [Cloud Client Libraries for Python](https://github.com/GoogleCloudPlatform/google-cloud-python) which is under active development.
 
 # Installation
 To install, simply use `pip` or `easy_install`:
