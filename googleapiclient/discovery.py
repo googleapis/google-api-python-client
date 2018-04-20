@@ -72,7 +72,6 @@ from googleapiclient.model import JsonModel
 from googleapiclient.model import MediaModel
 from googleapiclient.model import RawModel
 from googleapiclient.schema import Schemas
-from oauth2client.client import GoogleCredentials
 
 # Oauth2client < 3 has the positional helper in 'util', >= 3 has it
 # in '_helpers'.
