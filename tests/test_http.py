@@ -125,24 +125,26 @@ class HttpMockWithErrors(object):
       return httplib2.Response(self.success_json), self.success_data
     else:
       self.num_errors -= 1
-      if self.num_errors == 1:
+      if self.num_errors == 1:  # initial == 2
         raise ssl.SSLError()
-      else:
-        if PY3:
-          ex = TimeoutError()
-        else:
-          ex = socket.error()
+      else:  # initial != 2
         if self.num_errors == 2:
-          #first try a broken pipe error (#218)
+          # first try a broken pipe error (#218)
+          ex = socket.error()
           ex.errno = socket.errno.EPIPE
         else:
           # Initialize the timeout error code to the platform's error code.
           try:
             # For Windows:
+            ex = socket.error()
             ex.errno = socket.errno.WSAETIMEDOUT
           except AttributeError:
             # For Linux/Mac:
-            ex.errno = socket.errno.ETIMEDOUT
+            if PY3:
+              ex = socket.timeout()
+            else:
+              ex = socket.error()
+              ex.errno = socket.errno.ETIMEDOUT
         # Now raise the correct error.
         raise ex
 
