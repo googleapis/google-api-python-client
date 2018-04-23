@@ -78,10 +78,7 @@ from googleapiclient.model import JsonModel
 from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.client import OAuth2Credentials, GoogleCredentials
 
-try:
-  from oauth2client import util
-except ImportError:
-  from oauth2client import _helpers as util
+from googleapiclient import _helpers as util
 
 import uritemplate
 
