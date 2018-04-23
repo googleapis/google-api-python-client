@@ -167,7 +167,6 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
     except _ssl_SSLError as ssl_error:
       exception = ssl_error
     except socket.error as socket_error:
-      # https://github.com/google/google-api-python-client/issues/494
       # socket.timeout has no errno
       # errno's contents differ by platform, so we have to match by name.
       if not isinstance(socket_error, socket.timeout) and \
