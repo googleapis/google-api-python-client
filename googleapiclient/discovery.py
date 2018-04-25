@@ -138,7 +138,7 @@ def fix_method_name(name):
     name: string, method name.
 
   Returns:
-    The name with a '_' prefixed if the name is a reserved word.
+    The name with an '_' appended if the name is a reserved word.
   """
   if keyword.iskeyword(name) or name in RESERVED_WORDS:
     return name + '_'
