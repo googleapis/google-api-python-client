@@ -55,12 +55,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from email.parser import FeedParser
 
-# Oauth2client < 3 has the positional helper in 'util', >= 3 has it
-# in '_helpers'.
-try:
-  from oauth2client import util
-except ImportError:
-  from oauth2client import _helpers as util
+from googleapiclient import _helpers as util
 
 from googleapiclient import _auth
 from googleapiclient.errors import BatchError
