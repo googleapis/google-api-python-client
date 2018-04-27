@@ -163,10 +163,14 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
     # Retry on SSL errors and socket timeout errors.
     except _ssl_SSLError as ssl_error:
       exception = ssl_error
+    except socket.timeout as socket_timeout:
+      # It's important that this be before socket.error as it's a subclass
+      # socket.timeout has no errorcode
+      exception = socket_timeout
     except socket.error as socket_error:
       # errno's contents differ by platform, so we have to match by name.
-      if socket.errno.errorcode.get(socket_error.errno) not in (
-          'WSAETIMEDOUT', 'ETIMEDOUT', 'EPIPE', 'ECONNABORTED', ):
+      if socket.errno.errorcode.get(socket_error.errno) not in {
+        'WSAETIMEDOUT', 'ETIMEDOUT', 'EPIPE', 'ECONNABORTED'}:
         raise
       exception = socket_error
 
