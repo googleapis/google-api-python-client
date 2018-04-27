@@ -1,8 +1,15 @@
 """Retain apiclient as an alias for googleapiclient."""
 
 from six import iteritems
-
-import googleapiclient
+import sys, googleapiclient
+from googleapiclient import schema
+from googleapiclient import channel
+from googleapiclient import discovery
+from googleapiclient import errors
+from googleapiclient import http
+from googleapiclient import mimeparse
+from googleapiclient import model
+from googleapiclient import sample_tools
 
 try:
   import oauth2client
@@ -15,14 +22,6 @@ except ImportError:
       '  pip install -I google-api-python-client'
   )
 
-from googleapiclient import channel
-from googleapiclient import discovery
-from googleapiclient import errors
-from googleapiclient import http
-from googleapiclient import mimeparse
-from googleapiclient import model
-from googleapiclient import sample_tools
-from googleapiclient import schema
 
 __version__ = googleapiclient.__version__
 
@@ -37,6 +36,5 @@ _SUBMODULES = {
     'schema': schema,
 }
 
-import sys
 for module_name, module in iteritems(_SUBMODULES):
   sys.modules['apiclient.%s' % module_name] = module
