@@ -75,6 +75,7 @@ from googleapiclient.http import MediaUpload
 from googleapiclient.http import MediaUploadProgress
 from googleapiclient.http import tunnel_patch
 from googleapiclient.model import JsonModel
+from googleapiclient.schema import Schemas
 from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.client import OAuth2Credentials, GoogleCredentials
 
@@ -122,18 +123,21 @@ class Utilities(unittest.TestCase):
     self.zoo_get_method_desc = self.zoo_root_desc['methods']['query']
     self.zoo_animals_resource = self.zoo_root_desc['resources']['animals']
     self.zoo_insert_method_desc = self.zoo_animals_resource['methods']['insert']
+    self.zoo_schema = Schemas(self.zoo_root_desc)
 
   def test_key2param(self):
     self.assertEqual('max_results', key2param('max-results'))
     self.assertEqual('x007_bond', key2param('007-bond'))
 
-  def _base_fix_up_parameters_test(self, method_desc, http_method, root_desc):
+  def _base_fix_up_parameters_test(
+          self, method_desc, http_method, root_desc, schema):
     self.assertEqual(method_desc['httpMethod'], http_method)
 
     method_desc_copy = copy.deepcopy(method_desc)
     self.assertEqual(method_desc, method_desc_copy)
 
-    parameters = _fix_up_parameters(method_desc_copy, root_desc, http_method)
+    parameters = _fix_up_parameters(method_desc_copy, root_desc, http_method,
+                                    schema)
 
     self.assertNotEqual(method_desc, method_desc_copy)
 
@@ -147,14 +151,14 @@ class Utilities(unittest.TestCase):
     return parameters
 
   def test_fix_up_parameters_get(self):
-    parameters = self._base_fix_up_parameters_test(self.zoo_get_method_desc,
-                                                   'GET', self.zoo_root_desc)
+    parameters = self._base_fix_up_parameters_test(
+      self.zoo_get_method_desc, 'GET', self.zoo_root_desc, self.zoo_schema)
     # Since http_method is 'GET'
     self.assertFalse('body' in parameters)
 
   def test_fix_up_parameters_insert(self):
-    parameters = self._base_fix_up_parameters_test(self.zoo_insert_method_desc,
-                                                   'POST', self.zoo_root_desc)
+    parameters = self._base_fix_up_parameters_test(
+      self.zoo_insert_method_desc, 'POST', self.zoo_root_desc, self.zoo_schema)
     body = {
         'description': 'The request body.',
         'type': 'object',
@@ -165,34 +169,57 @@ class Utilities(unittest.TestCase):
 
   def test_fix_up_parameters_check_body(self):
     dummy_root_desc = {}
+    dummy_schema = {
+      'Request': {
+        'properties': {
+          "description": "Required. Dummy parameter.",
+          "type": "string"
+        }
+      }
+    }
     no_payload_http_method = 'DELETE'
     with_payload_http_method = 'PUT'
 
     invalid_method_desc = {'response': 'Who cares'}
-    valid_method_desc = {'request': {'key1': 'value1', 'key2': 'value2'}}
+    valid_method_desc = {
+      'request': {
+        'key1': 'value1',
+        'key2': 'value2',
+        '$ref': 'Request'
+      }
+    }
 
     parameters = _fix_up_parameters(invalid_method_desc, dummy_root_desc,
-                                    no_payload_http_method)
+                                    no_payload_http_method, dummy_schema)
     self.assertFalse('body' in parameters)
 
     parameters = _fix_up_parameters(valid_method_desc, dummy_root_desc,
-                                    no_payload_http_method)
+                                    no_payload_http_method, dummy_schema)
     self.assertFalse('body' in parameters)
 
     parameters = _fix_up_parameters(invalid_method_desc, dummy_root_desc,
-                                    with_payload_http_method)
+                                    with_payload_http_method, dummy_schema)
     self.assertFalse('body' in parameters)
 
     parameters = _fix_up_parameters(valid_method_desc, dummy_root_desc,
-                                    with_payload_http_method)
+                                    with_payload_http_method, dummy_schema)
     body = {
         'description': 'The request body.',
         'type': 'object',
         'required': True,
+        '$ref': 'Request',
         'key1': 'value1',
         'key2': 'value2',
     }
     self.assertEqual(parameters['body'], body)
+
+  def test_fix_up_parameters_optional_body(self):
+    # Request with no parameters
+    dummy_schema = {'Request': {'properties': {}}}
+    method_desc = {'request': {'$ref': 'Request'}}
+
+    parameters = _fix_up_parameters(method_desc, {}, 'POST', dummy_schema)
+    self.assertFalse(parameters['body']['required'])
 
   def _base_fix_up_method_description_test(
       self, method_desc, initial_parameters, final_parameters,
@@ -260,7 +287,7 @@ class Utilities(unittest.TestCase):
 
   def test_fix_up_method_description_get(self):
     result = _fix_up_method_description(self.zoo_get_method_desc,
-                                        self.zoo_root_desc)
+                                        self.zoo_root_desc, self.zoo_schema)
     path_url = 'query'
     http_method = 'GET'
     method_id = 'bigquery.query'
@@ -272,7 +299,7 @@ class Utilities(unittest.TestCase):
 
   def test_fix_up_method_description_insert(self):
     result = _fix_up_method_description(self.zoo_insert_method_desc,
-                                        self.zoo_root_desc)
+                                        self.zoo_root_desc, self.zoo_schema)
     path_url = 'animals'
     http_method = 'POST'
     method_id = 'zoo.animals.insert'
