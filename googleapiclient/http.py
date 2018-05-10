@@ -16,7 +16,7 @@
 
 The classes implement a command pattern, with every
 object supporting an execute() method that does the
-actuall HTTP request.
+actual HTTP request.
 """
 from __future__ import absolute_import
 import six
@@ -1290,7 +1290,7 @@ class BatchHttpRequest(object):
     from the server. The default behavior is to have the library generate it's
     own unique id. If the caller passes in a request_id then they must ensure
     uniqueness for each request_id, and if they are not an exception is
-    raised. Callers should either supply all request_ids or nevery supply a
+    raised. Callers should either supply all request_ids or never supply a
     request id, to avoid such an error.
 
     Args:
