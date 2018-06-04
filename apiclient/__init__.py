@@ -10,7 +10,12 @@ from googleapiclient import errors
 from googleapiclient import http
 from googleapiclient import mimeparse
 from googleapiclient import model
-from googleapiclient import sample_tools
+try:
+    from googleapiclient import sample_tools
+except ImportError:
+    # Silently ignore, because the vast majority of consumers won't use it and
+    # it has deep dependence on oauth2client, an optional dependency.
+    sample_tools = None
 from googleapiclient import schema
 
 __version__ = googleapiclient.__version__
