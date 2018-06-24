@@ -127,7 +127,9 @@ class HttpMockWithErrors(object):
       self.num_errors -= 1
       if self.num_errors == 1:  # initial == 2
         raise ssl.SSLError()
-      else:  # initial != 2
+      if self.num_errors == 3:  # initial == 4
+        raise httplib2.ServerNotFoundError()
+      else:  # initial != 2,4
         if self.num_errors == 2:
           # first try a broken pipe error (#218)
           ex = socket.error()
@@ -495,14 +497,14 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
   def test_media_io_base_download_retries_connection_errors(self):
     self.request.http = HttpMockWithErrors(
-        3, {'status': '200', 'content-range': '0-2/3'}, b'123')
+        4, {'status': '200', 'content-range': '0-2/3'}, b'123')
 
     download = MediaIoBaseDownload(
         fd=self.fd, request=self.request, chunksize=3)
     download._sleep = lambda _x: 0  # do nothing
     download._rand = lambda: 10
 
-    status, done = download.next_chunk(num_retries=3)
+    status, done = download.next_chunk(num_retries=4)
 
     self.assertEqual(self.fd.getvalue(), b'123')
     self.assertEqual(True, done)
@@ -839,12 +841,12 @@ class TestHttpRequest(unittest.TestCase):
   def test_retry_connection_errors_non_resumable(self):
     model = JsonModel()
     request = HttpRequest(
-        HttpMockWithErrors(3, {'status': '200'}, '{"foo": "bar"}'),
+        HttpMockWithErrors(4, {'status': '200'}, '{"foo": "bar"}'),
         model.response,
         u'https://www.example.com/json_api_endpoint')
     request._sleep = lambda _x: 0  # do nothing
     request._rand = lambda: 10
-    response = request.execute(num_retries=3)
+    response = request.execute(num_retries=4)
     self.assertEqual({u'foo': u'bar'}, response)
 
   def test_retry_connection_errors_resumable(self):
@@ -856,14 +858,14 @@ class TestHttpRequest(unittest.TestCase):
 
     request = HttpRequest(
         HttpMockWithErrors(
-            3, {'status': '200', 'location': 'location'}, '{"foo": "bar"}'),
+            4, {'status': '200', 'location': 'location'}, '{"foo": "bar"}'),
         model.response,
         u'https://www.example.com/file_upload',
         method='POST',
         resumable=upload)
     request._sleep = lambda _x: 0  # do nothing
     request._rand = lambda: 10
-    response = request.execute(num_retries=3)
+    response = request.execute(num_retries=4)
     self.assertEqual({u'foo': u'bar'}, response)
 
   def test_retry(self):
