@@ -173,6 +173,8 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
         'WSAETIMEDOUT', 'ETIMEDOUT', 'EPIPE', 'ECONNABORTED'}:
         raise
       exception = socket_error
+    except httplib2.ServerNotFoundError as server_not_found_error:
+      exception = server_not_found_error
 
     if exception:
       if retry_num == num_retries:
