@@ -27,9 +27,13 @@ import os
 
 from googleapiclient import discovery
 from googleapiclient.http import build_http
-from oauth2client import client
-from oauth2client import file
-from oauth2client import tools
+
+try:
+    from oauth2client import client
+    from oauth2client import file
+    from oauth2client import tools
+except ImportError:
+    raise ImportError('googleapiclient.sample_tools requires oauth2client. Please install oauth2client and try again.')
 
 
 def init(argv, name, version, doc, filename, scope=None, parents=[], discovery_filename=None):

@@ -36,9 +36,9 @@ except ImportError:
   try:
     from oauth2client.locked_file import LockedFile
   except ImportError:
-    # oauth2client > 4.0.0
+    # oauth2client > 4.0.0 or google-auth
     raise ImportError(
-      'file_cache is unavailable when using oauth2client >= 4.0.0')
+      'file_cache is unavailable when using oauth2client >= 4.0.0 or google-auth')
 
 from . import base
 from ..discovery_cache import DISCOVERY_DOC_MAX_AGE

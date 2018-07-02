@@ -16,7 +16,7 @@
 
 The classes implement a command pattern, with every
 object supporting an execute() method that does the
-actuall HTTP request.
+actual HTTP request.
 """
 from __future__ import absolute_import
 import six
@@ -55,15 +55,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from email.parser import FeedParser
 
-# Oauth2client < 3 has the positional helper in 'util', >= 3 has it
-# in '_helpers'.
-try:
-  from oauth2client import util
-except ImportError:
-  from oauth2client import _helpers as util
+from googleapiclient import _helpers as util
 
 from googleapiclient import _auth
-from googleapiclient import mimeparse
 from googleapiclient.errors import BatchError
 from googleapiclient.errors import HttpError
 from googleapiclient.errors import InvalidChunkSizeError
@@ -75,7 +69,7 @@ from googleapiclient.model import JsonModel
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_CHUNK_SIZE = 512*1024
+DEFAULT_CHUNK_SIZE = 100*1024*1024
 
 MAX_URI_LENGTH = 2048
 
@@ -83,13 +77,15 @@ _TOO_MANY_REQUESTS = 429
 
 DEFAULT_HTTP_TIMEOUT_SEC = 60
 
+_LEGACY_BATCH_URI = 'https://www.googleapis.com/batch'
+
 
 def _should_retry_response(resp_status, content):
   """Determines whether a response should be retried.
 
   Args:
     resp_status: The response status received.
-    content: The response content body. 
+    content: The response content body.
 
   Returns:
     True if the response should be retried, otherwise False.
@@ -112,7 +108,10 @@ def _should_retry_response(resp_status, content):
     # Content is in JSON format.
     try:
       data = json.loads(content.decode('utf-8'))
-      reason = data['error']['errors'][0]['reason']
+      if isinstance(data, dict):
+        reason = data['error']['errors'][0]['reason']
+      else:
+        reason = data[0]['error']['errors']['reason']
     except (UnicodeDecodeError, ValueError, KeyError):
       LOGGER.warning('Invalid JSON content from response: %s', content)
       return False
@@ -164,12 +163,18 @@ def _retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args,
     # Retry on SSL errors and socket timeout errors.
     except _ssl_SSLError as ssl_error:
       exception = ssl_error
+    except socket.timeout as socket_timeout:
+      # It's important that this be before socket.error as it's a subclass
+      # socket.timeout has no errorcode
+      exception = socket_timeout
     except socket.error as socket_error:
       # errno's contents differ by platform, so we have to match by name.
-      if socket.errno.errorcode.get(socket_error.errno) not in (
-          'WSAETIMEDOUT', 'ETIMEDOUT', 'EPIPE', 'ECONNABORTED', ):
+      if socket.errno.errorcode.get(socket_error.errno) not in {
+        'WSAETIMEDOUT', 'ETIMEDOUT', 'EPIPE', 'ECONNABORTED'}:
         raise
       exception = socket_error
+    except httplib2.ServerNotFoundError as server_not_found_error:
+      exception = server_not_found_error
 
     if exception:
       if retry_num == num_retries:
@@ -510,7 +515,6 @@ class MediaFileUpload(MediaIoBaseUpload):
   Construct a MediaFileUpload and pass as the media_body parameter of the
   method. For example, if we had a service that allowed uploading images:
 
-
     media = MediaFileUpload('cow.png', mimetype='image/png',
       chunksize=1024*1024, resumable=True)
     farm.animals().insert(
@@ -656,7 +660,7 @@ class MediaIoBaseDownload(object):
     Returns:
       (status, done): (MediaDownloadProgress, boolean)
          The value of 'done' will be True when the media has been fully
-         downloaded.
+         downloaded or the total size of the media is unknown.
 
     Raises:
       googleapiclient.errors.HttpError if the response was not a 2xx.
@@ -685,7 +689,7 @@ class MediaIoBaseDownload(object):
       elif 'content-length' in resp:
         self._total_size = int(resp['content-length'])
 
-      if self._progress == self._total_size:
+      if self._total_size is None or self._progress == self._total_size:
         self._done = True
       return MediaDownloadProgress(self._progress, self._total_size), self._done
     else:
@@ -766,10 +770,6 @@ class HttpRequest(object):
     self.resumable = resumable
     self.response_callbacks = []
     self._in_error_state = False
-
-    # Pull the multipart boundary out of the content-type header.
-    major, minor, params = mimeparse.parse_mime_type(
-        self.headers.get('content-type', 'application/json'))
 
     # The size of the non-media part of the request.
     self.body_size = len(self.body or '')
@@ -1089,7 +1089,17 @@ class BatchHttpRequest(object):
       batch_uri: string, URI to send batch requests to.
     """
     if batch_uri is None:
-      batch_uri = 'https://www.googleapis.com/batch'
+      batch_uri = _LEGACY_BATCH_URI
+
+    if batch_uri == _LEGACY_BATCH_URI:
+      LOGGER.warn(
+        "You have constructed a BatchHttpRequest using the legacy batch "
+        "endpoint %s. This endpoint will be turned down on March 25, 2019. "
+        "Please provide the API-specific endpoint or use "
+        "service.new_batch_http_request(). For more details see "
+        "https://developers.googleblog.com/2018/03/discontinuing-support-for-json-rpc-and.html"
+        "and https://developers.google.com/api-client-library/python/guide/batch.",
+        _LEGACY_BATCH_URI)
     self._batch_uri = batch_uri
 
     # Global callback to be called for each individual response in the batch.
@@ -1282,7 +1292,7 @@ class BatchHttpRequest(object):
     from the server. The default behavior is to have the library generate it's
     own unique id. If the caller passes in a request_id then they must ensure
     uniqueness for each request_id, and if they are not an exception is
-    raised. Callers should either supply all request_ids or nevery supply a
+    raised. Callers should either supply all request_ids or never supply a
     request id, to avoid such an error.
 
     Args:

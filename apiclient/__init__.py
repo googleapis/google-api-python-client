@@ -4,24 +4,18 @@ from six import iteritems
 
 import googleapiclient
 
-try:
-  import oauth2client
-except ImportError:
-  raise RuntimeError(
-      'Previous version of google-api-python-client detected; due to a '
-      'packaging issue, we cannot perform an in-place upgrade. To repair, '
-      'remove and reinstall this package, along with oauth2client and '
-      'uritemplate. One can do this with pip via\n'
-      '  pip install -I google-api-python-client'
-  )
-
 from googleapiclient import channel
 from googleapiclient import discovery
 from googleapiclient import errors
 from googleapiclient import http
 from googleapiclient import mimeparse
 from googleapiclient import model
-from googleapiclient import sample_tools
+try:
+    from googleapiclient import sample_tools
+except ImportError:
+    # Silently ignore, because the vast majority of consumers won't use it and
+    # it has deep dependence on oauth2client, an optional dependency.
+    sample_tools = None
 from googleapiclient import schema
 
 __version__ = googleapiclient.__version__

@@ -31,30 +31,6 @@ if (3, 1) <= sys.version_info < (3, 3):
   sys.exit(1)
 
 from setuptools import setup
-import pkg_resources
-
-def _DetectBadness():
-  import os
-  if 'SKIP_GOOGLEAPICLIENT_COMPAT_CHECK' in os.environ:
-    return
-  o2c_pkg = None
-  try:
-    o2c_pkg = pkg_resources.get_distribution('oauth2client')
-  except pkg_resources.DistributionNotFound:
-    pass
-  oauth2client = None
-  try:
-    import oauth2client
-  except ImportError:
-    pass
-  if o2c_pkg is None and oauth2client is not None:
-    raise RuntimeError(
-        'Previous version of google-api-python-client detected; due to a '
-        'packaging issue, we cannot perform an in-place upgrade. Please remove '
-        'the old version and re-install this package.'
-    )
-
-_DetectBadness()
 
 packages = [
     'apiclient',
@@ -64,7 +40,8 @@ packages = [
 
 install_requires = [
     'httplib2>=0.9.2,<1dev',
-    'oauth2client>=1.5.0,<5.0.0dev',
+    'google-auth>=1.4.1',
+    'google-auth-httplib2>=0.0.3',
     'six>=1.6.1,<2dev',
     'uritemplate>=3.0.0,<4dev',
 ]
