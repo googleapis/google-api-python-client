@@ -37,7 +37,7 @@ from googleapiclient.discovery import build
 import httplib2
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
-from oauth2client.tools import run
+from oauth2client.tools import run_flow
 
 
 # CLIENT_SECRETS, name of a file containing the OAuth 2.0 information for this
@@ -155,7 +155,7 @@ def main(argv):
   if credentials is None or credentials.invalid:
     print('invalid credentials')
     # Save the credentials in storage to be used in subsequent runs.
-    credentials = run(FLOW, storage)
+    credentials = run_flow(FLOW, storage)
 
   # Create an httplib2.Http object to handle our HTTP requests and authorize it
   # with our good Credentials.
