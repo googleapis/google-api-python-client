@@ -1171,7 +1171,10 @@ class BatchHttpRequest(object):
     if self._base_id is None:
       self._base_id = uuid.uuid4()
 
-    return '<%s+%s>' % (self._base_id, quote(id_))
+    # NB: we intentionally leave whitespace between base/id and '+', so RFC2822
+    # line folding works properly on Python 3; see
+    # https://github.com/google/google-api-python-client/issues/164
+    return '<%s + %s>' % (self._base_id, quote(id_))
 
   def _header_to_id(self, header):
     """Convert a Content-ID header value to an id.
@@ -1192,7 +1195,7 @@ class BatchHttpRequest(object):
       raise BatchError("Invalid value for Content-ID: %s" % header)
     if '+' not in header:
       raise BatchError("Invalid value for Content-ID: %s" % header)
-    base, id_ = header[1:-1].rsplit('+', 1)
+    base, id_ = [x.strip() for x in header[1:-1].rsplit('+', 1)]
 
     return unquote(id_)
 
