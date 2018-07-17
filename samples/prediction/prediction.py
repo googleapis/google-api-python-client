@@ -39,12 +39,10 @@ __author__ = ('jcgregorio@google.com (Joe Gregorio), '
               'marccohen@google.com (Marc Cohen)')
 
 import argparse
-import os
 import pprint
 import sys
 import time
 
-from apiclient import discovery
 from apiclient import sample_tools
 from oauth2client import client
 
