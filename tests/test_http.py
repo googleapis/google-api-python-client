@@ -635,7 +635,7 @@ ETag: "etag/pony"\r\n\r\n{"answer": 42}"""
 BATCH_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -645,7 +645,7 @@ ETag: "etag/pony"\r\n\r\n{"foo": 42}
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -657,7 +657,7 @@ ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 BATCH_ERROR_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -667,7 +667,7 @@ ETag: "etag/pony"\r\n\r\n{"foo": 42}
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 403 Access Not Configured
 Content-Type: application/json
@@ -693,7 +693,7 @@ ETag: "etag/sheep"\r\n\r\n{
 BATCH_RESPONSE_WITH_401 = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 401 Authorization Required
 Content-Type: application/json
@@ -704,7 +704,7 @@ ETag: "etag/pony"\r\n\r\n{"error": {"message":
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -716,7 +716,7 @@ ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 BATCH_SINGLE_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json

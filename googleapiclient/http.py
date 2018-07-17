@@ -1195,7 +1195,7 @@ class BatchHttpRequest(object):
       raise BatchError("Invalid value for Content-ID: %s" % header)
     if '+' not in header:
       raise BatchError("Invalid value for Content-ID: %s" % header)
-    base, id_ = [x.strip() for x in header[1:-1].rsplit('+', 1)]
+    base, id_ = [x.strip() for x in header[1:-1].split('+', 1)]
 
     return unquote(id_)
 
@@ -1306,7 +1306,9 @@ class BatchHttpRequest(object):
         third is an googleapiclient.errors.HttpError exception object if an HTTP error
         occurred while processing the request, or None if no errors occurred.
       request_id: string, A unique id for the request. The id will be passed to
-        the callback with the response.
+        the callback with the response.  It should not rely on beginning with
+        whitespace or ending with whitespace to make it unique; these will
+        be stripped in the response.
 
     Returns:
       None
