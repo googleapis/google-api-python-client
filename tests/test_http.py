@@ -1211,6 +1211,39 @@ class TestBatch(unittest.TestCase):
       header = parts[1].splitlines()[1]
       self.assertEqual('Content-Type: application/http', header)
 
+  def test_execute_request_body_with_custom_long_request_ids(self):
+    batch = BatchHttpRequest()
+
+    batch.add(self.request1, request_id='abc'*20)
+    batch.add(self.request2, request_id='def'*20)
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+        'echo_request_body'),
+      ])
+    try:
+      batch.execute(http=http)
+      self.fail('Should raise exception')
+    except BatchError as e:
+      boundary, _ = e.content.split(None, 1)
+      self.assertEqual('--', boundary[:2])
+      parts = e.content.split(boundary)
+      self.assertEqual(4, len(parts))
+      self.assertEqual('', parts[0])
+      self.assertEqual('--', parts[3].rstrip())
+      for partindex, request_id in ((1, 'abc'*20), (2, 'def'*20)):
+        lines = parts[partindex].splitlines()
+        for n, line in enumerate(lines):
+          if line.startswith('Content-ID:'):
+            # assert correct header folding
+            self.assertTrue(line.endswith('+'), line)
+            header_continuation = lines[n+1]
+            self.assertEqual(
+              header_continuation,
+              ' %s>' % request_id,
+              header_continuation
+            )
+
   def test_execute_initial_refresh_oauth2(self):
     batch = BatchHttpRequest()
     callbacks = Callbacks()
