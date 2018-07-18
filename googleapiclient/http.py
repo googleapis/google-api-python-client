@@ -1305,8 +1305,8 @@ class BatchHttpRequest(object):
         request id, and the second is the deserialized response object. The
         third is an googleapiclient.errors.HttpError exception object if an HTTP error
         occurred while processing the request, or None if no errors occurred.
-      request_id: string, A unique id for the request. The id will be passed to
-        the callback with the response.
+      request_id: string, A unique id for the request. The id will be passed
+        to the callback with the response.
 
     Returns:
       None
