@@ -635,7 +635,7 @@ ETag: "etag/pony"\r\n\r\n{"answer": 42}"""
 BATCH_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -645,7 +645,7 @@ ETag: "etag/pony"\r\n\r\n{"foo": 42}
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -657,7 +657,7 @@ ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 BATCH_ERROR_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -667,7 +667,7 @@ ETag: "etag/pony"\r\n\r\n{"foo": 42}
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 403 Access Not Configured
 Content-Type: application/json
@@ -693,7 +693,7 @@ ETag: "etag/sheep"\r\n\r\n{
 BATCH_RESPONSE_WITH_401 = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 401 Authorization Required
 Content-Type: application/json
@@ -704,7 +704,7 @@ ETag: "etag/pony"\r\n\r\n{"error": {"message":
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -716,7 +716,7 @@ ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 BATCH_SINGLE_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -1210,6 +1210,39 @@ class TestBatch(unittest.TestCase):
       self.assertEqual('--', parts[3].rstrip())
       header = parts[1].splitlines()[1]
       self.assertEqual('Content-Type: application/http', header)
+
+  def test_execute_request_body_with_custom_long_request_ids(self):
+    batch = BatchHttpRequest()
+
+    batch.add(self.request1, request_id='abc'*20)
+    batch.add(self.request2, request_id='def'*20)
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+        'echo_request_body'),
+      ])
+    try:
+      batch.execute(http=http)
+      self.fail('Should raise exception')
+    except BatchError as e:
+      boundary, _ = e.content.split(None, 1)
+      self.assertEqual('--', boundary[:2])
+      parts = e.content.split(boundary)
+      self.assertEqual(4, len(parts))
+      self.assertEqual('', parts[0])
+      self.assertEqual('--', parts[3].rstrip())
+      for partindex, request_id in ((1, 'abc'*20), (2, 'def'*20)):
+        lines = parts[partindex].splitlines()
+        for n, line in enumerate(lines):
+          if line.startswith('Content-ID:'):
+            # assert correct header folding
+            self.assertTrue(line.endswith('+'), line)
+            header_continuation = lines[n+1]
+            self.assertEqual(
+              header_continuation,
+              ' %s>' % request_id,
+              header_continuation
+            )
 
   def test_execute_initial_refresh_oauth2(self):
     batch = BatchHttpRequest()
