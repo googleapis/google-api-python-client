@@ -29,6 +29,7 @@ from io import FileIO
 from six.moves.urllib.parse import urlencode
 
 # Do not remove the httplib2 import
+import json
 import httplib2
 import logging
 import mock
@@ -455,6 +456,41 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     self.assertEqual(True, done)
     self.assertEqual(5, download._progress)
     self.assertEqual(5, download._total_size)
+
+  def test_media_io_base_download_custom_request_headers(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '200',
+        'content-range': '0-2/5'}, 'echo_request_headers_as_json'),
+      ({'status': '200',
+        'content-range': '3-4/5'}, 'echo_request_headers_as_json'),
+    ])
+    self.assertEqual(True, self.request.http.follow_redirects)
+
+    self.request.headers['Cache-Control'] = 'no-store'
+
+    download = MediaIoBaseDownload(
+        fd=self.fd, request=self.request, chunksize=3)
+
+    self.assertEqual(download._headers, {'Cache-Control':'no-store'})
+
+    status, done = download.next_chunk()
+
+    result = self.fd.getvalue().decode('utf-8')
+
+    # we abuse the internals of the object we're testing, pay no attention
+    # to the actual bytes= values here; we are just asserting that the
+    # header we added to the original request is sent up to the server
+    # on each call to next_chunk
+
+    self.assertEqual(json.loads(result),
+                     {"Cache-Control": "no-store", "range": "bytes=0-3"})
+
+    download._fd = self.fd = BytesIO()
+    status, done = download.next_chunk()
+
+    result = self.fd.getvalue().decode('utf-8')
+    self.assertEqual(json.loads(result),
+                     {"Cache-Control": "no-store", "range": "bytes=51-54"})
 
   def test_media_io_base_download_handle_redirects(self):
     self.request.http = HttpMockSequence([
