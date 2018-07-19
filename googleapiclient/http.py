@@ -1480,7 +1480,7 @@ class BatchHttpRequest(object):
       except HttpError as e:
         exception = e
     
-      if request_id is not None:
+      if request_id is not None and response is not None:
         response['request_id'] = request_id
       
       results.append([response, exception])
