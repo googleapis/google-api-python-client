@@ -1462,7 +1462,8 @@ class BatchHttpRequest(object):
     # Now process all callbacks that are erroring, and raise an exception for
     # ones that return a non-2xx response? Or add extra parameter to callback
     # that contains an HttpError?
-
+    results = []
+  
     for request_id in self._order:
       resp, content = self._responses[request_id]
 
@@ -1478,10 +1479,17 @@ class BatchHttpRequest(object):
       except HttpError as e:
         exception = e
 
-      if callback is not None:
-        callback(request_id, response, exception)
-      if self._callback is not None:
-        self._callback(request_id, response, exception)
+      # Attempt callback if one has been supplied for the request
+      cb = callback if callback is not None else self._callback
+      if cb is not None:
+        cb(request_id, response, exception)
+      else:
+        if request_id is not None and response is not None:
+          response['request_id'] = request_id
+        results.append([response, exception])
+
+    if len(results) != 0:
+      return results
 
 
 class HttpRequestMock(object):
