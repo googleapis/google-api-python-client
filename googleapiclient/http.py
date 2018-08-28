@@ -1098,6 +1098,7 @@ class HttpRequest(object):
         del d["postproc"]
         del d["_sleep"]
         del d["_rand"]
+        del d['response_callbacks']
 
         return json.dumps(d)
 
