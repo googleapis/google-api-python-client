@@ -7,9 +7,7 @@ cd github/google-api-python-client
 # Disable buffering, so that the logs stream through.
 export PYTHONUNBUFFERED=1
 
-python3 -m pip install --upgrade tox coveralls
+python3 -m pip install --upgrade tox
 
 # Run tests
 tox
-
-coveralls
