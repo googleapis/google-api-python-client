@@ -1324,6 +1324,10 @@ class BatchHttpRequest(object):
       BatchError if a media request is added to a batch.
       KeyError is the request_id is not unique.
     """
+
+    if len(self._order) >= MAX_BATCH_LIMIT:
+      raise BatchError("Exceeded the maximum calls(%d) in a single bactch request."
+                       % MAX_BATCH_LIMIT)
     if request_id is None:
       request_id = self._new_id()
     if request.resumable is not None:
@@ -1332,9 +1336,6 @@ class BatchHttpRequest(object):
       raise KeyError("A request with this ID already exists: %s" % request_id)
     self._requests[request_id] = request
     self._callbacks[request_id] = callback
-    if len(self._order) >= MAX_BATCH_LIMIT:
-      raise BatchError("Exceeded the maximum calls(%d) in a single bactch request."
-                       % MAX_BATCH_LIMIT)
     self._order.append(request_id)
 
   def _execute(self, http, order, requests):
