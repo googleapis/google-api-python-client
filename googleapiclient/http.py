@@ -73,6 +73,8 @@ DEFAULT_CHUNK_SIZE = 100*1024*1024
 
 MAX_URI_LENGTH = 2048
 
+MAX_BATCH_LIMIT = 1000
+
 _TOO_MANY_REQUESTS = 429
 
 DEFAULT_HTTP_TIMEOUT_SEC = 60
@@ -1330,6 +1332,9 @@ class BatchHttpRequest(object):
       raise KeyError("A request with this ID already exists: %s" % request_id)
     self._requests[request_id] = request
     self._callbacks[request_id] = callback
+    if len(self._order) >= MAX_BATCH_LIMIT:
+      raise BatchError("Exceeded the maximum calls(%d) in a single bactch request."
+                       % MAX_BATCH_LIMIT)
     self._order.append(request_id)
 
   def _execute(self, http, order, requests):
