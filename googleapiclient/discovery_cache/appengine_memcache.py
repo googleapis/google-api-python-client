@@ -39,6 +39,7 @@ class Cache(base.Cache):
       Args:
         max_age: Cache expiration in seconds.
         use_multi: use multi keys cache to overcome MAX size limitation.
+        TODO: may be retrieved from a configuration parameter
       """
       self._max_age = max_age
       self._use_multi = use_multi
