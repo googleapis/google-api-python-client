@@ -1205,7 +1205,6 @@ class TestBatch(unittest.TestCase):
         headers={'content-type': 'application/json'})
       )
     self.assertRaises(BatchError, batch.add, self.request1)
-      
 
   def test_add_fail_for_resumable(self):
     batch = BatchHttpRequest()
