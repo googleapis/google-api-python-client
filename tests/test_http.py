@@ -1192,9 +1192,6 @@ class TestBatch(unittest.TestCase):
     batch.add(self.request1, request_id='1')
     self.assertRaises(KeyError, batch.add, self.request1, request_id='1')
 
-  def test_add_over_limit(self):
-    # do nothing here
-    
   def test_add_fail_for_resumable(self):
     batch = BatchHttpRequest()
 
