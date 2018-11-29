@@ -1077,7 +1077,6 @@ class TestBatch(unittest.TestCase):
 
   def setUp(self):
     model = JsonModel()
-    self.MAX_BATCH_LIMIT = 1000
     self.request1 = HttpRequest(
         None,
         model.response,
@@ -1194,10 +1193,10 @@ class TestBatch(unittest.TestCase):
     self.assertRaises(KeyError, batch.add, self.request1, request_id='1')
 
   def test_add_fail_for_over_limit(self):
-        from googleapiclient.http import MAX_BATCH_LIMIT
+    from googleapiclient.http import MAX_BATCH_LIMIT
 
     batch = BatchHttpRequest()
-    for i in xrange(0, self.MAX_BATCH_LIMIT):
+    for i in xrange(0, MAX_BATCH_LIMIT):
       batch.add(HttpRequest(
         None,
         None,
