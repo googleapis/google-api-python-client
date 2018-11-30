@@ -219,7 +219,7 @@ def build(serviceName,
 
     try:
       content = _retrieve_discovery_doc(
-        requested_url, discovery_http, cache_discovery, cache)
+        requested_url, discovery_http, cache_discovery, cache, developerKey)
       return build_from_document(content, base=discovery_url, http=http,
           developerKey=developerKey, model=model, requestBuilder=requestBuilder,
           credentials=credentials)
@@ -233,7 +233,8 @@ def build(serviceName,
         "name: %s  version: %s" % (serviceName, version))
 
 
-def _retrieve_discovery_doc(url, http, cache_discovery, cache=None):
+def _retrieve_discovery_doc(url, http, cache_discovery, cache=None,
+                            developerKey=None):
   """Retrieves the discovery_doc from cache or the internet.
 
   Args:
@@ -264,6 +265,8 @@ def _retrieve_discovery_doc(url, http, cache_discovery, cache=None):
   # document to avoid exceeding the quota on discovery requests.
   if 'REMOTE_ADDR' in os.environ:
     actual_url = _add_query_parameter(url, 'userIp', os.environ['REMOTE_ADDR'])
+  if developerKey:
+    actual_url = _add_query_parameter(url, 'key', developerKey)
   logger.info('URL being requested: GET %s', actual_url)
 
   resp, content = http.request(actual_url)
@@ -360,7 +363,9 @@ def build_from_document(
       # The credentials need to be scoped.
       credentials = _auth.with_scopes(credentials, scopes)
 
-      # Create an authorized http instance
+    # If credentials are provided, create an authorized http instance;
+    # otherwise, skip authentication.
+    if credentials:
       http = _auth.authorized_http(credentials)
 
     # If the service doesn't require scopes then there is no need for
