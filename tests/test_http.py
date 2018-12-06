@@ -1192,6 +1192,21 @@ class TestBatch(unittest.TestCase):
     batch.add(self.request1, request_id='1')
     self.assertRaises(KeyError, batch.add, self.request1, request_id='1')
 
+  def test_add_fail_for_over_limit(self):
+    from googleapiclient.http import MAX_BATCH_LIMIT
+
+    batch = BatchHttpRequest()
+    for i in xrange(0, MAX_BATCH_LIMIT):
+      batch.add(HttpRequest(
+        None,
+        None,
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
+        method='POST',
+        body='{}',
+        headers={'content-type': 'application/json'})
+      )
+    self.assertRaises(BatchError, batch.add, self.request1)
+
   def test_add_fail_for_resumable(self):
     batch = BatchHttpRequest()
 

@@ -73,6 +73,8 @@ DEFAULT_CHUNK_SIZE = 100*1024*1024
 
 MAX_URI_LENGTH = 2048
 
+MAX_BATCH_LIMIT = 1000
+
 _TOO_MANY_REQUESTS = 429
 
 DEFAULT_HTTP_TIMEOUT_SEC = 60
@@ -1322,6 +1324,10 @@ class BatchHttpRequest(object):
       BatchError if a media request is added to a batch.
       KeyError is the request_id is not unique.
     """
+
+    if len(self._order) >= MAX_BATCH_LIMIT:
+      raise BatchError("Exceeded the maximum calls(%d) in a single bactch request."
+                       % MAX_BATCH_LIMIT)
     if request_id is None:
       request_id = self._new_id()
     if request.resumable is not None:
