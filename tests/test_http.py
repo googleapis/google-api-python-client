@@ -1196,7 +1196,7 @@ class TestBatch(unittest.TestCase):
     from googleapiclient.http import MAX_BATCH_LIMIT
 
     batch = BatchHttpRequest()
-    for i in xrange(0, MAX_BATCH_LIMIT):
+    for i in range(0, MAX_BATCH_LIMIT):
       batch.add(HttpRequest(
         None,
         None,
