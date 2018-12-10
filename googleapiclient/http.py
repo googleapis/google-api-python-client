@@ -1326,7 +1326,7 @@ class BatchHttpRequest(object):
     """
 
     if len(self._order) >= MAX_BATCH_LIMIT:
-      raise BatchError("Exceeded the maximum calls(%d) in a single bactch request."
+      raise BatchError("Exceeded the maximum calls(%d) in a single batch request."
                        % MAX_BATCH_LIMIT)
     if request_id is None:
       request_id = self._new_id()
