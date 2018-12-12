@@ -67,7 +67,7 @@ always be upper case.
 
 Example of unsubscribing.
 
-  service.channels().stop(channel.body())
+  service.channels().stop(channel.body()).execute()
 """
 from __future__ import absolute_import
 
