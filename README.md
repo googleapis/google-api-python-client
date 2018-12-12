@@ -21,8 +21,11 @@ $ easy_install --upgrade google-api-python-client
 
 See the [Developers Guide](https://developers.google.com/api-client-library/python/start/get_started) for more detailed instructions and additional documentation.
 
-# Python Version
-Python 2.7, 3.4, 3.5, and 3.6 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions.
+# Supported Python Versions
+Python 3.4, 3.5, 3.6 and 3.7 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions
+
+# Deprecated Python Versions
+Python == 2.7
 
 # Third Party Libraries and Dependencies
 The following libraries will be installed when you install the client library:
