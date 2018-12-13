@@ -1,4 +1,5 @@
-# Copyright 2014 Google Inc. All Rights Reserved.
+#!/bin/bash
+# Copyright 2017 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,17 +12,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-__version__ = "1.7.6"
-
-# Set default logging handler to avoid "No handler found" warnings.
-import logging
-
-try:  # Python 2.7+
-    from logging import NullHandler
-except ImportError:
-    class NullHandler(logging.Handler):
-        def emit(self, record):
-            pass
-
-logging.getLogger(__name__).addHandler(NullHandler())
+set -eo pipefail
+# Always run the cleanup script, regardless of the success of bouncing into
+# the container.
+function cleanup() {
+    chmod +x ${KOKORO_GFILE_DIR}/trampoline_cleanup.sh
+    ${KOKORO_GFILE_DIR}/trampoline_cleanup.sh
+    echo "cleanup";
+}
+trap cleanup EXIT
+python3 "${KOKORO_GFILE_DIR}/trampoline_v1.py"

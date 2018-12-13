@@ -1,9 +1,8 @@
 # Google API Client
 
-[![Build Status](https://travis-ci.org/google/google-api-python-client.svg?branch=master)](https://travis-ci.org/google/google-api-python-client)
 [![PyPI version](https://badge.fury.io/py/google-api-python-client.svg)](https://badge.fury.io/py/google-api-python-client)
 
-This is the Python client library for Google's discovery based APIs. To get started, please see the [full documentation for this library](http://google.github.io/google-api-python-client). Additionally, [dynamically generated documentation](http://api-python-client-doc.appspot.com/) is available for all of the APIs supported by this library.
+This is the Python client library for Google's discovery based APIs. To get started, please see the [full documentation for this library](https://developers.google.com/api-client-library/python/). Additionally, [dynamically generated documentation](http://google.github.io/google-api-python-client/docs/epy/index.html) is available for all of the APIs supported by this library.
 
 These client libraries are officially supported by Google.  However, the libraries are considered complete and are in maintenance mode. This means that we will address critical bugs and security issues but will not add any new features.
 

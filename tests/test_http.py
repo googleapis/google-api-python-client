@@ -29,6 +29,7 @@ from io import FileIO
 from six.moves.urllib.parse import urlencode
 
 # Do not remove the httplib2 import
+import json
 import httplib2
 import logging
 import mock
@@ -456,6 +457,41 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     self.assertEqual(5, download._progress)
     self.assertEqual(5, download._total_size)
 
+  def test_media_io_base_download_custom_request_headers(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '200',
+        'content-range': '0-2/5'}, 'echo_request_headers_as_json'),
+      ({'status': '200',
+        'content-range': '3-4/5'}, 'echo_request_headers_as_json'),
+    ])
+    self.assertEqual(True, self.request.http.follow_redirects)
+
+    self.request.headers['Cache-Control'] = 'no-store'
+
+    download = MediaIoBaseDownload(
+        fd=self.fd, request=self.request, chunksize=3)
+
+    self.assertEqual(download._headers, {'Cache-Control':'no-store'})
+
+    status, done = download.next_chunk()
+
+    result = self.fd.getvalue().decode('utf-8')
+
+    # we abuse the internals of the object we're testing, pay no attention
+    # to the actual bytes= values here; we are just asserting that the
+    # header we added to the original request is sent up to the server
+    # on each call to next_chunk
+
+    self.assertEqual(json.loads(result),
+                     {"Cache-Control": "no-store", "range": "bytes=0-3"})
+
+    download._fd = self.fd = BytesIO()
+    status, done = download.next_chunk()
+
+    result = self.fd.getvalue().decode('utf-8')
+    self.assertEqual(json.loads(result),
+                     {"Cache-Control": "no-store", "range": "bytes=51-54"})
+
   def test_media_io_base_download_handle_redirects(self):
     self.request.http = HttpMockSequence([
       ({'status': '200',
@@ -635,7 +671,7 @@ ETag: "etag/pony"\r\n\r\n{"answer": 42}"""
 BATCH_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -645,7 +681,7 @@ ETag: "etag/pony"\r\n\r\n{"foo": 42}
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -657,7 +693,7 @@ ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 BATCH_ERROR_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -667,7 +703,7 @@ ETag: "etag/pony"\r\n\r\n{"foo": 42}
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 403 Access Not Configured
 Content-Type: application/json
@@ -693,7 +729,7 @@ ETag: "etag/sheep"\r\n\r\n{
 BATCH_RESPONSE_WITH_401 = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 401 Authorization Required
 Content-Type: application/json
@@ -704,7 +740,7 @@ ETag: "etag/pony"\r\n\r\n{"error": {"message":
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -716,7 +752,7 @@ ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 BATCH_SINGLE_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -1156,6 +1192,21 @@ class TestBatch(unittest.TestCase):
     batch.add(self.request1, request_id='1')
     self.assertRaises(KeyError, batch.add, self.request1, request_id='1')
 
+  def test_add_fail_for_over_limit(self):
+    from googleapiclient.http import MAX_BATCH_LIMIT
+
+    batch = BatchHttpRequest()
+    for i in range(0, MAX_BATCH_LIMIT):
+      batch.add(HttpRequest(
+        None,
+        None,
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
+        method='POST',
+        body='{}',
+        headers={'content-type': 'application/json'})
+      )
+    self.assertRaises(BatchError, batch.add, self.request1)
+
   def test_add_fail_for_resumable(self):
     batch = BatchHttpRequest()
 
@@ -1210,6 +1261,39 @@ class TestBatch(unittest.TestCase):
       self.assertEqual('--', parts[3].rstrip())
       header = parts[1].splitlines()[1]
       self.assertEqual('Content-Type: application/http', header)
+
+  def test_execute_request_body_with_custom_long_request_ids(self):
+    batch = BatchHttpRequest()
+
+    batch.add(self.request1, request_id='abc'*20)
+    batch.add(self.request2, request_id='def'*20)
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+        'echo_request_body'),
+      ])
+    try:
+      batch.execute(http=http)
+      self.fail('Should raise exception')
+    except BatchError as e:
+      boundary, _ = e.content.split(None, 1)
+      self.assertEqual('--', boundary[:2])
+      parts = e.content.split(boundary)
+      self.assertEqual(4, len(parts))
+      self.assertEqual('', parts[0])
+      self.assertEqual('--', parts[3].rstrip())
+      for partindex, request_id in ((1, 'abc'*20), (2, 'def'*20)):
+        lines = parts[partindex].splitlines()
+        for n, line in enumerate(lines):
+          if line.startswith('Content-ID:'):
+            # assert correct header folding
+            self.assertTrue(line.endswith('+'), line)
+            header_continuation = lines[n+1]
+            self.assertEqual(
+              header_continuation,
+              ' %s>' % request_id,
+              header_continuation
+            )
 
   def test_execute_initial_refresh_oauth2(self):
     batch = BatchHttpRequest()

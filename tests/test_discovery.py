@@ -449,7 +449,7 @@ class DiscoveryFromDocument(unittest.TestCase):
 
     plus = build_from_document(
       discovery, base="https://www.googleapis.com/",
-      credentials=self.MOCK_CREDENTIALS)
+      credentials=None)
     # plus service requires Authorization
     self.assertIsInstance(plus._http, httplib2.Http)
     self.assertIsInstance(plus._http.timeout, int)
@@ -487,7 +487,7 @@ class DiscoveryFromHttp(unittest.TestCase):
       http = HttpMockSequence([
         ({'status': '400'}, open(datafile('zoo.json'), 'rb').read()),
         ])
-      zoo = build('zoo', 'v1', http=http, developerKey='foo',
+      zoo = build('zoo', 'v1', http=http, developerKey=None,
                   discoveryServiceUrl='http://example.com')
       self.fail('Should have raised an exception.')
     except HttpError as e:
@@ -505,6 +505,19 @@ class DiscoveryFromHttp(unittest.TestCase):
       self.fail('Should have raised an exception.')
     except HttpError as e:
       self.assertEqual(e.uri, 'http://example.com')
+
+  def test_key_is_added_to_discovery_uri(self):
+    # build() will raise an HttpError on a 400, use this to pick the request uri
+    # out of the raised exception.
+    try:
+      http = HttpMockSequence([
+        ({'status': '400'}, open(datafile('zoo.json'), 'rb').read()),
+        ])
+      zoo = build('zoo', 'v1', http=http, developerKey='foo',
+                  discoveryServiceUrl='http://example.com')
+      self.fail('Should have raised an exception.')
+    except HttpError as e:
+      self.assertEqual(e.uri, 'http://example.com?key=foo')
 
   def test_discovery_loading_from_v2_discovery_uri(self):
       http = HttpMockSequence([

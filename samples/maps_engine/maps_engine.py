@@ -47,8 +47,8 @@ import logging
 import sys
 import time
 
-from apiclient import sample_tools
-from apiclient.http import MediaFileUpload
+from googleapiclient import sample_tools
+from googleapiclient.http import MediaFileUpload
 
 logging.basicConfig(level=logging.INFO)
 
