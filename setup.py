@@ -25,8 +25,8 @@ if sys.version_info < (2, 7):
   print('google-api-python-client requires python version >= 2.7.',
         file=sys.stderr)
   sys.exit(1)
-if (3, 1) <= sys.version_info < (3, 3):
-  print('google-api-python-client requires python3 version >= 3.3.',
+if (3, 1) <= sys.version_info < (3, 4):
+  print('google-api-python-client requires python3 version >= 3.4.',
         file=sys.stderr)
   sys.exit(1)
 
@@ -60,6 +60,7 @@ setup(
     author="Google Inc.",
     url="http://github.com/google/google-api-python-client/",
     install_requires=install_requires,
+    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
     packages=packages,
     package_data={},
     license="Apache 2.0",
@@ -68,7 +69,6 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
