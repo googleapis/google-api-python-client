@@ -18,12 +18,12 @@ import google.auth.credentials
 import google_auth_httplib2
 import httplib2
 import oauth2client.client
-import unittest2
+import unittest2 as unittest
 
 from googleapiclient import _auth
 
 
-class TestAuthWithGoogleAuth(unittest2.TestCase):
+class TestAuthWithGoogleAuth(unittest.TestCase):
     def setUp(self):
         _auth.HAS_GOOGLE_AUTH = True
         _auth.HAS_OAUTH2CLIENT = False
@@ -77,7 +77,7 @@ class TestAuthWithGoogleAuth(unittest2.TestCase):
         self.assertGreater(authorized_http.http.timeout, 0)
 
 
-class TestAuthWithOAuth2Client(unittest2.TestCase):
+class TestAuthWithOAuth2Client(unittest.TestCase):
     def setUp(self):
         _auth.HAS_GOOGLE_AUTH = False
         _auth.HAS_OAUTH2CLIENT = True
@@ -127,7 +127,7 @@ class TestAuthWithOAuth2Client(unittest2.TestCase):
         self.assertGreater(http.timeout, 0)
 
 
-class TestAuthWithoutAuth(unittest2.TestCase):
+class TestAuthWithoutAuth(unittest.TestCase):
 
     def setUp(self):
         _auth.HAS_GOOGLE_AUTH = False
@@ -142,7 +142,7 @@ class TestAuthWithoutAuth(unittest2.TestCase):
             print(_auth.default_credentials())
 
 
-class TestGoogleAuthWithoutHttplib2(unittest2.TestCase):
+class TestGoogleAuthWithoutHttplib2(unittest.TestCase):
     def setUp(self):
         _auth.google_auth_httplib2 = None
 
