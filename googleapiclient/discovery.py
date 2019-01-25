@@ -126,14 +126,16 @@ class _BytesGenerator(BytesGenerator):
   _write_lines = BytesGenerator.write
 
 def fix_method_name(name):
-  """Fix method names to avoid reserved word conflicts.
+  """Fix method names to avoid '$' characters and reserved word conflicts.
 
   Args:
     name: string, method name.
 
   Returns:
-    The name with an '_' appended if the name is a reserved word.
+    The name with '_' appended if the name is a reserved word and '$' 
+    replaced with '_'. 
   """
+  name = name.replace('$', '_')
   if keyword.iskeyword(name) or name in RESERVED_WORDS:
     return name + '_'
   else:
