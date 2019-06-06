@@ -1,6 +1,8 @@
 # Google API Client
 
 [![PyPI version](https://badge.fury.io/py/google-api-python-client.svg)](https://badge.fury.io/py/google-api-python-client)
+[![Compat check PyPI](https://python-compatibility-tools.appspot.com/one_badge_image?package=google-api-python-client)](https://python-compatibility-tools.appspot.com/one_badge_target?package=google-api-python-client)
+[![Compat check github](https://python-compatibility-tools.appspot.com/one_badge_image?package=git%2Bgit%3A//github.com/googleapis/google-api-python-client.git)](https://python-compatibility-tools.appspot.com/one_badge_target?package=git%2Bgit%3A//github.com/googleapis/google-api-python-client.git)
 
 This is the Python client library for Google's discovery based APIs. To get started, please see the [full documentation for this library](https://developers.google.com/api-client-library/python/). Additionally, [dynamically generated documentation](http://google.github.io/google-api-python-client/docs/epy/index.html) is available for all of the APIs supported by this library.
 
