@@ -19,6 +19,8 @@ are not already installed.
 """
 from __future__ import print_function
 
+import io
+import os
 import sys
 
 if sys.version_info < (2, 7):
@@ -46,8 +48,11 @@ install_requires = [
     'uritemplate>=3.0.0,<4dev',
 ]
 
-long_desc = """The Google API Client for Python is a client library for
-accessing the Plus, Moderator, and many other Google APIs."""
+package_root = os.path.abspath(os.path.dirname(__file__))
+
+readme_filename = os.path.join(package_root, "README.md")
+with io.open(readme_filename, encoding="utf-8") as readme_file:
+    readme = readme_file.read()
 
 import googleapiclient
 version = googleapiclient.__version__
@@ -56,7 +61,8 @@ setup(
     name="google-api-python-client",
     version=version,
     description="Google API Client Library for Python",
-    long_description=long_desc,
+    long_description=readme,
+    long_description_content_type='text/markdown',
     author="Google Inc.",
     url="http://github.com/google/google-api-python-client/",
     install_requires=install_requires,
