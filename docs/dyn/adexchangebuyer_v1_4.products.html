@@ -107,8 +107,9 @@ Returns:
           "dimensionType": "A String",
           "dimensionValues": [
             { # Value of the dimension.
+              "percentage": 42, # Percent of total impressions for a dimension type. e.g. {dimension_type: 'GENDER', [{dimension_value: {id: 1, name: 'MALE', percentage: 60}}]} Gender MALE is 60% of all impressions which have gender.
               "id": 42, # Id of the dimension.
-              "name": "A String", # Name of the dimension mainly for debugging purposes.
+              "name": "A String", # Name of the dimension mainly for debugging purposes, except for the case of CREATIVE_SIZE. For CREATIVE_SIZE, strings are used instead of ids.
             },
           ],
         },
@@ -134,6 +135,7 @@ Returns:
     ],
     "inventorySource": "A String", # What exchange will provide this inventory (readonly, except on create).
     "publisherProfileId": "A String", # Id of the publisher profile for a given seller. A (seller.account_id, publisher_profile_id) pair uniquely identifies a publisher profile. Buyers can call the PublisherProfiles::List endpoint to get a list of publisher profiles for a given seller.
+    "creatorRole": "A String", # The role that created the offer. Set to BUYER for buyer initiated offers.
     "revisionNumber": "A String", # The revision number of the product. (readonly)
     "seller": { # Information about the seller that created this product (readonly, except on create)
       "subAccountId": "A String", # Optional sub-account id for the seller.
@@ -156,65 +158,96 @@ Returns:
     },
     "terms": { # The negotiable terms of the deal (buyer-readonly)
       "brandingType": "A String", # Visibilty of the URL in bid requests.
-      "estimatedGrossSpend": { # Non-binding estimate of the estimated gross spend for this deal Can be set by buyer or seller.
-        "pricingType": "A String", # The pricing type for the deal/product.
-        "currencyCode": "A String", # The currency code for the price.
-        "amountMicros": 3.14, # The price value in micros.
+      "crossListedExternalDealIdType": "A String", # Indicates that this ExternalDealId exists under at least two different AdxInventoryDeals. Currently, the only case that the same ExternalDealId will exist is programmatic cross sell case.
+      "guaranteedFixedPriceTerms": { # The terms for guaranteed fixed price deals.
+        "guaranteedImpressions": "A String", # Guaranteed impressions as a percentage. This is the percentage of guaranteed looks that the buyer is guaranteeing to buy.
+        "fixedPrices": [ # Fixed price for the specified buyer.
+          { # Used to specify pricing rules for buyers. Each PricePerBuyer in a product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer we look for the most specific matching rule - we first look for a rule matching the buyer and otherwise look for a matching rule where no buyer is set.
+            "auctionTier": "A String", # Optional access type for this buyer.
+            "buyer": { # The buyer who will pay this price. If unset, all buyers can pay this price (if the advertisers match, and there's no more specific rule matching the buyer).
+              "accountId": "A String", # Adx account id of the buyer.
+            },
+            "billedBuyer": { # Reference to the buyer that will get billed.
+              "accountId": "A String", # Adx account id of the buyer.
+            },
+            "price": { # The specified price
+              "pricingType": "A String", # The pricing type for the deal/product.
+              "currencyCode": "A String", # The currency code for the price.
+              "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
+              "amountMicros": 3.14, # The price value in micros.
+            },
+          },
+        ],
+        "minimumDailyLooks": "A String", # Count of minimum daily looks for a CPD deal. For CPD deals, buyer should negotiate on this field instead of guaranteed_looks.
+        "guaranteedLooks": "A String", # Count of guaranteed looks. Required for deal, optional for product. For CPD deals, buyer changes to guaranteed_looks will be ignored.
+        "billingInfo": { # External billing info for this Deal. This field is relevant when external billing info such as price has a different currency code than DFP/AdX.
+          "price": { # The original reservation price for the deal, if the currency code is different from the one used in negotiation.
+            "pricingType": "A String", # The pricing type for the deal/product.
+            "currencyCode": "A String", # The currency code for the price.
+            "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
+            "amountMicros": 3.14, # The price value in micros.
+          },
+          "dfpLineItemId": "A String", # The DFP line item id associated with this deal. For features like CPD, buyers can retrieve the DFP line item for billing reconciliation.
+          "originalContractedQuantity": "A String", # The original contracted quantity (# impressions) for this deal. To ensure delivery, sometimes the publisher will book the deal with a impression buffer, such that guaranteed_looks is greater than the contracted quantity. However clients are billed using the original contracted quantity.
+          "currencyConversionTimeMs": "A String", # The timestamp (in ms since epoch) when the original reservation price for the deal was first converted to DFP currency. This is used to convert the contracted price into buyer's currency without discrepancy.
+        },
       },
       "sellerTimeZone": "A String", # For deals with Cost Per Day billing, defines the timezone used to mark the boundaries of a day (buyer-readonly)
       "estimatedImpressionsPerDay": "A String", # Non-binding estimate of the impressions served per day Can be set by buyer or seller.
       "nonGuaranteedFixedPriceTerms": { # The terms for non-guaranteed fixed price deals.
         "fixedPrices": [ # Fixed price for the specified buyer.
-          { # Used to specify pricing rules for buyers/advertisers. Each PricePerBuyer in an product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer or buyer/advertiser pair, we look for the most specific matching rule - we first look for a rule matching the buyer and advertiser, next a rule with the buyer but an empty advertiser list, and otherwise look for a matching rule where no buyer is set.
+          { # Used to specify pricing rules for buyers. Each PricePerBuyer in a product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer we look for the most specific matching rule - we first look for a rule matching the buyer and otherwise look for a matching rule where no buyer is set.
             "auctionTier": "A String", # Optional access type for this buyer.
             "buyer": { # The buyer who will pay this price. If unset, all buyers can pay this price (if the advertisers match, and there's no more specific rule matching the buyer).
+              "accountId": "A String", # Adx account id of the buyer.
+            },
+            "billedBuyer": { # Reference to the buyer that will get billed.
               "accountId": "A String", # Adx account id of the buyer.
             },
             "price": { # The specified price
               "pricingType": "A String", # The pricing type for the deal/product.
               "currencyCode": "A String", # The currency code for the price.
+              "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
               "amountMicros": 3.14, # The price value in micros.
             },
           },
         ],
       },
-      "guaranteedFixedPriceTerms": { # The terms for guaranteed fixed price deals.
-        "guaranteedImpressions": "A String", # Guaranteed impressions as a percentage. This is the percentage of guaranteed looks that the buyer is guaranteeing to buy.
-        "fixedPrices": [ # Fixed price for the specified buyer.
-          { # Used to specify pricing rules for buyers/advertisers. Each PricePerBuyer in an product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer or buyer/advertiser pair, we look for the most specific matching rule - we first look for a rule matching the buyer and advertiser, next a rule with the buyer but an empty advertiser list, and otherwise look for a matching rule where no buyer is set.
-            "auctionTier": "A String", # Optional access type for this buyer.
-            "buyer": { # The buyer who will pay this price. If unset, all buyers can pay this price (if the advertisers match, and there's no more specific rule matching the buyer).
-              "accountId": "A String", # Adx account id of the buyer.
-            },
-            "price": { # The specified price
-              "pricingType": "A String", # The pricing type for the deal/product.
-              "currencyCode": "A String", # The currency code for the price.
-              "amountMicros": 3.14, # The price value in micros.
-            },
-          },
-        ],
-        "guaranteedLooks": "A String", # Count of guaranteed looks. Required for deal, optional for product.
-        "billingInfo": { # External billing info for this Deal. This field is relevant when external billing info such as price has a different currency code than DFP/AdX.
-          "price": { # The original reservation price for the deal, if the currency code is different from the one used in negotiation.
-            "pricingType": "A String", # The pricing type for the deal/product.
-            "currencyCode": "A String", # The currency code for the price.
-            "amountMicros": 3.14, # The price value in micros.
-          },
-          "originalContractedQuantity": "A String", # The original contracted quantity (# impressions) for this deal. To ensure delivery, sometimes publisher will book the deal with a impression buffer, however clients are billed using the original contracted quantity.
-          "currencyConversionTimeMs": "A String", # The timestamp (in ms since epoch) when the original reservation price for the deal was first converted to DFP currency. This is used to convert the contracted price into advertiser's currency without discrepancy.
+      "estimatedGrossSpend": { # Non-binding estimate of the estimated gross spend for this deal Can be set by buyer or seller.
+        "pricingType": "A String", # The pricing type for the deal/product.
+        "currencyCode": "A String", # The currency code for the price.
+        "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
+        "amountMicros": 3.14, # The price value in micros.
+      },
+      "rubiconNonGuaranteedTerms": { # The terms for rubicon non-guaranteed deals.
+        "priorityPrice": { # Optional price for Rubicon priority access in the auction.
+          "pricingType": "A String", # The pricing type for the deal/product.
+          "currencyCode": "A String", # The currency code for the price.
+          "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
+          "amountMicros": 3.14, # The price value in micros.
+        },
+        "standardPrice": { # Optional price for Rubicon standard access in the auction.
+          "pricingType": "A String", # The pricing type for the deal/product.
+          "currencyCode": "A String", # The currency code for the price.
+          "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
+          "amountMicros": 3.14, # The price value in micros.
         },
       },
       "nonGuaranteedAuctionTerms": { # The terms for non-guaranteed auction deals.
         "autoOptimizePrivateAuction": True or False, # True if open auction buyers are allowed to compete with invited buyers in this private auction (buyer-readonly).
         "reservePricePerBuyers": [ # Reserve price for the specified buyer.
-          { # Used to specify pricing rules for buyers/advertisers. Each PricePerBuyer in an product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer or buyer/advertiser pair, we look for the most specific matching rule - we first look for a rule matching the buyer and advertiser, next a rule with the buyer but an empty advertiser list, and otherwise look for a matching rule where no buyer is set.
+          { # Used to specify pricing rules for buyers. Each PricePerBuyer in a product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer we look for the most specific matching rule - we first look for a rule matching the buyer and otherwise look for a matching rule where no buyer is set.
             "auctionTier": "A String", # Optional access type for this buyer.
             "buyer": { # The buyer who will pay this price. If unset, all buyers can pay this price (if the advertisers match, and there's no more specific rule matching the buyer).
+              "accountId": "A String", # Adx account id of the buyer.
+            },
+            "billedBuyer": { # Reference to the buyer that will get billed.
               "accountId": "A String", # Adx account id of the buyer.
             },
             "price": { # The specified price
               "pricingType": "A String", # The pricing type for the deal/product.
               "currencyCode": "A String", # The currency code for the price.
+              "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
               "amountMicros": 3.14, # The price value in micros.
             },
           },
@@ -227,7 +260,36 @@ Returns:
       {
         "inclusions": [ # The list of value to include as part of the targeting. Each value is OR'd together.
           {
+            "demogAgeCriteriaValue": {
+              "demogAgeCriteriaIds": [
+                "A String",
+              ],
+            },
+            "demogGenderCriteriaValue": {
+              "demogGenderCriteriaIds": [
+                "A String",
+              ],
+            },
             "longValue": "A String", # The long value to exclude/include.
+            "creativeSizeValue": { # Next Id: 7 # The creative size value to exclude/include.
+              "companionSizes": [ # For video size type, the list of companion sizes.
+                {
+                  "width": 42, # The width of the creative.
+                  "height": 42, # The height of the creative.
+                },
+              ],
+              "nativeTemplate": "A String", # The native template for native ad.
+              "allowedFormats": [ # The formats allowed by the publisher.
+                "A String",
+              ],
+              "size": { # For regular or video creative size type, specifies the size of the creative.
+                "width": 42, # The width of the creative.
+                "height": 42, # The height of the creative.
+              },
+              "creativeSizeType": "A String", # The Creative size type.
+              "skippableAdType": "A String", # The skippable ad type for video size.
+            },
+            "stringValue": "A String", # The string value to exclude/include.
             "dayPartTargetingValue": { # The daypart targeting to include / exclude. Filled in when the key is GOOG_DAYPART_TARGETING.
               "dayParts": [
                 {
@@ -240,25 +302,40 @@ Returns:
               ],
               "timeZoneType": "A String",
             },
-            "creativeSizeValue": { # The creative size value to exclude/include.
-              "creativeSizeType": "A String", # The Creative size type.
-              "companionSizes": [ # For video size type, the list of companion sizes.
-                {
-                  "width": 42, # The width of the creative.
-                  "height": 42, # The height of the creative.
-                },
-              ],
-              "size": { # For regular or video creative size type, specifies the size of the creative.
-                "width": 42, # The width of the creative.
-                "height": 42, # The height of the creative.
-              },
-            },
-            "stringValue": "A String", # The string value to exclude/include.
           },
         ],
         "exclusions": [ # The list of values to exclude from targeting. Each value is AND'd together.
           {
+            "demogAgeCriteriaValue": {
+              "demogAgeCriteriaIds": [
+                "A String",
+              ],
+            },
+            "demogGenderCriteriaValue": {
+              "demogGenderCriteriaIds": [
+                "A String",
+              ],
+            },
             "longValue": "A String", # The long value to exclude/include.
+            "creativeSizeValue": { # Next Id: 7 # The creative size value to exclude/include.
+              "companionSizes": [ # For video size type, the list of companion sizes.
+                {
+                  "width": 42, # The width of the creative.
+                  "height": 42, # The height of the creative.
+                },
+              ],
+              "nativeTemplate": "A String", # The native template for native ad.
+              "allowedFormats": [ # The formats allowed by the publisher.
+                "A String",
+              ],
+              "size": { # For regular or video creative size type, specifies the size of the creative.
+                "width": 42, # The width of the creative.
+                "height": 42, # The height of the creative.
+              },
+              "creativeSizeType": "A String", # The Creative size type.
+              "skippableAdType": "A String", # The skippable ad type for video size.
+            },
+            "stringValue": "A String", # The string value to exclude/include.
             "dayPartTargetingValue": { # The daypart targeting to include / exclude. Filled in when the key is GOOG_DAYPART_TARGETING.
               "dayParts": [
                 {
@@ -271,30 +348,23 @@ Returns:
               ],
               "timeZoneType": "A String",
             },
-            "creativeSizeValue": { # The creative size value to exclude/include.
-              "creativeSizeType": "A String", # The Creative size type.
-              "companionSizes": [ # For video size type, the list of companion sizes.
-                {
-                  "width": 42, # The width of the creative.
-                  "height": 42, # The height of the creative.
-                },
-              ],
-              "size": { # For regular or video creative size type, specifies the size of the creative.
-                "width": 42, # The width of the creative.
-                "height": 42, # The height of the creative.
-              },
-            },
-            "stringValue": "A String", # The string value to exclude/include.
           },
         ],
         "key": "A String", # The key representing the shared targeting criterion.
       },
     ],
+    "buyer": { # The buyer that created the offer if this is a buyer initiated offer (readonly, except on create)
+      "accountId": "A String", # Adx account id of the buyer.
+    },
     "lastUpdateTimeMs": "A String", # Time of last update in ms. since epoch (readonly)
     "legacyOfferId": "A String", # Optional legacy offer id if this offer is a preferred deal offer.
     "kind": "adexchangebuyer#product", # Identifies what kind of resource this is. Value: the fixed string "adexchangebuyer#product".
+    "marketplacePublisherProfileId": "A String", # Marketplace publisher profile Id. This Id differs from the regular publisher_profile_id in that 1. This is a new id, the old Id will be deprecated in 2017. 2. This id uniquely identifies a publisher profile by itself.
     "name": "A String", # The name for this product as set by the seller. (buyer-readonly)
     "syndicationProduct": "A String", # The syndication product associated with the deal. (readonly, except on create)
+    "billedBuyer": { # The billed buyer corresponding to the buyer that created the offer. (readonly, except on create)
+      "accountId": "A String", # Adx account id of the buyer.
+    },
     "flightStartTimeMs": "A String", # Inventory availability dates. (times are in ms since epoch) The granularity is generally in the order of seconds. (buyer-readonly)
     "creationTimeMs": "A String", # Creation time in ms. since epoch (readonly)
   }</pre>
@@ -328,8 +398,9 @@ Returns:
               "dimensionType": "A String",
               "dimensionValues": [
                 { # Value of the dimension.
+                  "percentage": 42, # Percent of total impressions for a dimension type. e.g. {dimension_type: 'GENDER', [{dimension_value: {id: 1, name: 'MALE', percentage: 60}}]} Gender MALE is 60% of all impressions which have gender.
                   "id": 42, # Id of the dimension.
-                  "name": "A String", # Name of the dimension mainly for debugging purposes.
+                  "name": "A String", # Name of the dimension mainly for debugging purposes, except for the case of CREATIVE_SIZE. For CREATIVE_SIZE, strings are used instead of ids.
                 },
               ],
             },
@@ -355,6 +426,7 @@ Returns:
         ],
         "inventorySource": "A String", # What exchange will provide this inventory (readonly, except on create).
         "publisherProfileId": "A String", # Id of the publisher profile for a given seller. A (seller.account_id, publisher_profile_id) pair uniquely identifies a publisher profile. Buyers can call the PublisherProfiles::List endpoint to get a list of publisher profiles for a given seller.
+        "creatorRole": "A String", # The role that created the offer. Set to BUYER for buyer initiated offers.
         "revisionNumber": "A String", # The revision number of the product. (readonly)
         "seller": { # Information about the seller that created this product (readonly, except on create)
           "subAccountId": "A String", # Optional sub-account id for the seller.
@@ -377,65 +449,96 @@ Returns:
         },
         "terms": { # The negotiable terms of the deal (buyer-readonly)
           "brandingType": "A String", # Visibilty of the URL in bid requests.
-          "estimatedGrossSpend": { # Non-binding estimate of the estimated gross spend for this deal Can be set by buyer or seller.
-            "pricingType": "A String", # The pricing type for the deal/product.
-            "currencyCode": "A String", # The currency code for the price.
-            "amountMicros": 3.14, # The price value in micros.
+          "crossListedExternalDealIdType": "A String", # Indicates that this ExternalDealId exists under at least two different AdxInventoryDeals. Currently, the only case that the same ExternalDealId will exist is programmatic cross sell case.
+          "guaranteedFixedPriceTerms": { # The terms for guaranteed fixed price deals.
+            "guaranteedImpressions": "A String", # Guaranteed impressions as a percentage. This is the percentage of guaranteed looks that the buyer is guaranteeing to buy.
+            "fixedPrices": [ # Fixed price for the specified buyer.
+              { # Used to specify pricing rules for buyers. Each PricePerBuyer in a product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer we look for the most specific matching rule - we first look for a rule matching the buyer and otherwise look for a matching rule where no buyer is set.
+                "auctionTier": "A String", # Optional access type for this buyer.
+                "buyer": { # The buyer who will pay this price. If unset, all buyers can pay this price (if the advertisers match, and there's no more specific rule matching the buyer).
+                  "accountId": "A String", # Adx account id of the buyer.
+                },
+                "billedBuyer": { # Reference to the buyer that will get billed.
+                  "accountId": "A String", # Adx account id of the buyer.
+                },
+                "price": { # The specified price
+                  "pricingType": "A String", # The pricing type for the deal/product.
+                  "currencyCode": "A String", # The currency code for the price.
+                  "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
+                  "amountMicros": 3.14, # The price value in micros.
+                },
+              },
+            ],
+            "minimumDailyLooks": "A String", # Count of minimum daily looks for a CPD deal. For CPD deals, buyer should negotiate on this field instead of guaranteed_looks.
+            "guaranteedLooks": "A String", # Count of guaranteed looks. Required for deal, optional for product. For CPD deals, buyer changes to guaranteed_looks will be ignored.
+            "billingInfo": { # External billing info for this Deal. This field is relevant when external billing info such as price has a different currency code than DFP/AdX.
+              "price": { # The original reservation price for the deal, if the currency code is different from the one used in negotiation.
+                "pricingType": "A String", # The pricing type for the deal/product.
+                "currencyCode": "A String", # The currency code for the price.
+                "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
+                "amountMicros": 3.14, # The price value in micros.
+              },
+              "dfpLineItemId": "A String", # The DFP line item id associated with this deal. For features like CPD, buyers can retrieve the DFP line item for billing reconciliation.
+              "originalContractedQuantity": "A String", # The original contracted quantity (# impressions) for this deal. To ensure delivery, sometimes the publisher will book the deal with a impression buffer, such that guaranteed_looks is greater than the contracted quantity. However clients are billed using the original contracted quantity.
+              "currencyConversionTimeMs": "A String", # The timestamp (in ms since epoch) when the original reservation price for the deal was first converted to DFP currency. This is used to convert the contracted price into buyer's currency without discrepancy.
+            },
           },
           "sellerTimeZone": "A String", # For deals with Cost Per Day billing, defines the timezone used to mark the boundaries of a day (buyer-readonly)
           "estimatedImpressionsPerDay": "A String", # Non-binding estimate of the impressions served per day Can be set by buyer or seller.
           "nonGuaranteedFixedPriceTerms": { # The terms for non-guaranteed fixed price deals.
             "fixedPrices": [ # Fixed price for the specified buyer.
-              { # Used to specify pricing rules for buyers/advertisers. Each PricePerBuyer in an product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer or buyer/advertiser pair, we look for the most specific matching rule - we first look for a rule matching the buyer and advertiser, next a rule with the buyer but an empty advertiser list, and otherwise look for a matching rule where no buyer is set.
+              { # Used to specify pricing rules for buyers. Each PricePerBuyer in a product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer we look for the most specific matching rule - we first look for a rule matching the buyer and otherwise look for a matching rule where no buyer is set.
                 "auctionTier": "A String", # Optional access type for this buyer.
                 "buyer": { # The buyer who will pay this price. If unset, all buyers can pay this price (if the advertisers match, and there's no more specific rule matching the buyer).
+                  "accountId": "A String", # Adx account id of the buyer.
+                },
+                "billedBuyer": { # Reference to the buyer that will get billed.
                   "accountId": "A String", # Adx account id of the buyer.
                 },
                 "price": { # The specified price
                   "pricingType": "A String", # The pricing type for the deal/product.
                   "currencyCode": "A String", # The currency code for the price.
+                  "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
                   "amountMicros": 3.14, # The price value in micros.
                 },
               },
             ],
           },
-          "guaranteedFixedPriceTerms": { # The terms for guaranteed fixed price deals.
-            "guaranteedImpressions": "A String", # Guaranteed impressions as a percentage. This is the percentage of guaranteed looks that the buyer is guaranteeing to buy.
-            "fixedPrices": [ # Fixed price for the specified buyer.
-              { # Used to specify pricing rules for buyers/advertisers. Each PricePerBuyer in an product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer or buyer/advertiser pair, we look for the most specific matching rule - we first look for a rule matching the buyer and advertiser, next a rule with the buyer but an empty advertiser list, and otherwise look for a matching rule where no buyer is set.
-                "auctionTier": "A String", # Optional access type for this buyer.
-                "buyer": { # The buyer who will pay this price. If unset, all buyers can pay this price (if the advertisers match, and there's no more specific rule matching the buyer).
-                  "accountId": "A String", # Adx account id of the buyer.
-                },
-                "price": { # The specified price
-                  "pricingType": "A String", # The pricing type for the deal/product.
-                  "currencyCode": "A String", # The currency code for the price.
-                  "amountMicros": 3.14, # The price value in micros.
-                },
-              },
-            ],
-            "guaranteedLooks": "A String", # Count of guaranteed looks. Required for deal, optional for product.
-            "billingInfo": { # External billing info for this Deal. This field is relevant when external billing info such as price has a different currency code than DFP/AdX.
-              "price": { # The original reservation price for the deal, if the currency code is different from the one used in negotiation.
-                "pricingType": "A String", # The pricing type for the deal/product.
-                "currencyCode": "A String", # The currency code for the price.
-                "amountMicros": 3.14, # The price value in micros.
-              },
-              "originalContractedQuantity": "A String", # The original contracted quantity (# impressions) for this deal. To ensure delivery, sometimes publisher will book the deal with a impression buffer, however clients are billed using the original contracted quantity.
-              "currencyConversionTimeMs": "A String", # The timestamp (in ms since epoch) when the original reservation price for the deal was first converted to DFP currency. This is used to convert the contracted price into advertiser's currency without discrepancy.
+          "estimatedGrossSpend": { # Non-binding estimate of the estimated gross spend for this deal Can be set by buyer or seller.
+            "pricingType": "A String", # The pricing type for the deal/product.
+            "currencyCode": "A String", # The currency code for the price.
+            "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
+            "amountMicros": 3.14, # The price value in micros.
+          },
+          "rubiconNonGuaranteedTerms": { # The terms for rubicon non-guaranteed deals.
+            "priorityPrice": { # Optional price for Rubicon priority access in the auction.
+              "pricingType": "A String", # The pricing type for the deal/product.
+              "currencyCode": "A String", # The currency code for the price.
+              "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
+              "amountMicros": 3.14, # The price value in micros.
+            },
+            "standardPrice": { # Optional price for Rubicon standard access in the auction.
+              "pricingType": "A String", # The pricing type for the deal/product.
+              "currencyCode": "A String", # The currency code for the price.
+              "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
+              "amountMicros": 3.14, # The price value in micros.
             },
           },
           "nonGuaranteedAuctionTerms": { # The terms for non-guaranteed auction deals.
             "autoOptimizePrivateAuction": True or False, # True if open auction buyers are allowed to compete with invited buyers in this private auction (buyer-readonly).
             "reservePricePerBuyers": [ # Reserve price for the specified buyer.
-              { # Used to specify pricing rules for buyers/advertisers. Each PricePerBuyer in an product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer or buyer/advertiser pair, we look for the most specific matching rule - we first look for a rule matching the buyer and advertiser, next a rule with the buyer but an empty advertiser list, and otherwise look for a matching rule where no buyer is set.
+              { # Used to specify pricing rules for buyers. Each PricePerBuyer in a product can become [0,1] deals. To check if there is a PricePerBuyer for a particular buyer we look for the most specific matching rule - we first look for a rule matching the buyer and otherwise look for a matching rule where no buyer is set.
                 "auctionTier": "A String", # Optional access type for this buyer.
                 "buyer": { # The buyer who will pay this price. If unset, all buyers can pay this price (if the advertisers match, and there's no more specific rule matching the buyer).
+                  "accountId": "A String", # Adx account id of the buyer.
+                },
+                "billedBuyer": { # Reference to the buyer that will get billed.
                   "accountId": "A String", # Adx account id of the buyer.
                 },
                 "price": { # The specified price
                   "pricingType": "A String", # The pricing type for the deal/product.
                   "currencyCode": "A String", # The currency code for the price.
+                  "expectedCpmMicros": 3.14, # In case of CPD deals, the expected CPM in micros.
                   "amountMicros": 3.14, # The price value in micros.
                 },
               },
@@ -448,7 +551,36 @@ Returns:
           {
             "inclusions": [ # The list of value to include as part of the targeting. Each value is OR'd together.
               {
+                "demogAgeCriteriaValue": {
+                  "demogAgeCriteriaIds": [
+                    "A String",
+                  ],
+                },
+                "demogGenderCriteriaValue": {
+                  "demogGenderCriteriaIds": [
+                    "A String",
+                  ],
+                },
                 "longValue": "A String", # The long value to exclude/include.
+                "creativeSizeValue": { # Next Id: 7 # The creative size value to exclude/include.
+                  "companionSizes": [ # For video size type, the list of companion sizes.
+                    {
+                      "width": 42, # The width of the creative.
+                      "height": 42, # The height of the creative.
+                    },
+                  ],
+                  "nativeTemplate": "A String", # The native template for native ad.
+                  "allowedFormats": [ # The formats allowed by the publisher.
+                    "A String",
+                  ],
+                  "size": { # For regular or video creative size type, specifies the size of the creative.
+                    "width": 42, # The width of the creative.
+                    "height": 42, # The height of the creative.
+                  },
+                  "creativeSizeType": "A String", # The Creative size type.
+                  "skippableAdType": "A String", # The skippable ad type for video size.
+                },
+                "stringValue": "A String", # The string value to exclude/include.
                 "dayPartTargetingValue": { # The daypart targeting to include / exclude. Filled in when the key is GOOG_DAYPART_TARGETING.
                   "dayParts": [
                     {
@@ -461,25 +593,40 @@ Returns:
                   ],
                   "timeZoneType": "A String",
                 },
-                "creativeSizeValue": { # The creative size value to exclude/include.
-                  "creativeSizeType": "A String", # The Creative size type.
-                  "companionSizes": [ # For video size type, the list of companion sizes.
-                    {
-                      "width": 42, # The width of the creative.
-                      "height": 42, # The height of the creative.
-                    },
-                  ],
-                  "size": { # For regular or video creative size type, specifies the size of the creative.
-                    "width": 42, # The width of the creative.
-                    "height": 42, # The height of the creative.
-                  },
-                },
-                "stringValue": "A String", # The string value to exclude/include.
               },
             ],
             "exclusions": [ # The list of values to exclude from targeting. Each value is AND'd together.
               {
+                "demogAgeCriteriaValue": {
+                  "demogAgeCriteriaIds": [
+                    "A String",
+                  ],
+                },
+                "demogGenderCriteriaValue": {
+                  "demogGenderCriteriaIds": [
+                    "A String",
+                  ],
+                },
                 "longValue": "A String", # The long value to exclude/include.
+                "creativeSizeValue": { # Next Id: 7 # The creative size value to exclude/include.
+                  "companionSizes": [ # For video size type, the list of companion sizes.
+                    {
+                      "width": 42, # The width of the creative.
+                      "height": 42, # The height of the creative.
+                    },
+                  ],
+                  "nativeTemplate": "A String", # The native template for native ad.
+                  "allowedFormats": [ # The formats allowed by the publisher.
+                    "A String",
+                  ],
+                  "size": { # For regular or video creative size type, specifies the size of the creative.
+                    "width": 42, # The width of the creative.
+                    "height": 42, # The height of the creative.
+                  },
+                  "creativeSizeType": "A String", # The Creative size type.
+                  "skippableAdType": "A String", # The skippable ad type for video size.
+                },
+                "stringValue": "A String", # The string value to exclude/include.
                 "dayPartTargetingValue": { # The daypart targeting to include / exclude. Filled in when the key is GOOG_DAYPART_TARGETING.
                   "dayParts": [
                     {
@@ -492,30 +639,23 @@ Returns:
                   ],
                   "timeZoneType": "A String",
                 },
-                "creativeSizeValue": { # The creative size value to exclude/include.
-                  "creativeSizeType": "A String", # The Creative size type.
-                  "companionSizes": [ # For video size type, the list of companion sizes.
-                    {
-                      "width": 42, # The width of the creative.
-                      "height": 42, # The height of the creative.
-                    },
-                  ],
-                  "size": { # For regular or video creative size type, specifies the size of the creative.
-                    "width": 42, # The width of the creative.
-                    "height": 42, # The height of the creative.
-                  },
-                },
-                "stringValue": "A String", # The string value to exclude/include.
               },
             ],
             "key": "A String", # The key representing the shared targeting criterion.
           },
         ],
+        "buyer": { # The buyer that created the offer if this is a buyer initiated offer (readonly, except on create)
+          "accountId": "A String", # Adx account id of the buyer.
+        },
         "lastUpdateTimeMs": "A String", # Time of last update in ms. since epoch (readonly)
         "legacyOfferId": "A String", # Optional legacy offer id if this offer is a preferred deal offer.
         "kind": "adexchangebuyer#product", # Identifies what kind of resource this is. Value: the fixed string "adexchangebuyer#product".
+        "marketplacePublisherProfileId": "A String", # Marketplace publisher profile Id. This Id differs from the regular publisher_profile_id in that 1. This is a new id, the old Id will be deprecated in 2017. 2. This id uniquely identifies a publisher profile by itself.
         "name": "A String", # The name for this product as set by the seller. (buyer-readonly)
         "syndicationProduct": "A String", # The syndication product associated with the deal. (readonly, except on create)
+        "billedBuyer": { # The billed buyer corresponding to the buyer that created the offer. (readonly, except on create)
+          "accountId": "A String", # Adx account id of the buyer.
+        },
         "flightStartTimeMs": "A String", # Inventory availability dates. (times are in ms since epoch) The granularity is generally in the order of seconds. (buyer-readonly)
         "creationTimeMs": "A String", # Creation time in ms. since epoch (readonly)
       },
