@@ -84,9 +84,6 @@ h1, h2, h3 {
   <code><a href="#createWebToken">createWebToken(enterpriseId, body)</a></code></p>
 <p class="firstline">Returns a unique token to access an embeddable UI. To generate a web UI, pass the generated token into the managed Google Play javascript API. Each token may only be used to start one UI session. See the javascript API documentation for further information.</p>
 <p class="toc_element">
-  <code><a href="#delete">delete(enterpriseId)</a></code></p>
-<p class="firstline">Deletes the binding between the EMM and enterprise. This is now deprecated. Use this method only to unenroll customers that were previously enrolled with the insert call, then enroll them again with the enroll call.</p>
-<p class="toc_element">
   <code><a href="#enroll">enroll(token, body)</a></code></p>
 <p class="firstline">Enrolls an enterprise with the calling EMM.</p>
 <p class="toc_element">
@@ -102,9 +99,6 @@ h1, h2, h3 {
   <code><a href="#getStoreLayout">getStoreLayout(enterpriseId)</a></code></p>
 <p class="firstline">Returns the store layout for the enterprise. If the store layout has not been set, returns "basic" as the store layout type and no homepage.</p>
 <p class="toc_element">
-  <code><a href="#insert">insert(token, body)</a></code></p>
-<p class="firstline">Establishes the binding between the EMM and an enterprise. This is now deprecated; use enroll instead.</p>
-<p class="toc_element">
   <code><a href="#list">list(domain)</a></code></p>
 <p class="firstline">Looks up an enterprise by domain name. This is only supported for enterprises created via the Google-initiated creation flow. Lookup of the id is not needed for enterprises created via the EMM-initiated flow since the EMM learns the enterprise ID in the callback specified in the Enterprises.generateSignupUrl call.</p>
 <p class="toc_element">
@@ -112,7 +106,7 @@ h1, h2, h3 {
 <p class="firstline">Pulls and returns a notification set for the enterprises associated with the service account authenticated for the request. The notification set may be empty if no notification are pending.</p>
 <p class="toc_element">
   <code><a href="#sendTestPushNotification">sendTestPushNotification(enterpriseId)</a></code></p>
-<p class="firstline">Sends a test push notification to validate the EMM integration with the Google Cloud Pub/Sub service for this enterprise.</p>
+<p class="firstline">Sends a test notification to validate the EMM integration with the Google Cloud Pub/Sub service for this enterprise.</p>
 <p class="toc_element">
   <code><a href="#setAccount">setAccount(enterpriseId, body)</a></code></p>
 <p class="firstline">Sets the account that will be used to authenticate to the API as the enterprise.</p>
@@ -168,11 +162,27 @@ Args:
     The object takes the form of:
 
 { # Specification for a token used to generate iframes. The token specifies what data the admin is allowed to modify and the URI the iframe is allowed to communiate with.
+    "storeBuilder": { # Options for displaying the Organize apps page.
+      "enabled": True or False, # Whether the Organize apps page is displayed. Default is true.
+    },
     "kind": "androidenterprise#administratorWebTokenSpec", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#administratorWebTokenSpec".
+    "playSearch": { # Options for displaying the managed Play Search apps page.
+      "approveApps": True or False, # Allow access to the iframe in approve mode. Default is false.
+      "enabled": True or False, # Whether the managed Play Search apps page is displayed. Default is true.
+    },
     "parent": "A String", # The URI of the parent frame hosting the iframe. To prevent XSS, the iframe may not be hosted at other URIs. This URI must be https.
-    "permission": [ # The list of permissions the admin is granted within the iframe. The admin will only be allowed to view an iframe if they have all of the permissions associated with it. The only valid value is "approveApps" that will allow the admin to access the iframe in "approve" mode.
+    "privateApps": { # Options for displaying the Private Apps page.
+      "enabled": True or False, # Whether the Private Apps page is displayed. Default is true.
+    },
+    "permission": [ # Deprecated. Use PlaySearch.approveApps.
       "A String",
     ],
+    "webApps": { # Options for displaying the Web Apps page.
+      "enabled": True or False, # Whether the Web Apps page is displayed. Default is true.
+    },
+    "managedConfigurations": { # Options for displaying the Managed Configuration page.
+      "enabled": True or False, # Whether the Managed Configuration page is displayed. Default is true.
+    },
   }
 
 
@@ -183,15 +193,6 @@ Returns:
     "kind": "androidenterprise#administratorWebToken", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#administratorWebToken".
     "token": "A String", # An opaque token to be passed to the Play front-end to generate an iframe.
   }</pre>
-</div>
-
-<div class="method">
-    <code class="details" id="delete">delete(enterpriseId)</code>
-  <pre>Deletes the binding between the EMM and enterprise. This is now deprecated. Use this method only to unenroll customers that were previously enrolled with the insert call, then enroll them again with the enroll call.
-
-Args:
-  enterpriseId: string, The ID of the enterprise. (required)
-</pre>
 </div>
 
 <div class="method">
@@ -332,48 +333,6 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="insert">insert(token, body)</code>
-  <pre>Establishes the binding between the EMM and an enterprise. This is now deprecated; use enroll instead.
-
-Args:
-  token: string, The token provided by the enterprise to register the EMM. (required)
-  body: object, The request body. (required)
-    The object takes the form of:
-
-{ # An Enterprises resource represents the binding between an EMM and a specific organization. That binding can be instantiated in one of two different ways using this API as follows:
-      # - For Google managed domain customers, the process involves using Enterprises.enroll and Enterprises.setAccount (in conjunction with artifacts obtained from the Admin console and the Google API Console) and submitted to the EMM through a more-or-less manual process.
-      # - For managed Google Play Accounts customers, the process involves using Enterprises.generateSignupUrl and Enterprises.completeSignup in conjunction with the managed Google Play sign-up UI (Google-provided mechanism) to create the binding without manual steps. As an EMM, you can support either or both approaches in your EMM console. See Create an Enterprise for details.
-    "administrator": [ # Admins of the enterprise. This is only supported for enterprises created via the EMM-initiated flow.
-      { # This represents an enterprise admin who can manage the enterprise in the managed Google Play store.
-        "email": "A String", # The admin's email address.
-      },
-    ],
-    "primaryDomain": "A String", # The enterprise's primary domain, such as "example.com".
-    "id": "A String", # The unique ID for the enterprise.
-    "kind": "androidenterprise#enterprise", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#enterprise".
-    "name": "A String", # The name of the enterprise, for example, "Example, Inc".
-  }
-
-
-Returns:
-  An object of the form:
-
-    { # An Enterprises resource represents the binding between an EMM and a specific organization. That binding can be instantiated in one of two different ways using this API as follows:
-        # - For Google managed domain customers, the process involves using Enterprises.enroll and Enterprises.setAccount (in conjunction with artifacts obtained from the Admin console and the Google API Console) and submitted to the EMM through a more-or-less manual process.
-        # - For managed Google Play Accounts customers, the process involves using Enterprises.generateSignupUrl and Enterprises.completeSignup in conjunction with the managed Google Play sign-up UI (Google-provided mechanism) to create the binding without manual steps. As an EMM, you can support either or both approaches in your EMM console. See Create an Enterprise for details.
-      "administrator": [ # Admins of the enterprise. This is only supported for enterprises created via the EMM-initiated flow.
-        { # This represents an enterprise admin who can manage the enterprise in the managed Google Play store.
-          "email": "A String", # The admin's email address.
-        },
-      ],
-      "primaryDomain": "A String", # The enterprise's primary domain, such as "example.com".
-      "id": "A String", # The unique ID for the enterprise.
-      "kind": "androidenterprise#enterprise", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#enterprise".
-      "name": "A String", # The name of the enterprise, for example, "Example, Inc".
-    }</pre>
-</div>
-
-<div class="method">
     <code class="details" id="list">list(domain)</code>
   <pre>Looks up an enterprise by domain name. This is only supported for enterprises created via the Google-initiated creation flow. Lookup of the id is not needed for enterprises created via the EMM-initiated flow since the EMM learns the enterprise ID in the callback specified in the Enterprises.generateSignupUrl call.
 
@@ -439,18 +398,40 @@ Returns:
           "productId": "A String", # The id of the product (e.g. "app:com.google.android.gm") for which new permissions were added. This field will always be present.
         },
         "notificationType": "A String", # Type of the notification.
-        "productAvailabilityChangeEvent": { # An event generated whenever a product's availability changes. # Notifications about product availability changes.
-          "availabilityStatus": "A String", # The new state of the product. This field will always be present.
-          "productId": "A String", # The id of the product (e.g. "app:com.google.android.gm") for which the product availability changed. This field will always be present.
+        "deviceReportUpdateEvent": { # An event generated when an updated device report is available. # Notifications about device report updates.
+          "report": { # Device report updated with the latest app states for managed apps on the device. # The device report updated with the latest app states. This field will always be present.
+            "appState": [ # List of app states set by managed apps on the device. App states are defined by the app's developers. This field will always be present.
+              { # List of states set by the app.
+                "packageName": "A String", # The package name of the app. This field will always be present.
+                "keyedAppState": [ # List of keyed app states. This field will always be present.
+                  { # Represents a keyed app state containing a key, timestamp, severity level, optional description, and optional data.
+                    "message": "A String", # Free-form, human-readable message describing the app state. For example, an error message. To prevent XSS, we recommend removing any HTML from the message before displaying it.
+                    "data": "A String", # Additional field intended for machine-readable data. For example, a number or JSON object. To prevent XSS, we recommend removing any HTML from the data before displaying it.
+                    "severity": "A String", # Severity of the app state. This field will always be present.
+                    "key": "A String", # Key indicating what the app is providing a state for. The content of the key is set by the app's developer. To prevent XSS, we recommend removing any HTML from the key before displaying it. This field will always be present.
+                    "stateTimestampMillis": "A String", # Timestamp of when the app set the state in milliseconds since epoch. This field will always be present.
+                  },
+                ],
+              },
+            ],
+            "lastUpdatedTimestampMillis": "A String", # The timestamp of the last report update in milliseconds since epoch. This field will always be present.
+          },
+          "userId": "A String", # The ID of the user. This field will always be present.
+          "deviceId": "A String", # The Android ID of the device. This field will always be present.
         },
         "productApprovalEvent": { # An event generated when a product's approval status is changed. # Notifications about changes to a product's approval status.
           "approved": "A String", # Whether the product was approved or unapproved. This field will always be present.
           "productId": "A String", # The id of the product (e.g. "app:com.google.android.gm") for which the approval status has changed. This field will always be present.
         },
         "enterpriseId": "A String", # The ID of the enterprise for which the notification is sent. This will always be present.
+        "productAvailabilityChangeEvent": { # An event generated whenever a product's availability changes. # Notifications about product availability changes.
+          "availabilityStatus": "A String", # The new state of the product. This field will always be present.
+          "productId": "A String", # The id of the product (e.g. "app:com.google.android.gm") for which the product availability changed. This field will always be present.
+        },
         "newDeviceEvent": { # An event generated when a new device is ready to be managed. # Notifications about new devices.
           "userId": "A String", # The ID of the user. This field will always be present.
           "deviceId": "A String", # The Android ID of the device. This field will always be present.
+          "dpcPackageName": "A String", # Policy app on the device.
           "managementType": "A String", # Identifies the extent to which the device is controlled by an Android EMM in various deployment configurations.
               #
               # Possible values include:
@@ -477,7 +458,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="sendTestPushNotification">sendTestPushNotification(enterpriseId)</code>
-  <pre>Sends a test push notification to validate the EMM integration with the Google Cloud Pub/Sub service for this enterprise.
+  <pre>Sends a test notification to validate the EMM integration with the Google Cloud Pub/Sub service for this enterprise.
 
 Args:
   enterpriseId: string, The ID of the enterprise. (required)

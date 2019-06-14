@@ -72,7 +72,7 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="cloudkms_v1.html">Google Cloud Key Management Service (KMS) API</a> . <a href="cloudkms_v1.projects.html">projects</a> . <a href="cloudkms_v1.projects.locations.html">locations</a> . <a href="cloudkms_v1.projects.locations.keyRings.html">keyRings</a> . <a href="cloudkms_v1.projects.locations.keyRings.cryptoKeys.html">cryptoKeys</a></h1>
+<h1><a href="cloudkms_v1.html">Cloud Key Management Service (KMS) API</a> . <a href="cloudkms_v1.projects.html">projects</a> . <a href="cloudkms_v1.projects.locations.html">locations</a> . <a href="cloudkms_v1.projects.locations.keyRings.html">keyRings</a> . <a href="cloudkms_v1.projects.locations.keyRings.cryptoKeys.html">cryptoKeys</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="cloudkms_v1.projects.locations.keyRings.cryptoKeys.cryptoKeyVersions.html">cryptoKeyVersions()</a></code>
@@ -84,7 +84,7 @@ h1, h2, h3 {
 <p class="firstline">Create a new CryptoKey within a KeyRing.</p>
 <p class="toc_element">
   <code><a href="#decrypt">decrypt(name, body, x__xgafv=None)</a></code></p>
-<p class="firstline">Decrypts data that was protected by Encrypt.</p>
+<p class="firstline">Decrypts data that was protected by Encrypt. The CryptoKey.purpose</p>
 <p class="toc_element">
   <code><a href="#encrypt">encrypt(name, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Encrypts data, so that it can only be recovered by a call to Decrypt.</p>
@@ -95,7 +95,7 @@ h1, h2, h3 {
   <code><a href="#getIamPolicy">getIamPolicy(resource, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets the access control policy for a resource.</p>
 <p class="toc_element">
-  <code><a href="#list">list(parent, pageToken=None, x__xgafv=None, pageSize=None)</a></code></p>
+  <code><a href="#list">list(parent, versionView=None, pageToken=None, x__xgafv=None, pageSize=None)</a></code></p>
 <p class="firstline">Lists CryptoKeys.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -111,13 +111,15 @@ h1, h2, h3 {
 <p class="firstline">Returns permissions that a caller has on the specified resource.</p>
 <p class="toc_element">
   <code><a href="#updatePrimaryVersion">updatePrimaryVersion(name, body, x__xgafv=None)</a></code></p>
-<p class="firstline">Update the version of a CryptoKey that will be used in Encrypt</p>
+<p class="firstline">Update the version of a CryptoKey that will be used in Encrypt.</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="create">create(parent, body, cryptoKeyId=None, x__xgafv=None)</code>
   <pre>Create a new CryptoKey within a KeyRing.
 
-CryptoKey.purpose is required.
+CryptoKey.purpose and
+CryptoKey.version_template.algorithm
+are required.
 
 Args:
   parent: string, Required. The name of the KeyRing associated with the
@@ -130,37 +132,84 @@ CryptoKeys. (required)
     # 
     # A CryptoKey is made up of one or more versions, which
     # represent the actual key material used in cryptographic operations.
+  "labels": { # Labels with user-defined metadata. For more information, see
+      # [Labeling Keys](/kms/docs/labeling-keys).
+    "a_key": "A String",
+  },
   "name": "A String", # Output only. The resource name for this CryptoKey in the format
       # `projects/*/locations/*/keyRings/*/cryptoKeys/*`.
   "rotationPeriod": "A String", # next_rotation_time will be advanced by this period when the service
       # automatically rotates a key. Must be at least one day.
       # 
       # If rotation_period is set, next_rotation_time must also be set.
+      # 
+      # Keys with purpose
+      # ENCRYPT_DECRYPT support
+      # automatic rotation. For other keys, this field must be omitted.
   "primary": { # A CryptoKeyVersion represents an individual cryptographic key, and the # Output only. A copy of the "primary" CryptoKeyVersion that will be used
       # by Encrypt when this CryptoKey is given
       # in EncryptRequest.name.
       # 
       # The CryptoKey's primary version can be updated via
       # UpdateCryptoKeyPrimaryVersion.
+      # 
+      # All keys with purpose
+      # ENCRYPT_DECRYPT have a
+      # primary. For other keys, this field will be omitted.
       # associated key material.
       #
-      # It can be used for cryptographic operations either directly, or via its
-      # parent CryptoKey, in which case the server will choose the appropriate
-      # version for the operation.
-    "state": "A String", # The current state of the CryptoKeyVersion.
+      # An ENABLED version can be
+      # used for cryptographic operations.
+      #
+      # For security reasons, the raw cryptographic key material represented by a
+      # CryptoKeyVersion can never be viewed or exported. It can only be used to
+      # encrypt, decrypt, or sign data when an authorized user or application invokes
+      # Cloud KMS.
     "destroyTime": "A String", # Output only. The time this CryptoKeyVersion's key material is scheduled
         # for destruction. Only present if state is
         # DESTROY_SCHEDULED.
-    "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
+    "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
+        # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+    "algorithm": "A String", # Output only. The CryptoKeyVersionAlgorithm that this
+        # CryptoKeyVersion supports.
+    "protectionLevel": "A String", # Output only. The ProtectionLevel describing how crypto operations are
+        # performed with this CryptoKeyVersion.
+    "attestation": { # Contains an HSM-generated attestation about a key operation. For more # Output only. Statement that was generated and signed by the HSM at key
+        # creation time. Use this statement to verify attributes of the key as stored
+        # on the HSM, independently of Google. Only provided for key versions with
+        # protection_level HSM.
+        # information, see [Verifying attestations]
+        # (https://cloud.google.com/kms/docs/attest-key).
+      "content": "A String", # Output only. The attestation data provided by the HSM when the key
+          # operation was performed.
+      "format": "A String", # Output only. The format of the attestation data.
+    },
+    "state": "A String", # The current state of the CryptoKeyVersion.
     "destroyEventTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
         # destroyed. Only present if state is
         # DESTROYED.
-    "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
-        # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+    "generateTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
+        # generated.
+    "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
   },
-  "purpose": "A String", # The immutable purpose of this CryptoKey. Currently, the only acceptable
-      # purpose is ENCRYPT_DECRYPT.
   "createTime": "A String", # Output only. The time at which this CryptoKey was created.
+  "purpose": "A String", # The immutable purpose of this CryptoKey.
+  "versionTemplate": { # A CryptoKeyVersionTemplate specifies the properties to use when creating # A template describing settings for new CryptoKeyVersion instances.
+      # The properties of new CryptoKeyVersion instances created by either
+      # CreateCryptoKeyVersion or
+      # auto-rotation are controlled by this template.
+      # a new CryptoKeyVersion, either manually with
+      # CreateCryptoKeyVersion or
+      # automatically as a result of auto-rotation.
+    "protectionLevel": "A String", # ProtectionLevel to use when creating a CryptoKeyVersion based on
+        # this template. Immutable. Defaults to SOFTWARE.
+    "algorithm": "A String", # Required. Algorithm to use
+        # when creating a CryptoKeyVersion based on this template.
+        #
+        # For backwards compatibility, GOOGLE_SYMMETRIC_ENCRYPTION is implied if both
+        # this field is omitted and CryptoKey.purpose is
+        # ENCRYPT_DECRYPT.
+  },
   "nextRotationTime": "A String", # At next_rotation_time, the Key Management Service will automatically:
       # 
       # 1. Create a new version of this CryptoKey.
@@ -170,6 +219,10 @@ CryptoKeys. (required)
       # CreateCryptoKeyVersion and
       # UpdateCryptoKeyPrimaryVersion
       # do not affect next_rotation_time.
+      # 
+      # Keys with purpose
+      # ENCRYPT_DECRYPT support
+      # automatic rotation. For other keys, this field must be omitted.
 }
 
   cryptoKeyId: string, Required. It must be unique within a KeyRing and match the regular
@@ -187,37 +240,84 @@ Returns:
       #
       # A CryptoKey is made up of one or more versions, which
       # represent the actual key material used in cryptographic operations.
+    "labels": { # Labels with user-defined metadata. For more information, see
+        # [Labeling Keys](/kms/docs/labeling-keys).
+      "a_key": "A String",
+    },
     "name": "A String", # Output only. The resource name for this CryptoKey in the format
         # `projects/*/locations/*/keyRings/*/cryptoKeys/*`.
     "rotationPeriod": "A String", # next_rotation_time will be advanced by this period when the service
         # automatically rotates a key. Must be at least one day.
         #
         # If rotation_period is set, next_rotation_time must also be set.
+        #
+        # Keys with purpose
+        # ENCRYPT_DECRYPT support
+        # automatic rotation. For other keys, this field must be omitted.
     "primary": { # A CryptoKeyVersion represents an individual cryptographic key, and the # Output only. A copy of the "primary" CryptoKeyVersion that will be used
         # by Encrypt when this CryptoKey is given
         # in EncryptRequest.name.
         #
         # The CryptoKey's primary version can be updated via
         # UpdateCryptoKeyPrimaryVersion.
+        #
+        # All keys with purpose
+        # ENCRYPT_DECRYPT have a
+        # primary. For other keys, this field will be omitted.
         # associated key material.
         #
-        # It can be used for cryptographic operations either directly, or via its
-        # parent CryptoKey, in which case the server will choose the appropriate
-        # version for the operation.
-      "state": "A String", # The current state of the CryptoKeyVersion.
+        # An ENABLED version can be
+        # used for cryptographic operations.
+        #
+        # For security reasons, the raw cryptographic key material represented by a
+        # CryptoKeyVersion can never be viewed or exported. It can only be used to
+        # encrypt, decrypt, or sign data when an authorized user or application invokes
+        # Cloud KMS.
       "destroyTime": "A String", # Output only. The time this CryptoKeyVersion's key material is scheduled
           # for destruction. Only present if state is
           # DESTROY_SCHEDULED.
-      "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
+      "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
+          # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+      "algorithm": "A String", # Output only. The CryptoKeyVersionAlgorithm that this
+          # CryptoKeyVersion supports.
+      "protectionLevel": "A String", # Output only. The ProtectionLevel describing how crypto operations are
+          # performed with this CryptoKeyVersion.
+      "attestation": { # Contains an HSM-generated attestation about a key operation. For more # Output only. Statement that was generated and signed by the HSM at key
+          # creation time. Use this statement to verify attributes of the key as stored
+          # on the HSM, independently of Google. Only provided for key versions with
+          # protection_level HSM.
+          # information, see [Verifying attestations]
+          # (https://cloud.google.com/kms/docs/attest-key).
+        "content": "A String", # Output only. The attestation data provided by the HSM when the key
+            # operation was performed.
+        "format": "A String", # Output only. The format of the attestation data.
+      },
+      "state": "A String", # The current state of the CryptoKeyVersion.
       "destroyEventTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
           # destroyed. Only present if state is
           # DESTROYED.
-      "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
-          # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+      "generateTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
+          # generated.
+      "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
     },
-    "purpose": "A String", # The immutable purpose of this CryptoKey. Currently, the only acceptable
-        # purpose is ENCRYPT_DECRYPT.
     "createTime": "A String", # Output only. The time at which this CryptoKey was created.
+    "purpose": "A String", # The immutable purpose of this CryptoKey.
+    "versionTemplate": { # A CryptoKeyVersionTemplate specifies the properties to use when creating # A template describing settings for new CryptoKeyVersion instances.
+        # The properties of new CryptoKeyVersion instances created by either
+        # CreateCryptoKeyVersion or
+        # auto-rotation are controlled by this template.
+        # a new CryptoKeyVersion, either manually with
+        # CreateCryptoKeyVersion or
+        # automatically as a result of auto-rotation.
+      "protectionLevel": "A String", # ProtectionLevel to use when creating a CryptoKeyVersion based on
+          # this template. Immutable. Defaults to SOFTWARE.
+      "algorithm": "A String", # Required. Algorithm to use
+          # when creating a CryptoKeyVersion based on this template.
+          #
+          # For backwards compatibility, GOOGLE_SYMMETRIC_ENCRYPTION is implied if both
+          # this field is omitted and CryptoKey.purpose is
+          # ENCRYPT_DECRYPT.
+    },
     "nextRotationTime": "A String", # At next_rotation_time, the Key Management Service will automatically:
         #
         # 1. Create a new version of this CryptoKey.
@@ -227,12 +327,17 @@ Returns:
         # CreateCryptoKeyVersion and
         # UpdateCryptoKeyPrimaryVersion
         # do not affect next_rotation_time.
+        #
+        # Keys with purpose
+        # ENCRYPT_DECRYPT support
+        # automatic rotation. For other keys, this field must be omitted.
   }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="decrypt">decrypt(name, body, x__xgafv=None)</code>
-  <pre>Decrypts data that was protected by Encrypt.
+  <pre>Decrypts data that was protected by Encrypt. The CryptoKey.purpose
+must be ENCRYPT_DECRYPT.
 
 Args:
   name: string, Required. The resource name of the CryptoKey to use for decryption.
@@ -263,6 +368,8 @@ Returns:
 <div class="method">
     <code class="details" id="encrypt">encrypt(name, body, x__xgafv=None)</code>
   <pre>Encrypts data, so that it can only be recovered by a call to Decrypt.
+The CryptoKey.purpose must be
+ENCRYPT_DECRYPT.
 
 Args:
   name: string, Required. The resource name of the CryptoKey or CryptoKeyVersion
@@ -275,9 +382,22 @@ primary version. (required)
 
 { # Request message for KeyManagementService.Encrypt.
     "plaintext": "A String", # Required. The data to encrypt. Must be no larger than 64KiB.
+        # 
+        # The maximum size depends on the key version's
+        # protection_level. For
+        # SOFTWARE keys, the plaintext must be no larger
+        # than 64KiB. For HSM keys, the combined length of the
+        # plaintext and additional_authenticated_data fields must be no larger than
+        # 8KiB.
     "additionalAuthenticatedData": "A String", # Optional data that, if specified, must also be provided during decryption
-        # through DecryptRequest.additional_authenticated_data.  Must be no
-        # larger than 64KiB.
+        # through DecryptRequest.additional_authenticated_data.
+        # 
+        # The maximum size depends on the key version's
+        # protection_level. For
+        # SOFTWARE keys, the AAD must be no larger than
+        # 64KiB. For HSM keys, the combined length of the
+        # plaintext and additional_authenticated_data fields must be no larger than
+        # 8KiB.
   }
 
   x__xgafv: string, V1 error format.
@@ -314,37 +434,84 @@ Returns:
       #
       # A CryptoKey is made up of one or more versions, which
       # represent the actual key material used in cryptographic operations.
+    "labels": { # Labels with user-defined metadata. For more information, see
+        # [Labeling Keys](/kms/docs/labeling-keys).
+      "a_key": "A String",
+    },
     "name": "A String", # Output only. The resource name for this CryptoKey in the format
         # `projects/*/locations/*/keyRings/*/cryptoKeys/*`.
     "rotationPeriod": "A String", # next_rotation_time will be advanced by this period when the service
         # automatically rotates a key. Must be at least one day.
         #
         # If rotation_period is set, next_rotation_time must also be set.
+        #
+        # Keys with purpose
+        # ENCRYPT_DECRYPT support
+        # automatic rotation. For other keys, this field must be omitted.
     "primary": { # A CryptoKeyVersion represents an individual cryptographic key, and the # Output only. A copy of the "primary" CryptoKeyVersion that will be used
         # by Encrypt when this CryptoKey is given
         # in EncryptRequest.name.
         #
         # The CryptoKey's primary version can be updated via
         # UpdateCryptoKeyPrimaryVersion.
+        #
+        # All keys with purpose
+        # ENCRYPT_DECRYPT have a
+        # primary. For other keys, this field will be omitted.
         # associated key material.
         #
-        # It can be used for cryptographic operations either directly, or via its
-        # parent CryptoKey, in which case the server will choose the appropriate
-        # version for the operation.
-      "state": "A String", # The current state of the CryptoKeyVersion.
+        # An ENABLED version can be
+        # used for cryptographic operations.
+        #
+        # For security reasons, the raw cryptographic key material represented by a
+        # CryptoKeyVersion can never be viewed or exported. It can only be used to
+        # encrypt, decrypt, or sign data when an authorized user or application invokes
+        # Cloud KMS.
       "destroyTime": "A String", # Output only. The time this CryptoKeyVersion's key material is scheduled
           # for destruction. Only present if state is
           # DESTROY_SCHEDULED.
-      "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
+      "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
+          # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+      "algorithm": "A String", # Output only. The CryptoKeyVersionAlgorithm that this
+          # CryptoKeyVersion supports.
+      "protectionLevel": "A String", # Output only. The ProtectionLevel describing how crypto operations are
+          # performed with this CryptoKeyVersion.
+      "attestation": { # Contains an HSM-generated attestation about a key operation. For more # Output only. Statement that was generated and signed by the HSM at key
+          # creation time. Use this statement to verify attributes of the key as stored
+          # on the HSM, independently of Google. Only provided for key versions with
+          # protection_level HSM.
+          # information, see [Verifying attestations]
+          # (https://cloud.google.com/kms/docs/attest-key).
+        "content": "A String", # Output only. The attestation data provided by the HSM when the key
+            # operation was performed.
+        "format": "A String", # Output only. The format of the attestation data.
+      },
+      "state": "A String", # The current state of the CryptoKeyVersion.
       "destroyEventTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
           # destroyed. Only present if state is
           # DESTROYED.
-      "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
-          # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+      "generateTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
+          # generated.
+      "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
     },
-    "purpose": "A String", # The immutable purpose of this CryptoKey. Currently, the only acceptable
-        # purpose is ENCRYPT_DECRYPT.
     "createTime": "A String", # Output only. The time at which this CryptoKey was created.
+    "purpose": "A String", # The immutable purpose of this CryptoKey.
+    "versionTemplate": { # A CryptoKeyVersionTemplate specifies the properties to use when creating # A template describing settings for new CryptoKeyVersion instances.
+        # The properties of new CryptoKeyVersion instances created by either
+        # CreateCryptoKeyVersion or
+        # auto-rotation are controlled by this template.
+        # a new CryptoKeyVersion, either manually with
+        # CreateCryptoKeyVersion or
+        # automatically as a result of auto-rotation.
+      "protectionLevel": "A String", # ProtectionLevel to use when creating a CryptoKeyVersion based on
+          # this template. Immutable. Defaults to SOFTWARE.
+      "algorithm": "A String", # Required. Algorithm to use
+          # when creating a CryptoKeyVersion based on this template.
+          #
+          # For backwards compatibility, GOOGLE_SYMMETRIC_ENCRYPTION is implied if both
+          # this field is omitted and CryptoKey.purpose is
+          # ENCRYPT_DECRYPT.
+    },
     "nextRotationTime": "A String", # At next_rotation_time, the Key Management Service will automatically:
         #
         # 1. Create a new version of this CryptoKey.
@@ -354,6 +521,10 @@ Returns:
         # CreateCryptoKeyVersion and
         # UpdateCryptoKeyPrimaryVersion
         # do not affect next_rotation_time.
+        #
+        # Keys with purpose
+        # ENCRYPT_DECRYPT support
+        # automatic rotation. For other keys, this field must be omitted.
   }</pre>
 </div>
 
@@ -378,12 +549,12 @@ Returns:
       # specify access control policies for Cloud Platform resources.
       #
       #
-      # A `Policy` consists of a list of `bindings`. A `Binding` binds a list of
+      # A `Policy` consists of a list of `bindings`. A `binding` binds a list of
       # `members` to a `role`, where the members can be user accounts, Google groups,
       # Google domains, and service accounts. A `role` is a named list of permissions
       # defined by IAM.
       #
-      # **Example**
+      # **JSON Example**
       #
       #     {
       #       "bindings": [
@@ -393,7 +564,7 @@ Returns:
       #             "user:mike@example.com",
       #             "group:admins@example.com",
       #             "domain:google.com",
-      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com",
+      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com"
       #           ]
       #         },
       #         {
@@ -403,8 +574,86 @@ Returns:
       #       ]
       #     }
       #
+      # **YAML Example**
+      #
+      #     bindings:
+      #     - members:
+      #       - user:mike@example.com
+      #       - group:admins@example.com
+      #       - domain:google.com
+      #       - serviceAccount:my-other-app@appspot.gserviceaccount.com
+      #       role: roles/owner
+      #     - members:
+      #       - user:sean@example.com
+      #       role: roles/viewer
+      #
+      #
       # For a description of IAM and its features, see the
-      # [IAM developer's guide](https://cloud.google.com/iam).
+      # [IAM developer's guide](https://cloud.google.com/iam/docs).
+    "bindings": [ # Associates a list of `members` to a `role`.
+        # `bindings` with no members will result in an error.
+      { # Associates `members` with a `role`.
+        "role": "A String", # Role that is assigned to `members`.
+            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
+        "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
+            # `members` can have the following values:
+            #
+            # * `allUsers`: A special identifier that represents anyone who is
+            #    on the internet; with or without a Google account.
+            #
+            # * `allAuthenticatedUsers`: A special identifier that represents anyone
+            #    who is authenticated with a Google account or a service account.
+            #
+            # * `user:{emailid}`: An email address that represents a specific Google
+            #    account. For example, `alice@gmail.com` .
+            #
+            #
+            # * `serviceAccount:{emailid}`: An email address that represents a service
+            #    account. For example, `my-other-app@appspot.gserviceaccount.com`.
+            #
+            # * `group:{emailid}`: An email address that represents a Google group.
+            #    For example, `admins@example.com`.
+            #
+            #
+            # * `domain:{domain}`: The G Suite domain (primary) that represents all the
+            #    users of that domain. For example, `google.com` or `example.com`.
+            #
+          "A String",
+        ],
+        "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
+            # NOTE: An unsatisfied condition will not allow user access via current
+            # binding. Different bindings, including their conditions, are examined
+            # independently.
+            #
+            #     title: "User account presence"
+            #     description: "Determines whether the request has a user account"
+            #     expression: "size(request.user) > 0"
+          "description": "A String", # An optional description of the expression. This is a longer text which
+              # describes the expression, e.g. when hovered over it in a UI.
+          "expression": "A String", # Textual representation of an expression in
+              # Common Expression Language syntax.
+              #
+              # The application context of the containing message determines which
+              # well-known feature set of CEL is supported.
+          "location": "A String", # An optional string indicating the location of the expression for error
+              # reporting, e.g. a file name and a position in the file.
+          "title": "A String", # An optional title for the expression, i.e. a short string describing
+              # its purpose. This can be used e.g. in UIs which allow to enter the
+              # expression.
+        },
+      },
+    ],
+    "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # If no `etag` is provided in the call to `setIamPolicy`, then the existing
+        # policy is overwritten blindly.
+    "version": 42, # Deprecated.
     "auditConfigs": [ # Specifies cloud audit logging configuration for this policy.
       { # Specifies the audit configuration for a service.
           # The configuration determines which permission types are logged, and what
@@ -414,7 +663,7 @@ Returns:
           # If there are AuditConfigs for both `allServices` and a specific service,
           # the union of the two AuditConfigs is used for that service: the log_types
           # specified in each AuditConfig are enabled, and the exempted_members in each
-          # AuditConfig are exempted.
+          # AuditLogConfig are exempted.
           #
           # Example Policy with multiple AuditConfigs:
           #
@@ -457,11 +706,7 @@ Returns:
           # For fooservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
           # logging. It also exempts foo@gmail.com from DATA_READ logging, and
           # bar@gmail.com from DATA_WRITE logging.
-        "exemptedMembers": [
-          "A String",
-        ],
         "auditLogConfigs": [ # The configuration for logging of each type of permission.
-            # Next ID: 4
           { # Provides the configuration for logging a type of permissions.
               # Example:
               #
@@ -494,139 +739,17 @@ Returns:
             # `allServices` is a special value that covers all services.
       },
     ],
-    "rules": [ # If more than one rule is specified, the rules are applied in the following
-        # manner:
-        # - All matching LOG rules are always applied.
-        # - If any DENY/DENY_WITH_LOG rule matches, permission is denied.
-        #   Logging will be applied if one or more matching rule requires logging.
-        # - Otherwise, if any ALLOW/ALLOW_WITH_LOG rule matches, permission is
-        #   granted.
-        #   Logging will be applied if one or more matching rule requires logging.
-        # - Otherwise, if no rule applies, permission is denied.
-      { # A rule to be applied in a Policy.
-        "notIn": [ # If one or more 'not_in' clauses are specified, the rule matches
-            # if the PRINCIPAL/AUTHORITY_SELECTOR is in none of the entries.
-            # The format for in and not_in entries is the same as for members in a
-            # Binding (see google/iam/v1/policy.proto).
-          "A String",
-        ],
-        "description": "A String", # Human-readable description of the rule.
-        "in": [ # If one or more 'in' clauses are specified, the rule matches if
-            # the PRINCIPAL/AUTHORITY_SELECTOR is in at least one of these entries.
-          "A String",
-        ],
-        "action": "A String", # Required
-        "conditions": [ # Additional restrictions that must be met
-          { # A condition to be met.
-            "iam": "A String", # Trusted attributes supplied by the IAM system.
-            "svc": "A String", # Trusted attributes discharged by the service.
-            "value": "A String", # DEPRECATED. Use 'values' instead.
-            "sys": "A String", # Trusted attributes supplied by any service that owns resources and uses
-                # the IAM system for access control.
-            "values": [ # The objects of the condition. This is mutually exclusive with 'value'.
-              "A String",
-            ],
-            "op": "A String", # An operator to apply the subject with.
-          },
-        ],
-        "logConfig": [ # The config returned to callers of tech.iam.IAM.CheckPolicy for any entries
-            # that match the LOG action.
-          { # Specifies what kind of log the caller must write
-            "counter": { # Options for counters # Counter options.
-              "field": "A String", # The field value to attribute.
-              "metric": "A String", # The metric to update.
-            },
-            "dataAccess": { # Write a Data Access (Gin) log # Data access options.
-            },
-            "cloudAudit": { # Write a Cloud Audit log # Cloud audit options.
-              "logName": "A String", # The log_name to populate in the Cloud Audit Record.
-            },
-          },
-        ],
-        "permissions": [ # A permission is a string of form '<service>.<resource type>.<verb>'
-            # (e.g., 'storage.buckets.list'). A value of '*' matches all permissions,
-            # and a verb part of '*' (e.g., 'storage.buckets.*') matches all verbs.
-          "A String",
-        ],
-      },
-    ],
-    "version": 42, # Version of the `Policy`. The default version is 0.
-    "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
-        #
-        # If no `etag` is provided in the call to `setIamPolicy`, then the existing
-        # policy is overwritten blindly.
-    "bindings": [ # Associates a list of `members` to a `role`.
-        # `bindings` with no members will result in an error.
-      { # Associates `members` with a `role`.
-        "role": "A String", # Role that is assigned to `members`.
-            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
-            # Required
-        "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
-            # `members` can have the following values:
-            #
-            # * `allUsers`: A special identifier that represents anyone who is
-            #    on the internet; with or without a Google account.
-            #
-            # * `allAuthenticatedUsers`: A special identifier that represents anyone
-            #    who is authenticated with a Google account or a service account.
-            #
-            # * `user:{emailid}`: An email address that represents a specific Google
-            #    account. For example, `alice@gmail.com` or `joe@example.com`.
-            #
-            #
-            # * `serviceAccount:{emailid}`: An email address that represents a service
-            #    account. For example, `my-other-app@appspot.gserviceaccount.com`.
-            #
-            # * `group:{emailid}`: An email address that represents a Google group.
-            #    For example, `admins@example.com`.
-            #
-            #
-            # * `domain:{domain}`: A Google Apps domain name that represents all the
-            #    users of that domain. For example, `google.com` or `example.com`.
-            #
-          "A String",
-        ],
-        "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
-            # NOTE: an unsatisfied condition will not allow user access via current
-            # binding. Different bindings, including their conditions, are examined
-            # independently.
-            # This field is GOOGLE_INTERNAL.
-            #
-            #     title: "User account presence"
-            #     description: "Determines whether the request has a user account"
-            #     expression: "size(request.user) > 0"
-          "location": "A String", # An optional string indicating the location of the expression for error
-              # reporting, e.g. a file name and a position in the file.
-          "expression": "A String", # Textual representation of an expression in
-              # [Common Expression Language](http://go/api-expr) syntax.
-              #
-              # The application context of the containing message determines which
-              # well-known feature set of CEL is supported.
-          "description": "A String", # An optional description of the expression. This is a longer text which
-              # describes the expression, e.g. when hovered over it in a UI.
-          "title": "A String", # An optional title for the expression, i.e. a short string describing
-              # its purpose. This can be used e.g. in UIs which allow to enter the
-              # expression.
-        },
-      },
-    ],
-    "iamOwned": True or False,
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(parent, pageToken=None, x__xgafv=None, pageSize=None)</code>
+    <code class="details" id="list">list(parent, versionView=None, pageToken=None, x__xgafv=None, pageSize=None)</code>
   <pre>Lists CryptoKeys.
 
 Args:
   parent: string, Required. The resource name of the KeyRing to list, in the format
 `projects/*/locations/*/keyRings/*`. (required)
+  versionView: string, The fields of the primary version to include in the response.
   pageToken: string, Optional pagination token, returned earlier via
 ListCryptoKeysResponse.next_page_token.
   x__xgafv: string, V1 error format.
@@ -650,37 +773,84 @@ Returns:
           #
           # A CryptoKey is made up of one or more versions, which
           # represent the actual key material used in cryptographic operations.
+        "labels": { # Labels with user-defined metadata. For more information, see
+            # [Labeling Keys](/kms/docs/labeling-keys).
+          "a_key": "A String",
+        },
         "name": "A String", # Output only. The resource name for this CryptoKey in the format
             # `projects/*/locations/*/keyRings/*/cryptoKeys/*`.
         "rotationPeriod": "A String", # next_rotation_time will be advanced by this period when the service
             # automatically rotates a key. Must be at least one day.
             #
             # If rotation_period is set, next_rotation_time must also be set.
+            #
+            # Keys with purpose
+            # ENCRYPT_DECRYPT support
+            # automatic rotation. For other keys, this field must be omitted.
         "primary": { # A CryptoKeyVersion represents an individual cryptographic key, and the # Output only. A copy of the "primary" CryptoKeyVersion that will be used
             # by Encrypt when this CryptoKey is given
             # in EncryptRequest.name.
             #
             # The CryptoKey's primary version can be updated via
             # UpdateCryptoKeyPrimaryVersion.
+            #
+            # All keys with purpose
+            # ENCRYPT_DECRYPT have a
+            # primary. For other keys, this field will be omitted.
             # associated key material.
             #
-            # It can be used for cryptographic operations either directly, or via its
-            # parent CryptoKey, in which case the server will choose the appropriate
-            # version for the operation.
-          "state": "A String", # The current state of the CryptoKeyVersion.
+            # An ENABLED version can be
+            # used for cryptographic operations.
+            #
+            # For security reasons, the raw cryptographic key material represented by a
+            # CryptoKeyVersion can never be viewed or exported. It can only be used to
+            # encrypt, decrypt, or sign data when an authorized user or application invokes
+            # Cloud KMS.
           "destroyTime": "A String", # Output only. The time this CryptoKeyVersion's key material is scheduled
               # for destruction. Only present if state is
               # DESTROY_SCHEDULED.
-          "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
+          "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
+              # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+          "algorithm": "A String", # Output only. The CryptoKeyVersionAlgorithm that this
+              # CryptoKeyVersion supports.
+          "protectionLevel": "A String", # Output only. The ProtectionLevel describing how crypto operations are
+              # performed with this CryptoKeyVersion.
+          "attestation": { # Contains an HSM-generated attestation about a key operation. For more # Output only. Statement that was generated and signed by the HSM at key
+              # creation time. Use this statement to verify attributes of the key as stored
+              # on the HSM, independently of Google. Only provided for key versions with
+              # protection_level HSM.
+              # information, see [Verifying attestations]
+              # (https://cloud.google.com/kms/docs/attest-key).
+            "content": "A String", # Output only. The attestation data provided by the HSM when the key
+                # operation was performed.
+            "format": "A String", # Output only. The format of the attestation data.
+          },
+          "state": "A String", # The current state of the CryptoKeyVersion.
           "destroyEventTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
               # destroyed. Only present if state is
               # DESTROYED.
-          "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
-              # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+          "generateTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
+              # generated.
+          "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
         },
-        "purpose": "A String", # The immutable purpose of this CryptoKey. Currently, the only acceptable
-            # purpose is ENCRYPT_DECRYPT.
         "createTime": "A String", # Output only. The time at which this CryptoKey was created.
+        "purpose": "A String", # The immutable purpose of this CryptoKey.
+        "versionTemplate": { # A CryptoKeyVersionTemplate specifies the properties to use when creating # A template describing settings for new CryptoKeyVersion instances.
+            # The properties of new CryptoKeyVersion instances created by either
+            # CreateCryptoKeyVersion or
+            # auto-rotation are controlled by this template.
+            # a new CryptoKeyVersion, either manually with
+            # CreateCryptoKeyVersion or
+            # automatically as a result of auto-rotation.
+          "protectionLevel": "A String", # ProtectionLevel to use when creating a CryptoKeyVersion based on
+              # this template. Immutable. Defaults to SOFTWARE.
+          "algorithm": "A String", # Required. Algorithm to use
+              # when creating a CryptoKeyVersion based on this template.
+              #
+              # For backwards compatibility, GOOGLE_SYMMETRIC_ENCRYPTION is implied if both
+              # this field is omitted and CryptoKey.purpose is
+              # ENCRYPT_DECRYPT.
+        },
         "nextRotationTime": "A String", # At next_rotation_time, the Key Management Service will automatically:
             #
             # 1. Create a new version of this CryptoKey.
@@ -690,6 +860,10 @@ Returns:
             # CreateCryptoKeyVersion and
             # UpdateCryptoKeyPrimaryVersion
             # do not affect next_rotation_time.
+            #
+            # Keys with purpose
+            # ENCRYPT_DECRYPT support
+            # automatic rotation. For other keys, this field must be omitted.
       },
     ],
     "totalSize": 42, # The total number of CryptoKeys that matched the query.
@@ -725,37 +899,84 @@ Args:
     # 
     # A CryptoKey is made up of one or more versions, which
     # represent the actual key material used in cryptographic operations.
+  "labels": { # Labels with user-defined metadata. For more information, see
+      # [Labeling Keys](/kms/docs/labeling-keys).
+    "a_key": "A String",
+  },
   "name": "A String", # Output only. The resource name for this CryptoKey in the format
       # `projects/*/locations/*/keyRings/*/cryptoKeys/*`.
   "rotationPeriod": "A String", # next_rotation_time will be advanced by this period when the service
       # automatically rotates a key. Must be at least one day.
       # 
       # If rotation_period is set, next_rotation_time must also be set.
+      # 
+      # Keys with purpose
+      # ENCRYPT_DECRYPT support
+      # automatic rotation. For other keys, this field must be omitted.
   "primary": { # A CryptoKeyVersion represents an individual cryptographic key, and the # Output only. A copy of the "primary" CryptoKeyVersion that will be used
       # by Encrypt when this CryptoKey is given
       # in EncryptRequest.name.
       # 
       # The CryptoKey's primary version can be updated via
       # UpdateCryptoKeyPrimaryVersion.
+      # 
+      # All keys with purpose
+      # ENCRYPT_DECRYPT have a
+      # primary. For other keys, this field will be omitted.
       # associated key material.
       #
-      # It can be used for cryptographic operations either directly, or via its
-      # parent CryptoKey, in which case the server will choose the appropriate
-      # version for the operation.
-    "state": "A String", # The current state of the CryptoKeyVersion.
+      # An ENABLED version can be
+      # used for cryptographic operations.
+      #
+      # For security reasons, the raw cryptographic key material represented by a
+      # CryptoKeyVersion can never be viewed or exported. It can only be used to
+      # encrypt, decrypt, or sign data when an authorized user or application invokes
+      # Cloud KMS.
     "destroyTime": "A String", # Output only. The time this CryptoKeyVersion's key material is scheduled
         # for destruction. Only present if state is
         # DESTROY_SCHEDULED.
-    "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
+    "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
+        # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+    "algorithm": "A String", # Output only. The CryptoKeyVersionAlgorithm that this
+        # CryptoKeyVersion supports.
+    "protectionLevel": "A String", # Output only. The ProtectionLevel describing how crypto operations are
+        # performed with this CryptoKeyVersion.
+    "attestation": { # Contains an HSM-generated attestation about a key operation. For more # Output only. Statement that was generated and signed by the HSM at key
+        # creation time. Use this statement to verify attributes of the key as stored
+        # on the HSM, independently of Google. Only provided for key versions with
+        # protection_level HSM.
+        # information, see [Verifying attestations]
+        # (https://cloud.google.com/kms/docs/attest-key).
+      "content": "A String", # Output only. The attestation data provided by the HSM when the key
+          # operation was performed.
+      "format": "A String", # Output only. The format of the attestation data.
+    },
+    "state": "A String", # The current state of the CryptoKeyVersion.
     "destroyEventTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
         # destroyed. Only present if state is
         # DESTROYED.
-    "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
-        # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+    "generateTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
+        # generated.
+    "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
   },
-  "purpose": "A String", # The immutable purpose of this CryptoKey. Currently, the only acceptable
-      # purpose is ENCRYPT_DECRYPT.
   "createTime": "A String", # Output only. The time at which this CryptoKey was created.
+  "purpose": "A String", # The immutable purpose of this CryptoKey.
+  "versionTemplate": { # A CryptoKeyVersionTemplate specifies the properties to use when creating # A template describing settings for new CryptoKeyVersion instances.
+      # The properties of new CryptoKeyVersion instances created by either
+      # CreateCryptoKeyVersion or
+      # auto-rotation are controlled by this template.
+      # a new CryptoKeyVersion, either manually with
+      # CreateCryptoKeyVersion or
+      # automatically as a result of auto-rotation.
+    "protectionLevel": "A String", # ProtectionLevel to use when creating a CryptoKeyVersion based on
+        # this template. Immutable. Defaults to SOFTWARE.
+    "algorithm": "A String", # Required. Algorithm to use
+        # when creating a CryptoKeyVersion based on this template.
+        #
+        # For backwards compatibility, GOOGLE_SYMMETRIC_ENCRYPTION is implied if both
+        # this field is omitted and CryptoKey.purpose is
+        # ENCRYPT_DECRYPT.
+  },
   "nextRotationTime": "A String", # At next_rotation_time, the Key Management Service will automatically:
       # 
       # 1. Create a new version of this CryptoKey.
@@ -765,6 +986,10 @@ Args:
       # CreateCryptoKeyVersion and
       # UpdateCryptoKeyPrimaryVersion
       # do not affect next_rotation_time.
+      # 
+      # Keys with purpose
+      # ENCRYPT_DECRYPT support
+      # automatic rotation. For other keys, this field must be omitted.
 }
 
   updateMask: string, Required list of fields to be updated in this request.
@@ -781,37 +1006,84 @@ Returns:
       #
       # A CryptoKey is made up of one or more versions, which
       # represent the actual key material used in cryptographic operations.
+    "labels": { # Labels with user-defined metadata. For more information, see
+        # [Labeling Keys](/kms/docs/labeling-keys).
+      "a_key": "A String",
+    },
     "name": "A String", # Output only. The resource name for this CryptoKey in the format
         # `projects/*/locations/*/keyRings/*/cryptoKeys/*`.
     "rotationPeriod": "A String", # next_rotation_time will be advanced by this period when the service
         # automatically rotates a key. Must be at least one day.
         #
         # If rotation_period is set, next_rotation_time must also be set.
+        #
+        # Keys with purpose
+        # ENCRYPT_DECRYPT support
+        # automatic rotation. For other keys, this field must be omitted.
     "primary": { # A CryptoKeyVersion represents an individual cryptographic key, and the # Output only. A copy of the "primary" CryptoKeyVersion that will be used
         # by Encrypt when this CryptoKey is given
         # in EncryptRequest.name.
         #
         # The CryptoKey's primary version can be updated via
         # UpdateCryptoKeyPrimaryVersion.
+        #
+        # All keys with purpose
+        # ENCRYPT_DECRYPT have a
+        # primary. For other keys, this field will be omitted.
         # associated key material.
         #
-        # It can be used for cryptographic operations either directly, or via its
-        # parent CryptoKey, in which case the server will choose the appropriate
-        # version for the operation.
-      "state": "A String", # The current state of the CryptoKeyVersion.
+        # An ENABLED version can be
+        # used for cryptographic operations.
+        #
+        # For security reasons, the raw cryptographic key material represented by a
+        # CryptoKeyVersion can never be viewed or exported. It can only be used to
+        # encrypt, decrypt, or sign data when an authorized user or application invokes
+        # Cloud KMS.
       "destroyTime": "A String", # Output only. The time this CryptoKeyVersion's key material is scheduled
           # for destruction. Only present if state is
           # DESTROY_SCHEDULED.
-      "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
+      "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
+          # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+      "algorithm": "A String", # Output only. The CryptoKeyVersionAlgorithm that this
+          # CryptoKeyVersion supports.
+      "protectionLevel": "A String", # Output only. The ProtectionLevel describing how crypto operations are
+          # performed with this CryptoKeyVersion.
+      "attestation": { # Contains an HSM-generated attestation about a key operation. For more # Output only. Statement that was generated and signed by the HSM at key
+          # creation time. Use this statement to verify attributes of the key as stored
+          # on the HSM, independently of Google. Only provided for key versions with
+          # protection_level HSM.
+          # information, see [Verifying attestations]
+          # (https://cloud.google.com/kms/docs/attest-key).
+        "content": "A String", # Output only. The attestation data provided by the HSM when the key
+            # operation was performed.
+        "format": "A String", # Output only. The format of the attestation data.
+      },
+      "state": "A String", # The current state of the CryptoKeyVersion.
       "destroyEventTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
           # destroyed. Only present if state is
           # DESTROYED.
-      "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
-          # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+      "generateTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
+          # generated.
+      "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
     },
-    "purpose": "A String", # The immutable purpose of this CryptoKey. Currently, the only acceptable
-        # purpose is ENCRYPT_DECRYPT.
     "createTime": "A String", # Output only. The time at which this CryptoKey was created.
+    "purpose": "A String", # The immutable purpose of this CryptoKey.
+    "versionTemplate": { # A CryptoKeyVersionTemplate specifies the properties to use when creating # A template describing settings for new CryptoKeyVersion instances.
+        # The properties of new CryptoKeyVersion instances created by either
+        # CreateCryptoKeyVersion or
+        # auto-rotation are controlled by this template.
+        # a new CryptoKeyVersion, either manually with
+        # CreateCryptoKeyVersion or
+        # automatically as a result of auto-rotation.
+      "protectionLevel": "A String", # ProtectionLevel to use when creating a CryptoKeyVersion based on
+          # this template. Immutable. Defaults to SOFTWARE.
+      "algorithm": "A String", # Required. Algorithm to use
+          # when creating a CryptoKeyVersion based on this template.
+          #
+          # For backwards compatibility, GOOGLE_SYMMETRIC_ENCRYPTION is implied if both
+          # this field is omitted and CryptoKey.purpose is
+          # ENCRYPT_DECRYPT.
+    },
     "nextRotationTime": "A String", # At next_rotation_time, the Key Management Service will automatically:
         #
         # 1. Create a new version of this CryptoKey.
@@ -821,6 +1093,10 @@ Returns:
         # CreateCryptoKeyVersion and
         # UpdateCryptoKeyPrimaryVersion
         # do not affect next_rotation_time.
+        #
+        # Keys with purpose
+        # ENCRYPT_DECRYPT support
+        # automatic rotation. For other keys, this field must be omitted.
   }</pre>
 </div>
 
@@ -843,12 +1119,12 @@ See the operation documentation for the appropriate value for this field. (requi
         # specify access control policies for Cloud Platform resources.
         #
         #
-        # A `Policy` consists of a list of `bindings`. A `Binding` binds a list of
+        # A `Policy` consists of a list of `bindings`. A `binding` binds a list of
         # `members` to a `role`, where the members can be user accounts, Google groups,
         # Google domains, and service accounts. A `role` is a named list of permissions
         # defined by IAM.
         #
-        # **Example**
+        # **JSON Example**
         #
         #     {
         #       "bindings": [
@@ -858,7 +1134,7 @@ See the operation documentation for the appropriate value for this field. (requi
         #             "user:mike@example.com",
         #             "group:admins@example.com",
         #             "domain:google.com",
-        #             "serviceAccount:my-other-app@appspot.gserviceaccount.com",
+        #             "serviceAccount:my-other-app@appspot.gserviceaccount.com"
         #           ]
         #         },
         #         {
@@ -868,8 +1144,86 @@ See the operation documentation for the appropriate value for this field. (requi
         #       ]
         #     }
         #
+        # **YAML Example**
+        #
+        #     bindings:
+        #     - members:
+        #       - user:mike@example.com
+        #       - group:admins@example.com
+        #       - domain:google.com
+        #       - serviceAccount:my-other-app@appspot.gserviceaccount.com
+        #       role: roles/owner
+        #     - members:
+        #       - user:sean@example.com
+        #       role: roles/viewer
+        #
+        #
         # For a description of IAM and its features, see the
-        # [IAM developer's guide](https://cloud.google.com/iam).
+        # [IAM developer's guide](https://cloud.google.com/iam/docs).
+      "bindings": [ # Associates a list of `members` to a `role`.
+          # `bindings` with no members will result in an error.
+        { # Associates `members` with a `role`.
+          "role": "A String", # Role that is assigned to `members`.
+              # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
+          "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
+              # `members` can have the following values:
+              #
+              # * `allUsers`: A special identifier that represents anyone who is
+              #    on the internet; with or without a Google account.
+              #
+              # * `allAuthenticatedUsers`: A special identifier that represents anyone
+              #    who is authenticated with a Google account or a service account.
+              #
+              # * `user:{emailid}`: An email address that represents a specific Google
+              #    account. For example, `alice@gmail.com` .
+              #
+              #
+              # * `serviceAccount:{emailid}`: An email address that represents a service
+              #    account. For example, `my-other-app@appspot.gserviceaccount.com`.
+              #
+              # * `group:{emailid}`: An email address that represents a Google group.
+              #    For example, `admins@example.com`.
+              #
+              #
+              # * `domain:{domain}`: The G Suite domain (primary) that represents all the
+              #    users of that domain. For example, `google.com` or `example.com`.
+              #
+            "A String",
+          ],
+          "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
+              # NOTE: An unsatisfied condition will not allow user access via current
+              # binding. Different bindings, including their conditions, are examined
+              # independently.
+              #
+              #     title: "User account presence"
+              #     description: "Determines whether the request has a user account"
+              #     expression: "size(request.user) > 0"
+            "description": "A String", # An optional description of the expression. This is a longer text which
+                # describes the expression, e.g. when hovered over it in a UI.
+            "expression": "A String", # Textual representation of an expression in
+                # Common Expression Language syntax.
+                #
+                # The application context of the containing message determines which
+                # well-known feature set of CEL is supported.
+            "location": "A String", # An optional string indicating the location of the expression for error
+                # reporting, e.g. a file name and a position in the file.
+            "title": "A String", # An optional title for the expression, i.e. a short string describing
+                # its purpose. This can be used e.g. in UIs which allow to enter the
+                # expression.
+          },
+        },
+      ],
+      "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
+          # prevent simultaneous updates of a policy from overwriting each other.
+          # It is strongly suggested that systems make use of the `etag` in the
+          # read-modify-write cycle to perform policy updates in order to avoid race
+          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+          # systems are expected to put that etag in the request to `setIamPolicy` to
+          # ensure that their change will be applied to the same version of the policy.
+          #
+          # If no `etag` is provided in the call to `setIamPolicy`, then the existing
+          # policy is overwritten blindly.
+      "version": 42, # Deprecated.
       "auditConfigs": [ # Specifies cloud audit logging configuration for this policy.
         { # Specifies the audit configuration for a service.
             # The configuration determines which permission types are logged, and what
@@ -879,7 +1233,7 @@ See the operation documentation for the appropriate value for this field. (requi
             # If there are AuditConfigs for both `allServices` and a specific service,
             # the union of the two AuditConfigs is used for that service: the log_types
             # specified in each AuditConfig are enabled, and the exempted_members in each
-            # AuditConfig are exempted.
+            # AuditLogConfig are exempted.
             #
             # Example Policy with multiple AuditConfigs:
             #
@@ -922,11 +1276,7 @@ See the operation documentation for the appropriate value for this field. (requi
             # For fooservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
             # logging. It also exempts foo@gmail.com from DATA_READ logging, and
             # bar@gmail.com from DATA_WRITE logging.
-          "exemptedMembers": [
-            "A String",
-          ],
           "auditLogConfigs": [ # The configuration for logging of each type of permission.
-              # Next ID: 4
             { # Provides the configuration for logging a type of permissions.
                 # Example:
                 #
@@ -959,129 +1309,6 @@ See the operation documentation for the appropriate value for this field. (requi
               # `allServices` is a special value that covers all services.
         },
       ],
-      "rules": [ # If more than one rule is specified, the rules are applied in the following
-          # manner:
-          # - All matching LOG rules are always applied.
-          # - If any DENY/DENY_WITH_LOG rule matches, permission is denied.
-          #   Logging will be applied if one or more matching rule requires logging.
-          # - Otherwise, if any ALLOW/ALLOW_WITH_LOG rule matches, permission is
-          #   granted.
-          #   Logging will be applied if one or more matching rule requires logging.
-          # - Otherwise, if no rule applies, permission is denied.
-        { # A rule to be applied in a Policy.
-          "notIn": [ # If one or more 'not_in' clauses are specified, the rule matches
-              # if the PRINCIPAL/AUTHORITY_SELECTOR is in none of the entries.
-              # The format for in and not_in entries is the same as for members in a
-              # Binding (see google/iam/v1/policy.proto).
-            "A String",
-          ],
-          "description": "A String", # Human-readable description of the rule.
-          "in": [ # If one or more 'in' clauses are specified, the rule matches if
-              # the PRINCIPAL/AUTHORITY_SELECTOR is in at least one of these entries.
-            "A String",
-          ],
-          "action": "A String", # Required
-          "conditions": [ # Additional restrictions that must be met
-            { # A condition to be met.
-              "iam": "A String", # Trusted attributes supplied by the IAM system.
-              "svc": "A String", # Trusted attributes discharged by the service.
-              "value": "A String", # DEPRECATED. Use 'values' instead.
-              "sys": "A String", # Trusted attributes supplied by any service that owns resources and uses
-                  # the IAM system for access control.
-              "values": [ # The objects of the condition. This is mutually exclusive with 'value'.
-                "A String",
-              ],
-              "op": "A String", # An operator to apply the subject with.
-            },
-          ],
-          "logConfig": [ # The config returned to callers of tech.iam.IAM.CheckPolicy for any entries
-              # that match the LOG action.
-            { # Specifies what kind of log the caller must write
-              "counter": { # Options for counters # Counter options.
-                "field": "A String", # The field value to attribute.
-                "metric": "A String", # The metric to update.
-              },
-              "dataAccess": { # Write a Data Access (Gin) log # Data access options.
-              },
-              "cloudAudit": { # Write a Cloud Audit log # Cloud audit options.
-                "logName": "A String", # The log_name to populate in the Cloud Audit Record.
-              },
-            },
-          ],
-          "permissions": [ # A permission is a string of form '<service>.<resource type>.<verb>'
-              # (e.g., 'storage.buckets.list'). A value of '*' matches all permissions,
-              # and a verb part of '*' (e.g., 'storage.buckets.*') matches all verbs.
-            "A String",
-          ],
-        },
-      ],
-      "version": 42, # Version of the `Policy`. The default version is 0.
-      "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
-          # prevent simultaneous updates of a policy from overwriting each other.
-          # It is strongly suggested that systems make use of the `etag` in the
-          # read-modify-write cycle to perform policy updates in order to avoid race
-          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-          # systems are expected to put that etag in the request to `setIamPolicy` to
-          # ensure that their change will be applied to the same version of the policy.
-          #
-          # If no `etag` is provided in the call to `setIamPolicy`, then the existing
-          # policy is overwritten blindly.
-      "bindings": [ # Associates a list of `members` to a `role`.
-          # `bindings` with no members will result in an error.
-        { # Associates `members` with a `role`.
-          "role": "A String", # Role that is assigned to `members`.
-              # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
-              # Required
-          "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
-              # `members` can have the following values:
-              #
-              # * `allUsers`: A special identifier that represents anyone who is
-              #    on the internet; with or without a Google account.
-              #
-              # * `allAuthenticatedUsers`: A special identifier that represents anyone
-              #    who is authenticated with a Google account or a service account.
-              #
-              # * `user:{emailid}`: An email address that represents a specific Google
-              #    account. For example, `alice@gmail.com` or `joe@example.com`.
-              #
-              #
-              # * `serviceAccount:{emailid}`: An email address that represents a service
-              #    account. For example, `my-other-app@appspot.gserviceaccount.com`.
-              #
-              # * `group:{emailid}`: An email address that represents a Google group.
-              #    For example, `admins@example.com`.
-              #
-              #
-              # * `domain:{domain}`: A Google Apps domain name that represents all the
-              #    users of that domain. For example, `google.com` or `example.com`.
-              #
-            "A String",
-          ],
-          "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
-              # NOTE: an unsatisfied condition will not allow user access via current
-              # binding. Different bindings, including their conditions, are examined
-              # independently.
-              # This field is GOOGLE_INTERNAL.
-              #
-              #     title: "User account presence"
-              #     description: "Determines whether the request has a user account"
-              #     expression: "size(request.user) > 0"
-            "location": "A String", # An optional string indicating the location of the expression for error
-                # reporting, e.g. a file name and a position in the file.
-            "expression": "A String", # Textual representation of an expression in
-                # [Common Expression Language](http://go/api-expr) syntax.
-                #
-                # The application context of the containing message determines which
-                # well-known feature set of CEL is supported.
-            "description": "A String", # An optional description of the expression. This is a longer text which
-                # describes the expression, e.g. when hovered over it in a UI.
-            "title": "A String", # An optional title for the expression, i.e. a short string describing
-                # its purpose. This can be used e.g. in UIs which allow to enter the
-                # expression.
-          },
-        },
-      ],
-      "iamOwned": True or False,
     },
     "updateMask": "A String", # OPTIONAL: A FieldMask specifying which fields of the policy to modify. Only
         # the fields in the mask will be modified. If no mask is provided, the
@@ -1102,12 +1329,12 @@ Returns:
       # specify access control policies for Cloud Platform resources.
       #
       #
-      # A `Policy` consists of a list of `bindings`. A `Binding` binds a list of
+      # A `Policy` consists of a list of `bindings`. A `binding` binds a list of
       # `members` to a `role`, where the members can be user accounts, Google groups,
       # Google domains, and service accounts. A `role` is a named list of permissions
       # defined by IAM.
       #
-      # **Example**
+      # **JSON Example**
       #
       #     {
       #       "bindings": [
@@ -1117,7 +1344,7 @@ Returns:
       #             "user:mike@example.com",
       #             "group:admins@example.com",
       #             "domain:google.com",
-      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com",
+      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com"
       #           ]
       #         },
       #         {
@@ -1127,8 +1354,86 @@ Returns:
       #       ]
       #     }
       #
+      # **YAML Example**
+      #
+      #     bindings:
+      #     - members:
+      #       - user:mike@example.com
+      #       - group:admins@example.com
+      #       - domain:google.com
+      #       - serviceAccount:my-other-app@appspot.gserviceaccount.com
+      #       role: roles/owner
+      #     - members:
+      #       - user:sean@example.com
+      #       role: roles/viewer
+      #
+      #
       # For a description of IAM and its features, see the
-      # [IAM developer's guide](https://cloud.google.com/iam).
+      # [IAM developer's guide](https://cloud.google.com/iam/docs).
+    "bindings": [ # Associates a list of `members` to a `role`.
+        # `bindings` with no members will result in an error.
+      { # Associates `members` with a `role`.
+        "role": "A String", # Role that is assigned to `members`.
+            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
+        "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
+            # `members` can have the following values:
+            #
+            # * `allUsers`: A special identifier that represents anyone who is
+            #    on the internet; with or without a Google account.
+            #
+            # * `allAuthenticatedUsers`: A special identifier that represents anyone
+            #    who is authenticated with a Google account or a service account.
+            #
+            # * `user:{emailid}`: An email address that represents a specific Google
+            #    account. For example, `alice@gmail.com` .
+            #
+            #
+            # * `serviceAccount:{emailid}`: An email address that represents a service
+            #    account. For example, `my-other-app@appspot.gserviceaccount.com`.
+            #
+            # * `group:{emailid}`: An email address that represents a Google group.
+            #    For example, `admins@example.com`.
+            #
+            #
+            # * `domain:{domain}`: The G Suite domain (primary) that represents all the
+            #    users of that domain. For example, `google.com` or `example.com`.
+            #
+          "A String",
+        ],
+        "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
+            # NOTE: An unsatisfied condition will not allow user access via current
+            # binding. Different bindings, including their conditions, are examined
+            # independently.
+            #
+            #     title: "User account presence"
+            #     description: "Determines whether the request has a user account"
+            #     expression: "size(request.user) > 0"
+          "description": "A String", # An optional description of the expression. This is a longer text which
+              # describes the expression, e.g. when hovered over it in a UI.
+          "expression": "A String", # Textual representation of an expression in
+              # Common Expression Language syntax.
+              #
+              # The application context of the containing message determines which
+              # well-known feature set of CEL is supported.
+          "location": "A String", # An optional string indicating the location of the expression for error
+              # reporting, e.g. a file name and a position in the file.
+          "title": "A String", # An optional title for the expression, i.e. a short string describing
+              # its purpose. This can be used e.g. in UIs which allow to enter the
+              # expression.
+        },
+      },
+    ],
+    "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # If no `etag` is provided in the call to `setIamPolicy`, then the existing
+        # policy is overwritten blindly.
+    "version": 42, # Deprecated.
     "auditConfigs": [ # Specifies cloud audit logging configuration for this policy.
       { # Specifies the audit configuration for a service.
           # The configuration determines which permission types are logged, and what
@@ -1138,7 +1443,7 @@ Returns:
           # If there are AuditConfigs for both `allServices` and a specific service,
           # the union of the two AuditConfigs is used for that service: the log_types
           # specified in each AuditConfig are enabled, and the exempted_members in each
-          # AuditConfig are exempted.
+          # AuditLogConfig are exempted.
           #
           # Example Policy with multiple AuditConfigs:
           #
@@ -1181,11 +1486,7 @@ Returns:
           # For fooservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
           # logging. It also exempts foo@gmail.com from DATA_READ logging, and
           # bar@gmail.com from DATA_WRITE logging.
-        "exemptedMembers": [
-          "A String",
-        ],
         "auditLogConfigs": [ # The configuration for logging of each type of permission.
-            # Next ID: 4
           { # Provides the configuration for logging a type of permissions.
               # Example:
               #
@@ -1218,129 +1519,6 @@ Returns:
             # `allServices` is a special value that covers all services.
       },
     ],
-    "rules": [ # If more than one rule is specified, the rules are applied in the following
-        # manner:
-        # - All matching LOG rules are always applied.
-        # - If any DENY/DENY_WITH_LOG rule matches, permission is denied.
-        #   Logging will be applied if one or more matching rule requires logging.
-        # - Otherwise, if any ALLOW/ALLOW_WITH_LOG rule matches, permission is
-        #   granted.
-        #   Logging will be applied if one or more matching rule requires logging.
-        # - Otherwise, if no rule applies, permission is denied.
-      { # A rule to be applied in a Policy.
-        "notIn": [ # If one or more 'not_in' clauses are specified, the rule matches
-            # if the PRINCIPAL/AUTHORITY_SELECTOR is in none of the entries.
-            # The format for in and not_in entries is the same as for members in a
-            # Binding (see google/iam/v1/policy.proto).
-          "A String",
-        ],
-        "description": "A String", # Human-readable description of the rule.
-        "in": [ # If one or more 'in' clauses are specified, the rule matches if
-            # the PRINCIPAL/AUTHORITY_SELECTOR is in at least one of these entries.
-          "A String",
-        ],
-        "action": "A String", # Required
-        "conditions": [ # Additional restrictions that must be met
-          { # A condition to be met.
-            "iam": "A String", # Trusted attributes supplied by the IAM system.
-            "svc": "A String", # Trusted attributes discharged by the service.
-            "value": "A String", # DEPRECATED. Use 'values' instead.
-            "sys": "A String", # Trusted attributes supplied by any service that owns resources and uses
-                # the IAM system for access control.
-            "values": [ # The objects of the condition. This is mutually exclusive with 'value'.
-              "A String",
-            ],
-            "op": "A String", # An operator to apply the subject with.
-          },
-        ],
-        "logConfig": [ # The config returned to callers of tech.iam.IAM.CheckPolicy for any entries
-            # that match the LOG action.
-          { # Specifies what kind of log the caller must write
-            "counter": { # Options for counters # Counter options.
-              "field": "A String", # The field value to attribute.
-              "metric": "A String", # The metric to update.
-            },
-            "dataAccess": { # Write a Data Access (Gin) log # Data access options.
-            },
-            "cloudAudit": { # Write a Cloud Audit log # Cloud audit options.
-              "logName": "A String", # The log_name to populate in the Cloud Audit Record.
-            },
-          },
-        ],
-        "permissions": [ # A permission is a string of form '<service>.<resource type>.<verb>'
-            # (e.g., 'storage.buckets.list'). A value of '*' matches all permissions,
-            # and a verb part of '*' (e.g., 'storage.buckets.*') matches all verbs.
-          "A String",
-        ],
-      },
-    ],
-    "version": 42, # Version of the `Policy`. The default version is 0.
-    "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
-        #
-        # If no `etag` is provided in the call to `setIamPolicy`, then the existing
-        # policy is overwritten blindly.
-    "bindings": [ # Associates a list of `members` to a `role`.
-        # `bindings` with no members will result in an error.
-      { # Associates `members` with a `role`.
-        "role": "A String", # Role that is assigned to `members`.
-            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
-            # Required
-        "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
-            # `members` can have the following values:
-            #
-            # * `allUsers`: A special identifier that represents anyone who is
-            #    on the internet; with or without a Google account.
-            #
-            # * `allAuthenticatedUsers`: A special identifier that represents anyone
-            #    who is authenticated with a Google account or a service account.
-            #
-            # * `user:{emailid}`: An email address that represents a specific Google
-            #    account. For example, `alice@gmail.com` or `joe@example.com`.
-            #
-            #
-            # * `serviceAccount:{emailid}`: An email address that represents a service
-            #    account. For example, `my-other-app@appspot.gserviceaccount.com`.
-            #
-            # * `group:{emailid}`: An email address that represents a Google group.
-            #    For example, `admins@example.com`.
-            #
-            #
-            # * `domain:{domain}`: A Google Apps domain name that represents all the
-            #    users of that domain. For example, `google.com` or `example.com`.
-            #
-          "A String",
-        ],
-        "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
-            # NOTE: an unsatisfied condition will not allow user access via current
-            # binding. Different bindings, including their conditions, are examined
-            # independently.
-            # This field is GOOGLE_INTERNAL.
-            #
-            #     title: "User account presence"
-            #     description: "Determines whether the request has a user account"
-            #     expression: "size(request.user) > 0"
-          "location": "A String", # An optional string indicating the location of the expression for error
-              # reporting, e.g. a file name and a position in the file.
-          "expression": "A String", # Textual representation of an expression in
-              # [Common Expression Language](http://go/api-expr) syntax.
-              #
-              # The application context of the containing message determines which
-              # well-known feature set of CEL is supported.
-          "description": "A String", # An optional description of the expression. This is a longer text which
-              # describes the expression, e.g. when hovered over it in a UI.
-          "title": "A String", # An optional title for the expression, i.e. a short string describing
-              # its purpose. This can be used e.g. in UIs which allow to enter the
-              # expression.
-        },
-      },
-    ],
-    "iamOwned": True or False,
   }</pre>
 </div>
 
@@ -1387,7 +1565,9 @@ Returns:
 
 <div class="method">
     <code class="details" id="updatePrimaryVersion">updatePrimaryVersion(name, body, x__xgafv=None)</code>
-  <pre>Update the version of a CryptoKey that will be used in Encrypt
+  <pre>Update the version of a CryptoKey that will be used in Encrypt.
+
+Returns an error if called on an asymmetric key.
 
 Args:
   name: string, The resource name of the CryptoKey to update. (required)
@@ -1411,37 +1591,84 @@ Returns:
       #
       # A CryptoKey is made up of one or more versions, which
       # represent the actual key material used in cryptographic operations.
+    "labels": { # Labels with user-defined metadata. For more information, see
+        # [Labeling Keys](/kms/docs/labeling-keys).
+      "a_key": "A String",
+    },
     "name": "A String", # Output only. The resource name for this CryptoKey in the format
         # `projects/*/locations/*/keyRings/*/cryptoKeys/*`.
     "rotationPeriod": "A String", # next_rotation_time will be advanced by this period when the service
         # automatically rotates a key. Must be at least one day.
         #
         # If rotation_period is set, next_rotation_time must also be set.
+        #
+        # Keys with purpose
+        # ENCRYPT_DECRYPT support
+        # automatic rotation. For other keys, this field must be omitted.
     "primary": { # A CryptoKeyVersion represents an individual cryptographic key, and the # Output only. A copy of the "primary" CryptoKeyVersion that will be used
         # by Encrypt when this CryptoKey is given
         # in EncryptRequest.name.
         #
         # The CryptoKey's primary version can be updated via
         # UpdateCryptoKeyPrimaryVersion.
+        #
+        # All keys with purpose
+        # ENCRYPT_DECRYPT have a
+        # primary. For other keys, this field will be omitted.
         # associated key material.
         #
-        # It can be used for cryptographic operations either directly, or via its
-        # parent CryptoKey, in which case the server will choose the appropriate
-        # version for the operation.
-      "state": "A String", # The current state of the CryptoKeyVersion.
+        # An ENABLED version can be
+        # used for cryptographic operations.
+        #
+        # For security reasons, the raw cryptographic key material represented by a
+        # CryptoKeyVersion can never be viewed or exported. It can only be used to
+        # encrypt, decrypt, or sign data when an authorized user or application invokes
+        # Cloud KMS.
       "destroyTime": "A String", # Output only. The time this CryptoKeyVersion's key material is scheduled
           # for destruction. Only present if state is
           # DESTROY_SCHEDULED.
-      "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
+      "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
+          # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+      "algorithm": "A String", # Output only. The CryptoKeyVersionAlgorithm that this
+          # CryptoKeyVersion supports.
+      "protectionLevel": "A String", # Output only. The ProtectionLevel describing how crypto operations are
+          # performed with this CryptoKeyVersion.
+      "attestation": { # Contains an HSM-generated attestation about a key operation. For more # Output only. Statement that was generated and signed by the HSM at key
+          # creation time. Use this statement to verify attributes of the key as stored
+          # on the HSM, independently of Google. Only provided for key versions with
+          # protection_level HSM.
+          # information, see [Verifying attestations]
+          # (https://cloud.google.com/kms/docs/attest-key).
+        "content": "A String", # Output only. The attestation data provided by the HSM when the key
+            # operation was performed.
+        "format": "A String", # Output only. The format of the attestation data.
+      },
+      "state": "A String", # The current state of the CryptoKeyVersion.
       "destroyEventTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
           # destroyed. Only present if state is
           # DESTROYED.
-      "name": "A String", # Output only. The resource name for this CryptoKeyVersion in the format
-          # `projects/*/locations/*/keyRings/*/cryptoKeys/*/cryptoKeyVersions/*`.
+      "generateTime": "A String", # Output only. The time this CryptoKeyVersion's key material was
+          # generated.
+      "createTime": "A String", # Output only. The time at which this CryptoKeyVersion was created.
     },
-    "purpose": "A String", # The immutable purpose of this CryptoKey. Currently, the only acceptable
-        # purpose is ENCRYPT_DECRYPT.
     "createTime": "A String", # Output only. The time at which this CryptoKey was created.
+    "purpose": "A String", # The immutable purpose of this CryptoKey.
+    "versionTemplate": { # A CryptoKeyVersionTemplate specifies the properties to use when creating # A template describing settings for new CryptoKeyVersion instances.
+        # The properties of new CryptoKeyVersion instances created by either
+        # CreateCryptoKeyVersion or
+        # auto-rotation are controlled by this template.
+        # a new CryptoKeyVersion, either manually with
+        # CreateCryptoKeyVersion or
+        # automatically as a result of auto-rotation.
+      "protectionLevel": "A String", # ProtectionLevel to use when creating a CryptoKeyVersion based on
+          # this template. Immutable. Defaults to SOFTWARE.
+      "algorithm": "A String", # Required. Algorithm to use
+          # when creating a CryptoKeyVersion based on this template.
+          #
+          # For backwards compatibility, GOOGLE_SYMMETRIC_ENCRYPTION is implied if both
+          # this field is omitted and CryptoKey.purpose is
+          # ENCRYPT_DECRYPT.
+    },
     "nextRotationTime": "A String", # At next_rotation_time, the Key Management Service will automatically:
         #
         # 1. Create a new version of this CryptoKey.
@@ -1451,6 +1678,10 @@ Returns:
         # CreateCryptoKeyVersion and
         # UpdateCryptoKeyPrimaryVersion
         # do not affect next_rotation_time.
+        #
+        # Keys with purpose
+        # ENCRYPT_DECRYPT support
+        # automatic rotation. For other keys, this field must be omitted.
   }</pre>
 </div>
 

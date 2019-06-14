@@ -72,7 +72,7 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="cloudresourcemanager_v1.html">Google Cloud Resource Manager API</a> . <a href="cloudresourcemanager_v1.organizations.html">organizations</a></h1>
+<h1><a href="cloudresourcemanager_v1.html">Cloud Resource Manager API</a> . <a href="cloudresourcemanager_v1.organizations.html">organizations</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="#clearOrgPolicy">clearOrgPolicy(resource, body, x__xgafv=None)</a></code></p>
@@ -84,7 +84,7 @@ h1, h2, h3 {
   <code><a href="#getEffectiveOrgPolicy">getEffectiveOrgPolicy(resource, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets the effective `Policy` on a resource. This is the result of merging</p>
 <p class="toc_element">
-  <code><a href="#getIamPolicy">getIamPolicy(resource, body, x__xgafv=None)</a></code></p>
+  <code><a href="#getIamPolicy">getIamPolicy(resource, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets the access control policy for an Organization resource. May be empty</p>
 <p class="toc_element">
   <code><a href="#getOrgPolicy">getOrgPolicy(resource, body, x__xgafv=None)</a></code></p>
@@ -157,7 +157,9 @@ Returns:
   <pre>Fetches an Organization resource identified by the specified resource name.
 
 Args:
-  name: string, The resource name of the Organization to fetch, e.g. "organizations/1234". (required)
+  name: string, The resource name of the Organization to fetch. This is the organization's
+relative path in the API, formatted as "organizations/[organizationId]".
+For example, "organizations/1234". (required)
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -174,19 +176,20 @@ Returns:
         # all of its descendants are bound to the `OrganizationOwner`. If the
         # `OrganizationOwner` is deleted, the Organization and all its descendants will
         # be deleted.
-      "directoryCustomerId": "A String", # The Google for Work customer id used in the Directory API.
+      "directoryCustomerId": "A String", # The G Suite customer id used in the Directory API.
     },
+    "displayName": "A String", # A human-readable string that refers to the Organization in the
+        # GCP Console UI. This string is set by the server and cannot be
+        # changed. The string will be set to the primary domain (for example,
+        # "google.com") of the G Suite customer that owns the organization.
+        # @OutputOnly
     "creationTime": "A String", # Timestamp when the Organization was created. Assigned by the server.
         # @OutputOnly
-    "displayName": "A String", # A friendly string to be used to refer to the Organization in the UI.
-        # Assigned by the server, set to the primary domain of the G Suite
-        # customer that owns the organization.
+    "lifecycleState": "A String", # The organization's current lifecycle state. Assigned by the server.
         # @OutputOnly
     "name": "A String", # Output Only. The resource name of the organization. This is the
         # organization's relative path in the API. Its format is
         # "organizations/[organization_id]". For example, "organizations/1234".
-    "lifecycleState": "A String", # The organization's current lifecycle state. Assigned by the server.
-        # @OutputOnly
   }</pre>
 </div>
 
@@ -195,6 +198,8 @@ Returns:
   <pre>Gets the effective `Policy` on a resource. This is the result of merging
 `Policies` in the resource hierarchy. The returned `Policy` will not have
 an `etag`set because it is a computed `Policy` across multiple resources.
+Subtrees of Resource Manager resource hierarchy with 'under:' prefix will
+not be expanded.
 
 Args:
   resource: string, The name of the resource to start computing the effective `Policy`. (required)
@@ -219,6 +224,7 @@ Returns:
         # server, not specified by the caller, and represents the last time a call to
         # `SetOrgPolicy` was made for that `Policy`. Any value set by the client will
         # be ignored.
+    "version": 42, # Version of the `Policy`. Default version is 0;
     "constraint": "A String", # The name of the `Constraint` the `Policy` is configuring, for example,
         # `constraints/serviceuser.services`.
         #
@@ -240,17 +246,27 @@ Returns:
     "listPolicy": { # Used in `policy_type` to specify how `list_policy` behaves at this # List of values either allowed or disallowed.
         # resource.
         #
-        # A `ListPolicy` can define specific values that are allowed or denied by
-        # setting either the `allowed_values` or `denied_values` fields. It can also
-        # be used to allow or deny all values, by setting the `all_values` field. If
-        # `all_values` is `ALL_VALUES_UNSPECIFIED`, exactly one of `allowed_values`
-        # or `denied_values` must be set (attempting to set both or neither will
-        # result in a failed request). If `all_values` is set to either `ALLOW` or
-        # `DENY`, `allowed_values` and `denied_values` must be unset.
+        # `ListPolicy` can define specific values and subtrees of Cloud Resource
+        # Manager resource hierarchy (`Organizations`, `Folders`, `Projects`) that
+        # are allowed or denied by setting the `allowed_values` and `denied_values`
+        # fields. This is achieved by using the `under:` and optional `is:` prefixes.
+        # The `under:` prefix is used to denote resource subtree values.
+        # The `is:` prefix is used to denote specific values, and is required only
+        # if the value contains a ":". Values prefixed with "is:" are treated the
+        # same as values with no prefix.
+        # Ancestry subtrees must be in one of the following formats:
+        #     - “projects/<project-id>”, e.g. “projects/tokyo-rain-123”
+        #     - “folders/<folder-id>”, e.g. “folders/1234”
+        #     - “organizations/<organization-id>”, e.g. “organizations/1234”
+        # The `supports_under` field of the associated `Constraint`  defines whether
+        # ancestry prefixes can be used. You can set `allowed_values` and
+        # `denied_values` in the same `Policy` if `all_values` is
+        # `ALL_VALUES_UNSPECIFIED`. `ALLOW` or `DENY` are used to allow or deny all
+        # values. If `all_values` is set to either `ALLOW` or `DENY`,
+        # `allowed_values` and `denied_values` must be unset.
       "allValues": "A String", # The policy all_values state.
-      "allowedValues": [ # List of values allowed  at this resource. an only be set if no values are
-          # set for `denied_values` and `all_values` is set to
-          # `ALL_VALUES_UNSPECIFIED`.
+      "allowedValues": [ # List of values allowed  at this resource. Can only be set if `all_values`
+          # is set to `ALL_VALUES_UNSPECIFIED`.
         "A String",
       ],
       "inheritFromParent": True or False, # Determines the inheritance behavior for this `Policy`.
@@ -277,12 +293,13 @@ Returns:
           # `inherit_from_parent` set to `false` and field all_values set to DENY,
           # then an attempt to activate any API will be denied.
           #
-          # The following examples demonstrate different possible layerings:
+          # The following examples demonstrate different possible layerings for
+          # `projects/bar` parented by `organizations/foo`:
           #
           # Example 1 (no inherited values):
           #   `organizations/foo` has a `Policy` with values:
           #     {allowed_values: “E1” allowed_values:”E2”}
-          #   ``projects/bar`` has `inherit_from_parent` `false` and values:
+          #   `projects/bar` has `inherit_from_parent` `false` and values:
           #     {allowed_values: "E3" allowed_values: "E4"}
           # The accepted values at `organizations/foo` are `E1`, `E2`.
           # The accepted values at `projects/bar` are `E3`, and `E4`.
@@ -335,13 +352,26 @@ Returns:
           #     {all: DENY}
           # The accepted values at `organizations/foo` are `E1`, E2`.
           # No value is accepted at `projects/bar`.
+          #
+          # Example 10 (allowed and denied subtrees of Resource Manager hierarchy):
+          # Given the following resource hierarchy
+          #   O1->{F1, F2}; F1->{P1}; F2->{P2, P3},
+          #   `organizations/foo` has a `Policy` with values:
+          #     {allowed_values: "under:organizations/O1"}
+          #   `projects/bar` has a `Policy` with:
+          #     {allowed_values: "under:projects/P3"}
+          #     {denied_values: "under:folders/F2"}
+          # The accepted values at `organizations/foo` are `organizations/O1`,
+          #   `folders/F1`, `folders/F2`, `projects/P1`, `projects/P2`,
+          #   `projects/P3`.
+          # The accepted values at `projects/bar` are `organizations/O1`,
+          #   `folders/F1`, `projects/P1`.
       "suggestedValue": "A String", # Optional. The Google Cloud Console will try to default to a configuration
           # that matches the value specified in this `Policy`. If `suggested_value`
           # is not set, it will inherit the value specified higher in the hierarchy,
           # unless `inherit_from_parent` is `false`.
-      "deniedValues": [ # List of values denied at this resource. Can only be set if no values are
-          # set for `allowed_values` and `all_values` is set to
-          # `ALL_VALUES_UNSPECIFIED`.
+      "deniedValues": [ # List of values denied at this resource. Can only be set if `all_values`
+          # is set to `ALL_VALUES_UNSPECIFIED`.
         "A String",
       ],
     },
@@ -350,9 +380,10 @@ Returns:
       "enforced": True or False, # If `true`, then the `Policy` is enforced. If `false`, then any
           # configuration is acceptable.
           #
-          # Suppose you have a `Constraint` `constraints/compute.disableSerialPortAccess`
-          # with `constraint_default` set to `ALLOW`. A `Policy` for that
-          # `Constraint` exhibits the following behavior:
+          # Suppose you have a `Constraint`
+          # `constraints/compute.disableSerialPortAccess` with `constraint_default`
+          # set to `ALLOW`. A `Policy` for that `Constraint` exhibits the following
+          # behavior:
           #   - If the `Policy` at this resource has enforced set to `false`, serial
           #     port connection attempts will be allowed.
           #   - If the `Policy` at this resource has enforced set to `true`, serial
@@ -391,7 +422,6 @@ Returns:
           # The constraint at `projects/bar` is not enforced, because
           # `constraint_default` for the `Constraint` is `ALLOW`.
     },
-    "version": 42, # Version of the `Policy`. Default version is 0;
     "etag": "A String", # An opaque tag indicating the current version of the `Policy`, used for
         # concurrency control.
         #
@@ -411,15 +441,18 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="getIamPolicy">getIamPolicy(resource, body, x__xgafv=None)</code>
+    <code class="details" id="getIamPolicy">getIamPolicy(resource, body=None, x__xgafv=None)</code>
   <pre>Gets the access control policy for an Organization resource. May be empty
 if no such policy or resource exists. The `resource` field should be the
 organization's resource name, e.g. "organizations/123".
 
+Authorization requires the Google IAM permission
+`resourcemanager.organizations.getIamPolicy` on the specified organization
+
 Args:
   resource: string, REQUIRED: The resource for which the policy is being requested.
 See the operation documentation for the appropriate value for this field. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Request message for `GetIamPolicy` method.
@@ -437,12 +470,12 @@ Returns:
       # specify access control policies for Cloud Platform resources.
       #
       #
-      # A `Policy` consists of a list of `bindings`. A `Binding` binds a list of
+      # A `Policy` consists of a list of `bindings`. A `binding` binds a list of
       # `members` to a `role`, where the members can be user accounts, Google groups,
       # Google domains, and service accounts. A `role` is a named list of permissions
       # defined by IAM.
       #
-      # **Example**
+      # **JSON Example**
       #
       #     {
       #       "bindings": [
@@ -452,7 +485,7 @@ Returns:
       #             "user:mike@example.com",
       #             "group:admins@example.com",
       #             "domain:google.com",
-      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com",
+      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com"
       #           ]
       #         },
       #         {
@@ -462,15 +495,48 @@ Returns:
       #       ]
       #     }
       #
+      # **YAML Example**
+      #
+      #     bindings:
+      #     - members:
+      #       - user:mike@example.com
+      #       - group:admins@example.com
+      #       - domain:google.com
+      #       - serviceAccount:my-other-app@appspot.gserviceaccount.com
+      #       role: roles/owner
+      #     - members:
+      #       - user:sean@example.com
+      #       role: roles/viewer
+      #
+      #
       # For a description of IAM and its features, see the
-      # [IAM developer's guide](https://cloud.google.com/iam).
+      # [IAM developer's guide](https://cloud.google.com/iam/docs).
     "bindings": [ # Associates a list of `members` to a `role`.
-        # Multiple `bindings` must not be specified for the same `role`.
         # `bindings` with no members will result in an error.
       { # Associates `members` with a `role`.
         "role": "A String", # Role that is assigned to `members`.
             # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
-            # Required
+        "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
+            # NOTE: An unsatisfied condition will not allow user access via current
+            # binding. Different bindings, including their conditions, are examined
+            # independently.
+            #
+            #     title: "User account presence"
+            #     description: "Determines whether the request has a user account"
+            #     expression: "size(request.user) > 0"
+          "location": "A String", # An optional string indicating the location of the expression for error
+              # reporting, e.g. a file name and a position in the file.
+          "expression": "A String", # Textual representation of an expression in
+              # Common Expression Language syntax.
+              #
+              # The application context of the containing message determines which
+              # well-known feature set of CEL is supported.
+          "description": "A String", # An optional description of the expression. This is a longer text which
+              # describes the expression, e.g. when hovered over it in a UI.
+          "title": "A String", # An optional title for the expression, i.e. a short string describing
+              # its purpose. This can be used e.g. in UIs which allow to enter the
+              # expression.
+        },
         "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
             # `members` can have the following values:
             #
@@ -481,7 +547,7 @@ Returns:
             #    who is authenticated with a Google account or a service account.
             #
             # * `user:{emailid}`: An email address that represents a specific Google
-            #    account. For example, `alice@gmail.com` or `joe@example.com`.
+            #    account. For example, `alice@gmail.com` .
             #
             #
             # * `serviceAccount:{emailid}`: An email address that represents a service
@@ -491,13 +557,24 @@ Returns:
             #    For example, `admins@example.com`.
             #
             #
-            # * `domain:{domain}`: A Google Apps domain name that represents all the
+            # * `domain:{domain}`: The G Suite domain (primary) that represents all the
             #    users of that domain. For example, `google.com` or `example.com`.
             #
           "A String",
         ],
       },
     ],
+    "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # If no `etag` is provided in the call to `setIamPolicy`, then the existing
+        # policy is overwritten blindly.
+    "version": 42, # Deprecated.
     "auditConfigs": [ # Specifies cloud audit logging configuration for this policy.
       { # Specifies the audit configuration for a service.
           # The configuration determines which permission types are logged, and what
@@ -507,7 +584,7 @@ Returns:
           # If there are AuditConfigs for both `allServices` and a specific service,
           # the union of the two AuditConfigs is used for that service: the log_types
           # specified in each AuditConfig are enabled, and the exempted_members in each
-          # AuditConfig are exempted.
+          # AuditLogConfig are exempted.
           #
           # Example Policy with multiple AuditConfigs:
           #
@@ -551,7 +628,6 @@ Returns:
           # logging. It also exempts foo@gmail.com from DATA_READ logging, and
           # bar@gmail.com from DATA_WRITE logging.
         "auditLogConfigs": [ # The configuration for logging of each type of permission.
-            # Next ID: 4
           { # Provides the configuration for logging a type of permissions.
               # Example:
               #
@@ -584,17 +660,6 @@ Returns:
             # `allServices` is a special value that covers all services.
       },
     ],
-    "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
-        #
-        # If no `etag` is provided in the call to `setIamPolicy`, then the existing
-        # policy is overwritten blindly.
-    "version": 42, # Version of the `Policy`. The default version is 0.
   }</pre>
 </div>
 
@@ -630,6 +695,7 @@ Returns:
         # server, not specified by the caller, and represents the last time a call to
         # `SetOrgPolicy` was made for that `Policy`. Any value set by the client will
         # be ignored.
+    "version": 42, # Version of the `Policy`. Default version is 0;
     "constraint": "A String", # The name of the `Constraint` the `Policy` is configuring, for example,
         # `constraints/serviceuser.services`.
         #
@@ -651,17 +717,27 @@ Returns:
     "listPolicy": { # Used in `policy_type` to specify how `list_policy` behaves at this # List of values either allowed or disallowed.
         # resource.
         #
-        # A `ListPolicy` can define specific values that are allowed or denied by
-        # setting either the `allowed_values` or `denied_values` fields. It can also
-        # be used to allow or deny all values, by setting the `all_values` field. If
-        # `all_values` is `ALL_VALUES_UNSPECIFIED`, exactly one of `allowed_values`
-        # or `denied_values` must be set (attempting to set both or neither will
-        # result in a failed request). If `all_values` is set to either `ALLOW` or
-        # `DENY`, `allowed_values` and `denied_values` must be unset.
+        # `ListPolicy` can define specific values and subtrees of Cloud Resource
+        # Manager resource hierarchy (`Organizations`, `Folders`, `Projects`) that
+        # are allowed or denied by setting the `allowed_values` and `denied_values`
+        # fields. This is achieved by using the `under:` and optional `is:` prefixes.
+        # The `under:` prefix is used to denote resource subtree values.
+        # The `is:` prefix is used to denote specific values, and is required only
+        # if the value contains a ":". Values prefixed with "is:" are treated the
+        # same as values with no prefix.
+        # Ancestry subtrees must be in one of the following formats:
+        #     - “projects/<project-id>”, e.g. “projects/tokyo-rain-123”
+        #     - “folders/<folder-id>”, e.g. “folders/1234”
+        #     - “organizations/<organization-id>”, e.g. “organizations/1234”
+        # The `supports_under` field of the associated `Constraint`  defines whether
+        # ancestry prefixes can be used. You can set `allowed_values` and
+        # `denied_values` in the same `Policy` if `all_values` is
+        # `ALL_VALUES_UNSPECIFIED`. `ALLOW` or `DENY` are used to allow or deny all
+        # values. If `all_values` is set to either `ALLOW` or `DENY`,
+        # `allowed_values` and `denied_values` must be unset.
       "allValues": "A String", # The policy all_values state.
-      "allowedValues": [ # List of values allowed  at this resource. an only be set if no values are
-          # set for `denied_values` and `all_values` is set to
-          # `ALL_VALUES_UNSPECIFIED`.
+      "allowedValues": [ # List of values allowed  at this resource. Can only be set if `all_values`
+          # is set to `ALL_VALUES_UNSPECIFIED`.
         "A String",
       ],
       "inheritFromParent": True or False, # Determines the inheritance behavior for this `Policy`.
@@ -688,12 +764,13 @@ Returns:
           # `inherit_from_parent` set to `false` and field all_values set to DENY,
           # then an attempt to activate any API will be denied.
           #
-          # The following examples demonstrate different possible layerings:
+          # The following examples demonstrate different possible layerings for
+          # `projects/bar` parented by `organizations/foo`:
           #
           # Example 1 (no inherited values):
           #   `organizations/foo` has a `Policy` with values:
           #     {allowed_values: “E1” allowed_values:”E2”}
-          #   ``projects/bar`` has `inherit_from_parent` `false` and values:
+          #   `projects/bar` has `inherit_from_parent` `false` and values:
           #     {allowed_values: "E3" allowed_values: "E4"}
           # The accepted values at `organizations/foo` are `E1`, `E2`.
           # The accepted values at `projects/bar` are `E3`, and `E4`.
@@ -746,13 +823,26 @@ Returns:
           #     {all: DENY}
           # The accepted values at `organizations/foo` are `E1`, E2`.
           # No value is accepted at `projects/bar`.
+          #
+          # Example 10 (allowed and denied subtrees of Resource Manager hierarchy):
+          # Given the following resource hierarchy
+          #   O1->{F1, F2}; F1->{P1}; F2->{P2, P3},
+          #   `organizations/foo` has a `Policy` with values:
+          #     {allowed_values: "under:organizations/O1"}
+          #   `projects/bar` has a `Policy` with:
+          #     {allowed_values: "under:projects/P3"}
+          #     {denied_values: "under:folders/F2"}
+          # The accepted values at `organizations/foo` are `organizations/O1`,
+          #   `folders/F1`, `folders/F2`, `projects/P1`, `projects/P2`,
+          #   `projects/P3`.
+          # The accepted values at `projects/bar` are `organizations/O1`,
+          #   `folders/F1`, `projects/P1`.
       "suggestedValue": "A String", # Optional. The Google Cloud Console will try to default to a configuration
           # that matches the value specified in this `Policy`. If `suggested_value`
           # is not set, it will inherit the value specified higher in the hierarchy,
           # unless `inherit_from_parent` is `false`.
-      "deniedValues": [ # List of values denied at this resource. Can only be set if no values are
-          # set for `allowed_values` and `all_values` is set to
-          # `ALL_VALUES_UNSPECIFIED`.
+      "deniedValues": [ # List of values denied at this resource. Can only be set if `all_values`
+          # is set to `ALL_VALUES_UNSPECIFIED`.
         "A String",
       ],
     },
@@ -761,9 +851,10 @@ Returns:
       "enforced": True or False, # If `true`, then the `Policy` is enforced. If `false`, then any
           # configuration is acceptable.
           #
-          # Suppose you have a `Constraint` `constraints/compute.disableSerialPortAccess`
-          # with `constraint_default` set to `ALLOW`. A `Policy` for that
-          # `Constraint` exhibits the following behavior:
+          # Suppose you have a `Constraint`
+          # `constraints/compute.disableSerialPortAccess` with `constraint_default`
+          # set to `ALLOW`. A `Policy` for that `Constraint` exhibits the following
+          # behavior:
           #   - If the `Policy` at this resource has enforced set to `false`, serial
           #     port connection attempts will be allowed.
           #   - If the `Policy` at this resource has enforced set to `true`, serial
@@ -802,7 +893,6 @@ Returns:
           # The constraint at `projects/bar` is not enforced, because
           # `constraint_default` for the `Constraint` is `ALLOW`.
     },
-    "version": 42, # Version of the `Policy`. Default version is 0;
     "etag": "A String", # An opaque tag indicating the current version of the `Policy`, used for
         # concurrency control.
         #
@@ -871,10 +961,8 @@ Returns:
         "displayName": "A String", # The human readable name.
             #
             # Mutable.
-        "description": "A String", # Detailed description of what this `Constraint` controls as well as how and
-            # where it is enforced.
-            #
-            # Mutable.
+        "name": "A String", # Immutable value, required to globally be unique. For example,
+            # `constraints/serviceuser.services`
         "booleanConstraint": { # A `Constraint` that is either enforced or not. # Defines this constraint as being a BooleanConstraint.
             #
             # For example a constraint `constraints/compute.disableSerialPortAccess`.
@@ -884,11 +972,17 @@ Returns:
         "version": 42, # Version of the `Constraint`. Default version is 0;
         "listConstraint": { # A `Constraint` that allows or disallows a list of string values, which are # Defines this constraint as being a ListConstraint.
             # configured by an Organization's policy administrator with a `Policy`.
+          "supportsUnder": True or False, # Indicates whether subtrees of Cloud Resource Manager resource hierarchy
+              # can be used in `Policy.allowed_values` and `Policy.denied_values`. For
+              # example, `"under:folders/123"` would match any resource under the
+              # 'folders/123' folder.
           "suggestedValue": "A String", # Optional. The Google Cloud Console will try to default to a configuration
               # that matches the value specified in this `Constraint`.
         },
-        "name": "A String", # Immutable value, required to globally be unique. For example,
-            # `constraints/serviceuser.services`
+        "description": "A String", # Detailed description of what this `Constraint` controls as well as how and
+            # where it is enforced.
+            #
+            # Mutable.
       },
     ],
   }</pre>
@@ -945,6 +1039,7 @@ Returns:
             # server, not specified by the caller, and represents the last time a call to
             # `SetOrgPolicy` was made for that `Policy`. Any value set by the client will
             # be ignored.
+        "version": 42, # Version of the `Policy`. Default version is 0;
         "constraint": "A String", # The name of the `Constraint` the `Policy` is configuring, for example,
             # `constraints/serviceuser.services`.
             #
@@ -966,17 +1061,27 @@ Returns:
         "listPolicy": { # Used in `policy_type` to specify how `list_policy` behaves at this # List of values either allowed or disallowed.
             # resource.
             #
-            # A `ListPolicy` can define specific values that are allowed or denied by
-            # setting either the `allowed_values` or `denied_values` fields. It can also
-            # be used to allow or deny all values, by setting the `all_values` field. If
-            # `all_values` is `ALL_VALUES_UNSPECIFIED`, exactly one of `allowed_values`
-            # or `denied_values` must be set (attempting to set both or neither will
-            # result in a failed request). If `all_values` is set to either `ALLOW` or
-            # `DENY`, `allowed_values` and `denied_values` must be unset.
+            # `ListPolicy` can define specific values and subtrees of Cloud Resource
+            # Manager resource hierarchy (`Organizations`, `Folders`, `Projects`) that
+            # are allowed or denied by setting the `allowed_values` and `denied_values`
+            # fields. This is achieved by using the `under:` and optional `is:` prefixes.
+            # The `under:` prefix is used to denote resource subtree values.
+            # The `is:` prefix is used to denote specific values, and is required only
+            # if the value contains a ":". Values prefixed with "is:" are treated the
+            # same as values with no prefix.
+            # Ancestry subtrees must be in one of the following formats:
+            #     - “projects/<project-id>”, e.g. “projects/tokyo-rain-123”
+            #     - “folders/<folder-id>”, e.g. “folders/1234”
+            #     - “organizations/<organization-id>”, e.g. “organizations/1234”
+            # The `supports_under` field of the associated `Constraint`  defines whether
+            # ancestry prefixes can be used. You can set `allowed_values` and
+            # `denied_values` in the same `Policy` if `all_values` is
+            # `ALL_VALUES_UNSPECIFIED`. `ALLOW` or `DENY` are used to allow or deny all
+            # values. If `all_values` is set to either `ALLOW` or `DENY`,
+            # `allowed_values` and `denied_values` must be unset.
           "allValues": "A String", # The policy all_values state.
-          "allowedValues": [ # List of values allowed  at this resource. an only be set if no values are
-              # set for `denied_values` and `all_values` is set to
-              # `ALL_VALUES_UNSPECIFIED`.
+          "allowedValues": [ # List of values allowed  at this resource. Can only be set if `all_values`
+              # is set to `ALL_VALUES_UNSPECIFIED`.
             "A String",
           ],
           "inheritFromParent": True or False, # Determines the inheritance behavior for this `Policy`.
@@ -1003,12 +1108,13 @@ Returns:
               # `inherit_from_parent` set to `false` and field all_values set to DENY,
               # then an attempt to activate any API will be denied.
               #
-              # The following examples demonstrate different possible layerings:
+              # The following examples demonstrate different possible layerings for
+              # `projects/bar` parented by `organizations/foo`:
               #
               # Example 1 (no inherited values):
               #   `organizations/foo` has a `Policy` with values:
               #     {allowed_values: “E1” allowed_values:”E2”}
-              #   ``projects/bar`` has `inherit_from_parent` `false` and values:
+              #   `projects/bar` has `inherit_from_parent` `false` and values:
               #     {allowed_values: "E3" allowed_values: "E4"}
               # The accepted values at `organizations/foo` are `E1`, `E2`.
               # The accepted values at `projects/bar` are `E3`, and `E4`.
@@ -1061,13 +1167,26 @@ Returns:
               #     {all: DENY}
               # The accepted values at `organizations/foo` are `E1`, E2`.
               # No value is accepted at `projects/bar`.
+              #
+              # Example 10 (allowed and denied subtrees of Resource Manager hierarchy):
+              # Given the following resource hierarchy
+              #   O1->{F1, F2}; F1->{P1}; F2->{P2, P3},
+              #   `organizations/foo` has a `Policy` with values:
+              #     {allowed_values: "under:organizations/O1"}
+              #   `projects/bar` has a `Policy` with:
+              #     {allowed_values: "under:projects/P3"}
+              #     {denied_values: "under:folders/F2"}
+              # The accepted values at `organizations/foo` are `organizations/O1`,
+              #   `folders/F1`, `folders/F2`, `projects/P1`, `projects/P2`,
+              #   `projects/P3`.
+              # The accepted values at `projects/bar` are `organizations/O1`,
+              #   `folders/F1`, `projects/P1`.
           "suggestedValue": "A String", # Optional. The Google Cloud Console will try to default to a configuration
               # that matches the value specified in this `Policy`. If `suggested_value`
               # is not set, it will inherit the value specified higher in the hierarchy,
               # unless `inherit_from_parent` is `false`.
-          "deniedValues": [ # List of values denied at this resource. Can only be set if no values are
-              # set for `allowed_values` and `all_values` is set to
-              # `ALL_VALUES_UNSPECIFIED`.
+          "deniedValues": [ # List of values denied at this resource. Can only be set if `all_values`
+              # is set to `ALL_VALUES_UNSPECIFIED`.
             "A String",
           ],
         },
@@ -1076,9 +1195,10 @@ Returns:
           "enforced": True or False, # If `true`, then the `Policy` is enforced. If `false`, then any
               # configuration is acceptable.
               #
-              # Suppose you have a `Constraint` `constraints/compute.disableSerialPortAccess`
-              # with `constraint_default` set to `ALLOW`. A `Policy` for that
-              # `Constraint` exhibits the following behavior:
+              # Suppose you have a `Constraint`
+              # `constraints/compute.disableSerialPortAccess` with `constraint_default`
+              # set to `ALLOW`. A `Policy` for that `Constraint` exhibits the following
+              # behavior:
               #   - If the `Policy` at this resource has enforced set to `false`, serial
               #     port connection attempts will be allowed.
               #   - If the `Policy` at this resource has enforced set to `true`, serial
@@ -1117,7 +1237,6 @@ Returns:
               # The constraint at `projects/bar` is not enforced, because
               # `constraint_default` for the `Constraint` is `ALLOW`.
         },
-        "version": 42, # Version of the `Policy`. Default version is 0;
         "etag": "A String", # An opaque tag indicating the current version of the `Policy`, used for
             # concurrency control.
             #
@@ -1159,6 +1278,9 @@ the specified filter. This method returns Organizations in an unspecified
 order. New Organizations do not necessarily appear at the end of the
 results.
 
+Search will only return organizations on which the user has the permission
+`resourcemanager.organizations.get`
+
 Args:
   body: object, The request body. (required)
     The object takes the form of:
@@ -1169,13 +1291,14 @@ Args:
         # 
         # 
         # Organizations may be filtered by `owner.directoryCustomerId` or by
-        # `domain`, where the domain is a Google for Work domain, for example:
+        # `domain`, where the domain is a G Suite domain, for example:
         # 
-        # |Filter|Description|
-        # |------|-----------|
-        # |owner.directorycustomerid:123456789|Organizations with
-        # `owner.directory_customer_id` equal to `123456789`.|
-        # |domain:google.com|Organizations corresponding to the domain `google.com`.|
+        # clang-format off
+        # | Filter                              | Description                      |
+        # |-------------------------------------|----------------------------------|
+        # | owner.directorycustomerid:123456789 | Organizations with `owner.directory_customer_id` equal to `123456789`.|
+        # | domain:google.com                   | Organizations corresponding to the domain `google.com`.|
+        # clang-format on
         # 
         # This field is optional.
     "pageToken": "A String", # A pagination token returned from a previous call to `SearchOrganizations`
@@ -1209,19 +1332,20 @@ Returns:
             # all of its descendants are bound to the `OrganizationOwner`. If the
             # `OrganizationOwner` is deleted, the Organization and all its descendants will
             # be deleted.
-          "directoryCustomerId": "A String", # The Google for Work customer id used in the Directory API.
+          "directoryCustomerId": "A String", # The G Suite customer id used in the Directory API.
         },
+        "displayName": "A String", # A human-readable string that refers to the Organization in the
+            # GCP Console UI. This string is set by the server and cannot be
+            # changed. The string will be set to the primary domain (for example,
+            # "google.com") of the G Suite customer that owns the organization.
+            # @OutputOnly
         "creationTime": "A String", # Timestamp when the Organization was created. Assigned by the server.
             # @OutputOnly
-        "displayName": "A String", # A friendly string to be used to refer to the Organization in the UI.
-            # Assigned by the server, set to the primary domain of the G Suite
-            # customer that owns the organization.
+        "lifecycleState": "A String", # The organization's current lifecycle state. Assigned by the server.
             # @OutputOnly
         "name": "A String", # Output Only. The resource name of the organization. This is the
             # organization's relative path in the API. Its format is
             # "organizations/[organization_id]". For example, "organizations/1234".
-        "lifecycleState": "A String", # The organization's current lifecycle state. Assigned by the server.
-            # @OutputOnly
       },
     ],
   }</pre>
@@ -1247,6 +1371,9 @@ Returns:
 existing policy. The `resource` field should be the organization's resource
 name, e.g. "organizations/123".
 
+Authorization requires the Google IAM permission
+`resourcemanager.organizations.setIamPolicy` on the specified organization
+
 Args:
   resource: string, REQUIRED: The resource for which the policy is being specified.
 See the operation documentation for the appropriate value for this field. (required)
@@ -1261,12 +1388,12 @@ See the operation documentation for the appropriate value for this field. (requi
         # specify access control policies for Cloud Platform resources.
         #
         #
-        # A `Policy` consists of a list of `bindings`. A `Binding` binds a list of
+        # A `Policy` consists of a list of `bindings`. A `binding` binds a list of
         # `members` to a `role`, where the members can be user accounts, Google groups,
         # Google domains, and service accounts. A `role` is a named list of permissions
         # defined by IAM.
         #
-        # **Example**
+        # **JSON Example**
         #
         #     {
         #       "bindings": [
@@ -1276,7 +1403,7 @@ See the operation documentation for the appropriate value for this field. (requi
         #             "user:mike@example.com",
         #             "group:admins@example.com",
         #             "domain:google.com",
-        #             "serviceAccount:my-other-app@appspot.gserviceaccount.com",
+        #             "serviceAccount:my-other-app@appspot.gserviceaccount.com"
         #           ]
         #         },
         #         {
@@ -1286,15 +1413,48 @@ See the operation documentation for the appropriate value for this field. (requi
         #       ]
         #     }
         #
+        # **YAML Example**
+        #
+        #     bindings:
+        #     - members:
+        #       - user:mike@example.com
+        #       - group:admins@example.com
+        #       - domain:google.com
+        #       - serviceAccount:my-other-app@appspot.gserviceaccount.com
+        #       role: roles/owner
+        #     - members:
+        #       - user:sean@example.com
+        #       role: roles/viewer
+        #
+        #
         # For a description of IAM and its features, see the
-        # [IAM developer's guide](https://cloud.google.com/iam).
+        # [IAM developer's guide](https://cloud.google.com/iam/docs).
       "bindings": [ # Associates a list of `members` to a `role`.
-          # Multiple `bindings` must not be specified for the same `role`.
           # `bindings` with no members will result in an error.
         { # Associates `members` with a `role`.
           "role": "A String", # Role that is assigned to `members`.
               # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
-              # Required
+          "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
+              # NOTE: An unsatisfied condition will not allow user access via current
+              # binding. Different bindings, including their conditions, are examined
+              # independently.
+              #
+              #     title: "User account presence"
+              #     description: "Determines whether the request has a user account"
+              #     expression: "size(request.user) > 0"
+            "location": "A String", # An optional string indicating the location of the expression for error
+                # reporting, e.g. a file name and a position in the file.
+            "expression": "A String", # Textual representation of an expression in
+                # Common Expression Language syntax.
+                #
+                # The application context of the containing message determines which
+                # well-known feature set of CEL is supported.
+            "description": "A String", # An optional description of the expression. This is a longer text which
+                # describes the expression, e.g. when hovered over it in a UI.
+            "title": "A String", # An optional title for the expression, i.e. a short string describing
+                # its purpose. This can be used e.g. in UIs which allow to enter the
+                # expression.
+          },
           "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
               # `members` can have the following values:
               #
@@ -1305,7 +1465,7 @@ See the operation documentation for the appropriate value for this field. (requi
               #    who is authenticated with a Google account or a service account.
               #
               # * `user:{emailid}`: An email address that represents a specific Google
-              #    account. For example, `alice@gmail.com` or `joe@example.com`.
+              #    account. For example, `alice@gmail.com` .
               #
               #
               # * `serviceAccount:{emailid}`: An email address that represents a service
@@ -1315,13 +1475,24 @@ See the operation documentation for the appropriate value for this field. (requi
               #    For example, `admins@example.com`.
               #
               #
-              # * `domain:{domain}`: A Google Apps domain name that represents all the
+              # * `domain:{domain}`: The G Suite domain (primary) that represents all the
               #    users of that domain. For example, `google.com` or `example.com`.
               #
             "A String",
           ],
         },
       ],
+      "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
+          # prevent simultaneous updates of a policy from overwriting each other.
+          # It is strongly suggested that systems make use of the `etag` in the
+          # read-modify-write cycle to perform policy updates in order to avoid race
+          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+          # systems are expected to put that etag in the request to `setIamPolicy` to
+          # ensure that their change will be applied to the same version of the policy.
+          #
+          # If no `etag` is provided in the call to `setIamPolicy`, then the existing
+          # policy is overwritten blindly.
+      "version": 42, # Deprecated.
       "auditConfigs": [ # Specifies cloud audit logging configuration for this policy.
         { # Specifies the audit configuration for a service.
             # The configuration determines which permission types are logged, and what
@@ -1331,7 +1502,7 @@ See the operation documentation for the appropriate value for this field. (requi
             # If there are AuditConfigs for both `allServices` and a specific service,
             # the union of the two AuditConfigs is used for that service: the log_types
             # specified in each AuditConfig are enabled, and the exempted_members in each
-            # AuditConfig are exempted.
+            # AuditLogConfig are exempted.
             #
             # Example Policy with multiple AuditConfigs:
             #
@@ -1375,7 +1546,6 @@ See the operation documentation for the appropriate value for this field. (requi
             # logging. It also exempts foo@gmail.com from DATA_READ logging, and
             # bar@gmail.com from DATA_WRITE logging.
           "auditLogConfigs": [ # The configuration for logging of each type of permission.
-              # Next ID: 4
             { # Provides the configuration for logging a type of permissions.
                 # Example:
                 #
@@ -1408,17 +1578,6 @@ See the operation documentation for the appropriate value for this field. (requi
               # `allServices` is a special value that covers all services.
         },
       ],
-      "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
-          # prevent simultaneous updates of a policy from overwriting each other.
-          # It is strongly suggested that systems make use of the `etag` in the
-          # read-modify-write cycle to perform policy updates in order to avoid race
-          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-          # systems are expected to put that etag in the request to `setIamPolicy` to
-          # ensure that their change will be applied to the same version of the policy.
-          #
-          # If no `etag` is provided in the call to `setIamPolicy`, then the existing
-          # policy is overwritten blindly.
-      "version": 42, # Version of the `Policy`. The default version is 0.
     },
     "updateMask": "A String", # OPTIONAL: A FieldMask specifying which fields of the policy to modify. Only
         # the fields in the mask will be modified. If no mask is provided, the
@@ -1439,12 +1598,12 @@ Returns:
       # specify access control policies for Cloud Platform resources.
       #
       #
-      # A `Policy` consists of a list of `bindings`. A `Binding` binds a list of
+      # A `Policy` consists of a list of `bindings`. A `binding` binds a list of
       # `members` to a `role`, where the members can be user accounts, Google groups,
       # Google domains, and service accounts. A `role` is a named list of permissions
       # defined by IAM.
       #
-      # **Example**
+      # **JSON Example**
       #
       #     {
       #       "bindings": [
@@ -1454,7 +1613,7 @@ Returns:
       #             "user:mike@example.com",
       #             "group:admins@example.com",
       #             "domain:google.com",
-      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com",
+      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com"
       #           ]
       #         },
       #         {
@@ -1464,15 +1623,48 @@ Returns:
       #       ]
       #     }
       #
+      # **YAML Example**
+      #
+      #     bindings:
+      #     - members:
+      #       - user:mike@example.com
+      #       - group:admins@example.com
+      #       - domain:google.com
+      #       - serviceAccount:my-other-app@appspot.gserviceaccount.com
+      #       role: roles/owner
+      #     - members:
+      #       - user:sean@example.com
+      #       role: roles/viewer
+      #
+      #
       # For a description of IAM and its features, see the
-      # [IAM developer's guide](https://cloud.google.com/iam).
+      # [IAM developer's guide](https://cloud.google.com/iam/docs).
     "bindings": [ # Associates a list of `members` to a `role`.
-        # Multiple `bindings` must not be specified for the same `role`.
         # `bindings` with no members will result in an error.
       { # Associates `members` with a `role`.
         "role": "A String", # Role that is assigned to `members`.
             # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
-            # Required
+        "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
+            # NOTE: An unsatisfied condition will not allow user access via current
+            # binding. Different bindings, including their conditions, are examined
+            # independently.
+            #
+            #     title: "User account presence"
+            #     description: "Determines whether the request has a user account"
+            #     expression: "size(request.user) > 0"
+          "location": "A String", # An optional string indicating the location of the expression for error
+              # reporting, e.g. a file name and a position in the file.
+          "expression": "A String", # Textual representation of an expression in
+              # Common Expression Language syntax.
+              #
+              # The application context of the containing message determines which
+              # well-known feature set of CEL is supported.
+          "description": "A String", # An optional description of the expression. This is a longer text which
+              # describes the expression, e.g. when hovered over it in a UI.
+          "title": "A String", # An optional title for the expression, i.e. a short string describing
+              # its purpose. This can be used e.g. in UIs which allow to enter the
+              # expression.
+        },
         "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
             # `members` can have the following values:
             #
@@ -1483,7 +1675,7 @@ Returns:
             #    who is authenticated with a Google account or a service account.
             #
             # * `user:{emailid}`: An email address that represents a specific Google
-            #    account. For example, `alice@gmail.com` or `joe@example.com`.
+            #    account. For example, `alice@gmail.com` .
             #
             #
             # * `serviceAccount:{emailid}`: An email address that represents a service
@@ -1493,13 +1685,24 @@ Returns:
             #    For example, `admins@example.com`.
             #
             #
-            # * `domain:{domain}`: A Google Apps domain name that represents all the
+            # * `domain:{domain}`: The G Suite domain (primary) that represents all the
             #    users of that domain. For example, `google.com` or `example.com`.
             #
           "A String",
         ],
       },
     ],
+    "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # If no `etag` is provided in the call to `setIamPolicy`, then the existing
+        # policy is overwritten blindly.
+    "version": 42, # Deprecated.
     "auditConfigs": [ # Specifies cloud audit logging configuration for this policy.
       { # Specifies the audit configuration for a service.
           # The configuration determines which permission types are logged, and what
@@ -1509,7 +1712,7 @@ Returns:
           # If there are AuditConfigs for both `allServices` and a specific service,
           # the union of the two AuditConfigs is used for that service: the log_types
           # specified in each AuditConfig are enabled, and the exempted_members in each
-          # AuditConfig are exempted.
+          # AuditLogConfig are exempted.
           #
           # Example Policy with multiple AuditConfigs:
           #
@@ -1553,7 +1756,6 @@ Returns:
           # logging. It also exempts foo@gmail.com from DATA_READ logging, and
           # bar@gmail.com from DATA_WRITE logging.
         "auditLogConfigs": [ # The configuration for logging of each type of permission.
-            # Next ID: 4
           { # Provides the configuration for logging a type of permissions.
               # Example:
               #
@@ -1586,17 +1788,6 @@ Returns:
             # `allServices` is a special value that covers all services.
       },
     ],
-    "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
-        #
-        # If no `etag` is provided in the call to `setIamPolicy`, then the existing
-        # policy is overwritten blindly.
-    "version": 42, # Version of the `Policy`. The default version is 0.
   }</pre>
 </div>
 
@@ -1620,6 +1811,7 @@ Args:
           # server, not specified by the caller, and represents the last time a call to
           # `SetOrgPolicy` was made for that `Policy`. Any value set by the client will
           # be ignored.
+      "version": 42, # Version of the `Policy`. Default version is 0;
       "constraint": "A String", # The name of the `Constraint` the `Policy` is configuring, for example,
           # `constraints/serviceuser.services`.
           #
@@ -1641,17 +1833,27 @@ Args:
       "listPolicy": { # Used in `policy_type` to specify how `list_policy` behaves at this # List of values either allowed or disallowed.
           # resource.
           #
-          # A `ListPolicy` can define specific values that are allowed or denied by
-          # setting either the `allowed_values` or `denied_values` fields. It can also
-          # be used to allow or deny all values, by setting the `all_values` field. If
-          # `all_values` is `ALL_VALUES_UNSPECIFIED`, exactly one of `allowed_values`
-          # or `denied_values` must be set (attempting to set both or neither will
-          # result in a failed request). If `all_values` is set to either `ALLOW` or
-          # `DENY`, `allowed_values` and `denied_values` must be unset.
+          # `ListPolicy` can define specific values and subtrees of Cloud Resource
+          # Manager resource hierarchy (`Organizations`, `Folders`, `Projects`) that
+          # are allowed or denied by setting the `allowed_values` and `denied_values`
+          # fields. This is achieved by using the `under:` and optional `is:` prefixes.
+          # The `under:` prefix is used to denote resource subtree values.
+          # The `is:` prefix is used to denote specific values, and is required only
+          # if the value contains a ":". Values prefixed with "is:" are treated the
+          # same as values with no prefix.
+          # Ancestry subtrees must be in one of the following formats:
+          #     - “projects/<project-id>”, e.g. “projects/tokyo-rain-123”
+          #     - “folders/<folder-id>”, e.g. “folders/1234”
+          #     - “organizations/<organization-id>”, e.g. “organizations/1234”
+          # The `supports_under` field of the associated `Constraint`  defines whether
+          # ancestry prefixes can be used. You can set `allowed_values` and
+          # `denied_values` in the same `Policy` if `all_values` is
+          # `ALL_VALUES_UNSPECIFIED`. `ALLOW` or `DENY` are used to allow or deny all
+          # values. If `all_values` is set to either `ALLOW` or `DENY`,
+          # `allowed_values` and `denied_values` must be unset.
         "allValues": "A String", # The policy all_values state.
-        "allowedValues": [ # List of values allowed  at this resource. an only be set if no values are
-            # set for `denied_values` and `all_values` is set to
-            # `ALL_VALUES_UNSPECIFIED`.
+        "allowedValues": [ # List of values allowed  at this resource. Can only be set if `all_values`
+            # is set to `ALL_VALUES_UNSPECIFIED`.
           "A String",
         ],
         "inheritFromParent": True or False, # Determines the inheritance behavior for this `Policy`.
@@ -1678,12 +1880,13 @@ Args:
             # `inherit_from_parent` set to `false` and field all_values set to DENY,
             # then an attempt to activate any API will be denied.
             #
-            # The following examples demonstrate different possible layerings:
+            # The following examples demonstrate different possible layerings for
+            # `projects/bar` parented by `organizations/foo`:
             #
             # Example 1 (no inherited values):
             #   `organizations/foo` has a `Policy` with values:
             #     {allowed_values: “E1” allowed_values:”E2”}
-            #   ``projects/bar`` has `inherit_from_parent` `false` and values:
+            #   `projects/bar` has `inherit_from_parent` `false` and values:
             #     {allowed_values: "E3" allowed_values: "E4"}
             # The accepted values at `organizations/foo` are `E1`, `E2`.
             # The accepted values at `projects/bar` are `E3`, and `E4`.
@@ -1736,13 +1939,26 @@ Args:
             #     {all: DENY}
             # The accepted values at `organizations/foo` are `E1`, E2`.
             # No value is accepted at `projects/bar`.
+            #
+            # Example 10 (allowed and denied subtrees of Resource Manager hierarchy):
+            # Given the following resource hierarchy
+            #   O1->{F1, F2}; F1->{P1}; F2->{P2, P3},
+            #   `organizations/foo` has a `Policy` with values:
+            #     {allowed_values: "under:organizations/O1"}
+            #   `projects/bar` has a `Policy` with:
+            #     {allowed_values: "under:projects/P3"}
+            #     {denied_values: "under:folders/F2"}
+            # The accepted values at `organizations/foo` are `organizations/O1`,
+            #   `folders/F1`, `folders/F2`, `projects/P1`, `projects/P2`,
+            #   `projects/P3`.
+            # The accepted values at `projects/bar` are `organizations/O1`,
+            #   `folders/F1`, `projects/P1`.
         "suggestedValue": "A String", # Optional. The Google Cloud Console will try to default to a configuration
             # that matches the value specified in this `Policy`. If `suggested_value`
             # is not set, it will inherit the value specified higher in the hierarchy,
             # unless `inherit_from_parent` is `false`.
-        "deniedValues": [ # List of values denied at this resource. Can only be set if no values are
-            # set for `allowed_values` and `all_values` is set to
-            # `ALL_VALUES_UNSPECIFIED`.
+        "deniedValues": [ # List of values denied at this resource. Can only be set if `all_values`
+            # is set to `ALL_VALUES_UNSPECIFIED`.
           "A String",
         ],
       },
@@ -1751,9 +1967,10 @@ Args:
         "enforced": True or False, # If `true`, then the `Policy` is enforced. If `false`, then any
             # configuration is acceptable.
             #
-            # Suppose you have a `Constraint` `constraints/compute.disableSerialPortAccess`
-            # with `constraint_default` set to `ALLOW`. A `Policy` for that
-            # `Constraint` exhibits the following behavior:
+            # Suppose you have a `Constraint`
+            # `constraints/compute.disableSerialPortAccess` with `constraint_default`
+            # set to `ALLOW`. A `Policy` for that `Constraint` exhibits the following
+            # behavior:
             #   - If the `Policy` at this resource has enforced set to `false`, serial
             #     port connection attempts will be allowed.
             #   - If the `Policy` at this resource has enforced set to `true`, serial
@@ -1792,7 +2009,6 @@ Args:
             # The constraint at `projects/bar` is not enforced, because
             # `constraint_default` for the `Constraint` is `ALLOW`.
       },
-      "version": 42, # Version of the `Policy`. Default version is 0;
       "etag": "A String", # An opaque tag indicating the current version of the `Policy`, used for
           # concurrency control.
           #
@@ -1825,6 +2041,7 @@ Returns:
         # server, not specified by the caller, and represents the last time a call to
         # `SetOrgPolicy` was made for that `Policy`. Any value set by the client will
         # be ignored.
+    "version": 42, # Version of the `Policy`. Default version is 0;
     "constraint": "A String", # The name of the `Constraint` the `Policy` is configuring, for example,
         # `constraints/serviceuser.services`.
         #
@@ -1846,17 +2063,27 @@ Returns:
     "listPolicy": { # Used in `policy_type` to specify how `list_policy` behaves at this # List of values either allowed or disallowed.
         # resource.
         #
-        # A `ListPolicy` can define specific values that are allowed or denied by
-        # setting either the `allowed_values` or `denied_values` fields. It can also
-        # be used to allow or deny all values, by setting the `all_values` field. If
-        # `all_values` is `ALL_VALUES_UNSPECIFIED`, exactly one of `allowed_values`
-        # or `denied_values` must be set (attempting to set both or neither will
-        # result in a failed request). If `all_values` is set to either `ALLOW` or
-        # `DENY`, `allowed_values` and `denied_values` must be unset.
+        # `ListPolicy` can define specific values and subtrees of Cloud Resource
+        # Manager resource hierarchy (`Organizations`, `Folders`, `Projects`) that
+        # are allowed or denied by setting the `allowed_values` and `denied_values`
+        # fields. This is achieved by using the `under:` and optional `is:` prefixes.
+        # The `under:` prefix is used to denote resource subtree values.
+        # The `is:` prefix is used to denote specific values, and is required only
+        # if the value contains a ":". Values prefixed with "is:" are treated the
+        # same as values with no prefix.
+        # Ancestry subtrees must be in one of the following formats:
+        #     - “projects/<project-id>”, e.g. “projects/tokyo-rain-123”
+        #     - “folders/<folder-id>”, e.g. “folders/1234”
+        #     - “organizations/<organization-id>”, e.g. “organizations/1234”
+        # The `supports_under` field of the associated `Constraint`  defines whether
+        # ancestry prefixes can be used. You can set `allowed_values` and
+        # `denied_values` in the same `Policy` if `all_values` is
+        # `ALL_VALUES_UNSPECIFIED`. `ALLOW` or `DENY` are used to allow or deny all
+        # values. If `all_values` is set to either `ALLOW` or `DENY`,
+        # `allowed_values` and `denied_values` must be unset.
       "allValues": "A String", # The policy all_values state.
-      "allowedValues": [ # List of values allowed  at this resource. an only be set if no values are
-          # set for `denied_values` and `all_values` is set to
-          # `ALL_VALUES_UNSPECIFIED`.
+      "allowedValues": [ # List of values allowed  at this resource. Can only be set if `all_values`
+          # is set to `ALL_VALUES_UNSPECIFIED`.
         "A String",
       ],
       "inheritFromParent": True or False, # Determines the inheritance behavior for this `Policy`.
@@ -1883,12 +2110,13 @@ Returns:
           # `inherit_from_parent` set to `false` and field all_values set to DENY,
           # then an attempt to activate any API will be denied.
           #
-          # The following examples demonstrate different possible layerings:
+          # The following examples demonstrate different possible layerings for
+          # `projects/bar` parented by `organizations/foo`:
           #
           # Example 1 (no inherited values):
           #   `organizations/foo` has a `Policy` with values:
           #     {allowed_values: “E1” allowed_values:”E2”}
-          #   ``projects/bar`` has `inherit_from_parent` `false` and values:
+          #   `projects/bar` has `inherit_from_parent` `false` and values:
           #     {allowed_values: "E3" allowed_values: "E4"}
           # The accepted values at `organizations/foo` are `E1`, `E2`.
           # The accepted values at `projects/bar` are `E3`, and `E4`.
@@ -1941,13 +2169,26 @@ Returns:
           #     {all: DENY}
           # The accepted values at `organizations/foo` are `E1`, E2`.
           # No value is accepted at `projects/bar`.
+          #
+          # Example 10 (allowed and denied subtrees of Resource Manager hierarchy):
+          # Given the following resource hierarchy
+          #   O1->{F1, F2}; F1->{P1}; F2->{P2, P3},
+          #   `organizations/foo` has a `Policy` with values:
+          #     {allowed_values: "under:organizations/O1"}
+          #   `projects/bar` has a `Policy` with:
+          #     {allowed_values: "under:projects/P3"}
+          #     {denied_values: "under:folders/F2"}
+          # The accepted values at `organizations/foo` are `organizations/O1`,
+          #   `folders/F1`, `folders/F2`, `projects/P1`, `projects/P2`,
+          #   `projects/P3`.
+          # The accepted values at `projects/bar` are `organizations/O1`,
+          #   `folders/F1`, `projects/P1`.
       "suggestedValue": "A String", # Optional. The Google Cloud Console will try to default to a configuration
           # that matches the value specified in this `Policy`. If `suggested_value`
           # is not set, it will inherit the value specified higher in the hierarchy,
           # unless `inherit_from_parent` is `false`.
-      "deniedValues": [ # List of values denied at this resource. Can only be set if no values are
-          # set for `allowed_values` and `all_values` is set to
-          # `ALL_VALUES_UNSPECIFIED`.
+      "deniedValues": [ # List of values denied at this resource. Can only be set if `all_values`
+          # is set to `ALL_VALUES_UNSPECIFIED`.
         "A String",
       ],
     },
@@ -1956,9 +2197,10 @@ Returns:
       "enforced": True or False, # If `true`, then the `Policy` is enforced. If `false`, then any
           # configuration is acceptable.
           #
-          # Suppose you have a `Constraint` `constraints/compute.disableSerialPortAccess`
-          # with `constraint_default` set to `ALLOW`. A `Policy` for that
-          # `Constraint` exhibits the following behavior:
+          # Suppose you have a `Constraint`
+          # `constraints/compute.disableSerialPortAccess` with `constraint_default`
+          # set to `ALLOW`. A `Policy` for that `Constraint` exhibits the following
+          # behavior:
           #   - If the `Policy` at this resource has enforced set to `false`, serial
           #     port connection attempts will be allowed.
           #   - If the `Policy` at this resource has enforced set to `true`, serial
@@ -1997,7 +2239,6 @@ Returns:
           # The constraint at `projects/bar` is not enforced, because
           # `constraint_default` for the `Constraint` is `ALLOW`.
     },
-    "version": 42, # Version of the `Policy`. Default version is 0;
     "etag": "A String", # An opaque tag indicating the current version of the `Policy`, used for
         # concurrency control.
         #
@@ -2021,6 +2262,8 @@ Returns:
   <pre>Returns permissions that a caller has on the specified Organization.
 The `resource` field should be the organization's resource name,
 e.g. "organizations/123".
+
+There are no permissions required for making this API call.
 
 Args:
   resource: string, REQUIRED: The resource for which the policy detail is being requested.

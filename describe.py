@@ -335,7 +335,8 @@ def document_collection_recursive(resource, path, root_discovery, discovery):
   for name in dir(resource):
     if (not name.startswith('_')
         and callable(getattr(resource, name))
-        and hasattr(getattr(resource, name), '__is_resource__')):
+        and hasattr(getattr(resource, name), '__is_resource__')
+        and discovery != {}):
       dname = name.rsplit('_')[0]
       collection = getattr(resource, name)()
       document_collection_recursive(collection, path + name + '.', root_discovery,

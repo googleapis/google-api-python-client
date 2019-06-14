@@ -72,7 +72,7 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="dataflow_v1b3.html">Google Dataflow API</a> . <a href="dataflow_v1b3.projects.html">projects</a> . <a href="dataflow_v1b3.projects.locations.html">locations</a> . <a href="dataflow_v1b3.projects.locations.jobs.html">jobs</a> . <a href="dataflow_v1b3.projects.locations.jobs.workItems.html">workItems</a></h1>
+<h1><a href="dataflow_v1b3.html">Dataflow API</a> . <a href="dataflow_v1b3.projects.html">projects</a> . <a href="dataflow_v1b3.projects.locations.html">locations</a> . <a href="dataflow_v1b3.projects.locations.jobs.html">jobs</a> . <a href="dataflow_v1b3.projects.locations.jobs.workItems.html">workItems</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="#lease">lease(projectId, location, jobId, body, x__xgafv=None)</a></code></p>
@@ -87,7 +87,9 @@ h1, h2, h3 {
 
 Args:
   projectId: string, Identifies the project this worker belongs to. (required)
-  location: string, The location which contains the WorkItem's job. (required)
+  location: string, The [regional endpoint]
+(https://cloud.google.com/dataflow/docs/concepts/regional-endpoints) that
+contains the WorkItem's job. (required)
   jobId: string, Identifies the workflow job this worker belongs to. (required)
   body: object, The request body. (required)
     The object takes the form of:
@@ -100,11 +102,16 @@ Args:
         # capabilities.
       "A String",
     ],
+    "currentWorkerTime": "A String", # The current timestamp at the worker.
     "requestedLeaseDuration": "A String", # The initial lease period.
     "workerId": "A String", # Identifies the worker leasing work -- typically the ID of the
         # virtual machine running the worker.
-    "currentWorkerTime": "A String", # The current timestamp at the worker.
-    "location": "A String", # The location which contains the WorkItem's job.
+    "unifiedWorkerRequest": { # Untranslated bag-of-bytes WorkRequest from UnifiedWorker.
+      "a_key": "", # Properties of the object. Contains field @type with type URL.
+    },
+    "location": "A String", # The [regional endpoint]
+        # (https://cloud.google.com/dataflow/docs/concepts/regional-endpoints) that
+        # contains the WorkItem's job.
   }
 
   x__xgafv: string, V1 error format.
@@ -119,7 +126,26 @@ Returns:
     "workItems": [ # A list of the leased WorkItems.
       { # WorkItem represents basic information about a WorkItem to be executed
           # in the cloud.
-        "reportStatusInterval": "A String", # Recommended reporting interval.
+        "packages": [ # Any required packages that need to be fetched in order to execute
+            # this WorkItem.
+          { # The packages that must be installed in order for a worker to run the
+              # steps of the Cloud Dataflow job that will be assigned to its worker
+              # pool.
+              #
+              # This is the mechanism by which the Cloud Dataflow SDK causes code to
+              # be loaded onto the workers. For example, the Cloud Dataflow Java SDK
+              # might use this to install jars containing the user's code and all of the
+              # various dependencies (libraries, data files, etc.) required in order
+              # for that code to run.
+            "location": "A String", # The resource to read the package from. The supported resource type is:
+                #
+                # Google Cloud Storage:
+                #
+                #   storage.googleapis.com/{bucket}
+                #   bucket.storage.googleapis.com/
+            "name": "A String", # The name of the package.
+          },
+        ],
         "leaseExpireTime": "A String", # Time when the lease on this Work will expire.
         "seqMapTask": { # Describes a particular function to invoke. # Additional information for SeqMapTask WorkItems.
           "inputs": [ # Information about each of the inputs.
@@ -189,6 +215,14 @@ Returns:
                   # this should correspond to the tag of some MultiOutputInfo.
             },
           ],
+          "name": "A String", # The user-provided name of the SeqDo operation.
+          "stageName": "A String", # System-defined name of the stage containing the SeqDo operation.
+              # Unique across the workflow.
+          "systemName": "A String", # System-defined name of the SeqDo operation.
+              # Unique across the workflow.
+          "userFn": { # The user function to invoke.
+            "a_key": "", # Properties of the object.
+          },
           "outputInfos": [ # Information about each of the outputs.
             { # Information about an output of a SeqMapTask.
               "tag": "A String", # The id of the TupleTag the user code will tag the output value by.
@@ -202,147 +236,38 @@ Returns:
               },
             },
           ],
-          "stageName": "A String", # System-defined name of the stage containing the SeqDo operation.
-              # Unique across the workflow.
-          "systemName": "A String", # System-defined name of the SeqDo operation.
-              # Unique across the workflow.
-          "userFn": { # The user function to invoke.
-            "a_key": "", # Properties of the object.
-          },
-          "name": "A String", # The user-provided name of the SeqDo operation.
         },
         "projectId": "A String", # Identifies the cloud project this WorkItem belongs to.
-        "sourceOperationTask": { # A work item that represents the different operations that can be # Additional information for source operation WorkItems.
-            # performed on a user-defined Source specification.
-          "getMetadata": { # A request to compute the SourceMetadata of a Source. # Information about a request to get metadata about a source.
-            "source": { # A source that records can be read and decoded from. # Specification of the source whose metadata should be computed.
-              "codec": { # The codec to use to decode data read from the source.
-                "a_key": "", # Properties of the object.
-              },
-              "baseSpecs": [ # While splitting, sources may specify the produced bundles
-                  # as differences against another source, in order to save backend-side
-                  # memory and allow bigger jobs. For details, see SourceSplitRequest.
-                  # To support this use case, the full set of parameters of the source
-                  # is logically obtained by taking the latest explicitly specified value
-                  # of each parameter in the order:
-                  # base_specs (later items win), spec (overrides anything in base_specs).
-                {
-                  "a_key": "", # Properties of the object.
+        "streamingComputationTask": { # A task which describes what action should be performed for the specified # Additional information for StreamingComputationTask WorkItems.
+            # streaming computation ranges.
+          "taskType": "A String", # A type of streaming computation task.
+          "computationRanges": [ # Contains ranges of a streaming computation this task should apply to.
+            { # Describes full or partial data disk assignment information of the computation
+                # ranges.
+              "rangeAssignments": [ # Data disk assignments for ranges from this computation.
+                { # Data disk assignment information for a specific key-range of a sharded
+                    # computation.
+                    # Currently we only support UTF-8 character splits to simplify encoding into
+                    # JSON.
+                  "start": "A String", # The start (inclusive) of the key range.
+                  "end": "A String", # The end (exclusive) of the key range.
+                  "dataDisk": "A String", # The name of the data disk where data for this range is stored.
+                      # This name is local to the Google Cloud Platform project and uniquely
+                      # identifies the disk within that project, for example
+                      # "myproject-1014-104817-4c2-harness-0-disk-1".
                 },
               ],
-              "spec": { # The source to read from, plus its parameters.
-                "a_key": "", # Properties of the object.
-              },
-              "doesNotNeedSplitting": True or False, # Setting this value to true hints to the framework that the source
-                  # doesn't need splitting, and using SourceSplitRequest on it would
-                  # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
-                  #
-                  # E.g. a file splitter may set this to true when splitting a single file
-                  # into a set of byte ranges of appropriate size, and set this
-                  # to false when splitting a filepattern into individual files.
-                  # However, for efficiency, a file splitter may decide to produce
-                  # file subranges directly from the filepattern to avoid a splitting
-                  # round-trip.
-                  #
-                  # See SourceSplitRequest for an overview of the splitting process.
-                  #
-                  # This field is meaningful only in the Source objects populated
-                  # by the user (e.g. when filling in a DerivedSource).
-                  # Source objects supplied by the framework to the user don't have
-                  # this field populated.
-              "metadata": { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
-                  # avoiding a SourceGetMetadataOperation roundtrip
-                  # (see SourceOperationRequest).
-                  #
-                  # This field is meaningful only in the Source objects populated
-                  # by the user (e.g. when filling in a DerivedSource).
-                  # Source objects supplied by the framework to the user don't have
-                  # this field populated.
-                  # and tuning the pipeline, etc.
-                "infinite": True or False, # Specifies that the size of this source is known to be infinite
-                    # (this is a streaming source).
-                "estimatedSizeBytes": "A String", # An estimate of the total size (in bytes) of the data that would be
-                    # read from this source.  This estimate is in terms of external storage
-                    # size, before any decompression or other processing done by the reader.
-                "producesSortedKeys": True or False, # Whether this source is known to produce key/value pairs with
-                    # the (encoded) keys in lexicographically sorted order.
-              },
+              "computationId": "A String", # The ID of the computation.
             },
-          },
-          "split": { # Represents the operation to split a high-level Source specification # Information about a request to split a source.
-              # into bundles (parts for parallel processing).
-              #
-              # At a high level, splitting of a source into bundles happens as follows:
-              # SourceSplitRequest is applied to the source. If it returns
-              # SOURCE_SPLIT_OUTCOME_USE_CURRENT, no further splitting happens and the source
-              # is used "as is". Otherwise, splitting is applied recursively to each
-              # produced DerivedSource.
-              #
-              # As an optimization, for any Source, if its does_not_need_splitting is
-              # true, the framework assumes that splitting this source would return
-              # SOURCE_SPLIT_OUTCOME_USE_CURRENT, and doesn't initiate a SourceSplitRequest.
-              # This applies both to the initial source being split and to bundles
-              # produced from it.
-            "source": { # A source that records can be read and decoded from. # Specification of the source to be split.
-              "codec": { # The codec to use to decode data read from the source.
-                "a_key": "", # Properties of the object.
-              },
-              "baseSpecs": [ # While splitting, sources may specify the produced bundles
-                  # as differences against another source, in order to save backend-side
-                  # memory and allow bigger jobs. For details, see SourceSplitRequest.
-                  # To support this use case, the full set of parameters of the source
-                  # is logically obtained by taking the latest explicitly specified value
-                  # of each parameter in the order:
-                  # base_specs (later items win), spec (overrides anything in base_specs).
-                {
-                  "a_key": "", # Properties of the object.
-                },
-              ],
-              "spec": { # The source to read from, plus its parameters.
-                "a_key": "", # Properties of the object.
-              },
-              "doesNotNeedSplitting": True or False, # Setting this value to true hints to the framework that the source
-                  # doesn't need splitting, and using SourceSplitRequest on it would
-                  # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
-                  #
-                  # E.g. a file splitter may set this to true when splitting a single file
-                  # into a set of byte ranges of appropriate size, and set this
-                  # to false when splitting a filepattern into individual files.
-                  # However, for efficiency, a file splitter may decide to produce
-                  # file subranges directly from the filepattern to avoid a splitting
-                  # round-trip.
-                  #
-                  # See SourceSplitRequest for an overview of the splitting process.
-                  #
-                  # This field is meaningful only in the Source objects populated
-                  # by the user (e.g. when filling in a DerivedSource).
-                  # Source objects supplied by the framework to the user don't have
-                  # this field populated.
-              "metadata": { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
-                  # avoiding a SourceGetMetadataOperation roundtrip
-                  # (see SourceOperationRequest).
-                  #
-                  # This field is meaningful only in the Source objects populated
-                  # by the user (e.g. when filling in a DerivedSource).
-                  # Source objects supplied by the framework to the user don't have
-                  # this field populated.
-                  # and tuning the pipeline, etc.
-                "infinite": True or False, # Specifies that the size of this source is known to be infinite
-                    # (this is a streaming source).
-                "estimatedSizeBytes": "A String", # An estimate of the total size (in bytes) of the data that would be
-                    # read from this source.  This estimate is in terms of external storage
-                    # size, before any decompression or other processing done by the reader.
-                "producesSortedKeys": True or False, # Whether this source is known to produce key/value pairs with
-                    # the (encoded) keys in lexicographically sorted order.
-              },
+          ],
+          "dataDisks": [ # Describes the set of data disks this task should apply to.
+            { # Describes mounted data disk.
+              "dataDisk": "A String", # The name of the data disk.
+                  # This name is local to the Google Cloud Platform project and uniquely
+                  # identifies the disk within that project, for example
+                  # "myproject-1014-104817-4c2-harness-0-disk-1".
             },
-            "options": { # Hints for splitting a Source into bundles (parts for parallel # Hints for tuning the splitting process.
-                # processing) using SourceSplitRequest.
-              "desiredShardSizeBytes": "A String", # DEPRECATED in favor of desired_bundle_size_bytes.
-              "desiredBundleSizeBytes": "A String", # The source should be split into a set of bundles where the estimated size
-                  # of each is approximately this many bytes.
-            },
-          },
+          ],
         },
         "initialReportIndex": "A String", # The initial index to use when reporting the status of the WorkItem.
         "mapTask": { # MapTask consists of an ordered set of instructions, each of which # Additional information for MapTask WorkItems.
@@ -353,6 +278,8 @@ Returns:
             # depends on its output.
           "systemName": "A String", # System-defined name of this MapTask.
               # Unique across the workflow.
+          "counterPrefix": "A String", # Counter prefix that can be used to prefix counters. Not currently used in
+              # Dataflow.
           "stageName": "A String", # System-defined name of the stage containing this MapTask.
               # Unique across the workflow.
           "instructions": [ # The instructions in the MapTask.
@@ -499,9 +426,8 @@ Returns:
                         # this should correspond to the tag of some MultiOutputInfo.
                   },
                 ],
-                "inputElementCodec": { # The codec to use for interpreting an element in the input PTable.
-                  "a_key": "", # Properties of the object.
-                },
+                "originalCombineValuesInputStoreName": "A String", # If this instruction includes a combining function this is the name of the
+                    # intermediate store between the GBK and the CombineValues.
                 "originalCombineValuesStepName": "A String", # If this instruction includes a combining function, this is the name of the
                     # CombineValues instruction lifted into this instruction.
                 "valueCombiningFn": { # The value combining function to invoke.
@@ -515,8 +441,9 @@ Returns:
                       # to the list of instructions in this input's instruction's
                       # containing MapTask.
                 },
-                "originalCombineValuesInputStoreName": "A String", # If this instruction includes a combining function this is the name of the
-                    # intermediate store between the GBK and the CombineValues.
+                "inputElementCodec": { # The codec to use for interpreting an element in the input PTable.
+                  "a_key": "", # Properties of the object.
+                },
               },
               "write": { # An instruction that writes records. # Additional information for Write instructions.
                   # Takes one input, produces no outputs.
@@ -646,8 +573,151 @@ Returns:
           ],
         },
         "jobId": "A String", # Identifies the workflow job this WorkItem belongs to.
-        "configuration": "A String", # Work item-specific configuration as an opaque blob.
+        "reportStatusInterval": "A String", # Recommended reporting interval.
+        "sourceOperationTask": { # A work item that represents the different operations that can be # Additional information for source operation WorkItems.
+            # performed on a user-defined Source specification.
+          "name": "A String", # User-provided name of the Read instruction for this source.
+          "stageName": "A String", # System-defined name of the stage containing the source operation.
+              # Unique across the workflow.
+          "getMetadata": { # A request to compute the SourceMetadata of a Source. # Information about a request to get metadata about a source.
+            "source": { # A source that records can be read and decoded from. # Specification of the source whose metadata should be computed.
+              "codec": { # The codec to use to decode data read from the source.
+                "a_key": "", # Properties of the object.
+              },
+              "baseSpecs": [ # While splitting, sources may specify the produced bundles
+                  # as differences against another source, in order to save backend-side
+                  # memory and allow bigger jobs. For details, see SourceSplitRequest.
+                  # To support this use case, the full set of parameters of the source
+                  # is logically obtained by taking the latest explicitly specified value
+                  # of each parameter in the order:
+                  # base_specs (later items win), spec (overrides anything in base_specs).
+                {
+                  "a_key": "", # Properties of the object.
+                },
+              ],
+              "spec": { # The source to read from, plus its parameters.
+                "a_key": "", # Properties of the object.
+              },
+              "doesNotNeedSplitting": True or False, # Setting this value to true hints to the framework that the source
+                  # doesn't need splitting, and using SourceSplitRequest on it would
+                  # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
+                  #
+                  # E.g. a file splitter may set this to true when splitting a single file
+                  # into a set of byte ranges of appropriate size, and set this
+                  # to false when splitting a filepattern into individual files.
+                  # However, for efficiency, a file splitter may decide to produce
+                  # file subranges directly from the filepattern to avoid a splitting
+                  # round-trip.
+                  #
+                  # See SourceSplitRequest for an overview of the splitting process.
+                  #
+                  # This field is meaningful only in the Source objects populated
+                  # by the user (e.g. when filling in a DerivedSource).
+                  # Source objects supplied by the framework to the user don't have
+                  # this field populated.
+              "metadata": { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
+                  # avoiding a SourceGetMetadataOperation roundtrip
+                  # (see SourceOperationRequest).
+                  #
+                  # This field is meaningful only in the Source objects populated
+                  # by the user (e.g. when filling in a DerivedSource).
+                  # Source objects supplied by the framework to the user don't have
+                  # this field populated.
+                  # and tuning the pipeline, etc.
+                "infinite": True or False, # Specifies that the size of this source is known to be infinite
+                    # (this is a streaming source).
+                "estimatedSizeBytes": "A String", # An estimate of the total size (in bytes) of the data that would be
+                    # read from this source.  This estimate is in terms of external storage
+                    # size, before any decompression or other processing done by the reader.
+                "producesSortedKeys": True or False, # Whether this source is known to produce key/value pairs with
+                    # the (encoded) keys in lexicographically sorted order.
+              },
+            },
+          },
+          "systemName": "A String", # System-defined name of the Read instruction for this source.
+              # Unique across the workflow.
+          "split": { # Represents the operation to split a high-level Source specification # Information about a request to split a source.
+              # into bundles (parts for parallel processing).
+              #
+              # At a high level, splitting of a source into bundles happens as follows:
+              # SourceSplitRequest is applied to the source. If it returns
+              # SOURCE_SPLIT_OUTCOME_USE_CURRENT, no further splitting happens and the source
+              # is used "as is". Otherwise, splitting is applied recursively to each
+              # produced DerivedSource.
+              #
+              # As an optimization, for any Source, if its does_not_need_splitting is
+              # true, the framework assumes that splitting this source would return
+              # SOURCE_SPLIT_OUTCOME_USE_CURRENT, and doesn't initiate a SourceSplitRequest.
+              # This applies both to the initial source being split and to bundles
+              # produced from it.
+            "source": { # A source that records can be read and decoded from. # Specification of the source to be split.
+              "codec": { # The codec to use to decode data read from the source.
+                "a_key": "", # Properties of the object.
+              },
+              "baseSpecs": [ # While splitting, sources may specify the produced bundles
+                  # as differences against another source, in order to save backend-side
+                  # memory and allow bigger jobs. For details, see SourceSplitRequest.
+                  # To support this use case, the full set of parameters of the source
+                  # is logically obtained by taking the latest explicitly specified value
+                  # of each parameter in the order:
+                  # base_specs (later items win), spec (overrides anything in base_specs).
+                {
+                  "a_key": "", # Properties of the object.
+                },
+              ],
+              "spec": { # The source to read from, plus its parameters.
+                "a_key": "", # Properties of the object.
+              },
+              "doesNotNeedSplitting": True or False, # Setting this value to true hints to the framework that the source
+                  # doesn't need splitting, and using SourceSplitRequest on it would
+                  # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
+                  #
+                  # E.g. a file splitter may set this to true when splitting a single file
+                  # into a set of byte ranges of appropriate size, and set this
+                  # to false when splitting a filepattern into individual files.
+                  # However, for efficiency, a file splitter may decide to produce
+                  # file subranges directly from the filepattern to avoid a splitting
+                  # round-trip.
+                  #
+                  # See SourceSplitRequest for an overview of the splitting process.
+                  #
+                  # This field is meaningful only in the Source objects populated
+                  # by the user (e.g. when filling in a DerivedSource).
+                  # Source objects supplied by the framework to the user don't have
+                  # this field populated.
+              "metadata": { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
+                  # avoiding a SourceGetMetadataOperation roundtrip
+                  # (see SourceOperationRequest).
+                  #
+                  # This field is meaningful only in the Source objects populated
+                  # by the user (e.g. when filling in a DerivedSource).
+                  # Source objects supplied by the framework to the user don't have
+                  # this field populated.
+                  # and tuning the pipeline, etc.
+                "infinite": True or False, # Specifies that the size of this source is known to be infinite
+                    # (this is a streaming source).
+                "estimatedSizeBytes": "A String", # An estimate of the total size (in bytes) of the data that would be
+                    # read from this source.  This estimate is in terms of external storage
+                    # size, before any decompression or other processing done by the reader.
+                "producesSortedKeys": True or False, # Whether this source is known to produce key/value pairs with
+                    # the (encoded) keys in lexicographically sorted order.
+              },
+            },
+            "options": { # Hints for splitting a Source into bundles (parts for parallel # Hints for tuning the splitting process.
+                # processing) using SourceSplitRequest.
+              "desiredShardSizeBytes": "A String", # DEPRECATED in favor of desired_bundle_size_bytes.
+              "desiredBundleSizeBytes": "A String", # The source should be split into a set of bundles where the estimated size
+                  # of each is approximately this many bytes.
+            },
+          },
+          "originalName": "A String", # System-defined name for the Read instruction for this source
+              # in the original workflow graph.
+        },
         "streamingSetupTask": { # A task which initializes part of a streaming Dataflow job. # Additional information for StreamingSetupTask WorkItems.
+          "snapshotConfig": { # Streaming appliance snapshot configuration. # Configures streaming appliance snapshot.
+            "snapshotId": "A String", # If set, indicates the snapshot id for the snapshot being performed.
+            "importStateEndpoint": "A String", # Indicates which endpoint is used to import appliance state.
+          },
           "workerHarnessPort": 42, # The TCP port used by the worker to communicate with the Dataflow
               # worker harness.
           "drain": True or False, # The user has requested drain.
@@ -759,16 +829,15 @@ Returns:
                 ],
               },
             ],
-            "forwardingKeyBits": 42, # The size (in bits) of keys that will be assigned to source messages.
+            "persistentStateVersion": 42, # Version number for persistent state.
             "userStageToComputationNameMap": { # Maps user stage names to stable computation names.
               "a_key": "A String",
             },
-            "persistentStateVersion": 42, # Version number for persistent state.
+            "forwardingKeyBits": 42, # The size (in bits) of keys that will be assigned to source messages.
           },
           "receiveWorkPort": 42, # The TCP port on which the worker should listen for messages from
               # other streaming computation workers.
         },
-        "id": "A String", # Identifies this WorkItem.
         "streamingConfigTask": { # A task that carries configuration information for streaming computations. # Additional information for StreamingConfigTask WorkItems.
           "userStepToStateFamilyNameMap": { # Map from user step names to state families.
             "a_key": "A String",
@@ -778,6 +847,10 @@ Returns:
               # specified.
           "streamingComputationConfigs": [ # Set of computation configuration information.
             { # Configuration information for a single streaming computation.
+              "transformUserNameToStateFamily": { # Map from user name of stateful transforms in this stage to their state
+                  # family.
+                "a_key": "A String",
+              },
               "computationId": "A String", # Unique identifier for this computation.
               "systemName": "A String", # System defined name for this computation.
               "stageName": "A String", # Stage name of this computation.
@@ -925,9 +998,8 @@ Returns:
                             # this should correspond to the tag of some MultiOutputInfo.
                       },
                     ],
-                    "inputElementCodec": { # The codec to use for interpreting an element in the input PTable.
-                      "a_key": "", # Properties of the object.
-                    },
+                    "originalCombineValuesInputStoreName": "A String", # If this instruction includes a combining function this is the name of the
+                        # intermediate store between the GBK and the CombineValues.
                     "originalCombineValuesStepName": "A String", # If this instruction includes a combining function, this is the name of the
                         # CombineValues instruction lifted into this instruction.
                     "valueCombiningFn": { # The value combining function to invoke.
@@ -941,8 +1013,9 @@ Returns:
                           # to the list of instructions in this input's instruction's
                           # containing MapTask.
                     },
-                    "originalCombineValuesInputStoreName": "A String", # If this instruction includes a combining function this is the name of the
-                        # intermediate store between the GBK and the CombineValues.
+                    "inputElementCodec": { # The codec to use for interpreting an element in the input PTable.
+                      "a_key": "", # Properties of the object.
+                    },
                   },
                   "write": { # An instruction that writes records. # Additional information for Write instructions.
                       # Takes one input, produces no outputs.
@@ -1072,67 +1145,22 @@ Returns:
               ],
             },
           ],
+          "maxWorkItemCommitBytes": "A String", # Maximum size for work item commit supported windmill storage layer.
           "windmillServiceEndpoint": "A String", # If present, the worker must use this endpoint to communicate with Windmill
               # Service dispatchers, otherwise the worker must continue to use whatever
               # endpoint it had been using.
         },
-        "packages": [ # Any required packages that need to be fetched in order to execute
-            # this WorkItem.
-          { # The packages that must be installed in order for a worker to run the
-              # steps of the Cloud Dataflow job that will be assigned to its worker
-              # pool.
-              #
-              # This is the mechanism by which the Cloud Dataflow SDK causes code to
-              # be loaded onto the workers. For example, the Cloud Dataflow Java SDK
-              # might use this to install jars containing the user's code and all of the
-              # various dependencies (libraries, data files, etc.) required in order
-              # for that code to run.
-            "location": "A String", # The resource to read the package from. The supported resource type is:
-                #
-                # Google Cloud Storage:
-                #
-                #   storage.googleapis.com/{bucket}
-                #   bucket.storage.googleapis.com/
-            "name": "A String", # The name of the package.
-          },
-        ],
+        "configuration": "A String", # Work item-specific configuration as an opaque blob.
         "shellTask": { # A task which consists of a shell command for the worker to execute. # Additional information for ShellTask WorkItems.
           "command": "A String", # The shell command to run.
           "exitCode": 42, # Exit code for the task.
         },
-        "streamingComputationTask": { # A task which describes what action should be performed for the specified # Additional information for StreamingComputationTask WorkItems.
-            # streaming computation ranges.
-          "taskType": "A String", # A type of streaming computation task.
-          "computationRanges": [ # Contains ranges of a streaming computation this task should apply to.
-            { # Describes full or partial data disk assignment information of the computation
-                # ranges.
-              "computationId": "A String", # The ID of the computation.
-              "rangeAssignments": [ # Data disk assignments for ranges from this computation.
-                { # Data disk assignment information for a specific key-range of a sharded
-                    # computation.
-                    # Currently we only support UTF-8 character splits to simplify encoding into
-                    # JSON.
-                  "start": "A String", # The start (inclusive) of the key range.
-                  "end": "A String", # The end (exclusive) of the key range.
-                  "dataDisk": "A String", # The name of the data disk where data for this range is stored.
-                      # This name is local to the Google Cloud Platform project and uniquely
-                      # identifies the disk within that project, for example
-                      # "myproject-1014-104817-4c2-harness-0-disk-1".
-                },
-              ],
-            },
-          ],
-          "dataDisks": [ # Describes the set of data disks this task should apply to.
-            { # Describes mounted data disk.
-              "dataDisk": "A String", # The name of the data disk.
-                  # This name is local to the Google Cloud Platform project and uniquely
-                  # identifies the disk within that project, for example
-                  # "myproject-1014-104817-4c2-harness-0-disk-1".
-            },
-          ],
-        },
+        "id": "A String", # Identifies this WorkItem.
       },
     ],
+    "unifiedWorkerResponse": { # Untranslated bag-of-bytes WorkResponse for UnifiedWorker.
+      "a_key": "", # Properties of the object. Contains field @type with type URL.
+    },
   }</pre>
 </div>
 
@@ -1142,7 +1170,9 @@ Returns:
 
 Args:
   projectId: string, The project which owns the WorkItem's job. (required)
-  location: string, The location which contains the WorkItem's job. (required)
+  location: string, The [regional endpoint]
+(https://cloud.google.com/dataflow/docs/concepts/regional-endpoints) that
+contains the WorkItem's job. (required)
   jobId: string, The job which the WorkItem is part of. (required)
   body: object, The request body. (required)
     The object takes the form of:
@@ -1152,6 +1182,9 @@ Args:
         # does not match the ID of the worker which the Dataflow service
         # believes currently has the lease on the WorkItem, the report
         # will be dropped (with an error response).
+    "unifiedWorkerRequest": { # Untranslated bag-of-bytes WorkProgressUpdateRequest from UnifiedWorker.
+      "a_key": "", # Properties of the object. Contains field @type with type URL.
+    },
     "currentWorkerTime": "A String", # The current timestamp at the worker.
     "workItemStatuses": [ # The order is unimportant, except that the order of the
         # WorkItemServiceState messages in the ReportWorkItemStatusResponse
@@ -1172,17 +1205,17 @@ Args:
         "errors": [ # Specifies errors which occurred during processing.  If errors are
             # provided, and completed = true, then the WorkItem is considered
             # to have failed.
-          { # The `Status` type defines a logical error model that is suitable for different
-              # programming environments, including REST APIs and RPC APIs. It is used by
-              # [gRPC](https://github.com/grpc). The error model is designed to be:
+          { # The `Status` type defines a logical error model that is suitable for
+              # different programming environments, including REST APIs and RPC APIs. It is
+              # used by [gRPC](https://github.com/grpc). The error model is designed to be:
               #
               # - Simple to use and understand for most users
               # - Flexible enough to meet unexpected needs
               #
               # # Overview
               #
-              # The `Status` message contains three pieces of data: error code, error message,
-              # and error details. The error code should be an enum value of
+              # The `Status` message contains three pieces of data: error code, error
+              # message, and error details. The error code should be an enum value of
               # google.rpc.Code, but it may accept additional error codes if needed.  The
               # error message should be a developer-facing English message that helps
               # developers *understand* and *resolve* the error. If a localized user-facing
@@ -1228,8 +1261,8 @@ Args:
                 # user-facing error message should be localized and sent in the
                 # google.rpc.Status.details field, or localized by the client.
             "code": 42, # The status code, which should be an enum value of google.rpc.Code.
-            "details": [ # A list of messages that carry the error details.  There will be a
-                # common set of message types for APIs to use.
+            "details": [ # A list of messages that carry the error details.  There is a common set of
+                # message types for APIs to use.
               {
                 "a_key": "", # Properties of the object. Contains field @type with type URL.
               },
@@ -1546,7 +1579,7 @@ Args:
               },
             },
           },
-          "residual": { # DEPRECATED in favor of DerivedSource. # DEPRECATED
+          "primary": { # DEPRECATED in favor of DerivedSource. # DEPRECATED
             "derivationMode": "A String", # DEPRECATED
             "source": { # A source that records can be read and decoded from. # DEPRECATED
               "codec": { # The codec to use to decode data read from the source.
@@ -1602,7 +1635,7 @@ Args:
               },
             },
           },
-          "primary": { # DEPRECATED in favor of DerivedSource. # DEPRECATED
+          "residual": { # DEPRECATED in favor of DerivedSource. # DEPRECATED
             "derivationMode": "A String", # DEPRECATED
             "source": { # A source that records can be read and decoded from. # DEPRECATED
               "codec": { # The codec to use to decode data read from the source.
@@ -1787,6 +1820,7 @@ Args:
             },
           },
         },
+        "totalThrottlerWaitTimeSeconds": 3.14, # Total time the worker spent being throttled by external systems.
         "counterUpdates": [ # Worker output counters for this WorkItem.
           { # An update to a Counter sent from a worker.
             "floatingPointList": { # A metric value representing a list of floating point numbers. # List of floating point numbers, for Set.
@@ -1824,6 +1858,14 @@ Args:
             "shortId": "A String", # The service-generated short identifier for this counter.
                 # The short_id -> (name, metadata) mapping is constant for the lifetime of
                 # a job.
+            "integerGauge": { # A metric value representing temporal values of a variable. # Gauge data
+              "timestamp": "A String", # The time at which this value was measured. Measured as msecs from epoch.
+              "value": { # A representation of an int64, n, that is immune to precision loss when # The value of the variable represented by this gauge.
+                  # encoded in JSON.
+                "lowBits": 42, # The low order bits: n & 0xffffffff.
+                "highBits": 42, # The high order bits, including the sign: n >> 32.
+              },
+            },
             "floatingPointMean": { # A representation of a floating point mean metric contribution. # Floating point mean aggregation value for Mean.
               "count": { # A representation of an int64, n, that is immune to precision loss when # The number of values being aggregated.
                   # encoded in JSON.
@@ -1843,17 +1885,26 @@ Args:
                     # context of the other fields.
                     # Required.
                 "workerId": "A String", # ID of a particular worker.
-                "originalStepName": "A String", # System generated name of the original step in the user's graph, before
-                    # optimization.
+                "inputIndex": 42, # Index of an input collection that's being read from/written to as a side
+                    # input.
+                    # The index identifies a step's side inputs starting by 1 (e.g. the first
+                    # side input has input_index 1, the third has input_index 3).
+                    # Side inputs are identified by a pair of (original_step_name, input_index).
+                    # This field helps uniquely identify them.
                 "originNamespace": "A String", # A string containing a more specific namespace of the counter's origin.
+                "originalRequestingStepName": "A String", # The step name requesting an operation, such as GBK.
+                    # I.e. the ParDo causing a read/write from shuffle to occur, or a
+                    # read from side inputs.
                 "portion": "A String", # Portion of this counter, either key or value.
                 "componentStepName": "A String", # Name of the optimized step being executed by the workers.
+                "originalStepName": "A String", # System generated name of the original step in the user's graph, before
+                    # optimization.
               },
               "metadata": { # CounterMetadata includes all static non-name non-value counter attributes. # Metadata associated with a counter
                 "standardUnits": "A String", # System defined Units, see above enum.
                 "kind": "A String", # Counter aggregation kind.
-                "otherUnits": "A String", # A string referring to the unit type.
                 "description": "A String", # Human-readable description of the counter semantics.
+                "otherUnits": "A String", # A string referring to the unit type.
               },
             },
             "nameAndKind": { # Basic metadata about a counter. # Counter name and aggregation type.
@@ -1887,21 +1938,24 @@ Args:
                 "lowBits": 42, # The low order bits: n & 0xffffffff.
                 "highBits": 42, # The high order bits, including the sign: n >> 32.
               },
+              "histogram": { # Histogram of value counts for a distribution. # (Optional) Histogram of value counts for the distribution.
+                  #
+                  # Buckets have an inclusive lower bound and exclusive upper bound and use
+                  # "1,2,5 bucketing": The first bucket range is from [0,1) and all subsequent
+                  # bucket boundaries are powers of ten multiplied by 1, 2, or 5. Thus, bucket
+                  # boundaries are 0, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, ...
+                  # Negative values are not supported.
+                "firstBucketOffset": 42, # Starting index of first stored bucket. The non-inclusive upper-bound of
+                    # the ith bucket is given by:
+                    #   pow(10,(i-first_bucket_offset)/3) * (1,2,5)[(i-first_bucket_offset)%3]
+                "bucketCounts": [ # Counts of values in each bucket. For efficiency, prefix and trailing
+                    # buckets with count = 0 are elided. Buckets can store the full range of
+                    # values of an unsigned long, with ULLONG_MAX falling into the 59th bucket
+                    # with range [1e19, 2e19).
+                  "A String",
+                ],
+              },
               "sumOfSquares": 3.14, # Use a double since the sum of squares is likely to overflow int64.
-              "logBuckets": [ # (Optional) Logarithmic histogram of values.
-                  # Each log may be in no more than one bucket. Order does not matter.
-                { # Bucket of values for Distribution's logarithmic histogram.
-                  "count": "A String", # Number of values in this bucket.
-                  "log": 42, # floor(log2(value)); defined to be zero for nonpositive values.
-                      #   log(-1) = 0
-                      #   log(0) = 0
-                      #   log(1) = 0
-                      #   log(2) = 1
-                      #   log(3) = 1
-                      #   log(4) = 2
-                      #   log(5) = 2
-                },
-              ],
             },
             "stringList": { # A metric value representing a list of strings. # List of strings, for Set.
               "elements": [ # Elements of the list.
@@ -1937,9 +1991,12 @@ Args:
                 # This holds the count of the aggregated values and is used in combination
                 # with mean_sum above to obtain the actual mean aggregate value.
                 # The only possible value type is Long.
-            "updateTime": "A String", # Timestamp associated with the metric value. Optional when workers are
-                # reporting work progress; it will be filled in responses from the
-                # metrics API.
+            "kind": "A String", # Metric aggregation kind.  The possible metric aggregation kinds are
+                # "Sum", "Max", "Min", "Mean", "Set", "And", "Or", and "Distribution".
+                # The specified aggregation kind is case-insensitive.
+                #
+                # If omitted, this is not an aggregated value but instead
+                # a single metric sample value.
             "set": "", # Worker-computed aggregate value for the "Set" aggregation kind.  The only
                 # possible value type is a list of Values whose type can be Long, Double,
                 # or String, according to the metric's type.  All Values in the list must
@@ -1958,25 +2015,25 @@ Args:
                 "a_key": "A String",
               },
             },
-            "cumulative": True or False, # True if this metric is reported as the total cumulative aggregate
-                # value accumulated since the worker started working on this WorkItem.
-                # By default this is false, indicating that this metric is reported
-                # as a delta that is not associated with any WorkItem.
-            "kind": "A String", # Metric aggregation kind.  The possible metric aggregation kinds are
-                # "Sum", "Max", "Min", "Mean", "Set", "And", "Or", and "Distribution".
-                # The specified aggregation kind is case-insensitive.
-                #
-                # If omitted, this is not an aggregated value but instead
-                # a single metric sample value.
-            "scalar": "", # Worker-computed aggregate value for aggregation kinds "Sum", "Max", "Min",
-                # "And", and "Or".  The possible value types are Long, Double, and Boolean.
             "meanSum": "", # Worker-computed aggregate value for the "Mean" aggregation kind.
                 # This holds the sum of the aggregated values and is used in combination
                 # with mean_count below to obtain the actual mean aggregate value.
                 # The only possible value types are Long and Double.
-            "distribution": "", # A struct value describing properties of a distribution of numeric values.
+            "cumulative": True or False, # True if this metric is reported as the total cumulative aggregate
+                # value accumulated since the worker started working on this WorkItem.
+                # By default this is false, indicating that this metric is reported
+                # as a delta that is not associated with any WorkItem.
+            "updateTime": "A String", # Timestamp associated with the metric value. Optional when workers are
+                # reporting work progress; it will be filled in responses from the
+                # metrics API.
+            "scalar": "", # Worker-computed aggregate value for aggregation kinds "Sum", "Max", "Min",
+                # "And", and "Or".  The possible value types are Long, Double, and Boolean.
             "internal": "", # Worker-computed aggregate value for internal use by the Dataflow
                 # service.
+            "gauge": "", # A struct value describing properties of a Gauge.
+                # Metrics of gauge type show the value of a metric across time, and is
+                # aggregated based on the newest value.
+            "distribution": "", # A struct value describing properties of a distribution of numeric values.
           },
         ],
         "reportedProgress": { # A progress measurement of a WorkItem by a worker. # The worker's progress through this WorkItem.
@@ -2051,7 +2108,9 @@ Args:
         },
       },
     ],
-    "location": "A String", # The location which contains the WorkItem's job.
+    "location": "A String", # The [regional endpoint]
+        # (https://cloud.google.com/dataflow/docs/concepts/regional-endpoints) that
+        # contains the WorkItem's job.
   }
 
   x__xgafv: string, V1 error format.
@@ -2087,14 +2146,14 @@ Returns:
           "shufflePosition": "A String", # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED
               # sharding).
         },
+        "leaseExpireTime": "A String", # Time at which the current lease will expire.
+        "nextReportIndex": "A String", # The index value to use for the next report sent by the worker.
+            # Note: If the report call fails for whatever reason, the worker should
+            # reuse this index for subsequent report attempts.
         "harnessData": { # Other data returned by the service, specific to the particular
             # worker harness.
           "a_key": "", # Properties of the object.
         },
-        "nextReportIndex": "A String", # The index value to use for the next report sent by the worker.
-            # Note: If the report call fails for whatever reason, the worker should
-            # reuse this index for subsequent report attempts.
-        "leaseExpireTime": "A String", # Time at which the current lease will expire.
         "metricShortId": [ # The short ids that workers should use in subsequent metric updates.
             # Workers should strive to use short ids whenever possible, but it is ok
             # to request the short_id again if a worker lost track of it
@@ -2129,6 +2188,8 @@ Returns:
             "shufflePosition": "A String", # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED
                 # sharding).
           },
+          "fractionOfRemainder": 3.14, # The fraction of the remainder of work to split the work item at, from 0.0
+              # (split at the current position) to 1.0 (end of the input).
         },
         "suggestedStopPoint": { # Obsolete in favor of ApproximateReportedProgress and ApproximateSplitRequest. # DEPRECATED in favor of split_request.
           "position": { # Position defines a position within a collection of data.  The value # Obsolete.
@@ -2153,6 +2214,9 @@ Returns:
         },
       },
     ],
+    "unifiedWorkerResponse": { # Untranslated bag-of-bytes WorkProgressUpdateResponse for UnifiedWorker.
+      "a_key": "", # Properties of the object. Contains field @type with type URL.
+    },
   }</pre>
 </div>
 

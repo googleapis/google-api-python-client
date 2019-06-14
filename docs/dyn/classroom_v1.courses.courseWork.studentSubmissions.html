@@ -78,7 +78,7 @@ h1, h2, h3 {
   <code><a href="#get">get(courseId, courseWorkId, id, x__xgafv=None)</a></code></p>
 <p class="firstline">Returns a student submission.</p>
 <p class="toc_element">
-  <code><a href="#list">list(courseId, courseWorkId, pageSize=None, userId=None, states=None, x__xgafv=None, pageToken=None, late=None)</a></code></p>
+  <code><a href="#list">list(courseId, courseWorkId, pageSize=None, userId=None, states=None, x__xgafv=None, late=None, pageToken=None)</a></code></p>
 <p class="firstline">Returns a list of student submissions that the requester is permitted to</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -90,13 +90,13 @@ h1, h2, h3 {
   <code><a href="#patch">patch(courseId, courseWorkId, id, body, updateMask=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Updates one or more fields of a student submission.</p>
 <p class="toc_element">
-  <code><a href="#reclaim">reclaim(courseId, courseWorkId, id, body, x__xgafv=None)</a></code></p>
+  <code><a href="#reclaim">reclaim(courseId, courseWorkId, id, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Reclaims a student submission on behalf of the student that owns it.</p>
 <p class="toc_element">
-  <code><a href="#return_">return_(courseId, courseWorkId, id, body, x__xgafv=None)</a></code></p>
+  <code><a href="#return_">return_(courseId, courseWorkId, id, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Returns a student submission.</p>
 <p class="toc_element">
-  <code><a href="#turnIn">turnIn(courseId, courseWorkId, id, body, x__xgafv=None)</a></code></p>
+  <code><a href="#turnIn">turnIn(courseId, courseWorkId, id, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Turns in a student submission.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -131,11 +131,15 @@ Returns:
       # StudentSubmissions that have never been accessed (i.e. with `state` = NEW)
       # may not have a creation time or update time.
     "draftGrade": 3.14, # Optional pending grade. If unset, no grade was set.
-        # This must be a non-negative integer value.
+        # This value must be non-negative. Decimal (i.e. non-integer) values are
+        # allowed, but will be rounded to two decimal places.
         #
         # This is only visible to and modifiable by course teachers.
     "updateTime": "A String", # Last update time of this submission.
         # This may be unset if the student has not accessed this item.
+        #
+        # Read-only.
+    "userId": "A String", # Identifier for the student that owns this submission.
         #
         # Read-only.
     "alternateLink": "A String", # Absolute link to the submission in the Classroom web UI.
@@ -147,19 +151,33 @@ Returns:
     "multipleChoiceSubmission": { # Student work for a multiple-choice question. # Submission content when course_work_type is MULTIPLE_CHOICE_QUESTION.
       "answer": "A String", # Student's select choice.
     },
-    "userId": "A String", # Identifier for the student that owns this submission.
+    "creationTime": "A String", # Creation time of this submission.
+        # This may be unset if the student has not accessed this item.
         #
         # Read-only.
+    "submissionHistory": [ # The history of the submission (includes state and grade histories).
+        #
+        # Read-only.
+      { # The history of the submission. This currently includes state and grade
+          # histories.
+        "stateHistory": { # The history of each state this submission has been in. # The state history information of the submission, if present.
+          "state": "A String", # The workflow pipeline stage.
+          "actorUserId": "A String", # The teacher or student who made the change
+          "stateTimestamp": "A String", # When the submission entered this state.
+        },
+        "gradeHistory": { # The history of each grade on this submission. # The grade history information of the submission, if present.
+          "gradeTimestamp": "A String", # When the grade of the submission was changed.
+          "maxPoints": 3.14, # The denominator of the grade at this time in the submission grade
+              # history.
+          "pointsEarned": 3.14, # The numerator of the grade at this time in the submission grade history.
+          "actorUserId": "A String", # The teacher who made the grade change.
+          "gradeChangeType": "A String", # The type of grade change at this time in the submission grade history.
+        },
+      },
+    ],
     "shortAnswerSubmission": { # Student work for a short answer question. # Submission content when course_work_type is SHORT_ANSWER_QUESTION.
       "answer": "A String", # Student response to a short-answer question.
     },
-    "associatedWithDeveloper": True or False, # Whether this student submission is associated with the Developer Console
-        # project making the request.
-        #
-        # See google.classroom.Work.CreateCourseWork for more
-        # details.
-        #
-        # Read-only.
     "late": True or False, # Whether this submission is late.
         #
         # Read-only.
@@ -173,14 +191,14 @@ Returns:
         #
         # Read-only.
     "assignedGrade": 3.14, # Optional grade. If unset, no grade was set.
-        # This must be a non-negative integer value.
+        # This value must be non-negative. Decimal (i.e. non-integer) values are
+        # allowed, but will be rounded to two decimal places.
         #
         # This may be modified only by course teachers.
-    "creationTime": "A String", # Creation time of this submission.
-        # This may be unset if the student has not accessed this item.
+    "assignmentSubmission": { # Student work for an assignment. # Submission content when course_work_type is ASSIGNMENT.
         #
-        # Read-only.
-    "assignmentSubmission": { # Student work for an assignment. # Submission content when course_work_type is ASSIGNMENT .
+        # Students can modify this content using
+        # google.classroom.Work.ModifyAttachments.
       "attachments": [ # Attachments added by the student.
           # Drive files that correspond to materials with a share mode of
           # STUDENT_COPY may not exist yet if the student has not accessed the
@@ -215,10 +233,10 @@ Returns:
                 # Read-only.
           },
           "youTubeVideo": { # YouTube video item. # Youtube video attachment.
-            "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
+            "alternateLink": "A String", # URL that can be used to view the YouTube video.
                 #
                 # Read-only.
-            "alternateLink": "A String", # URL that can be used to view the YouTube video.
+            "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
                 #
                 # Read-only.
             "id": "A String", # YouTube API resource ID.
@@ -247,11 +265,18 @@ Returns:
         # This is unique among submissions for the relevant course work.
         #
         # Read-only.
+    "associatedWithDeveloper": True or False, # Whether this student submission is associated with the Developer Console
+        # project making the request.
+        #
+        # See google.classroom.Work.CreateCourseWork for more
+        # details.
+        #
+        # Read-only.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(courseId, courseWorkId, pageSize=None, userId=None, states=None, x__xgafv=None, pageToken=None, late=None)</code>
+    <code class="details" id="list">list(courseId, courseWorkId, pageSize=None, userId=None, states=None, x__xgafv=None, late=None, pageToken=None)</code>
   <pre>Returns a list of student submissions that the requester is permitted to
 view, factoring in the OAuth scopes of the request.
 `-` may be specified as the `course_work_id` to include student
@@ -271,7 +296,7 @@ Args:
   courseId: string, Identifier of the course.
 This identifier can be either the Classroom-assigned identifier or an
 alias. (required)
-  courseWorkId: string, Identifer of the student work to request.
+  courseWorkId: string, Identifier of the student work to request.
 This may be set to the string literal `"-"` to request student work for
 all course work in the specified course. (required)
   pageSize: integer, Maximum number of items to return. Zero or unspecified indicates that the
@@ -291,6 +316,9 @@ match one of the specified submission states. (repeated)
     Allowed values
       1 - v1 error format
       2 - v2 error format
+  late: string, Requested lateness value. If specified, returned student submissions are
+restricted by the requested value.
+If unspecified, submissions are returned regardless of `late` value.
   pageToken: string, nextPageToken
 value returned from a previous
 list call,
@@ -298,9 +326,6 @@ indicating that the subsequent page of results should be returned.
 
 The list request
 must be otherwise identical to the one that resulted in this token.
-  late: string, Requested lateness value. If specified, returned student submissions are
-restricted by the requested value.
-If unspecified, submissions are returned regardless of `late` value.
 
 Returns:
   An object of the form:
@@ -316,11 +341,15 @@ Returns:
           # StudentSubmissions that have never been accessed (i.e. with `state` = NEW)
           # may not have a creation time or update time.
         "draftGrade": 3.14, # Optional pending grade. If unset, no grade was set.
-            # This must be a non-negative integer value.
+            # This value must be non-negative. Decimal (i.e. non-integer) values are
+            # allowed, but will be rounded to two decimal places.
             #
             # This is only visible to and modifiable by course teachers.
         "updateTime": "A String", # Last update time of this submission.
             # This may be unset if the student has not accessed this item.
+            #
+            # Read-only.
+        "userId": "A String", # Identifier for the student that owns this submission.
             #
             # Read-only.
         "alternateLink": "A String", # Absolute link to the submission in the Classroom web UI.
@@ -332,19 +361,33 @@ Returns:
         "multipleChoiceSubmission": { # Student work for a multiple-choice question. # Submission content when course_work_type is MULTIPLE_CHOICE_QUESTION.
           "answer": "A String", # Student's select choice.
         },
-        "userId": "A String", # Identifier for the student that owns this submission.
+        "creationTime": "A String", # Creation time of this submission.
+            # This may be unset if the student has not accessed this item.
             #
             # Read-only.
+        "submissionHistory": [ # The history of the submission (includes state and grade histories).
+            #
+            # Read-only.
+          { # The history of the submission. This currently includes state and grade
+              # histories.
+            "stateHistory": { # The history of each state this submission has been in. # The state history information of the submission, if present.
+              "state": "A String", # The workflow pipeline stage.
+              "actorUserId": "A String", # The teacher or student who made the change
+              "stateTimestamp": "A String", # When the submission entered this state.
+            },
+            "gradeHistory": { # The history of each grade on this submission. # The grade history information of the submission, if present.
+              "gradeTimestamp": "A String", # When the grade of the submission was changed.
+              "maxPoints": 3.14, # The denominator of the grade at this time in the submission grade
+                  # history.
+              "pointsEarned": 3.14, # The numerator of the grade at this time in the submission grade history.
+              "actorUserId": "A String", # The teacher who made the grade change.
+              "gradeChangeType": "A String", # The type of grade change at this time in the submission grade history.
+            },
+          },
+        ],
         "shortAnswerSubmission": { # Student work for a short answer question. # Submission content when course_work_type is SHORT_ANSWER_QUESTION.
           "answer": "A String", # Student response to a short-answer question.
         },
-        "associatedWithDeveloper": True or False, # Whether this student submission is associated with the Developer Console
-            # project making the request.
-            #
-            # See google.classroom.Work.CreateCourseWork for more
-            # details.
-            #
-            # Read-only.
         "late": True or False, # Whether this submission is late.
             #
             # Read-only.
@@ -358,14 +401,14 @@ Returns:
             #
             # Read-only.
         "assignedGrade": 3.14, # Optional grade. If unset, no grade was set.
-            # This must be a non-negative integer value.
+            # This value must be non-negative. Decimal (i.e. non-integer) values are
+            # allowed, but will be rounded to two decimal places.
             #
             # This may be modified only by course teachers.
-        "creationTime": "A String", # Creation time of this submission.
-            # This may be unset if the student has not accessed this item.
+        "assignmentSubmission": { # Student work for an assignment. # Submission content when course_work_type is ASSIGNMENT.
             #
-            # Read-only.
-        "assignmentSubmission": { # Student work for an assignment. # Submission content when course_work_type is ASSIGNMENT .
+            # Students can modify this content using
+            # google.classroom.Work.ModifyAttachments.
           "attachments": [ # Attachments added by the student.
               # Drive files that correspond to materials with a share mode of
               # STUDENT_COPY may not exist yet if the student has not accessed the
@@ -400,10 +443,10 @@ Returns:
                     # Read-only.
               },
               "youTubeVideo": { # YouTube video item. # Youtube video attachment.
-                "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
+                "alternateLink": "A String", # URL that can be used to view the YouTube video.
                     #
                     # Read-only.
-                "alternateLink": "A String", # URL that can be used to view the YouTube video.
+                "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
                     #
                     # Read-only.
                 "id": "A String", # YouTube API resource ID.
@@ -430,6 +473,13 @@ Returns:
         },
         "id": "A String", # Classroom-assigned Identifier for the student submission.
             # This is unique among submissions for the relevant course work.
+            #
+            # Read-only.
+        "associatedWithDeveloper": True or False, # Whether this student submission is associated with the Developer Console
+            # project making the request.
+            #
+            # See google.classroom.Work.CreateCourseWork for more
+            # details.
             #
             # Read-only.
       },
@@ -512,10 +562,10 @@ alias. (required)
               # Read-only.
         },
         "youTubeVideo": { # YouTube video item. # Youtube video attachment.
-          "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
+          "alternateLink": "A String", # URL that can be used to view the YouTube video.
               #
               # Read-only.
-          "alternateLink": "A String", # URL that can be used to view the YouTube video.
+          "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
               #
               # Read-only.
           "id": "A String", # YouTube API resource ID.
@@ -556,11 +606,15 @@ Returns:
       # StudentSubmissions that have never been accessed (i.e. with `state` = NEW)
       # may not have a creation time or update time.
     "draftGrade": 3.14, # Optional pending grade. If unset, no grade was set.
-        # This must be a non-negative integer value.
+        # This value must be non-negative. Decimal (i.e. non-integer) values are
+        # allowed, but will be rounded to two decimal places.
         #
         # This is only visible to and modifiable by course teachers.
     "updateTime": "A String", # Last update time of this submission.
         # This may be unset if the student has not accessed this item.
+        #
+        # Read-only.
+    "userId": "A String", # Identifier for the student that owns this submission.
         #
         # Read-only.
     "alternateLink": "A String", # Absolute link to the submission in the Classroom web UI.
@@ -572,19 +626,33 @@ Returns:
     "multipleChoiceSubmission": { # Student work for a multiple-choice question. # Submission content when course_work_type is MULTIPLE_CHOICE_QUESTION.
       "answer": "A String", # Student's select choice.
     },
-    "userId": "A String", # Identifier for the student that owns this submission.
+    "creationTime": "A String", # Creation time of this submission.
+        # This may be unset if the student has not accessed this item.
         #
         # Read-only.
+    "submissionHistory": [ # The history of the submission (includes state and grade histories).
+        #
+        # Read-only.
+      { # The history of the submission. This currently includes state and grade
+          # histories.
+        "stateHistory": { # The history of each state this submission has been in. # The state history information of the submission, if present.
+          "state": "A String", # The workflow pipeline stage.
+          "actorUserId": "A String", # The teacher or student who made the change
+          "stateTimestamp": "A String", # When the submission entered this state.
+        },
+        "gradeHistory": { # The history of each grade on this submission. # The grade history information of the submission, if present.
+          "gradeTimestamp": "A String", # When the grade of the submission was changed.
+          "maxPoints": 3.14, # The denominator of the grade at this time in the submission grade
+              # history.
+          "pointsEarned": 3.14, # The numerator of the grade at this time in the submission grade history.
+          "actorUserId": "A String", # The teacher who made the grade change.
+          "gradeChangeType": "A String", # The type of grade change at this time in the submission grade history.
+        },
+      },
+    ],
     "shortAnswerSubmission": { # Student work for a short answer question. # Submission content when course_work_type is SHORT_ANSWER_QUESTION.
       "answer": "A String", # Student response to a short-answer question.
     },
-    "associatedWithDeveloper": True or False, # Whether this student submission is associated with the Developer Console
-        # project making the request.
-        #
-        # See google.classroom.Work.CreateCourseWork for more
-        # details.
-        #
-        # Read-only.
     "late": True or False, # Whether this submission is late.
         #
         # Read-only.
@@ -598,14 +666,14 @@ Returns:
         #
         # Read-only.
     "assignedGrade": 3.14, # Optional grade. If unset, no grade was set.
-        # This must be a non-negative integer value.
+        # This value must be non-negative. Decimal (i.e. non-integer) values are
+        # allowed, but will be rounded to two decimal places.
         #
         # This may be modified only by course teachers.
-    "creationTime": "A String", # Creation time of this submission.
-        # This may be unset if the student has not accessed this item.
+    "assignmentSubmission": { # Student work for an assignment. # Submission content when course_work_type is ASSIGNMENT.
         #
-        # Read-only.
-    "assignmentSubmission": { # Student work for an assignment. # Submission content when course_work_type is ASSIGNMENT .
+        # Students can modify this content using
+        # google.classroom.Work.ModifyAttachments.
       "attachments": [ # Attachments added by the student.
           # Drive files that correspond to materials with a share mode of
           # STUDENT_COPY may not exist yet if the student has not accessed the
@@ -640,10 +708,10 @@ Returns:
                 # Read-only.
           },
           "youTubeVideo": { # YouTube video item. # Youtube video attachment.
-            "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
+            "alternateLink": "A String", # URL that can be used to view the YouTube video.
                 #
                 # Read-only.
-            "alternateLink": "A String", # URL that can be used to view the YouTube video.
+            "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
                 #
                 # Read-only.
             "id": "A String", # YouTube API resource ID.
@@ -670,6 +738,13 @@ Returns:
     },
     "id": "A String", # Classroom-assigned Identifier for the student submission.
         # This is unique among submissions for the relevant course work.
+        #
+        # Read-only.
+    "associatedWithDeveloper": True or False, # Whether this student submission is associated with the Developer Console
+        # project making the request.
+        #
+        # See google.classroom.Work.CreateCourseWork for more
+        # details.
         #
         # Read-only.
   }</pre>
@@ -712,11 +787,15 @@ alias. (required)
     # StudentSubmissions that have never been accessed (i.e. with `state` = NEW)
     # may not have a creation time or update time.
   "draftGrade": 3.14, # Optional pending grade. If unset, no grade was set.
-      # This must be a non-negative integer value.
+      # This value must be non-negative. Decimal (i.e. non-integer) values are
+      # allowed, but will be rounded to two decimal places.
       # 
       # This is only visible to and modifiable by course teachers.
   "updateTime": "A String", # Last update time of this submission.
       # This may be unset if the student has not accessed this item.
+      # 
+      # Read-only.
+  "userId": "A String", # Identifier for the student that owns this submission.
       # 
       # Read-only.
   "alternateLink": "A String", # Absolute link to the submission in the Classroom web UI.
@@ -728,19 +807,33 @@ alias. (required)
   "multipleChoiceSubmission": { # Student work for a multiple-choice question. # Submission content when course_work_type is MULTIPLE_CHOICE_QUESTION.
     "answer": "A String", # Student's select choice.
   },
-  "userId": "A String", # Identifier for the student that owns this submission.
+  "creationTime": "A String", # Creation time of this submission.
+      # This may be unset if the student has not accessed this item.
       # 
       # Read-only.
+  "submissionHistory": [ # The history of the submission (includes state and grade histories).
+      # 
+      # Read-only.
+    { # The history of the submission. This currently includes state and grade
+        # histories.
+      "stateHistory": { # The history of each state this submission has been in. # The state history information of the submission, if present.
+        "state": "A String", # The workflow pipeline stage.
+        "actorUserId": "A String", # The teacher or student who made the change
+        "stateTimestamp": "A String", # When the submission entered this state.
+      },
+      "gradeHistory": { # The history of each grade on this submission. # The grade history information of the submission, if present.
+        "gradeTimestamp": "A String", # When the grade of the submission was changed.
+        "maxPoints": 3.14, # The denominator of the grade at this time in the submission grade
+            # history.
+        "pointsEarned": 3.14, # The numerator of the grade at this time in the submission grade history.
+        "actorUserId": "A String", # The teacher who made the grade change.
+        "gradeChangeType": "A String", # The type of grade change at this time in the submission grade history.
+      },
+    },
+  ],
   "shortAnswerSubmission": { # Student work for a short answer question. # Submission content when course_work_type is SHORT_ANSWER_QUESTION.
     "answer": "A String", # Student response to a short-answer question.
   },
-  "associatedWithDeveloper": True or False, # Whether this student submission is associated with the Developer Console
-      # project making the request.
-      # 
-      # See google.classroom.Work.CreateCourseWork for more
-      # details.
-      # 
-      # Read-only.
   "late": True or False, # Whether this submission is late.
       # 
       # Read-only.
@@ -754,14 +847,14 @@ alias. (required)
       # 
       # Read-only.
   "assignedGrade": 3.14, # Optional grade. If unset, no grade was set.
-      # This must be a non-negative integer value.
+      # This value must be non-negative. Decimal (i.e. non-integer) values are
+      # allowed, but will be rounded to two decimal places.
       # 
       # This may be modified only by course teachers.
-  "creationTime": "A String", # Creation time of this submission.
-      # This may be unset if the student has not accessed this item.
+  "assignmentSubmission": { # Student work for an assignment. # Submission content when course_work_type is ASSIGNMENT.
       # 
-      # Read-only.
-  "assignmentSubmission": { # Student work for an assignment. # Submission content when course_work_type is ASSIGNMENT .
+      # Students can modify this content using
+      # google.classroom.Work.ModifyAttachments.
     "attachments": [ # Attachments added by the student.
         # Drive files that correspond to materials with a share mode of
         # STUDENT_COPY may not exist yet if the student has not accessed the
@@ -796,10 +889,10 @@ alias. (required)
               # Read-only.
         },
         "youTubeVideo": { # YouTube video item. # Youtube video attachment.
-          "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
+          "alternateLink": "A String", # URL that can be used to view the YouTube video.
               #
               # Read-only.
-          "alternateLink": "A String", # URL that can be used to view the YouTube video.
+          "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
               #
               # Read-only.
           "id": "A String", # YouTube API resource ID.
@@ -828,6 +921,13 @@ alias. (required)
       # This is unique among submissions for the relevant course work.
       # 
       # Read-only.
+  "associatedWithDeveloper": True or False, # Whether this student submission is associated with the Developer Console
+      # project making the request.
+      # 
+      # See google.classroom.Work.CreateCourseWork for more
+      # details.
+      # 
+      # Read-only.
 }
 
   updateMask: string, Mask that identifies which fields on the student submission to update.
@@ -835,6 +935,7 @@ This field is required to do an update. The update fails if invalid
 fields are specified.
 
 The following fields may be specified by teachers:
+
 * `draft_grade`
 * `assigned_grade`
   x__xgafv: string, V1 error format.
@@ -852,11 +953,15 @@ Returns:
       # StudentSubmissions that have never been accessed (i.e. with `state` = NEW)
       # may not have a creation time or update time.
     "draftGrade": 3.14, # Optional pending grade. If unset, no grade was set.
-        # This must be a non-negative integer value.
+        # This value must be non-negative. Decimal (i.e. non-integer) values are
+        # allowed, but will be rounded to two decimal places.
         #
         # This is only visible to and modifiable by course teachers.
     "updateTime": "A String", # Last update time of this submission.
         # This may be unset if the student has not accessed this item.
+        #
+        # Read-only.
+    "userId": "A String", # Identifier for the student that owns this submission.
         #
         # Read-only.
     "alternateLink": "A String", # Absolute link to the submission in the Classroom web UI.
@@ -868,19 +973,33 @@ Returns:
     "multipleChoiceSubmission": { # Student work for a multiple-choice question. # Submission content when course_work_type is MULTIPLE_CHOICE_QUESTION.
       "answer": "A String", # Student's select choice.
     },
-    "userId": "A String", # Identifier for the student that owns this submission.
+    "creationTime": "A String", # Creation time of this submission.
+        # This may be unset if the student has not accessed this item.
         #
         # Read-only.
+    "submissionHistory": [ # The history of the submission (includes state and grade histories).
+        #
+        # Read-only.
+      { # The history of the submission. This currently includes state and grade
+          # histories.
+        "stateHistory": { # The history of each state this submission has been in. # The state history information of the submission, if present.
+          "state": "A String", # The workflow pipeline stage.
+          "actorUserId": "A String", # The teacher or student who made the change
+          "stateTimestamp": "A String", # When the submission entered this state.
+        },
+        "gradeHistory": { # The history of each grade on this submission. # The grade history information of the submission, if present.
+          "gradeTimestamp": "A String", # When the grade of the submission was changed.
+          "maxPoints": 3.14, # The denominator of the grade at this time in the submission grade
+              # history.
+          "pointsEarned": 3.14, # The numerator of the grade at this time in the submission grade history.
+          "actorUserId": "A String", # The teacher who made the grade change.
+          "gradeChangeType": "A String", # The type of grade change at this time in the submission grade history.
+        },
+      },
+    ],
     "shortAnswerSubmission": { # Student work for a short answer question. # Submission content when course_work_type is SHORT_ANSWER_QUESTION.
       "answer": "A String", # Student response to a short-answer question.
     },
-    "associatedWithDeveloper": True or False, # Whether this student submission is associated with the Developer Console
-        # project making the request.
-        #
-        # See google.classroom.Work.CreateCourseWork for more
-        # details.
-        #
-        # Read-only.
     "late": True or False, # Whether this submission is late.
         #
         # Read-only.
@@ -894,14 +1013,14 @@ Returns:
         #
         # Read-only.
     "assignedGrade": 3.14, # Optional grade. If unset, no grade was set.
-        # This must be a non-negative integer value.
+        # This value must be non-negative. Decimal (i.e. non-integer) values are
+        # allowed, but will be rounded to two decimal places.
         #
         # This may be modified only by course teachers.
-    "creationTime": "A String", # Creation time of this submission.
-        # This may be unset if the student has not accessed this item.
+    "assignmentSubmission": { # Student work for an assignment. # Submission content when course_work_type is ASSIGNMENT.
         #
-        # Read-only.
-    "assignmentSubmission": { # Student work for an assignment. # Submission content when course_work_type is ASSIGNMENT .
+        # Students can modify this content using
+        # google.classroom.Work.ModifyAttachments.
       "attachments": [ # Attachments added by the student.
           # Drive files that correspond to materials with a share mode of
           # STUDENT_COPY may not exist yet if the student has not accessed the
@@ -936,10 +1055,10 @@ Returns:
                 # Read-only.
           },
           "youTubeVideo": { # YouTube video item. # Youtube video attachment.
-            "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
+            "alternateLink": "A String", # URL that can be used to view the YouTube video.
                 #
                 # Read-only.
-            "alternateLink": "A String", # URL that can be used to view the YouTube video.
+            "thumbnailUrl": "A String", # URL of a thumbnail image of the YouTube video.
                 #
                 # Read-only.
             "id": "A String", # YouTube API resource ID.
@@ -968,15 +1087,22 @@ Returns:
         # This is unique among submissions for the relevant course work.
         #
         # Read-only.
+    "associatedWithDeveloper": True or False, # Whether this student submission is associated with the Developer Console
+        # project making the request.
+        #
+        # See google.classroom.Work.CreateCourseWork for more
+        # details.
+        #
+        # Read-only.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="reclaim">reclaim(courseId, courseWorkId, id, body, x__xgafv=None)</code>
+    <code class="details" id="reclaim">reclaim(courseId, courseWorkId, id, body=None, x__xgafv=None)</code>
   <pre>Reclaims a student submission on behalf of the student that owns it.
 
 Reclaiming a student submission transfers ownership of attached Drive
-files to the student and update the submission state.
+files to the student and updates the submission state.
 
 Only the student that owns the requested student submission may call this
 method, and only for a student submission that has been turned in.
@@ -1001,7 +1127,7 @@ This identifier can be either the Classroom-assigned identifier or an
 alias. (required)
   courseWorkId: string, Identifier of the course work. (required)
   id: string, Identifier of the student submission. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Request to reclaim a student submission.
@@ -1028,7 +1154,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="return_">return_(courseId, courseWorkId, id, body, x__xgafv=None)</code>
+    <code class="details" id="return_">return_(courseId, courseWorkId, id, body=None, x__xgafv=None)</code>
   <pre>Returns a student submission.
 
 Returning a student submission transfers ownership of attached Drive
@@ -1058,7 +1184,7 @@ This identifier can be either the Classroom-assigned identifier or an
 alias. (required)
   courseWorkId: string, Identifier of the course work. (required)
   id: string, Identifier of the student submission. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Request to return a student submission.
@@ -1085,7 +1211,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="turnIn">turnIn(courseId, courseWorkId, id, body, x__xgafv=None)</code>
+    <code class="details" id="turnIn">turnIn(courseId, courseWorkId, id, body=None, x__xgafv=None)</code>
   <pre>Turns in a student submission.
 
 Turning in a student submission transfers ownership of attached Drive
@@ -1113,7 +1239,7 @@ This identifier can be either the Classroom-assigned identifier or an
 alias. (required)
   courseWorkId: string, Identifier of the course work. (required)
   id: string, Identifier of the student submission. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Request to turn in a student submission.

@@ -75,14 +75,14 @@ h1, h2, h3 {
 <h1><a href="clouderrorreporting_v1beta1.html">Stackdriver Error Reporting API</a> . <a href="clouderrorreporting_v1beta1.projects.html">projects</a> . <a href="clouderrorreporting_v1beta1.projects.groupStats.html">groupStats</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#list">list(projectName, alignmentTime=None, pageSize=None, x__xgafv=None, alignment=None, serviceFilter_resourceType=None, timedCountDuration=None, timeRange_period=None, pageToken=None, serviceFilter_version=None, serviceFilter_service=None, groupId=None, order=None)</a></code></p>
+  <code><a href="#list">list(projectName, alignmentTime=None, pageSize=None, x__xgafv=None, alignment=None, serviceFilter_resourceType=None, timedCountDuration=None, timeRange_period=None, serviceFilter_version=None, pageToken=None, serviceFilter_service=None, groupId=None, order=None)</a></code></p>
 <p class="firstline">Lists the specified groups.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="list">list(projectName, alignmentTime=None, pageSize=None, x__xgafv=None, alignment=None, serviceFilter_resourceType=None, timedCountDuration=None, timeRange_period=None, pageToken=None, serviceFilter_version=None, serviceFilter_service=None, groupId=None, order=None)</code>
+    <code class="details" id="list">list(projectName, alignmentTime=None, pageSize=None, x__xgafv=None, alignment=None, serviceFilter_resourceType=None, timedCountDuration=None, timeRange_period=None, serviceFilter_version=None, pageToken=None, serviceFilter_service=None, groupId=None, order=None)</code>
   <pre>Lists the specified groups.
 
 Args:
@@ -107,11 +107,11 @@ Default is `ALIGNMENT_EQUAL_AT_END`.
   timedCountDuration: string, [Optional] The preferred duration for a single returned `TimedCount`.
 If not set, no timed counts are returned.
   timeRange_period: string, Restricts the query to the specified time range.
+  serviceFilter_version: string, [Optional] The exact value to match against
+[`ServiceContext.version`](/error-reporting/reference/rest/v1beta1/ServiceContext#FIELDS.version).
   pageToken: string, [Optional] A `next_page_token` provided by a previous response. To view
 additional results, pass this token along with the identical query
 parameters as the first request.
-  serviceFilter_version: string, [Optional] The exact value to match against
-[`ServiceContext.version`](/error-reporting/reference/rest/v1beta1/ServiceContext#FIELDS.version).
   serviceFilter_service: string, [Optional] The exact value to match against
 [`ServiceContext.service`](/error-reporting/reference/rest/v1beta1/ServiceContext#FIELDS.service).
   groupId: string, [Optional] List all <code>ErrorGroupStats</code> with these IDs. (repeated)
@@ -145,29 +145,18 @@ Returns:
             # context that was provided in the error report. If more users are
             # implicitly affected, such as due to a crash of the whole service,
             # this is not reflected here.
-        "affectedServices": [ # Service contexts with a non-zero error count for the given filter
-            # criteria. This list can be truncated if multiple services are affected.
-            # Refer to `num_affected_services` for the total count.
-          { # Describes a running service that sends errors.
-              # Its version changes over time and multiple versions can run in parallel.
-            "resourceType": "A String", # Type of the MonitoredResource. List of possible values:
-                # https://cloud.google.com/monitoring/api/resources
-                #
-                # Value is set automatically for incoming errors and must not be set when
-                # reporting errors.
-            "version": "A String", # Represents the source code version that the developer provided,
-                # which could represent a version label or a Git SHA-1 hash, for example.
-                # For App Engine standard environment, the version is set to the version of
-                # the app.
-            "service": "A String", # An identifier of the service, such as the name of the
-                # executable, job, or Google App Engine service name. This field is expected
-                # to have a low number of values that are relatively stable over time, as
-                # opposed to `version`, which can be changed whenever new code is deployed.
-                #
-                # Contains the service name for error reports extracted from Google
-                # App Engine logs or `default` if the App Engine default service is used.
-          },
-        ],
+        "group": { # Description of a group of similar error events. # Group data that is independent of the filter criteria.
+          "trackingIssues": [ # Associated tracking issues.
+            { # Information related to tracking the progress on resolving the error.
+              "url": "A String", # A URL pointing to a related entry in an issue tracking system.
+                  # Example: https://github.com/user/project/issues/4
+            },
+          ],
+          "groupId": "A String", # Group IDs are unique for a given project. If the same kind of error
+              # occurs in different service contexts, it will receive the same group ID.
+          "name": "A String", # The group resource name.
+              # Example: <code>projects/my-project-123/groups/my-groupid</code>
+        },
         "timedCounts": [ # Approximate number of occurrences over time.
             # Timed counts returned by ListGroups are guaranteed to be:
             #
@@ -209,10 +198,10 @@ Returns:
                 # Contains the service name for error reports extracted from Google
                 # App Engine logs or `default` if the App Engine default service is used.
           },
-          "message": "A String", # The stack trace that was reported or logged by the service.
           "eventTime": "A String", # Time when the event occurred as provided in the error report.
               # If the report did not contain a timestamp, the time the error was received
               # by the Error Reporting system is used.
+          "message": "A String", # The stack trace that was reported or logged by the service.
           "context": { # A description of the context in which an error occurred. # Data about the context in which the error occurred.
               # This data should be provided by the application when reporting an error,
               # unless the
@@ -242,20 +231,11 @@ Returns:
                     # Example: "https://github.com/GoogleCloudPlatform/kubernetes.git"
               },
             ],
-            "user": "A String", # The user who caused or was affected by the crash.
-                # This can be a user ID, an email address, or an arbitrary token that
-                # uniquely identifies the user.
-                # When sending an error report, leave this field empty if the user was not
-                # logged in. In this case the
-                # Error Reporting system will use other data, such as remote IP address, to
-                # distinguish affected users. See `affected_users_count` in
-                # `ErrorGroupStats`.
             "reportLocation": { # Indicates a location in the source code of the service for which errors are # The location in the source code where the decision was made to
                 # report the error, usually the place where it was logged.
                 # For a logged exception this would be the source line where the
                 # exception is logged, usually close to the place where it was
-                # caught. This value is in contrast to `Exception.cause_location`,
-                # which describes the source line where the exception was thrown.
+                # caught.
                 # reported. `functionName` must be provided by the application when reporting
                 # an error, unless the error report contains a `message` with a supported
                 # exception stack trace. All fields are optional for the later case.
@@ -266,22 +246,41 @@ Returns:
               "filePath": "A String", # The source code filename, which can include a truncated relative
                   # path, or a full path from a production machine.
             },
+            "user": "A String", # The user who caused or was affected by the crash.
+                # This can be a user ID, an email address, or an arbitrary token that
+                # uniquely identifies the user.
+                # When sending an error report, leave this field empty if the user was not
+                # logged in. In this case the
+                # Error Reporting system will use other data, such as remote IP address, to
+                # distinguish affected users. See `affected_users_count` in
+                # `ErrorGroupStats`.
           },
         },
         "numAffectedServices": 42, # The total number of services with a non-zero error count for the given
             # filter criteria.
-        "group": { # Description of a group of similar error events. # Group data that is independent of the filter criteria.
-          "trackingIssues": [ # Associated tracking issues.
-            { # Information related to tracking the progress on resolving the error.
-              "url": "A String", # A URL pointing to a related entry in an issue tracking system.
-                  # Example: https://github.com/user/project/issues/4
-            },
-          ],
-          "groupId": "A String", # Group IDs are unique for a given project. If the same kind of error
-              # occurs in different service contexts, it will receive the same group ID.
-          "name": "A String", # The group resource name.
-              # Example: <code>projects/my-project-123/groups/my-groupid</code>
-        },
+        "affectedServices": [ # Service contexts with a non-zero error count for the given filter
+            # criteria. This list can be truncated if multiple services are affected.
+            # Refer to `num_affected_services` for the total count.
+          { # Describes a running service that sends errors.
+              # Its version changes over time and multiple versions can run in parallel.
+            "resourceType": "A String", # Type of the MonitoredResource. List of possible values:
+                # https://cloud.google.com/monitoring/api/resources
+                #
+                # Value is set automatically for incoming errors and must not be set when
+                # reporting errors.
+            "version": "A String", # Represents the source code version that the developer provided,
+                # which could represent a version label or a Git SHA-1 hash, for example.
+                # For App Engine standard environment, the version is set to the version of
+                # the app.
+            "service": "A String", # An identifier of the service, such as the name of the
+                # executable, job, or Google App Engine service name. This field is expected
+                # to have a low number of values that are relatively stable over time, as
+                # opposed to `version`, which can be changed whenever new code is deployed.
+                #
+                # Contains the service name for error reports extracted from Google
+                # App Engine logs or `default` if the App Engine default service is used.
+          },
+        ],
       },
     ],
     "timeRangeBegin": "A String", # The timestamp specifies the start time to which the request was restricted.
