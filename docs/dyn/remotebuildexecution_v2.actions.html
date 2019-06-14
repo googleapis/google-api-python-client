@@ -1,0 +1,288 @@
+<html><body>
+<style>
+
+body, h1, h2, h3, div, span, p, pre, a {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-weight: inherit;
+  font-style: inherit;
+  font-size: 100%;
+  font-family: inherit;
+  vertical-align: baseline;
+}
+
+body {
+  font-size: 13px;
+  padding: 1em;
+}
+
+h1 {
+  font-size: 26px;
+  margin-bottom: 1em;
+}
+
+h2 {
+  font-size: 24px;
+  margin-bottom: 1em;
+}
+
+h3 {
+  font-size: 20px;
+  margin-bottom: 1em;
+  margin-top: 1em;
+}
+
+pre, code {
+  line-height: 1.5;
+  font-family: Monaco, 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Lucida Console', monospace;
+}
+
+pre {
+  margin-top: 0.5em;
+}
+
+h1, h2, h3, p {
+  font-family: Arial, sans serif;
+}
+
+h1, h2, h3 {
+  border-bottom: solid #CCC 1px;
+}
+
+.toc_element {
+  margin-top: 0.5em;
+}
+
+.firstline {
+  margin-left: 2 em;
+}
+
+.method  {
+  margin-top: 1em;
+  border: solid 1px #CCC;
+  padding: 1em;
+  background: #EEE;
+}
+
+.details {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+</style>
+
+<h1><a href="remotebuildexecution_v2.html">Remote Build Execution API</a> . <a href="remotebuildexecution_v2.actions.html">actions</a></h1>
+<h2>Instance Methods</h2>
+<p class="toc_element">
+  <code><a href="#execute">execute(instanceName, body, x__xgafv=None)</a></code></p>
+<p class="firstline">Execute an action remotely.</p>
+<h3>Method Details</h3>
+<div class="method">
+    <code class="details" id="execute">execute(instanceName, body, x__xgafv=None)</code>
+  <pre>Execute an action remotely.
+
+In order to execute an action, the client must first upload all of the
+inputs, the
+Command to run, and the
+Action into the
+ContentAddressableStorage.
+It then calls `Execute` with an `action_digest` referring to them. The
+server will run the action and eventually return the result.
+
+The input `Action`'s fields MUST meet the various canonicalization
+requirements specified in the documentation for their types so that it has
+the same digest as other logically equivalent `Action`s. The server MAY
+enforce the requirements and return errors if a non-canonical input is
+received. It MAY also proceed without verifying some or all of the
+requirements, such as for performance reasons. If the server does not
+verify the requirement, then it will treat the `Action` as distinct from
+another logically equivalent action if they hash differently.
+
+Returns a stream of
+google.longrunning.Operation messages
+describing the resulting execution, with eventual `response`
+ExecuteResponse. The
+`metadata` on the operation is of type
+ExecuteOperationMetadata.
+
+If the client remains connected after the first response is returned after
+the server, then updates are streamed as if the client had called
+WaitExecution
+until the execution completes or the request reaches an error. The
+operation can also be queried using Operations
+API.
+
+The server NEED NOT implement other methods or functionality of the
+Operations API.
+
+Errors discovered during creation of the `Operation` will be reported
+as gRPC Status errors, while errors that occurred while running the
+action will be reported in the `status` field of the `ExecuteResponse`. The
+server MUST NOT set the `error` field of the `Operation` proto.
+The possible errors include:
+
+* `INVALID_ARGUMENT`: One or more arguments are invalid.
+* `FAILED_PRECONDITION`: One or more errors occurred in setting up the
+  action requested, such as a missing input or command or no worker being
+  available. The client may be able to fix the errors and retry.
+* `RESOURCE_EXHAUSTED`: There is insufficient quota of some resource to run
+  the action.
+* `UNAVAILABLE`: Due to a transient condition, such as all workers being
+  occupied (and the server does not support a queue), the action could not
+  be started. The client should retry.
+* `INTERNAL`: An internal error occurred in the execution engine or the
+  worker.
+* `DEADLINE_EXCEEDED`: The execution timed out.
+* `CANCELLED`: The operation was cancelled by the client. This status is
+  only possible if the server implements the Operations API CancelOperation
+  method, and it was called for the current execution.
+
+In the case of a missing input or command, the server SHOULD additionally
+send a PreconditionFailure error detail
+where, for each requested blob not present in the CAS, there is a
+`Violation` with a `type` of `MISSING` and a `subject` of
+`"blobs/{hash}/{size}"` indicating the digest of the missing blob.
+
+Args:
+  instanceName: string, The instance of the execution system to operate against. A server may
+support multiple instances of the execution system (with their own workers,
+storage, caches, etc.). The server MAY require use of this field to select
+between them in an implementation-defined fashion, otherwise it can be
+omitted. (required)
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # A request message for
+      # Execution.Execute.
+    "resultsCachePolicy": { # A `ResultsCachePolicy` is used for fine-grained control over how action # An optional policy for the results of this execution in the remote cache.
+        # The server will have a default policy if this is not provided.
+        # This may be applied to both the ActionResult and the associated blobs.
+        # outputs are stored in the CAS and Action Cache.
+      "priority": 42, # The priority (relative importance) of this content in the overall cache.
+          # Generally, a lower value means a longer retention time or other advantage,
+          # but the interpretation of a given value is server-dependent. A priority of
+          # 0 means a *default* value, decided by the server.
+          #
+          # The particular semantics of this field is up to the server. In particular,
+          # every server will have their own supported range of priorities, and will
+          # decide how these map into retention/eviction policy.
+    },
+    "skipCacheLookup": True or False, # If true, the action will be executed even if its result is already
+        # present in the ActionCache.
+        # The execution is still allowed to be merged with other in-flight executions
+        # of the same action, however - semantically, the service MUST only guarantee
+        # that the results of an execution with this field set were not visible
+        # before the corresponding execution request was sent.
+        # Note that actions from execution requests setting this field set are still
+        # eligible to be entered into the action cache upon completion, and services
+        # SHOULD overwrite any existing entries that may exist. This allows
+        # skip_cache_lookup requests to be used as a mechanism for replacing action
+        # cache entries that reference outputs no longer available or that are
+        # poisoned in any way.
+        # If false, the result may be served from the action cache.
+    "actionDigest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest of the Action to
+        # execute.
+        # and its hash. The hash algorithm to use is defined by the server, but servers
+        # SHOULD use SHA-256.
+        #
+        # The size is considered to be an integral part of the digest and cannot be
+        # separated. That is, even if the `hash` field is correctly specified but
+        # `size_bytes` is not, the server MUST reject the request.
+        #
+        # The reason for including the size in the digest is as follows: in a great
+        # many cases, the server needs to know the size of the blob it is about to work
+        # with prior to starting an operation with it, such as flattening Merkle tree
+        # structures or streaming it to a worker. Technically, the server could
+        # implement a separate metadata store, but this results in a significantly more
+        # complicated implementation as opposed to having the client specify the size
+        # up-front (or storing the size along with the digest in every message where
+        # digests are embedded). This does mean that the API leaks some implementation
+        # details of (what we consider to be) a reasonable server implementation, but
+        # we consider this to be a worthwhile tradeoff.
+        #
+        # When a `Digest` is used to refer to a proto message, it always refers to the
+        # message in binary encoded form. To ensure consistent hashing, clients and
+        # servers MUST ensure that they serialize messages according to the following
+        # rules, even if there are alternate valid encodings for the same message:
+        #
+        # * Fields are serialized in tag order.
+        # * There are no unknown fields.
+        # * There are no duplicate fields.
+        # * Fields are serialized according to the default semantics for their type.
+        #
+        # Most protocol buffer implementations will always follow these rules when
+        # serializing, but care should be taken to avoid shortcuts. For instance,
+        # concatenating two messages to merge them may produce duplicate fields.
+      "sizeBytes": "A String", # The size of the blob, in bytes.
+      "hash": "A String", # The hash. In the case of SHA-256, it will always be a lowercase hex string
+          # exactly 64 characters long.
+    },
+    "executionPolicy": { # An `ExecutionPolicy` can be used to control the scheduling of the action. # An optional policy for execution of the action.
+        # The server will have a default policy if this is not provided.
+      "priority": 42, # The priority (relative importance) of this action. Generally, a lower value
+          # means that the action should be run sooner than actions having a greater
+          # priority value, but the interpretation of a given value is server-
+          # dependent. A priority of 0 means the *default* priority. Priorities may be
+          # positive or negative, and such actions should run later or sooner than
+          # actions having the default priority, respectively. The particular semantics
+          # of this field is up to the server. In particular, every server will have
+          # their own supported range of priorities, and will decide how these map into
+          # scheduling policy.
+    },
+  }
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # This resource represents a long-running operation that is the result of a
+      # network API call.
+    "response": { # The normal response of the operation in case of success.  If the original
+        # method returns no data on success, such as `Delete`, the response is
+        # `google.protobuf.Empty`.  If the original method is standard
+        # `Get`/`Create`/`Update`, the response should be the resource.  For other
+        # methods, the response should have the type `XxxResponse`, where `Xxx`
+        # is the original method name.  For example, if the original method name
+        # is `TakeSnapshot()`, the inferred response type is
+        # `TakeSnapshotResponse`.
+      "a_key": "", # Properties of the object. Contains field @type with type URL.
+    },
+    "metadata": { # Service-specific metadata associated with the operation.  It typically
+        # contains progress information and common metadata such as create time.
+        # Some services might not provide such metadata.  Any method that returns a
+        # long-running operation should document the metadata type, if any.
+      "a_key": "", # Properties of the object. Contains field @type with type URL.
+    },
+    "done": True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
+    "name": "A String", # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
+    "error": { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
+        #
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
+      "message": "A String", # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
+      "code": 42, # The status code, which should be an enum value of google.rpc.Code.
+      "details": [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
+        {
+          "a_key": "", # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+    },
+  }</pre>
+</div>
+
+</body></html>
