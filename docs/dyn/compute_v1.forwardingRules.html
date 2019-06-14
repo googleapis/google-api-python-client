@@ -81,13 +81,13 @@ h1, h2, h3 {
   <code><a href="#aggregatedList_next">aggregatedList_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#delete">delete(project, region, forwardingRule)</a></code></p>
+  <code><a href="#delete">delete(project, region, forwardingRule, requestId=None)</a></code></p>
 <p class="firstline">Deletes the specified ForwardingRule resource.</p>
 <p class="toc_element">
   <code><a href="#get">get(project, region, forwardingRule)</a></code></p>
 <p class="firstline">Returns the specified ForwardingRule resource.</p>
 <p class="toc_element">
-  <code><a href="#insert">insert(project, region, body)</a></code></p>
+  <code><a href="#insert">insert(project, region, body, requestId=None)</a></code></p>
 <p class="firstline">Creates a ForwardingRule resource in the specified project and region using the data included in the request.</p>
 <p class="toc_element">
   <code><a href="#list">list(project, region, orderBy=None, maxResults=None, pageToken=None, filter=None)</a></code></p>
@@ -96,7 +96,7 @@ h1, h2, h3 {
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#setTarget">setTarget(project, region, forwardingRule, body)</a></code></p>
+  <code><a href="#setTarget">setTarget(project, region, forwardingRule, body, requestId=None)</a></code></p>
 <p class="firstline">Changes target URL for forwarding rule. The new target should be of the same type as the old target.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -112,47 +112,73 @@ You can also sort results in descending order based on the creation timestamp us
 Currently, only sorting by name or creationTimestamp desc is supported.
   maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
-  filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
+  filter: string, A filter expression that filters resources listed in the response. The expression must specify the field name, a comparison operator, and the value that you want to use for filtering. The value must be a string, a number, or a boolean. The comparison operator must be either =, !=, >, or <.
 
-The field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.
+For example, if you are filtering Compute Engine instances, you can exclude instances named example-instance by specifying name != example-instance.
 
-For example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.
+You can also filter nested fields. For example, you could specify scheduling.automaticRestart = false to include instances only if they are not scheduled for automatic restarts. You can use filtering on nested fields to filter based on resource labels.
 
-You can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
-
-To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
+To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart = true) (cpuPlatform = "Intel Skylake"). By default, each expression is an AND expression. However, you can include AND and OR expressions explicitly. For example, (cpuPlatform = "Intel Skylake") OR (cpuPlatform = "Intel Broadwell") AND (scheduling.automaticRestart = true).
 
 Returns:
   An object of the form:
 
     {
     "nextPageToken": "A String", # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
-    "items": { # A map of scoped forwarding rule lists.
+    "kind": "compute#forwardingRuleAggregatedList", # [Output Only] Type of resource. Always compute#forwardingRuleAggregatedList for lists of forwarding rules.
+    "items": { # A list of ForwardingRulesScopedList resources.
       "a_key": { # Name of the scope containing this set of addresses.
-        "forwardingRules": [ # List of forwarding rules contained in this scope.
-          { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple.
+        "forwardingRules": [ # A list of forwarding rules contained in this scope.
+          { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple. (== resource_for beta.forwardingRules ==) (== resource_for v1.forwardingRules ==) (== resource_for beta.globalForwardingRules ==) (== resource_for v1.globalForwardingRules ==) (== resource_for beta.regionForwardingRules ==) (== resource_for v1.regionForwardingRules ==)
               "kind": "compute#forwardingRule", # [Output Only] Type of the resource. Always compute#forwardingRule for Forwarding Rule resources.
+              "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object. For INTERNAL_SELF_MANAGED load balancing, only HTTP and HTTPS targets are valid.
               "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
+              "serviceName": "A String", # [Output Only] The internal fully qualified service name for this Forwarding Rule.
+                  #
+                  # This field is only used for internal load balancing.
+              "networkTier": "A String", # This signifies the networking tier used for configuring this load balancer and can only take the following values: PREMIUM , STANDARD.
+                  #
+                  # For regional ForwardingRule, the valid values are PREMIUM and STANDARD. For GlobalForwardingRule, the valid value is PREMIUM.
+                  #
+                  # If this field is not specified, it is assumed to be PREMIUM. If IPAddress is specified, this value must be equal to the networkTier of the Address.
               "IPAddress": "A String", # The IP address that this forwarding rule is serving on behalf of.
                   #
-                  # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
+                  # Addresses are restricted based on the forwarding rule's load balancing scheme (EXTERNAL or INTERNAL) and scope (global or regional).
                   #
-                  # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule.
-              "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules.
+                  # When the load balancing scheme is EXTERNAL, for global forwarding rules, the address must be a global IP, and for regional forwarding rules, the address must live in the same region as the forwarding rule. If this field is empty, an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
+                  #
+                  # When the load balancing scheme is INTERNAL_SELF_MANAGED, this must be a URL reference to an existing Address resource ( internal regional static IP address), with a purpose of GCE_END_POINT and address_type of INTERNAL.
+                  #
+                  # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnet configured for the forwarding rule. By default, if this field is empty, an ephemeral internal IP address will be automatically allocated from the IP range of the subnet or network configured for this forwarding rule.
+                  #
+                  # An address can be specified either by a literal IP address or a URL reference to an existing Address resource. The following examples are all valid:
+                  # - 100.1.2.3
+                  # - https://www.googleapis.com/compute/v1/projects/project/regions/region/addresses/address
+                  # - projects/project/regions/region/addresses/address
+                  # - regions/region/addresses/address
+                  # - global/addresses/address
+                  # - address
+              "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules. You must specify this field as part of the HTTP request URL. It is not settable as a field in the request body.
+              "allPorts": True or False, # This field is used along with the backend_service field for internal load balancing or with the target field for internal TargetInstance. This field cannot be used with port or portRange fields.
+                  #
+                  # When the load balancing scheme is INTERNAL and protocol is TCP/UDP, specify this field to allow packets addressed to any ports will be forwarded to the backends configured with this forwarding rule.
               "ports": [ # This field is used along with the backend_service field for internal load balancing.
                   #
-                  # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
+                  # When the load balancing scheme is INTERNAL, a list of ports can be configured, for example, ['80'], ['8000','9000'] etc. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
                   #
                   # You may specify a maximum of up to 5 ports.
                 "A String",
               ],
+              "ipVersion": "A String", # The IP Version that will be used by this forwarding rule. Valid options are IPV4 or IPV6. This can only be specified for an external global forwarding rule.
               "network": "A String", # This field is not used for external load balancing.
                   #
-                  # For internal load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
-              "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, EXTERNAL The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
-              "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object.
+                  # For INTERNAL and INTERNAL_SELF_MANAGED load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
+              "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, INTERNAL_SELF_MANAGED, EXTERNAL. The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of INTERNAL_SELF_MANAGED means that this will be used for Internal Global HTTP(S) LB. The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
+              "serviceLabel": "A String", # An optional prefix to the service name for this Forwarding Rule. If specified, will be the first label of the fully qualified service name.
                   #
-                  # This field is not used for internal load balancing.
+                  # The label must be 1-63 characters long, and comply with RFC1035. Specifically, the label must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+                  #
+                  # This field is only used for internal load balancing.
               "portRange": "A String", # This field is used along with the target field for TargetHttpProxy, TargetHttpsProxy, TargetSslProxy, TargetTcpProxy, TargetVpnGateway, TargetPool, TargetInstance.
                   #
                   # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
@@ -160,16 +186,16 @@ Returns:
                   # Some types of forwarding target have constraints on the acceptable ports:
                   # - TargetHttpProxy: 80, 8080
                   # - TargetHttpsProxy: 443
-                  # - TargetSslProxy: 443
+                  # - TargetTcpProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1688, 1883, 5222
+                  # - TargetSslProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1688, 1883, 5222
                   # - TargetVpnGateway: 500, 4500
-                  # -
-              "backendService": "A String", # This field is not used for external load balancing.
+              "backendService": "A String", # This field is only used for INTERNAL load balancing.
                   #
                   # For internal load balancing, this field identifies the BackendService resource to receive the matched traffic.
               "IPProtocol": "A String", # The IP protocol to which this rule applies. Valid options are TCP, UDP, ESP, AH, SCTP or ICMP.
                   #
-                  # When the load balancing scheme is INTERNAL, only TCP and UDP are valid.
-              "subnetwork": "A String", # This field is not used for external load balancing.
+                  # When the load balancing scheme is INTERNAL, only TCP and UDP are valid. When the load balancing scheme is INTERNAL_SELF_MANAGED, only TCPis valid.
+              "subnetwork": "A String", # This field is only used for INTERNAL load balancing.
                   #
                   # For internal load balancing, this field identifies the subnetwork that the load balanced IP should belong to for this Forwarding Rule.
                   #
@@ -177,7 +203,7 @@ Returns:
               "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
               "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
               "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-              "name": "A String", # Name of the resource; provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+              "name": "A String", # Name of the resource; provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
             },
         ],
         "warning": { # Informational warning which replaces the list of forwarding rules when the list is empty.
@@ -193,8 +219,18 @@ Returns:
         },
       },
     },
-    "kind": "compute#forwardingRuleAggregatedList", # [Output Only] Type of resource. Always compute#forwardingRuleAggregatedList for lists of forwarding rules.
-    "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
+    "warning": { # [Output Only] Informational warning message.
+      "message": "A String", # [Output Only] A human-readable description of the warning code.
+      "code": "A String", # [Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.
+      "data": [ # [Output Only] Metadata about this warning in key: value format. For example:
+          # "data": [ { "key": "scope", "value": "zones/us-east1-d" }
+        {
+          "value": "A String", # [Output Only] A warning data value corresponding to the key.
+          "key": "A String", # [Output Only] A key that provides more detail on the warning being returned. For example, for warnings where there are no results in a list request for a particular zone, this key might be scope and the key value might be the zone name. Other examples might be a key indicating a deprecated resource and a suggested replacement, or a warning about invalid network settings (for example, if an instance attempts to perform IP forwarding but is not enabled for IP forwarding).
+        },
+      ],
+    },
+    "id": "A String", # [Output Only] Unique identifier for the resource; defined by the server.
     "selfLink": "A String", # [Output Only] Server-defined URL for this resource.
   }</pre>
 </div>
@@ -214,23 +250,37 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="delete">delete(project, region, forwardingRule)</code>
+    <code class="details" id="delete">delete(project, region, forwardingRule, requestId=None)</code>
   <pre>Deletes the specified ForwardingRule resource.
 
 Args:
   project: string, Project ID for this request. (required)
   region: string, Name of the region scoping this request. (required)
   forwardingRule: string, Name of the ForwardingRule resource to delete. (required)
+  requestId: string, An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.
+
+For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.
+
+The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).
 
 Returns:
   An object of the form:
 
-    { # An Operation resource, used to manage asynchronous API requests.
+    { # Represents an Operation resource.
+      #
+      # You can use an operation resource to manage asynchronous API requests. For more information, read Handling API responses.
+      #
+      # Operations can be global, regional or zonal.
+      # - For global operations, use the globalOperations resource.
+      # - For regional operations, use the regionOperations resource.
+      # - For zonal operations, use the zonalOperations resource.
+      #
+      # For more information, read  Global, Regional, and Zonal Resources. (== resource_for v1.globalOperations ==) (== resource_for beta.globalOperations ==) (== resource_for v1.regionOperations ==) (== resource_for beta.regionOperations ==) (== resource_for v1.zoneOperations ==) (== resource_for beta.zoneOperations ==)
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
-    "clientOperationId": "A String", # [Output Only] Reserved for future use.
+    "clientOperationId": "A String", # [Output Only] The value of `requestId` if you provided it in the request. Not present otherwise.
     "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
-    "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
+    "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only applicable when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
     "operationType": "A String", # [Output Only] The type of operation, such as insert, update, or delete, and so on.
     "httpErrorMessage": "A String", # [Output Only] If the operation fails, this field contains the HTTP error message that was returned, such as NOT FOUND.
@@ -256,7 +306,7 @@ Returns:
     "startTime": "A String", # [Output Only] The time that this operation was started by the server. This value is in RFC3339 text format.
     "kind": "compute#operation", # [Output Only] Type of the resource. Always compute#operation for Operation resources.
     "name": "A String", # [Output Only] Name of the resource.
-    "region": "A String", # [Output Only] The URL of the region where the operation resides. Only available when performing regional operations.
+    "region": "A String", # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
     "error": { # [Output Only] If errors are generated during processing of the operation, this field will be populated.
       "errors": [ # [Output Only] The array of errors encountered while processing this operation.
         {
@@ -284,29 +334,56 @@ Args:
 Returns:
   An object of the form:
 
-    { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple.
+    { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple. (== resource_for beta.forwardingRules ==) (== resource_for v1.forwardingRules ==) (== resource_for beta.globalForwardingRules ==) (== resource_for v1.globalForwardingRules ==) (== resource_for beta.regionForwardingRules ==) (== resource_for v1.regionForwardingRules ==)
       "kind": "compute#forwardingRule", # [Output Only] Type of the resource. Always compute#forwardingRule for Forwarding Rule resources.
+      "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object. For INTERNAL_SELF_MANAGED load balancing, only HTTP and HTTPS targets are valid.
       "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
+      "serviceName": "A String", # [Output Only] The internal fully qualified service name for this Forwarding Rule.
+          #
+          # This field is only used for internal load balancing.
+      "networkTier": "A String", # This signifies the networking tier used for configuring this load balancer and can only take the following values: PREMIUM , STANDARD.
+          #
+          # For regional ForwardingRule, the valid values are PREMIUM and STANDARD. For GlobalForwardingRule, the valid value is PREMIUM.
+          #
+          # If this field is not specified, it is assumed to be PREMIUM. If IPAddress is specified, this value must be equal to the networkTier of the Address.
       "IPAddress": "A String", # The IP address that this forwarding rule is serving on behalf of.
           #
-          # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
+          # Addresses are restricted based on the forwarding rule's load balancing scheme (EXTERNAL or INTERNAL) and scope (global or regional).
           #
-          # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule.
-      "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules.
+          # When the load balancing scheme is EXTERNAL, for global forwarding rules, the address must be a global IP, and for regional forwarding rules, the address must live in the same region as the forwarding rule. If this field is empty, an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
+          #
+          # When the load balancing scheme is INTERNAL_SELF_MANAGED, this must be a URL reference to an existing Address resource ( internal regional static IP address), with a purpose of GCE_END_POINT and address_type of INTERNAL.
+          #
+          # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnet configured for the forwarding rule. By default, if this field is empty, an ephemeral internal IP address will be automatically allocated from the IP range of the subnet or network configured for this forwarding rule.
+          #
+          # An address can be specified either by a literal IP address or a URL reference to an existing Address resource. The following examples are all valid:
+          # - 100.1.2.3
+          # - https://www.googleapis.com/compute/v1/projects/project/regions/region/addresses/address
+          # - projects/project/regions/region/addresses/address
+          # - regions/region/addresses/address
+          # - global/addresses/address
+          # - address
+      "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules. You must specify this field as part of the HTTP request URL. It is not settable as a field in the request body.
+      "allPorts": True or False, # This field is used along with the backend_service field for internal load balancing or with the target field for internal TargetInstance. This field cannot be used with port or portRange fields.
+          #
+          # When the load balancing scheme is INTERNAL and protocol is TCP/UDP, specify this field to allow packets addressed to any ports will be forwarded to the backends configured with this forwarding rule.
       "ports": [ # This field is used along with the backend_service field for internal load balancing.
           #
-          # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
+          # When the load balancing scheme is INTERNAL, a list of ports can be configured, for example, ['80'], ['8000','9000'] etc. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
           #
           # You may specify a maximum of up to 5 ports.
         "A String",
       ],
+      "ipVersion": "A String", # The IP Version that will be used by this forwarding rule. Valid options are IPV4 or IPV6. This can only be specified for an external global forwarding rule.
       "network": "A String", # This field is not used for external load balancing.
           #
-          # For internal load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
-      "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, EXTERNAL The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
-      "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object.
+          # For INTERNAL and INTERNAL_SELF_MANAGED load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
+      "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, INTERNAL_SELF_MANAGED, EXTERNAL. The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of INTERNAL_SELF_MANAGED means that this will be used for Internal Global HTTP(S) LB. The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
+      "serviceLabel": "A String", # An optional prefix to the service name for this Forwarding Rule. If specified, will be the first label of the fully qualified service name.
           #
-          # This field is not used for internal load balancing.
+          # The label must be 1-63 characters long, and comply with RFC1035. Specifically, the label must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+          #
+          # This field is only used for internal load balancing.
       "portRange": "A String", # This field is used along with the target field for TargetHttpProxy, TargetHttpsProxy, TargetSslProxy, TargetTcpProxy, TargetVpnGateway, TargetPool, TargetInstance.
           #
           # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
@@ -314,16 +391,16 @@ Returns:
           # Some types of forwarding target have constraints on the acceptable ports:
           # - TargetHttpProxy: 80, 8080
           # - TargetHttpsProxy: 443
-          # - TargetSslProxy: 443
+          # - TargetTcpProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1688, 1883, 5222
+          # - TargetSslProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1688, 1883, 5222
           # - TargetVpnGateway: 500, 4500
-          # -
-      "backendService": "A String", # This field is not used for external load balancing.
+      "backendService": "A String", # This field is only used for INTERNAL load balancing.
           #
           # For internal load balancing, this field identifies the BackendService resource to receive the matched traffic.
       "IPProtocol": "A String", # The IP protocol to which this rule applies. Valid options are TCP, UDP, ESP, AH, SCTP or ICMP.
           #
-          # When the load balancing scheme is INTERNAL, only TCP and UDP are valid.
-      "subnetwork": "A String", # This field is not used for external load balancing.
+          # When the load balancing scheme is INTERNAL, only TCP and UDP are valid. When the load balancing scheme is INTERNAL_SELF_MANAGED, only TCPis valid.
+      "subnetwork": "A String", # This field is only used for INTERNAL load balancing.
           #
           # For internal load balancing, this field identifies the subnetwork that the load balanced IP should belong to for this Forwarding Rule.
           #
@@ -331,12 +408,12 @@ Returns:
       "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
       "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
       "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-      "name": "A String", # Name of the resource; provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+      "name": "A String", # Name of the resource; provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
     }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="insert">insert(project, region, body)</code>
+    <code class="details" id="insert">insert(project, region, body, requestId=None)</code>
   <pre>Creates a ForwardingRule resource in the specified project and region using the data included in the request.
 
 Args:
@@ -345,29 +422,56 @@ Args:
   body: object, The request body. (required)
     The object takes the form of:
 
-{ # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple.
+{ # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple. (== resource_for beta.forwardingRules ==) (== resource_for v1.forwardingRules ==) (== resource_for beta.globalForwardingRules ==) (== resource_for v1.globalForwardingRules ==) (== resource_for beta.regionForwardingRules ==) (== resource_for v1.regionForwardingRules ==)
     "kind": "compute#forwardingRule", # [Output Only] Type of the resource. Always compute#forwardingRule for Forwarding Rule resources.
+    "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object. For INTERNAL_SELF_MANAGED load balancing, only HTTP and HTTPS targets are valid.
     "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
+    "serviceName": "A String", # [Output Only] The internal fully qualified service name for this Forwarding Rule.
+        # 
+        # This field is only used for internal load balancing.
+    "networkTier": "A String", # This signifies the networking tier used for configuring this load balancer and can only take the following values: PREMIUM , STANDARD.
+        # 
+        # For regional ForwardingRule, the valid values are PREMIUM and STANDARD. For GlobalForwardingRule, the valid value is PREMIUM.
+        # 
+        # If this field is not specified, it is assumed to be PREMIUM. If IPAddress is specified, this value must be equal to the networkTier of the Address.
     "IPAddress": "A String", # The IP address that this forwarding rule is serving on behalf of.
         # 
-        # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
+        # Addresses are restricted based on the forwarding rule's load balancing scheme (EXTERNAL or INTERNAL) and scope (global or regional).
         # 
-        # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule.
-    "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules.
+        # When the load balancing scheme is EXTERNAL, for global forwarding rules, the address must be a global IP, and for regional forwarding rules, the address must live in the same region as the forwarding rule. If this field is empty, an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
+        # 
+        # When the load balancing scheme is INTERNAL_SELF_MANAGED, this must be a URL reference to an existing Address resource ( internal regional static IP address), with a purpose of GCE_END_POINT and address_type of INTERNAL.
+        # 
+        # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnet configured for the forwarding rule. By default, if this field is empty, an ephemeral internal IP address will be automatically allocated from the IP range of the subnet or network configured for this forwarding rule.
+        # 
+        # An address can be specified either by a literal IP address or a URL reference to an existing Address resource. The following examples are all valid:
+        # - 100.1.2.3
+        # - https://www.googleapis.com/compute/v1/projects/project/regions/region/addresses/address
+        # - projects/project/regions/region/addresses/address
+        # - regions/region/addresses/address
+        # - global/addresses/address
+        # - address
+    "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules. You must specify this field as part of the HTTP request URL. It is not settable as a field in the request body.
+    "allPorts": True or False, # This field is used along with the backend_service field for internal load balancing or with the target field for internal TargetInstance. This field cannot be used with port or portRange fields.
+        # 
+        # When the load balancing scheme is INTERNAL and protocol is TCP/UDP, specify this field to allow packets addressed to any ports will be forwarded to the backends configured with this forwarding rule.
     "ports": [ # This field is used along with the backend_service field for internal load balancing.
         # 
-        # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
+        # When the load balancing scheme is INTERNAL, a list of ports can be configured, for example, ['80'], ['8000','9000'] etc. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
         # 
         # You may specify a maximum of up to 5 ports.
       "A String",
     ],
+    "ipVersion": "A String", # The IP Version that will be used by this forwarding rule. Valid options are IPV4 or IPV6. This can only be specified for an external global forwarding rule.
     "network": "A String", # This field is not used for external load balancing.
         # 
-        # For internal load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
-    "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, EXTERNAL The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
-    "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object.
+        # For INTERNAL and INTERNAL_SELF_MANAGED load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
+    "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, INTERNAL_SELF_MANAGED, EXTERNAL. The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of INTERNAL_SELF_MANAGED means that this will be used for Internal Global HTTP(S) LB. The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
+    "serviceLabel": "A String", # An optional prefix to the service name for this Forwarding Rule. If specified, will be the first label of the fully qualified service name.
         # 
-        # This field is not used for internal load balancing.
+        # The label must be 1-63 characters long, and comply with RFC1035. Specifically, the label must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+        # 
+        # This field is only used for internal load balancing.
     "portRange": "A String", # This field is used along with the target field for TargetHttpProxy, TargetHttpsProxy, TargetSslProxy, TargetTcpProxy, TargetVpnGateway, TargetPool, TargetInstance.
         # 
         # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
@@ -375,16 +479,16 @@ Args:
         # Some types of forwarding target have constraints on the acceptable ports:
         # - TargetHttpProxy: 80, 8080
         # - TargetHttpsProxy: 443
-        # - TargetSslProxy: 443
+        # - TargetTcpProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1688, 1883, 5222
+        # - TargetSslProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1688, 1883, 5222
         # - TargetVpnGateway: 500, 4500
-        # -
-    "backendService": "A String", # This field is not used for external load balancing.
+    "backendService": "A String", # This field is only used for INTERNAL load balancing.
         # 
         # For internal load balancing, this field identifies the BackendService resource to receive the matched traffic.
     "IPProtocol": "A String", # The IP protocol to which this rule applies. Valid options are TCP, UDP, ESP, AH, SCTP or ICMP.
         # 
-        # When the load balancing scheme is INTERNAL, only TCP and UDP are valid.
-    "subnetwork": "A String", # This field is not used for external load balancing.
+        # When the load balancing scheme is INTERNAL, only TCP and UDP are valid. When the load balancing scheme is INTERNAL_SELF_MANAGED, only TCPis valid.
+    "subnetwork": "A String", # This field is only used for INTERNAL load balancing.
         # 
         # For internal load balancing, this field identifies the subnetwork that the load balanced IP should belong to for this Forwarding Rule.
         # 
@@ -392,19 +496,33 @@ Args:
     "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "name": "A String", # Name of the resource; provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+    "name": "A String", # Name of the resource; provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
   }
 
+  requestId: string, An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.
+
+For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.
+
+The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).
 
 Returns:
   An object of the form:
 
-    { # An Operation resource, used to manage asynchronous API requests.
+    { # Represents an Operation resource.
+      #
+      # You can use an operation resource to manage asynchronous API requests. For more information, read Handling API responses.
+      #
+      # Operations can be global, regional or zonal.
+      # - For global operations, use the globalOperations resource.
+      # - For regional operations, use the regionOperations resource.
+      # - For zonal operations, use the zonalOperations resource.
+      #
+      # For more information, read  Global, Regional, and Zonal Resources. (== resource_for v1.globalOperations ==) (== resource_for beta.globalOperations ==) (== resource_for v1.regionOperations ==) (== resource_for beta.regionOperations ==) (== resource_for v1.zoneOperations ==) (== resource_for beta.zoneOperations ==)
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
-    "clientOperationId": "A String", # [Output Only] Reserved for future use.
+    "clientOperationId": "A String", # [Output Only] The value of `requestId` if you provided it in the request. Not present otherwise.
     "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
-    "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
+    "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only applicable when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
     "operationType": "A String", # [Output Only] The type of operation, such as insert, update, or delete, and so on.
     "httpErrorMessage": "A String", # [Output Only] If the operation fails, this field contains the HTTP error message that was returned, such as NOT FOUND.
@@ -430,7 +548,7 @@ Returns:
     "startTime": "A String", # [Output Only] The time that this operation was started by the server. This value is in RFC3339 text format.
     "kind": "compute#operation", # [Output Only] Type of the resource. Always compute#operation for Operation resources.
     "name": "A String", # [Output Only] Name of the resource.
-    "region": "A String", # [Output Only] The URL of the region where the operation resides. Only available when performing regional operations.
+    "region": "A String", # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
     "error": { # [Output Only] If errors are generated during processing of the operation, this field will be populated.
       "errors": [ # [Output Only] The array of errors encountered while processing this operation.
         {
@@ -460,45 +578,71 @@ You can also sort results in descending order based on the creation timestamp us
 Currently, only sorting by name or creationTimestamp desc is supported.
   maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
-  filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
+  filter: string, A filter expression that filters resources listed in the response. The expression must specify the field name, a comparison operator, and the value that you want to use for filtering. The value must be a string, a number, or a boolean. The comparison operator must be either =, !=, >, or <.
 
-The field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.
+For example, if you are filtering Compute Engine instances, you can exclude instances named example-instance by specifying name != example-instance.
 
-For example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.
+You can also filter nested fields. For example, you could specify scheduling.automaticRestart = false to include instances only if they are not scheduled for automatic restarts. You can use filtering on nested fields to filter based on resource labels.
 
-You can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
-
-To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
+To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart = true) (cpuPlatform = "Intel Skylake"). By default, each expression is an AND expression. However, you can include AND and OR expressions explicitly. For example, (cpuPlatform = "Intel Skylake") OR (cpuPlatform = "Intel Broadwell") AND (scheduling.automaticRestart = true).
 
 Returns:
   An object of the form:
 
     { # Contains a list of ForwardingRule resources.
     "nextPageToken": "A String", # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
+    "kind": "compute#forwardingRuleList", # Type of resource.
     "items": [ # A list of ForwardingRule resources.
-      { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple.
+      { # A ForwardingRule resource. A ForwardingRule resource specifies which pool of target virtual machines to forward a packet to if it matches the given [IPAddress, IPProtocol, ports] tuple. (== resource_for beta.forwardingRules ==) (== resource_for v1.forwardingRules ==) (== resource_for beta.globalForwardingRules ==) (== resource_for v1.globalForwardingRules ==) (== resource_for beta.regionForwardingRules ==) (== resource_for v1.regionForwardingRules ==)
           "kind": "compute#forwardingRule", # [Output Only] Type of the resource. Always compute#forwardingRule for Forwarding Rule resources.
+          "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object. For INTERNAL_SELF_MANAGED load balancing, only HTTP and HTTPS targets are valid.
           "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
+          "serviceName": "A String", # [Output Only] The internal fully qualified service name for this Forwarding Rule.
+              #
+              # This field is only used for internal load balancing.
+          "networkTier": "A String", # This signifies the networking tier used for configuring this load balancer and can only take the following values: PREMIUM , STANDARD.
+              #
+              # For regional ForwardingRule, the valid values are PREMIUM and STANDARD. For GlobalForwardingRule, the valid value is PREMIUM.
+              #
+              # If this field is not specified, it is assumed to be PREMIUM. If IPAddress is specified, this value must be equal to the networkTier of the Address.
           "IPAddress": "A String", # The IP address that this forwarding rule is serving on behalf of.
               #
-              # For global forwarding rules, the address must be a global IP. For regional forwarding rules, the address must live in the same region as the forwarding rule. By default, this field is empty and an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
+              # Addresses are restricted based on the forwarding rule's load balancing scheme (EXTERNAL or INTERNAL) and scope (global or regional).
               #
-              # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnetwork configured for the forwarding rule. A reserved address cannot be used. If the field is empty, the IP address will be automatically allocated from the internal IP range of the subnetwork or network configured for this forwarding rule.
-          "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules.
+              # When the load balancing scheme is EXTERNAL, for global forwarding rules, the address must be a global IP, and for regional forwarding rules, the address must live in the same region as the forwarding rule. If this field is empty, an ephemeral IPv4 address from the same scope (global or regional) will be assigned. A regional forwarding rule supports IPv4 only. A global forwarding rule supports either IPv4 or IPv6.
+              #
+              # When the load balancing scheme is INTERNAL_SELF_MANAGED, this must be a URL reference to an existing Address resource ( internal regional static IP address), with a purpose of GCE_END_POINT and address_type of INTERNAL.
+              #
+              # When the load balancing scheme is INTERNAL, this can only be an RFC 1918 IP address belonging to the network/subnet configured for the forwarding rule. By default, if this field is empty, an ephemeral internal IP address will be automatically allocated from the IP range of the subnet or network configured for this forwarding rule.
+              #
+              # An address can be specified either by a literal IP address or a URL reference to an existing Address resource. The following examples are all valid:
+              # - 100.1.2.3
+              # - https://www.googleapis.com/compute/v1/projects/project/regions/region/addresses/address
+              # - projects/project/regions/region/addresses/address
+              # - regions/region/addresses/address
+              # - global/addresses/address
+              # - address
+          "region": "A String", # [Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules. You must specify this field as part of the HTTP request URL. It is not settable as a field in the request body.
+          "allPorts": True or False, # This field is used along with the backend_service field for internal load balancing or with the target field for internal TargetInstance. This field cannot be used with port or portRange fields.
+              #
+              # When the load balancing scheme is INTERNAL and protocol is TCP/UDP, specify this field to allow packets addressed to any ports will be forwarded to the backends configured with this forwarding rule.
           "ports": [ # This field is used along with the backend_service field for internal load balancing.
               #
-              # When the load balancing scheme is INTERNAL, a single port or a comma separated list of ports can be configured. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
+              # When the load balancing scheme is INTERNAL, a list of ports can be configured, for example, ['80'], ['8000','9000'] etc. Only packets addressed to these ports will be forwarded to the backends configured with this forwarding rule.
               #
               # You may specify a maximum of up to 5 ports.
             "A String",
           ],
+          "ipVersion": "A String", # The IP Version that will be used by this forwarding rule. Valid options are IPV4 or IPV6. This can only be specified for an external global forwarding rule.
           "network": "A String", # This field is not used for external load balancing.
               #
-              # For internal load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
-          "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, EXTERNAL The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
-          "target": "A String", # The URL of the target resource to receive the matched traffic. For regional forwarding rules, this target must live in the same region as the forwarding rule. For global forwarding rules, this target must be a global load balancing resource. The forwarded traffic must be of a type appropriate to the target object.
+              # For INTERNAL and INTERNAL_SELF_MANAGED load balancing, this field identifies the network that the load balanced IP should belong to for this Forwarding Rule. If this field is not specified, the default network will be used.
+          "loadBalancingScheme": "A String", # This signifies what the ForwardingRule will be used for and can only take the following values: INTERNAL, INTERNAL_SELF_MANAGED, EXTERNAL. The value of INTERNAL means that this will be used for Internal Network Load Balancing (TCP, UDP). The value of INTERNAL_SELF_MANAGED means that this will be used for Internal Global HTTP(S) LB. The value of EXTERNAL means that this will be used for External Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
+          "serviceLabel": "A String", # An optional prefix to the service name for this Forwarding Rule. If specified, will be the first label of the fully qualified service name.
               #
-              # This field is not used for internal load balancing.
+              # The label must be 1-63 characters long, and comply with RFC1035. Specifically, the label must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+              #
+              # This field is only used for internal load balancing.
           "portRange": "A String", # This field is used along with the target field for TargetHttpProxy, TargetHttpsProxy, TargetSslProxy, TargetTcpProxy, TargetVpnGateway, TargetPool, TargetInstance.
               #
               # Applicable only when IPProtocol is TCP, UDP, or SCTP, only packets addressed to ports in the specified range will be forwarded to target. Forwarding rules with the same [IPAddress, IPProtocol] pair must have disjoint port ranges.
@@ -506,16 +650,16 @@ Returns:
               # Some types of forwarding target have constraints on the acceptable ports:
               # - TargetHttpProxy: 80, 8080
               # - TargetHttpsProxy: 443
-              # - TargetSslProxy: 443
+              # - TargetTcpProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1688, 1883, 5222
+              # - TargetSslProxy: 25, 43, 110, 143, 195, 443, 465, 587, 700, 993, 995, 1688, 1883, 5222
               # - TargetVpnGateway: 500, 4500
-              # -
-          "backendService": "A String", # This field is not used for external load balancing.
+          "backendService": "A String", # This field is only used for INTERNAL load balancing.
               #
               # For internal load balancing, this field identifies the BackendService resource to receive the matched traffic.
           "IPProtocol": "A String", # The IP protocol to which this rule applies. Valid options are TCP, UDP, ESP, AH, SCTP or ICMP.
               #
-              # When the load balancing scheme is INTERNAL, only TCP and UDP are valid.
-          "subnetwork": "A String", # This field is not used for external load balancing.
+              # When the load balancing scheme is INTERNAL, only TCP and UDP are valid. When the load balancing scheme is INTERNAL_SELF_MANAGED, only TCPis valid.
+          "subnetwork": "A String", # This field is only used for INTERNAL load balancing.
               #
               # For internal load balancing, this field identifies the subnetwork that the load balanced IP should belong to for this Forwarding Rule.
               #
@@ -523,11 +667,21 @@ Returns:
           "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
           "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
           "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-          "name": "A String", # Name of the resource; provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+          "name": "A String", # Name of the resource; provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
         },
     ],
-    "kind": "compute#forwardingRuleList", # Type of resource.
-    "id": "A String", # [Output Only] Unique identifier for the resource. Set by the server.
+    "warning": { # [Output Only] Informational warning message.
+      "message": "A String", # [Output Only] A human-readable description of the warning code.
+      "code": "A String", # [Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.
+      "data": [ # [Output Only] Metadata about this warning in key: value format. For example:
+          # "data": [ { "key": "scope", "value": "zones/us-east1-d" }
+        {
+          "value": "A String", # [Output Only] A warning data value corresponding to the key.
+          "key": "A String", # [Output Only] A key that provides more detail on the warning being returned. For example, for warnings where there are no results in a list request for a particular zone, this key might be scope and the key value might be the zone name. Other examples might be a key indicating a deprecated resource and a suggested replacement, or a warning about invalid network settings (for example, if an instance attempts to perform IP forwarding but is not enabled for IP forwarding).
+        },
+      ],
+    },
+    "id": "A String", # [Output Only] Unique identifier for the resource; defined by the server.
     "selfLink": "A String", # [Output Only] Server-defined URL for this resource.
   }</pre>
 </div>
@@ -547,7 +701,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="setTarget">setTarget(project, region, forwardingRule, body)</code>
+    <code class="details" id="setTarget">setTarget(project, region, forwardingRule, body, requestId=None)</code>
   <pre>Changes target URL for forwarding rule. The new target should be of the same type as the old target.
 
 Args:
@@ -561,16 +715,30 @@ Args:
     "target": "A String",
   }
 
+  requestId: string, An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.
+
+For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.
+
+The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).
 
 Returns:
   An object of the form:
 
-    { # An Operation resource, used to manage asynchronous API requests.
+    { # Represents an Operation resource.
+      #
+      # You can use an operation resource to manage asynchronous API requests. For more information, read Handling API responses.
+      #
+      # Operations can be global, regional or zonal.
+      # - For global operations, use the globalOperations resource.
+      # - For regional operations, use the regionOperations resource.
+      # - For zonal operations, use the zonalOperations resource.
+      #
+      # For more information, read  Global, Regional, and Zonal Resources. (== resource_for v1.globalOperations ==) (== resource_for beta.globalOperations ==) (== resource_for v1.regionOperations ==) (== resource_for beta.regionOperations ==) (== resource_for v1.zoneOperations ==) (== resource_for beta.zoneOperations ==)
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
-    "clientOperationId": "A String", # [Output Only] Reserved for future use.
+    "clientOperationId": "A String", # [Output Only] The value of `requestId` if you provided it in the request. Not present otherwise.
     "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
-    "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
+    "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only applicable when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
     "operationType": "A String", # [Output Only] The type of operation, such as insert, update, or delete, and so on.
     "httpErrorMessage": "A String", # [Output Only] If the operation fails, this field contains the HTTP error message that was returned, such as NOT FOUND.
@@ -596,7 +764,7 @@ Returns:
     "startTime": "A String", # [Output Only] The time that this operation was started by the server. This value is in RFC3339 text format.
     "kind": "compute#operation", # [Output Only] Type of the resource. Always compute#operation for Operation resources.
     "name": "A String", # [Output Only] Name of the resource.
-    "region": "A String", # [Output Only] The URL of the region where the operation resides. Only available when performing regional operations.
+    "region": "A String", # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
     "error": { # [Output Only] If errors are generated during processing of the operation, this field will be populated.
       "errors": [ # [Output Only] The array of errors encountered while processing this operation.
         {

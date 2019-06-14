@@ -87,6 +87,9 @@ h1, h2, h3 {
   <code><a href="#downloadAccount_next">downloadAccount_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
+  <code><a href="#emailLinkSignin">emailLinkSignin(body)</a></code></p>
+<p class="firstline">Reset password for a user.</p>
+<p class="toc_element">
   <code><a href="#getAccountInfo">getAccountInfo(body)</a></code></p>
 <p class="firstline">Returns the account info.</p>
 <p class="toc_element">
@@ -104,6 +107,9 @@ h1, h2, h3 {
 <p class="toc_element">
   <code><a href="#resetPassword">resetPassword(body)</a></code></p>
 <p class="firstline">Reset password for a user.</p>
+<p class="toc_element">
+  <code><a href="#sendVerificationCode">sendVerificationCode(body)</a></code></p>
+<p class="firstline">Send SMS verification code.</p>
 <p class="toc_element">
   <code><a href="#setAccountInfo">setAccountInfo(body)</a></code></p>
 <p class="firstline">Set account info for a user.</p>
@@ -128,6 +134,9 @@ h1, h2, h3 {
 <p class="toc_element">
   <code><a href="#verifyPassword">verifyPassword(body)</a></code></p>
 <p class="firstline">Verifies the user entered password.</p>
+<p class="toc_element">
+  <code><a href="#verifyPhoneNumber">verifyPhoneNumber(body)</a></code></p>
+<p class="firstline">Verifies ownership of a phone number and creates/updates the user account accordingly.</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="createAuthUri">createAuthUri(body)</code>
@@ -141,6 +150,7 @@ Args:
     "sessionId": "A String", # The session_id passed by client.
     "hostedDomain": "A String", # The hosted domain to restrict sign-in to accounts at that domain for Google Apps hosted accounts.
     "openidRealm": "A String", # Optional realm for OpenID protocol. The sub string "scheme://domain:port" of the param "continueUri" is used if this is not set.
+    "tenantProjectNumber": "A String", # Tenant project number to be used for idp discovery.
     "oauthConsumerKey": "A String", # The developer's consumer key for OpenId OAuth Extension
     "clientId": "A String", # The relying party OAuth client ID.
     "oauthScope": "A String", # Additional oauth scopes, beyond the basid user profile, that the user would be prompted to grant
@@ -154,6 +164,7 @@ Args:
       "a_key": "A String", # The customized query parameter.
     },
     "identifier": "A String", # The email or federated ID of the user.
+    "tenantId": "A String", # For multi-tenant use cases, in order to construct sign-in URL with the correct IDP parameters, Firebear needs to know which Tenant to retrieve IDP configs from.
   }
 
 
@@ -169,6 +180,9 @@ Returns:
       "A String",
     ],
     "forExistingProvider": True or False, # True if the authUri is for user's existing provider.
+    "signinMethods": [ # All sign-in methods this user has used.
+      "A String",
+    ],
     "providerId": "A String", # The provider ID of the auth URI.
     "authUri": "A String", # The URI used by the IDP to authenticate the user.
   }</pre>
@@ -231,6 +245,7 @@ Returns:
         "lastLoginAt": "A String", # last login timestamp.
         "customAuth": True or False, # Whether the user is authenticated by the developer.
         "disabled": True or False, # Whether the user is disabled.
+        "customAttributes": "A String", # The custom attributes to be set in the user's id token.
         "version": 42, # Version of the user's password.
         "phoneNumber": "A String", # User's phone number.
         "providerUserInfo": [ # The IDP of the user.
@@ -270,6 +285,35 @@ Returns:
 </div>
 
 <div class="method">
+    <code class="details" id="emailLinkSignin">emailLinkSignin(body)</code>
+  <pre>Reset password for a user.
+
+Args:
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # Request to sign in with email.
+    "idToken": "A String", # Token for linking flow.
+    "oobCode": "A String", # The confirmation code.
+    "email": "A String", # The email address of the user.
+  }
+
+
+Returns:
+  An object of the form:
+
+    { # Response of email signIn.
+    "expiresIn": "A String", # Expiration time of STS id token in seconds.
+    "kind": "identitytoolkit#EmailLinkSigninResponse", # The fixed string "identitytoolkit#EmailLinkSigninResponse".
+    "refreshToken": "A String", # The refresh token for the signed in user.
+    "localId": "A String", # The RP local ID of the user.
+    "idToken": "A String", # The STS id token to login the newly signed in user.
+    "isNewUser": True or False, # Whether the user is new.
+    "email": "A String", # The user's email.
+  }</pre>
+</div>
+
+<div class="method">
     <code class="details" id="getAccountInfo">getAccountInfo(body)</code>
   <pre>Returns the account info.
 
@@ -280,6 +324,9 @@ Args:
 { # Request to get the account information.
     "idToken": "A String", # The GITKit token of the authenticated user.
     "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
+    "phoneNumber": [ # Privileged caller can query users by specified phone number.
+      "A String",
+    ],
     "email": [ # The list of emails of the users to inquiry.
       "A String",
     ],
@@ -306,6 +353,7 @@ Returns:
         "lastLoginAt": "A String", # last login timestamp.
         "customAuth": True or False, # Whether the user is authenticated by the developer.
         "disabled": True or False, # Whether the user is disabled.
+        "customAttributes": "A String", # The custom attributes to be set in the user's id token.
         "version": 42, # Version of the user's password.
         "phoneNumber": "A String", # User's phone number.
         "providerUserInfo": [ # The IDP of the user.
@@ -493,6 +541,30 @@ Returns:
 </div>
 
 <div class="method">
+    <code class="details" id="sendVerificationCode">sendVerificationCode(body)</code>
+  <pre>Send SMS verification code.
+
+Args:
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # Request for Identitytoolkit-SendVerificationCode
+    "recaptchaToken": "A String", # Recaptcha solution.
+    "iosSecret": "A String", # Secret delivered to iOS app via APNS.
+    "iosReceipt": "A String", # Receipt of successful app token validation with APNS.
+    "phoneNumber": "A String", # The phone number to send the verification code to in E.164 format.
+  }
+
+
+Returns:
+  An object of the form:
+
+    { # Response for Identitytoolkit-SendVerificationCode
+    "sessionInfo": "A String", # Encrypted session information
+  }</pre>
+</div>
+
+<div class="method">
     <code class="details" id="setAccountInfo">setAccountInfo(body)</code>
   <pre>Set account info for a user.
 
@@ -501,33 +573,35 @@ Args:
     The object takes the form of:
 
 { # Request to set the account information.
-    "instanceId": "A String", # Instance id token of the app.
-    "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
-    "deleteAttribute": [ # The attributes users request to delete.
-      "A String",
-    ],
     "localId": "A String", # The local ID of the user.
     "validSince": "A String", # Timestamp in seconds for valid login token.
     "photoUrl": "A String", # The photo url of the user.
-    "captchaResponse": "A String", # Response to the captcha.
-    "emailVerified": True or False, # Mark the email as verified or not.
+    "instanceId": "A String", # Instance id token of the app.
     "lastLoginAt": "A String", # Last login timestamp.
-    "provider": [ # The associated IDPs of the user.
+    "disableUser": True or False, # Whether to disable the user.
+    "returnSecureToken": True or False, # Whether return sts id token and refresh token instead of gitkit token.
+    "createdAt": "A String", # The timestamp when the account is created.
+    "deleteAttribute": [ # The attributes users request to delete.
       "A String",
     ],
-    "disableUser": True or False, # Whether to disable the user.
+    "upgradeToFederatedLogin": True or False, # Mark the user to upgrade to federated login.
     "deleteProvider": [ # The IDPs the user request to delete.
       "A String",
     ],
     "captchaChallenge": "A String", # The captcha challenge.
-    "oobCode": "A String", # The out-of-band code of the change email request.
-    "upgradeToFederatedLogin": True or False, # Mark the user to upgrade to federated login.
-    "idToken": "A String", # The GITKit token of the authenticated user.
-    "returnSecureToken": True or False, # Whether return sts id token and refresh token instead of gitkit token.
-    "displayName": "A String", # The name of the user.
-    "password": "A String", # The new password of the user.
+    "phoneNumber": "A String", # Privileged caller can update user with specified phone number.
+    "provider": [ # The associated IDPs of the user.
+      "A String",
+    ],
     "email": "A String", # The email of the user.
-    "createdAt": "A String", # The timestamp when the account is created.
+    "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
+    "oobCode": "A String", # The out-of-band code of the change email request.
+    "captchaResponse": "A String", # Response to the captcha.
+    "password": "A String", # The new password of the user.
+    "displayName": "A String", # The name of the user.
+    "emailVerified": True or False, # Mark the email as verified or not.
+    "customAttributes": "A String", # The custom attributes to be set in the user's id token.
+    "idToken": "A String", # The GITKit token of the authenticated user.
   }
 
 
@@ -666,8 +740,11 @@ Args:
     "photoUrl": "A String", # The photo url of the user.
     "captchaResponse": "A String", # Response to the captcha.
     "emailVerified": True or False, # Mark the email as verified or not. Only can be used by service account.
+    "tenantProjectNumber": "A String", # Tenant project number to be used for idp discovery.
+    "tenantId": "A String", # For multi-tenant use cases, in order to construct sign-in URL with the correct IDP parameters, Firebear needs to know which Tenant to retrieve IDP configs from.
     "disabled": True or False, # Whether to disable the user. Only can be used by service account.
     "captchaChallenge": "A String", # The captcha challenge.
+    "phoneNumber": "A String", # Privileged caller can create user with specified phone number.
     "idToken": "A String", # The GITKit token of the authenticated user.
     "password": "A String", # The new password of the user.
     "email": "A String", # The email of the user.
@@ -697,6 +774,7 @@ Args:
     The object takes the form of:
 
 { # Request to upload user account in batch.
+    "dkLen": 42,
     "hashAlgorithm": "A String", # The password hash algorithm.
     "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
     "allowOverwrite": True or False, # Whether allow overwrite existing account when user local_id exists.
@@ -712,6 +790,7 @@ Args:
         "lastLoginAt": "A String", # last login timestamp.
         "customAuth": True or False, # Whether the user is authenticated by the developer.
         "disabled": True or False, # Whether the user is disabled.
+        "customAttributes": "A String", # The custom attributes to be set in the user's id token.
         "version": 42, # Version of the user's password.
         "phoneNumber": "A String", # User's phone number.
         "providerUserInfo": [ # The IDP of the user.
@@ -733,7 +812,10 @@ Args:
         "screenName": "A String", # User's screen name at Twitter or login name at Github.
       },
     ],
+    "parallelization": 42,
+    "blockSize": 42,
     "sanityCheck": True or False, # If true, backend will do sanity check(including duplicate email and federated id) when uploading account.
+    "cpuMemCost": 42, # The following 4 fields are for standard scrypt algorithm.
     "signerKey": "A String", # The key for to hash the password.
     "memoryCost": 42, # Memory cost for hash calculation. Used by scrypt similar algorithms.
     "saltSeparator": "A String", # The salt separator.
@@ -769,8 +851,10 @@ Args:
     "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
     "instanceId": "A String", # Instance id token of the app.
     "idToken": "A String", # The GITKit token of the authenticated user.
+    "tenantProjectNumber": "A String", # Tenant project number to be used for idp discovery.
     "pendingIdToken": "A String", # The GITKit token for the non-trusted IDP pending to be confirmed by the user.
     "sessionId": "A String", # Session ID, which should match the one in previous createAuthUri request.
+    "tenantId": "A String", # For multi-tenant use cases, in order to construct sign-in URL with the correct IDP parameters, Firebear needs to know which Tenant to retrieve IDP configs from.
     "requestUri": "A String", # The URI to which the IDP redirects the user back. It may contain federated login result params added by the IDP.
     "returnSecureToken": True or False, # Whether return sts id token and refresh token instead of gitkit token.
     "autoCreate": True or False, # When it's true, automatically creates a new account if the user doesn't exist. When it's false, allows existing user to sign in normally and throws exception if the user doesn't exist.
@@ -849,8 +933,9 @@ Returns:
     { # Response from verifying a custom token
     "expiresIn": "A String", # If idToken is STS id token, then this field will be expiration time of STS id token in seconds.
     "idToken": "A String", # The GITKit token for authenticated user.
-    "kind": "identitytoolkit#VerifyCustomTokenResponse", # The fixed string "identitytoolkit#VerifyCustomTokenResponse".
+    "isNewUser": True or False, # True if it's a new user sign-in, false if it's a returning user.
     "refreshToken": "A String", # If idToken is STS id token, then this field will be refresh token.
+    "kind": "identitytoolkit#VerifyCustomTokenResponse", # The fixed string "identitytoolkit#VerifyCustomTokenResponse".
   }</pre>
 </div>
 
@@ -867,11 +952,13 @@ Args:
     "delegatedProjectNumber": "A String", # GCP project number of the requesting delegated app. Currently only intended for Firebase V1 migration.
     "captchaResponse": "A String", # Response to the captcha.
     "idToken": "A String", # The GITKit token of the authenticated user.
+    "tenantProjectNumber": "A String", # Tenant project number to be used for idp discovery.
     "pendingIdToken": "A String", # The GITKit token for the non-trusted IDP, which is to be confirmed by the user.
     "captchaChallenge": "A String", # The captcha challenge.
     "returnSecureToken": True or False, # Whether return sts id token and refresh token instead of gitkit token.
     "password": "A String", # The password inputed by the user.
     "email": "A String", # The email of the user.
+    "tenantId": "A String", # For multi-tenant use cases, in order to construct sign-in URL with the correct IDP parameters, Firebear needs to know which Tenant to retrieve IDP configs from.
   }
 
 
@@ -891,6 +978,42 @@ Returns:
     "oauthAuthorizationCode": "A String", # The OAuth2 authorization code.
     "refreshToken": "A String", # If idToken is STS id token, then this field will be refresh token.
     "email": "A String", # The email returned by the IdP. NOTE: The federated login user may not own the email.
+  }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="verifyPhoneNumber">verifyPhoneNumber(body)</code>
+  <pre>Verifies ownership of a phone number and creates/updates the user account accordingly.
+
+Args:
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # Request for Identitytoolkit-VerifyPhoneNumber
+    "verificationProof": "A String",
+    "code": "A String",
+    "sessionInfo": "A String", # The session info previously returned by IdentityToolkit-SendVerificationCode.
+    "idToken": "A String",
+    "phoneNumber": "A String",
+    "operation": "A String",
+    "temporaryProof": "A String",
+  }
+
+
+Returns:
+  An object of the form:
+
+    { # Response for Identitytoolkit-VerifyPhoneNumber
+    "expiresIn": "A String",
+    "temporaryProofExpiresIn": "A String",
+    "refreshToken": "A String",
+    "localId": "A String",
+    "verificationProofExpiresIn": "A String",
+    "idToken": "A String",
+    "isNewUser": True or False,
+    "verificationProof": "A String",
+    "phoneNumber": "A String",
+    "temporaryProof": "A String",
   }</pre>
 </div>
 

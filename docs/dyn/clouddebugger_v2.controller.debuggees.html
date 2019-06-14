@@ -87,27 +87,27 @@ h1, h2, h3 {
     <code class="details" id="register">register(body, x__xgafv=None)</code>
   <pre>Registers the debuggee with the controller service.
 
-All agents attached to the same application should call this method with
-the same request content to get back the same stable `debuggee_id`. Agents
-should call this method again whenever `google.rpc.Code.NOT_FOUND` is
-returned from any controller method.
+All agents attached to the same application must call this method with
+exactly the same request content to get back the same stable `debuggee_id`.
+Agents should call this method again whenever `google.rpc.Code.NOT_FOUND`
+is returned from any controller method.
 
-This allows the controller service to disable the agent or recover from any
-data loss. If the debuggee is disabled by the server, the response will
-have `is_disabled` set to `true`.
+This protocol allows the controller service to disable debuggees, recover
+from data loss, or change the `debuggee_id` format. Agents must handle
+`debuggee_id` value changing upon re-registration.
 
 Args:
   body: object, The request body. (required)
     The object takes the form of:
 
 { # Request to register a debuggee.
-    "debuggee": { # Represents the application to debug. The application may include one or more # Debuggee information to register.
+    "debuggee": { # Represents the debugged application. The application may include one or more # Debuggee information to register.
         # The fields `project`, `uniquifier`, `description` and `agent_version`
         # of the debuggee must be set.
         # replicated processes executing the same code. Each of these processes is
         # attached with a debugger agent, carrying out the debugging commands.
-        # The agents attached to the same debuggee are identified by using exactly the
-        # same field values when registering.
+        # Agents attached to the same debuggee identify themselves as such by using
+        # exactly the same Debuggee message value when registering.
       "status": { # Represents a contextual status message. # Human readable message to be displayed to the user about this debuggee.
           # Absence of this field indicates no status. The message can be either
           # informational or an error status.
@@ -141,17 +141,16 @@ Args:
           # displayed to the user.
         "a_key": "A String",
       },
-      "uniquifier": "A String", # Debuggee uniquifier within the project.
-          # Any string that identifies the application within the project can be used.
-          # Including environment and version or build IDs is recommended.
+      "uniquifier": "A String", # Uniquifier to further distinguish the application.
+          # It is possible that different applications might have identical values in
+          # the debuggee message, thus, incorrectly identified as a single application
+          # by the Controller service. This field adds salt to further distinguish the
+          # application. Agents should consider seeding this field with value that
+          # identifies the code, binary, configuration and environment.
       "project": "A String", # Project the debuggee is associated with.
-          # Use the project number when registering a Google Cloud Platform project.
+          # Use project number or id when registering a Google Cloud Platform project.
       "sourceContexts": [ # References to the locations and revisions of the source code used in the
           # deployed application.
-          #
-          # NOTE: This field is deprecated. Consumers should use
-          # `ext_source_contexts` if it is not empty. Debug agents should populate
-          # both this field and `ext_source_contexts`.
         { # A SourceContext is a reference to a tree of files. A SourceContext together
             # with a path point to a unique revision of a single file or directory.
           "cloudWorkspace": { # A CloudWorkspaceSourceContext denotes a workspace at a particular snapshot. # A SourceContext referring to a snapshot in a cloud workspace.
@@ -163,12 +162,12 @@ Args:
               "name": "A String", # The unique name of the workspace within the repo.  This is the name
                   # chosen by the client in the Source API's CreateWorkspace method.
               "repoId": { # A unique identifier for a cloud repo. # The ID of the repo containing the workspace.
+                "uid": "A String", # A server-assigned, globally unique identifier.
                 "projectRepoId": { # Selects a repo using a Google Cloud Platform project ID # A combination of a project ID and a repo name.
                     # (e.g. winged-cargo-31) and a repo name within that project.
                   "projectId": "A String", # The ID of the project.
                   "repoName": "A String", # The name of the repo. Leave empty for the default repo.
                 },
-                "uid": "A String", # A server-assigned, globally unique identifier.
               },
             },
           },
@@ -181,12 +180,12 @@ Args:
             "revisionId": "A String", # A revision ID.
             "aliasName": "A String", # The name of an alias (branch, tag, etc.).
             "repoId": { # A unique identifier for a cloud repo. # The ID of the repo.
+              "uid": "A String", # A server-assigned, globally unique identifier.
               "projectRepoId": { # Selects a repo using a Google Cloud Platform project ID # A combination of a project ID and a repo name.
                   # (e.g. winged-cargo-31) and a repo name within that project.
                 "projectId": "A String", # The ID of the project.
                 "repoName": "A String", # The name of the repo. Leave empty for the default repo.
               },
-              "uid": "A String", # A server-assigned, globally unique identifier.
             },
           },
           "git": { # A GitSourceContext denotes a particular revision in a third party Git # A SourceContext referring to any third party Git repo (e.g. GitHub).
@@ -201,20 +200,16 @@ Args:
               "name": "A String", # The alias name.
             },
             "revisionId": "A String", # A revision (commit) ID.
-            "hostUri": "A String", # The URI of a running Gerrit instance.
-            "aliasName": "A String", # The name of an alias (branch, tag, etc.).
             "gerritProject": "A String", # The full project name within the host. Projects may be nested, so
                 # "project/subproject" is a valid project name.
                 # The "repo name" is hostURI/project.
+            "hostUri": "A String", # The URI of a running Gerrit instance.
+            "aliasName": "A String", # The name of an alias (branch, tag, etc.).
           },
         },
       ],
       "extSourceContexts": [ # References to the locations and revisions of the source code used in the
           # deployed application.
-          #
-          # Contexts describing a remote repo related to the source code
-          # have a `category` label of `remote_repo`. Source snapshot source
-          # contexts have a `category` of `snapshot`.
         { # An ExtendedSourceContext is a SourceContext combined with additional
             # details describing the context.
           "labels": { # Labels with user defined metadata.
@@ -231,12 +226,12 @@ Args:
                 "name": "A String", # The unique name of the workspace within the repo.  This is the name
                     # chosen by the client in the Source API's CreateWorkspace method.
                 "repoId": { # A unique identifier for a cloud repo. # The ID of the repo containing the workspace.
+                  "uid": "A String", # A server-assigned, globally unique identifier.
                   "projectRepoId": { # Selects a repo using a Google Cloud Platform project ID # A combination of a project ID and a repo name.
                       # (e.g. winged-cargo-31) and a repo name within that project.
                     "projectId": "A String", # The ID of the project.
                     "repoName": "A String", # The name of the repo. Leave empty for the default repo.
                   },
-                  "uid": "A String", # A server-assigned, globally unique identifier.
                 },
               },
             },
@@ -249,12 +244,12 @@ Args:
               "revisionId": "A String", # A revision ID.
               "aliasName": "A String", # The name of an alias (branch, tag, etc.).
               "repoId": { # A unique identifier for a cloud repo. # The ID of the repo.
+                "uid": "A String", # A server-assigned, globally unique identifier.
                 "projectRepoId": { # Selects a repo using a Google Cloud Platform project ID # A combination of a project ID and a repo name.
                     # (e.g. winged-cargo-31) and a repo name within that project.
                   "projectId": "A String", # The ID of the project.
                   "repoName": "A String", # The name of the repo. Leave empty for the default repo.
                 },
-                "uid": "A String", # A server-assigned, globally unique identifier.
               },
             },
             "git": { # A GitSourceContext denotes a particular revision in a third party Git # A SourceContext referring to any third party Git repo (e.g. GitHub).
@@ -269,20 +264,20 @@ Args:
                 "name": "A String", # The alias name.
               },
               "revisionId": "A String", # A revision (commit) ID.
-              "hostUri": "A String", # The URI of a running Gerrit instance.
-              "aliasName": "A String", # The name of an alias (branch, tag, etc.).
               "gerritProject": "A String", # The full project name within the host. Projects may be nested, so
                   # "project/subproject" is a valid project name.
                   # The "repo name" is hostURI/project.
+              "hostUri": "A String", # The URI of a running Gerrit instance.
+              "aliasName": "A String", # The name of an alias (branch, tag, etc.).
             },
           },
         },
       ],
-      "agentVersion": "A String", # Version ID of the agent release. The version ID is structured as
-          # following: `domain/type/vmajor.minor` (for example
-          # `google.com/gcp-java/v1.1`).
-      "isInactive": True or False, # If set to `true`, indicates that the debuggee is considered as inactive by
-          # the Controller service.
+      "agentVersion": "A String", # Version ID of the agent.
+          # Schema: `domain/language-platform/vmajor.minor` (for example
+          # `google.com/java-gcp/v1.1`).
+      "isInactive": True or False, # If set to `true`, indicates that Controller service does not detect any
+          # activity from the debuggee agents and the application is possibly stopped.
       "id": "A String", # Unique identifier for the debuggee generated by the controller service.
     },
   }
@@ -296,12 +291,15 @@ Returns:
   An object of the form:
 
     { # Response for registering a debuggee.
-    "debuggee": { # Represents the application to debug. The application may include one or more # Debuggee resource.
-        # The field `id` is guranteed to be set (in addition to the echoed fields).
+    "debuggee": { # Represents the debugged application. The application may include one or more # Debuggee resource.
+        # The field `id` is guaranteed to be set (in addition to the echoed fields).
+        # If the field `is_disabled` is set to `true`, the agent should disable
+        # itself by removing all breakpoints and detaching from the application.
+        # It should however continue to poll `RegisterDebuggee` until reenabled.
         # replicated processes executing the same code. Each of these processes is
         # attached with a debugger agent, carrying out the debugging commands.
-        # The agents attached to the same debuggee are identified by using exactly the
-        # same field values when registering.
+        # Agents attached to the same debuggee identify themselves as such by using
+        # exactly the same Debuggee message value when registering.
       "status": { # Represents a contextual status message. # Human readable message to be displayed to the user about this debuggee.
           # Absence of this field indicates no status. The message can be either
           # informational or an error status.
@@ -335,17 +333,16 @@ Returns:
           # displayed to the user.
         "a_key": "A String",
       },
-      "uniquifier": "A String", # Debuggee uniquifier within the project.
-          # Any string that identifies the application within the project can be used.
-          # Including environment and version or build IDs is recommended.
+      "uniquifier": "A String", # Uniquifier to further distinguish the application.
+          # It is possible that different applications might have identical values in
+          # the debuggee message, thus, incorrectly identified as a single application
+          # by the Controller service. This field adds salt to further distinguish the
+          # application. Agents should consider seeding this field with value that
+          # identifies the code, binary, configuration and environment.
       "project": "A String", # Project the debuggee is associated with.
-          # Use the project number when registering a Google Cloud Platform project.
+          # Use project number or id when registering a Google Cloud Platform project.
       "sourceContexts": [ # References to the locations and revisions of the source code used in the
           # deployed application.
-          #
-          # NOTE: This field is deprecated. Consumers should use
-          # `ext_source_contexts` if it is not empty. Debug agents should populate
-          # both this field and `ext_source_contexts`.
         { # A SourceContext is a reference to a tree of files. A SourceContext together
             # with a path point to a unique revision of a single file or directory.
           "cloudWorkspace": { # A CloudWorkspaceSourceContext denotes a workspace at a particular snapshot. # A SourceContext referring to a snapshot in a cloud workspace.
@@ -357,12 +354,12 @@ Returns:
               "name": "A String", # The unique name of the workspace within the repo.  This is the name
                   # chosen by the client in the Source API's CreateWorkspace method.
               "repoId": { # A unique identifier for a cloud repo. # The ID of the repo containing the workspace.
+                "uid": "A String", # A server-assigned, globally unique identifier.
                 "projectRepoId": { # Selects a repo using a Google Cloud Platform project ID # A combination of a project ID and a repo name.
                     # (e.g. winged-cargo-31) and a repo name within that project.
                   "projectId": "A String", # The ID of the project.
                   "repoName": "A String", # The name of the repo. Leave empty for the default repo.
                 },
-                "uid": "A String", # A server-assigned, globally unique identifier.
               },
             },
           },
@@ -375,12 +372,12 @@ Returns:
             "revisionId": "A String", # A revision ID.
             "aliasName": "A String", # The name of an alias (branch, tag, etc.).
             "repoId": { # A unique identifier for a cloud repo. # The ID of the repo.
+              "uid": "A String", # A server-assigned, globally unique identifier.
               "projectRepoId": { # Selects a repo using a Google Cloud Platform project ID # A combination of a project ID and a repo name.
                   # (e.g. winged-cargo-31) and a repo name within that project.
                 "projectId": "A String", # The ID of the project.
                 "repoName": "A String", # The name of the repo. Leave empty for the default repo.
               },
-              "uid": "A String", # A server-assigned, globally unique identifier.
             },
           },
           "git": { # A GitSourceContext denotes a particular revision in a third party Git # A SourceContext referring to any third party Git repo (e.g. GitHub).
@@ -395,20 +392,16 @@ Returns:
               "name": "A String", # The alias name.
             },
             "revisionId": "A String", # A revision (commit) ID.
-            "hostUri": "A String", # The URI of a running Gerrit instance.
-            "aliasName": "A String", # The name of an alias (branch, tag, etc.).
             "gerritProject": "A String", # The full project name within the host. Projects may be nested, so
                 # "project/subproject" is a valid project name.
                 # The "repo name" is hostURI/project.
+            "hostUri": "A String", # The URI of a running Gerrit instance.
+            "aliasName": "A String", # The name of an alias (branch, tag, etc.).
           },
         },
       ],
       "extSourceContexts": [ # References to the locations and revisions of the source code used in the
           # deployed application.
-          #
-          # Contexts describing a remote repo related to the source code
-          # have a `category` label of `remote_repo`. Source snapshot source
-          # contexts have a `category` of `snapshot`.
         { # An ExtendedSourceContext is a SourceContext combined with additional
             # details describing the context.
           "labels": { # Labels with user defined metadata.
@@ -425,12 +418,12 @@ Returns:
                 "name": "A String", # The unique name of the workspace within the repo.  This is the name
                     # chosen by the client in the Source API's CreateWorkspace method.
                 "repoId": { # A unique identifier for a cloud repo. # The ID of the repo containing the workspace.
+                  "uid": "A String", # A server-assigned, globally unique identifier.
                   "projectRepoId": { # Selects a repo using a Google Cloud Platform project ID # A combination of a project ID and a repo name.
                       # (e.g. winged-cargo-31) and a repo name within that project.
                     "projectId": "A String", # The ID of the project.
                     "repoName": "A String", # The name of the repo. Leave empty for the default repo.
                   },
-                  "uid": "A String", # A server-assigned, globally unique identifier.
                 },
               },
             },
@@ -443,12 +436,12 @@ Returns:
               "revisionId": "A String", # A revision ID.
               "aliasName": "A String", # The name of an alias (branch, tag, etc.).
               "repoId": { # A unique identifier for a cloud repo. # The ID of the repo.
+                "uid": "A String", # A server-assigned, globally unique identifier.
                 "projectRepoId": { # Selects a repo using a Google Cloud Platform project ID # A combination of a project ID and a repo name.
                     # (e.g. winged-cargo-31) and a repo name within that project.
                   "projectId": "A String", # The ID of the project.
                   "repoName": "A String", # The name of the repo. Leave empty for the default repo.
                 },
-                "uid": "A String", # A server-assigned, globally unique identifier.
               },
             },
             "git": { # A GitSourceContext denotes a particular revision in a third party Git # A SourceContext referring to any third party Git repo (e.g. GitHub).
@@ -463,20 +456,20 @@ Returns:
                 "name": "A String", # The alias name.
               },
               "revisionId": "A String", # A revision (commit) ID.
-              "hostUri": "A String", # The URI of a running Gerrit instance.
-              "aliasName": "A String", # The name of an alias (branch, tag, etc.).
               "gerritProject": "A String", # The full project name within the host. Projects may be nested, so
                   # "project/subproject" is a valid project name.
                   # The "repo name" is hostURI/project.
+              "hostUri": "A String", # The URI of a running Gerrit instance.
+              "aliasName": "A String", # The name of an alias (branch, tag, etc.).
             },
           },
         },
       ],
-      "agentVersion": "A String", # Version ID of the agent release. The version ID is structured as
-          # following: `domain/type/vmajor.minor` (for example
-          # `google.com/gcp-java/v1.1`).
-      "isInactive": True or False, # If set to `true`, indicates that the debuggee is considered as inactive by
-          # the Controller service.
+      "agentVersion": "A String", # Version ID of the agent.
+          # Schema: `domain/language-platform/vmajor.minor` (for example
+          # `google.com/java-gcp/v1.1`).
+      "isInactive": True or False, # If set to `true`, indicates that Controller service does not detect any
+          # activity from the debuggee agents and the application is possibly stopped.
       "id": "A String", # Unique identifier for the debuggee generated by the controller service.
     },
   }</pre>

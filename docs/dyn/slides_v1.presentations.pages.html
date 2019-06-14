@@ -99,7 +99,7 @@ Returns:
     { # A page in a presentation.
     "layoutProperties": { # The properties of Page are only # Layout specific properties. Only set if page_type = LAYOUT.
         # relevant for pages with page_type LAYOUT.
-      "displayName": "A String", # The human readable name of the layout in the presentation's locale.
+      "displayName": "A String", # The human-readable name of the layout.
       "name": "A String", # The name of the layout.
       "masterObjectId": "A String", # The object ID of the master that this layout is based on.
     },
@@ -109,8 +109,12 @@ Returns:
             # word art.
           "renderedText": "A String", # The text rendered as word art.
         },
-        "description": "A String", # The description of the page element. Combined with title to display alt
-            # text.
+        "elementGroup": { # A PageElement kind representing a # A collection of page elements joined as a single unit.
+            # joined collection of PageElements.
+          "children": [ # The collection of elements in the group. The minimum size of a group is 2.
+            # Object with schema name: PageElement
+          ],
+        },
         "objectId": "A String", # The object ID for this page element. Object IDs used by
             # google.apps.slides.v1.Page and
             # google.apps.slides.v1.PageElement share the same namespace.
@@ -123,7 +127,7 @@ Returns:
               # effectively accesses the image as the original requester. Access to the
               # image may be lost if the presentation's sharing settings change.
           "imageProperties": { # The properties of the Image. # The properties of the image.
-            "outline": { # The outline of a PageElement. # The outline of the image. If not set, the the image has no outline.
+            "outline": { # The outline of a PageElement. # The outline of the image. If not set, the image has no outline.
                 #
                 # If these fields are unset, they may be inherited from a parent placeholder
                 # if it exists. If there is no parent, the fields will default to the value
@@ -154,9 +158,9 @@ Returns:
               },
               "propertyState": "A String", # The outline property state.
                   #
-                  # Updating the the outline on a page element will implicitly update this
-                  # field to`RENDERED`, unless another value is specified in the same request.
-                  # To have no outline on a page element, set this field to `NOT_RENDERED`. In
+                  # Updating the outline on a page element will implicitly update this field
+                  # to `RENDERED`, unless another value is specified in the same request. To
+                  # have no outline on a page element, set this field to `NOT_RENDERED`. In
                   # this case, any other outline fields set in the same request will be
                   # ignored.
               "dashStyle": "A String", # The dash style of the outline.
@@ -232,14 +236,14 @@ Returns:
               "leftOffset": 3.14, # The offset specifies the left edge of the crop rectangle that is located to
                   # the right of the original bounding rectangle left edge, relative to the
                   # object's original width.
+              "bottomOffset": 3.14, # The offset specifies the bottom edge of the crop rectangle that is located
+                  # above the original bounding rectangle bottom edge, relative to the object's
+                  # original height.
               "angle": 3.14, # The rotation angle of the crop window around its center, in radians.
                   # Rotation angle is applied after the offset.
               "rightOffset": 3.14, # The offset specifies the right edge of the crop rectangle that is located
                   # to the left of the original bounding rectangle right edge, relative to the
                   # object's original width.
-              "bottomOffset": 3.14, # The offset specifies the bottom edge of the crop rectangle that is located
-                  # above the original bounding rectangle bottom edge, relative to the object's
-                  # original height.
               "topOffset": 3.14, # The offset specifies the top edge of the crop rectangle that is located
                   # below the original bounding rectangle top edge, relative to the object's
                   # original height.
@@ -283,9 +287,9 @@ Returns:
               },
               "propertyState": "A String", # The shadow property state.
                   #
-                  # Updating the the shadow on a page element will implicitly update this field
-                  # to `RENDERED`, unless another value is specified in the same request. To
-                  # have no shadow on a page element, set this field to `NOT_RENDERED`. In this
+                  # Updating the shadow on a page element will implicitly update this field to
+                  # `RENDERED`, unless another value is specified in the same request. To have
+                  # no shadow on a page element, set this field to `NOT_RENDERED`. In this
                   # case, any other shadow fields set in the same request will be ignored.
               "blurRadius": { # A magnitude in a single direction in the specified units. # The radius of the shadow blur. The larger the radius, the more diffuse the
                   # shadow becomes.
@@ -293,16 +297,27 @@ Returns:
                 "unit": "A String", # The units for magnitude.
               },
               "alpha": 3.14, # The alpha of the shadow's color, from 0.0 to 1.0.
-              "type": "A String", # The type of the shadow.
+              "type": "A String", # The type of the shadow. This property is read-only.
               "alignment": "A String", # The alignment point of the shadow, that sets the origin for translate,
-                  # scale and skew of the shadow.
-              "rotateWithShape": True or False, # Whether the shadow should rotate with the shape.
+                  # scale and skew of the shadow. This property is read-only.
+              "rotateWithShape": True or False, # Whether the shadow should rotate with the shape. This property is
+                  # read-only.
             },
             "contrast": 3.14, # The contrast effect of the image. The value should be in the interval
                 # [-1.0, 1.0], where 0 means no effect. This property is read-only.
           },
+          "sourceUrl": "A String", # The source URL is the URL used to insert the image. The source URL can be
+              # empty.
         },
         "transform": { # AffineTransform uses a 3x3 matrix with an implied last row of [ 0 0 1 ] # The transform of the page element.
+            #
+            # The visual appearance of the page element is determined by its absolute
+            # transform. To compute the absolute transform, preconcatenate a page
+            # element's transform with the transforms of all of its parent groups. If the
+            # page element is not in a group, its absolute transform is the same as the
+            # value in this field.
+            #
+            # The initial transform for the newly created Group is always the identity transform.
             # to transform source coordinates (x,y) into destination coordinates (x', y')
             # according to:
             #
@@ -327,156 +342,6 @@ Returns:
             # generic shape that does not have a more specific classification.
           "text": { # The general text content. The text must reside in a compatible shape (e.g. # The text content of the shape.
               # text box or rectangle) or a table cell in a page.
-            "lists": { # The bulleted lists contained in this text, keyed by list ID.
-              "a_key": { # A List describes the look and feel of bullets belonging to paragraphs
-                  # associated with a list. A paragraph that is part of a list has an implicit
-                  # reference to that list's ID.
-                "nestingLevel": { # A map of nesting levels to the properties of bullets at the associated
-                    # level. A list has at most nine levels of nesting, so the possible values
-                    # for the keys of this map are 0 through 8, inclusive.
-                  "a_key": { # Contains properties describing the look and feel of a list bullet at a given
-                      # level of nesting.
-                    "bulletStyle": { # Represents the styling that can be applied to a TextRun. # The style of a bullet at this level of nesting.
-                        #
-                        # If this text is contained in a shape with a parent placeholder, then these text styles may be
-                        # inherited from the parent. Which text styles are inherited depend on the
-                        # nesting level of lists:
-                        #
-                        # * A text run in a paragraph that is not in a list will inherit its text style
-                        #   from the the newline character in the paragraph at the 0 nesting level of
-                        #   the list inside the parent placeholder.
-                        # * A text run in a paragraph that is in a list will inherit its text style
-                        #   from the newline character in the paragraph at its corresponding nesting
-                        #   level of the list inside the parent placeholder.
-                        #
-                        # Inherited text styles are represented as unset fields in this message. If
-                        # text is contained in a shape without a parent placeholder, unsetting these
-                        # fields will revert the style to a value matching the defaults in the Slides
-                        # editor.
-                      "foregroundColor": { # A color that can either be fully opaque or fully transparent. # The color of the text itself. If set, the color is either opaque or
-                          # transparent, depending on if the `opaque_color` field in it is set.
-                        "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
-                            # a transparent color.
-                          "themeColor": "A String", # An opaque theme color.
-                          "rgbColor": { # An RGB color. # An opaque RGB color.
-                            "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
-                            "green": 3.14, # The green component of the color, from 0.0 to 1.0.
-                            "red": 3.14, # The red component of the color, from 0.0 to 1.0.
-                          },
-                        },
-                      },
-                      "bold": True or False, # Whether or not the text is rendered as bold.
-                      "baselineOffset": "A String", # The text's vertical offset from its normal position.
-                          #
-                          # Text with `SUPERSCRIPT` or `SUBSCRIPT` baseline offsets is automatically
-                          # rendered in a smaller font size, computed based on the `font_size` field.
-                          # The `font_size` itself is not affected by changes in this field.
-                      "strikethrough": True or False, # Whether or not the text is struck through.
-                      "weightedFontFamily": { # Represents a font family and weight used to style a TextRun. # The font family and rendered weight of the text.
-                          #
-                          # This field is an extension of `font_family` meant to support explicit font
-                          # weights without breaking backwards compatibility. As such, when reading the
-                          # style of a range of text, the value of `weighted_font_family#font_family`
-                          # will always be equal to that of `font_family`. However, when writing, if
-                          # both fields are included in the field mask (either explicitly or through
-                          # the wildcard `"*"`), their values are reconciled as follows:
-                          #
-                          # * If `font_family` is set and `weighted_font_family` is not, the value of
-                          #   `font_family` is applied with weight `400` ("normal").
-                          # * If both fields are set, the value of `font_family` must match that of
-                          #   `weighted_font_family#font_family`. If so, the font family and weight of
-                          #   `weighted_font_family` is applied. Otherwise, a 400 bad request error is
-                          #   returned.
-                          # * If `weighted_font_family` is set and `font_family` is not, the font
-                          #   family and weight of `weighted_font_family` is applied.
-                          # * If neither field is set, the font family and weight of the text inherit
-                          #   from the parent. Note that these properties cannot inherit separately
-                          #   from each other.
-                          #
-                          # If an update request specifies values for both `weighted_font_family` and
-                          # `bold`, the `weighted_font_family` is applied first, then `bold`.
-                          #
-                          # If `weighted_font_family#weight` is not set, it defaults to `400`.
-                          #
-                          # If `weighted_font_family` is set, then `weighted_font_family#font_family`
-                          # must also be set with a non-empty value. Otherwise, a 400 bad request error
-                          # is returned.
-                        "fontFamily": "A String", # The font family of the text.
-                            #
-                            # The font family can be any font from the Font menu in Slides or from
-                            # [Google Fonts] (https://fonts.google.com/). If the font name is
-                            # unrecognized, the text is rendered in `Arial`.
-                        "weight": 42, # The rendered weight of the text. This field can have any value that is a
-                            # multiple of `100` between `100` and `900`, inclusive. This range
-                            # corresponds to the numerical values described in the CSS 2.1
-                            # Specification, [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
-                            # with non-numerical values disallowed. Weights greater than or equal to
-                            # `700` are considered bold, and weights less than `700`are not bold. The
-                            # default value is `400` ("normal").
-                      },
-                      "smallCaps": True or False, # Whether or not the text is in small capital letters.
-                      "fontFamily": "A String", # The font family of the text.
-                          #
-                          # The font family can be any font from the Font menu in Slides or from
-                          # [Google Fonts] (https://fonts.google.com/). If the font name is
-                          # unrecognized, the text is rendered in `Arial`.
-                          #
-                          # Some fonts can affect the weight of the text. If an update request
-                          # specifies values for both `font_family` and `bold`, the explicitly-set
-                          # `bold` value is used.
-                      "italic": True or False, # Whether or not the text is italicized.
-                      "link": { # A hypertext link. # The hyperlink destination of the text. If unset, there is no link. Links
-                          # are not inherited from parent text.
-                          #
-                          # Changing the link in an update request causes some other changes to the
-                          # text style of the range:
-                          #
-                          # * When setting a link, the text foreground color will be set to
-                          #   ThemeColorType.HYPERLINK and the text will
-                          #   be underlined. If these fields are modified in the same
-                          #   request, those values will be used instead of the link defaults.
-                          # * Setting a link on a text range that overlaps with an existing link will
-                          #   also update the existing link to point to the new URL.
-                          # * Links are not settable on newline characters. As a result, setting a link
-                          #   on a text range that crosses a paragraph boundary, such as `"ABC\n123"`,
-                          #   will separate the newline character(s) into their own text runs. The
-                          #   link will be applied separately to the runs before and after the newline.
-                          # * Removing a link will update the text style of the range to match the
-                          #   style of the preceding text (or the default text styles if the preceding
-                          #   text is another link) unless different styles are being set in the same
-                          #   request.
-                        "url": "A String", # If set, indicates this is a link to the external web page at this URL.
-                        "slideIndex": 42, # If set, indicates this is a link to the slide at this zero-based index
-                            # in the presentation. There may not be a slide at this index.
-                        "pageObjectId": "A String", # If set, indicates this is a link to the specific page in this
-                            # presentation with this ID. A page with this ID may not exist.
-                        "relativeLink": "A String", # If set, indicates this is a link to a slide in this presentation,
-                            # addressed by its position.
-                      },
-                      "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
-                          # transparent, depending on if the `opaque_color` field in it is set.
-                        "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
-                            # a transparent color.
-                          "themeColor": "A String", # An opaque theme color.
-                          "rgbColor": { # An RGB color. # An opaque RGB color.
-                            "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
-                            "green": 3.14, # The green component of the color, from 0.0 to 1.0.
-                            "red": 3.14, # The red component of the color, from 0.0 to 1.0.
-                          },
-                        },
-                      },
-                      "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
-                          # points.
-                        "magnitude": 3.14, # The magnitude.
-                        "unit": "A String", # The units for magnitude.
-                      },
-                      "underline": True or False, # Whether or not the text is underlined.
-                    },
-                  },
-                },
-                "listId": "A String", # The ID of the list.
-              },
-            },
             "textElements": [ # The text contents broken down into its component parts, including styling
                 # information. This property is read-only.
               { # A TextElement describes the content of a range of indices in the text content
@@ -513,7 +378,18 @@ Returns:
                         },
                       },
                     },
-                    "bold": True or False, # Whether or not the text is rendered as bold.
+                    "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
+                        # transparent, depending on if the `opaque_color` field in it is set.
+                      "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
+                          # a transparent color.
+                        "themeColor": "A String", # An opaque theme color.
+                        "rgbColor": { # An RGB color. # An opaque RGB color.
+                          "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                          "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                          "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                        },
+                      },
+                    },
                     "baselineOffset": "A String", # The text's vertical offset from its normal position.
                         #
                         # Text with `SUPERSCRIPT` or `SUBSCRIPT` baseline offsets is automatically
@@ -557,7 +433,8 @@ Returns:
                       "weight": 42, # The rendered weight of the text. This field can have any value that is a
                           # multiple of `100` between `100` and `900`, inclusive. This range
                           # corresponds to the numerical values described in the CSS 2.1
-                          # Specification, [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
+                          # Specification,
+                          # [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
                           # with non-numerical values disallowed. Weights greater than or equal to
                           # `700` are considered bold, and weights less than `700`are not bold. The
                           # default value is `400` ("normal").
@@ -572,6 +449,11 @@ Returns:
                         # Some fonts can affect the weight of the text. If an update request
                         # specifies values for both `font_family` and `bold`, the explicitly-set
                         # `bold` value is used.
+                    "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
+                        # points.
+                      "magnitude": 3.14, # The magnitude.
+                      "unit": "A String", # The units for magnitude.
+                    },
                     "italic": True or False, # Whether or not the text is italicized.
                     "link": { # A hypertext link. # The hyperlink destination of the text. If unset, there is no link. Links
                         # are not inherited from parent text.
@@ -601,24 +483,8 @@ Returns:
                       "relativeLink": "A String", # If set, indicates this is a link to a slide in this presentation,
                           # addressed by its position.
                     },
-                    "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
-                        # transparent, depending on if the `opaque_color` field in it is set.
-                      "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
-                          # a transparent color.
-                        "themeColor": "A String", # An opaque theme color.
-                        "rgbColor": { # An RGB color. # An opaque RGB color.
-                          "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
-                          "green": 3.14, # The green component of the color, from 0.0 to 1.0.
-                          "red": 3.14, # The red component of the color, from 0.0 to 1.0.
-                        },
-                      },
-                    },
-                    "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
-                        # points.
-                      "magnitude": 3.14, # The magnitude.
-                      "unit": "A String", # The units for magnitude.
-                    },
                     "underline": True or False, # Whether or not the text is underlined.
+                    "bold": True or False, # Whether or not the text is rendered as bold.
                   },
                   "type": "A String", # The type of this auto text.
                 },
@@ -649,7 +515,7 @@ Returns:
                     "direction": "A String", # The text direction of this paragraph. If unset, the value defaults to
                         # LEFT_TO_RIGHT since
                         # text direction is not inherited.
-                    "spaceBelow": { # A magnitude in a single direction in the specified units. # The amount of extra space above the paragraph. If unset, the value is
+                    "spaceBelow": { # A magnitude in a single direction in the specified units. # The amount of extra space below the paragraph. If unset, the value is
                         # inherited from the parent.
                       "magnitude": 3.14, # The magnitude.
                       "unit": "A String", # The units for magnitude.
@@ -713,7 +579,18 @@ Returns:
                           },
                         },
                       },
-                      "bold": True or False, # Whether or not the text is rendered as bold.
+                      "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
+                          # transparent, depending on if the `opaque_color` field in it is set.
+                        "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
+                            # a transparent color.
+                          "themeColor": "A String", # An opaque theme color.
+                          "rgbColor": { # An RGB color. # An opaque RGB color.
+                            "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                            "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                            "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                          },
+                        },
+                      },
                       "baselineOffset": "A String", # The text's vertical offset from its normal position.
                           #
                           # Text with `SUPERSCRIPT` or `SUBSCRIPT` baseline offsets is automatically
@@ -757,7 +634,8 @@ Returns:
                         "weight": 42, # The rendered weight of the text. This field can have any value that is a
                             # multiple of `100` between `100` and `900`, inclusive. This range
                             # corresponds to the numerical values described in the CSS 2.1
-                            # Specification, [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
+                            # Specification,
+                            # [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
                             # with non-numerical values disallowed. Weights greater than or equal to
                             # `700` are considered bold, and weights less than `700`are not bold. The
                             # default value is `400` ("normal").
@@ -772,6 +650,11 @@ Returns:
                           # Some fonts can affect the weight of the text. If an update request
                           # specifies values for both `font_family` and `bold`, the explicitly-set
                           # `bold` value is used.
+                      "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
+                          # points.
+                        "magnitude": 3.14, # The magnitude.
+                        "unit": "A String", # The units for magnitude.
+                      },
                       "italic": True or False, # Whether or not the text is italicized.
                       "link": { # A hypertext link. # The hyperlink destination of the text. If unset, there is no link. Links
                           # are not inherited from parent text.
@@ -801,24 +684,8 @@ Returns:
                         "relativeLink": "A String", # If set, indicates this is a link to a slide in this presentation,
                             # addressed by its position.
                       },
-                      "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
-                          # transparent, depending on if the `opaque_color` field in it is set.
-                        "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
-                            # a transparent color.
-                          "themeColor": "A String", # An opaque theme color.
-                          "rgbColor": { # An RGB color. # An opaque RGB color.
-                            "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
-                            "green": 3.14, # The green component of the color, from 0.0 to 1.0.
-                            "red": 3.14, # The red component of the color, from 0.0 to 1.0.
-                          },
-                        },
-                      },
-                      "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
-                          # points.
-                        "magnitude": 3.14, # The magnitude.
-                        "unit": "A String", # The units for magnitude.
-                      },
                       "underline": True or False, # Whether or not the text is underlined.
+                      "bold": True or False, # Whether or not the text is rendered as bold.
                     },
                     "glyph": "A String", # The rendered bullet glyph for this paragraph.
                   },
@@ -860,7 +727,18 @@ Returns:
                         },
                       },
                     },
-                    "bold": True or False, # Whether or not the text is rendered as bold.
+                    "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
+                        # transparent, depending on if the `opaque_color` field in it is set.
+                      "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
+                          # a transparent color.
+                        "themeColor": "A String", # An opaque theme color.
+                        "rgbColor": { # An RGB color. # An opaque RGB color.
+                          "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                          "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                          "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                        },
+                      },
+                    },
                     "baselineOffset": "A String", # The text's vertical offset from its normal position.
                         #
                         # Text with `SUPERSCRIPT` or `SUBSCRIPT` baseline offsets is automatically
@@ -904,7 +782,8 @@ Returns:
                       "weight": 42, # The rendered weight of the text. This field can have any value that is a
                           # multiple of `100` between `100` and `900`, inclusive. This range
                           # corresponds to the numerical values described in the CSS 2.1
-                          # Specification, [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
+                          # Specification,
+                          # [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
                           # with non-numerical values disallowed. Weights greater than or equal to
                           # `700` are considered bold, and weights less than `700`are not bold. The
                           # default value is `400` ("normal").
@@ -919,6 +798,11 @@ Returns:
                         # Some fonts can affect the weight of the text. If an update request
                         # specifies values for both `font_family` and `bold`, the explicitly-set
                         # `bold` value is used.
+                    "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
+                        # points.
+                      "magnitude": 3.14, # The magnitude.
+                      "unit": "A String", # The units for magnitude.
+                    },
                     "italic": True or False, # Whether or not the text is italicized.
                     "link": { # A hypertext link. # The hyperlink destination of the text. If unset, there is no link. Links
                         # are not inherited from parent text.
@@ -948,28 +832,163 @@ Returns:
                       "relativeLink": "A String", # If set, indicates this is a link to a slide in this presentation,
                           # addressed by its position.
                     },
-                    "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
-                        # transparent, depending on if the `opaque_color` field in it is set.
-                      "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
-                          # a transparent color.
-                        "themeColor": "A String", # An opaque theme color.
-                        "rgbColor": { # An RGB color. # An opaque RGB color.
-                          "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
-                          "green": 3.14, # The green component of the color, from 0.0 to 1.0.
-                          "red": 3.14, # The red component of the color, from 0.0 to 1.0.
-                        },
-                      },
-                    },
-                    "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
-                        # points.
-                      "magnitude": 3.14, # The magnitude.
-                      "unit": "A String", # The units for magnitude.
-                    },
                     "underline": True or False, # Whether or not the text is underlined.
+                    "bold": True or False, # Whether or not the text is rendered as bold.
                   },
                 },
               },
             ],
+            "lists": { # The bulleted lists contained in this text, keyed by list ID.
+              "a_key": { # A List describes the look and feel of bullets belonging to paragraphs
+                  # associated with a list. A paragraph that is part of a list has an implicit
+                  # reference to that list's ID.
+                "nestingLevel": { # A map of nesting levels to the properties of bullets at the associated
+                    # level. A list has at most nine levels of nesting, so the possible values
+                    # for the keys of this map are 0 through 8, inclusive.
+                  "a_key": { # Contains properties describing the look and feel of a list bullet at a given
+                      # level of nesting.
+                    "bulletStyle": { # Represents the styling that can be applied to a TextRun. # The style of a bullet at this level of nesting.
+                        #
+                        # If this text is contained in a shape with a parent placeholder, then these text styles may be
+                        # inherited from the parent. Which text styles are inherited depend on the
+                        # nesting level of lists:
+                        #
+                        # * A text run in a paragraph that is not in a list will inherit its text style
+                        #   from the the newline character in the paragraph at the 0 nesting level of
+                        #   the list inside the parent placeholder.
+                        # * A text run in a paragraph that is in a list will inherit its text style
+                        #   from the newline character in the paragraph at its corresponding nesting
+                        #   level of the list inside the parent placeholder.
+                        #
+                        # Inherited text styles are represented as unset fields in this message. If
+                        # text is contained in a shape without a parent placeholder, unsetting these
+                        # fields will revert the style to a value matching the defaults in the Slides
+                        # editor.
+                      "foregroundColor": { # A color that can either be fully opaque or fully transparent. # The color of the text itself. If set, the color is either opaque or
+                          # transparent, depending on if the `opaque_color` field in it is set.
+                        "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
+                            # a transparent color.
+                          "themeColor": "A String", # An opaque theme color.
+                          "rgbColor": { # An RGB color. # An opaque RGB color.
+                            "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                            "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                            "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                          },
+                        },
+                      },
+                      "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
+                          # transparent, depending on if the `opaque_color` field in it is set.
+                        "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
+                            # a transparent color.
+                          "themeColor": "A String", # An opaque theme color.
+                          "rgbColor": { # An RGB color. # An opaque RGB color.
+                            "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                            "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                            "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                          },
+                        },
+                      },
+                      "baselineOffset": "A String", # The text's vertical offset from its normal position.
+                          #
+                          # Text with `SUPERSCRIPT` or `SUBSCRIPT` baseline offsets is automatically
+                          # rendered in a smaller font size, computed based on the `font_size` field.
+                          # The `font_size` itself is not affected by changes in this field.
+                      "strikethrough": True or False, # Whether or not the text is struck through.
+                      "weightedFontFamily": { # Represents a font family and weight used to style a TextRun. # The font family and rendered weight of the text.
+                          #
+                          # This field is an extension of `font_family` meant to support explicit font
+                          # weights without breaking backwards compatibility. As such, when reading the
+                          # style of a range of text, the value of `weighted_font_family#font_family`
+                          # will always be equal to that of `font_family`. However, when writing, if
+                          # both fields are included in the field mask (either explicitly or through
+                          # the wildcard `"*"`), their values are reconciled as follows:
+                          #
+                          # * If `font_family` is set and `weighted_font_family` is not, the value of
+                          #   `font_family` is applied with weight `400` ("normal").
+                          # * If both fields are set, the value of `font_family` must match that of
+                          #   `weighted_font_family#font_family`. If so, the font family and weight of
+                          #   `weighted_font_family` is applied. Otherwise, a 400 bad request error is
+                          #   returned.
+                          # * If `weighted_font_family` is set and `font_family` is not, the font
+                          #   family and weight of `weighted_font_family` is applied.
+                          # * If neither field is set, the font family and weight of the text inherit
+                          #   from the parent. Note that these properties cannot inherit separately
+                          #   from each other.
+                          #
+                          # If an update request specifies values for both `weighted_font_family` and
+                          # `bold`, the `weighted_font_family` is applied first, then `bold`.
+                          #
+                          # If `weighted_font_family#weight` is not set, it defaults to `400`.
+                          #
+                          # If `weighted_font_family` is set, then `weighted_font_family#font_family`
+                          # must also be set with a non-empty value. Otherwise, a 400 bad request error
+                          # is returned.
+                        "fontFamily": "A String", # The font family of the text.
+                            #
+                            # The font family can be any font from the Font menu in Slides or from
+                            # [Google Fonts] (https://fonts.google.com/). If the font name is
+                            # unrecognized, the text is rendered in `Arial`.
+                        "weight": 42, # The rendered weight of the text. This field can have any value that is a
+                            # multiple of `100` between `100` and `900`, inclusive. This range
+                            # corresponds to the numerical values described in the CSS 2.1
+                            # Specification,
+                            # [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
+                            # with non-numerical values disallowed. Weights greater than or equal to
+                            # `700` are considered bold, and weights less than `700`are not bold. The
+                            # default value is `400` ("normal").
+                      },
+                      "smallCaps": True or False, # Whether or not the text is in small capital letters.
+                      "fontFamily": "A String", # The font family of the text.
+                          #
+                          # The font family can be any font from the Font menu in Slides or from
+                          # [Google Fonts] (https://fonts.google.com/). If the font name is
+                          # unrecognized, the text is rendered in `Arial`.
+                          #
+                          # Some fonts can affect the weight of the text. If an update request
+                          # specifies values for both `font_family` and `bold`, the explicitly-set
+                          # `bold` value is used.
+                      "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
+                          # points.
+                        "magnitude": 3.14, # The magnitude.
+                        "unit": "A String", # The units for magnitude.
+                      },
+                      "italic": True or False, # Whether or not the text is italicized.
+                      "link": { # A hypertext link. # The hyperlink destination of the text. If unset, there is no link. Links
+                          # are not inherited from parent text.
+                          #
+                          # Changing the link in an update request causes some other changes to the
+                          # text style of the range:
+                          #
+                          # * When setting a link, the text foreground color will be set to
+                          #   ThemeColorType.HYPERLINK and the text will
+                          #   be underlined. If these fields are modified in the same
+                          #   request, those values will be used instead of the link defaults.
+                          # * Setting a link on a text range that overlaps with an existing link will
+                          #   also update the existing link to point to the new URL.
+                          # * Links are not settable on newline characters. As a result, setting a link
+                          #   on a text range that crosses a paragraph boundary, such as `"ABC\n123"`,
+                          #   will separate the newline character(s) into their own text runs. The
+                          #   link will be applied separately to the runs before and after the newline.
+                          # * Removing a link will update the text style of the range to match the
+                          #   style of the preceding text (or the default text styles if the preceding
+                          #   text is another link) unless different styles are being set in the same
+                          #   request.
+                        "url": "A String", # If set, indicates this is a link to the external web page at this URL.
+                        "slideIndex": 42, # If set, indicates this is a link to the slide at this zero-based index
+                            # in the presentation. There may not be a slide at this index.
+                        "pageObjectId": "A String", # If set, indicates this is a link to the specific page in this
+                            # presentation with this ID. A page with this ID may not exist.
+                        "relativeLink": "A String", # If set, indicates this is a link to a slide in this presentation,
+                            # addressed by its position.
+                      },
+                      "underline": True or False, # Whether or not the text is underlined.
+                      "bold": True or False, # Whether or not the text is rendered as bold.
+                    },
+                  },
+                },
+                "listId": "A String", # The ID of the list.
+              },
+            },
           },
           "shapeProperties": { # The properties of a Shape. # The properties of the shape.
               #
@@ -1019,9 +1038,9 @@ Returns:
               },
               "propertyState": "A String", # The shadow property state.
                   #
-                  # Updating the the shadow on a page element will implicitly update this field
-                  # to `RENDERED`, unless another value is specified in the same request. To
-                  # have no shadow on a page element, set this field to `NOT_RENDERED`. In this
+                  # Updating the shadow on a page element will implicitly update this field to
+                  # `RENDERED`, unless another value is specified in the same request. To have
+                  # no shadow on a page element, set this field to `NOT_RENDERED`. In this
                   # case, any other shadow fields set in the same request will be ignored.
               "blurRadius": { # A magnitude in a single direction in the specified units. # The radius of the shadow blur. The larger the radius, the more diffuse the
                   # shadow becomes.
@@ -1029,10 +1048,11 @@ Returns:
                 "unit": "A String", # The units for magnitude.
               },
               "alpha": 3.14, # The alpha of the shadow's color, from 0.0 to 1.0.
-              "type": "A String", # The type of the shadow.
+              "type": "A String", # The type of the shadow. This property is read-only.
               "alignment": "A String", # The alignment point of the shadow, that sets the origin for translate,
-                  # scale and skew of the shadow.
-              "rotateWithShape": True or False, # Whether the shadow should rotate with the shape.
+                  # scale and skew of the shadow. This property is read-only.
+              "rotateWithShape": True or False, # Whether the shadow should rotate with the shape. This property is
+                  # read-only.
             },
             "shapeBackgroundFill": { # The shape background fill. # The background fill of the shape. If unset, the background fill is
                 # inherited from a parent placeholder if it exists. If the shape has no
@@ -1061,7 +1081,7 @@ Returns:
               },
               "propertyState": "A String", # The background fill property state.
                   #
-                  # Updating the the fill on a shape will implicitly update this field to
+                  # Updating the fill on a shape will implicitly update this field to
                   # `RENDERED`, unless another value is specified in the same request. To
                   # have no fill on a shape, set this field to `NOT_RENDERED`. In this case,
                   # any other fill fields set in the same request will be ignored.
@@ -1110,9 +1130,9 @@ Returns:
               },
               "propertyState": "A String", # The outline property state.
                   #
-                  # Updating the the outline on a page element will implicitly update this
-                  # field to`RENDERED`, unless another value is specified in the same request.
-                  # To have no outline on a page element, set this field to `NOT_RENDERED`. In
+                  # Updating the outline on a page element will implicitly update this field
+                  # to `RENDERED`, unless another value is specified in the same request. To
+                  # have no outline on a page element, set this field to `NOT_RENDERED`. In
                   # this case, any other outline fields set in the same request will be
                   # ignored.
               "dashStyle": "A String", # The dash style of the outline.
@@ -1121,6 +1141,10 @@ Returns:
                 "unit": "A String", # The units for magnitude.
               },
             },
+            "contentAlignment": "A String", # The alignment of the content in the shape. If unspecified,
+                # the alignment is inherited from a parent placeholder if it exists. If the
+                # shape has no parent, the default alignment matches the alignment for new
+                # shapes created in the Slides editor.
           },
           "placeholder": { # The placeholder information that uniquely identifies a placeholder shape. # Placeholders are shapes that are inherit from corresponding placeholders on
               # layouts and masters.
@@ -1147,7 +1171,7 @@ Returns:
           "spreadsheetId": "A String", # The ID of the Google Sheets spreadsheet that contains the source chart.
           "sheetsChartProperties": { # The properties of the SheetsChart. # The properties of the Sheets chart.
             "chartImageProperties": { # The properties of the Image. # The properties of the embedded chart image.
-              "outline": { # The outline of a PageElement. # The outline of the image. If not set, the the image has no outline.
+              "outline": { # The outline of a PageElement. # The outline of the image. If not set, the image has no outline.
                   #
                   # If these fields are unset, they may be inherited from a parent placeholder
                   # if it exists. If there is no parent, the fields will default to the value
@@ -1178,9 +1202,9 @@ Returns:
                 },
                 "propertyState": "A String", # The outline property state.
                     #
-                    # Updating the the outline on a page element will implicitly update this
-                    # field to`RENDERED`, unless another value is specified in the same request.
-                    # To have no outline on a page element, set this field to `NOT_RENDERED`. In
+                    # Updating the outline on a page element will implicitly update this field
+                    # to `RENDERED`, unless another value is specified in the same request. To
+                    # have no outline on a page element, set this field to `NOT_RENDERED`. In
                     # this case, any other outline fields set in the same request will be
                     # ignored.
                 "dashStyle": "A String", # The dash style of the outline.
@@ -1256,14 +1280,14 @@ Returns:
                 "leftOffset": 3.14, # The offset specifies the left edge of the crop rectangle that is located to
                     # the right of the original bounding rectangle left edge, relative to the
                     # object's original width.
+                "bottomOffset": 3.14, # The offset specifies the bottom edge of the crop rectangle that is located
+                    # above the original bounding rectangle bottom edge, relative to the object's
+                    # original height.
                 "angle": 3.14, # The rotation angle of the crop window around its center, in radians.
                     # Rotation angle is applied after the offset.
                 "rightOffset": 3.14, # The offset specifies the right edge of the crop rectangle that is located
                     # to the left of the original bounding rectangle right edge, relative to the
                     # object's original width.
-                "bottomOffset": 3.14, # The offset specifies the bottom edge of the crop rectangle that is located
-                    # above the original bounding rectangle bottom edge, relative to the object's
-                    # original height.
                 "topOffset": 3.14, # The offset specifies the top edge of the crop rectangle that is located
                     # below the original bounding rectangle top edge, relative to the object's
                     # original height.
@@ -1307,9 +1331,9 @@ Returns:
                 },
                 "propertyState": "A String", # The shadow property state.
                     #
-                    # Updating the the shadow on a page element will implicitly update this field
-                    # to `RENDERED`, unless another value is specified in the same request. To
-                    # have no shadow on a page element, set this field to `NOT_RENDERED`. In this
+                    # Updating the shadow on a page element will implicitly update this field to
+                    # `RENDERED`, unless another value is specified in the same request. To have
+                    # no shadow on a page element, set this field to `NOT_RENDERED`. In this
                     # case, any other shadow fields set in the same request will be ignored.
                 "blurRadius": { # A magnitude in a single direction in the specified units. # The radius of the shadow blur. The larger the radius, the more diffuse the
                     # shadow becomes.
@@ -1317,10 +1341,11 @@ Returns:
                   "unit": "A String", # The units for magnitude.
                 },
                 "alpha": 3.14, # The alpha of the shadow's color, from 0.0 to 1.0.
-                "type": "A String", # The type of the shadow.
+                "type": "A String", # The type of the shadow. This property is read-only.
                 "alignment": "A String", # The alignment point of the shadow, that sets the origin for translate,
-                    # scale and skew of the shadow.
-                "rotateWithShape": True or False, # Whether the shadow should rotate with the shape.
+                    # scale and skew of the shadow. This property is read-only.
+                "rotateWithShape": True or False, # Whether the shadow should rotate with the shape. This property is
+                    # read-only.
               },
               "contrast": 3.14, # The contrast effect of the image. The value should be in the interval
                   # [-1.0, 1.0], where 0 means no effect. This property is read-only.
@@ -1331,9 +1356,22 @@ Returns:
         },
         "video": { # A PageElement kind representing a # A video page element.
             # video.
-          "url": "A String", # An URL to a video. The URL is valid as long as the source video
-              # exists and sharing settings do not change.
+          "url": "A String", # An URL to a video. The URL is valid as long as the source video exists and
+              # sharing settings do not change.
           "videoProperties": { # The properties of the Video. # The properties of the video.
+            "start": 42, # The time at which to start playback, measured in seconds from the beginning
+                # of the video.
+                # If set, the start time should be before the end time.
+                # If you set this to a value that exceeds the video's length in seconds, the
+                # video will be played from the last second.
+                # If not set, the video will be played from the beginning.
+            "autoPlay": True or False, # Whether to enable video autoplay when the page is displayed in present
+                # mode. Defaults to false.
+            "end": 42, # The time at which to end playback, measured in seconds from the beginning
+                # of the video.
+                # If set, the end time should be after the start time.
+                # If not set or if you set this to a value that exceeds the video's length,
+                # the video will be played until its end.
             "outline": { # The outline of a PageElement. # The outline of the video. The default outline matches the defaults for new
                 # videos created in the Slides editor.
                 #
@@ -1366,9 +1404,9 @@ Returns:
               },
               "propertyState": "A String", # The outline property state.
                   #
-                  # Updating the the outline on a page element will implicitly update this
-                  # field to`RENDERED`, unless another value is specified in the same request.
-                  # To have no outline on a page element, set this field to `NOT_RENDERED`. In
+                  # Updating the outline on a page element will implicitly update this field
+                  # to `RENDERED`, unless another value is specified in the same request. To
+                  # have no outline on a page element, set this field to `NOT_RENDERED`. In
                   # this case, any other outline fields set in the same request will be
                   # ignored.
               "dashStyle": "A String", # The dash style of the outline.
@@ -1377,18 +1415,112 @@ Returns:
                 "unit": "A String", # The units for magnitude.
               },
             },
+            "mute": True or False, # Whether to mute the audio during video playback. Defaults to false.
           },
           "id": "A String", # The video source's unique identifier for this video.
           "source": "A String", # The video source.
         },
-        "elementGroup": { # A PageElement kind representing a # A collection of page elements joined as a single unit.
-            # joined collection of PageElements.
-          "children": [ # The collection of elements in the group. The minimum size of a group is 2.
-            # Object with schema name: PageElement
-          ],
-        },
         "table": { # A PageElement kind representing a # A table page element.
             # table.
+          "rows": 42, # Number of rows in the table.
+          "horizontalBorderRows": [ # Properties of horizontal cell borders.
+              #
+              # A table's horizontal cell borders are represented as a grid. The grid has
+              # one more row than the number of rows in the table and the same number of
+              # columns as the table. For example, if the table is 3 x 3, its horizontal
+              # borders will be represented as a grid with 4 rows and 3 columns.
+            { # Contents of each border row in a table.
+              "tableBorderCells": [ # Properties of each border cell. When a border's adjacent table cells are
+                  # merged, it is not included in the response.
+                { # The properties of each border cell.
+                  "tableBorderProperties": { # The border styling properties of the # The border properties.
+                      # TableBorderCell.
+                    "tableBorderFill": { # The fill of the border. # The fill of the table border.
+                      "solidFill": { # A solid color fill. The page or page element is filled entirely with the # Solid fill.
+                          # specified color value.
+                          #
+                          # If any field is unset, its value may be inherited from a parent placeholder
+                          # if it exists.
+                        "color": { # A themeable solid color value. # The color value of the solid fill.
+                          "themeColor": "A String", # An opaque theme color.
+                          "rgbColor": { # An RGB color. # An opaque RGB color.
+                            "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                            "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                            "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                          },
+                        },
+                        "alpha": 3.14, # The fraction of this `color` that should be applied to the pixel.
+                            # That is, the final pixel color is defined by the equation:
+                            #
+                            #   pixel color = alpha * (color) + (1.0 - alpha) * (background color)
+                            #
+                            # This means that a value of 1.0 corresponds to a solid color, whereas
+                            # a value of 0.0 corresponds to a completely transparent color.
+                      },
+                    },
+                    "dashStyle": "A String", # The dash style of the border.
+                    "weight": { # A magnitude in a single direction in the specified units. # The thickness of the border.
+                      "magnitude": 3.14, # The magnitude.
+                      "unit": "A String", # The units for magnitude.
+                    },
+                  },
+                  "location": { # A location of a single table cell within a table. # The location of the border within the border table.
+                    "rowIndex": 42, # The 0-based row index.
+                    "columnIndex": 42, # The 0-based column index.
+                  },
+                },
+              ],
+            },
+          ],
+          "verticalBorderRows": [ # Properties of vertical cell borders.
+              #
+              # A table's vertical cell borders are represented as a grid. The grid has the
+              # same number of rows as the table and one more column than the number of
+              # columns in the table. For example, if the table is 3 x 3, its vertical
+              # borders will be represented as a grid with 3 rows and 4 columns.
+            { # Contents of each border row in a table.
+              "tableBorderCells": [ # Properties of each border cell. When a border's adjacent table cells are
+                  # merged, it is not included in the response.
+                { # The properties of each border cell.
+                  "tableBorderProperties": { # The border styling properties of the # The border properties.
+                      # TableBorderCell.
+                    "tableBorderFill": { # The fill of the border. # The fill of the table border.
+                      "solidFill": { # A solid color fill. The page or page element is filled entirely with the # Solid fill.
+                          # specified color value.
+                          #
+                          # If any field is unset, its value may be inherited from a parent placeholder
+                          # if it exists.
+                        "color": { # A themeable solid color value. # The color value of the solid fill.
+                          "themeColor": "A String", # An opaque theme color.
+                          "rgbColor": { # An RGB color. # An opaque RGB color.
+                            "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                            "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                            "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                          },
+                        },
+                        "alpha": 3.14, # The fraction of this `color` that should be applied to the pixel.
+                            # That is, the final pixel color is defined by the equation:
+                            #
+                            #   pixel color = alpha * (color) + (1.0 - alpha) * (background color)
+                            #
+                            # This means that a value of 1.0 corresponds to a solid color, whereas
+                            # a value of 0.0 corresponds to a completely transparent color.
+                      },
+                    },
+                    "dashStyle": "A String", # The dash style of the border.
+                    "weight": { # A magnitude in a single direction in the specified units. # The thickness of the border.
+                      "magnitude": 3.14, # The magnitude.
+                      "unit": "A String", # The units for magnitude.
+                    },
+                  },
+                  "location": { # A location of a single table cell within a table. # The location of the border within the border table.
+                    "rowIndex": 42, # The 0-based row index.
+                    "columnIndex": 42, # The 0-based column index.
+                  },
+                },
+              ],
+            },
+          ],
           "tableColumns": [ # Properties of each column.
             { # Properties of each column in a table.
               "columnWidth": { # A magnitude in a single direction in the specified units. # Width of a column.
@@ -1412,156 +1544,6 @@ Returns:
                 { # Properties and contents of each table cell.
                   "text": { # The general text content. The text must reside in a compatible shape (e.g. # The text content of the cell.
                       # text box or rectangle) or a table cell in a page.
-                    "lists": { # The bulleted lists contained in this text, keyed by list ID.
-                      "a_key": { # A List describes the look and feel of bullets belonging to paragraphs
-                          # associated with a list. A paragraph that is part of a list has an implicit
-                          # reference to that list's ID.
-                        "nestingLevel": { # A map of nesting levels to the properties of bullets at the associated
-                            # level. A list has at most nine levels of nesting, so the possible values
-                            # for the keys of this map are 0 through 8, inclusive.
-                          "a_key": { # Contains properties describing the look and feel of a list bullet at a given
-                              # level of nesting.
-                            "bulletStyle": { # Represents the styling that can be applied to a TextRun. # The style of a bullet at this level of nesting.
-                                #
-                                # If this text is contained in a shape with a parent placeholder, then these text styles may be
-                                # inherited from the parent. Which text styles are inherited depend on the
-                                # nesting level of lists:
-                                #
-                                # * A text run in a paragraph that is not in a list will inherit its text style
-                                #   from the the newline character in the paragraph at the 0 nesting level of
-                                #   the list inside the parent placeholder.
-                                # * A text run in a paragraph that is in a list will inherit its text style
-                                #   from the newline character in the paragraph at its corresponding nesting
-                                #   level of the list inside the parent placeholder.
-                                #
-                                # Inherited text styles are represented as unset fields in this message. If
-                                # text is contained in a shape without a parent placeholder, unsetting these
-                                # fields will revert the style to a value matching the defaults in the Slides
-                                # editor.
-                              "foregroundColor": { # A color that can either be fully opaque or fully transparent. # The color of the text itself. If set, the color is either opaque or
-                                  # transparent, depending on if the `opaque_color` field in it is set.
-                                "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
-                                    # a transparent color.
-                                  "themeColor": "A String", # An opaque theme color.
-                                  "rgbColor": { # An RGB color. # An opaque RGB color.
-                                    "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
-                                    "green": 3.14, # The green component of the color, from 0.0 to 1.0.
-                                    "red": 3.14, # The red component of the color, from 0.0 to 1.0.
-                                  },
-                                },
-                              },
-                              "bold": True or False, # Whether or not the text is rendered as bold.
-                              "baselineOffset": "A String", # The text's vertical offset from its normal position.
-                                  #
-                                  # Text with `SUPERSCRIPT` or `SUBSCRIPT` baseline offsets is automatically
-                                  # rendered in a smaller font size, computed based on the `font_size` field.
-                                  # The `font_size` itself is not affected by changes in this field.
-                              "strikethrough": True or False, # Whether or not the text is struck through.
-                              "weightedFontFamily": { # Represents a font family and weight used to style a TextRun. # The font family and rendered weight of the text.
-                                  #
-                                  # This field is an extension of `font_family` meant to support explicit font
-                                  # weights without breaking backwards compatibility. As such, when reading the
-                                  # style of a range of text, the value of `weighted_font_family#font_family`
-                                  # will always be equal to that of `font_family`. However, when writing, if
-                                  # both fields are included in the field mask (either explicitly or through
-                                  # the wildcard `"*"`), their values are reconciled as follows:
-                                  #
-                                  # * If `font_family` is set and `weighted_font_family` is not, the value of
-                                  #   `font_family` is applied with weight `400` ("normal").
-                                  # * If both fields are set, the value of `font_family` must match that of
-                                  #   `weighted_font_family#font_family`. If so, the font family and weight of
-                                  #   `weighted_font_family` is applied. Otherwise, a 400 bad request error is
-                                  #   returned.
-                                  # * If `weighted_font_family` is set and `font_family` is not, the font
-                                  #   family and weight of `weighted_font_family` is applied.
-                                  # * If neither field is set, the font family and weight of the text inherit
-                                  #   from the parent. Note that these properties cannot inherit separately
-                                  #   from each other.
-                                  #
-                                  # If an update request specifies values for both `weighted_font_family` and
-                                  # `bold`, the `weighted_font_family` is applied first, then `bold`.
-                                  #
-                                  # If `weighted_font_family#weight` is not set, it defaults to `400`.
-                                  #
-                                  # If `weighted_font_family` is set, then `weighted_font_family#font_family`
-                                  # must also be set with a non-empty value. Otherwise, a 400 bad request error
-                                  # is returned.
-                                "fontFamily": "A String", # The font family of the text.
-                                    #
-                                    # The font family can be any font from the Font menu in Slides or from
-                                    # [Google Fonts] (https://fonts.google.com/). If the font name is
-                                    # unrecognized, the text is rendered in `Arial`.
-                                "weight": 42, # The rendered weight of the text. This field can have any value that is a
-                                    # multiple of `100` between `100` and `900`, inclusive. This range
-                                    # corresponds to the numerical values described in the CSS 2.1
-                                    # Specification, [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
-                                    # with non-numerical values disallowed. Weights greater than or equal to
-                                    # `700` are considered bold, and weights less than `700`are not bold. The
-                                    # default value is `400` ("normal").
-                              },
-                              "smallCaps": True or False, # Whether or not the text is in small capital letters.
-                              "fontFamily": "A String", # The font family of the text.
-                                  #
-                                  # The font family can be any font from the Font menu in Slides or from
-                                  # [Google Fonts] (https://fonts.google.com/). If the font name is
-                                  # unrecognized, the text is rendered in `Arial`.
-                                  #
-                                  # Some fonts can affect the weight of the text. If an update request
-                                  # specifies values for both `font_family` and `bold`, the explicitly-set
-                                  # `bold` value is used.
-                              "italic": True or False, # Whether or not the text is italicized.
-                              "link": { # A hypertext link. # The hyperlink destination of the text. If unset, there is no link. Links
-                                  # are not inherited from parent text.
-                                  #
-                                  # Changing the link in an update request causes some other changes to the
-                                  # text style of the range:
-                                  #
-                                  # * When setting a link, the text foreground color will be set to
-                                  #   ThemeColorType.HYPERLINK and the text will
-                                  #   be underlined. If these fields are modified in the same
-                                  #   request, those values will be used instead of the link defaults.
-                                  # * Setting a link on a text range that overlaps with an existing link will
-                                  #   also update the existing link to point to the new URL.
-                                  # * Links are not settable on newline characters. As a result, setting a link
-                                  #   on a text range that crosses a paragraph boundary, such as `"ABC\n123"`,
-                                  #   will separate the newline character(s) into their own text runs. The
-                                  #   link will be applied separately to the runs before and after the newline.
-                                  # * Removing a link will update the text style of the range to match the
-                                  #   style of the preceding text (or the default text styles if the preceding
-                                  #   text is another link) unless different styles are being set in the same
-                                  #   request.
-                                "url": "A String", # If set, indicates this is a link to the external web page at this URL.
-                                "slideIndex": 42, # If set, indicates this is a link to the slide at this zero-based index
-                                    # in the presentation. There may not be a slide at this index.
-                                "pageObjectId": "A String", # If set, indicates this is a link to the specific page in this
-                                    # presentation with this ID. A page with this ID may not exist.
-                                "relativeLink": "A String", # If set, indicates this is a link to a slide in this presentation,
-                                    # addressed by its position.
-                              },
-                              "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
-                                  # transparent, depending on if the `opaque_color` field in it is set.
-                                "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
-                                    # a transparent color.
-                                  "themeColor": "A String", # An opaque theme color.
-                                  "rgbColor": { # An RGB color. # An opaque RGB color.
-                                    "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
-                                    "green": 3.14, # The green component of the color, from 0.0 to 1.0.
-                                    "red": 3.14, # The red component of the color, from 0.0 to 1.0.
-                                  },
-                                },
-                              },
-                              "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
-                                  # points.
-                                "magnitude": 3.14, # The magnitude.
-                                "unit": "A String", # The units for magnitude.
-                              },
-                              "underline": True or False, # Whether or not the text is underlined.
-                            },
-                          },
-                        },
-                        "listId": "A String", # The ID of the list.
-                      },
-                    },
                     "textElements": [ # The text contents broken down into its component parts, including styling
                         # information. This property is read-only.
                       { # A TextElement describes the content of a range of indices in the text content
@@ -1598,7 +1580,18 @@ Returns:
                                 },
                               },
                             },
-                            "bold": True or False, # Whether or not the text is rendered as bold.
+                            "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
+                                # transparent, depending on if the `opaque_color` field in it is set.
+                              "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
+                                  # a transparent color.
+                                "themeColor": "A String", # An opaque theme color.
+                                "rgbColor": { # An RGB color. # An opaque RGB color.
+                                  "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                                  "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                                  "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                                },
+                              },
+                            },
                             "baselineOffset": "A String", # The text's vertical offset from its normal position.
                                 #
                                 # Text with `SUPERSCRIPT` or `SUBSCRIPT` baseline offsets is automatically
@@ -1642,7 +1635,8 @@ Returns:
                               "weight": 42, # The rendered weight of the text. This field can have any value that is a
                                   # multiple of `100` between `100` and `900`, inclusive. This range
                                   # corresponds to the numerical values described in the CSS 2.1
-                                  # Specification, [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
+                                  # Specification,
+                                  # [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
                                   # with non-numerical values disallowed. Weights greater than or equal to
                                   # `700` are considered bold, and weights less than `700`are not bold. The
                                   # default value is `400` ("normal").
@@ -1657,6 +1651,11 @@ Returns:
                                 # Some fonts can affect the weight of the text. If an update request
                                 # specifies values for both `font_family` and `bold`, the explicitly-set
                                 # `bold` value is used.
+                            "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
+                                # points.
+                              "magnitude": 3.14, # The magnitude.
+                              "unit": "A String", # The units for magnitude.
+                            },
                             "italic": True or False, # Whether or not the text is italicized.
                             "link": { # A hypertext link. # The hyperlink destination of the text. If unset, there is no link. Links
                                 # are not inherited from parent text.
@@ -1686,24 +1685,8 @@ Returns:
                               "relativeLink": "A String", # If set, indicates this is a link to a slide in this presentation,
                                   # addressed by its position.
                             },
-                            "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
-                                # transparent, depending on if the `opaque_color` field in it is set.
-                              "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
-                                  # a transparent color.
-                                "themeColor": "A String", # An opaque theme color.
-                                "rgbColor": { # An RGB color. # An opaque RGB color.
-                                  "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
-                                  "green": 3.14, # The green component of the color, from 0.0 to 1.0.
-                                  "red": 3.14, # The red component of the color, from 0.0 to 1.0.
-                                },
-                              },
-                            },
-                            "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
-                                # points.
-                              "magnitude": 3.14, # The magnitude.
-                              "unit": "A String", # The units for magnitude.
-                            },
                             "underline": True or False, # Whether or not the text is underlined.
+                            "bold": True or False, # Whether or not the text is rendered as bold.
                           },
                           "type": "A String", # The type of this auto text.
                         },
@@ -1734,7 +1717,7 @@ Returns:
                             "direction": "A String", # The text direction of this paragraph. If unset, the value defaults to
                                 # LEFT_TO_RIGHT since
                                 # text direction is not inherited.
-                            "spaceBelow": { # A magnitude in a single direction in the specified units. # The amount of extra space above the paragraph. If unset, the value is
+                            "spaceBelow": { # A magnitude in a single direction in the specified units. # The amount of extra space below the paragraph. If unset, the value is
                                 # inherited from the parent.
                               "magnitude": 3.14, # The magnitude.
                               "unit": "A String", # The units for magnitude.
@@ -1798,7 +1781,18 @@ Returns:
                                   },
                                 },
                               },
-                              "bold": True or False, # Whether or not the text is rendered as bold.
+                              "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
+                                  # transparent, depending on if the `opaque_color` field in it is set.
+                                "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
+                                    # a transparent color.
+                                  "themeColor": "A String", # An opaque theme color.
+                                  "rgbColor": { # An RGB color. # An opaque RGB color.
+                                    "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                                    "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                                    "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                                  },
+                                },
+                              },
                               "baselineOffset": "A String", # The text's vertical offset from its normal position.
                                   #
                                   # Text with `SUPERSCRIPT` or `SUBSCRIPT` baseline offsets is automatically
@@ -1842,7 +1836,8 @@ Returns:
                                 "weight": 42, # The rendered weight of the text. This field can have any value that is a
                                     # multiple of `100` between `100` and `900`, inclusive. This range
                                     # corresponds to the numerical values described in the CSS 2.1
-                                    # Specification, [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
+                                    # Specification,
+                                    # [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
                                     # with non-numerical values disallowed. Weights greater than or equal to
                                     # `700` are considered bold, and weights less than `700`are not bold. The
                                     # default value is `400` ("normal").
@@ -1857,6 +1852,11 @@ Returns:
                                   # Some fonts can affect the weight of the text. If an update request
                                   # specifies values for both `font_family` and `bold`, the explicitly-set
                                   # `bold` value is used.
+                              "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
+                                  # points.
+                                "magnitude": 3.14, # The magnitude.
+                                "unit": "A String", # The units for magnitude.
+                              },
                               "italic": True or False, # Whether or not the text is italicized.
                               "link": { # A hypertext link. # The hyperlink destination of the text. If unset, there is no link. Links
                                   # are not inherited from parent text.
@@ -1886,24 +1886,8 @@ Returns:
                                 "relativeLink": "A String", # If set, indicates this is a link to a slide in this presentation,
                                     # addressed by its position.
                               },
-                              "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
-                                  # transparent, depending on if the `opaque_color` field in it is set.
-                                "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
-                                    # a transparent color.
-                                  "themeColor": "A String", # An opaque theme color.
-                                  "rgbColor": { # An RGB color. # An opaque RGB color.
-                                    "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
-                                    "green": 3.14, # The green component of the color, from 0.0 to 1.0.
-                                    "red": 3.14, # The red component of the color, from 0.0 to 1.0.
-                                  },
-                                },
-                              },
-                              "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
-                                  # points.
-                                "magnitude": 3.14, # The magnitude.
-                                "unit": "A String", # The units for magnitude.
-                              },
                               "underline": True or False, # Whether or not the text is underlined.
+                              "bold": True or False, # Whether or not the text is rendered as bold.
                             },
                             "glyph": "A String", # The rendered bullet glyph for this paragraph.
                           },
@@ -1945,7 +1929,18 @@ Returns:
                                 },
                               },
                             },
-                            "bold": True or False, # Whether or not the text is rendered as bold.
+                            "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
+                                # transparent, depending on if the `opaque_color` field in it is set.
+                              "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
+                                  # a transparent color.
+                                "themeColor": "A String", # An opaque theme color.
+                                "rgbColor": { # An RGB color. # An opaque RGB color.
+                                  "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                                  "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                                  "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                                },
+                              },
+                            },
                             "baselineOffset": "A String", # The text's vertical offset from its normal position.
                                 #
                                 # Text with `SUPERSCRIPT` or `SUBSCRIPT` baseline offsets is automatically
@@ -1989,7 +1984,8 @@ Returns:
                               "weight": 42, # The rendered weight of the text. This field can have any value that is a
                                   # multiple of `100` between `100` and `900`, inclusive. This range
                                   # corresponds to the numerical values described in the CSS 2.1
-                                  # Specification, [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
+                                  # Specification,
+                                  # [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
                                   # with non-numerical values disallowed. Weights greater than or equal to
                                   # `700` are considered bold, and weights less than `700`are not bold. The
                                   # default value is `400` ("normal").
@@ -2004,6 +2000,11 @@ Returns:
                                 # Some fonts can affect the weight of the text. If an update request
                                 # specifies values for both `font_family` and `bold`, the explicitly-set
                                 # `bold` value is used.
+                            "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
+                                # points.
+                              "magnitude": 3.14, # The magnitude.
+                              "unit": "A String", # The units for magnitude.
+                            },
                             "italic": True or False, # Whether or not the text is italicized.
                             "link": { # A hypertext link. # The hyperlink destination of the text. If unset, there is no link. Links
                                 # are not inherited from parent text.
@@ -2033,28 +2034,163 @@ Returns:
                               "relativeLink": "A String", # If set, indicates this is a link to a slide in this presentation,
                                   # addressed by its position.
                             },
-                            "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
-                                # transparent, depending on if the `opaque_color` field in it is set.
-                              "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
-                                  # a transparent color.
-                                "themeColor": "A String", # An opaque theme color.
-                                "rgbColor": { # An RGB color. # An opaque RGB color.
-                                  "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
-                                  "green": 3.14, # The green component of the color, from 0.0 to 1.0.
-                                  "red": 3.14, # The red component of the color, from 0.0 to 1.0.
-                                },
-                              },
-                            },
-                            "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
-                                # points.
-                              "magnitude": 3.14, # The magnitude.
-                              "unit": "A String", # The units for magnitude.
-                            },
                             "underline": True or False, # Whether or not the text is underlined.
+                            "bold": True or False, # Whether or not the text is rendered as bold.
                           },
                         },
                       },
                     ],
+                    "lists": { # The bulleted lists contained in this text, keyed by list ID.
+                      "a_key": { # A List describes the look and feel of bullets belonging to paragraphs
+                          # associated with a list. A paragraph that is part of a list has an implicit
+                          # reference to that list's ID.
+                        "nestingLevel": { # A map of nesting levels to the properties of bullets at the associated
+                            # level. A list has at most nine levels of nesting, so the possible values
+                            # for the keys of this map are 0 through 8, inclusive.
+                          "a_key": { # Contains properties describing the look and feel of a list bullet at a given
+                              # level of nesting.
+                            "bulletStyle": { # Represents the styling that can be applied to a TextRun. # The style of a bullet at this level of nesting.
+                                #
+                                # If this text is contained in a shape with a parent placeholder, then these text styles may be
+                                # inherited from the parent. Which text styles are inherited depend on the
+                                # nesting level of lists:
+                                #
+                                # * A text run in a paragraph that is not in a list will inherit its text style
+                                #   from the the newline character in the paragraph at the 0 nesting level of
+                                #   the list inside the parent placeholder.
+                                # * A text run in a paragraph that is in a list will inherit its text style
+                                #   from the newline character in the paragraph at its corresponding nesting
+                                #   level of the list inside the parent placeholder.
+                                #
+                                # Inherited text styles are represented as unset fields in this message. If
+                                # text is contained in a shape without a parent placeholder, unsetting these
+                                # fields will revert the style to a value matching the defaults in the Slides
+                                # editor.
+                              "foregroundColor": { # A color that can either be fully opaque or fully transparent. # The color of the text itself. If set, the color is either opaque or
+                                  # transparent, depending on if the `opaque_color` field in it is set.
+                                "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
+                                    # a transparent color.
+                                  "themeColor": "A String", # An opaque theme color.
+                                  "rgbColor": { # An RGB color. # An opaque RGB color.
+                                    "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                                    "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                                    "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                                  },
+                                },
+                              },
+                              "backgroundColor": { # A color that can either be fully opaque or fully transparent. # The background color of the text. If set, the color is either opaque or
+                                  # transparent, depending on if the `opaque_color` field in it is set.
+                                "opaqueColor": { # A themeable solid color value. # If set, this will be used as an opaque color. If unset, this represents
+                                    # a transparent color.
+                                  "themeColor": "A String", # An opaque theme color.
+                                  "rgbColor": { # An RGB color. # An opaque RGB color.
+                                    "blue": 3.14, # The blue component of the color, from 0.0 to 1.0.
+                                    "green": 3.14, # The green component of the color, from 0.0 to 1.0.
+                                    "red": 3.14, # The red component of the color, from 0.0 to 1.0.
+                                  },
+                                },
+                              },
+                              "baselineOffset": "A String", # The text's vertical offset from its normal position.
+                                  #
+                                  # Text with `SUPERSCRIPT` or `SUBSCRIPT` baseline offsets is automatically
+                                  # rendered in a smaller font size, computed based on the `font_size` field.
+                                  # The `font_size` itself is not affected by changes in this field.
+                              "strikethrough": True or False, # Whether or not the text is struck through.
+                              "weightedFontFamily": { # Represents a font family and weight used to style a TextRun. # The font family and rendered weight of the text.
+                                  #
+                                  # This field is an extension of `font_family` meant to support explicit font
+                                  # weights without breaking backwards compatibility. As such, when reading the
+                                  # style of a range of text, the value of `weighted_font_family#font_family`
+                                  # will always be equal to that of `font_family`. However, when writing, if
+                                  # both fields are included in the field mask (either explicitly or through
+                                  # the wildcard `"*"`), their values are reconciled as follows:
+                                  #
+                                  # * If `font_family` is set and `weighted_font_family` is not, the value of
+                                  #   `font_family` is applied with weight `400` ("normal").
+                                  # * If both fields are set, the value of `font_family` must match that of
+                                  #   `weighted_font_family#font_family`. If so, the font family and weight of
+                                  #   `weighted_font_family` is applied. Otherwise, a 400 bad request error is
+                                  #   returned.
+                                  # * If `weighted_font_family` is set and `font_family` is not, the font
+                                  #   family and weight of `weighted_font_family` is applied.
+                                  # * If neither field is set, the font family and weight of the text inherit
+                                  #   from the parent. Note that these properties cannot inherit separately
+                                  #   from each other.
+                                  #
+                                  # If an update request specifies values for both `weighted_font_family` and
+                                  # `bold`, the `weighted_font_family` is applied first, then `bold`.
+                                  #
+                                  # If `weighted_font_family#weight` is not set, it defaults to `400`.
+                                  #
+                                  # If `weighted_font_family` is set, then `weighted_font_family#font_family`
+                                  # must also be set with a non-empty value. Otherwise, a 400 bad request error
+                                  # is returned.
+                                "fontFamily": "A String", # The font family of the text.
+                                    #
+                                    # The font family can be any font from the Font menu in Slides or from
+                                    # [Google Fonts] (https://fonts.google.com/). If the font name is
+                                    # unrecognized, the text is rendered in `Arial`.
+                                "weight": 42, # The rendered weight of the text. This field can have any value that is a
+                                    # multiple of `100` between `100` and `900`, inclusive. This range
+                                    # corresponds to the numerical values described in the CSS 2.1
+                                    # Specification,
+                                    # [section 15.6](https://www.w3.org/TR/CSS21/fonts.html#font-boldness),
+                                    # with non-numerical values disallowed. Weights greater than or equal to
+                                    # `700` are considered bold, and weights less than `700`are not bold. The
+                                    # default value is `400` ("normal").
+                              },
+                              "smallCaps": True or False, # Whether or not the text is in small capital letters.
+                              "fontFamily": "A String", # The font family of the text.
+                                  #
+                                  # The font family can be any font from the Font menu in Slides or from
+                                  # [Google Fonts] (https://fonts.google.com/). If the font name is
+                                  # unrecognized, the text is rendered in `Arial`.
+                                  #
+                                  # Some fonts can affect the weight of the text. If an update request
+                                  # specifies values for both `font_family` and `bold`, the explicitly-set
+                                  # `bold` value is used.
+                              "fontSize": { # A magnitude in a single direction in the specified units. # The size of the text's font. When read, the `font_size` will specified in
+                                  # points.
+                                "magnitude": 3.14, # The magnitude.
+                                "unit": "A String", # The units for magnitude.
+                              },
+                              "italic": True or False, # Whether or not the text is italicized.
+                              "link": { # A hypertext link. # The hyperlink destination of the text. If unset, there is no link. Links
+                                  # are not inherited from parent text.
+                                  #
+                                  # Changing the link in an update request causes some other changes to the
+                                  # text style of the range:
+                                  #
+                                  # * When setting a link, the text foreground color will be set to
+                                  #   ThemeColorType.HYPERLINK and the text will
+                                  #   be underlined. If these fields are modified in the same
+                                  #   request, those values will be used instead of the link defaults.
+                                  # * Setting a link on a text range that overlaps with an existing link will
+                                  #   also update the existing link to point to the new URL.
+                                  # * Links are not settable on newline characters. As a result, setting a link
+                                  #   on a text range that crosses a paragraph boundary, such as `"ABC\n123"`,
+                                  #   will separate the newline character(s) into their own text runs. The
+                                  #   link will be applied separately to the runs before and after the newline.
+                                  # * Removing a link will update the text style of the range to match the
+                                  #   style of the preceding text (or the default text styles if the preceding
+                                  #   text is another link) unless different styles are being set in the same
+                                  #   request.
+                                "url": "A String", # If set, indicates this is a link to the external web page at this URL.
+                                "slideIndex": 42, # If set, indicates this is a link to the slide at this zero-based index
+                                    # in the presentation. There may not be a slide at this index.
+                                "pageObjectId": "A String", # If set, indicates this is a link to the specific page in this
+                                    # presentation with this ID. A page with this ID may not exist.
+                                "relativeLink": "A String", # If set, indicates this is a link to a slide in this presentation,
+                                    # addressed by its position.
+                              },
+                              "underline": True or False, # Whether or not the text is underlined.
+                              "bold": True or False, # Whether or not the text is rendered as bold.
+                            },
+                          },
+                        },
+                        "listId": "A String", # The ID of the list.
+                      },
+                    },
                   },
                   "tableCellProperties": { # The properties of the TableCell. # The properties of the table cell.
                     "tableCellBackgroundFill": { # The table cell background fill. # The background fill of the table cell. The default fill matches the fill
@@ -2082,11 +2218,13 @@ Returns:
                       },
                       "propertyState": "A String", # The background fill property state.
                           #
-                          # Updating the the fill on a table cell will implicitly update this field
+                          # Updating the fill on a table cell will implicitly update this field
                           # to `RENDERED`, unless another value is specified in the same request. To
                           # have no fill on a table cell, set this field to `NOT_RENDERED`. In this
                           # case, any other fill fields set in the same request will be ignored.
                     },
+                    "contentAlignment": "A String", # The alignment of the content in the table cell. The default alignment
+                        # matches the alignment for newly created table cells in the Slides editor.
                   },
                   "rowSpan": 42, # Row span of the cell.
                   "columnSpan": 42, # Column span of the cell.
@@ -2100,13 +2238,24 @@ Returns:
                 "magnitude": 3.14, # The magnitude.
                 "unit": "A String", # The units for magnitude.
               },
+              "tableRowProperties": { # Properties of each row in a table. # Properties of the row.
+                "minRowHeight": { # A magnitude in a single direction in the specified units. # Minimum height of the row. The row will be rendered in the Slides editor at
+                    # a height equal to or greater than this value in order to show all the text
+                    # in the row's cell(s).
+                  "magnitude": 3.14, # The magnitude.
+                  "unit": "A String", # The units for magnitude.
+                },
+              },
             },
           ],
-          "rows": 42, # Number of rows in the table.
           "columns": 42, # Number of columns in the table.
         },
         "line": { # A PageElement kind representing a # A line page element.
-            # line, curved connector, or bent connector.
+            # non-connector line, straight connector, curved connector, or bent connector.
+          "lineCategory": "A String", # The category of the line.
+              #
+              # It matches the `category` specified in CreateLineRequest, and can be updated with
+              # UpdateLineCategoryRequest.
           "lineProperties": { # The properties of the Line. # The properties of the line.
               #
               # When unset, these fields default to values that match the appearance of
@@ -2150,6 +2299,51 @@ Returns:
                     # a value of 0.0 corresponds to a completely transparent color.
               },
             },
+            "startConnection": { # The properties for one end of a Line # The connection at the beginning of the line. If unset, there is no
+                # connection.
+                #
+                # Only lines with a Type indicating it is
+                # a "connector" can have a `start_connection`.
+                # connection.
+              "connectionSiteIndex": 42, # The index of the connection site on the connected page element.
+                  #
+                  # In most cases, it corresponds to the predefined connection site index from
+                  # the ECMA-376 standard. More information on those connection sites can be
+                  # found in the description of the "cnx" attribute in section 20.1.9.9 and
+                  # Annex H. "Predefined DrawingML Shape and Text Geometries" of "Office Open
+                  # XML File Formats-Fundamentals and Markup Language Reference", part 1 of
+                  # [ECMA-376 5th edition]
+                  # (http://www.ecma-international.org/publications/standards/Ecma-376.htm).
+                  #
+                  # The position of each connection site can also be viewed from Slides editor.
+              "connectedObjectId": "A String", # The object ID of the connected page element.
+                  #
+                  # Some page elements, such as groups, tables, and lines
+                  # do not have connection sites and therefore cannot be connected to a
+                  # connector line.
+            },
+            "endConnection": { # The properties for one end of a Line # The connection at the end of the line. If unset, there is no connection.
+                #
+                # Only lines with a Type indicating it is
+                # a "connector" can have an `end_connection`.
+                # connection.
+              "connectionSiteIndex": 42, # The index of the connection site on the connected page element.
+                  #
+                  # In most cases, it corresponds to the predefined connection site index from
+                  # the ECMA-376 standard. More information on those connection sites can be
+                  # found in the description of the "cnx" attribute in section 20.1.9.9 and
+                  # Annex H. "Predefined DrawingML Shape and Text Geometries" of "Office Open
+                  # XML File Formats-Fundamentals and Markup Language Reference", part 1 of
+                  # [ECMA-376 5th edition]
+                  # (http://www.ecma-international.org/publications/standards/Ecma-376.htm).
+                  #
+                  # The position of each connection site can also be viewed from Slides editor.
+              "connectedObjectId": "A String", # The object ID of the connected page element.
+                  #
+                  # Some page elements, such as groups, tables, and lines
+                  # do not have connection sites and therefore cannot be connected to a
+                  # connector line.
+            },
             "startArrow": "A String", # The style of the arrow at the beginning of the line.
           },
           "lineType": "A String", # The type of the line.
@@ -2164,6 +2358,8 @@ Returns:
             "unit": "A String", # The units for magnitude.
           },
         },
+        "description": "A String", # The description of the page element. Combined with title to display alt
+            # text.
       },
     ],
     "notesProperties": { # The properties of Page that are only # Notes specific properties. Only set if page_type = NOTES.
@@ -2190,6 +2386,10 @@ Returns:
         # changed. Conversely, a changed ID (for the same presentation and user)
         # usually means the presentation has been updated; however, a changed ID can
         # also be due to internal factors such as ID format changes.
+    "masterProperties": { # The properties of Page that are only # Master specific properties. Only set if page_type = MASTER.
+        # relevant for pages with page_type MASTER.
+      "displayName": "A String", # The human-readable name of the master.
+    },
     "pageProperties": { # The properties of the Page. # The properties of the page.
         #
         # The page will inherit properties from the parent page. Depending on the page
@@ -2222,7 +2422,7 @@ Returns:
         },
         "propertyState": "A String", # The background fill property state.
             #
-            # Updating the the fill on a page will implicitly update this field to
+            # Updating the fill on a page will implicitly update this field to
             # `RENDERED`, unless another value is specified in the same request. To
             # have no fill on a page, set this field to `NOT_RENDERED`. In this case,
             # any other fill fields set in the same request will be ignored.
@@ -2239,8 +2439,10 @@ Returns:
               #
               # The picture is fetched once at insertion time and a copy is stored for
               # display inside the presentation. Pictures must be less than 50MB in size,
-              # cannot exceed 25 megapixels, and must be in either in PNG, JPEG, or GIF
+              # cannot exceed 25 megapixels, and must be in one of PNG, JPEG, or GIF
               # format.
+              #
+              # The provided URL can be at most 2 kB in length.
           "size": { # A width and height. # The original size of the picture fill. This field is read-only.
             "width": { # A magnitude in a single direction in the specified units. # The width of the object.
               "magnitude": 3.14, # The magnitude.
@@ -2279,9 +2481,11 @@ Returns:
           # notes for this slide. The ID of this shape is identified by the
           # speakerNotesObjectId field.
           # The notes page is read-only except for the text content and styles of the
-          # speaker notes shape.
-      "masterObjectId": "A String", # The object ID of the master that this slide is based on.
-      "layoutObjectId": "A String", # The object ID of the layout that this slide is based on.
+          # speaker notes shape. This property is read-only.
+      "masterObjectId": "A String", # The object ID of the master that this slide is based on. This property is
+          # read-only.
+      "layoutObjectId": "A String", # The object ID of the layout that this slide is based on. This property is
+          # read-only.
     },
   }</pre>
 </div>
@@ -2290,6 +2494,9 @@ Returns:
     <code class="details" id="getThumbnail">getThumbnail(presentationId, pageObjectId, thumbnailProperties_mimeType=None, thumbnailProperties_thumbnailSize=None, x__xgafv=None)</code>
   <pre>Generates a thumbnail of the latest version of the specified page in the
 presentation and returns a URL to the thumbnail image.
+
+This request counts as an [expensive read request](/slides/limits) for
+quota purposes.
 
 Args:
   presentationId: string, The ID of the presentation to retrieve. (required)

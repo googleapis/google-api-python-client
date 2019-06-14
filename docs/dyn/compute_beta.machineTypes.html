@@ -82,7 +82,7 @@ h1, h2, h3 {
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#get">get(project, zone, machineType)</a></code></p>
-<p class="firstline">Returns the specified machine type. Get a list of available machine types by making a list() request.</p>
+<p class="firstline">Returns the specified machine type. Gets a list of available machine types by making a list() request.</p>
 <p class="toc_element">
   <code><a href="#list">list(project, zone, orderBy=None, maxResults=None, pageToken=None, filter=None)</a></code></p>
 <p class="firstline">Retrieves a list of machine types available to the specified project.</p>
@@ -103,25 +103,26 @@ You can also sort results in descending order based on the creation timestamp us
 Currently, only sorting by name or creationTimestamp desc is supported.
   maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
-  filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
+  filter: string, A filter expression that filters resources listed in the response. The expression must specify the field name, a comparison operator, and the value that you want to use for filtering. The value must be a string, a number, or a boolean. The comparison operator must be either =, !=, >, or <.
 
-The field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.
+For example, if you are filtering Compute Engine instances, you can exclude instances named example-instance by specifying name != example-instance.
 
-For example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.
+You can also filter nested fields. For example, you could specify scheduling.automaticRestart = false to include instances only if they are not scheduled for automatic restarts. You can use filtering on nested fields to filter based on resource labels.
 
-You can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
-
-To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
+To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart = true) (cpuPlatform = "Intel Skylake"). By default, each expression is an AND expression. However, you can include AND and OR expressions explicitly. For example, (cpuPlatform = "Intel Skylake") OR (cpuPlatform = "Intel Broadwell") AND (scheduling.automaticRestart = true).
 
 Returns:
   An object of the form:
 
     {
     "nextPageToken": "A String", # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
-    "items": { # [Output Only] A map of scoped machine type lists.
+    "kind": "compute#machineTypeAggregatedList", # [Output Only] Type of resource. Always compute#machineTypeAggregatedList for aggregated lists of machine types.
+    "items": { # A list of MachineTypesScopedList resources.
       "a_key": { # [Output Only] Name of the scope containing this set of machine types.
-        "machineTypes": [ # [Output Only] List of machine types contained in this scope.
-          { # A Machine Type resource.
+        "machineTypes": [ # [Output Only] A list of machine types contained in this scope.
+          { # Represents a Machine Type resource.
+              #
+              # You can use specific machine types for your VM instances based on performance and pricing requirements. For more information, read Machine Types. (== resource_for v1.machineTypes ==) (== resource_for beta.machineTypes ==)
             "guestCpus": 42, # [Output Only] The number of virtual CPUs that are available to the instance.
             "maximumPersistentDisksSizeGb": "A String", # [Output Only] Maximum total persistent disks size (GB) allowed.
             "kind": "compute#machineType", # [Output Only] The type of the resource. Always compute#machineType for machine types.
@@ -131,7 +132,7 @@ Returns:
             "deprecated": { # Deprecation status for a public resource. # [Output Only] The deprecation status associated with this machine type.
               "deleted": "A String", # An optional RFC3339 timestamp on or after which the state of this resource is intended to change to DELETED. This is only informational and the status will not change unless the client explicitly changes it.
               "deprecated": "A String", # An optional RFC3339 timestamp on or after which the state of this resource is intended to change to DEPRECATED. This is only informational and the status will not change unless the client explicitly changes it.
-              "state": "A String", # The deprecation state of this resource. This can be DEPRECATED, OBSOLETE, or DELETED. Operations which create a new resource using a DEPRECATED resource will return successfully, but with a warning indicating the deprecated resource and recommending its replacement. Operations which use OBSOLETE or DELETED resources will be rejected and result in an error.
+              "state": "A String", # The deprecation state of this resource. This can be ACTIVE, DEPRECATED, OBSOLETE, or DELETED. Operations which communicate the end of life date for an image, can use ACTIVE. Operations which create a new resource using a DEPRECATED resource will return successfully, but with a warning indicating the deprecated resource and recommending its replacement. Operations which use OBSOLETE or DELETED resources will be rejected and result in an error.
               "obsolete": "A String", # An optional RFC3339 timestamp on or after which the state of this resource is intended to change to OBSOLETE. This is only informational and the status will not change unless the client explicitly changes it.
               "replacement": "A String", # The URL of the suggested replacement for a deprecated resource. The suggested replacement resource must be the same kind of resource as the deprecated resource.
             },
@@ -156,8 +157,18 @@ Returns:
         },
       },
     },
-    "kind": "compute#machineTypeAggregatedList", # [Output Only] Type of resource. Always compute#machineTypeAggregatedList for aggregated lists of machine types.
-    "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
+    "warning": { # [Output Only] Informational warning message.
+      "message": "A String", # [Output Only] A human-readable description of the warning code.
+      "code": "A String", # [Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.
+      "data": [ # [Output Only] Metadata about this warning in key: value format. For example:
+          # "data": [ { "key": "scope", "value": "zones/us-east1-d" }
+        {
+          "value": "A String", # [Output Only] A warning data value corresponding to the key.
+          "key": "A String", # [Output Only] A key that provides more detail on the warning being returned. For example, for warnings where there are no results in a list request for a particular zone, this key might be scope and the key value might be the zone name. Other examples might be a key indicating a deprecated resource and a suggested replacement, or a warning about invalid network settings (for example, if an instance attempts to perform IP forwarding but is not enabled for IP forwarding).
+        },
+      ],
+    },
+    "id": "A String", # [Output Only] Unique identifier for the resource; defined by the server.
     "selfLink": "A String", # [Output Only] Server-defined URL for this resource.
   }</pre>
 </div>
@@ -178,7 +189,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="get">get(project, zone, machineType)</code>
-  <pre>Returns the specified machine type. Get a list of available machine types by making a list() request.
+  <pre>Returns the specified machine type. Gets a list of available machine types by making a list() request.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -188,7 +199,9 @@ Args:
 Returns:
   An object of the form:
 
-    { # A Machine Type resource.
+    { # Represents a Machine Type resource.
+      #
+      # You can use specific machine types for your VM instances based on performance and pricing requirements. For more information, read Machine Types. (== resource_for v1.machineTypes ==) (== resource_for beta.machineTypes ==)
     "guestCpus": 42, # [Output Only] The number of virtual CPUs that are available to the instance.
     "maximumPersistentDisksSizeGb": "A String", # [Output Only] Maximum total persistent disks size (GB) allowed.
     "kind": "compute#machineType", # [Output Only] The type of the resource. Always compute#machineType for machine types.
@@ -198,7 +211,7 @@ Returns:
     "deprecated": { # Deprecation status for a public resource. # [Output Only] The deprecation status associated with this machine type.
       "deleted": "A String", # An optional RFC3339 timestamp on or after which the state of this resource is intended to change to DELETED. This is only informational and the status will not change unless the client explicitly changes it.
       "deprecated": "A String", # An optional RFC3339 timestamp on or after which the state of this resource is intended to change to DEPRECATED. This is only informational and the status will not change unless the client explicitly changes it.
-      "state": "A String", # The deprecation state of this resource. This can be DEPRECATED, OBSOLETE, or DELETED. Operations which create a new resource using a DEPRECATED resource will return successfully, but with a warning indicating the deprecated resource and recommending its replacement. Operations which use OBSOLETE or DELETED resources will be rejected and result in an error.
+      "state": "A String", # The deprecation state of this resource. This can be ACTIVE, DEPRECATED, OBSOLETE, or DELETED. Operations which communicate the end of life date for an image, can use ACTIVE. Operations which create a new resource using a DEPRECATED resource will return successfully, but with a warning indicating the deprecated resource and recommending its replacement. Operations which use OBSOLETE or DELETED resources will be rejected and result in an error.
       "obsolete": "A String", # An optional RFC3339 timestamp on or after which the state of this resource is intended to change to OBSOLETE. This is only informational and the status will not change unless the client explicitly changes it.
       "replacement": "A String", # The URL of the suggested replacement for a deprecated resource. The suggested replacement resource must be the same kind of resource as the deprecated resource.
     },
@@ -225,23 +238,24 @@ You can also sort results in descending order based on the creation timestamp us
 Currently, only sorting by name or creationTimestamp desc is supported.
   maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
-  filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
+  filter: string, A filter expression that filters resources listed in the response. The expression must specify the field name, a comparison operator, and the value that you want to use for filtering. The value must be a string, a number, or a boolean. The comparison operator must be either =, !=, >, or <.
 
-The field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.
+For example, if you are filtering Compute Engine instances, you can exclude instances named example-instance by specifying name != example-instance.
 
-For example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.
+You can also filter nested fields. For example, you could specify scheduling.automaticRestart = false to include instances only if they are not scheduled for automatic restarts. You can use filtering on nested fields to filter based on resource labels.
 
-You can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
-
-To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
+To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart = true) (cpuPlatform = "Intel Skylake"). By default, each expression is an AND expression. However, you can include AND and OR expressions explicitly. For example, (cpuPlatform = "Intel Skylake") OR (cpuPlatform = "Intel Broadwell") AND (scheduling.automaticRestart = true).
 
 Returns:
   An object of the form:
 
     { # Contains a list of machine types.
     "nextPageToken": "A String", # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
-    "items": [ # [Output Only] A list of Machine Type resources.
-      { # A Machine Type resource.
+    "kind": "compute#machineTypeList", # [Output Only] Type of resource. Always compute#machineTypeList for lists of machine types.
+    "items": [ # A list of MachineType resources.
+      { # Represents a Machine Type resource.
+          #
+          # You can use specific machine types for your VM instances based on performance and pricing requirements. For more information, read Machine Types. (== resource_for v1.machineTypes ==) (== resource_for beta.machineTypes ==)
         "guestCpus": 42, # [Output Only] The number of virtual CPUs that are available to the instance.
         "maximumPersistentDisksSizeGb": "A String", # [Output Only] Maximum total persistent disks size (GB) allowed.
         "kind": "compute#machineType", # [Output Only] The type of the resource. Always compute#machineType for machine types.
@@ -251,7 +265,7 @@ Returns:
         "deprecated": { # Deprecation status for a public resource. # [Output Only] The deprecation status associated with this machine type.
           "deleted": "A String", # An optional RFC3339 timestamp on or after which the state of this resource is intended to change to DELETED. This is only informational and the status will not change unless the client explicitly changes it.
           "deprecated": "A String", # An optional RFC3339 timestamp on or after which the state of this resource is intended to change to DEPRECATED. This is only informational and the status will not change unless the client explicitly changes it.
-          "state": "A String", # The deprecation state of this resource. This can be DEPRECATED, OBSOLETE, or DELETED. Operations which create a new resource using a DEPRECATED resource will return successfully, but with a warning indicating the deprecated resource and recommending its replacement. Operations which use OBSOLETE or DELETED resources will be rejected and result in an error.
+          "state": "A String", # The deprecation state of this resource. This can be ACTIVE, DEPRECATED, OBSOLETE, or DELETED. Operations which communicate the end of life date for an image, can use ACTIVE. Operations which create a new resource using a DEPRECATED resource will return successfully, but with a warning indicating the deprecated resource and recommending its replacement. Operations which use OBSOLETE or DELETED resources will be rejected and result in an error.
           "obsolete": "A String", # An optional RFC3339 timestamp on or after which the state of this resource is intended to change to OBSOLETE. This is only informational and the status will not change unless the client explicitly changes it.
           "replacement": "A String", # The URL of the suggested replacement for a deprecated resource. The suggested replacement resource must be the same kind of resource as the deprecated resource.
         },
@@ -263,8 +277,18 @@ Returns:
         "name": "A String", # [Output Only] Name of the resource.
       },
     ],
-    "kind": "compute#machineTypeList", # [Output Only] Type of resource. Always compute#machineTypeList for lists of machine types.
-    "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
+    "warning": { # [Output Only] Informational warning message.
+      "message": "A String", # [Output Only] A human-readable description of the warning code.
+      "code": "A String", # [Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.
+      "data": [ # [Output Only] Metadata about this warning in key: value format. For example:
+          # "data": [ { "key": "scope", "value": "zones/us-east1-d" }
+        {
+          "value": "A String", # [Output Only] A warning data value corresponding to the key.
+          "key": "A String", # [Output Only] A key that provides more detail on the warning being returned. For example, for warnings where there are no results in a list request for a particular zone, this key might be scope and the key value might be the zone name. Other examples might be a key indicating a deprecated resource and a suggested replacement, or a warning about invalid network settings (for example, if an instance attempts to perform IP forwarding but is not enabled for IP forwarding).
+        },
+      ],
+    },
+    "id": "A String", # [Output Only] Unique identifier for the resource; defined by the server.
     "selfLink": "A String", # [Output Only] Server-defined URL for this resource.
   }</pre>
 </div>
