@@ -394,6 +394,7 @@ if __name__ == '__main__':
   if FLAGS.discovery_uri:
     document_api_from_discovery_document(FLAGS.discovery_uri)
   else:
+    api_directory = {}
     http = build_http()
     resp, content = http.request(
         FLAGS.directory_uri,
@@ -402,5 +403,27 @@ if __name__ == '__main__':
       directory = json.loads(content)['items']
       for api in directory:
         document_api(api['name'], api['version'])
+        if api['name'] in api_directory:
+          api_directory[api['name']].append(api['version'])
+        else:
+          api_directory[api['name']] = [api['version']]
+
+      html = [
+          '<html><body>',
+          CSS,
+          ]
+      
+      for api, versions in api_directory.items():
+          html.append('<h2>%s</h2>' % api)
+          html.append('<ul>')
+          for version in versions:
+              html.append('<li><a href="%s_%s.html">%s</a></li>' % (api, version, version))
+          html.append('</ul>')
+
+      html.append("</body></html>")
+
+      with open('docs/dyn/index.html', 'w') as f:
+        f.write('\n'.join(html).encode('utf-8'))
+
     else:
       sys.exit("Failed to load the discovery document.")
