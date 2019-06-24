@@ -51,6 +51,7 @@ import re
 # Third-party imports
 import httplib2
 import uritemplate
+import google.api_core.client_options
 
 # Local imports
 from googleapiclient import _auth
@@ -176,7 +177,8 @@ def build(serviceName,
           requestBuilder=HttpRequest,
           credentials=None,
           cache_discovery=True,
-          cache=None):
+          cache=None,
+          client_options=None):
   """Construct a Resource for interacting with an API.
 
   Construct a Resource object for interacting with an API. The serviceName and
@@ -202,6 +204,8 @@ def build(serviceName,
     cache_discovery: Boolean, whether or not to cache the discovery doc.
     cache: googleapiclient.discovery_cache.base.CacheBase, an optional
       cache object for the discovery documents.
+    client_options: google.api_core.client_options, Client options to set user
+      options on the client. API endpoint should be set through client_options.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -224,7 +228,7 @@ def build(serviceName,
         requested_url, discovery_http, cache_discovery, cache, developerKey)
       return build_from_document(content, base=discovery_url, http=http,
           developerKey=developerKey, model=model, requestBuilder=requestBuilder,
-          credentials=credentials)
+          credentials=credentials, client_options=client_options)
     except HttpError as e:
       if e.resp.status == http_client.NOT_FOUND:
         continue
@@ -300,7 +304,8 @@ def build_from_document(
     developerKey=None,
     model=None,
     requestBuilder=HttpRequest,
-    credentials=None):
+    credentials=None,
+    client_options=None):
   """Create a Resource for interacting with an API.
 
   Same as `build()`, but constructs the Resource object from a discovery
@@ -324,6 +329,8 @@ def build_from_document(
     credentials: oauth2client.Credentials or
       google.auth.credentials.Credentials, credentials to be used for
       authentication.
+    client_options: google.api_core.client_options, Client options used to set user options on the client. 
+      API Endpoint (previously called base) should be set through client_options.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -342,8 +349,13 @@ def build_from_document(
                    "build() without mocking once first to populate the " +
                    "cache.")
       raise InvalidJsonError()
+  
+  # If an API Endpoint is provided on the client options object, use that URL
+  api_endpoint = service['rootUrl']
+  if client_options.api_endpoint:
+    api_endpoint = service['rootUrl']
 
-  base = urljoin(service['rootUrl'], service['servicePath'])
+  base = urljoin(api_endpoint, service['servicePath'])
   schema = Schemas(service)
 
   # If the http client is not specified, then we must construct an http client

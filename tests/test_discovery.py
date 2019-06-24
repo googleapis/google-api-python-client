@@ -471,6 +471,15 @@ class DiscoveryFromDocument(unittest.TestCase):
     # application default credentials were used.
     self.assertNotIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
 
+  def test_api_endpoint_override(self):
+    discovery = open(datafile('plus.json')).read()
+    api_endpoint = "foo.googleapis.com"
+    options = google.api_core.client_options.ClientOptions(api_endpoint=api_endpoint)
+    plus = build_from_document(
+      discovery, client_options=options)
+
+    self.assertEquals(plus._baseUrl, api_endpoint)
+
 
 class DiscoveryFromHttp(unittest.TestCase):
   def setUp(self):
@@ -526,6 +535,16 @@ class DiscoveryFromHttp(unittest.TestCase):
       ])
       zoo = build('zoo', 'v1', http=http, cache_discovery=False)
       self.assertTrue(hasattr(zoo, 'animals'))
+
+  def test_api_endpoint_override(self):
+      http = HttpMockSequence([
+        ({'status': '404'}, 'Not found'),
+        ({'status': '200'}, open(datafile('zoo.json'), 'rb').read()),
+      ])
+      api_endpoint = "foo.googleapis.com"
+      options = google.api_core.client_options.ClientOptions(api_endpoint=api_endpoint)
+      zoo = build('zoo', 'v1', http=http, cache_discovery=False, client_options=options)
+      self.assertEquals(zoo._baseUrl, api_endpoint)
 
 class DiscoveryFromAppEngineCache(unittest.TestCase):
   def test_appengine_memcache(self):
