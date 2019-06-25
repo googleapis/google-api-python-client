@@ -42,7 +42,7 @@ install_requires = [
     'httplib2>=0.9.2,<1dev',
     'google-auth>=1.4.1',
     'google-auth-httplib2>=0.0.3',
-    'google-api-core', # TODO: pin to version with client options
+    'google-api-core>=1.13.0,<2dev',
     'six>=1.6.1,<2dev',
     'uritemplate>=3.0.0,<4dev',
 ]
