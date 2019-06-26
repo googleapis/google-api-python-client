@@ -23,7 +23,10 @@ the generated API surface itself.
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
+from collections import OrderedDict
+from packaging import version
 import argparse
+import collections
 import json
 import os
 import re
@@ -394,7 +397,7 @@ if __name__ == '__main__':
   if FLAGS.discovery_uri:
     document_api_from_discovery_document(FLAGS.discovery_uri)
   else:
-    api_directory = {}
+    api_directory = collections.defaultdict(list)
     http = build_http()
     resp, content = http.request(
         FLAGS.directory_uri,
@@ -403,27 +406,22 @@ if __name__ == '__main__':
       directory = json.loads(content)['items']
       for api in directory:
         document_api(api['name'], api['version'])
-        if api['name'] in api_directory:
-          api_directory[api['name']].append(api['version'])
-        else:
-          api_directory[api['name']] = [api['version']]
-
-      html = [
-          '<html><body>',
-          CSS,
-          ]
+        api_directory[api['name']].append(api['version'])
       
+      # sort by api name and version number
+      for api in api_directory:
+        api_directory[api] = sorted(api_directory[api])
+      api_directory = OrderedDict(sorted(api_directory.items(), key = lambda x: x[0]))
+
+      markdown = []
       for api, versions in api_directory.items():
-          html.append('<h2>%s</h2>' % api)
-          html.append('<ul>')
+          markdown.append('## %s' % api)
           for version in versions:
-              html.append('<li><a href="%s_%s.html">%s</a></li>' % (api, version, version))
-          html.append('</ul>')
+              markdown.append('* [%s](%s_%s.html)' % (version, api, version))
+          markdown.append('\n')
 
-      html.append("</body></html>")
-
-      with open('docs/dyn/index.html', 'w') as f:
-        f.write('\n'.join(html).encode('utf-8'))
+      with open('docs/dyn/index.md', 'w') as f:
+        f.write('\n'.join(markdown).encode('utf-8'))
 
     else:
       sys.exit("Failed to load the discovery document.")
