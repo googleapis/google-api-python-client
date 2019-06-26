@@ -24,7 +24,6 @@ the generated API surface itself.
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
 from collections import OrderedDict
-from packaging import version
 import argparse
 import collections
 import json
