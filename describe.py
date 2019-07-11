@@ -416,7 +416,7 @@ if __name__ == '__main__':
       for api, versions in api_directory.items():
           markdown.append('## %s' % api)
           for version in versions:
-              markdown.append('* [%s](%s_%s.html)' % (version, api, version))
+              markdown.append('* [%s](http://googleapis.github.io/google-api-python-client/docs/dyn/%s_%s.html)' % (version, api, version))
           markdown.append('\n')
 
       with open('docs/dyn/index.md', 'w') as f:
