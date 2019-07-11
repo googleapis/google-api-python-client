@@ -15,6 +15,8 @@ access to many Google APIs.
 
 Learn how to use the Google API Python Client with these guides:
 
+### Usage Guides
+
 - [Getting Started](start.md)
 - [Auth](auth.md)
   - [API Keys](api-keys.md)
@@ -32,4 +34,8 @@ Learn how to use the Google API Python Client with these guides:
   - [Understand Thread Safety](thread_safety.md)
   - [Use Google App Engine](google_app_engine.md)
   - [Use Django](django.md)
-  
+
+### Reference Documentation
+
+- Reference documentation for the the core library [googleapiclient](http://googleapis.github.io/google-api-python-client/docs/epy/index.html),
+- [Library reference documentation by API](dyn/index.md).
