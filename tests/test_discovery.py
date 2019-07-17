@@ -162,7 +162,6 @@ class Utilities(unittest.TestCase):
     body = {
         'description': 'The request body.',
         'type': 'object',
-        'required': True,
         '$ref': 'Animal',
     }
     self.assertEqual(parameters['body'], body)
@@ -206,7 +205,6 @@ class Utilities(unittest.TestCase):
     body = {
         'description': 'The request body.',
         'type': 'object',
-        'required': True,
         '$ref': 'Request',
         'key1': 'value1',
         'key2': 'value2',
@@ -219,7 +217,6 @@ class Utilities(unittest.TestCase):
     method_desc = {'request': {'$ref': 'Request'}}
 
     parameters = _fix_up_parameters(method_desc, {}, 'POST', dummy_schema)
-    self.assertFalse(parameters['body']['required'])
 
   def _base_fix_up_method_description_test(
       self, method_desc, initial_parameters, final_parameters,
@@ -267,7 +264,7 @@ class Utilities(unittest.TestCase):
   def test_fix_up_media_upload_with_initial_valid_minimal(self):
     valid_method_desc = {'mediaUpload': {'accept': []}}
     initial_parameters = {'body': {}}
-    final_parameters = {'body': {'required': False},
+    final_parameters = {'body': {},
                         'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
                         'media_mime_type': MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE}
     self._base_fix_up_method_description_test(
@@ -277,7 +274,7 @@ class Utilities(unittest.TestCase):
   def test_fix_up_media_upload_with_initial_valid_full(self):
     valid_method_desc = {'mediaUpload': {'accept': ['*/*'], 'maxSize': '10GB'}}
     initial_parameters = {'body': {}}
-    final_parameters = {'body': {'required': False},
+    final_parameters = {'body': {},
                         'media_body': MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
                         'media_mime_type': MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE}
     ten_gb = 10 * 2**30
