@@ -31,6 +31,7 @@ from six.moves.urllib.parse import urlencode
 # Do not remove the httplib2 import
 import json
 import httplib2
+import io
 import logging
 import mock
 import os
@@ -208,6 +209,15 @@ class TestUserAgent(unittest.TestCase):
 
 
 class TestMediaUpload(unittest.TestCase):
+
+  def test_media_file_upload_closes_fd_in___del__(self):
+    file_desc = mock.Mock(spec=io.TextIOWrapper)
+    opener = mock.mock_open(file_desc)
+    with mock.patch('__builtin__.open', return_value=opener):
+      upload = MediaFileUpload(datafile('test_close'), mimetype='text/plain')
+    self.assertIs(upload.stream(), file_desc)
+    del upload
+    file_desc.close.assert_called_once_with()
 
   def test_media_file_upload_mimetype_detection(self):
     upload = MediaFileUpload(datafile('small.png'))
@@ -861,7 +871,7 @@ class TestHttpRequest(unittest.TestCase):
         headers={'content-type': ''})
     request.execute()
     self.assertEqual('', http.headers.get('content-type'))
-  
+
   def test_no_retry_connection_errors(self):
     model = JsonModel()
     request = HttpRequest(

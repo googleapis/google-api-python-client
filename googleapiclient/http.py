@@ -558,8 +558,12 @@ class MediaFileUpload(MediaIoBaseUpload):
       if mimetype is None:
         # Guess failed, use octet-stream.
         mimetype = 'application/octet-stream'
-    super(MediaFileUpload, self).__init__(fd, mimetype, chunksize=chunksize,
+    super(MediaFileUpload, self).__init__(fd, mimetype,
+                                          chunksize=chunksize,
                                           resumable=resumable)
+
+  def __del__(self):
+    self._fd.close()
 
   def to_json(self):
     """Creating a JSON representation of an instance of MediaFileUpload.
