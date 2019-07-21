@@ -20,6 +20,7 @@ Command-line tool that creates documentation for all APIs listed in discovery.
 The documentation is generated from a combination of the discovery document and
 the generated API surface itself.
 """
+from __future__ import print_function
 
 __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 
@@ -343,7 +344,7 @@ def document_api(name, version):
   try:
     service = build(name, version)
   except UnknownApiNameOrVersion as e:
-    print 'Warning: {} {} found but could not be built.'.format(name, version)
+    print('Warning: {} {} found but could not be built.'.format(name, version))
     return
 
   http = build_http()
