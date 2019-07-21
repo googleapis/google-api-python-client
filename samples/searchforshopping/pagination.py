@@ -9,6 +9,11 @@ import pprint
 
 from googleapiclient.discovery import build
 
+try:
+  input = raw_input
+except NameError:
+  pass
+
 
 SHOPPING_API_VERSION = 'v1'
 DEVELOPER_KEY = 'AIzaSyACZJW4JwcWwz5taR2gjIMNQrtgDLfILPc'
@@ -30,8 +35,8 @@ def main():
   itemsPerPage = response['itemsPerPage']
   totalItems = response['totalItems']
   for i in range(1, totalItems, itemsPerPage):
-    answer = raw_input('About to display results from %s to %s, y/(n)? ' %
-                       (i, i + itemsPerPage))
+    answer = input('About to display results from %s to %s, y/(n)? ' %
+                   (i, i + itemsPerPage))
     if answer.strip().lower().startswith('n'):
       # Stop if the user has had enough
       break
