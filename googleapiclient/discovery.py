@@ -72,16 +72,9 @@ from googleapiclient.model import JsonModel
 from googleapiclient.model import MediaModel
 from googleapiclient.model import RawModel
 from googleapiclient.schema import Schemas
-from oauth2client.client import GoogleCredentials
 
-# Oauth2client < 3 has the positional helper in 'util', >= 3 has it
-# in '_helpers'.
-try:
-  from oauth2client.util import _add_query_parameter
-  from oauth2client.util import positional
-except ImportError:
-  from oauth2client._helpers import _add_query_parameter
-  from oauth2client._helpers import positional
+from googleapiclient._helpers import _add_query_parameter
+from googleapiclient._helpers import positional
 
 
 # The client library requires a version of httplib2 that supports RETRIES.
@@ -103,7 +96,6 @@ _MEDIA_SIZE_BIT_SHIFTS = {'KB': 10, 'MB': 20, 'GB': 30, 'TB': 40}
 BODY_PARAMETER_DEFAULT_VALUE = {
     'description': 'The request body.',
     'type': 'object',
-    'required': True,
 }
 MEDIA_BODY_PARAMETER_DEFAULT_VALUE = {
     'description': ('The filename of the media request body, or an instance '
@@ -117,6 +109,7 @@ MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE = {
     'type': 'string',
     'required': False,
 }
+_PAGE_TOKEN_NAMES = ('pageToken', 'nextPageToken')
 
 # Parameters accepted by the stack, but not visible via discovery.
 # TODO(dhermes): Remove 'userip' in 'v2'.
@@ -132,14 +125,16 @@ class _BytesGenerator(BytesGenerator):
   _write_lines = BytesGenerator.write
 
 def fix_method_name(name):
-  """Fix method names to avoid reserved word conflicts.
+  """Fix method names to avoid '$' characters and reserved word conflicts.
 
   Args:
     name: string, method name.
 
   Returns:
-    The name with a '_' prefixed if the name is a reserved word.
+    The name with '_' appended if the name is a reserved word and '$' 
+    replaced with '_'. 
   """
+  name = name.replace('$', '_')
   if keyword.iskeyword(name) or name in RESERVED_WORDS:
     return name + '_'
   else:
@@ -225,7 +220,7 @@ def build(serviceName,
 
     try:
       content = _retrieve_discovery_doc(
-        requested_url, discovery_http, cache_discovery, cache)
+        requested_url, discovery_http, cache_discovery, cache, developerKey)
       return build_from_document(content, base=discovery_url, http=http,
           developerKey=developerKey, model=model, requestBuilder=requestBuilder,
           credentials=credentials)
@@ -239,7 +234,8 @@ def build(serviceName,
         "name: %s  version: %s" % (serviceName, version))
 
 
-def _retrieve_discovery_doc(url, http, cache_discovery, cache=None):
+def _retrieve_discovery_doc(url, http, cache_discovery, cache=None,
+                            developerKey=None):
   """Retrieves the discovery_doc from cache or the internet.
 
   Args:
@@ -270,6 +266,8 @@ def _retrieve_discovery_doc(url, http, cache_discovery, cache=None):
   # document to avoid exceeding the quota on discovery requests.
   if 'REMOTE_ADDR' in os.environ:
     actual_url = _add_query_parameter(url, 'userIp', os.environ['REMOTE_ADDR'])
+  if developerKey:
+    actual_url = _add_query_parameter(url, 'key', developerKey)
   logger.info('URL being requested: GET %s', actual_url)
 
   resp, content = http.request(actual_url)
@@ -355,8 +353,9 @@ def build_from_document(
     scopes = list(
       service.get('auth', {}).get('oauth2', {}).get('scopes', {}).keys())
 
-    # If so, then the we need to setup authentication.
-    if scopes:
+    # If so, then the we need to setup authentication if no developerKey is
+    # specified.
+    if scopes and not developerKey:
       # If the user didn't pass in credentials, attempt to acquire application
       # default credentials.
       if credentials is None:
@@ -365,7 +364,9 @@ def build_from_document(
       # The credentials need to be scoped.
       credentials = _auth.with_scopes(credentials, scopes)
 
-      # Create an authorized http instance
+    # If credentials are provided, create an authorized http instance;
+    # otherwise, skip authentication.
+    if credentials:
       http = _auth.authorized_http(credentials)
 
     # If the service doesn't require scopes then there is no need for
@@ -453,7 +454,7 @@ def _media_path_url_from_info(root_desc, path_url):
   }
 
 
-def _fix_up_parameters(method_desc, root_desc, http_method):
+def _fix_up_parameters(method_desc, root_desc, http_method, schema):
   """Updates parameters of an API method with values specific to this library.
 
   Specifically, adds whatever global parameters are specified by the API to the
@@ -471,6 +472,7 @@ def _fix_up_parameters(method_desc, root_desc, http_method):
     root_desc: Dictionary; the entire original deserialized discovery document.
     http_method: String; the HTTP method used to call the API method described
         in method_desc.
+    schema: Object, mapping of schema names to schema descriptions.
 
   Returns:
     The updated Dictionary stored in the 'parameters' key of the method
@@ -499,10 +501,8 @@ def _fix_up_parameters(method_desc, root_desc, http_method):
 def _fix_up_media_upload(method_desc, root_desc, path_url, parameters):
   """Adds 'media_body' and 'media_mime_type' parameters if supported by method.
 
-  SIDE EFFECTS: If the method supports media upload and has a required body,
-  sets body to be optional (required=False) instead. Also, if there is a
-  'mediaUpload' in the method description, adds 'media_upload' key to
-  parameters.
+  SIDE EFFECTS: If there is a 'mediaUpload' in the method description, adds
+  'media_upload' key to parameters.
 
   Args:
     method_desc: Dictionary with metadata describing an API method. Value comes
@@ -535,13 +535,11 @@ def _fix_up_media_upload(method_desc, root_desc, path_url, parameters):
     media_path_url = _media_path_url_from_info(root_desc, path_url)
     parameters['media_body'] = MEDIA_BODY_PARAMETER_DEFAULT_VALUE.copy()
     parameters['media_mime_type'] = MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE.copy()
-    if 'body' in parameters:
-      parameters['body']['required'] = False
 
   return accept, max_size, media_path_url
 
 
-def _fix_up_method_description(method_desc, root_desc):
+def _fix_up_method_description(method_desc, root_desc, schema):
   """Updates a method description in a discovery document.
 
   SIDE EFFECTS: Changes the parameters dictionary in the method description with
@@ -552,6 +550,7 @@ def _fix_up_method_description(method_desc, root_desc):
         from the dictionary of methods stored in the 'methods' key in the
         deserialized discovery document.
     root_desc: Dictionary; the entire original deserialized discovery document.
+    schema: Object, mapping of schema names to schema descriptions.
 
   Returns:
     Tuple (path_url, http_method, method_id, accept, max_size, media_path_url)
@@ -576,7 +575,7 @@ def _fix_up_method_description(method_desc, root_desc):
   http_method = method_desc['httpMethod']
   method_id = method_desc['id']
 
-  parameters = _fix_up_parameters(method_desc, root_desc, http_method)
+  parameters = _fix_up_parameters(method_desc, root_desc, http_method, schema)
   # Order is important. `_fix_up_media_upload` needs `method_desc` to have a
   # 'parameters' key and needs to know if there is a 'body' parameter because it
   # also sets a 'media_body' parameter.
@@ -704,7 +703,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
   """
   methodName = fix_method_name(methodName)
   (pathUrl, httpMethod, methodId, accept,
-   maxSize, mediaPathUrl) = _fix_up_method_description(methodDesc, rootDesc)
+   maxSize, mediaPathUrl) = _fix_up_method_description(methodDesc, rootDesc, schema)
 
   parameters = ResourceMethodParameters(methodDesc)
 
@@ -723,7 +722,11 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
 
     for name in parameters.required_params:
       if name not in kwargs:
-        raise TypeError('Missing required parameter "%s"' % name)
+        # temporary workaround for non-paging methods incorrectly requiring
+        # page token parameter (cf. drive.changes.watch vs. drive.changes.list)
+        if name not in _PAGE_TOKEN_NAMES or _findPageTokenName(
+            _methodProperties(methodDesc, schema, 'response')):
+          raise TypeError('Missing required parameter "%s"' % name)
 
     for name, regex in six.iteritems(parameters.pattern_params):
       if name in kwargs:
@@ -926,13 +929,20 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
   return (methodName, method)
 
 
-def createNextMethod(methodName):
+def createNextMethod(methodName,
+                     pageTokenName='pageToken',
+                     nextPageTokenName='nextPageToken',
+                     isPageTokenParameter=True):
   """Creates any _next methods for attaching to a Resource.
 
   The _next methods allow for easy iteration through list() responses.
 
   Args:
     methodName: string, name of the method to use.
+    pageTokenName: string, name of request page token field.
+    nextPageTokenName: string, name of response page token field.
+    isPageTokenParameter: Boolean, True if request page token is a query
+        parameter, False if request page token is a field of the request body.
   """
   methodName = fix_method_name(methodName)
 
@@ -950,24 +960,24 @@ Returns:
     # Retrieve nextPageToken from previous_response
     # Use as pageToken in previous_request to create new request.
 
-    if 'nextPageToken' not in previous_response or not previous_response['nextPageToken']:
+    nextPageToken = previous_response.get(nextPageTokenName, None)
+    if not nextPageToken:
       return None
 
     request = copy.copy(previous_request)
 
-    pageToken = previous_response['nextPageToken']
-    parsed = list(urlparse(request.uri))
-    q = parse_qsl(parsed[4])
-
-    # Find and remove old 'pageToken' value from URI
-    newq = [(key, value) for (key, value) in q if key != 'pageToken']
-    newq.append(('pageToken', pageToken))
-    parsed[4] = urlencode(newq)
-    uri = urlunparse(parsed)
-
-    request.uri = uri
-
-    logger.info('URL being requested: %s %s' % (methodName,uri))
+    if isPageTokenParameter:
+        # Replace pageToken value in URI
+        request.uri = _add_query_parameter(
+            request.uri, pageTokenName, nextPageToken)
+        logger.info('Next page request URL: %s %s' % (methodName, request.uri))
+    else:
+        # Replace pageToken value in request body
+        model = self._model
+        body = model.deserialize(request.body)
+        body[pageTokenName] = nextPageToken
+        request.body = model.serialize(body)
+        logger.info('Next page request body: %s %s' % (methodName, body))
 
     return request
 
@@ -1115,19 +1125,59 @@ class Resource(object):
                                method.__get__(self, self.__class__))
 
   def _add_next_methods(self, resourceDesc, schema):
-    # Add _next() methods
-    # Look for response bodies in schema that contain nextPageToken, and methods
-    # that take a pageToken parameter.
-    if 'methods' in resourceDesc:
-      for methodName, methodDesc in six.iteritems(resourceDesc['methods']):
-        if 'response' in methodDesc:
-          responseSchema = methodDesc['response']
-          if '$ref' in responseSchema:
-            responseSchema = schema.get(responseSchema['$ref'])
-          hasNextPageToken = 'nextPageToken' in responseSchema.get('properties',
-                                                                   {})
-          hasPageToken = 'pageToken' in methodDesc.get('parameters', {})
-          if hasNextPageToken and hasPageToken:
-            fixedMethodName, method = createNextMethod(methodName + '_next')
-            self._set_dynamic_attr(fixedMethodName,
-                                   method.__get__(self, self.__class__))
+    # Add _next() methods if and only if one of the names 'pageToken' or
+    # 'nextPageToken' occurs among the fields of both the method's response
+    # type either the method's request (query parameters) or request body.
+    if 'methods' not in resourceDesc:
+      return
+    for methodName, methodDesc in six.iteritems(resourceDesc['methods']):
+      nextPageTokenName = _findPageTokenName(
+          _methodProperties(methodDesc, schema, 'response'))
+      if not nextPageTokenName:
+        continue
+      isPageTokenParameter = True
+      pageTokenName = _findPageTokenName(methodDesc.get('parameters', {}))
+      if not pageTokenName:
+        isPageTokenParameter = False
+        pageTokenName = _findPageTokenName(
+            _methodProperties(methodDesc, schema, 'request'))
+      if not pageTokenName:
+        continue
+      fixedMethodName, method = createNextMethod(
+          methodName + '_next', pageTokenName, nextPageTokenName,
+          isPageTokenParameter)
+      self._set_dynamic_attr(fixedMethodName,
+                             method.__get__(self, self.__class__))
+
+
+def _findPageTokenName(fields):
+  """Search field names for one like a page token.
+
+  Args:
+    fields: container of string, names of fields.
+
+  Returns:
+    First name that is either 'pageToken' or 'nextPageToken' if one exists,
+    otherwise None.
+  """
+  return next((tokenName for tokenName in _PAGE_TOKEN_NAMES
+              if tokenName in fields), None)
+
+def _methodProperties(methodDesc, schema, name):
+  """Get properties of a field in a method description.
+
+  Args:
+    methodDesc: object, fragment of deserialized discovery document that
+      describes the method.
+    schema: object, mapping of schema names to schema descriptions.
+    name: string, name of top-level field in method description.
+
+  Returns:
+    Object representing fragment of deserialized discovery document
+    corresponding to 'properties' field of object corresponding to named field
+    in method description, if it exists, otherwise empty dict.
+  """
+  desc = methodDesc.get(name, {})
+  if '$ref' in desc:
+    desc = schema.get(desc['$ref'], {})
+  return desc.get('properties', {})

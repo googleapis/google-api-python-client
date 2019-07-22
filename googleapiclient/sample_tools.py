@@ -27,10 +27,6 @@ import os
 
 from googleapiclient import discovery
 from googleapiclient.http import build_http
-from oauth2client import client
-from oauth2client import file
-from oauth2client import tools
-
 
 def init(argv, name, version, doc, filename, scope=None, parents=[], discovery_filename=None):
   """A common initialization routine for samples.
@@ -56,6 +52,13 @@ def init(argv, name, version, doc, filename, scope=None, parents=[], discovery_f
     A tuple of (service, flags), where service is the service object and flags
     is the parsed command-line flags.
   """
+  try:
+      from oauth2client import client
+      from oauth2client import file
+      from oauth2client import tools
+  except ImportError:
+      raise ImportError('googleapiclient.sample_tools requires oauth2client. Please install oauth2client and try again.')
+
   if scope is None:
     scope = 'https://www.googleapis.com/auth/' + name
 

@@ -29,7 +29,9 @@ from io import FileIO
 from six.moves.urllib.parse import urlencode
 
 # Do not remove the httplib2 import
+import json
 import httplib2
+import io
 import logging
 import mock
 import os
@@ -62,12 +64,21 @@ from oauth2client.client import Credentials
 
 class MockCredentials(Credentials):
   """Mock class for all Credentials objects."""
-  def __init__(self, bearer_token):
+  def __init__(self, bearer_token, expired=False):
     super(MockCredentials, self).__init__()
     self._authorized = 0
     self._refreshed = 0
     self._applied = 0
     self._bearer_token = bearer_token
+    self._access_token_expired = expired
+
+  @property
+  def access_token(self):
+    return self._bearer_token
+
+  @property
+  def access_token_expired(self):
+    return self._access_token_expired
 
   def authorize(self, http):
     self._authorized += 1
@@ -116,25 +127,28 @@ class HttpMockWithErrors(object):
       return httplib2.Response(self.success_json), self.success_data
     else:
       self.num_errors -= 1
-      if self.num_errors == 1:
+      if self.num_errors == 1:  # initial == 2
         raise ssl.SSLError()
-      else:
-        if PY3:
-          ex = TimeoutError()
-        else:
-          ex = socket.error()
-        
+      if self.num_errors == 3:  # initial == 4
+        raise httplib2.ServerNotFoundError()
+      else:  # initial != 2,4
         if self.num_errors == 2:
-          #first try a broken pipe error (#218)
+          # first try a broken pipe error (#218)
+          ex = socket.error()
           ex.errno = socket.errno.EPIPE
         else:
           # Initialize the timeout error code to the platform's error code.
           try:
             # For Windows:
+            ex = socket.error()
             ex.errno = socket.errno.WSAETIMEDOUT
           except AttributeError:
             # For Linux/Mac:
-            ex.errno = socket.errno.ETIMEDOUT
+            if PY3:
+              ex = socket.timeout()
+            else:
+              ex = socket.error()
+              ex.errno = socket.errno.ETIMEDOUT
         # Now raise the correct error.
         raise ex
 
@@ -168,6 +182,10 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 def datafile(filename):
   return os.path.join(DATA_DIR, filename)
 
+def _postproc_none(*kwargs):
+  pass
+
+
 class TestUserAgent(unittest.TestCase):
 
   def test_set_user_agent(self):
@@ -191,6 +209,15 @@ class TestUserAgent(unittest.TestCase):
 
 
 class TestMediaUpload(unittest.TestCase):
+
+  def test_media_file_upload_closes_fd_in___del__(self):
+    file_desc = mock.Mock(spec=io.TextIOWrapper)
+    opener = mock.mock_open(file_desc)
+    with mock.patch('__builtin__.open', return_value=opener):
+      upload = MediaFileUpload(datafile('test_close'), mimetype='text/plain')
+    self.assertIs(upload.stream(), file_desc)
+    del upload
+    file_desc.close.assert_called_once_with()
 
   def test_media_file_upload_mimetype_detection(self):
     upload = MediaFileUpload(datafile('small.png'))
@@ -232,16 +259,12 @@ class TestMediaUpload(unittest.TestCase):
     self.assertEqual(6, media.size())
 
   def test_http_request_to_from_json(self):
-
-    def _postproc(*kwargs):
-      pass
-
     http = build_http()
     media_upload = MediaFileUpload(
         datafile('small.png'), chunksize=500, resumable=True)
     req = HttpRequest(
         http,
-        _postproc,
+        _postproc_none,
         'http://example.com',
         method='POST',
         body='{}',
@@ -250,7 +273,7 @@ class TestMediaUpload(unittest.TestCase):
         resumable=media_upload)
 
     json = req.to_json()
-    new_req = HttpRequest.from_json(json, http, _postproc)
+    new_req = HttpRequest.from_json(json, http, _postproc_none)
 
     self.assertEqual({'content-type':
                        'multipart/related; boundary="---flubber"'},
@@ -444,6 +467,41 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     self.assertEqual(5, download._progress)
     self.assertEqual(5, download._total_size)
 
+  def test_media_io_base_download_custom_request_headers(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '200',
+        'content-range': '0-2/5'}, 'echo_request_headers_as_json'),
+      ({'status': '200',
+        'content-range': '3-4/5'}, 'echo_request_headers_as_json'),
+    ])
+    self.assertEqual(True, self.request.http.follow_redirects)
+
+    self.request.headers['Cache-Control'] = 'no-store'
+
+    download = MediaIoBaseDownload(
+        fd=self.fd, request=self.request, chunksize=3)
+
+    self.assertEqual(download._headers, {'Cache-Control':'no-store'})
+
+    status, done = download.next_chunk()
+
+    result = self.fd.getvalue().decode('utf-8')
+
+    # we abuse the internals of the object we're testing, pay no attention
+    # to the actual bytes= values here; we are just asserting that the
+    # header we added to the original request is sent up to the server
+    # on each call to next_chunk
+
+    self.assertEqual(json.loads(result),
+                     {"Cache-Control": "no-store", "range": "bytes=0-3"})
+
+    download._fd = self.fd = BytesIO()
+    status, done = download.next_chunk()
+
+    result = self.fd.getvalue().decode('utf-8')
+    self.assertEqual(json.loads(result),
+                     {"Cache-Control": "no-store", "range": "bytes=51-54"})
+
   def test_media_io_base_download_handle_redirects(self):
     self.request.http = HttpMockSequence([
       ({'status': '200',
@@ -485,14 +543,14 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
   def test_media_io_base_download_retries_connection_errors(self):
     self.request.http = HttpMockWithErrors(
-        3, {'status': '200', 'content-range': '0-2/3'}, b'123')
+        4, {'status': '200', 'content-range': '0-2/3'}, b'123')
 
     download = MediaIoBaseDownload(
         fd=self.fd, request=self.request, chunksize=3)
     download._sleep = lambda _x: 0  # do nothing
     download._rand = lambda: 10
 
-    status, done = download.next_chunk(num_retries=3)
+    status, done = download.next_chunk(num_retries=4)
 
     self.assertEqual(self.fd.getvalue(), b'123')
     self.assertEqual(True, done)
@@ -550,6 +608,51 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     self.assertEqual(5, download._progress)
     self.assertEqual(5, download._total_size)
 
+  def test_media_io_base_download_empty_file(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '200',
+        'content-range': '0-0/0'}, b''),
+    ])
+
+    download = MediaIoBaseDownload(
+      fd=self.fd, request=self.request, chunksize=3)
+
+    self.assertEqual(self.fd, download._fd)
+    self.assertEqual(0, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(False, download._done)
+    self.assertEqual(self.request.uri, download._uri)
+
+    status, done = download.next_chunk()
+
+    self.assertEqual(True, done)
+    self.assertEqual(0, download._progress)
+    self.assertEqual(0, download._total_size)
+    self.assertEqual(0, status.progress())
+
+  def test_media_io_base_download_unknown_media_size(self):
+    self.request.http = HttpMockSequence([
+      ({'status': '200'}, b'123')
+    ])
+
+    download = MediaIoBaseDownload(
+      fd=self.fd, request=self.request, chunksize=3)
+
+    self.assertEqual(self.fd, download._fd)
+    self.assertEqual(0, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(False, download._done)
+    self.assertEqual(self.request.uri, download._uri)
+
+    status, done = download.next_chunk()
+
+    self.assertEqual(self.fd.getvalue(), b'123')
+    self.assertEqual(True, done)
+    self.assertEqual(3, download._progress)
+    self.assertEqual(None, download._total_size)
+    self.assertEqual(0, status.progress())
+
+
 EXPECTED = """POST /someapi/v1/collection/?foo=bar HTTP/1.1
 Content-Type: application/json
 MIME-Version: 1.0
@@ -578,7 +681,7 @@ ETag: "etag/pony"\r\n\r\n{"answer": 42}"""
 BATCH_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -588,7 +691,7 @@ ETag: "etag/pony"\r\n\r\n{"foo": 42}
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -600,7 +703,7 @@ ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 BATCH_ERROR_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -610,7 +713,7 @@ ETag: "etag/pony"\r\n\r\n{"foo": 42}
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 403 Access Not Configured
 Content-Type: application/json
@@ -636,7 +739,7 @@ ETag: "etag/sheep"\r\n\r\n{
 BATCH_RESPONSE_WITH_401 = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 401 Authorization Required
 Content-Type: application/json
@@ -647,7 +750,7 @@ ETag: "etag/pony"\r\n\r\n{"error": {"message":
 --batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+2>
+Content-ID: <randomness + 2>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -659,7 +762,7 @@ ETag: "etag/sheep"\r\n\r\n{"baz": "qux"}
 BATCH_SINGLE_RESPONSE = b"""--batch_foobarbaz
 Content-Type: application/http
 Content-Transfer-Encoding: binary
-Content-ID: <randomness+1>
+Content-ID: <randomness + 1>
 
 HTTP/1.1 200 OK
 Content-Type: application/json
@@ -712,6 +815,20 @@ NOT_CONFIGURED_RESPONSE = """{
  }
 }"""
 
+LIST_NOT_CONFIGURED_RESPONSE = """[
+ "error": {
+  "errors": [
+   {
+    "domain": "usageLimits",
+    "reason": "accessNotConfigured",
+    "message": "Access Not Configured"
+   }
+  ],
+  "code": 403,
+  "message": "Access Not Configured"
+ }
+]"""
+
 class Callbacks(object):
   def __init__(self):
     self.responses = {}
@@ -741,6 +858,20 @@ class TestHttpRequest(unittest.TestCase):
     self.assertEqual(method, http.method)
     self.assertEqual(str, type(http.method))
 
+  def test_empty_content_type(self):
+    """Test for #284"""
+    http = HttpMock(None, headers={'status': 200})
+    uri = u'https://www.googleapis.com/someapi/v1/upload/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        _postproc_none,
+        uri,
+        method=method,
+        headers={'content-type': ''})
+    request.execute()
+    self.assertEqual('', http.headers.get('content-type'))
+
   def test_no_retry_connection_errors(self):
     model = JsonModel()
     request = HttpRequest(
@@ -756,12 +887,12 @@ class TestHttpRequest(unittest.TestCase):
   def test_retry_connection_errors_non_resumable(self):
     model = JsonModel()
     request = HttpRequest(
-        HttpMockWithErrors(3, {'status': '200'}, '{"foo": "bar"}'),
+        HttpMockWithErrors(4, {'status': '200'}, '{"foo": "bar"}'),
         model.response,
         u'https://www.example.com/json_api_endpoint')
     request._sleep = lambda _x: 0  # do nothing
     request._rand = lambda: 10
-    response = request.execute(num_retries=3)
+    response = request.execute(num_retries=4)
     self.assertEqual({u'foo': u'bar'}, response)
 
   def test_retry_connection_errors_resumable(self):
@@ -773,14 +904,14 @@ class TestHttpRequest(unittest.TestCase):
 
     request = HttpRequest(
         HttpMockWithErrors(
-            3, {'status': '200', 'location': 'location'}, '{"foo": "bar"}'),
+            4, {'status': '200', 'location': 'location'}, '{"foo": "bar"}'),
         model.response,
         u'https://www.example.com/file_upload',
         method='POST',
         resumable=upload)
     request._sleep = lambda _x: 0  # do nothing
     request._rand = lambda: 10
-    response = request.execute(num_retries=3)
+    response = request.execute(num_retries=4)
     self.assertEqual({u'foo': u'bar'}, response)
 
   def test_retry(self):
@@ -929,6 +1060,29 @@ class TestHttpRequest(unittest.TestCase):
       request.execute()
     request._sleep.assert_not_called()
 
+  def test_no_retry_403_list_fails(self):
+    http = HttpMockSequence([
+        ({'status': '403'}, LIST_NOT_CONFIGURED_RESPONSE),
+        ({'status': '200'}, '{}')
+        ])
+    model = JsonModel()
+    uri = u'https://www.googleapis.com/someapi/v1/collection/?foo=bar'
+    method = u'POST'
+    request = HttpRequest(
+        http,
+        model.response,
+        uri,
+        method=method,
+        body=u'{}',
+        headers={'content-type': 'application/json'})
+
+    request._rand = lambda: 1.0
+    request._sleep =  mock.MagicMock()
+
+    with self.assertRaises(HttpError):
+      request.execute()
+    request._sleep.assert_not_called()
+
 class TestBatch(unittest.TestCase):
 
   def setUp(self):
@@ -1048,6 +1202,21 @@ class TestBatch(unittest.TestCase):
     batch.add(self.request1, request_id='1')
     self.assertRaises(KeyError, batch.add, self.request1, request_id='1')
 
+  def test_add_fail_for_over_limit(self):
+    from googleapiclient.http import MAX_BATCH_LIMIT
+
+    batch = BatchHttpRequest()
+    for i in range(0, MAX_BATCH_LIMIT):
+      batch.add(HttpRequest(
+        None,
+        None,
+        'https://www.googleapis.com/someapi/v1/collection/?foo=bar',
+        method='POST',
+        body='{}',
+        headers={'content-type': 'application/json'})
+      )
+    self.assertRaises(BatchError, batch.add, self.request1)
+
   def test_add_fail_for_resumable(self):
     batch = BatchHttpRequest()
 
@@ -1103,13 +1272,43 @@ class TestBatch(unittest.TestCase):
       header = parts[1].splitlines()[1]
       self.assertEqual('Content-Type: application/http', header)
 
+  def test_execute_request_body_with_custom_long_request_ids(self):
+    batch = BatchHttpRequest()
+
+    batch.add(self.request1, request_id='abc'*20)
+    batch.add(self.request2, request_id='def'*20)
+    http = HttpMockSequence([
+      ({'status': '200',
+        'content-type': 'multipart/mixed; boundary="batch_foobarbaz"'},
+        'echo_request_body'),
+      ])
+    try:
+      batch.execute(http=http)
+      self.fail('Should raise exception')
+    except BatchError as e:
+      boundary, _ = e.content.split(None, 1)
+      self.assertEqual('--', boundary[:2])
+      parts = e.content.split(boundary)
+      self.assertEqual(4, len(parts))
+      self.assertEqual('', parts[0])
+      self.assertEqual('--', parts[3].rstrip())
+      for partindex, request_id in ((1, 'abc'*20), (2, 'def'*20)):
+        lines = parts[partindex].splitlines()
+        for n, line in enumerate(lines):
+          if line.startswith('Content-ID:'):
+            # assert correct header folding
+            self.assertTrue(line.endswith('+'), line)
+            header_continuation = lines[n+1]
+            self.assertEqual(
+              header_continuation,
+              ' %s>' % request_id,
+              header_continuation
+            )
+
   def test_execute_initial_refresh_oauth2(self):
     batch = BatchHttpRequest()
     callbacks = Callbacks()
-    cred = MockCredentials('Foo')
-
-    # Pretend this is a OAuth2Credentials object
-    cred.access_token = None
+    cred = MockCredentials('Foo', expired=True)
 
     http = HttpMockSequence([
       ({'status': '200',
