@@ -34,6 +34,7 @@ Sample usage:
   $ python search_analytics_api_sample.py 'https://www.example.com/' '2015-05-01' '2015-05-30'
 
 """
+from __future__ import print_function
 
 import argparse
 import sys
@@ -176,22 +177,22 @@ def print_table(response, title):
     response: The server response to be printed as a table.
     title: The title of the table.
   """
-  print '\n --' + title + ':'
-
+  print('\n --' + title + ':')
+  
   if 'rows' not in response:
-    print 'Empty response'
+    print('Empty response')
     return
 
   rows = response['rows']
   row_format = '{:<20}' + '{:>20}' * 4
-  print row_format.format('Keys', 'Clicks', 'Impressions', 'CTR', 'Position')
+  print(row_format.format('Keys', 'Clicks', 'Impressions', 'CTR', 'Position'))
   for row in rows:
     keys = ''
     # Keys are returned only if one or more dimensions are requested.
     if 'keys' in row:
       keys = u','.join(row['keys']).encode('utf-8')
-    print row_format.format(
-        keys, row['clicks'], row['impressions'], row['ctr'], row['position'])
+    print(row_format.format(
+        keys, row['clicks'], row['impressions'], row['ctr'], row['position']))
 
 if __name__ == '__main__':
   main(sys.argv)

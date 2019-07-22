@@ -92,7 +92,7 @@ def main(argv):
 
     pprint.pprint(update_result)
 
-  except AccessTokenRefreshError as e:
+  except client.AccessTokenRefreshError as e:
     print ('The credentials have been revoked or expired, please re-run'
       'the application to re-authorize')
 
