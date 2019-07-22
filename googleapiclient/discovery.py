@@ -333,6 +333,8 @@ def build_from_document(
 
   if isinstance(service, six.string_types):
     service = json.loads(service)
+  elif isinstance(service, six.binary_type):
+    service = json.loads(service.decode('utf-8'))
 
   if  'rootUrl' not in service and (isinstance(http, (HttpMock,
                                                       HttpMockSequence))):
