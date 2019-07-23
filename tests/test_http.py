@@ -213,8 +213,12 @@ class TestMediaUpload(unittest.TestCase):
   def test_media_file_upload_closes_fd_in___del__(self):
     file_desc = mock.Mock(spec=io.TextIOWrapper)
     opener = mock.mock_open(file_desc)
-    with mock.patch('__builtin__.open', return_value=opener):
-      upload = MediaFileUpload(datafile('test_close'), mimetype='text/plain')
+    if PY3:
+      with mock.patch('builtins.open', return_value=opener):
+        upload = MediaFileUpload(datafile('test_close'), mimetype='text/plain')
+    else:
+      with mock.patch('__builtin__.open', return_value=opener):
+        upload = MediaFileUpload(datafile('test_close'), mimetype='text/plain')     
     self.assertIs(upload.stream(), file_desc)
     del upload
     file_desc.close.assert_called_once_with()
