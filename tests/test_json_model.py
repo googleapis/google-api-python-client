@@ -26,6 +26,7 @@ __author__ = 'jcgregorio@google.com (Joe Gregorio)'
 import copy
 import json
 import os
+import platform
 import unittest2 as unittest
 import httplib2
 import googleapiclient.model
@@ -143,8 +144,21 @@ class Model(unittest.TestCase):
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['user-agent'],
-        'my-test-app/1.23.4 google-api-python-client/' + __version__ +
-        ' (gzip)')
+        'my-test-app/1.23.4')
+
+  def test_x_goog_api_client(self):
+    model = JsonModel(data_wrapper=False)
+
+    headers = {}
+    path_params = {}
+    query_params = {}
+    body = {}
+
+    headers, unused_params, unused_query, body = model.request(
+        headers, path_params, query_params, body)
+
+    self.assertEqual(headers['x-goog-api-client'],
+        'gdcl/' + __version__ + ' gl-python/' + platform.python_version())
 
   def test_bad_response(self):
     model = JsonModel(data_wrapper=False)
