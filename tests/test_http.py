@@ -491,21 +491,16 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
     result = json.loads(self.fd.getvalue().decode('utf-8'))
 
-    # we abuse the internals of the object we're testing, pay no attention
-    # to the actual bytes= values here; we are just asserting that the
-    # header we added to the original request is sent up to the server
-    # on each call to next_chunk
+    # assert that that the header we added to the original request is
+    # sent up to the server on each call to next_chunk
 
     self.assertEqual(result.get("Cache-Control"), "no-store")
-    self.assertEqual(result.get("range"), "bytes=0-3")
 
     download._fd = self.fd = BytesIO()
     status, done = download.next_chunk()
 
     result = json.loads(self.fd.getvalue().decode('utf-8'))
     self.assertEqual(result.get("Cache-Control"), "no-store")
-    # The bytes range is different in Python 2.7 and Python 3 test runs
-    self.assertIn("bytes=", result.get("range")) 
 
   def test_media_io_base_download_handle_redirects(self):
     self.request.http = HttpMockSequence([

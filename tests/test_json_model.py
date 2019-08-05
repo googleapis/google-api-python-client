@@ -149,7 +149,7 @@ class Model(unittest.TestCase):
   def test_x_goog_api_client(self):
     model = JsonModel(data_wrapper=False)
 
-    headers = {'x-goog-api-client': 'gccl/my-test-client/1.23.4'}
+    headers = {'x-goog-api-client': 'gccl/1.23.4'}
     path_params = {}
     query_params = {}
     body = {}
@@ -158,7 +158,7 @@ class Model(unittest.TestCase):
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['x-goog-api-client'],
-        'gccl/my-test-client/1.23.4' + ' gdcl/' + __version__ + ' gl-python/' + platform.python_version())
+        'gccl/1.23.4' + ' gdcl/' + __version__ + ' gl-python/' + platform.python_version())
 
   def test_bad_response(self):
     model = JsonModel(data_wrapper=False)
