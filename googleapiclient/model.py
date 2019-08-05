@@ -142,7 +142,11 @@ class BaseModel(Model):
     query = self._build_query(query_params)
     headers['accept'] = self.accept
     headers['accept-encoding'] = 'gzip, deflate'
-    headers['x-goog-api-client'] = 'gdcl/%s gl-python/%s' % (__version__, _PY_VERSION)
+    if 'x-goog-api-client' in headers:
+      headers['x-goog-api-client'] += ' '
+    else:
+      headers['x-goog-api-client'] = ''
+    headers['x-goog-api-client'] += 'gdcl/%s gl-python/%s' % (__version__, _PY_VERSION)
 
     if body_value is not None:
       headers['content-type'] = self.content_type
