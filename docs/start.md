@@ -150,7 +150,7 @@ import StringIO
 import urlparse
 import sys
 
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 from oauth2client.client import AccessTokenRefreshError
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.file import Storage
