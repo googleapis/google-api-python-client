@@ -2,6 +2,8 @@
 
 The Google APIs Client Library for Python uses the `client_secrets.json` file format for storing the `client_id`, `client_secret`, and other OAuth 2.0 parameters.
 
+See [Creating authorization credentials](https://developers.google.com/identity/protocols/OAuth2WebServer#creatingcred) for how to obtain a `client_secrets.json` file.
+
 The `client_secrets.json` file format is a [JSON](http://www.json.org/) formatted file containing the client ID, client secret, and other OAuth 2.0 parameters. Here is an example client_secrets.json file for a web application:
 
 ```json

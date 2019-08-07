@@ -21,13 +21,9 @@ You can get client IDs and secrets on the [API Access pane](https://console.deve
 
 **Warning**: Keep your client secret private. If someone obtains your client secret, they could use it to consume your quota, incur charges against your Google APIs Console project, and request access to user data.
 
-## The google-auth and google-auth-oauthlib libraries
+## The `google-auth` and `google-auth-oauthlib` libraries
 
-The [goohle-auth-oauthlib](https://google-auth-oauthlib.readthedocs.io/en/latest/reference/modules.html) library should be used for handling OAuth 2.0 protocol steps required for making API calls. You should install [google-auth]() and [google-auth-oauthlib](). The sections below describe important modules, classes, and functions of this library.
-
-## The oauth2client library
-
-The [oauth2client](http://oauth2client.readthedocs.org/en/latest/index.html) library was previously recommended for handling the OAuth 2.0 protocol. It is now deprecated, and we recommend you migrate your code to google-auth-oauthlib. See [oauth2client deprecation](https://google-auth.readthedocs.io/en/latest/oauth2client-deprecation.html) for more details.
+The [google-auth-oauthlib](https://google-auth-oauthlib.readthedocs.io/en/latest/reference/modules.html) library should be used for handling OAuth 2.0 protocol steps required for making API calls. You should install [google-auth]() and [google-auth-oauthlib](). The sections below describe important modules, classes, and functions of this library.
 
 ## Flows
 
@@ -35,24 +31,10 @@ The purpose of a `Flow` class is to acquire credentials that authorize your appl
 
 **Note**: See the [Using Google App Engine](app-engine.md) and [Using Django](django.md) pages for platform-specific Flows.
 
-### flow_from_client_secrets()
-
-The [google_auth_oauthlib.Flow.flow_from_clientsecrets()](https://google-auth-oauthlib.readthedocs.io/en/latest/reference/google_auth_oauthlib.flow.html#google_auth_oauthlib.flow.Flow.from_client_secrets_file) method creates a `Flow` object from a [client_secrets.json](client_secrets.md) file. This [JSON](http://www.json.org/) formatted file stores your client ID, client secret, and other OAuth 2.0 parameters.
-
-The following shows how you can use `flow_from_clientsecrets()` to create a `Flow` object:
-
-```py
-from google_auth_oauthlib.flow import Flow
-...
-flow = Flow.from_client_secrets_file(
-    'path/to/client_secrets.json',
-    scopes=['profile', 'email'],
-    redirect_uri='urn:ietf:wg:oauth:2.0:oob')
-```                               
 
 ### Installed App Flow
 
-The [google_auth_oauthlib.flow.InstalledAppFlow](https://google-auth-oauthlib.readthedocs.io/en/latest/reference/google_auth_oauthlib.flow.html#google_auth_oauthlib.flow.InstalledAppFlow) class is used for installed applications. This flow is useful for local development or applications that are installed on a desktop operating system. It is created by passing the client ID, client secret, and scope to its constructor: You provide the constructor with a `redirect_uri` parameter. This must be a URI handled by your application.
+The [google_auth_oauthlib.flow.InstalledAppFlow](https://google-auth-oauthlib.readthedocs.io/en/latest/reference/google_auth_oauthlib.flow.html#google_auth_oauthlib.flow.InstalledAppFlow) class is used for installed applications. This flow is useful for local development or applications that are installed on a desktop operating system.
 
 ```py
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -63,6 +45,21 @@ flow = InstalledAppFlow.from_client_secrets_file(
 
 flow.run_local_server()
 ```
+
+### from_client_secrets_file()
+
+The [google_auth_oauthlib.Flow.from_client_secrets()](https://google-auth-oauthlib.readthedocs.io/en/latest/reference/google_auth_oauthlib.flow.html#google_auth_oauthlib.flow.Flow.from_client_secrets_file) method creates a `Flow` object from a [client_secrets.json](client_secrets.md) file. This [JSON](http://www.json.org/) formatted file stores your client ID, client secret, and other OAuth 2.0 parameters.
+
+The following shows how you can use `from_client_secrets_file()` to create a `Flow` object:
+
+```py
+from google_auth_oauthlib.flow import Flow
+...
+flow = Flow.from_client_secrets_file(
+    'path/to/client_secrets.json',
+    scopes=['profile', 'email'],
+    redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+```                               
 
 ### authorization_url()
 
@@ -90,12 +87,8 @@ The [fetch_token()](https://google-auth-oauthlib.readthedocs.io/en/latest/refere
 # access token.
 code = input('Enter the authorization code: ')
 flow.fetch_token(code=code)
-
-# You can use flow.credentials, or you can just get a requests session
-# using flow.authorized_session.
-session = flow.authorized_session()
-print(session.get('https://www.googleapis.com/userinfo/v2/me').json())
 ```
+
 
 ## Credentials
 
@@ -142,3 +135,7 @@ service = build('calendar', 'v3', credentials=credentials)
 ## Storage
 
 `google-auth-oauthlib` does not currently have support for credentials storage. It may be added in the future. See [oauth2client deprecation](https://google-auth.readthedocs.io/en/latest/oauth2client-deprecation.html#replacement) for more details.
+
+## oauth2client deprecation
+
+The [oauth2client](http://oauth2client.readthedocs.org/en/latest/index.html) library was previously recommended for handling the OAuth 2.0 protocol. It is now deprecated, and we recommend you migrate your code to google-auth-oauthlib. See [oauth2client deprecation](https://google-auth.readthedocs.io/en/latest/oauth2client-deprecation.html) for more details.

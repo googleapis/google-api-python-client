@@ -31,7 +31,7 @@ These API calls access private user data. Before you can call them, the user tha
     
     > **Warning**: Keep refresh and access tokens private. If someone obtains your tokens, they could use them to access private user data.
     
-*   **Client ID and client secret**: These strings uniquely identify your application and are used to acquire tokens. They are created for your Google Cloud project on the [API Access pane](https://code.google.com/apis/console#:access) of the Google Cloud. There are three types of client IDs, so be sure to get the correct type for your application:
+*   **Client ID and client secret**: These strings uniquely identify your application and are used to acquire tokens. They are created for your Google Cloud project on the [API Access pane](https://console.developers.google.com/apis/credentials) of the Google Cloud. There are several types of client IDs, so be sure to get the correct type for your application:
     
     *   Web application client IDs
     *   Installed application client IDs
@@ -45,10 +45,10 @@ This section describes how to build an API-specific service object, make calls t
 
 ### Build the service object
 
-Whether you are using simple or authorized API access, you use the [build()](http://google.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build) function to create a service object. It takes an API name and API version as arguments. You can see the list of all API versions on the [Supported APIs](http://developers.google.com/api-client-library/python/apis/) page. The service object is constructed with methods specific to the given API. To create it, do the following:
+Whether you are using simple or authorized API access, you use the [build()](http://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build) function to create a service object. It takes an API name and API version as arguments. You can see the list of all API versions on the [Supported APIs](http://developers.google.com/api-client-library/python/apis/) page. The service object is constructed with methods specific to the given API. To create it, do the following:
 
 ```py
-from apiclient.discovery import build
+from googleapiclient.discovery import build
 service = build('api_name', 'api_version', ...)
 ```
 
@@ -133,7 +133,7 @@ For this example, we use authorized API access for a simple web server. It calls
 
 #### Setup for example
 
-1.  **Activate the Calendar API**: [Read about API activation](http://developers.google.com/console/help/activating-apis) and activate the Calendar API.
+1.  **Activate the Calendar API**: [Read about API activation](https://cloud.google.com/apis/docs/getting-started) and activate the Calendar API.
 2.  **Get your client ID and client secret**: Get a client ID and secret for _web applications_. Use `http://localhost` as your domain. After creating the client ID, edit the _Redirect URIs_ field to contain only `http://localhost:8080/`.
 3.  **Create calendar events**: In this example, user calendar events will be read. You can use any Google account you own, including the account associated with the application's Google APIs Console project. For the target user, create a few calendar events if none exist already.
 
@@ -403,10 +403,6 @@ Note how the Storage object is used to to retrieve and store credentials. If no 
 7.  The authorization server redirects the browser back to the local server.
 8.  Calendar events for the target user are listed on the page.
 
-## Django support
-
-This library includes helper classes that simplify use in a [Django](https://www.djangoproject.com/) application. See the [Using Django](http://developers.google.com/api-client-library/python/guide/django) page for details.
-
 ## Google App Engine support
 
 This library includes helper classes that simplify use in a [Google App Engine](http://developers.google.com/appengine/) application. See the [Using Google App Engine](http://developers.google.com/api-client-library/python/guide/google_app_engine) page for details.
@@ -417,6 +413,5 @@ Use the [APIs Explorer](http://developers.google.com/api-client-library/python/r
 
 ## Library reference documentation
 
-[PyDoc generated documentation](http://developers.google.com/api-client-library/python/reference/pydoc) is available for all modules in this library.
-
-You can get [interactive help](http://developers.google.com/api-client-library/python/reference/interactive_help) on library classes and functions using an interactive Python shell.
+[Core library documentation](http://googleapis.github.io/google-api-python-client/docs/epy/index.html).
+and [Library reference documentation by API](dyn/index.md). is available.
