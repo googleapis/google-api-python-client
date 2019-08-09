@@ -144,7 +144,7 @@ class Model(unittest.TestCase):
         headers, path_params, query_params, body)
 
     self.assertEqual(headers['user-agent'],
-        'my-test-app/1.23.4')
+        'my-test-app/1.23.4 (gzip)')
 
   def test_x_goog_api_client(self):
     model = JsonModel(data_wrapper=False)

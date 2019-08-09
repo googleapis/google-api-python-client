@@ -142,6 +142,11 @@ class BaseModel(Model):
     query = self._build_query(query_params)
     headers['accept'] = self.accept
     headers['accept-encoding'] = 'gzip, deflate'
+    if 'user-agent' in headers:
+      headers['user-agent'] += ' '
+    else:
+      headers['user-agent'] = ''
+    headers['user-agent'] += ' (gzip)'
     if 'x-goog-api-client' in headers:
       headers['x-goog-api-client'] += ' '
     else:
