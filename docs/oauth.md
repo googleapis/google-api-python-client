@@ -33,7 +33,7 @@ The purpose of a `Flow` class is to acquire credentials that authorize your appl
 
 ### flow_from_clientsecrets()
 
-The [oauth2client.client.flow_from_clientsecrets()](http://oauth2client.readthedocs.org/en/latest/source/oauth2client.client.html#oauth2client.client.flow_from_clientsecrets) method creates a `Flow` object from a [client_secrets.json](client_secrets.md) file. This [JSON](http://www.json.org/) formatted file stores your client ID, client secret, and other OAuth 2.0 parameters.
+The [oauth2client.client.flow_from_clientsecrets()](http://oauth2client.readthedocs.org/en/latest/source/oauth2client.client.html#oauth2client.client.flow_from_clientsecrets) method creates a `Flow` object from a [client_secrets.json](client-secrets.md) file. This [JSON](http://www.json.org/) formatted file stores your client ID, client secret, and other OAuth 2.0 parameters.
 
 The following shows how you can use `flow_from_clientsecrets()` to create a `Flow` object:
 
