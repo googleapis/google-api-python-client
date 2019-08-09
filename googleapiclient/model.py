@@ -146,7 +146,7 @@ class BaseModel(Model):
       headers['user-agent'] += ' '
     else:
       headers['user-agent'] = ''
-    headers['user-agent'] += ' (gzip)'
+    headers['user-agent'] += '(gzip)'
     if 'x-goog-api-client' in headers:
       headers['x-goog-api-client'] += ' '
     else:
