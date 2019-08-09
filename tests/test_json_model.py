@@ -149,6 +149,7 @@ class Model(unittest.TestCase):
   def test_x_goog_api_client(self):
     model = JsonModel(data_wrapper=False)
 
+    # test header composition for cloud clients that wrap discovery
     headers = {'x-goog-api-client': 'gccl/1.23.4'}
     path_params = {}
     query_params = {}
