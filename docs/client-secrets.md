@@ -55,7 +55,7 @@ The following examples show how use a `client_secrets.json` file to create a `Fl
 
 ### Installed App
 
-```py
+```python
 from google_auth_oauthlib.flow import InstalledAppFlow
 ...
 flow = InstalledAppFlow.from_client_secrets_file(
@@ -65,7 +65,7 @@ flow = InstalledAppFlow.from_client_secrets_file(
 
 ### Web Server App
 
-```py
+```python
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
 

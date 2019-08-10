@@ -54,6 +54,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
     # Call a helper function defined below to get the credentials for this user.
     credentials = self.get_credentials(fake_user)
+    print("creds: " + credentials)
 
     # If there are no credentials for this fake user or they are invalid,
     # we need to get new credentials.
@@ -206,8 +207,9 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
     """Using the fake user name as a key, save the credentials."""
     with open('credentials-%s.dat' % fake_user, 'w') as creds:
       user_info = {"refresh_token": credentials.refresh_token, 
-                  "client_id": credentials.client_id,
-                  "client_secret": credentials.client_secret}
+                   "token_uri": credentials.token_uri,
+                   "client_id": credentials.client_id,
+                   "client_secret": credentials.client_secret}
       json.dump(user_info, creds)
 
   def get_fake_user_from_url_param(self):
