@@ -138,5 +138,4 @@ service = build('calendar', 'v3', credentials=credentials)
 `google-auth-oauthlib` does not currently have support for credentials storage. It may be added in the future. See [oauth2client deprecation](https://google-auth.readthedocs.io/en/latest/oauth2client-deprecation.html#replacement) for more details.
 
 ## oauth2client deprecation
-
 The [oauth2client](http://oauth2client.readthedocs.org/en/latest/index.html) library was previously recommended for handling the OAuth 2.0 protocol. It is now deprecated, and we recommend `google-auth` and `google-auth-oauthlib`. See [oauth2client deprecation](https://google-auth.readthedocs.io/en/latest/oauth2client-deprecation.html) for more details.

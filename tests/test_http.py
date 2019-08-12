@@ -485,26 +485,22 @@ class TestMediaIoBaseDownload(unittest.TestCase):
     download = MediaIoBaseDownload(
         fd=self.fd, request=self.request, chunksize=3)
 
-    self.assertEqual(download._headers, {'Cache-Control':'no-store'})
+    self.assertEqual(download._headers.get('Cache-Control'), 'no-store')
 
     status, done = download.next_chunk()
 
-    result = self.fd.getvalue().decode('utf-8')
+    result = json.loads(self.fd.getvalue().decode('utf-8'))
 
-    # we abuse the internals of the object we're testing, pay no attention
-    # to the actual bytes= values here; we are just asserting that the
-    # header we added to the original request is sent up to the server
-    # on each call to next_chunk
+    # assert that that the header we added to the original request is
+    # sent up to the server on each call to next_chunk
 
-    self.assertEqual(json.loads(result),
-                     {"Cache-Control": "no-store", "range": "bytes=0-3"})
+    self.assertEqual(result.get("Cache-Control"), "no-store")
 
     download._fd = self.fd = BytesIO()
     status, done = download.next_chunk()
 
-    result = self.fd.getvalue().decode('utf-8')
-    self.assertEqual(json.loads(result),
-                     {"Cache-Control": "no-store", "range": "bytes=51-54"})
+    result = json.loads(self.fd.getvalue().decode('utf-8'))
+    self.assertEqual(result.get("Cache-Control"), "no-store")
 
   def test_media_io_base_download_handle_redirects(self):
     self.request.http = HttpMockSequence([
