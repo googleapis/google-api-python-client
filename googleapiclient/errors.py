@@ -52,6 +52,8 @@ class HttpError(Error):
         reason = data['error']['message']
         if 'details' in data['error']:
             self.error_details = data['error']['details']
+        elif 'detail' in data['error']:
+            self.error_details = data['error']['detail']
       elif isinstance(data, list) and len(data) > 0:
         first_error = data[0]
         reason = first_error['error']['message']
