@@ -650,6 +650,7 @@ class ResourceMethodParameters(object):
     self.path_params = set()
     self.param_types = {}
     self.enum_params = {}
+    self.maximum_values = {}
 
     self.set_parameters(method_desc)
 
@@ -680,6 +681,9 @@ class ResourceMethodParameters(object):
         self.query_params.append(param)
       if desc.get('location') == 'path':
         self.path_params.add(param)
+      if desc.get('maximum'):
+        self.maximum_values[param] = desc['maximum']
+
       self.param_types[param] = desc.get('type', 'string')
 
     # TODO(dhermes): Determine if this is still necessary. Discovery based APIs
@@ -762,6 +766,12 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     actual_path_params = {}
     for key, value in six.iteritems(kwargs):
       to_type = parameters.param_types.get(key, 'string')
+      if to_type == 'integer' and value == 'maximum':
+        if key in parameters.maximum_values:
+          value = parameters.maximum_values[key]
+        else:
+          # discovery doesn't document maximum value so remove this parameter.
+          del kwargs[key]
       # For repeated parameters we cast each member of the list.
       if key in parameters.repeated_params and type(value) == type([]):
         cast_value = [_cast(x, to_type) for x in value]
