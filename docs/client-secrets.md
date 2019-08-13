@@ -2,6 +2,8 @@
 
 The Google APIs Client Library for Python uses the `client_secrets.json` file format for storing the `client_id`, `client_secret`, and other OAuth 2.0 parameters.
 
+See [Creating authorization credentials](https://developers.google.com/identity/protocols/OAuth2WebServer#creatingcred) for how to obtain a `client_secrets.json` file.
+
 The `client_secrets.json` file format is a [JSON](http://www.json.org/) formatted file containing the client ID, client secret, and other OAuth 2.0 parameters. Here is an example client_secrets.json file for a web application:
 
 ```json
@@ -53,7 +55,7 @@ The following examples show how use a `client_secrets.json` file to create a `Fl
 
 ### Installed App
 
-```py
+```python
 from google_auth_oauthlib.flow import InstalledAppFlow
 ...
 flow = InstalledAppFlow.from_client_secrets_file(
@@ -63,7 +65,7 @@ flow = InstalledAppFlow.from_client_secrets_file(
 
 ### Web Server App
 
-```py
+```python
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
 

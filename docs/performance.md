@@ -14,7 +14,7 @@ To request a partial response, add the standard `fields` parameter to any API me
 
 In the following code snippet, the `list` method of a fictitious stamps API is called. The `cents` parameter is defined by the API to only return stamps with the given value. The value of the `fields` parameter is set to 'count,items/name'. The response will only contain stamps whose value is 5 cents, and the data returned will only include the number of stamps found along with the stamp names:
 
-```py
+```python
 response = service.stamps.list(cents=5, fields='count,items/name').execute()
 ```
 
@@ -32,13 +32,13 @@ You should turn on caching at the `httplib2` level. The cache will store `ETags`
 
 To enable caching, pass in a cache implementation to the `httplib2.Http` constructor. In the simplest case, you can just pass in a directory name, and a cache will be built from that directory:
 
-```py
+```python
 http = httplib2.Http(cache=".cache")
 ```
 
 On App Engine you can use memcache as a cache object:
 
-```py
+```python
 from google.appengine.api import memcache
 http = httplib2.Http(cache=memcache)
 ```

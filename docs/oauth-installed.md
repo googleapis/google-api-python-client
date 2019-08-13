@@ -73,7 +73,7 @@ This is useful when your application reads the title of the HTML page (by checki
 
 To create a client object from the client_secrets.json file, use the `flow_from_clientsecrets` function. For example, to request read-only access to a user's Google Drive:
 
-```py
+```python
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 flow = InstalledAppFlow.from_client_secrets_file(
@@ -89,13 +89,13 @@ Use either the `run_console` or `run_local_server` function to direct the user t
 
 - The run_console function instructs the user to open the authorization URL in their browser. After the user authorizes the application, the authorization server displays a web page with an authorization code, which the user then pastes into the application. The authorization library automatically exchanges the code for an access token.
 
-    ```py
+    ```python
     credentials = flow.run_console()
     ```
 
 - The run_local_server function attempts to open the authorization URL in the user's browser. It also starts a local web server to listen for the authorization response. After the user completes the auth flow, the authorization server redirects the user's browser to the local web server. That server gets the authorization code from the browser and shuts down, then exchanges the code for an access token.
 
-    ```py
+    ```python
     credentials = flow.run_local_server(host='localhost',
         port=8080, 
         authorization_prompt_message='Please visit this URL: {url}', 
@@ -111,7 +111,7 @@ Use the authorized `Http` object to call Google APIs by completing the following
 
 1. Build a service object for the API that you want to call. You build a a service object by calling the `build` function with the name and version of the API and the authorized Http object. For example, to call version 2 of the Drive API:
 
-    ```py
+    ```python
     from googleapiclient.discovery import build
 
     drive_service = build('drive', 'v3', credentials=credentials)
@@ -119,7 +119,7 @@ Use the authorized `Http` object to call Google APIs by completing the following
 
 1. Make requests to the API service using the [interface provided by the service object](start.md#build). For example, to list the files in the authenticated user's Google Drive:
 
-    ```py
+    ```python
     files = drive_service.files().list().execute()
     ```
 
@@ -127,7 +127,7 @@ Use the authorized `Http` object to call Google APIs by completing the following
 
 The following example requests access to the user's Google Drive files. If the user grants access, the code retrieves and prints a JSON-formatted list of the five Drive files that were most recently modified by the user.
 
-```py
+```python
 import os
 import pprint
 

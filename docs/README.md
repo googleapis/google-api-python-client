@@ -7,8 +7,7 @@ access to many Google APIs.
 ## Features
 
 - Call Google APIs simply
-- Use the library with Google App Engine
-- Handle Auath with fewer lines of code
+- Handle Auth with fewer lines of code
 - Use standard tooling for installation
 
 ## Documentation
@@ -32,8 +31,6 @@ Learn how to use the Google API Python Client with these guides:
   - [Use Pagination](pagination.md)
   - [Improve Performance](performance.md)
   - [Understand Thread Safety](thread_safety.md)
-  - [Use Google App Engine](google_app_engine.md)
-  - [Use Django](django.md)
 
 ### Reference Documentation
 

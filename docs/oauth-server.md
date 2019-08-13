@@ -4,7 +4,7 @@ The Google APIs Client Library for Python supports using OAuth 2.0 for server-to
 
 Typically, an application uses a service account when the application uses Google APIs to work with its own data rather than a user's data. For example, an application that uses [Google Cloud Datastore](https://cloud.google.com/datastore/) for data persistence would use a service account to authenticate its calls to the Google Cloud Datastore API.
 
-If you have a G Suite domain—if you use [G Suite](https://gsuite.google.com/), for example—an administrator of the G Suite domain can authorize an application to access user data on behalf of users in the G Suite domain. For example, an application that uses the [Google Calendar API](Google Calendar API) to add events to the calendars of all users in a G Suite domain would use a service account to access the Google Calendar API on behalf of users. Authorizing a service account to access data on behalf of users in a domain is sometimes referred to as "delegating domain-wide authority" to a service account.
+If you have a G Suite domain—if you use [G Suite](https://gsuite.google.com/), for example—an administrator of the G Suite domain can authorize an application to access user data on behalf of users in the G Suite domain. For example, an application that uses the [Google Calendar API](https://developers.google.com/calendar/) to add events to the calendars of all users in a G Suite domain would use a service account to access the Google Calendar API on behalf of users. Authorizing a service account to access data on behalf of users in a domain is sometimes referred to as "delegating domain-wide authority" to a service account.
 
 > **Note:** When you use [G Suite Marketplace](https://www.google.com/enterprise/marketplace/) to install an application for your domain, the required permissions are automatically granted to the application. You do not need to manually authorize the service accounts that the application uses.
 
@@ -74,7 +74,7 @@ After you obtain the client email address and private key from the API Console, 
 
 #### Google App Engine standard environment	
 
-```py
+```python
 from google.auth import app_engine
 
 SCOPES = ['https://www.googleapis.com/auth/sqlservice.admin']
@@ -82,11 +82,11 @@ SCOPES = ['https://www.googleapis.com/auth/sqlservice.admin']
 credentials = app_engine.Credentials(scopes=SCOPES)
 ```
 
-> **Note:** You can only use App Engine credential objects in applications that are running in a Google App Engine standard environment. If you need to run your application in other environments—for example, to test your application locally—you must detect this situation and use a different credential mechanism (see [Other platforms](https://developers.google.com/api-client-library/python/auth/service-accounts#jwtsample)).
+> **Note:** You can only use App Engine credential objects in applications that are running in a Google App Engine standard environment. If you need to run your application in other environments—for example, to test your application locally—you must detect this situation and use a different credential mechanism (see [https://google-auth.readthedocs.io/en/latest/user-guide.html#the-app-engine-standard-environment)).
 
 #### Google Compute Engine
 
-```py
+```python
 from google.auth import compute_engine
 
 credentials = compute_engine.Credentials()
@@ -94,11 +94,11 @@ credentials = compute_engine.Credentials()
 
 You must [configure your Compute Engine instance to allow access to the necessary scopes](https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances#changeserviceaccountandscopes).
 
-> **Note:** You can only use Compute Engine credential objects in applications that are running on Google Compute Engine. If you need to run your application in other environments—for example, to test your application locally—you must detect this situation and use a different credential mechanism (see [Other platforms](https://developers.google.com/api-client-library/python/auth/service-accounts#jwtsample)). You can use the [application default credentials](https://developers.google.com/accounts/docs/application-default-credentials) to simplify this process.
+> **Note:** You can only use Compute Engine credential objects in applications that are running on Google Compute Engine. If you need to run your application in other environments—for example, to test your application locally—you must detect this situation and use a different credential mechanism (see [Other platforms](https://google-auth.readthedocs.io/en/latest/user-guide.html#compute-engine-container-engine-and-the-app-engine-flexible-environment)). You can use the [application default credentials](https://developers.google.com/accounts/docs/application-default-credentials) to simplify this process.
 
 #### Other Platforms
 
-```py
+```python
 from google.oauth2 import service_account
 
 SCOPES = ['https://www.googleapis.com/auth/sqlservice.admin']
@@ -116,15 +116,15 @@ To call a Google API using the `Credentials` object, complete the following step
 
 1. Build a service object for the API that you want to call. You build a a service object by calling the build function with the name and version of the API and the authorized Http object. For example, to call version 1beta3 of the [Cloud SQL Administration API](https://cloud.google.com/sql/docs/admin-api/):
 
-    ```py
+    ```python
     import googleapiclient.discovery
 
     sqladmin = googleapiclient.discovery.build('sqladmin', 'v1beta3', credentials=credentials)
     ```
 
-1. Make requests to the API service using the [interface provided by the service object](https://developers.google.com/api-client-library/python/start/get_started#build). For example, to list the instances of Cloud SQL databases in the example-123 project:
+1. Make requests to the API service using the interface provided by the service object. For example, to list the instances of Cloud SQL databases in the example-123 project:
 
-    ```py
+    ```python
     response = sqladmin.instances().list(project='example-123').execute()
     ```
 
@@ -132,7 +132,7 @@ To call a Google API using the `Credentials` object, complete the following step
 
 The following example prints a JSON-formatted list of Cloud SQL instances in a project.
 
-```py
+```python
 from google.oauth2 import service_account
 import googleapiclient.discovery
 
