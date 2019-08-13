@@ -764,7 +764,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
 
     actual_query_params = {}
     actual_path_params = {}
-    for key, value in six.iteritems(kwargs):
+    for key, value in list(six.iteritems(kwargs)):
       to_type = parameters.param_types.get(key, 'string')
       if to_type == 'integer' and value == 'maximum':
         if key in parameters.maximum_values:
@@ -772,6 +772,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         else:
           # discovery doesn't document maximum value so remove this parameter.
           del kwargs[key]
+          continue
       # For repeated parameters we cast each member of the list.
       if key in parameters.repeated_params and type(value) == type([]):
         cast_value = [_cast(x, to_type) for x in value]
