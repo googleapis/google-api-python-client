@@ -122,7 +122,7 @@ For example, if the printed JSON is the following:
 You can access the data like this:
 
 ```python
-print('Num 5 cent stamps: %d'.format(response['count'])
+print('Num 5 cent stamps: %d'.format(response['count']))
 print('First stamp name: %s'.format(['items'][0]['name']))
 ```
 
