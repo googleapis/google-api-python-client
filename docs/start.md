@@ -123,7 +123,7 @@ You can access the data like this:
 
 ```python
 print('Num 5 cent stamps: %d'.format(response['count']))
-print('First stamp name: %s'.format(['items'][0]['name']))
+print('First stamp name: %s'.format(response['items'][0]['name']))
 ```
 
 ## Finding information about the APIs
