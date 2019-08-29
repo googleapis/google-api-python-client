@@ -85,32 +85,32 @@ EPOCH = datetime.datetime.utcfromtimestamp(0)
 # Map the names of the parameters in the JSON channel description to
 # the parameter names we use in the Channel class.
 CHANNEL_PARAMS = {
-    'address': 'address',
-    'id': 'id',
-    'expiration': 'expiration',
-    'params': 'params',
-    'resourceId': 'resource_id',
-    'resourceUri': 'resource_uri',
-    'type': 'type',
-    'token': 'token',
-    }
+    "address": "address",
+    "id": "id",
+    "expiration": "expiration",
+    "params": "params",
+    "resourceId": "resource_id",
+    "resourceUri": "resource_uri",
+    "type": "type",
+    "token": "token",
+}
 
-X_GOOG_CHANNEL_ID     = 'X-GOOG-CHANNEL-ID'
-X_GOOG_MESSAGE_NUMBER = 'X-GOOG-MESSAGE-NUMBER'
-X_GOOG_RESOURCE_STATE = 'X-GOOG-RESOURCE-STATE'
-X_GOOG_RESOURCE_URI   = 'X-GOOG-RESOURCE-URI'
-X_GOOG_RESOURCE_ID    = 'X-GOOG-RESOURCE-ID'
+X_GOOG_CHANNEL_ID = "X-GOOG-CHANNEL-ID"
+X_GOOG_MESSAGE_NUMBER = "X-GOOG-MESSAGE-NUMBER"
+X_GOOG_RESOURCE_STATE = "X-GOOG-RESOURCE-STATE"
+X_GOOG_RESOURCE_URI = "X-GOOG-RESOURCE-URI"
+X_GOOG_RESOURCE_ID = "X-GOOG-RESOURCE-ID"
 
 
 def _upper_header_keys(headers):
-  new_headers = {}
-  for k, v in six.iteritems(headers):
-    new_headers[k.upper()] = v
-  return new_headers
+    new_headers = {}
+    for k, v in six.iteritems(headers):
+        new_headers[k.upper()] = v
+    return new_headers
 
 
 class Notification(object):
-  """A Notification from a Channel.
+    """A Notification from a Channel.
 
   Notifications are not usually constructed directly, but are returned
   from functions like notification_from_headers().
@@ -122,9 +122,10 @@ class Notification(object):
     resource_id: str, The unique identifier of the version of the resource at
       this event.
   """
-  @util.positional(5)
-  def __init__(self, message_number, state, resource_uri, resource_id):
-    """Notification constructor.
+
+    @util.positional(5)
+    def __init__(self, message_number, state, resource_uri, resource_id):
+        """Notification constructor.
 
     Args:
       message_number: int, The unique id number of this notification.
@@ -133,14 +134,14 @@ class Notification(object):
       resource_uri: str, The address of the resource being monitored.
       resource_id: str, The identifier of the watched resource.
     """
-    self.message_number = message_number
-    self.state = state
-    self.resource_uri = resource_uri
-    self.resource_id = resource_id
+        self.message_number = message_number
+        self.state = state
+        self.resource_uri = resource_uri
+        self.resource_id = resource_id
 
 
 class Channel(object):
-  """A Channel for notifications.
+    """A Channel for notifications.
 
   Usually not constructed directly, instead it is returned from helper
   functions like new_webhook_channel().
@@ -163,10 +164,19 @@ class Channel(object):
     resource_uri: str, The canonicalized ID of the watched resource.
   """
 
-  @util.positional(5)
-  def __init__(self, type, id, token, address, expiration=None,
-               params=None, resource_id="", resource_uri=""):
-    """Create a new Channel.
+    @util.positional(5)
+    def __init__(
+        self,
+        type,
+        id,
+        token,
+        address,
+        expiration=None,
+        params=None,
+        resource_id="",
+        resource_uri="",
+    ):
+        """Create a new Channel.
 
     In user code, this Channel constructor will not typically be called
     manually since there are functions for creating channels for each specific
@@ -189,17 +199,17 @@ class Channel(object):
         being watched. Stable across different API versions.
       resource_uri: str, The canonicalized ID of the watched resource.
     """
-    self.type = type
-    self.id = id
-    self.token = token
-    self.address = address
-    self.expiration = expiration
-    self.params = params
-    self.resource_id = resource_id
-    self.resource_uri = resource_uri
+        self.type = type
+        self.id = id
+        self.token = token
+        self.address = address
+        self.expiration = expiration
+        self.params = params
+        self.resource_id = resource_id
+        self.resource_uri = resource_uri
 
-  def body(self):
-    """Build a body from the Channel.
+    def body(self):
+        """Build a body from the Channel.
 
     Constructs a dictionary that's appropriate for passing into watch()
     methods as the value of body argument.
@@ -207,25 +217,25 @@ class Channel(object):
     Returns:
       A dictionary representation of the channel.
     """
-    result = {
-        'id': self.id,
-        'token': self.token,
-        'type': self.type,
-        'address': self.address
+        result = {
+            "id": self.id,
+            "token": self.token,
+            "type": self.type,
+            "address": self.address,
         }
-    if self.params:
-      result['params'] = self.params
-    if self.resource_id:
-      result['resourceId'] = self.resource_id
-    if self.resource_uri:
-      result['resourceUri'] = self.resource_uri
-    if self.expiration:
-      result['expiration'] = self.expiration
+        if self.params:
+            result["params"] = self.params
+        if self.resource_id:
+            result["resourceId"] = self.resource_id
+        if self.resource_uri:
+            result["resourceUri"] = self.resource_uri
+        if self.expiration:
+            result["expiration"] = self.expiration
 
-    return result
+        return result
 
-  def update(self, resp):
-    """Update a channel with information from the response of watch().
+    def update(self, resp):
+        """Update a channel with information from the response of watch().
 
     When a request is sent to watch() a resource, the response returned
     from the watch() request is a dictionary with updated channel information,
@@ -234,14 +244,14 @@ class Channel(object):
     Args:
       resp: dict, The response from a watch() method.
     """
-    for json_name, param_name in six.iteritems(CHANNEL_PARAMS):
-      value = resp.get(json_name)
-      if value is not None:
-        setattr(self, param_name, value)
+        for json_name, param_name in six.iteritems(CHANNEL_PARAMS):
+            value = resp.get(json_name)
+            if value is not None:
+                setattr(self, param_name, value)
 
 
 def notification_from_headers(channel, headers):
-  """Parse a notification from the webhook request headers, validate
+    """Parse a notification from the webhook request headers, validate
     the notification, and return a Notification object.
 
   Args:
@@ -256,17 +266,18 @@ def notification_from_headers(channel, headers):
     errors.InvalidNotificationError if the notification is invalid.
     ValueError if the X-GOOG-MESSAGE-NUMBER can't be converted to an int.
   """
-  headers = _upper_header_keys(headers)
-  channel_id = headers[X_GOOG_CHANNEL_ID]
-  if channel.id != channel_id:
-    raise errors.InvalidNotificationError(
-        'Channel id mismatch: %s != %s' % (channel.id, channel_id))
-  else:
-    message_number = int(headers[X_GOOG_MESSAGE_NUMBER])
-    state = headers[X_GOOG_RESOURCE_STATE]
-    resource_uri = headers[X_GOOG_RESOURCE_URI]
-    resource_id = headers[X_GOOG_RESOURCE_ID]
-    return Notification(message_number, state, resource_uri, resource_id)
+    headers = _upper_header_keys(headers)
+    channel_id = headers[X_GOOG_CHANNEL_ID]
+    if channel.id != channel_id:
+        raise errors.InvalidNotificationError(
+            "Channel id mismatch: %s != %s" % (channel.id, channel_id)
+        )
+    else:
+        message_number = int(headers[X_GOOG_MESSAGE_NUMBER])
+        state = headers[X_GOOG_RESOURCE_STATE]
+        resource_uri = headers[X_GOOG_RESOURCE_URI]
+        resource_id = headers[X_GOOG_RESOURCE_ID]
+        return Notification(message_number, state, resource_uri, resource_id)
 
 
 @util.positional(2)
@@ -289,13 +300,18 @@ def new_webhook_channel(url, token=None, expiration=None, params=None):
     """
     expiration_ms = 0
     if expiration:
-      delta = expiration - EPOCH
-      expiration_ms = delta.microseconds/1000 + (
-          delta.seconds + delta.days*24*3600)*1000
-      if expiration_ms < 0:
-        expiration_ms = 0
+        delta = expiration - EPOCH
+        expiration_ms = (
+            delta.microseconds / 1000 + (delta.seconds + delta.days * 24 * 3600) * 1000
+        )
+        if expiration_ms < 0:
+            expiration_ms = 0
 
-    return Channel('web_hook', str(uuid.uuid4()),
-                   token, url, expiration=expiration_ms,
-                   params=params)
-
+    return Channel(
+        "web_hook",
+        str(uuid.uuid4()),
+        token,
+        url,
+        expiration=expiration_ms,
+        params=params,
+    )
