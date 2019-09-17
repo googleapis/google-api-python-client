@@ -17,6 +17,8 @@ import mock
 import google.auth.credentials
 import google_auth_httplib2
 import httplib2
+import socket
+from googleapiclient.http import build_http
 import oauth2client.client
 import unittest2 as unittest
 
@@ -74,7 +76,8 @@ class TestAuthWithGoogleAuth(unittest.TestCase):
         self.assertEqual(authorized_http.credentials, credentials)
         self.assertIsInstance(authorized_http.http, httplib2.Http)
         self.assertIsInstance(authorized_http.http.timeout, int)
-        self.assertGreater(authorized_http.http.timeout, 0)
+        # Check if the Http object's timeout is set to the default value.
+        self.assertEqual(authorized_http.http.timeout, 60)
 
 
 class TestAuthWithOAuth2Client(unittest.TestCase):
@@ -116,15 +119,20 @@ class TestAuthWithOAuth2Client(unittest.TestCase):
 
     def test_authorized_http(self):
         credentials = mock.Mock(spec=oauth2client.client.Credentials)
-
-        authorized_http = _auth.authorized_http(credentials)
+        
+        # Overriding the default timeout value of the Http object.
+        socket.setdefaulttimeout(42.0)
+        http = build_http()
+        
+        authorized_http = _auth.authorized_http(credentials, http)
 
         http = credentials.authorize.call_args[0][0]
 
         self.assertEqual(authorized_http, credentials.authorize.return_value)
         self.assertIsInstance(http, httplib2.Http)
-        self.assertIsInstance(http.timeout, int)
-        self.assertGreater(http.timeout, 0)
+        self.assertIsInstance(http.timeout, float)
+        # Check if the Http object's timeout is set to the override value.
+        self.assertEqual(http.timeout, 42.0)
 
 
 class TestAuthWithoutAuth(unittest.TestCase):
