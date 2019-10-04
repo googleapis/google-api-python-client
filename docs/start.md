@@ -128,7 +128,7 @@ print('First stamp name: %s'.format(response['items'][0]['name']))
 
 ## Finding information about the APIs
 
-Use the [APIs Explorer](http://developers.google.com/api-client-library/python/reference/apis_explorer) to browse APIs, list available methods, and even try API calls from your browser.
+Use the [APIs Explorer](https://developers.google.com/apis-explorer/) to browse APIs, list available methods, and even try API calls from your browser.
 
 ## Library reference documentation
 
