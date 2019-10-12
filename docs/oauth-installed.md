@@ -78,7 +78,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 flow = InstalledAppFlow.from_client_secrets_file(
     'client_secret.json',
-    scope=['https://www.googleapis.com/auth/drive.metadata.readonly'])
+    scopes=['https://www.googleapis.com/auth/drive.metadata.readonly'])
 ```
 
 Your application uses the client object to perform OAuth 2.0 operations, such as generating authorization request URIs and applying access tokens to HTTP requests.
