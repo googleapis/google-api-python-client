@@ -13,8 +13,6 @@ s.move(
         "noxfile.py",  # GAPIC library specific
         "CONTRIBUTING.rst",
         "MANIFEST.in",
-        ".kokoro/docs",  # apiary docs are published differently
-        ".kokoro/publish-docs.sh",
         "docs/conf.py",
     ],
 )

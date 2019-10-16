@@ -19,8 +19,7 @@ are not already installed.
 """
 from __future__ import print_function
 
-import sys
-
+version = 
 if sys.version_info < (2, 7):
     print("google-api-python-client requires python version >= 2.7.", file=sys.stderr)
     sys.exit(1)
@@ -43,9 +42,7 @@ install_requires = [
 long_desc = """The Google API Client for Python is a client library for
 accessing the Plus, Moderator, and many other Google APIs."""
 
-import googleapiclient
-
-version = googleapiclient.__version__
+version = "1.7.11"
 
 setup(
     name="google-api-python-client",
