@@ -453,7 +453,7 @@ def document_all_apis(*, base_path=BASE):
         for api, versions in api_directory.items():
             markdown.append(f"## {api}")
             for version in versions:
-                markdown.append(f"* [{version}]({base_path}/{api}_{version}.html)")
+                markdown.append(f"* [{version}]({base_path}/{api}_{safe_version(version)}.html)")
             markdown.append("\n")
 
         with open(f"{base_path}/index.md", "w") as f:
