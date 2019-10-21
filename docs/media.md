@@ -28,7 +28,7 @@ response = farm.animals().insert(media_body=media, body={'name': 'Pig'}).execute
 
 For large media files, you can use resumable media uploads to send files, which allows files to be uploaded in smaller chunks. This is especially useful if you are transferring large files, and the likelihood of a network interruption or some other transmission failure is high. It can also reduce your bandwidth usage in the event of network failures because you don't have to restart large file uploads from the beginning.
 
-To use resumable media you must use a MediaFileUpload object and flag it as a resumable upload. You then repeatedly call `next_chunk()` on the [`googleapiclient.http.HttpRequest`](googleapiclient.http.HttpRequest) object until the upload is complete. In the following code, the `status` object reports the progress of the upload, and the response object is created once the upload is complete:
+To use resumable media you must use a MediaFileUpload object and flag it as a resumable upload. You then repeatedly call `next_chunk()` on the `googleapiclient.http.HttpRequest` object until the upload is complete. In the following code, the `status` object reports the progress of the upload, and the response object is created once the upload is complete:
 
 ```python
 media = MediaFileUpload('pig.png', mimetype='image/png', resumable=True)
@@ -71,5 +71,5 @@ except apiclient.errors.HttpError, e:
 
 ## Extending MediaUpload
 
-Your application may need to upload a media object that isn't a file. For example, you may create a large image on the fly from a data set. For such cases you can create a subclass of [MediaUpload](https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.http.MediaUpload-class.html) which provides the data to be uploaded. You must fully implement the MediaUpload interface. See the source for the [MediaFileUpload](https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.http.MediaFileUpload-class.html), [MediaIoBaseUpload](MediaIoBaseUpload), and [MediaInMemoryUpload](https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.http.MediaInMemoryUpload-class.html) classes as examples.
+Your application may need to upload a media object that isn't a file. For example, you may create a large image on the fly from a data set. For such cases you can create a subclass of [MediaUpload](https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.http.MediaUpload-class.html) which provides the data to be uploaded. You must fully implement the MediaUpload interface. See the source for the [MediaFileUpload](https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.http.MediaFileUpload-class.html), MediaIoBaseUpload, and [MediaInMemoryUpload](https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.http.MediaInMemoryUpload-class.html) classes as examples.
 

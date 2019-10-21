@@ -13,7 +13,7 @@ Examples of situations when you might want to use batching:
 If you need to make more calls than that, use multiple batch requests.
 
 **Note**: You cannot use a
-[media upload](/api-client-library/python/guide/media_upload)
+[media upload](media)
 object in a batch request.
 
 ## Details
