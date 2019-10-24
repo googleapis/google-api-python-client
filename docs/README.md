@@ -1,4 +1,4 @@
-# Google API Client LIbrary for Python Docs
+# Google API Client Library for Python Docs
 
  The Google API Client Library for Python is designed for Python
 client-application developers. It offers simple, flexible
