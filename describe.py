@@ -442,27 +442,24 @@ def document_all_apis(*, base_path=BASE):
         directory = response.json()["items"]
         for api in directory:
             document_api(api["name"], api["version"], base_path)
-            api_directory[api["name"]].append((api["version"], api['title']))
-
+            api_directory[api["name"]].append((api["version"], api["title"]))
 
         for api in api_directory:
             api_directory[api] = sorted(api_directory[api])
         api_directory = OrderedDict(sorted(api_directory.items(), key=lambda x: x[0]))
         # sort by api name and version number
-        html = [
-            "<html><body>",
-            CSS,
-            "<h1>Reference Documentation By API</h1>"
-        ]
+        html = ["<html><body>", CSS, "<h1>Reference Documentation By API</h1>"]
         for api, info in api_directory.items():
             version, title = info
             html.append(f"<h3>{title}({api})</h3>")
             html.append(f"<ul>")
             for version in versions:
-                html.append(f"""<li><p class=toc_element><code><a href="{api}_{safe_version(version)}.html">{version}</a></code></li>""")
+                html.append(
+                    f"""<li><p class=toc_element><code><a href="{api}_{safe_version(version)}.html">{version}</a></code></li>"""
+                )
             html.append("</ul>\n")
         html.append("</body></html>")
-        
+
         with open(f"{base_path}/index.html", "w") as f:
             f.write("\n".join(html))
 

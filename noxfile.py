@@ -1,5 +1,5 @@
 import os
-import shutil 
+import shutil
 import sys
 import importlib.util
 import nox
@@ -87,6 +87,7 @@ def docs(session):
         os.path.join("docs", ""),
         os.path.join("docs", "_build", "html", ""),
     )
+
 
 # @nox.session(python="3.7")
 # def api_docs(session):
