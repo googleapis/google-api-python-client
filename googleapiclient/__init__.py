@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pkg_resources
+
+__version__ = pkg_resources.get_distribution("google-api-python-client").version
+
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
 
