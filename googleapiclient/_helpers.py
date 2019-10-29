@@ -25,17 +25,18 @@ from six.moves import urllib
 
 logger = logging.getLogger(__name__)
 
-POSITIONAL_WARNING = 'WARNING'
-POSITIONAL_EXCEPTION = 'EXCEPTION'
-POSITIONAL_IGNORE = 'IGNORE'
-POSITIONAL_SET = frozenset([POSITIONAL_WARNING, POSITIONAL_EXCEPTION,
-                            POSITIONAL_IGNORE])
+POSITIONAL_WARNING = "WARNING"
+POSITIONAL_EXCEPTION = "EXCEPTION"
+POSITIONAL_IGNORE = "IGNORE"
+POSITIONAL_SET = frozenset(
+    [POSITIONAL_WARNING, POSITIONAL_EXCEPTION, POSITIONAL_IGNORE]
+)
 
 positional_parameters_enforcement = POSITIONAL_WARNING
 
-_SYM_LINK_MESSAGE = 'File: {0}: Is a symbolic link.'
-_IS_DIR_MESSAGE = '{0}: Is a directory'
-_MISSING_FILE_MESSAGE = 'Cannot access {0}: No such file or directory'
+_SYM_LINK_MESSAGE = "File: {0}: Is a symbolic link."
+_IS_DIR_MESSAGE = "{0}: Is a directory"
+_MISSING_FILE_MESSAGE = "Cannot access {0}: No such file or directory"
 
 
 def positional(max_positional_args):
@@ -114,20 +115,24 @@ def positional(max_positional_args):
         @functools.wraps(wrapped)
         def positional_wrapper(*args, **kwargs):
             if len(args) > max_positional_args:
-                plural_s = ''
+                plural_s = ""
                 if max_positional_args != 1:
-                    plural_s = 's'
-                message = ('{function}() takes at most {args_max} positional '
-                           'argument{plural} ({args_given} given)'.format(
-                               function=wrapped.__name__,
-                               args_max=max_positional_args,
-                               args_given=len(args),
-                               plural=plural_s))
+                    plural_s = "s"
+                message = (
+                    "{function}() takes at most {args_max} positional "
+                    "argument{plural} ({args_given} given)".format(
+                        function=wrapped.__name__,
+                        args_max=max_positional_args,
+                        args_given=len(args),
+                        plural=plural_s,
+                    )
+                )
                 if positional_parameters_enforcement == POSITIONAL_EXCEPTION:
                     raise TypeError(message)
                 elif positional_parameters_enforcement == POSITIONAL_WARNING:
                     logger.warning(message)
             return wrapped(*args, **kwargs)
+
         return positional_wrapper
 
     if isinstance(max_positional_args, six.integer_types):
@@ -153,8 +158,10 @@ def parse_unique_urlencoded(content):
     params = {}
     for key, value in six.iteritems(urlencoded_params):
         if len(value) != 1:
-            msg = ('URL-encoded content contains a repeated value:'
-                   '%s -> %s' % (key, ', '.join(value)))
+            msg = "URL-encoded content contains a repeated value:" "%s -> %s" % (
+                key,
+                ", ".join(value),
+            )
             raise ValueError(msg)
         params[key] = value[0]
     return params
