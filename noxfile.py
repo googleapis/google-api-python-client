@@ -1,6 +1,7 @@
 import os
 import shutil 
-
+import sys
+import importlib.util
 import nox
 
 
@@ -65,6 +66,7 @@ def blacken(session):
     session.install("black")
     session.run("black", *BLACK_PATHS)
 
+
 @nox.session(python="3.7")
 def docs(session):
     """Build the docs for this library."""
@@ -85,3 +87,16 @@ def docs(session):
         os.path.join("docs", ""),
         os.path.join("docs", "_build", "html", ""),
     )
+
+# @nox.session(python="3.7")
+# def api_docs(session):
+#     """Build the dynamic generated docs by API.
+
+#     Docs are generated into docs/_build/html.
+#     """
+#     session.install("e", ".")
+
+#     spec = importlib.util.spec_from_file_location('describe', os.path.join(os.getcwd(), 'describe.py'))
+#     module = importlib.util.module_from_spec(spec)
+#     sys.modules['describe'] = module
+#     spec.loader.exec_module(module)

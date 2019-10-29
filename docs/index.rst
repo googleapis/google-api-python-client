@@ -1,4 +1,4 @@
-.. include:: README.md
+.. include:: README
 
 Usage Guide
 -------------
@@ -36,10 +36,8 @@ Client Docs
 
 API Docs
 --------
-.. toctree::
-    :maxdepth: 1
 
-    dyn/index
+See `<https://googleapis.dev/python/google-api-python-client/latest/api-docs/index.html>`_
 
 
 .. Changelog
