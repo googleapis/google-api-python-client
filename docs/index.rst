@@ -37,9 +37,13 @@ Client Docs
 API Docs
 --------
 
-See `<https://googleapis.dev/python/google-api-python-client/latest/api-docs/index.html>`_
+.. toctree::
+    :maxdepth: 1
+
+    dyn/index
 
 
+.. add after CHANGELOG is converted to .MD compatible with release-please
 .. Changelog
 .. ----------
 .. .. toctree::

@@ -26,6 +26,8 @@ Notes:
 
 Example setting up a channel:
 
+.. code-block:: python
+
   # Create a new channel that gets notifications via webhook.
   channel = new_webhook_channel("https://example.com/my_web_hook")
 
@@ -48,6 +50,9 @@ An example Webhook implementation using webapp2. Note that webapp2 puts
 headers in a case insensitive dictionary, as headers aren't guaranteed to
 always be upper case.
 
+
+.. code-block:: python
+
   id = self.request.headers[X_GOOG_CHANNEL_ID]
 
   # Retrieve the channel by id.
@@ -67,7 +72,10 @@ always be upper case.
 
 Example of unsubscribing.
 
+.. code-block:: python
+
   service.channels().stop(channel.body()).execute()
+
 """
 from __future__ import absolute_import
 
@@ -114,13 +122,6 @@ class Notification(object):
 
   Notifications are not usually constructed directly, but are returned
   from functions like notification_from_headers().
-
-  Attributes:
-    message_number: int, The unique id number of this notification.
-    state: str, The state of the resource being monitored.
-    uri: str, The address of the resource being monitored.
-    resource_id: str, The unique identifier of the version of the resource at
-      this event.
   """
 
     @util.positional(5)
@@ -128,11 +129,11 @@ class Notification(object):
         """Notification constructor.
 
     Args:
-      message_number: int, The unique id number of this notification.
-      state: str, The state of the resource being monitored. Can be one
+      message_number (int): The unique id number of this notification.
+      state (str): The state of the resource being monitored. Can be one
         of "exists", "not_exists", or "sync".
-      resource_uri: str, The address of the resource being monitored.
-      resource_id: str, The identifier of the watched resource.
+      resource_uri (str): The address of the resource being monitored.
+      resource_id (str): The identifier of the watched resource.
     """
         self.message_number = message_number
         self.state = state
@@ -145,23 +146,6 @@ class Channel(object):
 
   Usually not constructed directly, instead it is returned from helper
   functions like new_webhook_channel().
-
-  Attributes:
-    type: str, The type of delivery mechanism used by this channel. For
-      example, 'web_hook'.
-    id: str, A UUID for the channel.
-    token: str, An arbitrary string associated with the channel that
-      is delivered to the target address with each event delivered
-      over this channel.
-    address: str, The address of the receiving entity where events are
-      delivered. Specific to the channel type.
-    expiration: int, The time, in milliseconds from the epoch, when this
-      channel will expire.
-    params: dict, A dictionary of string to string, with additional parameters
-      controlling delivery channel behavior.
-    resource_id: str, An opaque id that identifies the resource that is
-      being watched. Stable across different API versions.
-    resource_uri: str, The canonicalized ID of the watched resource.
   """
 
     @util.positional(5)
@@ -183,21 +167,21 @@ class Channel(object):
     type with a more customized set of arguments to pass.
 
     Args:
-      type: str, The type of delivery mechanism used by this channel. For
+      type (str): The type of delivery mechanism used by this channel. For
         example, 'web_hook'.
-      id: str, A UUID for the channel.
-      token: str, An arbitrary string associated with the channel that
+      id (str): A UUID for the channel.
+      token (str): An arbitrary string associated with the channel that
         is delivered to the target address with each event delivered
         over this channel.
-      address: str,  The address of the receiving entity where events are
+      address (str):  The address of the receiving entity where events are
         delivered. Specific to the channel type.
-      expiration: int, The time, in milliseconds from the epoch, when this
+      expiration (int): The time, in milliseconds from the epoch, when this
         channel will expire.
-      params: dict, A dictionary of string to string, with additional parameters
+      params (dict): A dictionary of string to string, with additional parameters
         controlling delivery channel behavior.
-      resource_id: str, An opaque id that identifies the resource that is
+      resource_id (str): An opaque id that identifies the resource that is
         being watched. Stable across different API versions.
-      resource_uri: str, The canonicalized ID of the watched resource.
+      resource_uri (str): The canonicalized ID of the watched resource.
     """
         self.type = type
         self.id = id
@@ -215,7 +199,7 @@ class Channel(object):
     methods as the value of body argument.
 
     Returns:
-      A dictionary representation of the channel.
+      dict: A dictionary representation of the channel.
     """
         result = {
             "id": self.id,
@@ -242,7 +226,7 @@ class Channel(object):
     such as the resource_id, which is needed when stopping a subscription.
 
     Args:
-      resp: dict, The response from a watch() method.
+      resp (dict): The response from a watch() method.
     """
         for json_name, param_name in six.iteritems(CHANNEL_PARAMS):
             value = resp.get(json_name)
@@ -255,16 +239,16 @@ def notification_from_headers(channel, headers):
     the notification, and return a Notification object.
 
   Args:
-    channel: Channel, The channel that the notification is associated with.
-    headers: dict, A dictionary like object that contains the request headers
+    channel (Channel): The channel that the notification is associated with.
+    headers (dict): A dictionary like object that contains the request headers
       from the webhook HTTP request.
 
   Returns:
-    A Notification object.
+    Notification: A Notification object.
 
   Raises:
-    errors.InvalidNotificationError if the notification is invalid.
-    ValueError if the X-GOOG-MESSAGE-NUMBER can't be converted to an int.
+    errors.InvalidNotificationError: if the notification is invalid.
+    ValueError: if the X-GOOG-MESSAGE-NUMBER can't be converted to an int.
   """
     headers = _upper_header_keys(headers)
     channel_id = headers[X_GOOG_CHANNEL_ID]
@@ -285,17 +269,17 @@ def new_webhook_channel(url, token=None, expiration=None, params=None):
     """Create a new webhook Channel.
 
     Args:
-      url: str, URL to post notifications to.
-      token: str, An arbitrary string associated with the channel that
+      url (str): URL to post notifications to.
+      token (str): An arbitrary string associated with the channel that
         is delivered to the target address with each notification delivered
         over this channel.
-      expiration: datetime.datetime, A time in the future when the channel
+      expiration (datetime.datetime): A time in the future when the channel
         should expire. Can also be None if the subscription should use the
         default expiration. Note that different services may have different
         limits on how long a subscription lasts. Check the response from the
         watch() method to see the value the service has set for an expiration
         time.
-      params: dict, Extra parameters to pass on channel creation. Currently
+      params (dict): Extra parameters to pass on channel creation. Currently
         not used for webhook channels.
     """
     expiration_ms = 0

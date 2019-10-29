@@ -377,11 +377,15 @@ def makepatch(original, modified):
     form suitable to pass to a PATCH method.
 
   Example usage:
+
+  .. code-block:: python
+
     item = service.activities().get(postid=postid, userid=userid).execute()
     original = copy.deepcopy(item)
     item['object']['content'] = 'This is updated.'
     service.activities.patch(postid=postid, userid=userid,
       body=makepatch(original, item)).execute()
+
   """
     patch = {}
     for key, original_value in six.iteritems(original):

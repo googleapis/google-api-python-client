@@ -20,32 +20,35 @@ conform to the schema.
 
 For example, given the schema:
 
- schema = \"\"\"{
-   "Foo": {
-    "type": "object",
-    "properties": {
-     "etag": {
+.. code-block:: python
+
+  schema = {
+  "Foo": {
+  "type": "object",
+  "properties": {
+      "etag": {
       "type": "string",
       "description": "ETag of the collection."
-     },
-     "kind": {
+      },
+      "kind": {
       "type": "string",
       "description": "Type of the collection ('calendar#acl').",
       "default": "calendar#acl"
-     },
-     "nextPageToken": {
+      },
+      "nextPageToken": {
       "type": "string",
-      "description": "Token used to access the next
-         page of this result. Omitted if no further results are available."
-     }
-    }
-   }
- }\"\"\"
+      "description": "Token used to access the next page of this result. Omitted if no further results are available."
+      }
+  }
+  }
+  }
 
- s = Schemas(schema)
- print s.prettyPrintByName('Foo')
+  s = Schemas({"schemas": schema})
+  print s.prettyPrintByName('Foo')
 
- Produces the following output:
+Produces the following output:
+
+.. code-block:: python
 
   {
    "nextPageToken": "A String", # Token used to access the

@@ -404,6 +404,9 @@ class MediaIoBaseUpload(MediaUpload):
   Note that the Python file object is compatible with io.Base and can be used
   with this class also.
 
+
+  .. code-block:: python
+
     fh = BytesIO('...Some data to upload...')
     media = MediaIoBaseUpload(fh, mimetype='image/png',
       chunksize=1024*1024, resumable=True)
@@ -411,6 +414,7 @@ class MediaIoBaseUpload(MediaUpload):
         id='cow',
         name='cow.png',
         media_body=media).execute()
+
 
   Depending on the platform you are working on, you may pass -1 as the
   chunksize, which indicates that the entire file should be uploaded in a single
@@ -527,6 +531,8 @@ class MediaFileUpload(MediaIoBaseUpload):
 
   Construct a MediaFileUpload and pass as the media_body parameter of the
   method. For example, if we had a service that allowed uploading images:
+  
+  .. code-block:: python
 
     media = MediaFileUpload('cow.png', mimetype='image/png',
       chunksize=1024*1024, resumable=True)
@@ -638,8 +644,8 @@ class MediaIoBaseDownload(object):
   Note that the Python file object is compatible with io.Base and can be used
   with this class also.
 
+  .. code-block:: python
 
-  Example:
     request = farms.animals().get_media(id='cow')
     fh = io.FileIO('cow.png', mode='wb')
     downloader = MediaIoBaseDownload(fh, request, chunksize=1024*1024)
@@ -685,7 +691,8 @@ class MediaIoBaseDownload(object):
 
     @util.positional(1)
     def next_chunk(self, num_retries=0):
-        """Get the next chunk of the download.
+        """
+        Get the next chunk of the download.
 
     Args:
       num_retries: Integer, number of times to retry with randomized
@@ -917,7 +924,7 @@ class HttpRequest(object):
     Can only be used if the method being executed supports media uploads and
     the MediaUpload object passed in was flagged as using resumable upload.
 
-    Example:
+    .. code-block:: python
 
       media = MediaFileUpload('cow.png', mimetype='image/png',
                               chunksize=1000, resumable=True)
@@ -1113,7 +1120,9 @@ class HttpRequest(object):
 class BatchHttpRequest(object):
     """Batches multiple HttpRequest objects into a single HTTP request.
 
-  Example:
+
+  .. code-block:: python
+
     from googleapiclient.http import BatchHttpRequest
 
     def list_animals(request_id, response, exception):
@@ -1141,6 +1150,7 @@ class BatchHttpRequest(object):
     batch.add(service.animals().list(), list_animals)
     batch.add(service.farmers().list(), list_farmers)
     batch.execute(http=http)
+
   """
 
     @util.positional(1)
@@ -1377,9 +1387,6 @@ class BatchHttpRequest(object):
       request_id: string, A unique id for the request. The id will be passed
         to the callback with the response.
 
-    Returns:
-      None
-
     Raises:
       BatchError if a media request is added to a batch.
       KeyError is the request_id is not unique.
@@ -1482,9 +1489,6 @@ class BatchHttpRequest(object):
         HttpRequest request object was constructed with. If one isn't supplied
         then use a http object from the requests in this batch.
 
-    Returns:
-      None
-
     Raises:
       httplib2.HttpLib2Error if a transport error has occured.
       googleapiclient.errors.BatchError if the response is the wrong format.
@@ -1556,10 +1560,11 @@ class BatchHttpRequest(object):
 
 
 class HttpRequestMock(object):
-    """Mock of HttpRequest.
+    """
+    Mock of HttpRequest.
 
-  Do not construct directly, instead use RequestMockBuilder.
-  """
+    Do not construct directly, instead use RequestMockBuilder.
+    """
 
     def __init__(self, resp, content, postproc):
         """Constructor for HttpRequestMock
@@ -1597,14 +1602,15 @@ class RequestMockBuilder(object):
     If an opt_expected_body (str or dict) is provided, it will be compared to
     the body and UnexpectedBodyError will be raised on inequality.
 
-    Example:
-      response = '{"data": {"id": "tag:google.c...'
-      requestBuilder = RequestMockBuilder(
-        {
-          'plus.activities.get': (None, response),
-        }
-      )
-      googleapiclient.discovery.build("plus", "v1", requestBuilder=requestBuilder)
+    .. code-block:: python
+
+        response = '{"data": {"id": "tag:google.c...'
+        requestBuilder = RequestMockBuilder(
+            {
+            'plus.activities.get': (None, response),
+            }
+        )
+        googleapiclient.discovery.build("plus", "v1", requestBuilder=requestBuilder)
 
     Methods that you do not supply a response for will return a
     200 OK with an empty string as the response content or raise an excpetion
@@ -1716,6 +1722,8 @@ class HttpMockSequence(object):
   call. Create an instance initialized with the desired response headers
   and content and then use as if an httplib2.Http instance.
 
+  .. code-block:: python
+
     http = HttpMockSequence([
       ({'status': '401'}, ''),
       ({'status': '200'}, '{"access_token":"1/3w","expires_in":3600}'),
@@ -1728,7 +1736,7 @@ class HttpMockSequence(object):
 
   'echo_request_headers' means return the request headers in the response body
   'echo_request_headers_as_json' means return the request headers in
-     the response body
+  the response body
   'echo_request_body' means return the request body in the response body
   'echo_request_uri' means return the request uri in the response body
   """
@@ -1736,7 +1744,7 @@ class HttpMockSequence(object):
     def __init__(self, iterable):
         """
     Args:
-      iterable: iterable, a sequence of pairs of (headers, body)
+      iterable (Iterable[dict, dict]): a sequence of pairs of (headers, body)
     """
         self._iterable = iterable
         self.follow_redirects = True
@@ -1778,7 +1786,7 @@ def set_user_agent(http, user_agent):
   Returns:
      A modified instance of http that was passed in.
 
-  Example:
+  .. code-block:: python
 
     h = httplib2.Http()
     h = set_user_agent(h, "my-app-name/6.0")
@@ -1827,7 +1835,7 @@ def tunnel_patch(http):
   Returns:
      A modified instance of http that was passed in.
 
-  Example:
+  .. code-block:: python
 
     h = httplib2.Http()
     h = tunnel_patch(h, "my-app-name/6.0")
@@ -1874,13 +1882,16 @@ def tunnel_patch(http):
 def build_http():
     """Builds httplib2.Http object
 
-  Returns:
-  A httplib2.Http object, which is used to make http requests, and which has timeout set by default.
   To override default timeout call
+
+  .. code-block:: python
 
     socket.setdefaulttimeout(timeout_in_sec)
 
   before interacting with this method.
+
+  Returns:
+    httplib2.Http: object, which is used to make http requests has timeout set by default.
   """
     if socket.getdefaulttimeout() is not None:
         http_timeout = socket.getdefaulttimeout()

@@ -42,18 +42,18 @@ def init(
   main file.
 
   Args:
-    argv: list of string, the command-line parameters of the application.
-    name: string, name of the API.
-    version: string, version of the API.
-    doc: string, description of the application. Usually set to __doc__.
-    file: string, filename of the application. Usually set to __file__.
-    parents: list of argparse.ArgumentParser, additional command-line flags.
-    scope: string, The OAuth scope used.
-    discovery_filename: string, name of local discovery file (JSON). Use when discovery doc not available via URL.
+    argv (List[str]): the command-line parameters of the application.
+    name (str): name of the API.
+    version (str): version of the API.
+    doc (str): description of the application. Usually set to ``__doc__``.
+    file (str): filename of the application. Usually set to ``__file__``.
+    parents (List[argparse.ArgumentParser]): list of additional command-line flags.
+    scope (str): The OAuth scope used.
+    discovery_filename (str): name of local discovery file (JSON). Use when discovery doc not available via URL.
 
   Returns:
-    A tuple of (service, flags), where service is the service object and flags
-    is the parsed command-line flags.
+    Tuple[googleapiclient.discovery.Resource, Namespace]: A tuple of (service, flags), 
+    where service is the service object and flags is the parsed command-line flags.
   """
     try:
         from oauth2client import client
