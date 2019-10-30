@@ -10,6 +10,7 @@ from googleapiclient import errors
 from googleapiclient import http
 from googleapiclient import mimeparse
 from googleapiclient import model
+
 try:
     from googleapiclient import sample_tools
 except ImportError:
@@ -21,16 +22,17 @@ from googleapiclient import schema
 __version__ = googleapiclient.__version__
 
 _SUBMODULES = {
-    'channel': channel,
-    'discovery': discovery,
-    'errors': errors,
-    'http': http,
-    'mimeparse': mimeparse,
-    'model': model,
-    'sample_tools': sample_tools,
-    'schema': schema,
+    "channel": channel,
+    "discovery": discovery,
+    "errors": errors,
+    "http": http,
+    "mimeparse": mimeparse,
+    "model": model,
+    "sample_tools": sample_tools,
+    "schema": schema,
 }
 
 import sys
+
 for module_name, module in iteritems(_SUBMODULES):
-  sys.modules['apiclient.%s' % module_name] = module
+    sys.modules["apiclient.%s" % module_name] = module

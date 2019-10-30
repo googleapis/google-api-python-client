@@ -33,9 +33,8 @@ class TestAuthWithGoogleAuth(unittest.TestCase):
         _auth.HAS_OAUTH2CLIENT = True
 
     def test_default_credentials(self):
-        with mock.patch('google.auth.default', autospec=True) as default:
-            default.return_value = (
-                mock.sentinel.credentials, mock.sentinel.project)
+        with mock.patch("google.auth.default", autospec=True) as default:
+            default.return_value = (mock.sentinel.credentials, mock.sentinel.project)
 
             credentials = _auth.default_credentials()
 
@@ -50,8 +49,8 @@ class TestAuthWithGoogleAuth(unittest.TestCase):
 
     def test_with_scopes_scoped(self):
         class CredentialsWithScopes(
-                google.auth.credentials.Credentials,
-                google.auth.credentials.Scoped):
+            google.auth.credentials.Credentials, google.auth.credentials.Scoped
+        ):
             pass
 
         credentials = mock.Mock(spec=CredentialsWithScopes)
@@ -68,9 +67,7 @@ class TestAuthWithGoogleAuth(unittest.TestCase):
 
         authorized_http = _auth.authorized_http(credentials)
 
-        self.assertIsInstance(
-            authorized_http,
-            google_auth_httplib2.AuthorizedHttp)
+        self.assertIsInstance(authorized_http, google_auth_httplib2.AuthorizedHttp)
         self.assertEqual(authorized_http.credentials, credentials)
         self.assertIsInstance(authorized_http.http, httplib2.Http)
         self.assertIsInstance(authorized_http.http.timeout, int)
@@ -88,7 +85,8 @@ class TestAuthWithOAuth2Client(unittest.TestCase):
 
     def test_default_credentials(self):
         default_patch = mock.patch(
-            'oauth2client.client.GoogleCredentials.get_application_default')
+            "oauth2client.client.GoogleCredentials.get_application_default"
+        )
 
         with default_patch as default:
             default.return_value = mock.sentinel.credentials
@@ -128,7 +126,6 @@ class TestAuthWithOAuth2Client(unittest.TestCase):
 
 
 class TestAuthWithoutAuth(unittest.TestCase):
-
     def setUp(self):
         _auth.HAS_GOOGLE_AUTH = False
         _auth.HAS_OAUTH2CLIENT = False
