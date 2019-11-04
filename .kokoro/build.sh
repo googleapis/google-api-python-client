@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018 Google LLC
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,12 +23,6 @@ export PYTHONUNBUFFERED=1
 
 # Debug: show build environment
 env | grep KOKORO
-
-# Setup service account credentials.
-export GOOGLE_APPLICATION_CREDENTIALS=${KOKORO_GFILE_DIR}/service-account.json
-
-# Setup project id.
-export PROJECT_ID=$(cat "${KOKORO_GFILE_DIR}/project-id.json")
 
 # Remove old nox
 python3.6 -m pip uninstall --yes --quiet nox-automation
