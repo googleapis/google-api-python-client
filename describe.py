@@ -129,7 +129,7 @@ METHOD_LINK = """<p class="toc_element">
   <code><a href="#$name">$name($params)</a></code></p>
 <p class="firstline">$firstline</p>"""
 
-BASE = "api_docs"
+BASE = "docs/_build/api_docs"
 
 DIRECTORY_URI = "https://www.googleapis.com/discovery/v1/apis"
 
@@ -436,44 +436,48 @@ def document_all_apis(*, base_path=BASE):
     Generate docs for all the APIs listed in the directory uri.
     """
 
-    api_directory = collections.defaultdict(list)
+    api_versions = collections.defaultdict(list)  # {"api_name": ['v1', 'v2'], ...}
+    api_titles = {}  # {"api_name": "API Title"}
+
     response = requests.get(DIRECTORY_URI)
-    if response.status_code == 200:
-        directory = response.json()["items"]
-        for api in directory:
-            document_api(api["name"], api["version"], base_path)
-            api_directory[api["name"]].append((api["version"], api["title"]))
+    response.raise_for_status()
 
-        for api in api_directory:
-            api_directory[api] = sorted(api_directory[api])
-        api_directory = OrderedDict(sorted(api_directory.items(), key=lambda x: x[0]))
-        # sort by api name and version number
-        html = ["<html><body>", CSS, "<h1>Reference Documentation By API</h1>"]
-        for api, info in api_directory.items():
-            version, title = info
-            html.append(f"<h3>{title}({api})</h3>")
-            html.append(f"<ul>")
-            for version in versions:
-                html.append(
-                    f"""<li><p class=toc_element><code><a href="{api}_{safe_version(version)}.html">{version}</a></code></li>"""
-                )
-            html.append("</ul>\n")
-        html.append("</body></html>")
+    directory = response.json()["items"]
+    for api in directory:
+        api_titles[api["name"]] = api['title']
+        api_versions[api["name"]].append(api["version"])
+        document_api(api["name"], api["version"], base_path)
 
-        with open(f"{base_path}/index.html", "w") as f:
-            f.write("\n".join(html))
+    # Sort APIs by name and version number
+    for api in api_versions:
+        api_versions[api] = sorted(api_versions[api])
+    api_versions = OrderedDict(sorted(api_versions.items(), key=lambda x: x[0]))
 
-    else:
-        response.raise_for_status()
+    # Make index page
+    html = ["<html><body>", CSS, "<h1>Reference Documentation By API</h1>"]
+    for api, versions in api_versions.items():
+        html.append(f"<h3>{api_titles[api]} ({api})</h3>")
+        html.append(f"<ul>")
+        for version in versions:
+            html.append(
+                f"""<li><p class=toc_element><code><a href="{api}_{safe_version(version)}.html">{version}</a></code></li>"""
+            )
+        html.append("</ul>\n")
+    html.append("</body></html>")
+
+    with open(f"{base_path}/index.html", "w") as f:
+        f.write("\n".join(html))
+
 
 
 if __name__ == "__main__":
     FLAGS = parser.parse_args(sys.argv[1:])
 
-    try:
-        if FLAGS.discovery_uri:
-            document_api_from_discovery_document(FLAGS.discovery_uri, dest=FLAGS.dest)
-        else:
-            document_all_apis(base_path=FLAGS.dest)
-    except:
-        sys.exit(1)
+    destination = FLAGS.dest
+    if not os.path.exists(destination):
+        os.makedirs(destination)
+
+    if FLAGS.discovery_uri:
+        document_api_from_discovery_document(FLAGS.discovery_uri, dest=FLAGS.dest)
+    else:
+        document_all_apis(base_path=FLAGS.dest)
