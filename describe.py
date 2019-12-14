@@ -38,6 +38,7 @@ from googleapiclient.discovery import DISCOVERY_URI
 from googleapiclient.discovery import build
 from googleapiclient.discovery import build_from_document
 from googleapiclient.discovery import UnknownApiNameOrVersion
+from googleapiclient.errors import HttpError
 import uritemplate
 
 CSS = """<style>
@@ -391,7 +392,7 @@ def document_api(name, version, dest, uri_template=DISCOVERY_URI):
     """
     try:
         service = build(name, version)
-    except UnknownApiNameOrVersion as e:
+    except (UnknownApiNameOrVersion, HttpError) as e:
         print(f"Warning: {name} {version} found but could not be built.")
         return
 

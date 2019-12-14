@@ -16,7 +16,7 @@ python3 -m pip install --user gcp-docuploader
 # Serve docs at https://googleapis.dev/python/google-api-python-client/latest/api-docs
 # Index page at https://googleapis.dev/python/google-api-python-client/latest/api-docs/index.html
 # Only the latest version is served since the client is generated at runtime.
-DESTINATION='docs/_build/api_docs'
+DESTINATION='api_docs'
 METADATA_PATH=${DESTINATION}/docs.metadata
 SERVING_PATH='python/google-api-python-client/latest/api-docs'
 VERSION='latest'
@@ -38,4 +38,4 @@ python3 -m docuploader create-metadata \
 cat ${METADATA_PATH}
 
 # upload docs
-python3 -m docuploader upload api_docs --metadata-file docs.metadata --staging-bucket busun-sandbox
+python3 -m docuploader upload api_docs --metadata-file docs.metadata
