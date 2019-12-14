@@ -1,34 +1,41 @@
 #!/bin/bash
 
-# Copyright 2019 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-set -eo pipefail
-
-cd github/google-api-python-client
+# set -eo pipefail
 
 # Disable buffering, so that the logs stream through.
 export PYTHONUNBUFFERED=1
 
-# Debug: show build environment
-env | grep KOKORO
+cd github/google-api-python-client
 
-# Remove old nox
-python3.6 -m pip uninstall --yes --quiet nox-automation
+# Install library
+python3 -m pip install --user .
 
-# Install nox
-python3.6 -m pip install --upgrade --quiet nox
-python3.6 -m nox --version
+# Install docuploader
+python3 -m pip install --user gcp-docuploader
 
-python3.6 -m nox
+# Serve docs at https://googleapis.dev/python/google-api-python-client/latest/api-docs
+# Index page at https://googleapis.dev/python/google-api-python-client/latest/api-docs/index.html
+# Only the latest version is served since the client is generated at runtime.
+DESTINATION='api_docs'
+METADATA_PATH=${DESTINATION}/docs.metadata
+SERVING_PATH='python/google-api-python-client/latest/api-docs'
+VERSION='latest'
+
+# Run script
+python3 describe.py --dest ${DESTINATION}
+
+# create docs metadata
+python3 -m docuploader create-metadata \
+  --name=$(jq --raw-output '.name // empty' .repo-metadata.json) \
+  --language=$(jq --raw-output '.language // empty' .repo-metadata.json) \
+  --distribution-name=$(python3 setup.py --name) \
+  --version ${VERSION} \
+  --github-repository=$(jq --raw-output '.repo // empty' .repo-metadata.json) \
+  --issue-tracker=$(jq --raw-output '.issue_tracker // empty' .repo-metadata.json) \
+  --serving-path=${SERVING_PATH} \
+  ${METADATA_PATH}
+
+cat ${METADATA_PATH}
+
+# upload docs
+python3 -m docuploader upload api_docs --metadata-file docs.metadata
