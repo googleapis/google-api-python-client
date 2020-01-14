@@ -575,7 +575,10 @@ class MediaFileUpload(MediaIoBaseUpload):
         )
 
     def __del__(self):
-        self._fd.close()
+        try:
+            self._fd.close()
+        except AttributeError:
+            pass
 
     def to_json(self):
         """Creating a JSON representation of an instance of MediaFileUpload.
