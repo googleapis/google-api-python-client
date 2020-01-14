@@ -58,7 +58,6 @@ The following libraries will be installed when you install the client library:
 
 For development you will also need the following libraries:
 * [WebTest](http://webtest.pythonpaste.org/en/latest/index.html)
-* [pycrypto](https://pypi.python.org/pypi/pycrypto)
 * [pyopenssl](https://pypi.python.org/pypi/pyOpenSSL)
 
 ## Contributing
