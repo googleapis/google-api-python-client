@@ -223,10 +223,19 @@ class Model(unittest.TestCase):
         content = model.response(resp, content)
         self.assertEqual(content, "data goes here")
 
-    def test_no_content_response(self):
+    def test_no_content_204_response(self):
         model = JsonModel(data_wrapper=False)
         resp = httplib2.Response({"status": "204"})
         resp.reason = "No Content"
+        content = ""
+
+        content = model.response(resp, content)
+        self.assertEqual(content, {})
+
+    def test_no_content_200_response(self):
+        model = JsonModel(data_wrapper=False)
+        resp = httplib2.Response({"status": "200"})
+        resp.reason = "OK"
         content = ""
 
         content = model.response(resp, content)

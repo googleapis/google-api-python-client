@@ -216,6 +216,9 @@ class BaseModel(Model):
                 # A 204: No Content response should be treated differently
                 # to all the other success states
                 return self.no_content_response
+            elif not content:
+                # An empty response cannot be deserialized
+                return self.no_content_response
             return self.deserialize(content)
         else:
             LOGGER.debug("Content from bad request was: %s" % content)
