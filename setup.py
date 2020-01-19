@@ -33,7 +33,7 @@ from setuptools import setup
 packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
 
 install_requires = [
-    "httplib2>=0.9.2,<1dev",
+    "httplib2>=0.9.2,<0.16",  # https://github.com/googleapis/google-api-python-client/issues/803
     "google-auth>=1.4.1",
     "google-auth-httplib2>=0.0.3",
     "six>=1.6.1,<2dev",
