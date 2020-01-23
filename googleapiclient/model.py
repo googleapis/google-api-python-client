@@ -342,7 +342,7 @@ class ProtocolBufferModel(BaseModel):
     def __init__(self, protocol_buffer):
         """Constructs a ProtocolBufferModel.
 
-    The serialzed protocol buffer returned in an HTTP response will be
+    The serialized protocol buffer returned in an HTTP response will be
     de-serialized using the given protocol buffer class.
 
     Args:
