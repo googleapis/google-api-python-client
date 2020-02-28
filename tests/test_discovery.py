@@ -525,7 +525,7 @@ class DiscoveryFromDocument(unittest.TestCase):
 
         self.assertEquals(plus._baseUrl, api_endpoint)
 
-    def test_api_endpoint_override_from_client_options(self):
+    def test_api_endpoint_override_from_client_options_dict(self):
         discovery = open(datafile("plus.json")).read()
         api_endpoint = "https://foo.googleapis.com/"
         plus = build_from_document(
