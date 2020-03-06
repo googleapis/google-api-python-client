@@ -1891,6 +1891,6 @@ def build_http():
     # for Resumable Uploads rather than Permanent Redirects.
     # This asks httplib2 to exclude 308s from the status codes
     # it treats as redirects
-    http.redirect_codes = set(http.redirect_codes) - {308}
+    http.redirect_codes = frozenset(set(http.redirect_codes) - {308})
 
     return http
