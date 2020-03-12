@@ -1891,6 +1891,13 @@ def build_http():
     # for Resumable Uploads rather than Permanent Redirects.
     # This asks httplib2 to exclude 308s from the status codes
     # it treats as redirects
-    http.redirect_codes = http.redirect_codes - {308}
+    try:
+      http.redirect_codes = http.redirect_codes - {308}
+    except AttributeError:
+      # Apache Beam tests depend on this library and cannot
+      # currently upgrade their httplib2 version
+      # http.redirect_codes does not exist in previous versions
+      # of httplib2, so pass
+      pass
 
     return http
