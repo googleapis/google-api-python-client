@@ -33,7 +33,10 @@ from setuptools import setup
 packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
 
 install_requires = [
-    "httplib2>=0.17.0,<1dev",
+    # NOTE: Apache Beam tests depend on this library and cannot
+    # currently upgrade their httplib2 version.
+    # Please see https://github.com/googleapis/google-api-python-client/pull/841
+    "httplib2>=0.9.2,<1dev",
     "google-auth>=1.4.1",
     "google-auth-httplib2>=0.0.3",
     "google-api-core>=1.13.0,<2dev",
