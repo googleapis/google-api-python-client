@@ -1121,7 +1121,7 @@ class TestBatch(unittest.TestCase):
 
     def test_id_to_from_content_id_header(self):
         batch = BatchHttpRequest()
-        self.assertEquals("12", batch._header_to_id(batch._id_to_header("12")))
+        self.assertEqual("12", batch._header_to_id(batch._id_to_header("12")))
 
     def test_invalid_content_id_header(self):
         batch = BatchHttpRequest()
@@ -1645,7 +1645,11 @@ class TestHttpBuild(unittest.TestCase):
     def test_build_http_default_timeout_can_be_set_to_zero(self):
         socket.setdefaulttimeout(0)
         http = build_http()
-        self.assertEquals(http.timeout, 0)
+        self.assertEqual(http.timeout, 0)
+    
+    def test_build_http_default_308_is_excluded_as_redirect(self):
+        http = build_http()
+        self.assertTrue(308 not in http.redirect_codes)
 
 
 if __name__ == "__main__":
