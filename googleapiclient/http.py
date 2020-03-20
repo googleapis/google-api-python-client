@@ -1886,4 +1886,18 @@ def build_http():
         http_timeout = socket.getdefaulttimeout()
     else:
         http_timeout = DEFAULT_HTTP_TIMEOUT_SEC
-    return httplib2.Http(timeout=http_timeout)
+    http = httplib2.Http(timeout=http_timeout)
+    # 308's are used by several Google APIs (Drive, YouTube)
+    # for Resumable Uploads rather than Permanent Redirects.
+    # This asks httplib2 to exclude 308s from the status codes
+    # it treats as redirects
+    try:
+      http.redirect_codes = http.redirect_codes - {308}
+    except AttributeError:
+      # Apache Beam tests depend on this library and cannot
+      # currently upgrade their httplib2 version
+      # http.redirect_codes does not exist in previous versions
+      # of httplib2, so pass
+      pass
+
+    return http
