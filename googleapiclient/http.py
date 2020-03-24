@@ -81,6 +81,11 @@ DEFAULT_HTTP_TIMEOUT_SEC = 60
 
 _LEGACY_BATCH_URI = "https://www.googleapis.com/batch"
 
+if six.PY2:
+    # That's a builtin python3 exception, nonexistent in python2.
+    # Defined to None to avoid NameError while trying to catch it
+    ConnectionError = None
+
 
 def _should_retry_response(resp_status, content):
     """Determines whether a response should be retried.
@@ -177,6 +182,10 @@ def _retry_request(
             # It's important that this be before socket.error as it's a subclass
             # socket.timeout has no errorcode
             exception = socket_timeout
+        except ConnectionError as connection_error:
+            # Needs to be before socket.error as it's a subclass of
+            # OSError (socket.error)
+            exception = connection_error
         except socket.error as socket_error:
             # errno's contents differ by platform, so we have to match by name.
             if socket.errno.errorcode.get(socket_error.errno) not in {
