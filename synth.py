@@ -1,5 +1,5 @@
-#!/bin/bash
-# Copyright 2017 Google Inc.
+
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,11 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eo pipefail
+import synthtool as s
+from synthtool import gcp
 
-python3 "${KOKORO_GFILE_DIR}/trampoline_v1.py"  || ret_code=$?
+common = gcp.CommonTemplates()
 
-chmod +x ${KOKORO_GFILE_DIR}/trampoline_cleanup.sh
-${KOKORO_GFILE_DIR}/trampoline_cleanup.sh || true
+# ----------------------------------------------------------------------------
+# Add templated files
+# ----------------------------------------------------------------------------
+templated_files = common.py_library(unit_cov_level=100, cov_level=100)
 
-exit ${ret_code}
+# move kokoro configs, but skip docs because this repo needs more work
+# to publish docs with sphinx
+s.move(templated_files / '.kokoro', excludes=['**/docs/*', 'publish-docs.sh']) 
