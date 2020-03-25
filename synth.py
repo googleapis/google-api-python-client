@@ -1,4 +1,3 @@
-
 # Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +22,9 @@ common = gcp.CommonTemplates()
 # ----------------------------------------------------------------------------
 templated_files = common.py_library(unit_cov_level=100, cov_level=100)
 
-# move kokoro configs, but skip docs because this repo needs more work
-# to publish docs with sphinx
-s.move(templated_files / '.kokoro', excludes=['**/docs/*', 'publish-docs.sh']) 
+# Copy kokoro configs.
+# Docs are excluded as repo docs cannot currently be generated using sphinx.
+s.move(templated_files / '.kokoro', excludes=['**/docs/*', 'publish-docs.sh'])
+
+# Also move issue templates
+s.move(templated_files / '.github')

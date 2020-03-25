@@ -24,10 +24,12 @@ import sys
 if sys.version_info < (2, 7):
     print("google-api-python-client requires python version >= 2.7.", file=sys.stderr)
     sys.exit(1)
-if (3, 1) <= sys.version_info < (3, 4):
-    print("google-api-python-client requires python3 version >= 3.4.", file=sys.stderr)
+if (3, 1) <= sys.version_info < (3, 5):
+    print("google-api-python-client requires python3 version >= 3.5.", file=sys.stderr)
     sys.exit(1)
 
+import io
+import os
 from setuptools import setup
 
 packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
@@ -44,22 +46,24 @@ install_requires = [
     "uritemplate>=3.0.0,<4dev",
 ]
 
-long_desc = """The Google API Client for Python is a client library for
-accessing the Plus, Moderator, and many other Google APIs."""
+package_root = os.path.abspath(os.path.dirname(__file__))
 
-import googleapiclient
+readme_filename = os.path.join(package_root, "README.md")
+with io.open(readme_filename, encoding="utf-8") as readme_file:
+    readme = readme_file.read()
 
-version = googleapiclient.__version__
+version = "1.8.0"
 
 setup(
     name="google-api-python-client",
     version=version,
     description="Google API Client Library for Python",
-    long_description=long_desc,
-    author="Google Inc.",
+    long_description=readme,
+    author="Google LLC",
+    author_email="googleapis-packages@google.com",
     url="http://github.com/google/google-api-python-client/",
     install_requires=install_requires,
-    python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*",
+    python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*",
     packages=packages,
     package_data={},
     license="Apache 2.0",
@@ -68,10 +72,10 @@ setup(
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
