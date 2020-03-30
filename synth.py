@@ -20,7 +20,7 @@ common = gcp.CommonTemplates()
 # ----------------------------------------------------------------------------
 # Add templated files
 # ----------------------------------------------------------------------------
-templated_files = common.py_library(unit_cov_level=100, cov_level=100)
+templated_files = common.py_library()
 
 # Copy kokoro configs.
 # Docs are excluded as repo docs cannot currently be generated using sphinx.
