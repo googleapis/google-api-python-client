@@ -59,7 +59,7 @@ setup(
     version=version,
     description="Google API Client Library for Python",
     long_description=readme,
-    long_description_content_type='text/markdown'
+    long_description_content_type='text/markdown',
     author="Google LLC",
     author_email="googleapis-packages@google.com",
     url="http://github.com/google/google-api-python-client/",
