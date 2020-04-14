@@ -1760,16 +1760,18 @@ class HttpMockSequence(object):
         connection_type=None,
     ):
         resp, content = self._iterable.pop(0)
-        if content == "echo_request_headers":
+        content = six.ensure_binary(content)
+
+        if content == b"echo_request_headers":
             content = headers
-        elif content == "echo_request_headers_as_json":
+        elif content == b"echo_request_headers_as_json":
             content = json.dumps(headers)
-        elif content == "echo_request_body":
+        elif content == b"echo_request_body":
             if hasattr(body, "read"):
                 content = body.read()
             else:
                 content = body
-        elif content == "echo_request_uri":
+        elif content == b"echo_request_uri":
             content = uri
         if isinstance(content, six.text_type):
             content = content.encode("utf-8")
