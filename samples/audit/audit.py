@@ -38,6 +38,7 @@ from __future__ import print_function
 __author__ = 'rahulpaul@google.com (Rahul Paul)'
 
 import pprint
+import re
 import sys
 
 from oauth2client import client

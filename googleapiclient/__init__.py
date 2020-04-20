@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "1.7.4"
+__version__ = "1.8.0"
 
 # Set default logging handler to avoid "No handler found" warnings.
 import logging
@@ -20,8 +20,10 @@ import logging
 try:  # Python 2.7+
     from logging import NullHandler
 except ImportError:
+
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass
+
 
 logging.getLogger(__name__).addHandler(NullHandler())

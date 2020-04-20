@@ -72,7 +72,7 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="sqladmin_v1beta4.html">Cloud SQL Administration API</a> . <a href="sqladmin_v1beta4.backupRuns.html">backupRuns</a></h1>
+<h1><a href="sqladmin_v1beta4.html">Cloud SQL Admin API</a> . <a href="sqladmin_v1beta4.backupRuns.html">backupRuns</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="#delete">delete(project, instance, id)</a></code></p>
@@ -85,7 +85,7 @@ h1, h2, h3 {
 <p class="firstline">Creates a new backup run on demand. This method is applicable only to Second Generation instances.</p>
 <p class="toc_element">
   <code><a href="#list">list(project, instance, maxResults=None, pageToken=None)</a></code></p>
-<p class="firstline">Lists all backup runs associated with a given instance and configuration in the reverse chronological order of the enqueued time.</p>
+<p class="firstline">Lists all backup runs associated with a given instance and configuration in the reverse chronological order of the backup initiation time.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
@@ -102,16 +102,16 @@ Args:
 Returns:
   An object of the form:
 
-    { # An Operations resource contains information about database instance operations such as create, delete, and restart. Operations resources are created in response to operations that were initiated; you never create them directly.
+    { # An Operation resource. For successful operations that return an Operation resource, only the fields relevant to the operation are populated in the resource.
     "status": "A String", # The status of an operation. Valid values are PENDING, RUNNING, DONE, UNKNOWN.
     "importContext": { # Database instance import context. # The context for import operation, if applicable.
       "kind": "sql#importContext", # This is always sql#importContext.
-      "database": "A String", # The database (for example, guestbook) to which the import is made. If fileType is SQL and no database is specified, it is assumed that the database is specified in the file to be imported. If fileType is CSV, it must be specified.
+      "database": "A String", # The target database for the import. If fileType is SQL, this field is required only if the import file does not specify a database, and is overridden by any database specification in the import file. If fileType is CSV, one database must be specified.
       "fileType": "A String", # The file type for the specified uri.
           # SQL: The file contains SQL statements.
           # CSV: The file contains CSV data.
-      "uri": "A String", # A path to the file in Google Cloud Storage from which the import is made. The URI is in the form gs://bucketName/fileName. Compressed gzip files (.gz) are supported when fileType is SQL.
-      "importUser": "A String", # The PostgreSQL user to use for this import operation. Defaults to cloudsqlsuperuser. Does not apply to MySQL instances.
+      "uri": "A String", # Path to the import file in Cloud Storage, in the form gs://bucketName/fileName. Compressed gzip files (.gz) are supported when fileType is SQL. The instance must have write permissions to the bucket and read access to the file.
+      "importUser": "A String", # The PostgreSQL user for this import operation. PostgreSQL instances only.
       "csvImportOptions": { # Options for importing data as CSV.
         "table": "A String", # The table to which CSV data is imported.
         "columns": [ # The columns to which CSV data is imported. If not specified, all columns of the database table are loaded with CSV data.
@@ -126,17 +126,22 @@ Returns:
       "fileType": "A String", # The file type for the specified uri.
           # SQL: The file contains SQL statements.
           # CSV: The file contains CSV data.
-      "uri": "A String", # The path to the file in Google Cloud Storage where the export will be stored. The URI is in the form gs://bucketName/fileName. If the file already exists, the operation fails. If fileType is SQL and the filename ends with .gz, the contents are compressed.
+      "uri": "A String", # The path to the file in Google Cloud Storage where the export will be stored. The URI is in the form gs://bucketName/fileName. If the file already exists, the requests succeeds, but the operation fails. If fileType is SQL and the filename ends with .gz, the contents are compressed.
       "csvExportOptions": { # Options for exporting data as CSV.
         "selectQuery": "A String", # The select query used to extract the data.
       },
-      "databases": [ # Databases (for example, guestbook) from which the export is made. If fileType is SQL and no database is specified, all databases are exported. If fileType is CSV, you can optionally specify at most one database to export. If csvExportOptions.selectQuery also specifies the database, this field will be ignored.
+      "databases": [ # Databases to be exported.
+          # MySQL instances: If fileType is SQL and no database is specified, all databases are exported, except for the mysql system database. If fileType is CSV, you can specify one database, either by using this property or by using the csvExportOptions.selectQuery property, which takes precedence over this property.
+          # PostgreSQL instances: Specify exactly one database to be exported. If fileType is CSV, this database must match the database used in the csvExportOptions.selectQuery property.
         "A String",
       ],
       "sqlExportOptions": { # Options for exporting data as SQL statements.
-        "tables": [ # Tables to export, or that were exported, from the specified database. If you specify tables, specify one and only one database.
+        "tables": [ # Tables to export, or that were exported, from the specified database. If you specify tables, specify one and only one database. For PostgreSQL instances, you can specify only one table.
           "A String",
         ],
+        "mysqlExportOptions": { # Options for exporting from MySQL.
+          "masterData": 42, # Option to include SQL statement required to set up replication. If set to 1, the dump file includes a CHANGE MASTER TO statement with the binary log coordinates. If set to 2, the CHANGE MASTER TO statement is written as a SQL comment, and has no effect. All other values are ignored.
+        },
         "schemaOnly": True or False, # Export only schemas.
       },
     },
@@ -174,13 +179,14 @@ Args:
 Returns:
   An object of the form:
 
-    { # A database instance backup run resource.
+    { # A BackupRun resource.
       "status": "A String", # The status of this run.
       "kind": "sql#backupRun", # This is always sql#backupRun.
       "description": "A String", # The description of this run, only applicable to on-demand backups.
       "windowStartTime": "A String", # The start time of the backup window during which this the backup was attempted in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
       "enqueuedTime": "A String", # The time the run was enqueued in UTC timezone in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
       "instance": "A String", # Name of the database instance.
+      "location": "A String", # The location of the backup.
       "startTime": "A String", # The time the backup operation actually started in UTC timezone in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
       "error": { # Database instance operation error. # Information about why the backup operation failed. This is only present if the run has the FAILED status.
         "kind": "sql#operationError", # This is always sql#operationError.
@@ -189,7 +195,7 @@ Returns:
       },
       "endTime": "A String", # The time the backup operation completed in UTC timezone in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
       "type": "A String", # The type of this run; can be either "AUTOMATED" or "ON_DEMAND".
-      "id": "A String", # A unique identifier for this backup run. Note that this is unique only within the scope of a particular Cloud SQL instance.
+      "id": "A String", # The identifier for this backup run. Unique only for a specific Cloud SQL instance.
       "selfLink": "A String", # The URI of this resource.
     }</pre>
 </div>
@@ -204,13 +210,14 @@ Args:
   body: object, The request body. (required)
     The object takes the form of:
 
-{ # A database instance backup run resource.
+{ # A BackupRun resource.
     "status": "A String", # The status of this run.
     "kind": "sql#backupRun", # This is always sql#backupRun.
     "description": "A String", # The description of this run, only applicable to on-demand backups.
     "windowStartTime": "A String", # The start time of the backup window during which this the backup was attempted in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
     "enqueuedTime": "A String", # The time the run was enqueued in UTC timezone in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
     "instance": "A String", # Name of the database instance.
+    "location": "A String", # The location of the backup.
     "startTime": "A String", # The time the backup operation actually started in UTC timezone in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
     "error": { # Database instance operation error. # Information about why the backup operation failed. This is only present if the run has the FAILED status.
       "kind": "sql#operationError", # This is always sql#operationError.
@@ -219,7 +226,7 @@ Args:
     },
     "endTime": "A String", # The time the backup operation completed in UTC timezone in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
     "type": "A String", # The type of this run; can be either "AUTOMATED" or "ON_DEMAND".
-    "id": "A String", # A unique identifier for this backup run. Note that this is unique only within the scope of a particular Cloud SQL instance.
+    "id": "A String", # The identifier for this backup run. Unique only for a specific Cloud SQL instance.
     "selfLink": "A String", # The URI of this resource.
   }
 
@@ -227,16 +234,16 @@ Args:
 Returns:
   An object of the form:
 
-    { # An Operations resource contains information about database instance operations such as create, delete, and restart. Operations resources are created in response to operations that were initiated; you never create them directly.
+    { # An Operation resource. For successful operations that return an Operation resource, only the fields relevant to the operation are populated in the resource.
     "status": "A String", # The status of an operation. Valid values are PENDING, RUNNING, DONE, UNKNOWN.
     "importContext": { # Database instance import context. # The context for import operation, if applicable.
       "kind": "sql#importContext", # This is always sql#importContext.
-      "database": "A String", # The database (for example, guestbook) to which the import is made. If fileType is SQL and no database is specified, it is assumed that the database is specified in the file to be imported. If fileType is CSV, it must be specified.
+      "database": "A String", # The target database for the import. If fileType is SQL, this field is required only if the import file does not specify a database, and is overridden by any database specification in the import file. If fileType is CSV, one database must be specified.
       "fileType": "A String", # The file type for the specified uri.
           # SQL: The file contains SQL statements.
           # CSV: The file contains CSV data.
-      "uri": "A String", # A path to the file in Google Cloud Storage from which the import is made. The URI is in the form gs://bucketName/fileName. Compressed gzip files (.gz) are supported when fileType is SQL.
-      "importUser": "A String", # The PostgreSQL user to use for this import operation. Defaults to cloudsqlsuperuser. Does not apply to MySQL instances.
+      "uri": "A String", # Path to the import file in Cloud Storage, in the form gs://bucketName/fileName. Compressed gzip files (.gz) are supported when fileType is SQL. The instance must have write permissions to the bucket and read access to the file.
+      "importUser": "A String", # The PostgreSQL user for this import operation. PostgreSQL instances only.
       "csvImportOptions": { # Options for importing data as CSV.
         "table": "A String", # The table to which CSV data is imported.
         "columns": [ # The columns to which CSV data is imported. If not specified, all columns of the database table are loaded with CSV data.
@@ -251,17 +258,22 @@ Returns:
       "fileType": "A String", # The file type for the specified uri.
           # SQL: The file contains SQL statements.
           # CSV: The file contains CSV data.
-      "uri": "A String", # The path to the file in Google Cloud Storage where the export will be stored. The URI is in the form gs://bucketName/fileName. If the file already exists, the operation fails. If fileType is SQL and the filename ends with .gz, the contents are compressed.
+      "uri": "A String", # The path to the file in Google Cloud Storage where the export will be stored. The URI is in the form gs://bucketName/fileName. If the file already exists, the requests succeeds, but the operation fails. If fileType is SQL and the filename ends with .gz, the contents are compressed.
       "csvExportOptions": { # Options for exporting data as CSV.
         "selectQuery": "A String", # The select query used to extract the data.
       },
-      "databases": [ # Databases (for example, guestbook) from which the export is made. If fileType is SQL and no database is specified, all databases are exported. If fileType is CSV, you can optionally specify at most one database to export. If csvExportOptions.selectQuery also specifies the database, this field will be ignored.
+      "databases": [ # Databases to be exported.
+          # MySQL instances: If fileType is SQL and no database is specified, all databases are exported, except for the mysql system database. If fileType is CSV, you can specify one database, either by using this property or by using the csvExportOptions.selectQuery property, which takes precedence over this property.
+          # PostgreSQL instances: Specify exactly one database to be exported. If fileType is CSV, this database must match the database used in the csvExportOptions.selectQuery property.
         "A String",
       ],
       "sqlExportOptions": { # Options for exporting data as SQL statements.
-        "tables": [ # Tables to export, or that were exported, from the specified database. If you specify tables, specify one and only one database.
+        "tables": [ # Tables to export, or that were exported, from the specified database. If you specify tables, specify one and only one database. For PostgreSQL instances, you can specify only one table.
           "A String",
         ],
+        "mysqlExportOptions": { # Options for exporting from MySQL.
+          "masterData": 42, # Option to include SQL statement required to set up replication. If set to 1, the dump file includes a CHANGE MASTER TO statement with the binary log coordinates. If set to 2, the CHANGE MASTER TO statement is written as a SQL comment, and has no effect. All other values are ignored.
+        },
         "schemaOnly": True or False, # Export only schemas.
       },
     },
@@ -289,7 +301,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="list">list(project, instance, maxResults=None, pageToken=None)</code>
-  <pre>Lists all backup runs associated with a given instance and configuration in the reverse chronological order of the enqueued time.
+  <pre>Lists all backup runs associated with a given instance and configuration in the reverse chronological order of the backup initiation time.
 
 Args:
   project: string, Project ID of the project that contains the instance. (required)
@@ -303,13 +315,14 @@ Returns:
     { # Backup run list results.
     "nextPageToken": "A String", # The continuation token, used to page through large result sets. Provide this value in a subsequent request to return the next page of results.
     "items": [ # A list of backup runs in reverse chronological order of the enqueued time.
-      { # A database instance backup run resource.
+      { # A BackupRun resource.
           "status": "A String", # The status of this run.
           "kind": "sql#backupRun", # This is always sql#backupRun.
           "description": "A String", # The description of this run, only applicable to on-demand backups.
           "windowStartTime": "A String", # The start time of the backup window during which this the backup was attempted in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
           "enqueuedTime": "A String", # The time the run was enqueued in UTC timezone in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
           "instance": "A String", # Name of the database instance.
+          "location": "A String", # The location of the backup.
           "startTime": "A String", # The time the backup operation actually started in UTC timezone in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
           "error": { # Database instance operation error. # Information about why the backup operation failed. This is only present if the run has the FAILED status.
             "kind": "sql#operationError", # This is always sql#operationError.
@@ -318,7 +331,7 @@ Returns:
           },
           "endTime": "A String", # The time the backup operation completed in UTC timezone in RFC 3339 format, for example 2012-11-15T16:19:00.094Z.
           "type": "A String", # The type of this run; can be either "AUTOMATED" or "ON_DEMAND".
-          "id": "A String", # A unique identifier for this backup run. Note that this is unique only within the scope of a particular Cloud SQL instance.
+          "id": "A String", # The identifier for this backup run. Unique only for a specific Cloud SQL instance.
           "selfLink": "A String", # The URI of this resource.
         },
     ],

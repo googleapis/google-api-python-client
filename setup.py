@@ -24,28 +24,26 @@ import os
 import sys
 
 if sys.version_info < (2, 7):
-  print('google-api-python-client requires python version >= 2.7.',
-        file=sys.stderr)
-  sys.exit(1)
-if (3, 1) <= sys.version_info < (3, 3):
-  print('google-api-python-client requires python3 version >= 3.3.',
-        file=sys.stderr)
-  sys.exit(1)
+    print("google-api-python-client requires python version >= 2.7.", file=sys.stderr)
+    sys.exit(1)
+if (3, 1) <= sys.version_info < (3, 4):
+    print("google-api-python-client requires python3 version >= 3.4.", file=sys.stderr)
+    sys.exit(1)
 
 from setuptools import setup
 
-packages = [
-    'apiclient',
-    'googleapiclient',
-    'googleapiclient/discovery_cache',
-]
+packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
 
 install_requires = [
-    'httplib2>=0.9.2,<1dev',
-    'google-auth>=1.4.1',
-    'google-auth-httplib2>=0.0.3',
-    'six>=1.6.1,<2dev',
-    'uritemplate>=3.0.0,<4dev',
+    # NOTE: Apache Beam tests depend on this library and cannot
+    # currently upgrade their httplib2 version.
+    # Please see https://github.com/googleapis/google-api-python-client/pull/841
+    "httplib2>=0.9.2,<1dev",
+    "google-auth>=1.4.1",
+    "google-auth-httplib2>=0.0.3",
+    "google-api-core>=1.13.0,<2dev",
+    "six>=1.6.1,<2dev",
+    "uritemplate>=3.0.0,<4dev",
 ]
 
 package_root = os.path.abspath(os.path.dirname(__file__))
@@ -55,6 +53,7 @@ with io.open(readme_filename, encoding="utf-8") as readme_file:
     readme = readme_file.read()
 
 import googleapiclient
+
 version = googleapiclient.__version__
 
 setup(
@@ -66,22 +65,23 @@ setup(
     author="Google Inc.",
     url="http://github.com/google/google-api-python-client/",
     install_requires=install_requires,
+    python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*",
     packages=packages,
     package_data={},
     license="Apache 2.0",
     keywords="google api client",
     classifiers=[
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: Apache Software License',
-        'Operating System :: OS Independent',
-        'Topic :: Internet :: WWW/HTTP',
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: OS Independent",
+        "Topic :: Internet :: WWW/HTTP",
     ],
 )

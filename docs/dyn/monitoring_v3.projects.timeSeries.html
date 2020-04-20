@@ -94,8 +94,17 @@ Args:
     The object takes the form of:
 
 { # The CreateTimeSeries request.
-    "timeSeries": [ # The new data to be added to a list of time series. Adds at most one data point to each of several time series. The new data point must be more recent than any other point in its time series. Each TimeSeries value must fully specify a unique time series by supplying all label values for the metric and the monitored resource.
+    "timeSeries": [ # The new data to be added to a list of time series. Adds at most one data point to each of several time series. The new data point must be more recent than any other point in its time series. Each TimeSeries value must fully specify a unique time series by supplying all label values for the metric and the monitored resource.The maximum number of TimeSeries objects per Create request is 200.
       { # A collection of data points that describes the time-varying values of a metric. A time series is identified by a combination of a fully-specified monitored resource and a fully-specified metric. This type is used for both listing and creating time series.
+        "resource": { # An object representing a resource that can be used for monitoring, logging, billing, or other purposes. Examples include virtual machine instances, databases, and storage devices such as disks. The type field identifies a MonitoredResourceDescriptor object that describes the resource's schema. Information in the labels field identifies the actual resource and its attributes according to the schema. For example, a particular Compute Engine VM instance could be represented by the following object, because the MonitoredResourceDescriptor for "gce_instance" has labels "instance_id" and "zone": # The associated monitored resource. Custom metrics can use only certain monitored resource types in their time series data.
+            # { "type": "gce_instance",
+            #   "labels": { "instance_id": "12345678901234",
+            #               "zone": "us-central1-a" }}
+          "labels": { # Required. Values for all of the labels listed in the associated monitored resource descriptor. For example, Compute Engine VM instances use the labels "project_id", "instance_id", and "zone".
+            "a_key": "A String",
+          },
+          "type": "A String", # Required. The monitored resource type. This field must match the type field of a MonitoredResourceDescriptor object. For example, the type of a Compute Engine VM instance is gce_instance. For a list of types, see Monitoring resource types and Logging resource types.
+        },
         "metricKind": "A String", # The metric kind of the time series. When listing time series, this metric kind might be different from the metric kind of the associated metric if this time series is an alignment or reduction of other time series.When creating a time series, this field is optional. If present, it must be the same as the metric kind of the associated metric. If the associated metric's descriptor must be auto-created, then this field specifies the metric kind of the new descriptor and must be either GAUGE (the default) or CUMULATIVE.
         "metric": { # A specific metric, identified by specifying values for all of the labels of a MetricDescriptor. # The associated metric. A fully-specified metric used to identify the time series.
           "labels": { # The set of label values that uniquely identify this metric. All labels listed in the MetricDescriptor must be assigned values.
@@ -103,9 +112,9 @@ Args:
           },
           "type": "A String", # An existing metric type, see google.api.MetricDescriptor. For example, custom.googleapis.com/invoice/paid/amount.
         },
-        "points": [ # The data points of this time series. When listing time series, the order of the points is specified by the list method.When creating a time series, this field must contain exactly one point and the point's type must be the same as the value type of the associated metric. If the associated metric's descriptor must be auto-created, then the value type of the descriptor is determined by the point's type, which must be BOOL, INT64, DOUBLE, or DISTRIBUTION.
+        "points": [ # The data points of this time series. When listing time series, points are returned in reverse time order.When creating a time series, this field must contain exactly one point and the point's type must be the same as the value type of the associated metric. If the associated metric's descriptor must be auto-created, then the value type of the descriptor is determined by the point's type, which must be BOOL, INT64, DOUBLE, or DISTRIBUTION.
           { # A single data point in a time series.
-            "interval": { # A time interval extending just after a start time through an end time. If the start time is the same as the end time, then the interval represents a single point in time. # The time interval to which the data point applies. For GAUGE metrics, only the end time of the interval is used. For DELTA metrics, the start and end time should specify a non-zero interval, with subsequent points specifying contiguous and non-overlapping intervals. For CUMULATIVE metrics, the start and end time should specify a non-zero interval, with subsequent points specifying the same start time and increasing end times, until an event resets the cumulative value to zero and sets a new start time for the following points.
+            "interval": { # A time interval extending just after a start time through an end time. The start time must not be later than the end time. The default start time is the end time, making the startTime value technically optional. Whether this is useful depends on the MetricKind. If the start and end times are the same, the interval represents a point in time. This is appropriate for GAUGE metrics, but not for DELTA and CUMULATIVE metrics, which cover a span of time. # The time interval to which the data point applies. For GAUGE metrics, only the end time of the interval is used. For DELTA metrics, the start and end time should specify a non-zero interval, with subsequent points specifying contiguous and non-overlapping intervals. For CUMULATIVE metrics, the start and end time should specify a non-zero interval, with subsequent points specifying the same start time and increasing end times, until an event resets the cumulative value to zero and sets a new start time for the following points.
               "endTime": "A String", # Required. The end of the time interval.
               "startTime": "A String", # Optional. The beginning of the time interval. The default value for the start time is the end time. The start time must not be later than the end time.
             },
@@ -132,6 +141,17 @@ Args:
                     ],
                   },
                 },
+                "exemplars": [ # Must be in increasing order of value field.
+                  { # Exemplars are example points that may be used to annotate aggregated distribution values. They are metadata that gives information about a particular value added to a Distribution bucket, such as a trace ID that was active when a value was added. They may contain further information, such as a example values and timestamps, origin, etc.
+                    "timestamp": "A String", # The observation (sampling) time of the above value.
+                    "attachments": [ # Contextual information about the example value. Examples are:Trace: type.googleapis.com/google.monitoring.v3.SpanContextLiteral string: type.googleapis.com/google.protobuf.StringValueLabels dropped during aggregation:  type.googleapis.com/google.monitoring.v3.DroppedLabelsThere may be only a single attachment of any given message type in a single exemplar, and this is enforced by the system.
+                      {
+                        "a_key": "", # Properties of the object. Contains field @type with type URL.
+                      },
+                    ],
+                    "value": 3.14, # Value of the exemplar point. This value determines to which bucket the exemplar belongs.
+                  },
+                ],
                 "range": { # The range of the population values. # If specified, contains the range of the population values. The field must not be present if the count is zero. This field is presently ignored by the Stackdriver Monitoring API v3.
                   "max": 3.14, # The maximum of the population values.
                   "min": 3.14, # The minimum of the population values.
@@ -142,22 +162,24 @@ Args:
                 "mean": 3.14, # The arithmetic mean of the values in the population. If count is zero then this field must be zero.
               },
               "stringValue": "A String", # A variable-length string value.
-              "int64Value": "A String", # A 64-bit integer. Its range is approximately &plusmn;9.2x10<sup>18</sup>.
-              "doubleValue": 3.14, # A 64-bit double-precision floating-point number. Its magnitude is approximately &plusmn;10<sup>&plusmn;300</sup> and it has 16 significant digits of precision.
               "boolValue": True or False, # A Boolean value: true or false.
+              "doubleValue": 3.14, # A 64-bit double-precision floating-point number. Its magnitude is approximately &plusmn;10<sup>&plusmn;300</sup> and it has 16 significant digits of precision.
+              "int64Value": "A String", # A 64-bit integer. Its range is approximately &plusmn;9.2x10<sup>18</sup>.
             },
           },
         ],
-        "resource": { # An object representing a resource that can be used for monitoring, logging, billing, or other purposes. Examples include virtual machine instances, databases, and storage devices such as disks. The type field identifies a MonitoredResourceDescriptor object that describes the resource's schema. Information in the labels field identifies the actual resource and its attributes according to the schema. For example, a particular Compute Engine VM instance could be represented by the following object, because the MonitoredResourceDescriptor for "gce_instance" has labels "instance_id" and "zone": # The associated monitored resource. Custom metrics can use only certain monitored resource types in their time series data.
-            # { "type": "gce_instance",
-            #   "labels": { "instance_id": "12345678901234",
-            #               "zone": "us-central1-a" }}
-          "labels": { # Required. Values for all of the labels listed in the associated monitored resource descriptor. For example, Compute Engine VM instances use the labels "project_id", "instance_id", and "zone".
+        "valueType": "A String", # The value type of the time series. When listing time series, this value type might be different from the value type of the associated metric if this time series is an alignment or reduction of other time series.When creating a time series, this field is optional. If present, it must be the same as the type of the data in the points field.
+        "metadata": { # Auxiliary metadata for a MonitoredResource object. MonitoredResource objects contain the minimum set of information to uniquely identify a monitored resource instance. There is some other useful auxiliary metadata. Monitoring and Logging use an ingestion pipeline to extract metadata for cloud resources of all types, and store the metadata in this message. # Output only. The associated monitored resource metadata. When reading a a timeseries, this field will include metadata labels that are explicitly named in the reduction. When creating a timeseries, this field is ignored.
+          "userLabels": { # Output only. A map of user-defined metadata labels.
             "a_key": "A String",
           },
-          "type": "A String", # Required. The monitored resource type. This field must match the type field of a MonitoredResourceDescriptor object. For example, the type of a Compute Engine VM instance is gce_instance.
+          "systemLabels": { # Output only. Values for predefined system metadata labels. System labels are a kind of metadata extracted by Google, including "machine_image", "vpc", "subnet_id", "security_group", "name", etc. System label values can be only strings, Boolean values, or a list of strings. For example:
+              # { "name": "my-test-instance",
+              #   "security_group": ["a", "b", "c"],
+              #   "spot_instance": false }
+            "a_key": "", # Properties of the object.
+          },
         },
-        "valueType": "A String", # The value type of the time series. When listing time series, this value type might be different from the value type of the associated metric if this time series is an alignment or reduction of other time series.When creating a time series, this field is optional. If present, it must be the same as the type of the data in the points field.
       },
     ],
   }
@@ -184,8 +206,8 @@ Returns:
 
 Args:
   name: string, The project on which to execute the request. The format is "projects/{project_id_or_number}". (required)
-  orderBy: string, Specifies the order in which the points of the time series should be returned. By default, results are not ordered. Currently, this field must be left blank.
-  pageSize: integer, A positive number that is the maximum number of results to return. When view field sets to FULL, it limits the number of Points server will return; if view field is HEADERS, it limits the number of TimeSeries server will return.
+  orderBy: string, Unsupported: must be left blank. The points in each time series are returned in reverse time order.
+  pageSize: integer, A positive number that is the maximum number of results to return. If page_size is empty or more than 100,000 results, the effective page_size is 100,000 results. If view is set to FULL, this is the maximum number of Points returned. If view is set to HEADERS, this is the maximum number of TimeSeries returned.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -198,7 +220,7 @@ Args:
   aggregation_crossSeriesReducer: string, The approach to be used to combine time series. Not all reducer functions may be applied to all time series, depending on the metric type and the value type of the original time series. Reduction may change the metric type of value type of the time series.Time series data must be aligned in order to perform cross-time series reduction. If crossSeriesReducer is specified, then perSeriesAligner must be specified and not equal ALIGN_NONE and alignmentPeriod must be specified; otherwise, an error is returned.
   filter: string, A monitoring filter that specifies which time series should be returned. The filter must specify a single metric type, and can additionally specify metric labels and other information. For example:
 metric.type = "compute.googleapis.com/instance/cpu/usage_time" AND
-    metric.label.instance_name = "my-instance-name"
+    metric.labels.instance_name = "my-instance-name"
 
   interval_startTime: string, Optional. The beginning of the time interval. The default value for the start time is the end time. The start time must not be later than the end time.
   view: string, Specifies which information is returned about the time series.
@@ -208,8 +230,28 @@ Returns:
 
     { # The ListTimeSeries response.
     "nextPageToken": "A String", # If there are more results than have been returned, then this field is set to a non-empty value. To see the additional results, use that value as pageToken in the next call to this method.
+    "executionErrors": [ # Query execution errors that may have caused the time series data returned to be incomplete.
+      { # The Status type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by gRPC (https://github.com/grpc). Each Status message contains three pieces of data: error code, error message, and error details.You can find out more about this error model and how to work with it in the API Design Guide (https://cloud.google.com/apis/design/errors).
+        "message": "A String", # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
+        "code": 42, # The status code, which should be an enum value of google.rpc.Code.
+        "details": [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
+          {
+            "a_key": "", # Properties of the object. Contains field @type with type URL.
+          },
+        ],
+      },
+    ],
     "timeSeries": [ # One or more time series that match the filter included in the request.
       { # A collection of data points that describes the time-varying values of a metric. A time series is identified by a combination of a fully-specified monitored resource and a fully-specified metric. This type is used for both listing and creating time series.
+        "resource": { # An object representing a resource that can be used for monitoring, logging, billing, or other purposes. Examples include virtual machine instances, databases, and storage devices such as disks. The type field identifies a MonitoredResourceDescriptor object that describes the resource's schema. Information in the labels field identifies the actual resource and its attributes according to the schema. For example, a particular Compute Engine VM instance could be represented by the following object, because the MonitoredResourceDescriptor for "gce_instance" has labels "instance_id" and "zone": # The associated monitored resource. Custom metrics can use only certain monitored resource types in their time series data.
+            # { "type": "gce_instance",
+            #   "labels": { "instance_id": "12345678901234",
+            #               "zone": "us-central1-a" }}
+          "labels": { # Required. Values for all of the labels listed in the associated monitored resource descriptor. For example, Compute Engine VM instances use the labels "project_id", "instance_id", and "zone".
+            "a_key": "A String",
+          },
+          "type": "A String", # Required. The monitored resource type. This field must match the type field of a MonitoredResourceDescriptor object. For example, the type of a Compute Engine VM instance is gce_instance. For a list of types, see Monitoring resource types and Logging resource types.
+        },
         "metricKind": "A String", # The metric kind of the time series. When listing time series, this metric kind might be different from the metric kind of the associated metric if this time series is an alignment or reduction of other time series.When creating a time series, this field is optional. If present, it must be the same as the metric kind of the associated metric. If the associated metric's descriptor must be auto-created, then this field specifies the metric kind of the new descriptor and must be either GAUGE (the default) or CUMULATIVE.
         "metric": { # A specific metric, identified by specifying values for all of the labels of a MetricDescriptor. # The associated metric. A fully-specified metric used to identify the time series.
           "labels": { # The set of label values that uniquely identify this metric. All labels listed in the MetricDescriptor must be assigned values.
@@ -217,9 +259,9 @@ Returns:
           },
           "type": "A String", # An existing metric type, see google.api.MetricDescriptor. For example, custom.googleapis.com/invoice/paid/amount.
         },
-        "points": [ # The data points of this time series. When listing time series, the order of the points is specified by the list method.When creating a time series, this field must contain exactly one point and the point's type must be the same as the value type of the associated metric. If the associated metric's descriptor must be auto-created, then the value type of the descriptor is determined by the point's type, which must be BOOL, INT64, DOUBLE, or DISTRIBUTION.
+        "points": [ # The data points of this time series. When listing time series, points are returned in reverse time order.When creating a time series, this field must contain exactly one point and the point's type must be the same as the value type of the associated metric. If the associated metric's descriptor must be auto-created, then the value type of the descriptor is determined by the point's type, which must be BOOL, INT64, DOUBLE, or DISTRIBUTION.
           { # A single data point in a time series.
-            "interval": { # A time interval extending just after a start time through an end time. If the start time is the same as the end time, then the interval represents a single point in time. # The time interval to which the data point applies. For GAUGE metrics, only the end time of the interval is used. For DELTA metrics, the start and end time should specify a non-zero interval, with subsequent points specifying contiguous and non-overlapping intervals. For CUMULATIVE metrics, the start and end time should specify a non-zero interval, with subsequent points specifying the same start time and increasing end times, until an event resets the cumulative value to zero and sets a new start time for the following points.
+            "interval": { # A time interval extending just after a start time through an end time. The start time must not be later than the end time. The default start time is the end time, making the startTime value technically optional. Whether this is useful depends on the MetricKind. If the start and end times are the same, the interval represents a point in time. This is appropriate for GAUGE metrics, but not for DELTA and CUMULATIVE metrics, which cover a span of time. # The time interval to which the data point applies. For GAUGE metrics, only the end time of the interval is used. For DELTA metrics, the start and end time should specify a non-zero interval, with subsequent points specifying contiguous and non-overlapping intervals. For CUMULATIVE metrics, the start and end time should specify a non-zero interval, with subsequent points specifying the same start time and increasing end times, until an event resets the cumulative value to zero and sets a new start time for the following points.
               "endTime": "A String", # Required. The end of the time interval.
               "startTime": "A String", # Optional. The beginning of the time interval. The default value for the start time is the end time. The start time must not be later than the end time.
             },
@@ -246,6 +288,17 @@ Returns:
                     ],
                   },
                 },
+                "exemplars": [ # Must be in increasing order of value field.
+                  { # Exemplars are example points that may be used to annotate aggregated distribution values. They are metadata that gives information about a particular value added to a Distribution bucket, such as a trace ID that was active when a value was added. They may contain further information, such as a example values and timestamps, origin, etc.
+                    "timestamp": "A String", # The observation (sampling) time of the above value.
+                    "attachments": [ # Contextual information about the example value. Examples are:Trace: type.googleapis.com/google.monitoring.v3.SpanContextLiteral string: type.googleapis.com/google.protobuf.StringValueLabels dropped during aggregation:  type.googleapis.com/google.monitoring.v3.DroppedLabelsThere may be only a single attachment of any given message type in a single exemplar, and this is enforced by the system.
+                      {
+                        "a_key": "", # Properties of the object. Contains field @type with type URL.
+                      },
+                    ],
+                    "value": 3.14, # Value of the exemplar point. This value determines to which bucket the exemplar belongs.
+                  },
+                ],
                 "range": { # The range of the population values. # If specified, contains the range of the population values. The field must not be present if the count is zero. This field is presently ignored by the Stackdriver Monitoring API v3.
                   "max": 3.14, # The maximum of the population values.
                   "min": 3.14, # The minimum of the population values.
@@ -256,22 +309,24 @@ Returns:
                 "mean": 3.14, # The arithmetic mean of the values in the population. If count is zero then this field must be zero.
               },
               "stringValue": "A String", # A variable-length string value.
-              "int64Value": "A String", # A 64-bit integer. Its range is approximately &plusmn;9.2x10<sup>18</sup>.
-              "doubleValue": 3.14, # A 64-bit double-precision floating-point number. Its magnitude is approximately &plusmn;10<sup>&plusmn;300</sup> and it has 16 significant digits of precision.
               "boolValue": True or False, # A Boolean value: true or false.
+              "doubleValue": 3.14, # A 64-bit double-precision floating-point number. Its magnitude is approximately &plusmn;10<sup>&plusmn;300</sup> and it has 16 significant digits of precision.
+              "int64Value": "A String", # A 64-bit integer. Its range is approximately &plusmn;9.2x10<sup>18</sup>.
             },
           },
         ],
-        "resource": { # An object representing a resource that can be used for monitoring, logging, billing, or other purposes. Examples include virtual machine instances, databases, and storage devices such as disks. The type field identifies a MonitoredResourceDescriptor object that describes the resource's schema. Information in the labels field identifies the actual resource and its attributes according to the schema. For example, a particular Compute Engine VM instance could be represented by the following object, because the MonitoredResourceDescriptor for "gce_instance" has labels "instance_id" and "zone": # The associated monitored resource. Custom metrics can use only certain monitored resource types in their time series data.
-            # { "type": "gce_instance",
-            #   "labels": { "instance_id": "12345678901234",
-            #               "zone": "us-central1-a" }}
-          "labels": { # Required. Values for all of the labels listed in the associated monitored resource descriptor. For example, Compute Engine VM instances use the labels "project_id", "instance_id", and "zone".
+        "valueType": "A String", # The value type of the time series. When listing time series, this value type might be different from the value type of the associated metric if this time series is an alignment or reduction of other time series.When creating a time series, this field is optional. If present, it must be the same as the type of the data in the points field.
+        "metadata": { # Auxiliary metadata for a MonitoredResource object. MonitoredResource objects contain the minimum set of information to uniquely identify a monitored resource instance. There is some other useful auxiliary metadata. Monitoring and Logging use an ingestion pipeline to extract metadata for cloud resources of all types, and store the metadata in this message. # Output only. The associated monitored resource metadata. When reading a a timeseries, this field will include metadata labels that are explicitly named in the reduction. When creating a timeseries, this field is ignored.
+          "userLabels": { # Output only. A map of user-defined metadata labels.
             "a_key": "A String",
           },
-          "type": "A String", # Required. The monitored resource type. This field must match the type field of a MonitoredResourceDescriptor object. For example, the type of a Compute Engine VM instance is gce_instance.
+          "systemLabels": { # Output only. Values for predefined system metadata labels. System labels are a kind of metadata extracted by Google, including "machine_image", "vpc", "subnet_id", "security_group", "name", etc. System label values can be only strings, Boolean values, or a list of strings. For example:
+              # { "name": "my-test-instance",
+              #   "security_group": ["a", "b", "c"],
+              #   "spot_instance": false }
+            "a_key": "", # Properties of the object.
+          },
         },
-        "valueType": "A String", # The value type of the time series. When listing time series, this value type might be different from the value type of the associated metric if this time series is an alignment or reduction of other time series.When creating a time series, this field is optional. If present, it must be the same as the type of the data in the points field.
       },
     ],
   }</pre>

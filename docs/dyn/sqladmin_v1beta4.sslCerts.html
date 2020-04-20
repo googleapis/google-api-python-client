@@ -72,14 +72,14 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="sqladmin_v1beta4.html">Cloud SQL Administration API</a> . <a href="sqladmin_v1beta4.sslCerts.html">sslCerts</a></h1>
+<h1><a href="sqladmin_v1beta4.html">Cloud SQL Admin API</a> . <a href="sqladmin_v1beta4.sslCerts.html">sslCerts</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="#createEphemeral">createEphemeral(project, instance, body)</a></code></p>
 <p class="firstline">Generates a short-lived X509 certificate containing the provided public key and signed by a private key specific to the target instance. Users may use the certificate to authenticate as themselves when connecting to the database.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(project, instance, sha1Fingerprint)</a></code></p>
-<p class="firstline">Deletes the SSL certificate. The change will not take effect until the instance is restarted.</p>
+<p class="firstline">Deletes the SSL certificate. For First Generation instances, the certificate remains valid until the instance is restarted.</p>
 <p class="toc_element">
   <code><a href="#get">get(project, instance, sha1Fingerprint)</a></code></p>
 <p class="firstline">Retrieves a particular SSL certificate. Does not include the private key (required for usage). The private key must be saved from the response to initial creation.</p>
@@ -123,26 +123,26 @@ Returns:
 
 <div class="method">
     <code class="details" id="delete">delete(project, instance, sha1Fingerprint)</code>
-  <pre>Deletes the SSL certificate. The change will not take effect until the instance is restarted.
+  <pre>Deletes the SSL certificate. For First Generation instances, the certificate remains valid until the instance is restarted.
 
 Args:
-  project: string, Project ID of the project that contains the instance to be deleted. (required)
+  project: string, Project ID of the project that contains the instance. (required)
   instance: string, Cloud SQL instance ID. This does not include the project ID. (required)
   sha1Fingerprint: string, Sha1 FingerPrint. (required)
 
 Returns:
   An object of the form:
 
-    { # An Operations resource contains information about database instance operations such as create, delete, and restart. Operations resources are created in response to operations that were initiated; you never create them directly.
+    { # An Operation resource. For successful operations that return an Operation resource, only the fields relevant to the operation are populated in the resource.
     "status": "A String", # The status of an operation. Valid values are PENDING, RUNNING, DONE, UNKNOWN.
     "importContext": { # Database instance import context. # The context for import operation, if applicable.
       "kind": "sql#importContext", # This is always sql#importContext.
-      "database": "A String", # The database (for example, guestbook) to which the import is made. If fileType is SQL and no database is specified, it is assumed that the database is specified in the file to be imported. If fileType is CSV, it must be specified.
+      "database": "A String", # The target database for the import. If fileType is SQL, this field is required only if the import file does not specify a database, and is overridden by any database specification in the import file. If fileType is CSV, one database must be specified.
       "fileType": "A String", # The file type for the specified uri.
           # SQL: The file contains SQL statements.
           # CSV: The file contains CSV data.
-      "uri": "A String", # A path to the file in Google Cloud Storage from which the import is made. The URI is in the form gs://bucketName/fileName. Compressed gzip files (.gz) are supported when fileType is SQL.
-      "importUser": "A String", # The PostgreSQL user to use for this import operation. Defaults to cloudsqlsuperuser. Does not apply to MySQL instances.
+      "uri": "A String", # Path to the import file in Cloud Storage, in the form gs://bucketName/fileName. Compressed gzip files (.gz) are supported when fileType is SQL. The instance must have write permissions to the bucket and read access to the file.
+      "importUser": "A String", # The PostgreSQL user for this import operation. PostgreSQL instances only.
       "csvImportOptions": { # Options for importing data as CSV.
         "table": "A String", # The table to which CSV data is imported.
         "columns": [ # The columns to which CSV data is imported. If not specified, all columns of the database table are loaded with CSV data.
@@ -157,17 +157,22 @@ Returns:
       "fileType": "A String", # The file type for the specified uri.
           # SQL: The file contains SQL statements.
           # CSV: The file contains CSV data.
-      "uri": "A String", # The path to the file in Google Cloud Storage where the export will be stored. The URI is in the form gs://bucketName/fileName. If the file already exists, the operation fails. If fileType is SQL and the filename ends with .gz, the contents are compressed.
+      "uri": "A String", # The path to the file in Google Cloud Storage where the export will be stored. The URI is in the form gs://bucketName/fileName. If the file already exists, the requests succeeds, but the operation fails. If fileType is SQL and the filename ends with .gz, the contents are compressed.
       "csvExportOptions": { # Options for exporting data as CSV.
         "selectQuery": "A String", # The select query used to extract the data.
       },
-      "databases": [ # Databases (for example, guestbook) from which the export is made. If fileType is SQL and no database is specified, all databases are exported. If fileType is CSV, you can optionally specify at most one database to export. If csvExportOptions.selectQuery also specifies the database, this field will be ignored.
+      "databases": [ # Databases to be exported.
+          # MySQL instances: If fileType is SQL and no database is specified, all databases are exported, except for the mysql system database. If fileType is CSV, you can specify one database, either by using this property or by using the csvExportOptions.selectQuery property, which takes precedence over this property.
+          # PostgreSQL instances: Specify exactly one database to be exported. If fileType is CSV, this database must match the database used in the csvExportOptions.selectQuery property.
         "A String",
       ],
       "sqlExportOptions": { # Options for exporting data as SQL statements.
-        "tables": [ # Tables to export, or that were exported, from the specified database. If you specify tables, specify one and only one database.
+        "tables": [ # Tables to export, or that were exported, from the specified database. If you specify tables, specify one and only one database. For PostgreSQL instances, you can specify only one table.
           "A String",
         ],
+        "mysqlExportOptions": { # Options for exporting from MySQL.
+          "masterData": 42, # Option to include SQL statement required to set up replication. If set to 1, the dump file includes a CHANGE MASTER TO statement with the binary log coordinates. If set to 2, the CHANGE MASTER TO statement is written as a SQL comment, and has no effect. All other values are ignored.
+        },
         "schemaOnly": True or False, # Export only schemas.
       },
     },
@@ -223,13 +228,13 @@ Returns:
   <pre>Creates an SSL certificate and returns it along with the private key and server certificate authority. The new certificate will not be usable until the instance is restarted.
 
 Args:
-  project: string, Project ID of the project to which the newly created Cloud SQL instances should belong. (required)
+  project: string, Project ID of the project that contains the instance. (required)
   instance: string, Cloud SQL instance ID. This does not include the project ID. (required)
   body: object, The request body. (required)
     The object takes the form of:
 
 { # SslCerts insert request.
-    "commonName": "A String", # User supplied name. Must be a distinct name from the other certificates for this instance. New certificates will not be usable until the instance is restarted.
+    "commonName": "A String", # User supplied name. Must be a distinct name from the other certificates for this instance.
   }
 
 
@@ -238,7 +243,7 @@ Returns:
 
     { # SslCert insert response.
     "kind": "sql#sslCertsInsert", # This is always sql#sslCertsInsert.
-    "clientCert": { # SslCertDetail. # The new client certificate and private key. The new certificate will not work until the instance is restarted for First Generation instances.
+    "clientCert": { # SslCertDetail. # The new client certificate and private key. For First Generation instances, the new certificate does not take effect until the instance is restarted.
       "certPrivateKey": "A String", # The private key for the client cert, in pem format. Keep private in order to protect your security.
       "certInfo": { # SslCerts Resource # The public information about the cert.
         "certSerialNumber": "A String", # Serial number, as extracted from the certificate.
@@ -252,16 +257,16 @@ Returns:
         "selfLink": "A String", # The URI of this resource.
       },
     },
-    "operation": { # An Operations resource contains information about database instance operations such as create, delete, and restart. Operations resources are created in response to operations that were initiated; you never create them directly. # The operation to track the ssl certs insert request.
+    "operation": { # An Operation resource. For successful operations that return an Operation resource, only the fields relevant to the operation are populated in the resource. # The operation to track the ssl certs insert request.
       "status": "A String", # The status of an operation. Valid values are PENDING, RUNNING, DONE, UNKNOWN.
       "importContext": { # Database instance import context. # The context for import operation, if applicable.
         "kind": "sql#importContext", # This is always sql#importContext.
-        "database": "A String", # The database (for example, guestbook) to which the import is made. If fileType is SQL and no database is specified, it is assumed that the database is specified in the file to be imported. If fileType is CSV, it must be specified.
+        "database": "A String", # The target database for the import. If fileType is SQL, this field is required only if the import file does not specify a database, and is overridden by any database specification in the import file. If fileType is CSV, one database must be specified.
         "fileType": "A String", # The file type for the specified uri.
             # SQL: The file contains SQL statements.
             # CSV: The file contains CSV data.
-        "uri": "A String", # A path to the file in Google Cloud Storage from which the import is made. The URI is in the form gs://bucketName/fileName. Compressed gzip files (.gz) are supported when fileType is SQL.
-        "importUser": "A String", # The PostgreSQL user to use for this import operation. Defaults to cloudsqlsuperuser. Does not apply to MySQL instances.
+        "uri": "A String", # Path to the import file in Cloud Storage, in the form gs://bucketName/fileName. Compressed gzip files (.gz) are supported when fileType is SQL. The instance must have write permissions to the bucket and read access to the file.
+        "importUser": "A String", # The PostgreSQL user for this import operation. PostgreSQL instances only.
         "csvImportOptions": { # Options for importing data as CSV.
           "table": "A String", # The table to which CSV data is imported.
           "columns": [ # The columns to which CSV data is imported. If not specified, all columns of the database table are loaded with CSV data.
@@ -276,17 +281,22 @@ Returns:
         "fileType": "A String", # The file type for the specified uri.
             # SQL: The file contains SQL statements.
             # CSV: The file contains CSV data.
-        "uri": "A String", # The path to the file in Google Cloud Storage where the export will be stored. The URI is in the form gs://bucketName/fileName. If the file already exists, the operation fails. If fileType is SQL and the filename ends with .gz, the contents are compressed.
+        "uri": "A String", # The path to the file in Google Cloud Storage where the export will be stored. The URI is in the form gs://bucketName/fileName. If the file already exists, the requests succeeds, but the operation fails. If fileType is SQL and the filename ends with .gz, the contents are compressed.
         "csvExportOptions": { # Options for exporting data as CSV.
           "selectQuery": "A String", # The select query used to extract the data.
         },
-        "databases": [ # Databases (for example, guestbook) from which the export is made. If fileType is SQL and no database is specified, all databases are exported. If fileType is CSV, you can optionally specify at most one database to export. If csvExportOptions.selectQuery also specifies the database, this field will be ignored.
+        "databases": [ # Databases to be exported.
+            # MySQL instances: If fileType is SQL and no database is specified, all databases are exported, except for the mysql system database. If fileType is CSV, you can specify one database, either by using this property or by using the csvExportOptions.selectQuery property, which takes precedence over this property.
+            # PostgreSQL instances: Specify exactly one database to be exported. If fileType is CSV, this database must match the database used in the csvExportOptions.selectQuery property.
           "A String",
         ],
         "sqlExportOptions": { # Options for exporting data as SQL statements.
-          "tables": [ # Tables to export, or that were exported, from the specified database. If you specify tables, specify one and only one database.
+          "tables": [ # Tables to export, or that were exported, from the specified database. If you specify tables, specify one and only one database. For PostgreSQL instances, you can specify only one table.
             "A String",
           ],
+          "mysqlExportOptions": { # Options for exporting from MySQL.
+            "masterData": 42, # Option to include SQL statement required to set up replication. If set to 1, the dump file includes a CHANGE MASTER TO statement with the binary log coordinates. If set to 2, the CHANGE MASTER TO statement is written as a SQL comment, and has no effect. All other values are ignored.
+          },
           "schemaOnly": True or False, # Export only schemas.
         },
       },
@@ -329,7 +339,7 @@ Returns:
   <pre>Lists all of the current SSL certificates for the instance.
 
 Args:
-  project: string, Project ID of the project for which to list Cloud SQL instances. (required)
+  project: string, Project ID of the project that contains the instance. (required)
   instance: string, Cloud SQL instance ID. This does not include the project ID. (required)
 
 Returns:

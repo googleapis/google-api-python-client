@@ -72,7 +72,7 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="ml_v1.html">Google Cloud Machine Learning Engine</a> . <a href="ml_v1.projects.html">projects</a> . <a href="ml_v1.projects.models.html">models</a> . <a href="ml_v1.projects.models.versions.html">versions</a></h1>
+<h1><a href="ml_v1.html">Cloud Machine Learning Engine</a> . <a href="ml_v1.projects.html">projects</a> . <a href="ml_v1.projects.models.html">models</a> . <a href="ml_v1.projects.models.versions.html">versions</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="#create">create(parent, body, x__xgafv=None)</a></code></p>
@@ -84,13 +84,16 @@ h1, h2, h3 {
   <code><a href="#get">get(name, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets information about a model version.</p>
 <p class="toc_element">
-  <code><a href="#list">list(parent, pageToken=None, x__xgafv=None, pageSize=None)</a></code></p>
+  <code><a href="#list">list(parent, pageToken=None, x__xgafv=None, pageSize=None, filter=None)</a></code></p>
 <p class="firstline">Gets basic information about all the versions of a model.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#setDefault">setDefault(name, body, x__xgafv=None)</a></code></p>
+  <code><a href="#patch">patch(name, body, updateMask=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Updates the specified Version resource.</p>
+<p class="toc_element">
+  <code><a href="#setDefault">setDefault(name, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Designates a version to be the default for the model.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -105,9 +108,7 @@ new version to be the default, you must call
 [projects.models.versions.setDefault](/ml-engine/reference/rest/v1/projects.models.versions/setDefault).
 
 Args:
-  parent: string, Required. The name of the model.
-
-Authorization: requires `Editor` role on the parent project. (required)
+  parent: string, Required. The name of the model. (required)
   body: object, The request body. (required)
     The object takes the form of:
 
@@ -117,11 +118,36 @@ Authorization: requires `Editor` role on the parent project. (required)
     # prediction requests. A model can have multiple versions. You can get
     # information about all of the versions of a given model by calling
     # [projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).
+  "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
+  "labels": { # Optional. One or more labels that you can add, to organize your model
+      # versions. Each label is a key-value pair, where both the key and the value
+      # are arbitrary strings that you supply.
+      # For more information, see the documentation on
+      # <a href="/ml-engine/docs/tensorflow/resource-labels">using labels</a>.
+    "a_key": "A String",
+  },
+  "machineType": "A String", # Optional. The type of machine on which to serve the model. Currently only
+      # applies to online prediction service.
+      # <dl>
+      #   <dt>mls1-c1-m2</dt>
+      #   <dd>
+      #   The <b>default</b> machine type, with 1 core and 2 GB RAM. The deprecated
+      #   name for this machine type is "mls1-highmem-1".
+      #   </dd>
+      #   <dt>mls1-c4-m2</dt>
+      #   <dd>
+      #   In <b>Beta</b>. This machine type has 4 cores and 2 GB RAM. The
+      #   deprecated name for this machine type is "mls1-highcpu-4".
+      #   </dd>
+      # </dl>
   "description": "A String", # Optional. The description specified for the version when it was created.
-  "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for this deployment.
-      # If not set, Google Cloud ML will choose a version.
+  "runtimeVersion": "A String", # Optional. The AI Platform runtime version to use for this deployment.
+      # If not set, AI Platform uses the default stable version, 1.0. For more
+      # information, see the
+      # [runtime version list](/ml-engine/docs/runtime-version-list) and
+      # [how to manage runtime versions](/ml-engine/docs/versioning).
   "manualScaling": { # Options for manually scaling a model. # Manually select the number of nodes to use for serving the
-      # model. You should generally use `automatic_scaling` with an appropriate
+      # model. You should generally use `auto_scaling` with an appropriate
       # `min_nodes` instead, but this option is available if you want more
       # predictable billing. Beware that latency and error rates will increase
       # if the traffic exceeds that capability of the system to serve it based
@@ -131,29 +157,69 @@ Authorization: requires `Editor` role on the parent project. (required)
         # this model will be proportional to `nodes` * number of hours since
         # last billing cycle plus the cost for each prediction performed.
   },
-  "deploymentUri": "A String", # Required. The Google Cloud Storage location of the trained model used to
-      # create the version. See the
-      # [overview of model
-      # deployment](/ml-engine/docs/concepts/deployment-overview) for more
-      # informaiton.
+  "predictionClass": "A String", # Optional. The fully qualified name
+      # (<var>module_name</var>.<var>class_name</var>) of a class that implements
+      # the Predictor interface described in this reference field. The module
+      # containing this class should be included in a package provided to the
+      # [`packageUris` field](#Version.FIELDS.package_uris).
       # 
-      # When passing Version to
-      # [projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)
-      # the model service uses the specified location as the source of the model.
-      # Once deployed, the model version is hosted by the prediction service, so
-      # this location is useful only as a historical record.
-      # The total number of model files can't exceed 1000.
-  "lastUseTime": "A String", # Output only. The time the version was last used for prediction.
-  "automaticScaling": { # Options for automatically scaling a model. # Automatically scale the number of nodes used to serve the model in
+      # Specify this field if and only if you are deploying a [custom prediction
+      # routine (beta)](/ml-engine/docs/tensorflow/custom-prediction-routines).
+      # If you specify this field, you must set
+      # [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater.
+      # 
+      # The following code sample provides the Predictor interface:
+      # 
+      # ```py
+      # class Predictor(object):
+      # """Interface for constructing custom predictors."""
+      # 
+      # def predict(self, instances, **kwargs):
+      #     """Performs custom prediction.
+      # 
+      #     Instances are the decoded values from the request. They have already
+      #     been deserialized from JSON.
+      # 
+      #     Args:
+      #         instances: A list of prediction input instances.
+      #         **kwargs: A dictionary of keyword args provided as additional
+      #             fields on the predict request body.
+      # 
+      #     Returns:
+      #         A list of outputs containing the prediction results. This list must
+      #         be JSON serializable.
+      #     """
+      #     raise NotImplementedError()
+      # 
+      # @classmethod
+      # def from_path(cls, model_dir):
+      #     """Creates an instance of Predictor using the given path.
+      # 
+      #     Loading of the predictor should be done in this method.
+      # 
+      #     Args:
+      #         model_dir: The local directory that contains the exported model
+      #             file along with any additional files uploaded when creating the
+      #             version resource.
+      # 
+      #     Returns:
+      #         An instance implementing this Predictor class.
+      #     """
+      #     raise NotImplementedError()
+      # ```
+      # 
+      # Learn more about [the Predictor interface and custom prediction
+      # routines](/ml-engine/docs/tensorflow/custom-prediction-routines).
+  "autoScaling": { # Options for automatically scaling a model. # Automatically scale the number of nodes used to serve the model in
       # response to increases and decreases in traffic. Care should be
       # taken to ramp up traffic according to the model's ability to scale
       # or you will start seeing increases in latency and 429 response codes.
     "minNodes": 42, # Optional. The minimum number of nodes to allocate for this model. These
-        # nodes are always up, starting from the time the model is deployed, so the
-        # cost of operating this model will be at least
+        # nodes are always up, starting from the time the model is deployed.
+        # Therefore, the cost of operating this model will be at least
         # `rate` * `min_nodes` * number of hours since last billing cycle,
-        # where `rate` is the cost per node-hour as documented in
-        # [pricing](https://cloud.google.com/ml-engine/pricing#prediction_pricing),
+        # where `rate` is the cost per node-hour as documented in the
+        # [pricing guide](/ml-engine/docs/pricing),
         # even if no predictions are performed. There is additional cost for each
         # prediction performed.
         #
@@ -166,7 +232,74 @@ Authorization: requires `Editor` role on the parent project. (required)
         # If not specified, `min_nodes` defaults to 0, in which case, when traffic
         # to a model stops (and after a cool-down period), nodes will be shut down
         # and no charges will be incurred until traffic to the model resumes.
+        #
+        # You can set `min_nodes` when creating the model version, and you can also
+        # update `min_nodes` for an existing version:
+        # <pre>
+        # update_body.json:
+        # {
+        #   'autoScaling': {
+        #     'minNodes': 5
+        #   }
+        # }
+        # </pre>
+        # HTTP request:
+        # <pre>
+        # PATCH
+        # https://ml.googleapis.com/v1/{name=projects/*/models/*/versions/*}?update_mask=autoScaling.minNodes
+        # -d @./update_body.json
+        # </pre>
   },
+  "serviceAccount": "A String", # Optional. Specifies the service account for resource access control.
+  "state": "A String", # Output only. The state of a version.
+  "pythonVersion": "A String", # Optional. The version of Python used in prediction. If not set, the default
+      # version is '2.7'. Python '3.5' is available when `runtime_version` is set
+      # to '1.4' and above. Python '2.7' works with all supported runtime versions.
+  "framework": "A String", # Optional. The machine learning framework AI Platform uses to train
+      # this version of the model. Valid values are `TENSORFLOW`, `SCIKIT_LEARN`,
+      # `XGBOOST`. If you do not specify a framework, AI Platform
+      # will analyze files in the deployment_uri to determine a framework. If you
+      # choose `SCIKIT_LEARN` or `XGBOOST`, you must also set the runtime version
+      # of the model to 1.4 or greater.
+      # 
+      # Do **not** specify a framework if you're deploying a [custom
+      # prediction routine](/ml-engine/docs/tensorflow/custom-prediction-routines).
+  "packageUris": [ # Optional. Cloud Storage paths (`gs://…`) of packages for [custom
+      # prediction routines](/ml-engine/docs/tensorflow/custom-prediction-routines)
+      # or [scikit-learn pipelines with custom
+      # code](/ml-engine/docs/scikit/exporting-for-prediction#custom-pipeline-code).
+      # 
+      # For a custom prediction routine, one of these packages must contain your
+      # Predictor class (see
+      # [`predictionClass`](#Version.FIELDS.prediction_class)). Additionally,
+      # include any dependencies used by your Predictor or scikit-learn pipeline
+      # uses that are not already included in your selected [runtime
+      # version](/ml-engine/docs/tensorflow/runtime-version-list).
+      # 
+      # If you specify this field, you must also set
+      # [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater.
+    "A String",
+  ],
+  "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
+      # prevent simultaneous updates of a model from overwriting each other.
+      # It is strongly suggested that systems make use of the `etag` in the
+      # read-modify-write cycle to perform model updates in order to avoid race
+      # conditions: An `etag` is returned in the response to `GetVersion`, and
+      # systems are expected to put that etag in the request to `UpdateVersion` to
+      # ensure that their change will be applied to the model as intended.
+  "lastUseTime": "A String", # Output only. The time the version was last used for prediction.
+  "deploymentUri": "A String", # Required. The Cloud Storage location of the trained model used to
+      # create the version. See the
+      # [guide to model
+      # deployment](/ml-engine/docs/tensorflow/deploying-models) for more
+      # information.
+      # 
+      # When passing Version to
+      # [projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)
+      # the model service uses the specified location as the source of the model.
+      # Once deployed, the model version is hosted by the prediction service, so
+      # this location is useful only as a historical record.
+      # The total number of model files can't exceed 1000.
   "createTime": "A String", # Output only. The time the version was created.
   "isDefault": True or False, # Output only. If true, this version will be used to handle prediction
       # requests that do not specify a version.
@@ -194,71 +327,26 @@ Returns:
         # long-running operation should document the metadata type, if any.
       "a_key": "", # Properties of the object. Contains field @type with type URL.
     },
-    "error": { # The `Status` type defines a logical error model that is suitable for different # The error result of the operation in case of failure or cancellation.
-        # programming environments, including REST APIs and RPC APIs. It is used by
-        # [gRPC](https://github.com/grpc). The error model is designed to be:
+    "error": { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
         #
-        # - Simple to use and understand for most users
-        # - Flexible enough to meet unexpected needs
-        #
-        # # Overview
-        #
-        # The `Status` message contains three pieces of data: error code, error message,
-        # and error details. The error code should be an enum value of
-        # google.rpc.Code, but it may accept additional error codes if needed.  The
-        # error message should be a developer-facing English message that helps
-        # developers *understand* and *resolve* the error. If a localized user-facing
-        # error message is needed, put the localized message in the error details or
-        # localize it in the client. The optional error details may contain arbitrary
-        # information about the error. There is a predefined set of error detail types
-        # in the package `google.rpc` that can be used for common error conditions.
-        #
-        # # Language mapping
-        #
-        # The `Status` message is the logical representation of the error model, but it
-        # is not necessarily the actual wire format. When the `Status` message is
-        # exposed in different client libraries and different wire protocols, it can be
-        # mapped differently. For example, it will likely be mapped to some exceptions
-        # in Java, but more likely mapped to some error codes in C.
-        #
-        # # Other uses
-        #
-        # The error model and the `Status` message can be used in a variety of
-        # environments, either with or without APIs, to provide a
-        # consistent developer experience across different environments.
-        #
-        # Example uses of this error model include:
-        #
-        # - Partial errors. If a service needs to return partial errors to the client,
-        #     it may embed the `Status` in the normal response to indicate the partial
-        #     errors.
-        #
-        # - Workflow errors. A typical workflow has multiple steps. Each step may
-        #     have a `Status` message for error reporting.
-        #
-        # - Batch operations. If a client uses batch request and batch response, the
-        #     `Status` message should be used directly inside batch response, one for
-        #     each error sub-response.
-        #
-        # - Asynchronous operations. If an API call embeds asynchronous operation
-        #     results in its response, the status of those operations should be
-        #     represented directly using the `Status` message.
-        #
-        # - Logging. If some API errors are stored in logs, the message `Status` could
-        #     be used directly after any stripping needed for security/privacy reasons.
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
       "message": "A String", # A developer-facing error message, which should be in English. Any
           # user-facing error message should be localized and sent in the
           # google.rpc.Status.details field, or localized by the client.
       "code": 42, # The status code, which should be an enum value of google.rpc.Code.
-      "details": [ # A list of messages that carry the error details.  There will be a
-          # common set of message types for APIs to use.
+      "details": [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
         {
           "a_key": "", # Properties of the object. Contains field @type with type URL.
         },
       ],
     },
     "done": True or False, # If the value is `false`, it means the operation is still in progress.
-        # If true, the operation is completed, and either `error` or `response` is
+        # If `true`, the operation is completed, and either `error` or `response` is
         # available.
     "response": { # The normal response of the operation in case of success.  If the original
         # method returns no data on success, such as `Delete`, the response is
@@ -272,7 +360,7 @@ Returns:
     },
     "name": "A String", # The server-assigned name, which is only unique within the same service that
         # originally returns it. If you use the default HTTP mapping, the
-        # `name` should have the format of `operations/some/unique/name`.
+        # `name` should be a resource name ending with `operations/{unique_id}`.
   }</pre>
 </div>
 
@@ -289,9 +377,7 @@ of the model unless it is the only remaining version.
 Args:
   name: string, Required. The name of the version. You can get the names of all the
 versions of a model by calling
-[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).
-
-Authorization: requires `Editor` role on the parent project. (required)
+[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list). (required)
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -308,71 +394,26 @@ Returns:
         # long-running operation should document the metadata type, if any.
       "a_key": "", # Properties of the object. Contains field @type with type URL.
     },
-    "error": { # The `Status` type defines a logical error model that is suitable for different # The error result of the operation in case of failure or cancellation.
-        # programming environments, including REST APIs and RPC APIs. It is used by
-        # [gRPC](https://github.com/grpc). The error model is designed to be:
+    "error": { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
         #
-        # - Simple to use and understand for most users
-        # - Flexible enough to meet unexpected needs
-        #
-        # # Overview
-        #
-        # The `Status` message contains three pieces of data: error code, error message,
-        # and error details. The error code should be an enum value of
-        # google.rpc.Code, but it may accept additional error codes if needed.  The
-        # error message should be a developer-facing English message that helps
-        # developers *understand* and *resolve* the error. If a localized user-facing
-        # error message is needed, put the localized message in the error details or
-        # localize it in the client. The optional error details may contain arbitrary
-        # information about the error. There is a predefined set of error detail types
-        # in the package `google.rpc` that can be used for common error conditions.
-        #
-        # # Language mapping
-        #
-        # The `Status` message is the logical representation of the error model, but it
-        # is not necessarily the actual wire format. When the `Status` message is
-        # exposed in different client libraries and different wire protocols, it can be
-        # mapped differently. For example, it will likely be mapped to some exceptions
-        # in Java, but more likely mapped to some error codes in C.
-        #
-        # # Other uses
-        #
-        # The error model and the `Status` message can be used in a variety of
-        # environments, either with or without APIs, to provide a
-        # consistent developer experience across different environments.
-        #
-        # Example uses of this error model include:
-        #
-        # - Partial errors. If a service needs to return partial errors to the client,
-        #     it may embed the `Status` in the normal response to indicate the partial
-        #     errors.
-        #
-        # - Workflow errors. A typical workflow has multiple steps. Each step may
-        #     have a `Status` message for error reporting.
-        #
-        # - Batch operations. If a client uses batch request and batch response, the
-        #     `Status` message should be used directly inside batch response, one for
-        #     each error sub-response.
-        #
-        # - Asynchronous operations. If an API call embeds asynchronous operation
-        #     results in its response, the status of those operations should be
-        #     represented directly using the `Status` message.
-        #
-        # - Logging. If some API errors are stored in logs, the message `Status` could
-        #     be used directly after any stripping needed for security/privacy reasons.
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
       "message": "A String", # A developer-facing error message, which should be in English. Any
           # user-facing error message should be localized and sent in the
           # google.rpc.Status.details field, or localized by the client.
       "code": 42, # The status code, which should be an enum value of google.rpc.Code.
-      "details": [ # A list of messages that carry the error details.  There will be a
-          # common set of message types for APIs to use.
+      "details": [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
         {
           "a_key": "", # Properties of the object. Contains field @type with type URL.
         },
       ],
     },
     "done": True or False, # If the value is `false`, it means the operation is still in progress.
-        # If true, the operation is completed, and either `error` or `response` is
+        # If `true`, the operation is completed, and either `error` or `response` is
         # available.
     "response": { # The normal response of the operation in case of success.  If the original
         # method returns no data on success, such as `Delete`, the response is
@@ -386,7 +427,7 @@ Returns:
     },
     "name": "A String", # The server-assigned name, which is only unique within the same service that
         # originally returns it. If you use the default HTTP mapping, the
-        # `name` should have the format of `operations/some/unique/name`.
+        # `name` should be a resource name ending with `operations/{unique_id}`.
   }</pre>
 </div>
 
@@ -400,9 +441,7 @@ to get the same information that this method returns for all of the
 versions of a model.
 
 Args:
-  name: string, Required. The name of the version.
-
-Authorization: requires `Viewer` role on the parent project. (required)
+  name: string, Required. The name of the version. (required)
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -417,11 +456,36 @@ Returns:
       # prediction requests. A model can have multiple versions. You can get
       # information about all of the versions of a given model by calling
       # [projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).
+    "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
+    "labels": { # Optional. One or more labels that you can add, to organize your model
+        # versions. Each label is a key-value pair, where both the key and the value
+        # are arbitrary strings that you supply.
+        # For more information, see the documentation on
+        # <a href="/ml-engine/docs/tensorflow/resource-labels">using labels</a>.
+      "a_key": "A String",
+    },
+    "machineType": "A String", # Optional. The type of machine on which to serve the model. Currently only
+        # applies to online prediction service.
+        # <dl>
+        #   <dt>mls1-c1-m2</dt>
+        #   <dd>
+        #   The <b>default</b> machine type, with 1 core and 2 GB RAM. The deprecated
+        #   name for this machine type is "mls1-highmem-1".
+        #   </dd>
+        #   <dt>mls1-c4-m2</dt>
+        #   <dd>
+        #   In <b>Beta</b>. This machine type has 4 cores and 2 GB RAM. The
+        #   deprecated name for this machine type is "mls1-highcpu-4".
+        #   </dd>
+        # </dl>
     "description": "A String", # Optional. The description specified for the version when it was created.
-    "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for this deployment.
-        # If not set, Google Cloud ML will choose a version.
+    "runtimeVersion": "A String", # Optional. The AI Platform runtime version to use for this deployment.
+        # If not set, AI Platform uses the default stable version, 1.0. For more
+        # information, see the
+        # [runtime version list](/ml-engine/docs/runtime-version-list) and
+        # [how to manage runtime versions](/ml-engine/docs/versioning).
     "manualScaling": { # Options for manually scaling a model. # Manually select the number of nodes to use for serving the
-        # model. You should generally use `automatic_scaling` with an appropriate
+        # model. You should generally use `auto_scaling` with an appropriate
         # `min_nodes` instead, but this option is available if you want more
         # predictable billing. Beware that latency and error rates will increase
         # if the traffic exceeds that capability of the system to serve it based
@@ -431,29 +495,69 @@ Returns:
           # this model will be proportional to `nodes` * number of hours since
           # last billing cycle plus the cost for each prediction performed.
     },
-    "deploymentUri": "A String", # Required. The Google Cloud Storage location of the trained model used to
-        # create the version. See the
-        # [overview of model
-        # deployment](/ml-engine/docs/concepts/deployment-overview) for more
-        # informaiton.
+    "predictionClass": "A String", # Optional. The fully qualified name
+        # (<var>module_name</var>.<var>class_name</var>) of a class that implements
+        # the Predictor interface described in this reference field. The module
+        # containing this class should be included in a package provided to the
+        # [`packageUris` field](#Version.FIELDS.package_uris).
         #
-        # When passing Version to
-        # [projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)
-        # the model service uses the specified location as the source of the model.
-        # Once deployed, the model version is hosted by the prediction service, so
-        # this location is useful only as a historical record.
-        # The total number of model files can't exceed 1000.
-    "lastUseTime": "A String", # Output only. The time the version was last used for prediction.
-    "automaticScaling": { # Options for automatically scaling a model. # Automatically scale the number of nodes used to serve the model in
+        # Specify this field if and only if you are deploying a [custom prediction
+        # routine (beta)](/ml-engine/docs/tensorflow/custom-prediction-routines).
+        # If you specify this field, you must set
+        # [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater.
+        #
+        # The following code sample provides the Predictor interface:
+        #
+        # ```py
+        # class Predictor(object):
+        # """Interface for constructing custom predictors."""
+        #
+        # def predict(self, instances, **kwargs):
+        #     """Performs custom prediction.
+        #
+        #     Instances are the decoded values from the request. They have already
+        #     been deserialized from JSON.
+        #
+        #     Args:
+        #         instances: A list of prediction input instances.
+        #         **kwargs: A dictionary of keyword args provided as additional
+        #             fields on the predict request body.
+        #
+        #     Returns:
+        #         A list of outputs containing the prediction results. This list must
+        #         be JSON serializable.
+        #     """
+        #     raise NotImplementedError()
+        #
+        # @classmethod
+        # def from_path(cls, model_dir):
+        #     """Creates an instance of Predictor using the given path.
+        #
+        #     Loading of the predictor should be done in this method.
+        #
+        #     Args:
+        #         model_dir: The local directory that contains the exported model
+        #             file along with any additional files uploaded when creating the
+        #             version resource.
+        #
+        #     Returns:
+        #         An instance implementing this Predictor class.
+        #     """
+        #     raise NotImplementedError()
+        # ```
+        #
+        # Learn more about [the Predictor interface and custom prediction
+        # routines](/ml-engine/docs/tensorflow/custom-prediction-routines).
+    "autoScaling": { # Options for automatically scaling a model. # Automatically scale the number of nodes used to serve the model in
         # response to increases and decreases in traffic. Care should be
         # taken to ramp up traffic according to the model's ability to scale
         # or you will start seeing increases in latency and 429 response codes.
       "minNodes": 42, # Optional. The minimum number of nodes to allocate for this model. These
-          # nodes are always up, starting from the time the model is deployed, so the
-          # cost of operating this model will be at least
+          # nodes are always up, starting from the time the model is deployed.
+          # Therefore, the cost of operating this model will be at least
           # `rate` * `min_nodes` * number of hours since last billing cycle,
-          # where `rate` is the cost per node-hour as documented in
-          # [pricing](https://cloud.google.com/ml-engine/pricing#prediction_pricing),
+          # where `rate` is the cost per node-hour as documented in the
+          # [pricing guide](/ml-engine/docs/pricing),
           # even if no predictions are performed. There is additional cost for each
           # prediction performed.
           #
@@ -466,7 +570,74 @@ Returns:
           # If not specified, `min_nodes` defaults to 0, in which case, when traffic
           # to a model stops (and after a cool-down period), nodes will be shut down
           # and no charges will be incurred until traffic to the model resumes.
+          #
+          # You can set `min_nodes` when creating the model version, and you can also
+          # update `min_nodes` for an existing version:
+          # <pre>
+          # update_body.json:
+          # {
+          #   'autoScaling': {
+          #     'minNodes': 5
+          #   }
+          # }
+          # </pre>
+          # HTTP request:
+          # <pre>
+          # PATCH
+          # https://ml.googleapis.com/v1/{name=projects/*/models/*/versions/*}?update_mask=autoScaling.minNodes
+          # -d @./update_body.json
+          # </pre>
     },
+    "serviceAccount": "A String", # Optional. Specifies the service account for resource access control.
+    "state": "A String", # Output only. The state of a version.
+    "pythonVersion": "A String", # Optional. The version of Python used in prediction. If not set, the default
+        # version is '2.7'. Python '3.5' is available when `runtime_version` is set
+        # to '1.4' and above. Python '2.7' works with all supported runtime versions.
+    "framework": "A String", # Optional. The machine learning framework AI Platform uses to train
+        # this version of the model. Valid values are `TENSORFLOW`, `SCIKIT_LEARN`,
+        # `XGBOOST`. If you do not specify a framework, AI Platform
+        # will analyze files in the deployment_uri to determine a framework. If you
+        # choose `SCIKIT_LEARN` or `XGBOOST`, you must also set the runtime version
+        # of the model to 1.4 or greater.
+        #
+        # Do **not** specify a framework if you're deploying a [custom
+        # prediction routine](/ml-engine/docs/tensorflow/custom-prediction-routines).
+    "packageUris": [ # Optional. Cloud Storage paths (`gs://…`) of packages for [custom
+        # prediction routines](/ml-engine/docs/tensorflow/custom-prediction-routines)
+        # or [scikit-learn pipelines with custom
+        # code](/ml-engine/docs/scikit/exporting-for-prediction#custom-pipeline-code).
+        #
+        # For a custom prediction routine, one of these packages must contain your
+        # Predictor class (see
+        # [`predictionClass`](#Version.FIELDS.prediction_class)). Additionally,
+        # include any dependencies used by your Predictor or scikit-learn pipeline
+        # uses that are not already included in your selected [runtime
+        # version](/ml-engine/docs/tensorflow/runtime-version-list).
+        #
+        # If you specify this field, you must also set
+        # [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater.
+      "A String",
+    ],
+    "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a model from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform model updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `GetVersion`, and
+        # systems are expected to put that etag in the request to `UpdateVersion` to
+        # ensure that their change will be applied to the model as intended.
+    "lastUseTime": "A String", # Output only. The time the version was last used for prediction.
+    "deploymentUri": "A String", # Required. The Cloud Storage location of the trained model used to
+        # create the version. See the
+        # [guide to model
+        # deployment](/ml-engine/docs/tensorflow/deploying-models) for more
+        # information.
+        #
+        # When passing Version to
+        # [projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)
+        # the model service uses the specified location as the source of the model.
+        # Once deployed, the model version is hosted by the prediction service, so
+        # this location is useful only as a historical record.
+        # The total number of model files can't exceed 1000.
     "createTime": "A String", # Output only. The time the version was created.
     "isDefault": True or False, # Output only. If true, this version will be used to handle prediction
         # requests that do not specify a version.
@@ -480,17 +651,18 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(parent, pageToken=None, x__xgafv=None, pageSize=None)</code>
+    <code class="details" id="list">list(parent, pageToken=None, x__xgafv=None, pageSize=None, filter=None)</code>
   <pre>Gets basic information about all the versions of a model.
 
-If you expect that a model has a lot of versions, or if you need to handle
+If you expect that a model has many versions, or if you need to handle
 only a limited number of results at a time, you can request that the list
-be retrieved in batches (called pages):
+be retrieved in batches (called pages).
+
+If there are no versions that match the request parameters, the list
+request returns an empty response body: {}.
 
 Args:
-  parent: string, Required. The name of the model for which to list the version.
-
-Authorization: requires `Viewer` role on the parent project. (required)
+  parent: string, Required. The name of the model for which to list the version. (required)
   pageToken: string, Optional. A page token to request the next page of results.
 
 You get the token from the `next_page_token` field of the response from
@@ -504,6 +676,7 @@ there are more remaining results than this number, the response message
 will contain a valid value in the `next_page_token` field.
 
 The default value is 20, and the maximum page size is 100.
+  filter: string, Optional. Specifies the subset of versions to retrieve.
 
 Returns:
   An object of the form:
@@ -518,11 +691,36 @@ Returns:
           # prediction requests. A model can have multiple versions. You can get
           # information about all of the versions of a given model by calling
           # [projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).
+        "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
+        "labels": { # Optional. One or more labels that you can add, to organize your model
+            # versions. Each label is a key-value pair, where both the key and the value
+            # are arbitrary strings that you supply.
+            # For more information, see the documentation on
+            # <a href="/ml-engine/docs/tensorflow/resource-labels">using labels</a>.
+          "a_key": "A String",
+        },
+        "machineType": "A String", # Optional. The type of machine on which to serve the model. Currently only
+            # applies to online prediction service.
+            # <dl>
+            #   <dt>mls1-c1-m2</dt>
+            #   <dd>
+            #   The <b>default</b> machine type, with 1 core and 2 GB RAM. The deprecated
+            #   name for this machine type is "mls1-highmem-1".
+            #   </dd>
+            #   <dt>mls1-c4-m2</dt>
+            #   <dd>
+            #   In <b>Beta</b>. This machine type has 4 cores and 2 GB RAM. The
+            #   deprecated name for this machine type is "mls1-highcpu-4".
+            #   </dd>
+            # </dl>
         "description": "A String", # Optional. The description specified for the version when it was created.
-        "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for this deployment.
-            # If not set, Google Cloud ML will choose a version.
+        "runtimeVersion": "A String", # Optional. The AI Platform runtime version to use for this deployment.
+            # If not set, AI Platform uses the default stable version, 1.0. For more
+            # information, see the
+            # [runtime version list](/ml-engine/docs/runtime-version-list) and
+            # [how to manage runtime versions](/ml-engine/docs/versioning).
         "manualScaling": { # Options for manually scaling a model. # Manually select the number of nodes to use for serving the
-            # model. You should generally use `automatic_scaling` with an appropriate
+            # model. You should generally use `auto_scaling` with an appropriate
             # `min_nodes` instead, but this option is available if you want more
             # predictable billing. Beware that latency and error rates will increase
             # if the traffic exceeds that capability of the system to serve it based
@@ -532,29 +730,69 @@ Returns:
               # this model will be proportional to `nodes` * number of hours since
               # last billing cycle plus the cost for each prediction performed.
         },
-        "deploymentUri": "A String", # Required. The Google Cloud Storage location of the trained model used to
-            # create the version. See the
-            # [overview of model
-            # deployment](/ml-engine/docs/concepts/deployment-overview) for more
-            # informaiton.
+        "predictionClass": "A String", # Optional. The fully qualified name
+            # (<var>module_name</var>.<var>class_name</var>) of a class that implements
+            # the Predictor interface described in this reference field. The module
+            # containing this class should be included in a package provided to the
+            # [`packageUris` field](#Version.FIELDS.package_uris).
             #
-            # When passing Version to
-            # [projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)
-            # the model service uses the specified location as the source of the model.
-            # Once deployed, the model version is hosted by the prediction service, so
-            # this location is useful only as a historical record.
-            # The total number of model files can't exceed 1000.
-        "lastUseTime": "A String", # Output only. The time the version was last used for prediction.
-        "automaticScaling": { # Options for automatically scaling a model. # Automatically scale the number of nodes used to serve the model in
+            # Specify this field if and only if you are deploying a [custom prediction
+            # routine (beta)](/ml-engine/docs/tensorflow/custom-prediction-routines).
+            # If you specify this field, you must set
+            # [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater.
+            #
+            # The following code sample provides the Predictor interface:
+            #
+            # ```py
+            # class Predictor(object):
+            # """Interface for constructing custom predictors."""
+            #
+            # def predict(self, instances, **kwargs):
+            #     """Performs custom prediction.
+            #
+            #     Instances are the decoded values from the request. They have already
+            #     been deserialized from JSON.
+            #
+            #     Args:
+            #         instances: A list of prediction input instances.
+            #         **kwargs: A dictionary of keyword args provided as additional
+            #             fields on the predict request body.
+            #
+            #     Returns:
+            #         A list of outputs containing the prediction results. This list must
+            #         be JSON serializable.
+            #     """
+            #     raise NotImplementedError()
+            #
+            # @classmethod
+            # def from_path(cls, model_dir):
+            #     """Creates an instance of Predictor using the given path.
+            #
+            #     Loading of the predictor should be done in this method.
+            #
+            #     Args:
+            #         model_dir: The local directory that contains the exported model
+            #             file along with any additional files uploaded when creating the
+            #             version resource.
+            #
+            #     Returns:
+            #         An instance implementing this Predictor class.
+            #     """
+            #     raise NotImplementedError()
+            # ```
+            #
+            # Learn more about [the Predictor interface and custom prediction
+            # routines](/ml-engine/docs/tensorflow/custom-prediction-routines).
+        "autoScaling": { # Options for automatically scaling a model. # Automatically scale the number of nodes used to serve the model in
             # response to increases and decreases in traffic. Care should be
             # taken to ramp up traffic according to the model's ability to scale
             # or you will start seeing increases in latency and 429 response codes.
           "minNodes": 42, # Optional. The minimum number of nodes to allocate for this model. These
-              # nodes are always up, starting from the time the model is deployed, so the
-              # cost of operating this model will be at least
+              # nodes are always up, starting from the time the model is deployed.
+              # Therefore, the cost of operating this model will be at least
               # `rate` * `min_nodes` * number of hours since last billing cycle,
-              # where `rate` is the cost per node-hour as documented in
-              # [pricing](https://cloud.google.com/ml-engine/pricing#prediction_pricing),
+              # where `rate` is the cost per node-hour as documented in the
+              # [pricing guide](/ml-engine/docs/pricing),
               # even if no predictions are performed. There is additional cost for each
               # prediction performed.
               #
@@ -567,7 +805,74 @@ Returns:
               # If not specified, `min_nodes` defaults to 0, in which case, when traffic
               # to a model stops (and after a cool-down period), nodes will be shut down
               # and no charges will be incurred until traffic to the model resumes.
+              #
+              # You can set `min_nodes` when creating the model version, and you can also
+              # update `min_nodes` for an existing version:
+              # <pre>
+              # update_body.json:
+              # {
+              #   'autoScaling': {
+              #     'minNodes': 5
+              #   }
+              # }
+              # </pre>
+              # HTTP request:
+              # <pre>
+              # PATCH
+              # https://ml.googleapis.com/v1/{name=projects/*/models/*/versions/*}?update_mask=autoScaling.minNodes
+              # -d @./update_body.json
+              # </pre>
         },
+        "serviceAccount": "A String", # Optional. Specifies the service account for resource access control.
+        "state": "A String", # Output only. The state of a version.
+        "pythonVersion": "A String", # Optional. The version of Python used in prediction. If not set, the default
+            # version is '2.7'. Python '3.5' is available when `runtime_version` is set
+            # to '1.4' and above. Python '2.7' works with all supported runtime versions.
+        "framework": "A String", # Optional. The machine learning framework AI Platform uses to train
+            # this version of the model. Valid values are `TENSORFLOW`, `SCIKIT_LEARN`,
+            # `XGBOOST`. If you do not specify a framework, AI Platform
+            # will analyze files in the deployment_uri to determine a framework. If you
+            # choose `SCIKIT_LEARN` or `XGBOOST`, you must also set the runtime version
+            # of the model to 1.4 or greater.
+            #
+            # Do **not** specify a framework if you're deploying a [custom
+            # prediction routine](/ml-engine/docs/tensorflow/custom-prediction-routines).
+        "packageUris": [ # Optional. Cloud Storage paths (`gs://…`) of packages for [custom
+            # prediction routines](/ml-engine/docs/tensorflow/custom-prediction-routines)
+            # or [scikit-learn pipelines with custom
+            # code](/ml-engine/docs/scikit/exporting-for-prediction#custom-pipeline-code).
+            #
+            # For a custom prediction routine, one of these packages must contain your
+            # Predictor class (see
+            # [`predictionClass`](#Version.FIELDS.prediction_class)). Additionally,
+            # include any dependencies used by your Predictor or scikit-learn pipeline
+            # uses that are not already included in your selected [runtime
+            # version](/ml-engine/docs/tensorflow/runtime-version-list).
+            #
+            # If you specify this field, you must also set
+            # [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater.
+          "A String",
+        ],
+        "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
+            # prevent simultaneous updates of a model from overwriting each other.
+            # It is strongly suggested that systems make use of the `etag` in the
+            # read-modify-write cycle to perform model updates in order to avoid race
+            # conditions: An `etag` is returned in the response to `GetVersion`, and
+            # systems are expected to put that etag in the request to `UpdateVersion` to
+            # ensure that their change will be applied to the model as intended.
+        "lastUseTime": "A String", # Output only. The time the version was last used for prediction.
+        "deploymentUri": "A String", # Required. The Cloud Storage location of the trained model used to
+            # create the version. See the
+            # [guide to model
+            # deployment](/ml-engine/docs/tensorflow/deploying-models) for more
+            # information.
+            #
+            # When passing Version to
+            # [projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)
+            # the model service uses the specified location as the source of the model.
+            # Once deployed, the model version is hosted by the prediction service, so
+            # this location is useful only as a historical record.
+            # The total number of model files can't exceed 1000.
         "createTime": "A String", # Output only. The time the version was created.
         "isDefault": True or False, # Output only. If true, this version will be used to handle prediction
             # requests that do not specify a version.
@@ -597,7 +902,283 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="setDefault">setDefault(name, body, x__xgafv=None)</code>
+    <code class="details" id="patch">patch(name, body, updateMask=None, x__xgafv=None)</code>
+  <pre>Updates the specified Version resource.
+
+Currently the only update-able fields are `description` and
+`autoScaling.minNodes`.
+
+Args:
+  name: string, Required. The name of the model. (required)
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # Represents a version of the model.
+    # 
+    # Each version is a trained model deployed in the cloud, ready to handle
+    # prediction requests. A model can have multiple versions. You can get
+    # information about all of the versions of a given model by calling
+    # [projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).
+  "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
+  "labels": { # Optional. One or more labels that you can add, to organize your model
+      # versions. Each label is a key-value pair, where both the key and the value
+      # are arbitrary strings that you supply.
+      # For more information, see the documentation on
+      # <a href="/ml-engine/docs/tensorflow/resource-labels">using labels</a>.
+    "a_key": "A String",
+  },
+  "machineType": "A String", # Optional. The type of machine on which to serve the model. Currently only
+      # applies to online prediction service.
+      # <dl>
+      #   <dt>mls1-c1-m2</dt>
+      #   <dd>
+      #   The <b>default</b> machine type, with 1 core and 2 GB RAM. The deprecated
+      #   name for this machine type is "mls1-highmem-1".
+      #   </dd>
+      #   <dt>mls1-c4-m2</dt>
+      #   <dd>
+      #   In <b>Beta</b>. This machine type has 4 cores and 2 GB RAM. The
+      #   deprecated name for this machine type is "mls1-highcpu-4".
+      #   </dd>
+      # </dl>
+  "description": "A String", # Optional. The description specified for the version when it was created.
+  "runtimeVersion": "A String", # Optional. The AI Platform runtime version to use for this deployment.
+      # If not set, AI Platform uses the default stable version, 1.0. For more
+      # information, see the
+      # [runtime version list](/ml-engine/docs/runtime-version-list) and
+      # [how to manage runtime versions](/ml-engine/docs/versioning).
+  "manualScaling": { # Options for manually scaling a model. # Manually select the number of nodes to use for serving the
+      # model. You should generally use `auto_scaling` with an appropriate
+      # `min_nodes` instead, but this option is available if you want more
+      # predictable billing. Beware that latency and error rates will increase
+      # if the traffic exceeds that capability of the system to serve it based
+      # on the selected number of nodes.
+    "nodes": 42, # The number of nodes to allocate for this model. These nodes are always up,
+        # starting from the time the model is deployed, so the cost of operating
+        # this model will be proportional to `nodes` * number of hours since
+        # last billing cycle plus the cost for each prediction performed.
+  },
+  "predictionClass": "A String", # Optional. The fully qualified name
+      # (<var>module_name</var>.<var>class_name</var>) of a class that implements
+      # the Predictor interface described in this reference field. The module
+      # containing this class should be included in a package provided to the
+      # [`packageUris` field](#Version.FIELDS.package_uris).
+      # 
+      # Specify this field if and only if you are deploying a [custom prediction
+      # routine (beta)](/ml-engine/docs/tensorflow/custom-prediction-routines).
+      # If you specify this field, you must set
+      # [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater.
+      # 
+      # The following code sample provides the Predictor interface:
+      # 
+      # ```py
+      # class Predictor(object):
+      # """Interface for constructing custom predictors."""
+      # 
+      # def predict(self, instances, **kwargs):
+      #     """Performs custom prediction.
+      # 
+      #     Instances are the decoded values from the request. They have already
+      #     been deserialized from JSON.
+      # 
+      #     Args:
+      #         instances: A list of prediction input instances.
+      #         **kwargs: A dictionary of keyword args provided as additional
+      #             fields on the predict request body.
+      # 
+      #     Returns:
+      #         A list of outputs containing the prediction results. This list must
+      #         be JSON serializable.
+      #     """
+      #     raise NotImplementedError()
+      # 
+      # @classmethod
+      # def from_path(cls, model_dir):
+      #     """Creates an instance of Predictor using the given path.
+      # 
+      #     Loading of the predictor should be done in this method.
+      # 
+      #     Args:
+      #         model_dir: The local directory that contains the exported model
+      #             file along with any additional files uploaded when creating the
+      #             version resource.
+      # 
+      #     Returns:
+      #         An instance implementing this Predictor class.
+      #     """
+      #     raise NotImplementedError()
+      # ```
+      # 
+      # Learn more about [the Predictor interface and custom prediction
+      # routines](/ml-engine/docs/tensorflow/custom-prediction-routines).
+  "autoScaling": { # Options for automatically scaling a model. # Automatically scale the number of nodes used to serve the model in
+      # response to increases and decreases in traffic. Care should be
+      # taken to ramp up traffic according to the model's ability to scale
+      # or you will start seeing increases in latency and 429 response codes.
+    "minNodes": 42, # Optional. The minimum number of nodes to allocate for this model. These
+        # nodes are always up, starting from the time the model is deployed.
+        # Therefore, the cost of operating this model will be at least
+        # `rate` * `min_nodes` * number of hours since last billing cycle,
+        # where `rate` is the cost per node-hour as documented in the
+        # [pricing guide](/ml-engine/docs/pricing),
+        # even if no predictions are performed. There is additional cost for each
+        # prediction performed.
+        #
+        # Unlike manual scaling, if the load gets too heavy for the nodes
+        # that are up, the service will automatically add nodes to handle the
+        # increased load as well as scale back as traffic drops, always maintaining
+        # at least `min_nodes`. You will be charged for the time in which additional
+        # nodes are used.
+        #
+        # If not specified, `min_nodes` defaults to 0, in which case, when traffic
+        # to a model stops (and after a cool-down period), nodes will be shut down
+        # and no charges will be incurred until traffic to the model resumes.
+        #
+        # You can set `min_nodes` when creating the model version, and you can also
+        # update `min_nodes` for an existing version:
+        # <pre>
+        # update_body.json:
+        # {
+        #   'autoScaling': {
+        #     'minNodes': 5
+        #   }
+        # }
+        # </pre>
+        # HTTP request:
+        # <pre>
+        # PATCH
+        # https://ml.googleapis.com/v1/{name=projects/*/models/*/versions/*}?update_mask=autoScaling.minNodes
+        # -d @./update_body.json
+        # </pre>
+  },
+  "serviceAccount": "A String", # Optional. Specifies the service account for resource access control.
+  "state": "A String", # Output only. The state of a version.
+  "pythonVersion": "A String", # Optional. The version of Python used in prediction. If not set, the default
+      # version is '2.7'. Python '3.5' is available when `runtime_version` is set
+      # to '1.4' and above. Python '2.7' works with all supported runtime versions.
+  "framework": "A String", # Optional. The machine learning framework AI Platform uses to train
+      # this version of the model. Valid values are `TENSORFLOW`, `SCIKIT_LEARN`,
+      # `XGBOOST`. If you do not specify a framework, AI Platform
+      # will analyze files in the deployment_uri to determine a framework. If you
+      # choose `SCIKIT_LEARN` or `XGBOOST`, you must also set the runtime version
+      # of the model to 1.4 or greater.
+      # 
+      # Do **not** specify a framework if you're deploying a [custom
+      # prediction routine](/ml-engine/docs/tensorflow/custom-prediction-routines).
+  "packageUris": [ # Optional. Cloud Storage paths (`gs://…`) of packages for [custom
+      # prediction routines](/ml-engine/docs/tensorflow/custom-prediction-routines)
+      # or [scikit-learn pipelines with custom
+      # code](/ml-engine/docs/scikit/exporting-for-prediction#custom-pipeline-code).
+      # 
+      # For a custom prediction routine, one of these packages must contain your
+      # Predictor class (see
+      # [`predictionClass`](#Version.FIELDS.prediction_class)). Additionally,
+      # include any dependencies used by your Predictor or scikit-learn pipeline
+      # uses that are not already included in your selected [runtime
+      # version](/ml-engine/docs/tensorflow/runtime-version-list).
+      # 
+      # If you specify this field, you must also set
+      # [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater.
+    "A String",
+  ],
+  "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
+      # prevent simultaneous updates of a model from overwriting each other.
+      # It is strongly suggested that systems make use of the `etag` in the
+      # read-modify-write cycle to perform model updates in order to avoid race
+      # conditions: An `etag` is returned in the response to `GetVersion`, and
+      # systems are expected to put that etag in the request to `UpdateVersion` to
+      # ensure that their change will be applied to the model as intended.
+  "lastUseTime": "A String", # Output only. The time the version was last used for prediction.
+  "deploymentUri": "A String", # Required. The Cloud Storage location of the trained model used to
+      # create the version. See the
+      # [guide to model
+      # deployment](/ml-engine/docs/tensorflow/deploying-models) for more
+      # information.
+      # 
+      # When passing Version to
+      # [projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)
+      # the model service uses the specified location as the source of the model.
+      # Once deployed, the model version is hosted by the prediction service, so
+      # this location is useful only as a historical record.
+      # The total number of model files can't exceed 1000.
+  "createTime": "A String", # Output only. The time the version was created.
+  "isDefault": True or False, # Output only. If true, this version will be used to handle prediction
+      # requests that do not specify a version.
+      # 
+      # You can change the default version by calling
+      # [projects.methods.versions.setDefault](/ml-engine/reference/rest/v1/projects.models.versions/setDefault).
+  "name": "A String", # Required.The name specified for the version when it was created.
+      # 
+      # The version name must be unique within the model it is created in.
+}
+
+  updateMask: string, Required. Specifies the path, relative to `Version`, of the field to
+update. Must be present and non-empty.
+
+For example, to change the description of a version to "foo", the
+`update_mask` parameter would be specified as `description`, and the
+`PATCH` request body would specify the new value, as follows:
+    {
+      "description": "foo"
+    }
+
+Currently the only supported update mask fields are `description` and
+`autoScaling.minNodes`.
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # This resource represents a long-running operation that is the result of a
+      # network API call.
+    "metadata": { # Service-specific metadata associated with the operation.  It typically
+        # contains progress information and common metadata such as create time.
+        # Some services might not provide such metadata.  Any method that returns a
+        # long-running operation should document the metadata type, if any.
+      "a_key": "", # Properties of the object. Contains field @type with type URL.
+    },
+    "error": { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
+        #
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
+      "message": "A String", # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
+      "code": 42, # The status code, which should be an enum value of google.rpc.Code.
+      "details": [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
+        {
+          "a_key": "", # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+    },
+    "done": True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
+    "response": { # The normal response of the operation in case of success.  If the original
+        # method returns no data on success, such as `Delete`, the response is
+        # `google.protobuf.Empty`.  If the original method is standard
+        # `Get`/`Create`/`Update`, the response should be the resource.  For other
+        # methods, the response should have the type `XxxResponse`, where `Xxx`
+        # is the original method name.  For example, if the original method name
+        # is `TakeSnapshot()`, the inferred response type is
+        # `TakeSnapshotResponse`.
+      "a_key": "", # Properties of the object. Contains field @type with type URL.
+    },
+    "name": "A String", # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
+  }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="setDefault">setDefault(name, body=None, x__xgafv=None)</code>
   <pre>Designates a version to be the default for the model.
 
 The default version is used for prediction requests made against the model
@@ -610,10 +1191,8 @@ setting manually using this method.
 Args:
   name: string, Required. The name of the version to make the default for the model. You
 can get the names of all the versions of a model by calling
-[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).
-
-Authorization: requires `Editor` role on the parent project. (required)
-  body: object, The request body. (required)
+[projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list). (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Request message for the SetDefaultVersion request.
@@ -633,11 +1212,36 @@ Returns:
       # prediction requests. A model can have multiple versions. You can get
       # information about all of the versions of a given model by calling
       # [projects.models.versions.list](/ml-engine/reference/rest/v1/projects.models.versions/list).
+    "errorMessage": "A String", # Output only. The details of a failure or a cancellation.
+    "labels": { # Optional. One or more labels that you can add, to organize your model
+        # versions. Each label is a key-value pair, where both the key and the value
+        # are arbitrary strings that you supply.
+        # For more information, see the documentation on
+        # <a href="/ml-engine/docs/tensorflow/resource-labels">using labels</a>.
+      "a_key": "A String",
+    },
+    "machineType": "A String", # Optional. The type of machine on which to serve the model. Currently only
+        # applies to online prediction service.
+        # <dl>
+        #   <dt>mls1-c1-m2</dt>
+        #   <dd>
+        #   The <b>default</b> machine type, with 1 core and 2 GB RAM. The deprecated
+        #   name for this machine type is "mls1-highmem-1".
+        #   </dd>
+        #   <dt>mls1-c4-m2</dt>
+        #   <dd>
+        #   In <b>Beta</b>. This machine type has 4 cores and 2 GB RAM. The
+        #   deprecated name for this machine type is "mls1-highcpu-4".
+        #   </dd>
+        # </dl>
     "description": "A String", # Optional. The description specified for the version when it was created.
-    "runtimeVersion": "A String", # Optional. The Google Cloud ML runtime version to use for this deployment.
-        # If not set, Google Cloud ML will choose a version.
+    "runtimeVersion": "A String", # Optional. The AI Platform runtime version to use for this deployment.
+        # If not set, AI Platform uses the default stable version, 1.0. For more
+        # information, see the
+        # [runtime version list](/ml-engine/docs/runtime-version-list) and
+        # [how to manage runtime versions](/ml-engine/docs/versioning).
     "manualScaling": { # Options for manually scaling a model. # Manually select the number of nodes to use for serving the
-        # model. You should generally use `automatic_scaling` with an appropriate
+        # model. You should generally use `auto_scaling` with an appropriate
         # `min_nodes` instead, but this option is available if you want more
         # predictable billing. Beware that latency and error rates will increase
         # if the traffic exceeds that capability of the system to serve it based
@@ -647,29 +1251,69 @@ Returns:
           # this model will be proportional to `nodes` * number of hours since
           # last billing cycle plus the cost for each prediction performed.
     },
-    "deploymentUri": "A String", # Required. The Google Cloud Storage location of the trained model used to
-        # create the version. See the
-        # [overview of model
-        # deployment](/ml-engine/docs/concepts/deployment-overview) for more
-        # informaiton.
+    "predictionClass": "A String", # Optional. The fully qualified name
+        # (<var>module_name</var>.<var>class_name</var>) of a class that implements
+        # the Predictor interface described in this reference field. The module
+        # containing this class should be included in a package provided to the
+        # [`packageUris` field](#Version.FIELDS.package_uris).
         #
-        # When passing Version to
-        # [projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)
-        # the model service uses the specified location as the source of the model.
-        # Once deployed, the model version is hosted by the prediction service, so
-        # this location is useful only as a historical record.
-        # The total number of model files can't exceed 1000.
-    "lastUseTime": "A String", # Output only. The time the version was last used for prediction.
-    "automaticScaling": { # Options for automatically scaling a model. # Automatically scale the number of nodes used to serve the model in
+        # Specify this field if and only if you are deploying a [custom prediction
+        # routine (beta)](/ml-engine/docs/tensorflow/custom-prediction-routines).
+        # If you specify this field, you must set
+        # [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater.
+        #
+        # The following code sample provides the Predictor interface:
+        #
+        # ```py
+        # class Predictor(object):
+        # """Interface for constructing custom predictors."""
+        #
+        # def predict(self, instances, **kwargs):
+        #     """Performs custom prediction.
+        #
+        #     Instances are the decoded values from the request. They have already
+        #     been deserialized from JSON.
+        #
+        #     Args:
+        #         instances: A list of prediction input instances.
+        #         **kwargs: A dictionary of keyword args provided as additional
+        #             fields on the predict request body.
+        #
+        #     Returns:
+        #         A list of outputs containing the prediction results. This list must
+        #         be JSON serializable.
+        #     """
+        #     raise NotImplementedError()
+        #
+        # @classmethod
+        # def from_path(cls, model_dir):
+        #     """Creates an instance of Predictor using the given path.
+        #
+        #     Loading of the predictor should be done in this method.
+        #
+        #     Args:
+        #         model_dir: The local directory that contains the exported model
+        #             file along with any additional files uploaded when creating the
+        #             version resource.
+        #
+        #     Returns:
+        #         An instance implementing this Predictor class.
+        #     """
+        #     raise NotImplementedError()
+        # ```
+        #
+        # Learn more about [the Predictor interface and custom prediction
+        # routines](/ml-engine/docs/tensorflow/custom-prediction-routines).
+    "autoScaling": { # Options for automatically scaling a model. # Automatically scale the number of nodes used to serve the model in
         # response to increases and decreases in traffic. Care should be
         # taken to ramp up traffic according to the model's ability to scale
         # or you will start seeing increases in latency and 429 response codes.
       "minNodes": 42, # Optional. The minimum number of nodes to allocate for this model. These
-          # nodes are always up, starting from the time the model is deployed, so the
-          # cost of operating this model will be at least
+          # nodes are always up, starting from the time the model is deployed.
+          # Therefore, the cost of operating this model will be at least
           # `rate` * `min_nodes` * number of hours since last billing cycle,
-          # where `rate` is the cost per node-hour as documented in
-          # [pricing](https://cloud.google.com/ml-engine/pricing#prediction_pricing),
+          # where `rate` is the cost per node-hour as documented in the
+          # [pricing guide](/ml-engine/docs/pricing),
           # even if no predictions are performed. There is additional cost for each
           # prediction performed.
           #
@@ -682,7 +1326,74 @@ Returns:
           # If not specified, `min_nodes` defaults to 0, in which case, when traffic
           # to a model stops (and after a cool-down period), nodes will be shut down
           # and no charges will be incurred until traffic to the model resumes.
+          #
+          # You can set `min_nodes` when creating the model version, and you can also
+          # update `min_nodes` for an existing version:
+          # <pre>
+          # update_body.json:
+          # {
+          #   'autoScaling': {
+          #     'minNodes': 5
+          #   }
+          # }
+          # </pre>
+          # HTTP request:
+          # <pre>
+          # PATCH
+          # https://ml.googleapis.com/v1/{name=projects/*/models/*/versions/*}?update_mask=autoScaling.minNodes
+          # -d @./update_body.json
+          # </pre>
     },
+    "serviceAccount": "A String", # Optional. Specifies the service account for resource access control.
+    "state": "A String", # Output only. The state of a version.
+    "pythonVersion": "A String", # Optional. The version of Python used in prediction. If not set, the default
+        # version is '2.7'. Python '3.5' is available when `runtime_version` is set
+        # to '1.4' and above. Python '2.7' works with all supported runtime versions.
+    "framework": "A String", # Optional. The machine learning framework AI Platform uses to train
+        # this version of the model. Valid values are `TENSORFLOW`, `SCIKIT_LEARN`,
+        # `XGBOOST`. If you do not specify a framework, AI Platform
+        # will analyze files in the deployment_uri to determine a framework. If you
+        # choose `SCIKIT_LEARN` or `XGBOOST`, you must also set the runtime version
+        # of the model to 1.4 or greater.
+        #
+        # Do **not** specify a framework if you're deploying a [custom
+        # prediction routine](/ml-engine/docs/tensorflow/custom-prediction-routines).
+    "packageUris": [ # Optional. Cloud Storage paths (`gs://…`) of packages for [custom
+        # prediction routines](/ml-engine/docs/tensorflow/custom-prediction-routines)
+        # or [scikit-learn pipelines with custom
+        # code](/ml-engine/docs/scikit/exporting-for-prediction#custom-pipeline-code).
+        #
+        # For a custom prediction routine, one of these packages must contain your
+        # Predictor class (see
+        # [`predictionClass`](#Version.FIELDS.prediction_class)). Additionally,
+        # include any dependencies used by your Predictor or scikit-learn pipeline
+        # uses that are not already included in your selected [runtime
+        # version](/ml-engine/docs/tensorflow/runtime-version-list).
+        #
+        # If you specify this field, you must also set
+        # [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater.
+      "A String",
+    ],
+    "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a model from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform model updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `GetVersion`, and
+        # systems are expected to put that etag in the request to `UpdateVersion` to
+        # ensure that their change will be applied to the model as intended.
+    "lastUseTime": "A String", # Output only. The time the version was last used for prediction.
+    "deploymentUri": "A String", # Required. The Cloud Storage location of the trained model used to
+        # create the version. See the
+        # [guide to model
+        # deployment](/ml-engine/docs/tensorflow/deploying-models) for more
+        # information.
+        #
+        # When passing Version to
+        # [projects.models.versions.create](/ml-engine/reference/rest/v1/projects.models.versions/create)
+        # the model service uses the specified location as the source of the model.
+        # Once deployed, the model version is hosted by the prediction service, so
+        # this location is useful only as a historical record.
+        # The total number of model files can't exceed 1000.
     "createTime": "A String", # Output only. The time the version was created.
     "isDefault": True or False, # Output only. If true, this version will be used to handle prediction
         # requests that do not specify a version.

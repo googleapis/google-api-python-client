@@ -75,6 +75,9 @@ h1, h2, h3 {
 <h1><a href="androidenterprise_v1.html">Google Play EMM API</a> . <a href="androidenterprise_v1.devices.html">devices</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
+  <code><a href="#forceReportUpload">forceReportUpload(enterpriseId, userId, deviceId)</a></code></p>
+<p class="firstline">Uploads a report containing any changes in app states on the device since the last report was generated. You can call this method up to 3 times every 24 hours for a given device.</p>
+<p class="toc_element">
   <code><a href="#get">get(enterpriseId, userId, deviceId)</a></code></p>
 <p class="firstline">Retrieves the details of a device.</p>
 <p class="toc_element">
@@ -84,9 +87,26 @@ h1, h2, h3 {
   <code><a href="#list">list(enterpriseId, userId)</a></code></p>
 <p class="firstline">Retrieves the IDs of all of a user's devices.</p>
 <p class="toc_element">
+  <code><a href="#patch">patch(enterpriseId, userId, deviceId, body, updateMask=None)</a></code></p>
+<p class="firstline">Updates the device policy. This method supports patch semantics.</p>
+<p class="toc_element">
   <code><a href="#setState">setState(enterpriseId, userId, deviceId, body)</a></code></p>
 <p class="firstline">Sets whether a device's access to Google services is enabled or disabled. The device state takes effect only if enforcing EMM policies on Android devices is enabled in the Google Admin Console. Otherwise, the device state is ignored and all devices are allowed access to Google services. This is only supported for Google-managed users.</p>
+<p class="toc_element">
+  <code><a href="#update">update(enterpriseId, userId, deviceId, body, updateMask=None)</a></code></p>
+<p class="firstline">Updates the device policy</p>
 <h3>Method Details</h3>
+<div class="method">
+    <code class="details" id="forceReportUpload">forceReportUpload(enterpriseId, userId, deviceId)</code>
+  <pre>Uploads a report containing any changes in app states on the device since the last report was generated. You can call this method up to 3 times every 24 hours for a given device.
+
+Args:
+  enterpriseId: string, The ID of the enterprise. (required)
+  userId: string, The ID of the user. (required)
+  deviceId: string, The ID of the device. (required)
+</pre>
+</div>
+
 <div class="method">
     <code class="details" id="get">get(enterpriseId, userId, deviceId)</code>
   <pre>Retrieves the details of a device.
@@ -100,8 +120,93 @@ Returns:
   An object of the form:
 
     { # A Devices resource represents a mobile device managed by the EMM and belonging to a specific enterprise user.
-      #
-      # This collection cannot be modified via the API. It is automatically populated as devices are set up to be managed.
+    "policy": { # The device policy for a given managed device. # The policy enforced on the device.
+      "autoUpdatePolicy": "A String", # The auto-update policy for apps installed on the device. "choiceToTheUser" allows the device's user to configure the app update policy. "always" enables auto updates. "never" disables auto updates. "wifiOnly" enables auto updates only when the device is connected to wifi.
+      "maintenanceWindow": { # Maintenance window for managed Google Play Accounts. This allows Play store to update the apps on the foreground in the designated window. # The maintenance window defining when apps running in the foreground should be updated.
+        "startTimeAfterMidnightMs": "A String", # Start time of the maintenance window, in milliseconds after midnight on the device. Windows can span midnight.
+        "durationMs": "A String", # Duration of the maintenance window, in milliseconds. The duration must be between 30 minutes and 24 hours (inclusive).
+      },
+      "deviceReportPolicy": "A String", # Whether the device reports app states to the EMM. The default value is "deviceReportDisabled".
+      "productPolicy": [ # The list of product policies.
+        { # The policy for a product.
+          "autoInstallPolicy": { # The auto-install policy for the product.
+            "autoInstallMode": "A String", # The auto-install mode. If unset defaults to "doNotAutoInstall".
+            "autoInstallConstraint": [ # The constraints for auto-installing the app. You can specify a maximum of one constraint.
+              { # The auto-install constraint. Defines a set of restrictions for installation. At least one of the fields must be set.
+                "chargingStateConstraint": "A String", # Charging state constraint.
+                "deviceIdleStateConstraint": "A String", # Device idle state constraint.
+                "networkTypeConstraint": "A String", # Network type constraint.
+              },
+            ],
+            "autoInstallPriority": 42, # The priority of the install, as an unsigned integer. A lower number means higher priority.
+            "minimumVersionCode": 42, # The minimum version of the app. If a lower version of the app is installed, then the app will be auto-updated according to the auto-install constraints, instead of waiting for the regular auto-update.
+          },
+          "tracks": [ # Deprecated. Use trackIds instead.
+            "A String",
+          ],
+          "managedConfiguration": { # A managed configuration resource contains the set of managed properties defined by the app developer in the app's managed configurations schema, as well as any configuration variables defined for the user. # The managed configuration for the product.
+            "kind": "androidenterprise#managedConfiguration", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#managedConfiguration".
+            "configurationVariables": { # A configuration variables resource contains the managed configuration settings ID to be applied to a single user, as well as the variable set that is attributed to the user. The variable set will be used to replace placeholders in the managed configuration settings. # Contains the ID of the managed configuration profile and the set of configuration variables (if any) defined for the user.
+              "kind": "androidenterprise#configurationVariables", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#configurationVariables".
+              "variableSet": [ # The variable set that is attributed to the user.
+                { # A variable set is a key-value pair of EMM-provided placeholders and its corresponding value, which is attributed to a user. For example, $FIRSTNAME could be a placeholder, and its value could be Alice. Placeholders should start with a '$' sign and should be alphanumeric only.
+                  "userValue": "A String", # The value of the placeholder, specific to the user.
+                  "kind": "androidenterprise#variableSet", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#variableSet".
+                  "placeholder": "A String", # The placeholder string; defined by EMM.
+                },
+              ],
+              "mcmId": "A String", # The ID of the managed configurations settings.
+            },
+            "managedProperty": [ # The set of managed properties for this configuration.
+              { # A managed property of a managed configuration. The property must match one of the properties in the app restrictions schema of the product. Exactly one of the value fields must be populated, and it must match the property's type in the app restrictions schema.
+                "key": "A String", # The unique key that identifies the property.
+                "valueInteger": 42, # The integer value - this will only be present if type of the property is integer.
+                "valueStringArray": [ # The list of string values - this will only be present if type of the property is multiselect.
+                  "A String",
+                ],
+                "valueBool": True or False, # The boolean value - this will only be present if type of the property is bool.
+                "valueBundleArray": [ # The list of bundles of properties - this will only be present if type of the property is bundle_array.
+                  { # A bundle of managed properties.
+                    "managedProperty": [ # The list of managed properties.
+                      # Object with schema name: ManagedProperty
+                    ],
+                  },
+                ],
+                "valueBundle": { # A bundle of managed properties. # The bundle of managed properties - this will only be present if type of the property is bundle.
+                  "managedProperty": [ # The list of managed properties.
+                    # Object with schema name: ManagedProperty
+                  ],
+                },
+                "valueString": "A String", # The string value - this will only be present if type of the property is string, choice or hidden.
+              },
+            ],
+            "productId": "A String", # The ID of the product that the managed configuration is for, e.g. "app:com.google.android.gm".
+          },
+          "trackIds": [ # Grants the device visibility to the specified product release track(s), identified by trackIds. The list of release tracks of a product can be obtained by calling Products.Get.
+            "A String",
+          ],
+          "productId": "A String", # The ID of the product. For example, "app:com.google.android.gm".
+        },
+      ],
+      "productAvailabilityPolicy": "A String", # The availability granted to the device for the specified products. "all" gives the device access to all products, regardless of approval status. "all" does not enable automatic visibility of "alpha" or "beta" tracks. "whitelist" grants the device access the products specified in productPolicy[]. Only products that are approved or products that were previously approved (products with revoked approval) by the enterprise can be whitelisted. If no value is provided, the availability set at the user level is applied by default.
+    },
+    "report": { # Device report updated with the latest app states for managed apps on the device. # The device report updated with the latest app states.
+      "appState": [ # List of app states set by managed apps on the device. App states are defined by the app's developers. This field will always be present.
+        { # List of states set by the app.
+          "packageName": "A String", # The package name of the app. This field will always be present.
+          "keyedAppState": [ # List of keyed app states. This field will always be present.
+            { # Represents a keyed app state containing a key, timestamp, severity level, optional description, and optional data.
+              "message": "A String", # Free-form, human-readable message describing the app state. For example, an error message. To prevent XSS, we recommend removing any HTML from the message before displaying it.
+              "data": "A String", # Additional field intended for machine-readable data. For example, a number or JSON object. To prevent XSS, we recommend removing any HTML from the data before displaying it.
+              "severity": "A String", # Severity of the app state. This field will always be present.
+              "key": "A String", # Key indicating what the app is providing a state for. The content of the key is set by the app's developer. To prevent XSS, we recommend removing any HTML from the key before displaying it. This field will always be present.
+              "stateTimestampMillis": "A String", # Timestamp of when the app set the state in milliseconds since epoch. This field will always be present.
+            },
+          ],
+        },
+      ],
+      "lastUpdatedTimestampMillis": "A String", # The timestamp of the last report update in milliseconds since epoch. This field will always be present.
+    },
     "kind": "androidenterprise#device", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#device".
     "managementType": "A String", # Identifies the extent to which the device is controlled by a managed Google Play EMM in various deployment configurations.
         #
@@ -127,9 +232,9 @@ Returns:
   An object of the form:
 
     { # The state of a user's device, as accessed by the getState and setState methods on device resources.
-      "kind": "androidenterprise#deviceState", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#deviceState".
-      "accountState": "A String", # The state of the Google account on the device. "enabled" indicates that the Google account on the device can be used to access Google services (including Google Play), while "disabled" means that it cannot. A new device is initially in the "disabled" state.
-    }</pre>
+    "kind": "androidenterprise#deviceState", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#deviceState".
+    "accountState": "A String", # The state of the Google account on the device. "enabled" indicates that the Google account on the device can be used to access Google services (including Google Play), while "disabled" means that it cannot. A new device is initially in the "disabled" state.
+  }</pre>
 </div>
 
 <div class="method">
@@ -146,8 +251,93 @@ Returns:
     { # The device resources for the user.
     "device": [ # A managed device.
       { # A Devices resource represents a mobile device managed by the EMM and belonging to a specific enterprise user.
-          #
-          # This collection cannot be modified via the API. It is automatically populated as devices are set up to be managed.
+        "policy": { # The device policy for a given managed device. # The policy enforced on the device.
+          "autoUpdatePolicy": "A String", # The auto-update policy for apps installed on the device. "choiceToTheUser" allows the device's user to configure the app update policy. "always" enables auto updates. "never" disables auto updates. "wifiOnly" enables auto updates only when the device is connected to wifi.
+          "maintenanceWindow": { # Maintenance window for managed Google Play Accounts. This allows Play store to update the apps on the foreground in the designated window. # The maintenance window defining when apps running in the foreground should be updated.
+            "startTimeAfterMidnightMs": "A String", # Start time of the maintenance window, in milliseconds after midnight on the device. Windows can span midnight.
+            "durationMs": "A String", # Duration of the maintenance window, in milliseconds. The duration must be between 30 minutes and 24 hours (inclusive).
+          },
+          "deviceReportPolicy": "A String", # Whether the device reports app states to the EMM. The default value is "deviceReportDisabled".
+          "productPolicy": [ # The list of product policies.
+            { # The policy for a product.
+              "autoInstallPolicy": { # The auto-install policy for the product.
+                "autoInstallMode": "A String", # The auto-install mode. If unset defaults to "doNotAutoInstall".
+                "autoInstallConstraint": [ # The constraints for auto-installing the app. You can specify a maximum of one constraint.
+                  { # The auto-install constraint. Defines a set of restrictions for installation. At least one of the fields must be set.
+                    "chargingStateConstraint": "A String", # Charging state constraint.
+                    "deviceIdleStateConstraint": "A String", # Device idle state constraint.
+                    "networkTypeConstraint": "A String", # Network type constraint.
+                  },
+                ],
+                "autoInstallPriority": 42, # The priority of the install, as an unsigned integer. A lower number means higher priority.
+                "minimumVersionCode": 42, # The minimum version of the app. If a lower version of the app is installed, then the app will be auto-updated according to the auto-install constraints, instead of waiting for the regular auto-update.
+              },
+              "tracks": [ # Deprecated. Use trackIds instead.
+                "A String",
+              ],
+              "managedConfiguration": { # A managed configuration resource contains the set of managed properties defined by the app developer in the app's managed configurations schema, as well as any configuration variables defined for the user. # The managed configuration for the product.
+                "kind": "androidenterprise#managedConfiguration", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#managedConfiguration".
+                "configurationVariables": { # A configuration variables resource contains the managed configuration settings ID to be applied to a single user, as well as the variable set that is attributed to the user. The variable set will be used to replace placeholders in the managed configuration settings. # Contains the ID of the managed configuration profile and the set of configuration variables (if any) defined for the user.
+                  "kind": "androidenterprise#configurationVariables", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#configurationVariables".
+                  "variableSet": [ # The variable set that is attributed to the user.
+                    { # A variable set is a key-value pair of EMM-provided placeholders and its corresponding value, which is attributed to a user. For example, $FIRSTNAME could be a placeholder, and its value could be Alice. Placeholders should start with a '$' sign and should be alphanumeric only.
+                      "userValue": "A String", # The value of the placeholder, specific to the user.
+                      "kind": "androidenterprise#variableSet", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#variableSet".
+                      "placeholder": "A String", # The placeholder string; defined by EMM.
+                    },
+                  ],
+                  "mcmId": "A String", # The ID of the managed configurations settings.
+                },
+                "managedProperty": [ # The set of managed properties for this configuration.
+                  { # A managed property of a managed configuration. The property must match one of the properties in the app restrictions schema of the product. Exactly one of the value fields must be populated, and it must match the property's type in the app restrictions schema.
+                    "key": "A String", # The unique key that identifies the property.
+                    "valueInteger": 42, # The integer value - this will only be present if type of the property is integer.
+                    "valueStringArray": [ # The list of string values - this will only be present if type of the property is multiselect.
+                      "A String",
+                    ],
+                    "valueBool": True or False, # The boolean value - this will only be present if type of the property is bool.
+                    "valueBundleArray": [ # The list of bundles of properties - this will only be present if type of the property is bundle_array.
+                      { # A bundle of managed properties.
+                        "managedProperty": [ # The list of managed properties.
+                          # Object with schema name: ManagedProperty
+                        ],
+                      },
+                    ],
+                    "valueBundle": { # A bundle of managed properties. # The bundle of managed properties - this will only be present if type of the property is bundle.
+                      "managedProperty": [ # The list of managed properties.
+                        # Object with schema name: ManagedProperty
+                      ],
+                    },
+                    "valueString": "A String", # The string value - this will only be present if type of the property is string, choice or hidden.
+                  },
+                ],
+                "productId": "A String", # The ID of the product that the managed configuration is for, e.g. "app:com.google.android.gm".
+              },
+              "trackIds": [ # Grants the device visibility to the specified product release track(s), identified by trackIds. The list of release tracks of a product can be obtained by calling Products.Get.
+                "A String",
+              ],
+              "productId": "A String", # The ID of the product. For example, "app:com.google.android.gm".
+            },
+          ],
+          "productAvailabilityPolicy": "A String", # The availability granted to the device for the specified products. "all" gives the device access to all products, regardless of approval status. "all" does not enable automatic visibility of "alpha" or "beta" tracks. "whitelist" grants the device access the products specified in productPolicy[]. Only products that are approved or products that were previously approved (products with revoked approval) by the enterprise can be whitelisted. If no value is provided, the availability set at the user level is applied by default.
+        },
+        "report": { # Device report updated with the latest app states for managed apps on the device. # The device report updated with the latest app states.
+          "appState": [ # List of app states set by managed apps on the device. App states are defined by the app's developers. This field will always be present.
+            { # List of states set by the app.
+              "packageName": "A String", # The package name of the app. This field will always be present.
+              "keyedAppState": [ # List of keyed app states. This field will always be present.
+                { # Represents a keyed app state containing a key, timestamp, severity level, optional description, and optional data.
+                  "message": "A String", # Free-form, human-readable message describing the app state. For example, an error message. To prevent XSS, we recommend removing any HTML from the message before displaying it.
+                  "data": "A String", # Additional field intended for machine-readable data. For example, a number or JSON object. To prevent XSS, we recommend removing any HTML from the data before displaying it.
+                  "severity": "A String", # Severity of the app state. This field will always be present.
+                  "key": "A String", # Key indicating what the app is providing a state for. The content of the key is set by the app's developer. To prevent XSS, we recommend removing any HTML from the key before displaying it. This field will always be present.
+                  "stateTimestampMillis": "A String", # Timestamp of when the app set the state in milliseconds since epoch. This field will always be present.
+                },
+              ],
+            },
+          ],
+          "lastUpdatedTimestampMillis": "A String", # The timestamp of the last report update in milliseconds since epoch. This field will always be present.
+        },
         "kind": "androidenterprise#device", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#device".
         "managementType": "A String", # Identifies the extent to which the device is controlled by a managed Google Play EMM in various deployment configurations.
             #
@@ -164,6 +354,223 @@ Returns:
 </div>
 
 <div class="method">
+    <code class="details" id="patch">patch(enterpriseId, userId, deviceId, body, updateMask=None)</code>
+  <pre>Updates the device policy. This method supports patch semantics.
+
+Args:
+  enterpriseId: string, The ID of the enterprise. (required)
+  userId: string, The ID of the user. (required)
+  deviceId: string, The ID of the device. (required)
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # A Devices resource represents a mobile device managed by the EMM and belonging to a specific enterprise user.
+  "policy": { # The device policy for a given managed device. # The policy enforced on the device.
+    "autoUpdatePolicy": "A String", # The auto-update policy for apps installed on the device. "choiceToTheUser" allows the device's user to configure the app update policy. "always" enables auto updates. "never" disables auto updates. "wifiOnly" enables auto updates only when the device is connected to wifi.
+    "maintenanceWindow": { # Maintenance window for managed Google Play Accounts. This allows Play store to update the apps on the foreground in the designated window. # The maintenance window defining when apps running in the foreground should be updated.
+      "startTimeAfterMidnightMs": "A String", # Start time of the maintenance window, in milliseconds after midnight on the device. Windows can span midnight.
+      "durationMs": "A String", # Duration of the maintenance window, in milliseconds. The duration must be between 30 minutes and 24 hours (inclusive).
+    },
+    "deviceReportPolicy": "A String", # Whether the device reports app states to the EMM. The default value is "deviceReportDisabled".
+    "productPolicy": [ # The list of product policies.
+      { # The policy for a product.
+        "autoInstallPolicy": { # The auto-install policy for the product.
+          "autoInstallMode": "A String", # The auto-install mode. If unset defaults to "doNotAutoInstall".
+          "autoInstallConstraint": [ # The constraints for auto-installing the app. You can specify a maximum of one constraint.
+            { # The auto-install constraint. Defines a set of restrictions for installation. At least one of the fields must be set.
+              "chargingStateConstraint": "A String", # Charging state constraint.
+              "deviceIdleStateConstraint": "A String", # Device idle state constraint.
+              "networkTypeConstraint": "A String", # Network type constraint.
+            },
+          ],
+          "autoInstallPriority": 42, # The priority of the install, as an unsigned integer. A lower number means higher priority.
+          "minimumVersionCode": 42, # The minimum version of the app. If a lower version of the app is installed, then the app will be auto-updated according to the auto-install constraints, instead of waiting for the regular auto-update.
+        },
+        "tracks": [ # Deprecated. Use trackIds instead.
+          "A String",
+        ],
+        "managedConfiguration": { # A managed configuration resource contains the set of managed properties defined by the app developer in the app's managed configurations schema, as well as any configuration variables defined for the user. # The managed configuration for the product.
+          "kind": "androidenterprise#managedConfiguration", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#managedConfiguration".
+          "configurationVariables": { # A configuration variables resource contains the managed configuration settings ID to be applied to a single user, as well as the variable set that is attributed to the user. The variable set will be used to replace placeholders in the managed configuration settings. # Contains the ID of the managed configuration profile and the set of configuration variables (if any) defined for the user.
+            "kind": "androidenterprise#configurationVariables", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#configurationVariables".
+            "variableSet": [ # The variable set that is attributed to the user.
+              { # A variable set is a key-value pair of EMM-provided placeholders and its corresponding value, which is attributed to a user. For example, $FIRSTNAME could be a placeholder, and its value could be Alice. Placeholders should start with a '$' sign and should be alphanumeric only.
+                "userValue": "A String", # The value of the placeholder, specific to the user.
+                "kind": "androidenterprise#variableSet", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#variableSet".
+                "placeholder": "A String", # The placeholder string; defined by EMM.
+              },
+            ],
+            "mcmId": "A String", # The ID of the managed configurations settings.
+          },
+          "managedProperty": [ # The set of managed properties for this configuration.
+            { # A managed property of a managed configuration. The property must match one of the properties in the app restrictions schema of the product. Exactly one of the value fields must be populated, and it must match the property's type in the app restrictions schema.
+              "key": "A String", # The unique key that identifies the property.
+              "valueInteger": 42, # The integer value - this will only be present if type of the property is integer.
+              "valueStringArray": [ # The list of string values - this will only be present if type of the property is multiselect.
+                "A String",
+              ],
+              "valueBool": True or False, # The boolean value - this will only be present if type of the property is bool.
+              "valueBundleArray": [ # The list of bundles of properties - this will only be present if type of the property is bundle_array.
+                { # A bundle of managed properties.
+                  "managedProperty": [ # The list of managed properties.
+                    # Object with schema name: ManagedProperty
+                  ],
+                },
+              ],
+              "valueBundle": { # A bundle of managed properties. # The bundle of managed properties - this will only be present if type of the property is bundle.
+                "managedProperty": [ # The list of managed properties.
+                  # Object with schema name: ManagedProperty
+                ],
+              },
+              "valueString": "A String", # The string value - this will only be present if type of the property is string, choice or hidden.
+            },
+          ],
+          "productId": "A String", # The ID of the product that the managed configuration is for, e.g. "app:com.google.android.gm".
+        },
+        "trackIds": [ # Grants the device visibility to the specified product release track(s), identified by trackIds. The list of release tracks of a product can be obtained by calling Products.Get.
+          "A String",
+        ],
+        "productId": "A String", # The ID of the product. For example, "app:com.google.android.gm".
+      },
+    ],
+    "productAvailabilityPolicy": "A String", # The availability granted to the device for the specified products. "all" gives the device access to all products, regardless of approval status. "all" does not enable automatic visibility of "alpha" or "beta" tracks. "whitelist" grants the device access the products specified in productPolicy[]. Only products that are approved or products that were previously approved (products with revoked approval) by the enterprise can be whitelisted. If no value is provided, the availability set at the user level is applied by default.
+  },
+  "report": { # Device report updated with the latest app states for managed apps on the device. # The device report updated with the latest app states.
+    "appState": [ # List of app states set by managed apps on the device. App states are defined by the app's developers. This field will always be present.
+      { # List of states set by the app.
+        "packageName": "A String", # The package name of the app. This field will always be present.
+        "keyedAppState": [ # List of keyed app states. This field will always be present.
+          { # Represents a keyed app state containing a key, timestamp, severity level, optional description, and optional data.
+            "message": "A String", # Free-form, human-readable message describing the app state. For example, an error message. To prevent XSS, we recommend removing any HTML from the message before displaying it.
+            "data": "A String", # Additional field intended for machine-readable data. For example, a number or JSON object. To prevent XSS, we recommend removing any HTML from the data before displaying it.
+            "severity": "A String", # Severity of the app state. This field will always be present.
+            "key": "A String", # Key indicating what the app is providing a state for. The content of the key is set by the app's developer. To prevent XSS, we recommend removing any HTML from the key before displaying it. This field will always be present.
+            "stateTimestampMillis": "A String", # Timestamp of when the app set the state in milliseconds since epoch. This field will always be present.
+          },
+        ],
+      },
+    ],
+    "lastUpdatedTimestampMillis": "A String", # The timestamp of the last report update in milliseconds since epoch. This field will always be present.
+  },
+  "kind": "androidenterprise#device", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#device".
+  "managementType": "A String", # Identifies the extent to which the device is controlled by a managed Google Play EMM in various deployment configurations.
+      # 
+      # Possible values include:
+      # - "managedDevice", a device that has the EMM's device policy controller (DPC) as the device owner.
+      # - "managedProfile", a device that has a profile managed by the DPC (DPC is profile owner) in addition to a separate, personal profile that is unavailable to the DPC.
+      # - "containerApp", no longer used (deprecated).
+      # - "unmanagedProfile", a device that has been allowed (by the domain's admin, using the Admin Console to enable the privilege) to use managed Google Play, but the profile is itself not owned by a DPC.
+  "androidId": "A String", # The Google Play Services Android ID for the device encoded as a lowercase hex string. For example, "123456789abcdef0".
+}
+
+  updateMask: string, Mask that identifies which fields to update. If not set, all modifiable fields will be modified.
+
+When set in a query parameter, this field should be specified as updateMask=<field1>,<field2>,...
+
+Returns:
+  An object of the form:
+
+    { # A Devices resource represents a mobile device managed by the EMM and belonging to a specific enterprise user.
+    "policy": { # The device policy for a given managed device. # The policy enforced on the device.
+      "autoUpdatePolicy": "A String", # The auto-update policy for apps installed on the device. "choiceToTheUser" allows the device's user to configure the app update policy. "always" enables auto updates. "never" disables auto updates. "wifiOnly" enables auto updates only when the device is connected to wifi.
+      "maintenanceWindow": { # Maintenance window for managed Google Play Accounts. This allows Play store to update the apps on the foreground in the designated window. # The maintenance window defining when apps running in the foreground should be updated.
+        "startTimeAfterMidnightMs": "A String", # Start time of the maintenance window, in milliseconds after midnight on the device. Windows can span midnight.
+        "durationMs": "A String", # Duration of the maintenance window, in milliseconds. The duration must be between 30 minutes and 24 hours (inclusive).
+      },
+      "deviceReportPolicy": "A String", # Whether the device reports app states to the EMM. The default value is "deviceReportDisabled".
+      "productPolicy": [ # The list of product policies.
+        { # The policy for a product.
+          "autoInstallPolicy": { # The auto-install policy for the product.
+            "autoInstallMode": "A String", # The auto-install mode. If unset defaults to "doNotAutoInstall".
+            "autoInstallConstraint": [ # The constraints for auto-installing the app. You can specify a maximum of one constraint.
+              { # The auto-install constraint. Defines a set of restrictions for installation. At least one of the fields must be set.
+                "chargingStateConstraint": "A String", # Charging state constraint.
+                "deviceIdleStateConstraint": "A String", # Device idle state constraint.
+                "networkTypeConstraint": "A String", # Network type constraint.
+              },
+            ],
+            "autoInstallPriority": 42, # The priority of the install, as an unsigned integer. A lower number means higher priority.
+            "minimumVersionCode": 42, # The minimum version of the app. If a lower version of the app is installed, then the app will be auto-updated according to the auto-install constraints, instead of waiting for the regular auto-update.
+          },
+          "tracks": [ # Deprecated. Use trackIds instead.
+            "A String",
+          ],
+          "managedConfiguration": { # A managed configuration resource contains the set of managed properties defined by the app developer in the app's managed configurations schema, as well as any configuration variables defined for the user. # The managed configuration for the product.
+            "kind": "androidenterprise#managedConfiguration", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#managedConfiguration".
+            "configurationVariables": { # A configuration variables resource contains the managed configuration settings ID to be applied to a single user, as well as the variable set that is attributed to the user. The variable set will be used to replace placeholders in the managed configuration settings. # Contains the ID of the managed configuration profile and the set of configuration variables (if any) defined for the user.
+              "kind": "androidenterprise#configurationVariables", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#configurationVariables".
+              "variableSet": [ # The variable set that is attributed to the user.
+                { # A variable set is a key-value pair of EMM-provided placeholders and its corresponding value, which is attributed to a user. For example, $FIRSTNAME could be a placeholder, and its value could be Alice. Placeholders should start with a '$' sign and should be alphanumeric only.
+                  "userValue": "A String", # The value of the placeholder, specific to the user.
+                  "kind": "androidenterprise#variableSet", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#variableSet".
+                  "placeholder": "A String", # The placeholder string; defined by EMM.
+                },
+              ],
+              "mcmId": "A String", # The ID of the managed configurations settings.
+            },
+            "managedProperty": [ # The set of managed properties for this configuration.
+              { # A managed property of a managed configuration. The property must match one of the properties in the app restrictions schema of the product. Exactly one of the value fields must be populated, and it must match the property's type in the app restrictions schema.
+                "key": "A String", # The unique key that identifies the property.
+                "valueInteger": 42, # The integer value - this will only be present if type of the property is integer.
+                "valueStringArray": [ # The list of string values - this will only be present if type of the property is multiselect.
+                  "A String",
+                ],
+                "valueBool": True or False, # The boolean value - this will only be present if type of the property is bool.
+                "valueBundleArray": [ # The list of bundles of properties - this will only be present if type of the property is bundle_array.
+                  { # A bundle of managed properties.
+                    "managedProperty": [ # The list of managed properties.
+                      # Object with schema name: ManagedProperty
+                    ],
+                  },
+                ],
+                "valueBundle": { # A bundle of managed properties. # The bundle of managed properties - this will only be present if type of the property is bundle.
+                  "managedProperty": [ # The list of managed properties.
+                    # Object with schema name: ManagedProperty
+                  ],
+                },
+                "valueString": "A String", # The string value - this will only be present if type of the property is string, choice or hidden.
+              },
+            ],
+            "productId": "A String", # The ID of the product that the managed configuration is for, e.g. "app:com.google.android.gm".
+          },
+          "trackIds": [ # Grants the device visibility to the specified product release track(s), identified by trackIds. The list of release tracks of a product can be obtained by calling Products.Get.
+            "A String",
+          ],
+          "productId": "A String", # The ID of the product. For example, "app:com.google.android.gm".
+        },
+      ],
+      "productAvailabilityPolicy": "A String", # The availability granted to the device for the specified products. "all" gives the device access to all products, regardless of approval status. "all" does not enable automatic visibility of "alpha" or "beta" tracks. "whitelist" grants the device access the products specified in productPolicy[]. Only products that are approved or products that were previously approved (products with revoked approval) by the enterprise can be whitelisted. If no value is provided, the availability set at the user level is applied by default.
+    },
+    "report": { # Device report updated with the latest app states for managed apps on the device. # The device report updated with the latest app states.
+      "appState": [ # List of app states set by managed apps on the device. App states are defined by the app's developers. This field will always be present.
+        { # List of states set by the app.
+          "packageName": "A String", # The package name of the app. This field will always be present.
+          "keyedAppState": [ # List of keyed app states. This field will always be present.
+            { # Represents a keyed app state containing a key, timestamp, severity level, optional description, and optional data.
+              "message": "A String", # Free-form, human-readable message describing the app state. For example, an error message. To prevent XSS, we recommend removing any HTML from the message before displaying it.
+              "data": "A String", # Additional field intended for machine-readable data. For example, a number or JSON object. To prevent XSS, we recommend removing any HTML from the data before displaying it.
+              "severity": "A String", # Severity of the app state. This field will always be present.
+              "key": "A String", # Key indicating what the app is providing a state for. The content of the key is set by the app's developer. To prevent XSS, we recommend removing any HTML from the key before displaying it. This field will always be present.
+              "stateTimestampMillis": "A String", # Timestamp of when the app set the state in milliseconds since epoch. This field will always be present.
+            },
+          ],
+        },
+      ],
+      "lastUpdatedTimestampMillis": "A String", # The timestamp of the last report update in milliseconds since epoch. This field will always be present.
+    },
+    "kind": "androidenterprise#device", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#device".
+    "managementType": "A String", # Identifies the extent to which the device is controlled by a managed Google Play EMM in various deployment configurations.
+        #
+        # Possible values include:
+        # - "managedDevice", a device that has the EMM's device policy controller (DPC) as the device owner.
+        # - "managedProfile", a device that has a profile managed by the DPC (DPC is profile owner) in addition to a separate, personal profile that is unavailable to the DPC.
+        # - "containerApp", no longer used (deprecated).
+        # - "unmanagedProfile", a device that has been allowed (by the domain's admin, using the Admin Console to enable the privilege) to use managed Google Play, but the profile is itself not owned by a DPC.
+    "androidId": "A String", # The Google Play Services Android ID for the device encoded as a lowercase hex string. For example, "123456789abcdef0".
+  }</pre>
+</div>
+
+<div class="method">
     <code class="details" id="setState">setState(enterpriseId, userId, deviceId, body)</code>
   <pre>Sets whether a device's access to Google services is enabled or disabled. The device state takes effect only if enforcing EMM policies on Android devices is enabled in the Google Admin Console. Otherwise, the device state is ignored and all devices are allowed access to Google services. This is only supported for Google-managed users.
 
@@ -175,18 +582,235 @@ Args:
     The object takes the form of:
 
 { # The state of a user's device, as accessed by the getState and setState methods on device resources.
-    "kind": "androidenterprise#deviceState", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#deviceState".
-    "accountState": "A String", # The state of the Google account on the device. "enabled" indicates that the Google account on the device can be used to access Google services (including Google Play), while "disabled" means that it cannot. A new device is initially in the "disabled" state.
-  }
+  "kind": "androidenterprise#deviceState", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#deviceState".
+  "accountState": "A String", # The state of the Google account on the device. "enabled" indicates that the Google account on the device can be used to access Google services (including Google Play), while "disabled" means that it cannot. A new device is initially in the "disabled" state.
+}
 
 
 Returns:
   An object of the form:
 
     { # The state of a user's device, as accessed by the getState and setState methods on device resources.
-      "kind": "androidenterprise#deviceState", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#deviceState".
-      "accountState": "A String", # The state of the Google account on the device. "enabled" indicates that the Google account on the device can be used to access Google services (including Google Play), while "disabled" means that it cannot. A new device is initially in the "disabled" state.
-    }</pre>
+    "kind": "androidenterprise#deviceState", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#deviceState".
+    "accountState": "A String", # The state of the Google account on the device. "enabled" indicates that the Google account on the device can be used to access Google services (including Google Play), while "disabled" means that it cannot. A new device is initially in the "disabled" state.
+  }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="update">update(enterpriseId, userId, deviceId, body, updateMask=None)</code>
+  <pre>Updates the device policy
+
+Args:
+  enterpriseId: string, The ID of the enterprise. (required)
+  userId: string, The ID of the user. (required)
+  deviceId: string, The ID of the device. (required)
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # A Devices resource represents a mobile device managed by the EMM and belonging to a specific enterprise user.
+  "policy": { # The device policy for a given managed device. # The policy enforced on the device.
+    "autoUpdatePolicy": "A String", # The auto-update policy for apps installed on the device. "choiceToTheUser" allows the device's user to configure the app update policy. "always" enables auto updates. "never" disables auto updates. "wifiOnly" enables auto updates only when the device is connected to wifi.
+    "maintenanceWindow": { # Maintenance window for managed Google Play Accounts. This allows Play store to update the apps on the foreground in the designated window. # The maintenance window defining when apps running in the foreground should be updated.
+      "startTimeAfterMidnightMs": "A String", # Start time of the maintenance window, in milliseconds after midnight on the device. Windows can span midnight.
+      "durationMs": "A String", # Duration of the maintenance window, in milliseconds. The duration must be between 30 minutes and 24 hours (inclusive).
+    },
+    "deviceReportPolicy": "A String", # Whether the device reports app states to the EMM. The default value is "deviceReportDisabled".
+    "productPolicy": [ # The list of product policies.
+      { # The policy for a product.
+        "autoInstallPolicy": { # The auto-install policy for the product.
+          "autoInstallMode": "A String", # The auto-install mode. If unset defaults to "doNotAutoInstall".
+          "autoInstallConstraint": [ # The constraints for auto-installing the app. You can specify a maximum of one constraint.
+            { # The auto-install constraint. Defines a set of restrictions for installation. At least one of the fields must be set.
+              "chargingStateConstraint": "A String", # Charging state constraint.
+              "deviceIdleStateConstraint": "A String", # Device idle state constraint.
+              "networkTypeConstraint": "A String", # Network type constraint.
+            },
+          ],
+          "autoInstallPriority": 42, # The priority of the install, as an unsigned integer. A lower number means higher priority.
+          "minimumVersionCode": 42, # The minimum version of the app. If a lower version of the app is installed, then the app will be auto-updated according to the auto-install constraints, instead of waiting for the regular auto-update.
+        },
+        "tracks": [ # Deprecated. Use trackIds instead.
+          "A String",
+        ],
+        "managedConfiguration": { # A managed configuration resource contains the set of managed properties defined by the app developer in the app's managed configurations schema, as well as any configuration variables defined for the user. # The managed configuration for the product.
+          "kind": "androidenterprise#managedConfiguration", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#managedConfiguration".
+          "configurationVariables": { # A configuration variables resource contains the managed configuration settings ID to be applied to a single user, as well as the variable set that is attributed to the user. The variable set will be used to replace placeholders in the managed configuration settings. # Contains the ID of the managed configuration profile and the set of configuration variables (if any) defined for the user.
+            "kind": "androidenterprise#configurationVariables", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#configurationVariables".
+            "variableSet": [ # The variable set that is attributed to the user.
+              { # A variable set is a key-value pair of EMM-provided placeholders and its corresponding value, which is attributed to a user. For example, $FIRSTNAME could be a placeholder, and its value could be Alice. Placeholders should start with a '$' sign and should be alphanumeric only.
+                "userValue": "A String", # The value of the placeholder, specific to the user.
+                "kind": "androidenterprise#variableSet", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#variableSet".
+                "placeholder": "A String", # The placeholder string; defined by EMM.
+              },
+            ],
+            "mcmId": "A String", # The ID of the managed configurations settings.
+          },
+          "managedProperty": [ # The set of managed properties for this configuration.
+            { # A managed property of a managed configuration. The property must match one of the properties in the app restrictions schema of the product. Exactly one of the value fields must be populated, and it must match the property's type in the app restrictions schema.
+              "key": "A String", # The unique key that identifies the property.
+              "valueInteger": 42, # The integer value - this will only be present if type of the property is integer.
+              "valueStringArray": [ # The list of string values - this will only be present if type of the property is multiselect.
+                "A String",
+              ],
+              "valueBool": True or False, # The boolean value - this will only be present if type of the property is bool.
+              "valueBundleArray": [ # The list of bundles of properties - this will only be present if type of the property is bundle_array.
+                { # A bundle of managed properties.
+                  "managedProperty": [ # The list of managed properties.
+                    # Object with schema name: ManagedProperty
+                  ],
+                },
+              ],
+              "valueBundle": { # A bundle of managed properties. # The bundle of managed properties - this will only be present if type of the property is bundle.
+                "managedProperty": [ # The list of managed properties.
+                  # Object with schema name: ManagedProperty
+                ],
+              },
+              "valueString": "A String", # The string value - this will only be present if type of the property is string, choice or hidden.
+            },
+          ],
+          "productId": "A String", # The ID of the product that the managed configuration is for, e.g. "app:com.google.android.gm".
+        },
+        "trackIds": [ # Grants the device visibility to the specified product release track(s), identified by trackIds. The list of release tracks of a product can be obtained by calling Products.Get.
+          "A String",
+        ],
+        "productId": "A String", # The ID of the product. For example, "app:com.google.android.gm".
+      },
+    ],
+    "productAvailabilityPolicy": "A String", # The availability granted to the device for the specified products. "all" gives the device access to all products, regardless of approval status. "all" does not enable automatic visibility of "alpha" or "beta" tracks. "whitelist" grants the device access the products specified in productPolicy[]. Only products that are approved or products that were previously approved (products with revoked approval) by the enterprise can be whitelisted. If no value is provided, the availability set at the user level is applied by default.
+  },
+  "report": { # Device report updated with the latest app states for managed apps on the device. # The device report updated with the latest app states.
+    "appState": [ # List of app states set by managed apps on the device. App states are defined by the app's developers. This field will always be present.
+      { # List of states set by the app.
+        "packageName": "A String", # The package name of the app. This field will always be present.
+        "keyedAppState": [ # List of keyed app states. This field will always be present.
+          { # Represents a keyed app state containing a key, timestamp, severity level, optional description, and optional data.
+            "message": "A String", # Free-form, human-readable message describing the app state. For example, an error message. To prevent XSS, we recommend removing any HTML from the message before displaying it.
+            "data": "A String", # Additional field intended for machine-readable data. For example, a number or JSON object. To prevent XSS, we recommend removing any HTML from the data before displaying it.
+            "severity": "A String", # Severity of the app state. This field will always be present.
+            "key": "A String", # Key indicating what the app is providing a state for. The content of the key is set by the app's developer. To prevent XSS, we recommend removing any HTML from the key before displaying it. This field will always be present.
+            "stateTimestampMillis": "A String", # Timestamp of when the app set the state in milliseconds since epoch. This field will always be present.
+          },
+        ],
+      },
+    ],
+    "lastUpdatedTimestampMillis": "A String", # The timestamp of the last report update in milliseconds since epoch. This field will always be present.
+  },
+  "kind": "androidenterprise#device", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#device".
+  "managementType": "A String", # Identifies the extent to which the device is controlled by a managed Google Play EMM in various deployment configurations.
+      # 
+      # Possible values include:
+      # - "managedDevice", a device that has the EMM's device policy controller (DPC) as the device owner.
+      # - "managedProfile", a device that has a profile managed by the DPC (DPC is profile owner) in addition to a separate, personal profile that is unavailable to the DPC.
+      # - "containerApp", no longer used (deprecated).
+      # - "unmanagedProfile", a device that has been allowed (by the domain's admin, using the Admin Console to enable the privilege) to use managed Google Play, but the profile is itself not owned by a DPC.
+  "androidId": "A String", # The Google Play Services Android ID for the device encoded as a lowercase hex string. For example, "123456789abcdef0".
+}
+
+  updateMask: string, Mask that identifies which fields to update. If not set, all modifiable fields will be modified.
+
+When set in a query parameter, this field should be specified as updateMask=<field1>,<field2>,...
+
+Returns:
+  An object of the form:
+
+    { # A Devices resource represents a mobile device managed by the EMM and belonging to a specific enterprise user.
+    "policy": { # The device policy for a given managed device. # The policy enforced on the device.
+      "autoUpdatePolicy": "A String", # The auto-update policy for apps installed on the device. "choiceToTheUser" allows the device's user to configure the app update policy. "always" enables auto updates. "never" disables auto updates. "wifiOnly" enables auto updates only when the device is connected to wifi.
+      "maintenanceWindow": { # Maintenance window for managed Google Play Accounts. This allows Play store to update the apps on the foreground in the designated window. # The maintenance window defining when apps running in the foreground should be updated.
+        "startTimeAfterMidnightMs": "A String", # Start time of the maintenance window, in milliseconds after midnight on the device. Windows can span midnight.
+        "durationMs": "A String", # Duration of the maintenance window, in milliseconds. The duration must be between 30 minutes and 24 hours (inclusive).
+      },
+      "deviceReportPolicy": "A String", # Whether the device reports app states to the EMM. The default value is "deviceReportDisabled".
+      "productPolicy": [ # The list of product policies.
+        { # The policy for a product.
+          "autoInstallPolicy": { # The auto-install policy for the product.
+            "autoInstallMode": "A String", # The auto-install mode. If unset defaults to "doNotAutoInstall".
+            "autoInstallConstraint": [ # The constraints for auto-installing the app. You can specify a maximum of one constraint.
+              { # The auto-install constraint. Defines a set of restrictions for installation. At least one of the fields must be set.
+                "chargingStateConstraint": "A String", # Charging state constraint.
+                "deviceIdleStateConstraint": "A String", # Device idle state constraint.
+                "networkTypeConstraint": "A String", # Network type constraint.
+              },
+            ],
+            "autoInstallPriority": 42, # The priority of the install, as an unsigned integer. A lower number means higher priority.
+            "minimumVersionCode": 42, # The minimum version of the app. If a lower version of the app is installed, then the app will be auto-updated according to the auto-install constraints, instead of waiting for the regular auto-update.
+          },
+          "tracks": [ # Deprecated. Use trackIds instead.
+            "A String",
+          ],
+          "managedConfiguration": { # A managed configuration resource contains the set of managed properties defined by the app developer in the app's managed configurations schema, as well as any configuration variables defined for the user. # The managed configuration for the product.
+            "kind": "androidenterprise#managedConfiguration", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#managedConfiguration".
+            "configurationVariables": { # A configuration variables resource contains the managed configuration settings ID to be applied to a single user, as well as the variable set that is attributed to the user. The variable set will be used to replace placeholders in the managed configuration settings. # Contains the ID of the managed configuration profile and the set of configuration variables (if any) defined for the user.
+              "kind": "androidenterprise#configurationVariables", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#configurationVariables".
+              "variableSet": [ # The variable set that is attributed to the user.
+                { # A variable set is a key-value pair of EMM-provided placeholders and its corresponding value, which is attributed to a user. For example, $FIRSTNAME could be a placeholder, and its value could be Alice. Placeholders should start with a '$' sign and should be alphanumeric only.
+                  "userValue": "A String", # The value of the placeholder, specific to the user.
+                  "kind": "androidenterprise#variableSet", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#variableSet".
+                  "placeholder": "A String", # The placeholder string; defined by EMM.
+                },
+              ],
+              "mcmId": "A String", # The ID of the managed configurations settings.
+            },
+            "managedProperty": [ # The set of managed properties for this configuration.
+              { # A managed property of a managed configuration. The property must match one of the properties in the app restrictions schema of the product. Exactly one of the value fields must be populated, and it must match the property's type in the app restrictions schema.
+                "key": "A String", # The unique key that identifies the property.
+                "valueInteger": 42, # The integer value - this will only be present if type of the property is integer.
+                "valueStringArray": [ # The list of string values - this will only be present if type of the property is multiselect.
+                  "A String",
+                ],
+                "valueBool": True or False, # The boolean value - this will only be present if type of the property is bool.
+                "valueBundleArray": [ # The list of bundles of properties - this will only be present if type of the property is bundle_array.
+                  { # A bundle of managed properties.
+                    "managedProperty": [ # The list of managed properties.
+                      # Object with schema name: ManagedProperty
+                    ],
+                  },
+                ],
+                "valueBundle": { # A bundle of managed properties. # The bundle of managed properties - this will only be present if type of the property is bundle.
+                  "managedProperty": [ # The list of managed properties.
+                    # Object with schema name: ManagedProperty
+                  ],
+                },
+                "valueString": "A String", # The string value - this will only be present if type of the property is string, choice or hidden.
+              },
+            ],
+            "productId": "A String", # The ID of the product that the managed configuration is for, e.g. "app:com.google.android.gm".
+          },
+          "trackIds": [ # Grants the device visibility to the specified product release track(s), identified by trackIds. The list of release tracks of a product can be obtained by calling Products.Get.
+            "A String",
+          ],
+          "productId": "A String", # The ID of the product. For example, "app:com.google.android.gm".
+        },
+      ],
+      "productAvailabilityPolicy": "A String", # The availability granted to the device for the specified products. "all" gives the device access to all products, regardless of approval status. "all" does not enable automatic visibility of "alpha" or "beta" tracks. "whitelist" grants the device access the products specified in productPolicy[]. Only products that are approved or products that were previously approved (products with revoked approval) by the enterprise can be whitelisted. If no value is provided, the availability set at the user level is applied by default.
+    },
+    "report": { # Device report updated with the latest app states for managed apps on the device. # The device report updated with the latest app states.
+      "appState": [ # List of app states set by managed apps on the device. App states are defined by the app's developers. This field will always be present.
+        { # List of states set by the app.
+          "packageName": "A String", # The package name of the app. This field will always be present.
+          "keyedAppState": [ # List of keyed app states. This field will always be present.
+            { # Represents a keyed app state containing a key, timestamp, severity level, optional description, and optional data.
+              "message": "A String", # Free-form, human-readable message describing the app state. For example, an error message. To prevent XSS, we recommend removing any HTML from the message before displaying it.
+              "data": "A String", # Additional field intended for machine-readable data. For example, a number or JSON object. To prevent XSS, we recommend removing any HTML from the data before displaying it.
+              "severity": "A String", # Severity of the app state. This field will always be present.
+              "key": "A String", # Key indicating what the app is providing a state for. The content of the key is set by the app's developer. To prevent XSS, we recommend removing any HTML from the key before displaying it. This field will always be present.
+              "stateTimestampMillis": "A String", # Timestamp of when the app set the state in milliseconds since epoch. This field will always be present.
+            },
+          ],
+        },
+      ],
+      "lastUpdatedTimestampMillis": "A String", # The timestamp of the last report update in milliseconds since epoch. This field will always be present.
+    },
+    "kind": "androidenterprise#device", # Identifies what kind of resource this is. Value: the fixed string "androidenterprise#device".
+    "managementType": "A String", # Identifies the extent to which the device is controlled by a managed Google Play EMM in various deployment configurations.
+        #
+        # Possible values include:
+        # - "managedDevice", a device that has the EMM's device policy controller (DPC) as the device owner.
+        # - "managedProfile", a device that has a profile managed by the DPC (DPC is profile owner) in addition to a separate, personal profile that is unavailable to the DPC.
+        # - "containerApp", no longer used (deprecated).
+        # - "unmanagedProfile", a device that has been allowed (by the domain's admin, using the Admin Console to enable the privilege) to use managed Google Play, but the profile is itself not owned by a DPC.
+    "androidId": "A String", # The Google Play Services Android ID for the device encoded as a lowercase hex string. For example, "123456789abcdef0".
+  }</pre>
 </div>
 
 </body></html>

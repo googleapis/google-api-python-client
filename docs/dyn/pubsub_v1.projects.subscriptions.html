@@ -72,14 +72,14 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="pubsub_v1.html">Google Cloud Pub/Sub API</a> . <a href="pubsub_v1.projects.html">projects</a> . <a href="pubsub_v1.projects.subscriptions.html">subscriptions</a></h1>
+<h1><a href="pubsub_v1.html">Cloud Pub/Sub API</a> . <a href="pubsub_v1.projects.html">projects</a> . <a href="pubsub_v1.projects.subscriptions.html">subscriptions</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="#acknowledge">acknowledge(subscription, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Acknowledges the messages associated with the `ack_ids` in the</p>
 <p class="toc_element">
   <code><a href="#create">create(name, body, x__xgafv=None)</a></code></p>
-<p class="firstline">Creates a subscription to a given topic.</p>
+<p class="firstline">Creates a subscription to a given topic. See the</p>
 <p class="toc_element">
   <code><a href="#delete">delete(subscription, x__xgafv=None)</a></code></p>
 <p class="firstline">Deletes an existing subscription. All messages retained in the subscription</p>
@@ -102,8 +102,14 @@ h1, h2, h3 {
   <code><a href="#modifyPushConfig">modifyPushConfig(subscription, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Modifies the `PushConfig` for a specified subscription.</p>
 <p class="toc_element">
+  <code><a href="#patch">patch(name, body, x__xgafv=None)</a></code></p>
+<p class="firstline">Updates an existing subscription. Note that certain properties of a</p>
+<p class="toc_element">
   <code><a href="#pull">pull(subscription, body, x__xgafv=None)</a></code></p>
-<p class="firstline">Pulls messages from the server. Returns an empty list if there are no</p>
+<p class="firstline">Pulls messages from the server. The server may return `UNAVAILABLE` if</p>
+<p class="toc_element">
+  <code><a href="#seek">seek(subscription, body, x__xgafv=None)</a></code></p>
+<p class="firstline">Seeks an existing subscription to a point in time or to a given snapshot,</p>
 <p class="toc_element">
   <code><a href="#setIamPolicy">setIamPolicy(resource, body, x__xgafv=None)</a></code></p>
 <p class="firstline">Sets the access control policy on the specified resource. Replaces any</p>
@@ -156,16 +162,19 @@ Returns:
 
 <div class="method">
     <code class="details" id="create">create(name, body, x__xgafv=None)</code>
-  <pre>Creates a subscription to a given topic.
+  <pre>Creates a subscription to a given topic. See the
+<a href="https://cloud.google.com/pubsub/docs/admin#resource_names">
+resource name rules</a>.
 If the subscription already exists, returns `ALREADY_EXISTS`.
 If the corresponding topic doesn't exist, returns `NOT_FOUND`.
 
 If the name is not provided in the request, the server will assign a random
 name for this subscription on the same project as the topic, conforming
 to the
-[resource name format](https://cloud.google.com/pubsub/docs/overview#names).
-The generated name is populated in the returned Subscription object.
-Note that for REST API requests, you must specify a name in the request.
+[resource name
+format](https://cloud.google.com/pubsub/docs/admin#resource_names). The
+generated name is populated in the returned Subscription object. Note that
+for REST API requests, you must specify a name in the request.
 
 Args:
   name: string, The name of the subscription. It must have the format
@@ -178,16 +187,23 @@ in length, and it must not start with `"goog"`. (required)
     The object takes the form of:
 
 { # A subscription resource.
-  "ackDeadlineSeconds": 42, # This value is the maximum time after a subscriber receives a message
-      # before the subscriber should acknowledge the message. After message
-      # delivery but before the ack deadline expires and before the message is
-      # acknowledged, it is an outstanding message and will not be delivered
-      # again during that time (on a best-effort basis).
+  "name": "A String", # The name of the subscription. It must have the format
+      # `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
+      # start with a letter, and contain only letters (`[A-Za-z]`), numbers
+      # (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
+      # plus (`+`) or percent signs (`%`). It must be between 3 and 255 characters
+      # in length, and it must not start with `"goog"`.
+  "ackDeadlineSeconds": 42, # The approximate amount of time (on a best-effort basis) Pub/Sub waits for
+      # the subscriber to acknowledge receipt before resending the message. In the
+      # interval after the message is delivered and before it is acknowledged, it
+      # is considered to be <i>outstanding</i>. During that time period, the
+      # message will not be redelivered (on a best-effort basis).
       # 
       # For pull subscriptions, this value is used as the initial value for the ack
       # deadline. To override this value for a given message, call
       # `ModifyAckDeadline` with the corresponding `ack_id` if using
-      # pull.
+      # non-streaming pull or send the `ack_id` in a
+      # `StreamingModifyAckDeadlineRequest` if using streaming pull.
       # The minimum custom deadline you can specify is 10 seconds.
       # The maximum custom deadline you can specify is 600 seconds (10 minutes).
       # If this parameter is 0, a default value of 10 seconds is used.
@@ -197,10 +213,10 @@ in length, and it must not start with `"goog"`. (required)
       # 
       # If the subscriber never acknowledges the message, the Pub/Sub
       # system will eventually redeliver the message.
-  "topic": "A String", # The name of the topic from which this subscription is receiving messages.
-      # Format is `projects/{project}/topics/{topic}`.
-      # The value of this field will be `_deleted-topic_` if the topic has been
-      # deleted.
+  "labels": { # See <a href="https://cloud.google.com/pubsub/docs/labels"> Creating and
+      # managing labels</a>.
+    "a_key": "A String",
+  },
   "pushConfig": { # Configuration for a push delivery endpoint. # If push delivery is used with this subscription, this field is
       # used to configure it. An empty `pushConfig` signifies that the subscriber
       # will pull and ack messages using API methods.
@@ -227,15 +243,56 @@ in length, and it must not start with `"goog"`. (required)
         # * `v1` or `v1beta2`: uses the push format defined in the v1 Pub/Sub API.
       "a_key": "A String",
     },
+    "oidcToken": { # Contains information needed for generating an # If specified, Pub/Sub will generate and attach an OIDC JWT token as an
+        # `Authorization` header in the HTTP request for every pushed message.
+        # [OpenID Connect
+        # token](https://developers.google.com/identity/protocols/OpenIDConnect).
+      "audience": "A String", # Audience to be used when generating OIDC token. The audience claim
+          # identifies the recipients that the JWT is intended for. The audience
+          # value is a single case-sensitive string. Having multiple values (array)
+          # for the audience field is not supported. More info about the OIDC JWT
+          # token audience here: https://tools.ietf.org/html/rfc7519#section-4.1.3
+          # Note: if not specified, the Push endpoint URL will be used.
+      "serviceAccountEmail": "A String", # [Service account
+          # email](https://cloud.google.com/iam/docs/service-accounts)
+          # to be used for generating the OIDC token. The caller (for
+          # CreateSubscription, UpdateSubscription, and ModifyPushConfig RPCs) must
+          # have the iam.serviceAccounts.actAs permission for the service account.
+    },
     "pushEndpoint": "A String", # A URL locating the endpoint to which messages should be pushed.
         # For example, a Webhook endpoint might use "https://example.com/push".
   },
-  "name": "A String", # The name of the subscription. It must have the format
-      # `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
-      # start with a letter, and contain only letters (`[A-Za-z]`), numbers
-      # (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
-      # plus (`+`) or percent signs (`%`). It must be between 3 and 255 characters
-      # in length, and it must not start with `"goog"`.
+  "topic": "A String", # The name of the topic from which this subscription is receiving messages.
+      # Format is `projects/{project}/topics/{topic}`.
+      # The value of this field will be `_deleted-topic_` if the topic has been
+      # deleted.
+  "messageRetentionDuration": "A String", # How long to retain unacknowledged messages in the subscription's backlog,
+      # from the moment a message is published.
+      # If `retain_acked_messages` is true, then this also configures the retention
+      # of acknowledged messages, and thus configures how far back in time a `Seek`
+      # can be done. Defaults to 7 days. Cannot be more than 7 days or less than 10
+      # minutes.
+  "retainAckedMessages": True or False, # Indicates whether to retain acknowledged messages. If true, then
+      # messages are not expunged from the subscription's backlog, even if they are
+      # acknowledged, until they fall out of the `message_retention_duration`
+      # window. This must be true if you would like to
+      # <a
+      # href="https://cloud.google.com/pubsub/docs/replay-overview#seek_to_a_time">
+      # Seek to a timestamp</a>.
+  "expirationPolicy": { # A policy that specifies the conditions for resource expiration (i.e., # A policy that specifies the conditions for this subscription's expiration.
+      # A subscription is considered active as long as any connected subscriber is
+      # successfully consuming messages from the subscription or is issuing
+      # operations on the subscription. If `expiration_policy` is not set, a
+      # *default policy* with `ttl` of 31 days will be used. The minimum allowed
+      # value for `expiration_policy.ttl` is 1 day.
+      # automatic resource deletion).
+    "ttl": "A String", # Specifies the "time-to-live" duration for an associated resource. The
+        # resource expires if it is not active for a period of `ttl`. The definition
+        # of "activity" depends on the type of the associated resource. The minimum
+        # and maximum allowed values for `ttl` depend on the type of the associated
+        # resource, as well. If `ttl` is not set, the associated resource never
+        # expires.
+  },
 }
 
   x__xgafv: string, V1 error format.
@@ -247,16 +304,23 @@ Returns:
   An object of the form:
 
     { # A subscription resource.
-    "ackDeadlineSeconds": 42, # This value is the maximum time after a subscriber receives a message
-        # before the subscriber should acknowledge the message. After message
-        # delivery but before the ack deadline expires and before the message is
-        # acknowledged, it is an outstanding message and will not be delivered
-        # again during that time (on a best-effort basis).
+    "name": "A String", # The name of the subscription. It must have the format
+        # `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
+        # start with a letter, and contain only letters (`[A-Za-z]`), numbers
+        # (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
+        # plus (`+`) or percent signs (`%`). It must be between 3 and 255 characters
+        # in length, and it must not start with `"goog"`.
+    "ackDeadlineSeconds": 42, # The approximate amount of time (on a best-effort basis) Pub/Sub waits for
+        # the subscriber to acknowledge receipt before resending the message. In the
+        # interval after the message is delivered and before it is acknowledged, it
+        # is considered to be <i>outstanding</i>. During that time period, the
+        # message will not be redelivered (on a best-effort basis).
         #
         # For pull subscriptions, this value is used as the initial value for the ack
         # deadline. To override this value for a given message, call
         # `ModifyAckDeadline` with the corresponding `ack_id` if using
-        # pull.
+        # non-streaming pull or send the `ack_id` in a
+        # `StreamingModifyAckDeadlineRequest` if using streaming pull.
         # The minimum custom deadline you can specify is 10 seconds.
         # The maximum custom deadline you can specify is 600 seconds (10 minutes).
         # If this parameter is 0, a default value of 10 seconds is used.
@@ -266,10 +330,10 @@ Returns:
         #
         # If the subscriber never acknowledges the message, the Pub/Sub
         # system will eventually redeliver the message.
-    "topic": "A String", # The name of the topic from which this subscription is receiving messages.
-        # Format is `projects/{project}/topics/{topic}`.
-        # The value of this field will be `_deleted-topic_` if the topic has been
-        # deleted.
+    "labels": { # See <a href="https://cloud.google.com/pubsub/docs/labels"> Creating and
+        # managing labels</a>.
+      "a_key": "A String",
+    },
     "pushConfig": { # Configuration for a push delivery endpoint. # If push delivery is used with this subscription, this field is
         # used to configure it. An empty `pushConfig` signifies that the subscriber
         # will pull and ack messages using API methods.
@@ -296,15 +360,56 @@ Returns:
           # * `v1` or `v1beta2`: uses the push format defined in the v1 Pub/Sub API.
         "a_key": "A String",
       },
+      "oidcToken": { # Contains information needed for generating an # If specified, Pub/Sub will generate and attach an OIDC JWT token as an
+          # `Authorization` header in the HTTP request for every pushed message.
+          # [OpenID Connect
+          # token](https://developers.google.com/identity/protocols/OpenIDConnect).
+        "audience": "A String", # Audience to be used when generating OIDC token. The audience claim
+            # identifies the recipients that the JWT is intended for. The audience
+            # value is a single case-sensitive string. Having multiple values (array)
+            # for the audience field is not supported. More info about the OIDC JWT
+            # token audience here: https://tools.ietf.org/html/rfc7519#section-4.1.3
+            # Note: if not specified, the Push endpoint URL will be used.
+        "serviceAccountEmail": "A String", # [Service account
+            # email](https://cloud.google.com/iam/docs/service-accounts)
+            # to be used for generating the OIDC token. The caller (for
+            # CreateSubscription, UpdateSubscription, and ModifyPushConfig RPCs) must
+            # have the iam.serviceAccounts.actAs permission for the service account.
+      },
       "pushEndpoint": "A String", # A URL locating the endpoint to which messages should be pushed.
           # For example, a Webhook endpoint might use "https://example.com/push".
     },
-    "name": "A String", # The name of the subscription. It must have the format
-        # `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
-        # start with a letter, and contain only letters (`[A-Za-z]`), numbers
-        # (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
-        # plus (`+`) or percent signs (`%`). It must be between 3 and 255 characters
-        # in length, and it must not start with `"goog"`.
+    "topic": "A String", # The name of the topic from which this subscription is receiving messages.
+        # Format is `projects/{project}/topics/{topic}`.
+        # The value of this field will be `_deleted-topic_` if the topic has been
+        # deleted.
+    "messageRetentionDuration": "A String", # How long to retain unacknowledged messages in the subscription's backlog,
+        # from the moment a message is published.
+        # If `retain_acked_messages` is true, then this also configures the retention
+        # of acknowledged messages, and thus configures how far back in time a `Seek`
+        # can be done. Defaults to 7 days. Cannot be more than 7 days or less than 10
+        # minutes.
+    "retainAckedMessages": True or False, # Indicates whether to retain acknowledged messages. If true, then
+        # messages are not expunged from the subscription's backlog, even if they are
+        # acknowledged, until they fall out of the `message_retention_duration`
+        # window. This must be true if you would like to
+        # <a
+        # href="https://cloud.google.com/pubsub/docs/replay-overview#seek_to_a_time">
+        # Seek to a timestamp</a>.
+    "expirationPolicy": { # A policy that specifies the conditions for resource expiration (i.e., # A policy that specifies the conditions for this subscription's expiration.
+        # A subscription is considered active as long as any connected subscriber is
+        # successfully consuming messages from the subscription or is issuing
+        # operations on the subscription. If `expiration_policy` is not set, a
+        # *default policy* with `ttl` of 31 days will be used. The minimum allowed
+        # value for `expiration_policy.ttl` is 1 day.
+        # automatic resource deletion).
+      "ttl": "A String", # Specifies the "time-to-live" duration for an associated resource. The
+          # resource expires if it is not active for a period of `ttl`. The definition
+          # of "activity" depends on the type of the associated resource. The minimum
+          # and maximum allowed values for `ttl` depend on the type of the associated
+          # resource, as well. If `ttl` is not set, the associated resource never
+          # expires.
+    },
   }</pre>
 </div>
 
@@ -355,16 +460,23 @@ Returns:
   An object of the form:
 
     { # A subscription resource.
-    "ackDeadlineSeconds": 42, # This value is the maximum time after a subscriber receives a message
-        # before the subscriber should acknowledge the message. After message
-        # delivery but before the ack deadline expires and before the message is
-        # acknowledged, it is an outstanding message and will not be delivered
-        # again during that time (on a best-effort basis).
+    "name": "A String", # The name of the subscription. It must have the format
+        # `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
+        # start with a letter, and contain only letters (`[A-Za-z]`), numbers
+        # (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
+        # plus (`+`) or percent signs (`%`). It must be between 3 and 255 characters
+        # in length, and it must not start with `"goog"`.
+    "ackDeadlineSeconds": 42, # The approximate amount of time (on a best-effort basis) Pub/Sub waits for
+        # the subscriber to acknowledge receipt before resending the message. In the
+        # interval after the message is delivered and before it is acknowledged, it
+        # is considered to be <i>outstanding</i>. During that time period, the
+        # message will not be redelivered (on a best-effort basis).
         #
         # For pull subscriptions, this value is used as the initial value for the ack
         # deadline. To override this value for a given message, call
         # `ModifyAckDeadline` with the corresponding `ack_id` if using
-        # pull.
+        # non-streaming pull or send the `ack_id` in a
+        # `StreamingModifyAckDeadlineRequest` if using streaming pull.
         # The minimum custom deadline you can specify is 10 seconds.
         # The maximum custom deadline you can specify is 600 seconds (10 minutes).
         # If this parameter is 0, a default value of 10 seconds is used.
@@ -374,10 +486,10 @@ Returns:
         #
         # If the subscriber never acknowledges the message, the Pub/Sub
         # system will eventually redeliver the message.
-    "topic": "A String", # The name of the topic from which this subscription is receiving messages.
-        # Format is `projects/{project}/topics/{topic}`.
-        # The value of this field will be `_deleted-topic_` if the topic has been
-        # deleted.
+    "labels": { # See <a href="https://cloud.google.com/pubsub/docs/labels"> Creating and
+        # managing labels</a>.
+      "a_key": "A String",
+    },
     "pushConfig": { # Configuration for a push delivery endpoint. # If push delivery is used with this subscription, this field is
         # used to configure it. An empty `pushConfig` signifies that the subscriber
         # will pull and ack messages using API methods.
@@ -404,15 +516,56 @@ Returns:
           # * `v1` or `v1beta2`: uses the push format defined in the v1 Pub/Sub API.
         "a_key": "A String",
       },
+      "oidcToken": { # Contains information needed for generating an # If specified, Pub/Sub will generate and attach an OIDC JWT token as an
+          # `Authorization` header in the HTTP request for every pushed message.
+          # [OpenID Connect
+          # token](https://developers.google.com/identity/protocols/OpenIDConnect).
+        "audience": "A String", # Audience to be used when generating OIDC token. The audience claim
+            # identifies the recipients that the JWT is intended for. The audience
+            # value is a single case-sensitive string. Having multiple values (array)
+            # for the audience field is not supported. More info about the OIDC JWT
+            # token audience here: https://tools.ietf.org/html/rfc7519#section-4.1.3
+            # Note: if not specified, the Push endpoint URL will be used.
+        "serviceAccountEmail": "A String", # [Service account
+            # email](https://cloud.google.com/iam/docs/service-accounts)
+            # to be used for generating the OIDC token. The caller (for
+            # CreateSubscription, UpdateSubscription, and ModifyPushConfig RPCs) must
+            # have the iam.serviceAccounts.actAs permission for the service account.
+      },
       "pushEndpoint": "A String", # A URL locating the endpoint to which messages should be pushed.
           # For example, a Webhook endpoint might use "https://example.com/push".
     },
-    "name": "A String", # The name of the subscription. It must have the format
-        # `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
-        # start with a letter, and contain only letters (`[A-Za-z]`), numbers
-        # (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
-        # plus (`+`) or percent signs (`%`). It must be between 3 and 255 characters
-        # in length, and it must not start with `"goog"`.
+    "topic": "A String", # The name of the topic from which this subscription is receiving messages.
+        # Format is `projects/{project}/topics/{topic}`.
+        # The value of this field will be `_deleted-topic_` if the topic has been
+        # deleted.
+    "messageRetentionDuration": "A String", # How long to retain unacknowledged messages in the subscription's backlog,
+        # from the moment a message is published.
+        # If `retain_acked_messages` is true, then this also configures the retention
+        # of acknowledged messages, and thus configures how far back in time a `Seek`
+        # can be done. Defaults to 7 days. Cannot be more than 7 days or less than 10
+        # minutes.
+    "retainAckedMessages": True or False, # Indicates whether to retain acknowledged messages. If true, then
+        # messages are not expunged from the subscription's backlog, even if they are
+        # acknowledged, until they fall out of the `message_retention_duration`
+        # window. This must be true if you would like to
+        # <a
+        # href="https://cloud.google.com/pubsub/docs/replay-overview#seek_to_a_time">
+        # Seek to a timestamp</a>.
+    "expirationPolicy": { # A policy that specifies the conditions for resource expiration (i.e., # A policy that specifies the conditions for this subscription's expiration.
+        # A subscription is considered active as long as any connected subscriber is
+        # successfully consuming messages from the subscription or is issuing
+        # operations on the subscription. If `expiration_policy` is not set, a
+        # *default policy* with `ttl` of 31 days will be used. The minimum allowed
+        # value for `expiration_policy.ttl` is 1 day.
+        # automatic resource deletion).
+      "ttl": "A String", # Specifies the "time-to-live" duration for an associated resource. The
+          # resource expires if it is not active for a period of `ttl`. The definition
+          # of "activity" depends on the type of the associated resource. The minimum
+          # and maximum allowed values for `ttl` depend on the type of the associated
+          # resource, as well. If `ttl` is not set, the associated resource never
+          # expires.
+    },
   }</pre>
 </div>
 
@@ -437,12 +590,12 @@ Returns:
       # specify access control policies for Cloud Platform resources.
       #
       #
-      # A `Policy` consists of a list of `bindings`. A `Binding` binds a list of
+      # A `Policy` consists of a list of `bindings`. A `binding` binds a list of
       # `members` to a `role`, where the members can be user accounts, Google groups,
       # Google domains, and service accounts. A `role` is a named list of permissions
       # defined by IAM.
       #
-      # **Example**
+      # **JSON Example**
       #
       #     {
       #       "bindings": [
@@ -452,7 +605,7 @@ Returns:
       #             "user:mike@example.com",
       #             "group:admins@example.com",
       #             "domain:google.com",
-      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com",
+      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com"
       #           ]
       #         },
       #         {
@@ -462,15 +615,27 @@ Returns:
       #       ]
       #     }
       #
+      # **YAML Example**
+      #
+      #     bindings:
+      #     - members:
+      #       - user:mike@example.com
+      #       - group:admins@example.com
+      #       - domain:google.com
+      #       - serviceAccount:my-other-app@appspot.gserviceaccount.com
+      #       role: roles/owner
+      #     - members:
+      #       - user:sean@example.com
+      #       role: roles/viewer
+      #
+      #
       # For a description of IAM and its features, see the
-      # [IAM developer's guide](https://cloud.google.com/iam).
+      # [IAM developer's guide](https://cloud.google.com/iam/docs).
     "bindings": [ # Associates a list of `members` to a `role`.
-        # Multiple `bindings` must not be specified for the same `role`.
         # `bindings` with no members will result in an error.
       { # Associates `members` with a `role`.
         "role": "A String", # Role that is assigned to `members`.
             # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
-            # Required
         "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
             # `members` can have the following values:
             #
@@ -481,7 +646,7 @@ Returns:
             #    who is authenticated with a Google account or a service account.
             #
             # * `user:{emailid}`: An email address that represents a specific Google
-            #    account. For example, `alice@gmail.com` or `joe@example.com`.
+            #    account. For example, `alice@gmail.com` .
             #
             #
             # * `serviceAccount:{emailid}`: An email address that represents a service
@@ -490,13 +655,36 @@ Returns:
             # * `group:{emailid}`: An email address that represents a Google group.
             #    For example, `admins@example.com`.
             #
-            # * `domain:{domain}`: A Google Apps domain name that represents all the
+            #
+            # * `domain:{domain}`: The G Suite domain (primary) that represents all the
             #    users of that domain. For example, `google.com` or `example.com`.
             #
           "A String",
         ],
+        "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
+            # NOTE: An unsatisfied condition will not allow user access via current
+            # binding. Different bindings, including their conditions, are examined
+            # independently.
+            #
+            #     title: "User account presence"
+            #     description: "Determines whether the request has a user account"
+            #     expression: "size(request.user) > 0"
+          "location": "A String", # An optional string indicating the location of the expression for error
+              # reporting, e.g. a file name and a position in the file.
+          "expression": "A String", # Textual representation of an expression in
+              # Common Expression Language syntax.
+              #
+              # The application context of the containing message determines which
+              # well-known feature set of CEL is supported.
+          "description": "A String", # An optional description of the expression. This is a longer text which
+              # describes the expression, e.g. when hovered over it in a UI.
+          "title": "A String", # An optional title for the expression, i.e. a short string describing
+              # its purpose. This can be used e.g. in UIs which allow to enter the
+              # expression.
+        },
       },
     ],
+    "version": 42, # Deprecated.
     "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
         # prevent simultaneous updates of a policy from overwriting each other.
         # It is strongly suggested that systems make use of the `etag` in the
@@ -507,7 +695,6 @@ Returns:
         #
         # If no `etag` is provided in the call to `setIamPolicy`, then the existing
         # policy is overwritten blindly.
-    "version": 42, # Version of the `Policy`. The default version is 0.
   }</pre>
 </div>
 
@@ -516,8 +703,8 @@ Returns:
   <pre>Lists matching subscriptions.
 
 Args:
-  project: string, The name of the cloud project that subscriptions belong to.
-Format is `projects/{project}`. (required)
+  project: string, The name of the project in which to list subscriptions.
+Format is `projects/{project-id}`. (required)
   pageSize: integer, Maximum number of subscriptions to return.
   pageToken: string, The value returned by the last `ListSubscriptionsResponse`; indicates that
 this is a continuation of a prior `ListSubscriptions` call, and that the
@@ -536,16 +723,23 @@ Returns:
         # `ListSubscriptionsRequest` to get more subscriptions.
     "subscriptions": [ # The subscriptions that match the request.
       { # A subscription resource.
-        "ackDeadlineSeconds": 42, # This value is the maximum time after a subscriber receives a message
-            # before the subscriber should acknowledge the message. After message
-            # delivery but before the ack deadline expires and before the message is
-            # acknowledged, it is an outstanding message and will not be delivered
-            # again during that time (on a best-effort basis).
+        "name": "A String", # The name of the subscription. It must have the format
+            # `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
+            # start with a letter, and contain only letters (`[A-Za-z]`), numbers
+            # (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
+            # plus (`+`) or percent signs (`%`). It must be between 3 and 255 characters
+            # in length, and it must not start with `"goog"`.
+        "ackDeadlineSeconds": 42, # The approximate amount of time (on a best-effort basis) Pub/Sub waits for
+            # the subscriber to acknowledge receipt before resending the message. In the
+            # interval after the message is delivered and before it is acknowledged, it
+            # is considered to be <i>outstanding</i>. During that time period, the
+            # message will not be redelivered (on a best-effort basis).
             #
             # For pull subscriptions, this value is used as the initial value for the ack
             # deadline. To override this value for a given message, call
             # `ModifyAckDeadline` with the corresponding `ack_id` if using
-            # pull.
+            # non-streaming pull or send the `ack_id` in a
+            # `StreamingModifyAckDeadlineRequest` if using streaming pull.
             # The minimum custom deadline you can specify is 10 seconds.
             # The maximum custom deadline you can specify is 600 seconds (10 minutes).
             # If this parameter is 0, a default value of 10 seconds is used.
@@ -555,10 +749,10 @@ Returns:
             #
             # If the subscriber never acknowledges the message, the Pub/Sub
             # system will eventually redeliver the message.
-        "topic": "A String", # The name of the topic from which this subscription is receiving messages.
-            # Format is `projects/{project}/topics/{topic}`.
-            # The value of this field will be `_deleted-topic_` if the topic has been
-            # deleted.
+        "labels": { # See <a href="https://cloud.google.com/pubsub/docs/labels"> Creating and
+            # managing labels</a>.
+          "a_key": "A String",
+        },
         "pushConfig": { # Configuration for a push delivery endpoint. # If push delivery is used with this subscription, this field is
             # used to configure it. An empty `pushConfig` signifies that the subscriber
             # will pull and ack messages using API methods.
@@ -585,15 +779,56 @@ Returns:
               # * `v1` or `v1beta2`: uses the push format defined in the v1 Pub/Sub API.
             "a_key": "A String",
           },
+          "oidcToken": { # Contains information needed for generating an # If specified, Pub/Sub will generate and attach an OIDC JWT token as an
+              # `Authorization` header in the HTTP request for every pushed message.
+              # [OpenID Connect
+              # token](https://developers.google.com/identity/protocols/OpenIDConnect).
+            "audience": "A String", # Audience to be used when generating OIDC token. The audience claim
+                # identifies the recipients that the JWT is intended for. The audience
+                # value is a single case-sensitive string. Having multiple values (array)
+                # for the audience field is not supported. More info about the OIDC JWT
+                # token audience here: https://tools.ietf.org/html/rfc7519#section-4.1.3
+                # Note: if not specified, the Push endpoint URL will be used.
+            "serviceAccountEmail": "A String", # [Service account
+                # email](https://cloud.google.com/iam/docs/service-accounts)
+                # to be used for generating the OIDC token. The caller (for
+                # CreateSubscription, UpdateSubscription, and ModifyPushConfig RPCs) must
+                # have the iam.serviceAccounts.actAs permission for the service account.
+          },
           "pushEndpoint": "A String", # A URL locating the endpoint to which messages should be pushed.
               # For example, a Webhook endpoint might use "https://example.com/push".
         },
-        "name": "A String", # The name of the subscription. It must have the format
-            # `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
-            # start with a letter, and contain only letters (`[A-Za-z]`), numbers
-            # (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
-            # plus (`+`) or percent signs (`%`). It must be between 3 and 255 characters
-            # in length, and it must not start with `"goog"`.
+        "topic": "A String", # The name of the topic from which this subscription is receiving messages.
+            # Format is `projects/{project}/topics/{topic}`.
+            # The value of this field will be `_deleted-topic_` if the topic has been
+            # deleted.
+        "messageRetentionDuration": "A String", # How long to retain unacknowledged messages in the subscription's backlog,
+            # from the moment a message is published.
+            # If `retain_acked_messages` is true, then this also configures the retention
+            # of acknowledged messages, and thus configures how far back in time a `Seek`
+            # can be done. Defaults to 7 days. Cannot be more than 7 days or less than 10
+            # minutes.
+        "retainAckedMessages": True or False, # Indicates whether to retain acknowledged messages. If true, then
+            # messages are not expunged from the subscription's backlog, even if they are
+            # acknowledged, until they fall out of the `message_retention_duration`
+            # window. This must be true if you would like to
+            # <a
+            # href="https://cloud.google.com/pubsub/docs/replay-overview#seek_to_a_time">
+            # Seek to a timestamp</a>.
+        "expirationPolicy": { # A policy that specifies the conditions for resource expiration (i.e., # A policy that specifies the conditions for this subscription's expiration.
+            # A subscription is considered active as long as any connected subscriber is
+            # successfully consuming messages from the subscription or is issuing
+            # operations on the subscription. If `expiration_policy` is not set, a
+            # *default policy* with `ttl` of 31 days will be used. The minimum allowed
+            # value for `expiration_policy.ttl` is 1 day.
+            # automatic resource deletion).
+          "ttl": "A String", # Specifies the "time-to-live" duration for an associated resource. The
+              # resource expires if it is not active for a period of `ttl`. The definition
+              # of "activity" depends on the type of the associated resource. The minimum
+              # and maximum allowed values for `ttl` depend on the type of the associated
+              # resource, as well. If `ttl` is not set, the associated resource never
+              # expires.
+        },
       },
     ],
   }</pre>
@@ -631,8 +866,9 @@ Format is `projects/{project}/subscriptions/{sub}`. (required)
     "ackDeadlineSeconds": 42, # The new ack deadline with respect to the time this request was sent to
         # the Pub/Sub system. For example, if the value is 10, the new
         # ack deadline will expire 10 seconds after the `ModifyAckDeadline` call
-        # was made. Specifying zero may immediately make the message available for
-        # another pull request.
+        # was made. Specifying zero might immediately make the message available for
+        # delivery to another subscriber client. This typically results in an
+        # increase in the rate of message redeliveries (that is, duplicates).
         # The minimum deadline you can specify is 0 seconds.
         # The maximum deadline you can specify is 600 seconds (10 minutes).
     "ackIds": [ # List of acknowledgment IDs.
@@ -681,7 +917,7 @@ Format is `projects/{project}/subscriptions/{sub}`. (required)
         # An empty `pushConfig` indicates that the Pub/Sub system should
         # stop pushing messages from the given subscription and allow
         # messages to be pulled and acknowledged - effectively pausing
-        # the subscription if `Pull` is not called.
+        # the subscription if `Pull` or `StreamingPull` is not called.
       "attributes": { # Endpoint configuration attributes.
           #
           # Every endpoint has a set of API supported attributes that can be used to
@@ -704,6 +940,22 @@ Format is `projects/{project}/subscriptions/{sub}`. (required)
           # * `v1beta1`: uses the push format defined in the v1beta1 Pub/Sub API.
           # * `v1` or `v1beta2`: uses the push format defined in the v1 Pub/Sub API.
         "a_key": "A String",
+      },
+      "oidcToken": { # Contains information needed for generating an # If specified, Pub/Sub will generate and attach an OIDC JWT token as an
+          # `Authorization` header in the HTTP request for every pushed message.
+          # [OpenID Connect
+          # token](https://developers.google.com/identity/protocols/OpenIDConnect).
+        "audience": "A String", # Audience to be used when generating OIDC token. The audience claim
+            # identifies the recipients that the JWT is intended for. The audience
+            # value is a single case-sensitive string. Having multiple values (array)
+            # for the audience field is not supported. More info about the OIDC JWT
+            # token audience here: https://tools.ietf.org/html/rfc7519#section-4.1.3
+            # Note: if not specified, the Push endpoint URL will be used.
+        "serviceAccountEmail": "A String", # [Service account
+            # email](https://cloud.google.com/iam/docs/service-accounts)
+            # to be used for generating the OIDC token. The caller (for
+            # CreateSubscription, UpdateSubscription, and ModifyPushConfig RPCs) must
+            # have the iam.serviceAccounts.actAs permission for the service account.
       },
       "pushEndpoint": "A String", # A URL locating the endpoint to which messages should be pushed.
           # For example, a Webhook endpoint might use "https://example.com/push".
@@ -731,9 +983,254 @@ Returns:
 </div>
 
 <div class="method">
+    <code class="details" id="patch">patch(name, body, x__xgafv=None)</code>
+  <pre>Updates an existing subscription. Note that certain properties of a
+subscription, such as its topic, are not modifiable.
+
+Args:
+  name: string, The name of the subscription. It must have the format
+`"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
+start with a letter, and contain only letters (`[A-Za-z]`), numbers
+(`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
+plus (`+`) or percent signs (`%`). It must be between 3 and 255 characters
+in length, and it must not start with `"goog"`. (required)
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # Request for the UpdateSubscription method.
+    "updateMask": "A String", # Indicates which fields in the provided subscription to update.
+        # Must be specified and non-empty.
+    "subscription": { # A subscription resource. # The updated subscription object.
+      "name": "A String", # The name of the subscription. It must have the format
+          # `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
+          # start with a letter, and contain only letters (`[A-Za-z]`), numbers
+          # (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
+          # plus (`+`) or percent signs (`%`). It must be between 3 and 255 characters
+          # in length, and it must not start with `"goog"`.
+      "ackDeadlineSeconds": 42, # The approximate amount of time (on a best-effort basis) Pub/Sub waits for
+          # the subscriber to acknowledge receipt before resending the message. In the
+          # interval after the message is delivered and before it is acknowledged, it
+          # is considered to be <i>outstanding</i>. During that time period, the
+          # message will not be redelivered (on a best-effort basis).
+          #
+          # For pull subscriptions, this value is used as the initial value for the ack
+          # deadline. To override this value for a given message, call
+          # `ModifyAckDeadline` with the corresponding `ack_id` if using
+          # non-streaming pull or send the `ack_id` in a
+          # `StreamingModifyAckDeadlineRequest` if using streaming pull.
+          # The minimum custom deadline you can specify is 10 seconds.
+          # The maximum custom deadline you can specify is 600 seconds (10 minutes).
+          # If this parameter is 0, a default value of 10 seconds is used.
+          #
+          # For push delivery, this value is also used to set the request timeout for
+          # the call to the push endpoint.
+          #
+          # If the subscriber never acknowledges the message, the Pub/Sub
+          # system will eventually redeliver the message.
+      "labels": { # See <a href="https://cloud.google.com/pubsub/docs/labels"> Creating and
+          # managing labels</a>.
+        "a_key": "A String",
+      },
+      "pushConfig": { # Configuration for a push delivery endpoint. # If push delivery is used with this subscription, this field is
+          # used to configure it. An empty `pushConfig` signifies that the subscriber
+          # will pull and ack messages using API methods.
+        "attributes": { # Endpoint configuration attributes.
+            #
+            # Every endpoint has a set of API supported attributes that can be used to
+            # control different aspects of the message delivery.
+            #
+            # The currently supported attribute is `x-goog-version`, which you can
+            # use to change the format of the pushed message. This attribute
+            # indicates the version of the data expected by the endpoint. This
+            # controls the shape of the pushed message (i.e., its fields and metadata).
+            # The endpoint version is based on the version of the Pub/Sub API.
+            #
+            # If not present during the `CreateSubscription` call, it will default to
+            # the version of the API used to make such call. If not present during a
+            # `ModifyPushConfig` call, its value will not be changed. `GetSubscription`
+            # calls will always return a valid version, even if the subscription was
+            # created without this attribute.
+            #
+            # The possible values for this attribute are:
+            #
+            # * `v1beta1`: uses the push format defined in the v1beta1 Pub/Sub API.
+            # * `v1` or `v1beta2`: uses the push format defined in the v1 Pub/Sub API.
+          "a_key": "A String",
+        },
+        "oidcToken": { # Contains information needed for generating an # If specified, Pub/Sub will generate and attach an OIDC JWT token as an
+            # `Authorization` header in the HTTP request for every pushed message.
+            # [OpenID Connect
+            # token](https://developers.google.com/identity/protocols/OpenIDConnect).
+          "audience": "A String", # Audience to be used when generating OIDC token. The audience claim
+              # identifies the recipients that the JWT is intended for. The audience
+              # value is a single case-sensitive string. Having multiple values (array)
+              # for the audience field is not supported. More info about the OIDC JWT
+              # token audience here: https://tools.ietf.org/html/rfc7519#section-4.1.3
+              # Note: if not specified, the Push endpoint URL will be used.
+          "serviceAccountEmail": "A String", # [Service account
+              # email](https://cloud.google.com/iam/docs/service-accounts)
+              # to be used for generating the OIDC token. The caller (for
+              # CreateSubscription, UpdateSubscription, and ModifyPushConfig RPCs) must
+              # have the iam.serviceAccounts.actAs permission for the service account.
+        },
+        "pushEndpoint": "A String", # A URL locating the endpoint to which messages should be pushed.
+            # For example, a Webhook endpoint might use "https://example.com/push".
+      },
+      "topic": "A String", # The name of the topic from which this subscription is receiving messages.
+          # Format is `projects/{project}/topics/{topic}`.
+          # The value of this field will be `_deleted-topic_` if the topic has been
+          # deleted.
+      "messageRetentionDuration": "A String", # How long to retain unacknowledged messages in the subscription's backlog,
+          # from the moment a message is published.
+          # If `retain_acked_messages` is true, then this also configures the retention
+          # of acknowledged messages, and thus configures how far back in time a `Seek`
+          # can be done. Defaults to 7 days. Cannot be more than 7 days or less than 10
+          # minutes.
+      "retainAckedMessages": True or False, # Indicates whether to retain acknowledged messages. If true, then
+          # messages are not expunged from the subscription's backlog, even if they are
+          # acknowledged, until they fall out of the `message_retention_duration`
+          # window. This must be true if you would like to
+          # <a
+          # href="https://cloud.google.com/pubsub/docs/replay-overview#seek_to_a_time">
+          # Seek to a timestamp</a>.
+      "expirationPolicy": { # A policy that specifies the conditions for resource expiration (i.e., # A policy that specifies the conditions for this subscription's expiration.
+          # A subscription is considered active as long as any connected subscriber is
+          # successfully consuming messages from the subscription or is issuing
+          # operations on the subscription. If `expiration_policy` is not set, a
+          # *default policy* with `ttl` of 31 days will be used. The minimum allowed
+          # value for `expiration_policy.ttl` is 1 day.
+          # automatic resource deletion).
+        "ttl": "A String", # Specifies the "time-to-live" duration for an associated resource. The
+            # resource expires if it is not active for a period of `ttl`. The definition
+            # of "activity" depends on the type of the associated resource. The minimum
+            # and maximum allowed values for `ttl` depend on the type of the associated
+            # resource, as well. If `ttl` is not set, the associated resource never
+            # expires.
+      },
+    },
+  }
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # A subscription resource.
+    "name": "A String", # The name of the subscription. It must have the format
+        # `"projects/{project}/subscriptions/{subscription}"`. `{subscription}` must
+        # start with a letter, and contain only letters (`[A-Za-z]`), numbers
+        # (`[0-9]`), dashes (`-`), underscores (`_`), periods (`.`), tildes (`~`),
+        # plus (`+`) or percent signs (`%`). It must be between 3 and 255 characters
+        # in length, and it must not start with `"goog"`.
+    "ackDeadlineSeconds": 42, # The approximate amount of time (on a best-effort basis) Pub/Sub waits for
+        # the subscriber to acknowledge receipt before resending the message. In the
+        # interval after the message is delivered and before it is acknowledged, it
+        # is considered to be <i>outstanding</i>. During that time period, the
+        # message will not be redelivered (on a best-effort basis).
+        #
+        # For pull subscriptions, this value is used as the initial value for the ack
+        # deadline. To override this value for a given message, call
+        # `ModifyAckDeadline` with the corresponding `ack_id` if using
+        # non-streaming pull or send the `ack_id` in a
+        # `StreamingModifyAckDeadlineRequest` if using streaming pull.
+        # The minimum custom deadline you can specify is 10 seconds.
+        # The maximum custom deadline you can specify is 600 seconds (10 minutes).
+        # If this parameter is 0, a default value of 10 seconds is used.
+        #
+        # For push delivery, this value is also used to set the request timeout for
+        # the call to the push endpoint.
+        #
+        # If the subscriber never acknowledges the message, the Pub/Sub
+        # system will eventually redeliver the message.
+    "labels": { # See <a href="https://cloud.google.com/pubsub/docs/labels"> Creating and
+        # managing labels</a>.
+      "a_key": "A String",
+    },
+    "pushConfig": { # Configuration for a push delivery endpoint. # If push delivery is used with this subscription, this field is
+        # used to configure it. An empty `pushConfig` signifies that the subscriber
+        # will pull and ack messages using API methods.
+      "attributes": { # Endpoint configuration attributes.
+          #
+          # Every endpoint has a set of API supported attributes that can be used to
+          # control different aspects of the message delivery.
+          #
+          # The currently supported attribute is `x-goog-version`, which you can
+          # use to change the format of the pushed message. This attribute
+          # indicates the version of the data expected by the endpoint. This
+          # controls the shape of the pushed message (i.e., its fields and metadata).
+          # The endpoint version is based on the version of the Pub/Sub API.
+          #
+          # If not present during the `CreateSubscription` call, it will default to
+          # the version of the API used to make such call. If not present during a
+          # `ModifyPushConfig` call, its value will not be changed. `GetSubscription`
+          # calls will always return a valid version, even if the subscription was
+          # created without this attribute.
+          #
+          # The possible values for this attribute are:
+          #
+          # * `v1beta1`: uses the push format defined in the v1beta1 Pub/Sub API.
+          # * `v1` or `v1beta2`: uses the push format defined in the v1 Pub/Sub API.
+        "a_key": "A String",
+      },
+      "oidcToken": { # Contains information needed for generating an # If specified, Pub/Sub will generate and attach an OIDC JWT token as an
+          # `Authorization` header in the HTTP request for every pushed message.
+          # [OpenID Connect
+          # token](https://developers.google.com/identity/protocols/OpenIDConnect).
+        "audience": "A String", # Audience to be used when generating OIDC token. The audience claim
+            # identifies the recipients that the JWT is intended for. The audience
+            # value is a single case-sensitive string. Having multiple values (array)
+            # for the audience field is not supported. More info about the OIDC JWT
+            # token audience here: https://tools.ietf.org/html/rfc7519#section-4.1.3
+            # Note: if not specified, the Push endpoint URL will be used.
+        "serviceAccountEmail": "A String", # [Service account
+            # email](https://cloud.google.com/iam/docs/service-accounts)
+            # to be used for generating the OIDC token. The caller (for
+            # CreateSubscription, UpdateSubscription, and ModifyPushConfig RPCs) must
+            # have the iam.serviceAccounts.actAs permission for the service account.
+      },
+      "pushEndpoint": "A String", # A URL locating the endpoint to which messages should be pushed.
+          # For example, a Webhook endpoint might use "https://example.com/push".
+    },
+    "topic": "A String", # The name of the topic from which this subscription is receiving messages.
+        # Format is `projects/{project}/topics/{topic}`.
+        # The value of this field will be `_deleted-topic_` if the topic has been
+        # deleted.
+    "messageRetentionDuration": "A String", # How long to retain unacknowledged messages in the subscription's backlog,
+        # from the moment a message is published.
+        # If `retain_acked_messages` is true, then this also configures the retention
+        # of acknowledged messages, and thus configures how far back in time a `Seek`
+        # can be done. Defaults to 7 days. Cannot be more than 7 days or less than 10
+        # minutes.
+    "retainAckedMessages": True or False, # Indicates whether to retain acknowledged messages. If true, then
+        # messages are not expunged from the subscription's backlog, even if they are
+        # acknowledged, until they fall out of the `message_retention_duration`
+        # window. This must be true if you would like to
+        # <a
+        # href="https://cloud.google.com/pubsub/docs/replay-overview#seek_to_a_time">
+        # Seek to a timestamp</a>.
+    "expirationPolicy": { # A policy that specifies the conditions for resource expiration (i.e., # A policy that specifies the conditions for this subscription's expiration.
+        # A subscription is considered active as long as any connected subscriber is
+        # successfully consuming messages from the subscription or is issuing
+        # operations on the subscription. If `expiration_policy` is not set, a
+        # *default policy* with `ttl` of 31 days will be used. The minimum allowed
+        # value for `expiration_policy.ttl` is 1 day.
+        # automatic resource deletion).
+      "ttl": "A String", # Specifies the "time-to-live" duration for an associated resource. The
+          # resource expires if it is not active for a period of `ttl`. The definition
+          # of "activity" depends on the type of the associated resource. The minimum
+          # and maximum allowed values for `ttl` depend on the type of the associated
+          # resource, as well. If `ttl` is not set, the associated resource never
+          # expires.
+    },
+  }</pre>
+</div>
+
+<div class="method">
     <code class="details" id="pull">pull(subscription, body, x__xgafv=None)</code>
-  <pre>Pulls messages from the server. Returns an empty list if there are no
-messages available in the backlog. The server may return `UNAVAILABLE` if
+  <pre>Pulls messages from the server. The server may return `UNAVAILABLE` if
 there are too many concurrent pull requests pending for the given
 subscription.
 
@@ -747,9 +1244,7 @@ Format is `projects/{project}/subscriptions/{sub}`. (required)
     "returnImmediately": True or False, # If this field set to true, the system will respond immediately even if
         # it there are no messages available to return in the `Pull` response.
         # Otherwise, the system may wait (for a bounded amount of time) until at
-        # least one message is available, rather than returning no messages. The
-        # client may cancel the request if it does not wish to wait any longer for
-        # the response.
+        # least one message is available, rather than returning no messages.
     "maxMessages": 42, # The maximum number of messages returned for this request. The Pub/Sub
         # system may return fewer than the number specified.
   }
@@ -763,18 +1258,25 @@ Returns:
   An object of the form:
 
     { # Response for the `Pull` method.
-    "receivedMessages": [ # Received Pub/Sub messages. The Pub/Sub system will return zero messages if
-        # there are no more available in the backlog. The Pub/Sub system may return
-        # fewer than the `maxMessages` requested even if there are more messages
-        # available in the backlog.
+    "receivedMessages": [ # Received Pub/Sub messages. The list will be empty if there are no more
+        # messages available in the backlog. For JSON, the response can be entirely
+        # empty. The Pub/Sub system may return fewer than the `maxMessages` requested
+        # even if there are more messages available in the backlog.
       { # A message and its corresponding acknowledgment ID.
         "ackId": "A String", # This ID can be used to acknowledge the received message.
-        "message": { # A message data and its attributes. The message payload must not be empty; # The message.
-            # it must contain either a non-empty data field, or at least one attribute.
+        "message": { # A message that is published by publishers and consumed by subscribers. The # The message.
+            # message must contain either a non-empty data field or at least one attribute.
+            # Note that client libraries represent this object differently
+            # depending on the language. See the corresponding
+            # <a href="https://cloud.google.com/pubsub/docs/reference/libraries">client
+            # library documentation</a> for more information. See
+            # <a href="https://cloud.google.com/pubsub/quotas">Quotas and limits</a>
+            # for more information about message limits.
           "attributes": { # Optional attributes for this message.
             "a_key": "A String",
           },
-          "data": "A String", # The message payload.
+          "data": "A String", # The message data field. If this field is empty, the message must contain
+              # at least one attribute.
           "publishTime": "A String", # The time at which the message was published, populated by the server when
               # it receives the `Publish` call. It must not be populated by the
               # publisher in a `Publish` call.
@@ -785,6 +1287,51 @@ Returns:
         },
       },
     ],
+  }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="seek">seek(subscription, body, x__xgafv=None)</code>
+  <pre>Seeks an existing subscription to a point in time or to a given snapshot,
+whichever is provided in the request. Snapshots are used in
+<a href="https://cloud.google.com/pubsub/docs/replay-overview">Seek</a>
+operations, which allow
+you to manage message acknowledgments in bulk. That is, you can set the
+acknowledgment state of messages in an existing subscription to the state
+captured by a snapshot. Note that both the subscription and the snapshot
+must be on the same topic.
+
+Args:
+  subscription: string, The subscription to affect. (required)
+  body: object, The request body. (required)
+    The object takes the form of:
+
+{ # Request for the `Seek` method.
+    "snapshot": "A String", # The snapshot to seek to. The snapshot's topic must be the same as that of
+        # the provided subscription.
+        # Format is `projects/{project}/snapshots/{snap}`.
+    "time": "A String", # The time to seek to.
+        # Messages retained in the subscription that were published before this
+        # time are marked as acknowledged, and messages retained in the
+        # subscription that were published after this time are marked as
+        # unacknowledged. Note that this operation affects only those messages
+        # retained in the subscription (configured by the combination of
+        # `message_retention_duration` and `retain_acked_messages`). For example,
+        # if `time` corresponds to a point before the message retention
+        # window (or to a point before the system's notion of the subscription
+        # creation time), only retained messages will be marked as unacknowledged,
+        # and already-expunged messages will not be restored.
+  }
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # Response for the `Seek` method (this response is empty).
   }</pre>
 </div>
 
@@ -807,12 +1354,12 @@ See the operation documentation for the appropriate value for this field. (requi
         # specify access control policies for Cloud Platform resources.
         #
         #
-        # A `Policy` consists of a list of `bindings`. A `Binding` binds a list of
+        # A `Policy` consists of a list of `bindings`. A `binding` binds a list of
         # `members` to a `role`, where the members can be user accounts, Google groups,
         # Google domains, and service accounts. A `role` is a named list of permissions
         # defined by IAM.
         #
-        # **Example**
+        # **JSON Example**
         #
         #     {
         #       "bindings": [
@@ -822,7 +1369,7 @@ See the operation documentation for the appropriate value for this field. (requi
         #             "user:mike@example.com",
         #             "group:admins@example.com",
         #             "domain:google.com",
-        #             "serviceAccount:my-other-app@appspot.gserviceaccount.com",
+        #             "serviceAccount:my-other-app@appspot.gserviceaccount.com"
         #           ]
         #         },
         #         {
@@ -832,15 +1379,27 @@ See the operation documentation for the appropriate value for this field. (requi
         #       ]
         #     }
         #
+        # **YAML Example**
+        #
+        #     bindings:
+        #     - members:
+        #       - user:mike@example.com
+        #       - group:admins@example.com
+        #       - domain:google.com
+        #       - serviceAccount:my-other-app@appspot.gserviceaccount.com
+        #       role: roles/owner
+        #     - members:
+        #       - user:sean@example.com
+        #       role: roles/viewer
+        #
+        #
         # For a description of IAM and its features, see the
-        # [IAM developer's guide](https://cloud.google.com/iam).
+        # [IAM developer's guide](https://cloud.google.com/iam/docs).
       "bindings": [ # Associates a list of `members` to a `role`.
-          # Multiple `bindings` must not be specified for the same `role`.
           # `bindings` with no members will result in an error.
         { # Associates `members` with a `role`.
           "role": "A String", # Role that is assigned to `members`.
               # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
-              # Required
           "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
               # `members` can have the following values:
               #
@@ -851,7 +1410,7 @@ See the operation documentation for the appropriate value for this field. (requi
               #    who is authenticated with a Google account or a service account.
               #
               # * `user:{emailid}`: An email address that represents a specific Google
-              #    account. For example, `alice@gmail.com` or `joe@example.com`.
+              #    account. For example, `alice@gmail.com` .
               #
               #
               # * `serviceAccount:{emailid}`: An email address that represents a service
@@ -860,13 +1419,36 @@ See the operation documentation for the appropriate value for this field. (requi
               # * `group:{emailid}`: An email address that represents a Google group.
               #    For example, `admins@example.com`.
               #
-              # * `domain:{domain}`: A Google Apps domain name that represents all the
+              #
+              # * `domain:{domain}`: The G Suite domain (primary) that represents all the
               #    users of that domain. For example, `google.com` or `example.com`.
               #
             "A String",
           ],
+          "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
+              # NOTE: An unsatisfied condition will not allow user access via current
+              # binding. Different bindings, including their conditions, are examined
+              # independently.
+              #
+              #     title: "User account presence"
+              #     description: "Determines whether the request has a user account"
+              #     expression: "size(request.user) > 0"
+            "location": "A String", # An optional string indicating the location of the expression for error
+                # reporting, e.g. a file name and a position in the file.
+            "expression": "A String", # Textual representation of an expression in
+                # Common Expression Language syntax.
+                #
+                # The application context of the containing message determines which
+                # well-known feature set of CEL is supported.
+            "description": "A String", # An optional description of the expression. This is a longer text which
+                # describes the expression, e.g. when hovered over it in a UI.
+            "title": "A String", # An optional title for the expression, i.e. a short string describing
+                # its purpose. This can be used e.g. in UIs which allow to enter the
+                # expression.
+          },
         },
       ],
+      "version": 42, # Deprecated.
       "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
           # prevent simultaneous updates of a policy from overwriting each other.
           # It is strongly suggested that systems make use of the `etag` in the
@@ -877,7 +1459,6 @@ See the operation documentation for the appropriate value for this field. (requi
           #
           # If no `etag` is provided in the call to `setIamPolicy`, then the existing
           # policy is overwritten blindly.
-      "version": 42, # Version of the `Policy`. The default version is 0.
     },
   }
 
@@ -893,12 +1474,12 @@ Returns:
       # specify access control policies for Cloud Platform resources.
       #
       #
-      # A `Policy` consists of a list of `bindings`. A `Binding` binds a list of
+      # A `Policy` consists of a list of `bindings`. A `binding` binds a list of
       # `members` to a `role`, where the members can be user accounts, Google groups,
       # Google domains, and service accounts. A `role` is a named list of permissions
       # defined by IAM.
       #
-      # **Example**
+      # **JSON Example**
       #
       #     {
       #       "bindings": [
@@ -908,7 +1489,7 @@ Returns:
       #             "user:mike@example.com",
       #             "group:admins@example.com",
       #             "domain:google.com",
-      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com",
+      #             "serviceAccount:my-other-app@appspot.gserviceaccount.com"
       #           ]
       #         },
       #         {
@@ -918,15 +1499,27 @@ Returns:
       #       ]
       #     }
       #
+      # **YAML Example**
+      #
+      #     bindings:
+      #     - members:
+      #       - user:mike@example.com
+      #       - group:admins@example.com
+      #       - domain:google.com
+      #       - serviceAccount:my-other-app@appspot.gserviceaccount.com
+      #       role: roles/owner
+      #     - members:
+      #       - user:sean@example.com
+      #       role: roles/viewer
+      #
+      #
       # For a description of IAM and its features, see the
-      # [IAM developer's guide](https://cloud.google.com/iam).
+      # [IAM developer's guide](https://cloud.google.com/iam/docs).
     "bindings": [ # Associates a list of `members` to a `role`.
-        # Multiple `bindings` must not be specified for the same `role`.
         # `bindings` with no members will result in an error.
       { # Associates `members` with a `role`.
         "role": "A String", # Role that is assigned to `members`.
             # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
-            # Required
         "members": [ # Specifies the identities requesting access for a Cloud Platform resource.
             # `members` can have the following values:
             #
@@ -937,7 +1530,7 @@ Returns:
             #    who is authenticated with a Google account or a service account.
             #
             # * `user:{emailid}`: An email address that represents a specific Google
-            #    account. For example, `alice@gmail.com` or `joe@example.com`.
+            #    account. For example, `alice@gmail.com` .
             #
             #
             # * `serviceAccount:{emailid}`: An email address that represents a service
@@ -946,13 +1539,36 @@ Returns:
             # * `group:{emailid}`: An email address that represents a Google group.
             #    For example, `admins@example.com`.
             #
-            # * `domain:{domain}`: A Google Apps domain name that represents all the
+            #
+            # * `domain:{domain}`: The G Suite domain (primary) that represents all the
             #    users of that domain. For example, `google.com` or `example.com`.
             #
           "A String",
         ],
+        "condition": { # Represents an expression text. Example: # The condition that is associated with this binding.
+            # NOTE: An unsatisfied condition will not allow user access via current
+            # binding. Different bindings, including their conditions, are examined
+            # independently.
+            #
+            #     title: "User account presence"
+            #     description: "Determines whether the request has a user account"
+            #     expression: "size(request.user) > 0"
+          "location": "A String", # An optional string indicating the location of the expression for error
+              # reporting, e.g. a file name and a position in the file.
+          "expression": "A String", # Textual representation of an expression in
+              # Common Expression Language syntax.
+              #
+              # The application context of the containing message determines which
+              # well-known feature set of CEL is supported.
+          "description": "A String", # An optional description of the expression. This is a longer text which
+              # describes the expression, e.g. when hovered over it in a UI.
+          "title": "A String", # An optional title for the expression, i.e. a short string describing
+              # its purpose. This can be used e.g. in UIs which allow to enter the
+              # expression.
+        },
       },
     ],
+    "version": 42, # Deprecated.
     "etag": "A String", # `etag` is used for optimistic concurrency control as a way to help
         # prevent simultaneous updates of a policy from overwriting each other.
         # It is strongly suggested that systems make use of the `etag` in the
@@ -963,7 +1579,6 @@ Returns:
         #
         # If no `etag` is provided in the call to `setIamPolicy`, then the existing
         # policy is overwritten blindly.
-    "version": 42, # Version of the `Policy`. The default version is 0.
   }</pre>
 </div>
 

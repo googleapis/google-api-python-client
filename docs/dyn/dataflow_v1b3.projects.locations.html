@@ -72,12 +72,22 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="dataflow_v1b3.html">Google Dataflow API</a> . <a href="dataflow_v1b3.projects.html">projects</a> . <a href="dataflow_v1b3.projects.locations.html">locations</a></h1>
+<h1><a href="dataflow_v1b3.html">Dataflow API</a> . <a href="dataflow_v1b3.projects.html">projects</a> . <a href="dataflow_v1b3.projects.locations.html">locations</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="dataflow_v1b3.projects.locations.jobs.html">jobs()</a></code>
 </p>
 <p class="firstline">Returns the jobs Resource.</p>
+
+<p class="toc_element">
+  <code><a href="dataflow_v1b3.projects.locations.snapshots.html">snapshots()</a></code>
+</p>
+<p class="firstline">Returns the snapshots Resource.</p>
+
+<p class="toc_element">
+  <code><a href="dataflow_v1b3.projects.locations.sql.html">sql()</a></code>
+</p>
+<p class="firstline">Returns the sql Resource.</p>
 
 <p class="toc_element">
   <code><a href="dataflow_v1b3.projects.locations.templates.html">templates()</a></code>
@@ -94,43 +104,23 @@ h1, h2, h3 {
 
 Args:
   projectId: string, The project to send the WorkerMessages to. (required)
-  location: string, The location which contains the job (required)
+  location: string, The [regional endpoint]
+(https://cloud.google.com/dataflow/docs/concepts/regional-endpoints) that
+contains the job. (required)
   body: object, The request body. (required)
     The object takes the form of:
 
 { # A request for sending worker messages to the service.
     "workerMessages": [ # The WorkerMessages to send.
       { # WorkerMessage provides information to the backend about a worker.
-        "workerHealthReport": { # WorkerHealthReport contains information about the health of a worker. # The health of a worker.
-            #
-            # The VM should be identified by the labels attached to the WorkerMessage that
-            # this health ping belongs to.
-          "vmStartupTime": "A String", # The time the VM was booted.
-          "reportInterval": "A String", # The interval at which the worker is sending health reports.
-              # The default value of 0 should be interpreted as the field is not being
-              # explicitly set by the worker.
-          "pods": [ # The pods running on the worker. See:
-              # http://kubernetes.io/v1.1/docs/api-reference/v1/definitions.html#_v1_pod
-              #
-              # This field is used by the worker to send the status of the indvidual
-              # containers running on each worker.
-            {
-              "a_key": "", # Properties of the object.
-            },
-          ],
-          "vmIsHealthy": True or False, # Whether the VM is healthy.
-        },
-        "labels": { # Labels are used to group WorkerMessages.
-            # For example, a worker_message about a particular container
-            # might have the labels:
-            # { "JOB_ID": "2015-04-22",
-            #   "WORKER_ID": "wordcount-vm-2015…"
-            #   "CONTAINER_TYPE": "worker",
-            #   "CONTAINER_ID": "ac1234def"}
-            # Label tags typically correspond to Label enum values. However, for ease
-            # of development other strings can be used as tags. LABEL_UNSPECIFIED should
-            # not be used here.
-          "a_key": "A String",
+        "workerShutdownNotice": { # Shutdown notification from workers. This is to be sent by the shutdown # Shutdown notice by workers.
+            # script of the worker VM so that the backend knows that the VM is being
+            # shut down.
+          "reason": "A String", # The reason for the worker shutdown.
+              # Current possible values are:
+              #   "UNKNOWN": shutdown reason is unknown.
+              #   "PREEMPTION": shutdown reason is preemption.
+              # Other possible reasons may be added in the future.
         },
         "workerMetrics": { # Worker metrics exported from workers. This contains resource utilization # Resource metrics reported by workers.
             # metrics accumulated from a variety of sources. For more information, see
@@ -187,10 +177,61 @@ Args:
             "a_key": "", # Properties of the object.
           },
         },
+        "labels": { # Labels are used to group WorkerMessages.
+            # For example, a worker_message about a particular container
+            # might have the labels:
+            # { "JOB_ID": "2015-04-22",
+            #   "WORKER_ID": "wordcount-vm-2015…"
+            #   "CONTAINER_TYPE": "worker",
+            #   "CONTAINER_ID": "ac1234def"}
+            # Label tags typically correspond to Label enum values. However, for ease
+            # of development other strings can be used as tags. LABEL_UNSPECIFIED should
+            # not be used here.
+          "a_key": "A String",
+        },
+        "workerLifecycleEvent": { # A report of an event in a worker's lifecycle. # Record of worker lifecycle events.
+            # The proto contains one event, because the worker is expected to
+            # asynchronously send each message immediately after the event.
+            # Due to this asynchrony, messages may arrive out of order (or missing), and it
+            # is up to the consumer to interpret.
+            # The timestamp of the event is in the enclosing WorkerMessage proto.
+          "event": "A String", # The event being reported.
+          "containerStartTime": "A String", # The start time of this container. All events will report this so that
+              # events can be grouped together across container/VM restarts.
+          "metadata": { # Other stats that can accompany an event. E.g.
+              # { "downloaded_bytes" : "123456" }
+            "a_key": "A String",
+          },
+        },
         "time": "A String", # The timestamp of the worker_message.
+        "workerHealthReport": { # WorkerHealthReport contains information about the health of a worker. # The health of a worker.
+            #
+            # The VM should be identified by the labels attached to the WorkerMessage that
+            # this health ping belongs to.
+          "vmIsBroken": True or False, # Whether the VM is in a permanently broken state.
+              # Broken VMs should be abandoned or deleted ASAP to avoid assigning or
+              # completing any work.
+          "vmStartupTime": "A String", # The time the VM was booted.
+          "vmIsHealthy": True or False, # Whether the VM is currently healthy.
+          "msg": "A String", # A message describing any unusual health reports.
+          "reportInterval": "A String", # The interval at which the worker is sending health reports.
+              # The default value of 0 should be interpreted as the field is not being
+              # explicitly set by the worker.
+          "pods": [ # The pods running on the worker. See:
+              # http://kubernetes.io/v1.1/docs/api-reference/v1/definitions.html#_v1_pod
+              #
+              # This field is used by the worker to send the status of the indvidual
+              # containers running on each worker.
+            {
+              "a_key": "", # Properties of the object.
+            },
+          ],
+        },
       },
     ],
-    "location": "A String", # The location which contains the job
+    "location": "A String", # The [regional endpoint]
+        # (https://cloud.google.com/dataflow/docs/concepts/regional-endpoints) that
+        # contains the job.
   }
 
   x__xgafv: string, V1 error format.
@@ -214,6 +255,8 @@ Returns:
               # the server.
         },
         "workerMetricsResponse": { # Service-side response to WorkerMessage reporting resource utilization. # Service's response to reporting worker metrics (currently empty).
+        },
+        "workerShutdownNoticeResponse": { # Service-side response to WorkerMessage issuing shutdown notice. # Service's response to shutdown notice (currently empty).
         },
       },
     ],

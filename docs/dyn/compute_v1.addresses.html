@@ -81,14 +81,14 @@ h1, h2, h3 {
   <code><a href="#aggregatedList_next">aggregatedList_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#delete">delete(project, region, address)</a></code></p>
+  <code><a href="#delete">delete(project, region, address, requestId=None)</a></code></p>
 <p class="firstline">Deletes the specified address resource.</p>
 <p class="toc_element">
   <code><a href="#get">get(project, region, address)</a></code></p>
 <p class="firstline">Returns the specified address resource.</p>
 <p class="toc_element">
-  <code><a href="#insert">insert(project, region, body)</a></code></p>
-<p class="firstline">Creates an address resource in the specified project using the data included in the request.</p>
+  <code><a href="#insert">insert(project, region, body, requestId=None)</a></code></p>
+<p class="firstline">Creates an address resource in the specified project by using the data included in the request.</p>
 <p class="toc_element">
   <code><a href="#list">list(project, region, orderBy=None, maxResults=None, pageToken=None, filter=None)</a></code></p>
 <p class="firstline">Retrieves a list of addresses contained within the specified region.</p>
@@ -109,22 +109,21 @@ You can also sort results in descending order based on the creation timestamp us
 Currently, only sorting by name or creationTimestamp desc is supported.
   maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
-  filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
+  filter: string, A filter expression that filters resources listed in the response. The expression must specify the field name, a comparison operator, and the value that you want to use for filtering. The value must be a string, a number, or a boolean. The comparison operator must be either =, !=, >, or <.
 
-The field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.
+For example, if you are filtering Compute Engine instances, you can exclude instances named example-instance by specifying name != example-instance.
 
-For example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.
+You can also filter nested fields. For example, you could specify scheduling.automaticRestart = false to include instances only if they are not scheduled for automatic restarts. You can use filtering on nested fields to filter based on resource labels.
 
-You can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
-
-To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
+To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart = true) (cpuPlatform = "Intel Skylake"). By default, each expression is an AND expression. However, you can include AND and OR expressions explicitly. For example, (cpuPlatform = "Intel Skylake") OR (cpuPlatform = "Intel Broadwell") AND (scheduling.automaticRestart = true).
 
 Returns:
   An object of the form:
 
     {
     "nextPageToken": "A String", # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
-    "items": { # [Output Only] A map of scoped address lists.
+    "kind": "compute#addressAggregatedList", # [Output Only] Type of resource. Always compute#addressAggregatedList for aggregated lists of addresses.
+    "items": { # A list of AddressesScopedList resources.
       "a_key": { # [Output Only] Name of the scope containing this set of addresses.
         "warning": { # [Output Only] Informational warning which replaces the list of addresses when the list is empty.
           "message": "A String", # [Output Only] A human-readable description of the warning code.
@@ -137,25 +136,52 @@ Returns:
             },
           ],
         },
-        "addresses": [ # [Output Only] List of addresses contained in this scope.
-          { # A reserved address resource.
-              "status": "A String", # [Output Only] The status of the address, which can be either IN_USE or RESERVED. An address that is RESERVED is currently reserved and available to use. An IN_USE address is currently being used by another resource and is not available.
-              "kind": "compute#address", # [Output Only] Type of the resource. Always compute#address for addresses.
-              "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-              "region": "A String", # [Output Only] URL of the region where the regional address resides. This field is not applicable to global addresses.
-              "address": "A String", # The static external IP address represented by this resource.
+        "addresses": [ # [Output Only] A list of addresses contained in this scope.
+          { # Represents an IP Address resource.
+                #
+                # An address resource represents a regional internal IP address. Regional internal IP addresses are RFC 1918 addresses that come from either a primary or secondary IP range of a subnet in a VPC network. Regional external IP addresses can be assigned to GCP VM instances, Cloud VPN gateways, regional external forwarding rules for network load balancers (in either Standard or Premium Tier), and regional external forwarding rules for HTTP(S), SSL Proxy, and TCP Proxy load balancers in Standard Tier. For more information, read IP addresses.
+                #
+                # A globalAddresses resource represent a global external IP address. Global external IP addresses are IPv4 or IPv6 addresses. They can only be assigned to global forwarding rules for HTTP(S), SSL Proxy, or TCP Proxy load balancers in Premium Tier. For more information, read Global resources. (== resource_for beta.addresses ==) (== resource_for v1.addresses ==) (== resource_for beta.globalAddresses ==) (== resource_for v1.globalAddresses ==)
+              "status": "A String", # [Output Only] The status of the address, which can be one of RESERVING, RESERVED, or IN_USE. An address that is RESERVING is currently in the process of being reserved. A RESERVED address is currently reserved and available to use. An IN_USE address is currently being used by another resource and is not available.
               "users": [ # [Output Only] The URLs of the resources that are using this address.
                 "A String",
               ],
+              "kind": "compute#address", # [Output Only] Type of the resource. Always compute#address for addresses.
+              "addressType": "A String", # The type of address to reserve, either INTERNAL or EXTERNAL. If unspecified, defaults to EXTERNAL.
+              "description": "A String", # An optional description of this resource. Provide this field when you create the resource.
+              "networkTier": "A String", # This signifies the networking tier used for configuring this address and can only take the following values: PREMIUM or STANDARD. Global forwarding rules can only be Premium Tier. Regional forwarding rules can be either Premium or Standard Tier. Standard Tier addresses applied to regional forwarding rules can be used with any external load balancer. Regional forwarding rules in Premium Tier can only be used with a network load balancer.
+                  #
+                  # If this field is not specified, it is assumed to be PREMIUM.
+              "prefixLength": 42, # The prefix length if the resource reprensents an IP range.
+              "region": "A String", # [Output Only] The URL of the region where the regional address resides. This field is not applicable to global addresses. You must specify this field as part of the HTTP request URL.
+              "ipVersion": "A String", # The IP version that will be used by this address. Valid options are IPV4 or IPV6. This can only be specified for a global address.
+              "network": "A String", # The URL of the network in which to reserve the address. This field can only be used with INTERNAL type with the VPC_PEERING purpose.
+              "purpose": "A String", # The purpose of this resource, which can be one of the following values:
+                  # - `GCE_ENDPOINT` for addresses that are used by VM instances, alias IP ranges, internal load balancers, and similar resources.
+                  # - `DNS_RESOLVER` for a DNS resolver address in a subnetwork
+                  # - `VPC_PEERING` for addresses that are reserved for VPC peer networks.
+                  # - `NAT_AUTO` for addresses that are external IP addresses automatically reserved for Cloud NAT.
+              "address": "A String", # The static IP address represented by this resource.
+              "subnetwork": "A String", # The URL of the subnetwork in which to reserve the address. If an IP address is specified, it must be within the subnetwork's IP range. This field can only be used with INTERNAL type with a GCE_ENDPOINT or DNS_RESOLVER purpose.
               "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
               "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
               "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-              "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+              "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?`. The first character must be a lowercase letter, and all following characters (except for the last character) must be a dash, lowercase letter, or digit. The last character must be a lowercase letter or digit.
             },
         ],
       },
     },
-    "kind": "compute#addressAggregatedList", # [Output Only] Type of resource. Always compute#addressAggregatedList for aggregated lists of addresses.
+    "warning": { # [Output Only] Informational warning message.
+      "message": "A String", # [Output Only] A human-readable description of the warning code.
+      "code": "A String", # [Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.
+      "data": [ # [Output Only] Metadata about this warning in key: value format. For example:
+          # "data": [ { "key": "scope", "value": "zones/us-east1-d" }
+        {
+          "value": "A String", # [Output Only] A warning data value corresponding to the key.
+          "key": "A String", # [Output Only] A key that provides more detail on the warning being returned. For example, for warnings where there are no results in a list request for a particular zone, this key might be scope and the key value might be the zone name. Other examples might be a key indicating a deprecated resource and a suggested replacement, or a warning about invalid network settings (for example, if an instance attempts to perform IP forwarding but is not enabled for IP forwarding).
+        },
+      ],
+    },
     "id": "A String", # [Output Only] Unique identifier for the resource; defined by the server.
     "selfLink": "A String", # [Output Only] Server-defined URL for this resource.
   }</pre>
@@ -176,23 +202,37 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="delete">delete(project, region, address)</code>
+    <code class="details" id="delete">delete(project, region, address, requestId=None)</code>
   <pre>Deletes the specified address resource.
 
 Args:
   project: string, Project ID for this request. (required)
   region: string, Name of the region for this request. (required)
   address: string, Name of the address resource to delete. (required)
+  requestId: string, An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.
+
+For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.
+
+The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).
 
 Returns:
   An object of the form:
 
-    { # An Operation resource, used to manage asynchronous API requests.
+    { # Represents an Operation resource.
+      #
+      # You can use an operation resource to manage asynchronous API requests. For more information, read Handling API responses.
+      #
+      # Operations can be global, regional or zonal.
+      # - For global operations, use the globalOperations resource.
+      # - For regional operations, use the regionOperations resource.
+      # - For zonal operations, use the zonalOperations resource.
+      #
+      # For more information, read  Global, Regional, and Zonal Resources. (== resource_for v1.globalOperations ==) (== resource_for beta.globalOperations ==) (== resource_for v1.regionOperations ==) (== resource_for beta.regionOperations ==) (== resource_for v1.zoneOperations ==) (== resource_for beta.zoneOperations ==)
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
-    "clientOperationId": "A String", # [Output Only] Reserved for future use.
+    "clientOperationId": "A String", # [Output Only] The value of `requestId` if you provided it in the request. Not present otherwise.
     "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
-    "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
+    "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only applicable when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
     "operationType": "A String", # [Output Only] The type of operation, such as insert, update, or delete, and so on.
     "httpErrorMessage": "A String", # [Output Only] If the operation fails, this field contains the HTTP error message that was returned, such as NOT FOUND.
@@ -218,7 +258,7 @@ Returns:
     "startTime": "A String", # [Output Only] The time that this operation was started by the server. This value is in RFC3339 text format.
     "kind": "compute#operation", # [Output Only] Type of the resource. Always compute#operation for Operation resources.
     "name": "A String", # [Output Only] Name of the resource.
-    "region": "A String", # [Output Only] The URL of the region where the operation resides. Only available when performing regional operations.
+    "region": "A String", # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
     "error": { # [Output Only] If errors are generated during processing of the operation, this field will be populated.
       "errors": [ # [Output Only] The array of errors encountered while processing this operation.
         {
@@ -246,25 +286,42 @@ Args:
 Returns:
   An object of the form:
 
-    { # A reserved address resource.
-      "status": "A String", # [Output Only] The status of the address, which can be either IN_USE or RESERVED. An address that is RESERVED is currently reserved and available to use. An IN_USE address is currently being used by another resource and is not available.
-      "kind": "compute#address", # [Output Only] Type of the resource. Always compute#address for addresses.
-      "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-      "region": "A String", # [Output Only] URL of the region where the regional address resides. This field is not applicable to global addresses.
-      "address": "A String", # The static external IP address represented by this resource.
+    { # Represents an IP Address resource.
+        #
+        # An address resource represents a regional internal IP address. Regional internal IP addresses are RFC 1918 addresses that come from either a primary or secondary IP range of a subnet in a VPC network. Regional external IP addresses can be assigned to GCP VM instances, Cloud VPN gateways, regional external forwarding rules for network load balancers (in either Standard or Premium Tier), and regional external forwarding rules for HTTP(S), SSL Proxy, and TCP Proxy load balancers in Standard Tier. For more information, read IP addresses.
+        #
+        # A globalAddresses resource represent a global external IP address. Global external IP addresses are IPv4 or IPv6 addresses. They can only be assigned to global forwarding rules for HTTP(S), SSL Proxy, or TCP Proxy load balancers in Premium Tier. For more information, read Global resources. (== resource_for beta.addresses ==) (== resource_for v1.addresses ==) (== resource_for beta.globalAddresses ==) (== resource_for v1.globalAddresses ==)
+      "status": "A String", # [Output Only] The status of the address, which can be one of RESERVING, RESERVED, or IN_USE. An address that is RESERVING is currently in the process of being reserved. A RESERVED address is currently reserved and available to use. An IN_USE address is currently being used by another resource and is not available.
       "users": [ # [Output Only] The URLs of the resources that are using this address.
         "A String",
       ],
+      "kind": "compute#address", # [Output Only] Type of the resource. Always compute#address for addresses.
+      "addressType": "A String", # The type of address to reserve, either INTERNAL or EXTERNAL. If unspecified, defaults to EXTERNAL.
+      "description": "A String", # An optional description of this resource. Provide this field when you create the resource.
+      "networkTier": "A String", # This signifies the networking tier used for configuring this address and can only take the following values: PREMIUM or STANDARD. Global forwarding rules can only be Premium Tier. Regional forwarding rules can be either Premium or Standard Tier. Standard Tier addresses applied to regional forwarding rules can be used with any external load balancer. Regional forwarding rules in Premium Tier can only be used with a network load balancer.
+          #
+          # If this field is not specified, it is assumed to be PREMIUM.
+      "prefixLength": 42, # The prefix length if the resource reprensents an IP range.
+      "region": "A String", # [Output Only] The URL of the region where the regional address resides. This field is not applicable to global addresses. You must specify this field as part of the HTTP request URL.
+      "ipVersion": "A String", # The IP version that will be used by this address. Valid options are IPV4 or IPV6. This can only be specified for a global address.
+      "network": "A String", # The URL of the network in which to reserve the address. This field can only be used with INTERNAL type with the VPC_PEERING purpose.
+      "purpose": "A String", # The purpose of this resource, which can be one of the following values:
+          # - `GCE_ENDPOINT` for addresses that are used by VM instances, alias IP ranges, internal load balancers, and similar resources.
+          # - `DNS_RESOLVER` for a DNS resolver address in a subnetwork
+          # - `VPC_PEERING` for addresses that are reserved for VPC peer networks.
+          # - `NAT_AUTO` for addresses that are external IP addresses automatically reserved for Cloud NAT.
+      "address": "A String", # The static IP address represented by this resource.
+      "subnetwork": "A String", # The URL of the subnetwork in which to reserve the address. If an IP address is specified, it must be within the subnetwork's IP range. This field can only be used with INTERNAL type with a GCE_ENDPOINT or DNS_RESOLVER purpose.
       "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
       "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
       "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-      "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+      "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?`. The first character must be a lowercase letter, and all following characters (except for the last character) must be a dash, lowercase letter, or digit. The last character must be a lowercase letter or digit.
     }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="insert">insert(project, region, body)</code>
-  <pre>Creates an address resource in the specified project using the data included in the request.
+    <code class="details" id="insert">insert(project, region, body, requestId=None)</code>
+  <pre>Creates an address resource in the specified project by using the data included in the request.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -272,31 +329,62 @@ Args:
   body: object, The request body. (required)
     The object takes the form of:
 
-{ # A reserved address resource.
-    "status": "A String", # [Output Only] The status of the address, which can be either IN_USE or RESERVED. An address that is RESERVED is currently reserved and available to use. An IN_USE address is currently being used by another resource and is not available.
-    "kind": "compute#address", # [Output Only] Type of the resource. Always compute#address for addresses.
-    "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-    "region": "A String", # [Output Only] URL of the region where the regional address resides. This field is not applicable to global addresses.
-    "address": "A String", # The static external IP address represented by this resource.
+{ # Represents an IP Address resource.
+      # 
+      # An address resource represents a regional internal IP address. Regional internal IP addresses are RFC 1918 addresses that come from either a primary or secondary IP range of a subnet in a VPC network. Regional external IP addresses can be assigned to GCP VM instances, Cloud VPN gateways, regional external forwarding rules for network load balancers (in either Standard or Premium Tier), and regional external forwarding rules for HTTP(S), SSL Proxy, and TCP Proxy load balancers in Standard Tier. For more information, read IP addresses.
+      # 
+      # A globalAddresses resource represent a global external IP address. Global external IP addresses are IPv4 or IPv6 addresses. They can only be assigned to global forwarding rules for HTTP(S), SSL Proxy, or TCP Proxy load balancers in Premium Tier. For more information, read Global resources. (== resource_for beta.addresses ==) (== resource_for v1.addresses ==) (== resource_for beta.globalAddresses ==) (== resource_for v1.globalAddresses ==)
+    "status": "A String", # [Output Only] The status of the address, which can be one of RESERVING, RESERVED, or IN_USE. An address that is RESERVING is currently in the process of being reserved. A RESERVED address is currently reserved and available to use. An IN_USE address is currently being used by another resource and is not available.
     "users": [ # [Output Only] The URLs of the resources that are using this address.
       "A String",
     ],
+    "kind": "compute#address", # [Output Only] Type of the resource. Always compute#address for addresses.
+    "addressType": "A String", # The type of address to reserve, either INTERNAL or EXTERNAL. If unspecified, defaults to EXTERNAL.
+    "description": "A String", # An optional description of this resource. Provide this field when you create the resource.
+    "networkTier": "A String", # This signifies the networking tier used for configuring this address and can only take the following values: PREMIUM or STANDARD. Global forwarding rules can only be Premium Tier. Regional forwarding rules can be either Premium or Standard Tier. Standard Tier addresses applied to regional forwarding rules can be used with any external load balancer. Regional forwarding rules in Premium Tier can only be used with a network load balancer.
+        # 
+        # If this field is not specified, it is assumed to be PREMIUM.
+    "prefixLength": 42, # The prefix length if the resource reprensents an IP range.
+    "region": "A String", # [Output Only] The URL of the region where the regional address resides. This field is not applicable to global addresses. You must specify this field as part of the HTTP request URL.
+    "ipVersion": "A String", # The IP version that will be used by this address. Valid options are IPV4 or IPV6. This can only be specified for a global address.
+    "network": "A String", # The URL of the network in which to reserve the address. This field can only be used with INTERNAL type with the VPC_PEERING purpose.
+    "purpose": "A String", # The purpose of this resource, which can be one of the following values:
+        # - `GCE_ENDPOINT` for addresses that are used by VM instances, alias IP ranges, internal load balancers, and similar resources.
+        # - `DNS_RESOLVER` for a DNS resolver address in a subnetwork
+        # - `VPC_PEERING` for addresses that are reserved for VPC peer networks.
+        # - `NAT_AUTO` for addresses that are external IP addresses automatically reserved for Cloud NAT.
+    "address": "A String", # The static IP address represented by this resource.
+    "subnetwork": "A String", # The URL of the subnetwork in which to reserve the address. If an IP address is specified, it must be within the subnetwork's IP range. This field can only be used with INTERNAL type with a GCE_ENDPOINT or DNS_RESOLVER purpose.
     "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
     "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-    "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+    "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?`. The first character must be a lowercase letter, and all following characters (except for the last character) must be a dash, lowercase letter, or digit. The last character must be a lowercase letter or digit.
   }
 
+  requestId: string, An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.
+
+For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments.
+
+The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).
 
 Returns:
   An object of the form:
 
-    { # An Operation resource, used to manage asynchronous API requests.
+    { # Represents an Operation resource.
+      #
+      # You can use an operation resource to manage asynchronous API requests. For more information, read Handling API responses.
+      #
+      # Operations can be global, regional or zonal.
+      # - For global operations, use the globalOperations resource.
+      # - For regional operations, use the regionOperations resource.
+      # - For zonal operations, use the zonalOperations resource.
+      #
+      # For more information, read  Global, Regional, and Zonal Resources. (== resource_for v1.globalOperations ==) (== resource_for beta.globalOperations ==) (== resource_for v1.regionOperations ==) (== resource_for beta.regionOperations ==) (== resource_for v1.zoneOperations ==) (== resource_for beta.zoneOperations ==)
     "targetId": "A String", # [Output Only] The unique target ID, which identifies a specific incarnation of the target resource.
-    "clientOperationId": "A String", # [Output Only] Reserved for future use.
+    "clientOperationId": "A String", # [Output Only] The value of `requestId` if you provided it in the request. Not present otherwise.
     "creationTimestamp": "A String", # [Deprecated] This field is deprecated.
     "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
-    "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only available when performing per-zone operations.
+    "zone": "A String", # [Output Only] The URL of the zone where the operation resides. Only applicable when performing per-zone operations.
     "insertTime": "A String", # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
     "operationType": "A String", # [Output Only] The type of operation, such as insert, update, or delete, and so on.
     "httpErrorMessage": "A String", # [Output Only] If the operation fails, this field contains the HTTP error message that was returned, such as NOT FOUND.
@@ -322,7 +410,7 @@ Returns:
     "startTime": "A String", # [Output Only] The time that this operation was started by the server. This value is in RFC3339 text format.
     "kind": "compute#operation", # [Output Only] Type of the resource. Always compute#operation for Operation resources.
     "name": "A String", # [Output Only] Name of the resource.
-    "region": "A String", # [Output Only] The URL of the region where the operation resides. Only available when performing regional operations.
+    "region": "A String", # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
     "error": { # [Output Only] If errors are generated during processing of the operation, this field will be populated.
       "errors": [ # [Output Only] The array of errors encountered while processing this operation.
         {
@@ -352,40 +440,66 @@ You can also sort results in descending order based on the creation timestamp us
 Currently, only sorting by name or creationTimestamp desc is supported.
   maxResults: integer, The maximum number of results per page that should be returned. If the number of available results is larger than maxResults, Compute Engine returns a nextPageToken that can be used to get the next page of results in subsequent list requests. Acceptable values are 0 to 500, inclusive. (Default: 500)
   pageToken: string, Specifies a page token to use. Set pageToken to the nextPageToken returned by a previous list request to get the next page of results.
-  filter: string, Sets a filter expression for filtering listed resources, in the form filter={expression}. Your {expression} must be in the format: field_name comparison_string literal_string.
+  filter: string, A filter expression that filters resources listed in the response. The expression must specify the field name, a comparison operator, and the value that you want to use for filtering. The value must be a string, a number, or a boolean. The comparison operator must be either =, !=, >, or <.
 
-The field_name is the name of the field you want to compare. Only atomic field types are supported (string, number, boolean). The comparison_string must be either eq (equals) or ne (not equals). The literal_string is the string value to filter to. The literal value must be valid for the type of field you are filtering by (string, number, boolean). For string fields, the literal value is interpreted as a regular expression using RE2 syntax. The literal value must match the entire field.
+For example, if you are filtering Compute Engine instances, you can exclude instances named example-instance by specifying name != example-instance.
 
-For example, to filter for instances that do not have a name of example-instance, you would use filter=name ne example-instance.
+You can also filter nested fields. For example, you could specify scheduling.automaticRestart = false to include instances only if they are not scheduled for automatic restarts. You can use filtering on nested fields to filter based on resource labels.
 
-You can filter on nested fields. For example, you could filter on instances that have set the scheduling.automaticRestart field to true. Use filtering on nested fields to take advantage of labels to organize and search for results based on label values.
-
-To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart eq true) (zone eq us-central1-f). Multiple expressions are treated as AND expressions, meaning that resources must match all expressions to pass the filters.
+To filter on multiple expressions, provide each separate expression within parentheses. For example, (scheduling.automaticRestart = true) (cpuPlatform = "Intel Skylake"). By default, each expression is an AND expression. However, you can include AND and OR expressions explicitly. For example, (cpuPlatform = "Intel Skylake") OR (cpuPlatform = "Intel Broadwell") AND (scheduling.automaticRestart = true).
 
 Returns:
   An object of the form:
 
     { # Contains a list of addresses.
     "nextPageToken": "A String", # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
-    "items": [ # [Output Only] A list of addresses.
-      { # A reserved address resource.
-          "status": "A String", # [Output Only] The status of the address, which can be either IN_USE or RESERVED. An address that is RESERVED is currently reserved and available to use. An IN_USE address is currently being used by another resource and is not available.
-          "kind": "compute#address", # [Output Only] Type of the resource. Always compute#address for addresses.
-          "description": "A String", # An optional description of this resource. Provide this property when you create the resource.
-          "region": "A String", # [Output Only] URL of the region where the regional address resides. This field is not applicable to global addresses.
-          "address": "A String", # The static external IP address represented by this resource.
+    "kind": "compute#addressList", # [Output Only] Type of resource. Always compute#addressList for lists of addresses.
+    "items": [ # A list of Address resources.
+      { # Represents an IP Address resource.
+            #
+            # An address resource represents a regional internal IP address. Regional internal IP addresses are RFC 1918 addresses that come from either a primary or secondary IP range of a subnet in a VPC network. Regional external IP addresses can be assigned to GCP VM instances, Cloud VPN gateways, regional external forwarding rules for network load balancers (in either Standard or Premium Tier), and regional external forwarding rules for HTTP(S), SSL Proxy, and TCP Proxy load balancers in Standard Tier. For more information, read IP addresses.
+            #
+            # A globalAddresses resource represent a global external IP address. Global external IP addresses are IPv4 or IPv6 addresses. They can only be assigned to global forwarding rules for HTTP(S), SSL Proxy, or TCP Proxy load balancers in Premium Tier. For more information, read Global resources. (== resource_for beta.addresses ==) (== resource_for v1.addresses ==) (== resource_for beta.globalAddresses ==) (== resource_for v1.globalAddresses ==)
+          "status": "A String", # [Output Only] The status of the address, which can be one of RESERVING, RESERVED, or IN_USE. An address that is RESERVING is currently in the process of being reserved. A RESERVED address is currently reserved and available to use. An IN_USE address is currently being used by another resource and is not available.
           "users": [ # [Output Only] The URLs of the resources that are using this address.
             "A String",
           ],
+          "kind": "compute#address", # [Output Only] Type of the resource. Always compute#address for addresses.
+          "addressType": "A String", # The type of address to reserve, either INTERNAL or EXTERNAL. If unspecified, defaults to EXTERNAL.
+          "description": "A String", # An optional description of this resource. Provide this field when you create the resource.
+          "networkTier": "A String", # This signifies the networking tier used for configuring this address and can only take the following values: PREMIUM or STANDARD. Global forwarding rules can only be Premium Tier. Regional forwarding rules can be either Premium or Standard Tier. Standard Tier addresses applied to regional forwarding rules can be used with any external load balancer. Regional forwarding rules in Premium Tier can only be used with a network load balancer.
+              #
+              # If this field is not specified, it is assumed to be PREMIUM.
+          "prefixLength": 42, # The prefix length if the resource reprensents an IP range.
+          "region": "A String", # [Output Only] The URL of the region where the regional address resides. This field is not applicable to global addresses. You must specify this field as part of the HTTP request URL.
+          "ipVersion": "A String", # The IP version that will be used by this address. Valid options are IPV4 or IPV6. This can only be specified for a global address.
+          "network": "A String", # The URL of the network in which to reserve the address. This field can only be used with INTERNAL type with the VPC_PEERING purpose.
+          "purpose": "A String", # The purpose of this resource, which can be one of the following values:
+              # - `GCE_ENDPOINT` for addresses that are used by VM instances, alias IP ranges, internal load balancers, and similar resources.
+              # - `DNS_RESOLVER` for a DNS resolver address in a subnetwork
+              # - `VPC_PEERING` for addresses that are reserved for VPC peer networks.
+              # - `NAT_AUTO` for addresses that are external IP addresses automatically reserved for Cloud NAT.
+          "address": "A String", # The static IP address represented by this resource.
+          "subnetwork": "A String", # The URL of the subnetwork in which to reserve the address. If an IP address is specified, it must be within the subnetwork's IP range. This field can only be used with INTERNAL type with a GCE_ENDPOINT or DNS_RESOLVER purpose.
           "creationTimestamp": "A String", # [Output Only] Creation timestamp in RFC3339 text format.
           "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
           "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
-          "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
+          "name": "A String", # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?`. The first character must be a lowercase letter, and all following characters (except for the last character) must be a dash, lowercase letter, or digit. The last character must be a lowercase letter or digit.
         },
     ],
-    "kind": "compute#addressList", # [Output Only] Type of resource. Always compute#addressList for lists of addresses.
-    "id": "A String", # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
-    "selfLink": "A String", # [Output Only] Server-defined URL for the resource.
+    "warning": { # [Output Only] Informational warning message.
+      "message": "A String", # [Output Only] A human-readable description of the warning code.
+      "code": "A String", # [Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.
+      "data": [ # [Output Only] Metadata about this warning in key: value format. For example:
+          # "data": [ { "key": "scope", "value": "zones/us-east1-d" }
+        {
+          "value": "A String", # [Output Only] A warning data value corresponding to the key.
+          "key": "A String", # [Output Only] A key that provides more detail on the warning being returned. For example, for warnings where there are no results in a list request for a particular zone, this key might be scope and the key value might be the zone name. Other examples might be a key indicating a deprecated resource and a suggested replacement, or a warning about invalid network settings (for example, if an instance attempts to perform IP forwarding but is not enabled for IP forwarding).
+        },
+      ],
+    },
+    "id": "A String", # [Output Only] Unique identifier for the resource; defined by the server.
+    "selfLink": "A String", # [Output Only] Server-defined URL for this resource.
   }</pre>
 </div>
 

@@ -13,12 +13,12 @@
 """Test Package set up."""
 from __future__ import absolute_import
 
-__author__ = 'afshar@google.com (Ali Afshar)'
+__author__ = "afshar@google.com (Ali Afshar)"
 
 
 from googleapiclient import _helpers as util
 
 
 def setup_package():
-  """Run on testing package."""
-  util.positional_parameters_enforcement = 'EXCEPTION'
+    """Run on testing package."""
+    util.positional_parameters_enforcement = "EXCEPTION"

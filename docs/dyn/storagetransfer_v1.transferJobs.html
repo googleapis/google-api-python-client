@@ -72,7 +72,7 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="storagetransfer_v1.html">Google Storage Transfer API</a> . <a href="storagetransfer_v1.transferJobs.html">transferJobs</a></h1>
+<h1><a href="storagetransfer_v1.html">Storage Transfer API</a> . <a href="storagetransfer_v1.transferJobs.html">transferJobs</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
   <code><a href="#create">create(body, x__xgafv=None)</a></code></p>
@@ -81,7 +81,7 @@ h1, h2, h3 {
   <code><a href="#get">get(jobName, projectId=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets a transfer job.</p>
 <p class="toc_element">
-  <code><a href="#list">list(pageSize=None, filter=None, pageToken=None, x__xgafv=None)</a></code></p>
+  <code><a href="#list">list(pageSize=None, pageToken=None, x__xgafv=None, filter=None)</a></code></p>
 <p class="firstline">Lists transfer jobs.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -101,17 +101,25 @@ Args:
 { # This resource represents the configuration of a transfer job that runs
       # periodically.
     "transferSpec": { # Configuration for running a transfer. # Transfer specification.
-        # Required.
-      "objectConditions": { # Conditions that determine which objects will be transferred. # Only objects that satisfy these object conditions are included in the set
+      "objectConditions": { # Conditions that determine which objects will be transferred. Applies only # Only objects that satisfy these object conditions are included in the set
           # of data source and data sink objects.  Object conditions based on
           # objects' `lastModificationTime` do not exclude objects in a data sink.
-        "maxTimeElapsedSinceLastModification": "A String", # `maxTimeElapsedSinceLastModification` is the complement to
-            # `minTimeElapsedSinceLastModification`.
+          # to S3 and GCS objects.
+        "maxTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` on or after
+            # `NOW` - `maxTimeElapsedSinceLastModification` and objects that don't have
+            # a `lastModificationTime` are transferred.
+            #
+            # Note that, for each `TransferOperation` started by this `TransferJob`,
+            # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+            # `lastModificationTime` refers to the time of the last change to the
+            # object's content or metadata - specifically, this would be the `updated`
+            # property of GCS objects and the `LastModified` field of S3 objects.
         "includePrefixes": [ # If `includePrefixes` is specified, objects that satisfy the object
             # conditions must have names that start with one of the `includePrefixes`
-            # and that do not start with any of the `excludePrefixes`. If `includePrefixes`
-            # is not specified, all objects except those that have names starting with
-            # one of the `excludePrefixes` must satisfy the object conditions.
+            # and that do not start with any of the `excludePrefixes`. If
+            # `includePrefixes` is not specified, all objects except those that have
+            # names starting with one of the `excludePrefixes` must satisfy the object
+            # conditions.
             #
             # Requirements:
             #
@@ -148,24 +156,26 @@ Args:
             # The max size of `excludePrefixes` is 1000.
           "A String",
         ],
-        "minTimeElapsedSinceLastModification": "A String", # If unspecified, `minTimeElapsedSinceLastModification` takes a zero value
-            # and `maxTimeElapsedSinceLastModification` takes the maximum possible
-            # value of Duration. Objects that satisfy the object conditions
-            # must either have a `lastModificationTime` greater or equal to
-            # `NOW` - `maxTimeElapsedSinceLastModification` and less than
-            # `NOW` - `minTimeElapsedSinceLastModification`, or not have a
-            # `lastModificationTime`.
+        "minTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` before
+            # `NOW` - `minTimeElapsedSinceLastModification` and objects that don't have a
+            # `lastModificationTime` are transferred.
+            #
+            # Note that, for each `TransferOperation` started by this `TransferJob`,
+            # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+            # `lastModificationTime` refers to the time of the last change to the
+            # object's content or metadata - specifically, this would be the `updated`
+            # property of GCS objects and the `LastModified` field of S3 objects.
       },
-      "gcsDataSource": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data source.
-          # its `lastModificationTime` refers to the object's updated time, which changes
-          # when the content or the metadata of the object is updated.
-        "bucketName": "A String", # Google Cloud Storage bucket name (see
-            # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-            # Required.
+      "gcsDataSource": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data source.
+          # name and its `lastModificationTime` refers to the object's updated time,
+          # which changes when the content or the metadata of the object is updated.
+        "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+            # [Bucket Name
+            # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
       },
-      "httpDataSource": { # An HttpData specifies a list of objects on the web to be transferred over # An HTTP URL data source.
-          # HTTP.  The information of the objects to be transferred is contained in a
-          # file referenced by a URL. The first line in the file must be
+      "httpDataSource": { # An HttpData resource specifies a list of objects on the web to be transferred # An HTTP URL data source.
+          # over HTTP.  The information of the objects to be transferred is contained in
+          # a file referenced by a URL. The first line in the file must be
           # "TsvHttpData-1.0", which specifies the format of the file.  Subsequent lines
           # specify the information of the list of objects, one object per list entry.
           # Each entry has the following tab-delimited fields:
@@ -177,12 +187,13 @@ Args:
           # * MD5 - The base64-encoded MD5 hash of the object.
           #
           # For an example of a valid TSV file, see
-          # [Transferring data from URLs](https://cloud.google.com/storage/transfer/#urls)
+          # [Transferring data from
+          # URLs](https://cloud.google.com/storage/transfer/create-url-list).
           #
           # When transferring data based on a URL list, keep the following in mind:
           #
-          # * When an object located at `http(s)://hostname:port/<URL-path>` is transferred
-          # to a data sink, the name of the object at the data sink is
+          # * When an object located at `http(s)://hostname:port/<URL-path>` is
+          # transferred to a data sink, the name of the object at the data sink is
           # `<hostname>/<URL-path>`.
           #
           # * If the specified size of an object does not match the actual size of the
@@ -204,10 +215,9 @@ Args:
           #
           # * [ObjectConditions](#ObjectConditions) have no effect when filtering objects
           # to transfer.
-        "listUrl": "A String", # The URL that points to the file that stores the object list entries.
-            # This file must allow public access.  Currently, only URLs with HTTP and
-            # HTTPS schemes are supported.
-            # Required.
+        "listUrl": "A String", # Required. The URL that points to the file that stores the object list
+            # entries. This file must allow public access.  Currently, only URLs with
+            # HTTP and HTTPS schemes are supported.
       },
       "transferOptions": { # TransferOptions uses three boolean parameters to define the actions # If the option `deleteObjectsUniqueInSink` is `true`, object conditions
           # based on objects' `lastModificationTime` are ignored and do not exclude
@@ -215,31 +225,33 @@ Args:
           # to be performed on objects in a transfer.
         "overwriteObjectsAlreadyExistingInSink": True or False, # Whether overwriting objects that already exist in the sink is allowed.
         "deleteObjectsFromSourceAfterTransfer": True or False, # Whether objects should be deleted from the source after they are
-            # transferred to the sink.
-        "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.
+            # transferred to the sink.  Note that this option and
+            # `deleteObjectsUniqueInSink` are mutually exclusive.
+        "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.  Note that
+            # this option and `deleteObjectsFromSourceAfterTransfer` are mutually
+            # exclusive.
       },
-      "gcsDataSink": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data sink.
-          # its `lastModificationTime` refers to the object's updated time, which changes
-          # when the content or the metadata of the object is updated.
-        "bucketName": "A String", # Google Cloud Storage bucket name (see
-            # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-            # Required.
+      "gcsDataSink": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data sink.
+          # name and its `lastModificationTime` refers to the object's updated time,
+          # which changes when the content or the metadata of the object is updated.
+        "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+            # [Bucket Name
+            # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
       },
-      "awsS3DataSource": { # An AwsS3Data can be a data source, but not a data sink. # An AWS S3 data source.
-          # In an AwsS3Data, an object's name is the S3 object's key name.
-        "awsAccessKey": { # AWS access key (see # AWS access key used to sign the API requests to the AWS S3 bucket.
-            # Permissions on the bucket must be granted to the access ID of the
+      "awsS3DataSource": { # An AwsS3Data resource can be a data source, but not a data sink. # An AWS S3 data source.
+          # In an AwsS3Data resource, an object's name is the S3 object's key name.
+        "awsAccessKey": { # AWS access key (see # Required. AWS access key used to sign the API requests to the AWS S3
+            # bucket. Permissions on the bucket must be granted to the access ID of the
             # AWS access key.
-            # Required.
-            # [AWS Security Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
-          "secretAccessKey": "A String", # AWS secret access key. This field is not returned in RPC responses.
-              # Required.
-          "accessKeyId": "A String", # AWS access key ID.
-              # Required.
+            # [AWS Security
+            # Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
+          "secretAccessKey": "A String", # Required. AWS secret access key. This field is not returned in RPC
+              # responses.
+          "accessKeyId": "A String", # Required. AWS access key ID.
         },
-        "bucketName": "A String", # S3 Bucket name (see
-            # [Creating a bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
-            # Required.
+        "bucketName": "A String", # Required. S3 Bucket name (see
+            # [Creating a
+            # bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
       },
     },
     "status": "A String", # Status of the job. This value MUST be specified for
@@ -249,27 +261,8 @@ Args:
         # run. For example, if you change the job status from `ENABLED` to
         # `DISABLED`, and an operation spawned by the transfer is running, the status
         # change would not affect the current operation.
-    "deletionTime": "A String", # This field cannot be changed by user requests.
-    "description": "A String", # A description provided by the user for the job. Its max length is 1024
-        # bytes when Unicode-encoded.
+    "deletionTime": "A String", # Output only. The time that the transfer job was deleted.
     "schedule": { # Transfers can be scheduled to recur or to run just once. # Schedule specification.
-        # Required.
-      "scheduleStartDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The first day the recurring transfer is scheduled to run. If
-          # `scheduleStartDate` is in the past, the transfer will run for the first
-          # time on the following day.
-          # Required.
-          # time zone are either specified elsewhere or are not significant. The date
-          # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-          # represent a year and month where the day is not significant, e.g. credit card
-          # expiration date. The year may be 0 to represent a month and day independent
-          # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-          # and `google.protobuf.Timestamp`.
-        "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
-            # a year.
-        "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-            # if specifying a year/month where the day is not significant.
-        "month": 42, # Month of year. Must be from 1 to 12.
-      },
       "startTimeOfDay": { # Represents a time of day. The date and time zone are either not significant # The time in UTC at which the transfer will be scheduled to start in a day.
           # Transfers may start later than this time. If not specified, recurring and
           # one-time transfers that are scheduled to run today will run immediately;
@@ -286,30 +279,56 @@ Args:
             # allow the value 60 if it allows leap-seconds.
         "minutes": 42, # Minutes of hour of day. Must be from 0 to 59.
       },
-      "scheduleEndDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The last day the recurring transfer will be run. If `scheduleEndDate`
-          # is the same as `scheduleStartDate`, the transfer will be executed only
-          # once.
-          # time zone are either specified elsewhere or are not significant. The date
-          # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-          # represent a year and month where the day is not significant, e.g. credit card
-          # expiration date. The year may be 0 to represent a month and day independent
-          # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-          # and `google.protobuf.Timestamp`.
+      "scheduleStartDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # Required. The first day the recurring transfer is scheduled to run. If
+          # `scheduleStartDate` is in the past, the transfer will run for the first
+          # time on the following day.
+          # and time zone are either specified elsewhere or are not significant. The date
+          # is relative to the Proleptic Gregorian Calendar. This can represent:
+          #
+          # * A full date, with non-zero year, month and day values
+          # * A month and day value, with a zero year, e.g. an anniversary
+          # * A year on its own, with zero month and day values
+          # * A year and month value, with a zero day, e.g. a credit card expiration date
+          #
+          # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+        "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+            # month and day.
+        "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
+            # if specifying a year by itself or a year and month where the day is not
+            # significant.
         "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
             # a year.
+      },
+      "scheduleEndDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # The last day the recurring transfer will be run. If `scheduleEndDate`
+          # is the same as `scheduleStartDate`, the transfer will be executed only
+          # once.
+          # and time zone are either specified elsewhere or are not significant. The date
+          # is relative to the Proleptic Gregorian Calendar. This can represent:
+          #
+          # * A full date, with non-zero year, month and day values
+          # * A month and day value, with a zero year, e.g. an anniversary
+          # * A year on its own, with zero month and day values
+          # * A year and month value, with a zero day, e.g. a credit card expiration date
+          #
+          # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+        "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+            # month and day.
         "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-            # if specifying a year/month where the day is not significant.
-        "month": 42, # Month of year. Must be from 1 to 12.
+            # if specifying a year by itself or a year and month where the day is not
+            # significant.
+        "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
+            # a year.
       },
     },
-    "projectId": "A String", # The ID of the Google Cloud Platform Console project that owns the job.
-        # Required.
-    "lastModificationTime": "A String", # This field cannot be changed by user requests.
-    "creationTime": "A String", # This field cannot be changed by user requests.
+    "projectId": "A String", # The ID of the Google Cloud Platform Project that owns the job.
+    "lastModificationTime": "A String", # Output only. The time that the transfer job was last modified.
+    "creationTime": "A String", # Output only. The time that the transfer job was created.
     "name": "A String", # A globally unique name assigned by Storage Transfer Service when the
         # job is created. This field should be left empty in requests to create a new
         # transfer job; otherwise, the requests result in an `INVALID_ARGUMENT`
         # error.
+    "description": "A String", # A description provided by the user for the job. Its max length is 1024
+        # bytes when Unicode-encoded.
   }
 
   x__xgafv: string, V1 error format.
@@ -323,17 +342,25 @@ Returns:
     { # This resource represents the configuration of a transfer job that runs
         # periodically.
       "transferSpec": { # Configuration for running a transfer. # Transfer specification.
-          # Required.
-        "objectConditions": { # Conditions that determine which objects will be transferred. # Only objects that satisfy these object conditions are included in the set
+        "objectConditions": { # Conditions that determine which objects will be transferred. Applies only # Only objects that satisfy these object conditions are included in the set
             # of data source and data sink objects.  Object conditions based on
             # objects' `lastModificationTime` do not exclude objects in a data sink.
-          "maxTimeElapsedSinceLastModification": "A String", # `maxTimeElapsedSinceLastModification` is the complement to
-              # `minTimeElapsedSinceLastModification`.
+            # to S3 and GCS objects.
+          "maxTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` on or after
+              # `NOW` - `maxTimeElapsedSinceLastModification` and objects that don't have
+              # a `lastModificationTime` are transferred.
+              #
+              # Note that, for each `TransferOperation` started by this `TransferJob`,
+              # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+              # `lastModificationTime` refers to the time of the last change to the
+              # object's content or metadata - specifically, this would be the `updated`
+              # property of GCS objects and the `LastModified` field of S3 objects.
           "includePrefixes": [ # If `includePrefixes` is specified, objects that satisfy the object
               # conditions must have names that start with one of the `includePrefixes`
-              # and that do not start with any of the `excludePrefixes`. If `includePrefixes`
-              # is not specified, all objects except those that have names starting with
-              # one of the `excludePrefixes` must satisfy the object conditions.
+              # and that do not start with any of the `excludePrefixes`. If
+              # `includePrefixes` is not specified, all objects except those that have
+              # names starting with one of the `excludePrefixes` must satisfy the object
+              # conditions.
               #
               # Requirements:
               #
@@ -370,24 +397,26 @@ Returns:
               # The max size of `excludePrefixes` is 1000.
             "A String",
           ],
-          "minTimeElapsedSinceLastModification": "A String", # If unspecified, `minTimeElapsedSinceLastModification` takes a zero value
-              # and `maxTimeElapsedSinceLastModification` takes the maximum possible
-              # value of Duration. Objects that satisfy the object conditions
-              # must either have a `lastModificationTime` greater or equal to
-              # `NOW` - `maxTimeElapsedSinceLastModification` and less than
-              # `NOW` - `minTimeElapsedSinceLastModification`, or not have a
-              # `lastModificationTime`.
+          "minTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` before
+              # `NOW` - `minTimeElapsedSinceLastModification` and objects that don't have a
+              # `lastModificationTime` are transferred.
+              #
+              # Note that, for each `TransferOperation` started by this `TransferJob`,
+              # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+              # `lastModificationTime` refers to the time of the last change to the
+              # object's content or metadata - specifically, this would be the `updated`
+              # property of GCS objects and the `LastModified` field of S3 objects.
         },
-        "gcsDataSource": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data source.
-            # its `lastModificationTime` refers to the object's updated time, which changes
-            # when the content or the metadata of the object is updated.
-          "bucketName": "A String", # Google Cloud Storage bucket name (see
-              # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-              # Required.
+        "gcsDataSource": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data source.
+            # name and its `lastModificationTime` refers to the object's updated time,
+            # which changes when the content or the metadata of the object is updated.
+          "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+              # [Bucket Name
+              # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
         },
-        "httpDataSource": { # An HttpData specifies a list of objects on the web to be transferred over # An HTTP URL data source.
-            # HTTP.  The information of the objects to be transferred is contained in a
-            # file referenced by a URL. The first line in the file must be
+        "httpDataSource": { # An HttpData resource specifies a list of objects on the web to be transferred # An HTTP URL data source.
+            # over HTTP.  The information of the objects to be transferred is contained in
+            # a file referenced by a URL. The first line in the file must be
             # "TsvHttpData-1.0", which specifies the format of the file.  Subsequent lines
             # specify the information of the list of objects, one object per list entry.
             # Each entry has the following tab-delimited fields:
@@ -399,12 +428,13 @@ Returns:
             # * MD5 - The base64-encoded MD5 hash of the object.
             #
             # For an example of a valid TSV file, see
-            # [Transferring data from URLs](https://cloud.google.com/storage/transfer/#urls)
+            # [Transferring data from
+            # URLs](https://cloud.google.com/storage/transfer/create-url-list).
             #
             # When transferring data based on a URL list, keep the following in mind:
             #
-            # * When an object located at `http(s)://hostname:port/<URL-path>` is transferred
-            # to a data sink, the name of the object at the data sink is
+            # * When an object located at `http(s)://hostname:port/<URL-path>` is
+            # transferred to a data sink, the name of the object at the data sink is
             # `<hostname>/<URL-path>`.
             #
             # * If the specified size of an object does not match the actual size of the
@@ -426,10 +456,9 @@ Returns:
             #
             # * [ObjectConditions](#ObjectConditions) have no effect when filtering objects
             # to transfer.
-          "listUrl": "A String", # The URL that points to the file that stores the object list entries.
-              # This file must allow public access.  Currently, only URLs with HTTP and
-              # HTTPS schemes are supported.
-              # Required.
+          "listUrl": "A String", # Required. The URL that points to the file that stores the object list
+              # entries. This file must allow public access.  Currently, only URLs with
+              # HTTP and HTTPS schemes are supported.
         },
         "transferOptions": { # TransferOptions uses three boolean parameters to define the actions # If the option `deleteObjectsUniqueInSink` is `true`, object conditions
             # based on objects' `lastModificationTime` are ignored and do not exclude
@@ -437,31 +466,33 @@ Returns:
             # to be performed on objects in a transfer.
           "overwriteObjectsAlreadyExistingInSink": True or False, # Whether overwriting objects that already exist in the sink is allowed.
           "deleteObjectsFromSourceAfterTransfer": True or False, # Whether objects should be deleted from the source after they are
-              # transferred to the sink.
-          "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.
+              # transferred to the sink.  Note that this option and
+              # `deleteObjectsUniqueInSink` are mutually exclusive.
+          "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.  Note that
+              # this option and `deleteObjectsFromSourceAfterTransfer` are mutually
+              # exclusive.
         },
-        "gcsDataSink": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data sink.
-            # its `lastModificationTime` refers to the object's updated time, which changes
-            # when the content or the metadata of the object is updated.
-          "bucketName": "A String", # Google Cloud Storage bucket name (see
-              # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-              # Required.
+        "gcsDataSink": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data sink.
+            # name and its `lastModificationTime` refers to the object's updated time,
+            # which changes when the content or the metadata of the object is updated.
+          "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+              # [Bucket Name
+              # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
         },
-        "awsS3DataSource": { # An AwsS3Data can be a data source, but not a data sink. # An AWS S3 data source.
-            # In an AwsS3Data, an object's name is the S3 object's key name.
-          "awsAccessKey": { # AWS access key (see # AWS access key used to sign the API requests to the AWS S3 bucket.
-              # Permissions on the bucket must be granted to the access ID of the
+        "awsS3DataSource": { # An AwsS3Data resource can be a data source, but not a data sink. # An AWS S3 data source.
+            # In an AwsS3Data resource, an object's name is the S3 object's key name.
+          "awsAccessKey": { # AWS access key (see # Required. AWS access key used to sign the API requests to the AWS S3
+              # bucket. Permissions on the bucket must be granted to the access ID of the
               # AWS access key.
-              # Required.
-              # [AWS Security Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
-            "secretAccessKey": "A String", # AWS secret access key. This field is not returned in RPC responses.
-                # Required.
-            "accessKeyId": "A String", # AWS access key ID.
-                # Required.
+              # [AWS Security
+              # Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
+            "secretAccessKey": "A String", # Required. AWS secret access key. This field is not returned in RPC
+                # responses.
+            "accessKeyId": "A String", # Required. AWS access key ID.
           },
-          "bucketName": "A String", # S3 Bucket name (see
-              # [Creating a bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
-              # Required.
+          "bucketName": "A String", # Required. S3 Bucket name (see
+              # [Creating a
+              # bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
         },
       },
       "status": "A String", # Status of the job. This value MUST be specified for
@@ -471,27 +502,8 @@ Returns:
           # run. For example, if you change the job status from `ENABLED` to
           # `DISABLED`, and an operation spawned by the transfer is running, the status
           # change would not affect the current operation.
-      "deletionTime": "A String", # This field cannot be changed by user requests.
-      "description": "A String", # A description provided by the user for the job. Its max length is 1024
-          # bytes when Unicode-encoded.
+      "deletionTime": "A String", # Output only. The time that the transfer job was deleted.
       "schedule": { # Transfers can be scheduled to recur or to run just once. # Schedule specification.
-          # Required.
-        "scheduleStartDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The first day the recurring transfer is scheduled to run. If
-            # `scheduleStartDate` is in the past, the transfer will run for the first
-            # time on the following day.
-            # Required.
-            # time zone are either specified elsewhere or are not significant. The date
-            # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-            # represent a year and month where the day is not significant, e.g. credit card
-            # expiration date. The year may be 0 to represent a month and day independent
-            # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-            # and `google.protobuf.Timestamp`.
-          "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
-              # a year.
-          "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-              # if specifying a year/month where the day is not significant.
-          "month": 42, # Month of year. Must be from 1 to 12.
-        },
         "startTimeOfDay": { # Represents a time of day. The date and time zone are either not significant # The time in UTC at which the transfer will be scheduled to start in a day.
             # Transfers may start later than this time. If not specified, recurring and
             # one-time transfers that are scheduled to run today will run immediately;
@@ -508,30 +520,56 @@ Returns:
               # allow the value 60 if it allows leap-seconds.
           "minutes": 42, # Minutes of hour of day. Must be from 0 to 59.
         },
-        "scheduleEndDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The last day the recurring transfer will be run. If `scheduleEndDate`
-            # is the same as `scheduleStartDate`, the transfer will be executed only
-            # once.
-            # time zone are either specified elsewhere or are not significant. The date
-            # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-            # represent a year and month where the day is not significant, e.g. credit card
-            # expiration date. The year may be 0 to represent a month and day independent
-            # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-            # and `google.protobuf.Timestamp`.
+        "scheduleStartDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # Required. The first day the recurring transfer is scheduled to run. If
+            # `scheduleStartDate` is in the past, the transfer will run for the first
+            # time on the following day.
+            # and time zone are either specified elsewhere or are not significant. The date
+            # is relative to the Proleptic Gregorian Calendar. This can represent:
+            #
+            # * A full date, with non-zero year, month and day values
+            # * A month and day value, with a zero year, e.g. an anniversary
+            # * A year on its own, with zero month and day values
+            # * A year and month value, with a zero day, e.g. a credit card expiration date
+            #
+            # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+          "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+              # month and day.
+          "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
+              # if specifying a year by itself or a year and month where the day is not
+              # significant.
           "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
               # a year.
+        },
+        "scheduleEndDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # The last day the recurring transfer will be run. If `scheduleEndDate`
+            # is the same as `scheduleStartDate`, the transfer will be executed only
+            # once.
+            # and time zone are either specified elsewhere or are not significant. The date
+            # is relative to the Proleptic Gregorian Calendar. This can represent:
+            #
+            # * A full date, with non-zero year, month and day values
+            # * A month and day value, with a zero year, e.g. an anniversary
+            # * A year on its own, with zero month and day values
+            # * A year and month value, with a zero day, e.g. a credit card expiration date
+            #
+            # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+          "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+              # month and day.
           "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-              # if specifying a year/month where the day is not significant.
-          "month": 42, # Month of year. Must be from 1 to 12.
+              # if specifying a year by itself or a year and month where the day is not
+              # significant.
+          "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
+              # a year.
         },
       },
-      "projectId": "A String", # The ID of the Google Cloud Platform Console project that owns the job.
-          # Required.
-      "lastModificationTime": "A String", # This field cannot be changed by user requests.
-      "creationTime": "A String", # This field cannot be changed by user requests.
+      "projectId": "A String", # The ID of the Google Cloud Platform Project that owns the job.
+      "lastModificationTime": "A String", # Output only. The time that the transfer job was last modified.
+      "creationTime": "A String", # Output only. The time that the transfer job was created.
       "name": "A String", # A globally unique name assigned by Storage Transfer Service when the
           # job is created. This field should be left empty in requests to create a new
           # transfer job; otherwise, the requests result in an `INVALID_ARGUMENT`
           # error.
+      "description": "A String", # A description provided by the user for the job. Its max length is 1024
+          # bytes when Unicode-encoded.
     }</pre>
 </div>
 
@@ -540,10 +578,9 @@ Returns:
   <pre>Gets a transfer job.
 
 Args:
-  jobName: string, The job to get.
-Required. (required)
-  projectId: string, The ID of the Google Cloud Platform Console project that owns the job.
-Required.
+  jobName: string, Required. The job to get. (required)
+  projectId: string, Required. The ID of the Google Cloud Platform Console project that owns the
+job.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -555,17 +592,25 @@ Returns:
     { # This resource represents the configuration of a transfer job that runs
         # periodically.
       "transferSpec": { # Configuration for running a transfer. # Transfer specification.
-          # Required.
-        "objectConditions": { # Conditions that determine which objects will be transferred. # Only objects that satisfy these object conditions are included in the set
+        "objectConditions": { # Conditions that determine which objects will be transferred. Applies only # Only objects that satisfy these object conditions are included in the set
             # of data source and data sink objects.  Object conditions based on
             # objects' `lastModificationTime` do not exclude objects in a data sink.
-          "maxTimeElapsedSinceLastModification": "A String", # `maxTimeElapsedSinceLastModification` is the complement to
-              # `minTimeElapsedSinceLastModification`.
+            # to S3 and GCS objects.
+          "maxTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` on or after
+              # `NOW` - `maxTimeElapsedSinceLastModification` and objects that don't have
+              # a `lastModificationTime` are transferred.
+              #
+              # Note that, for each `TransferOperation` started by this `TransferJob`,
+              # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+              # `lastModificationTime` refers to the time of the last change to the
+              # object's content or metadata - specifically, this would be the `updated`
+              # property of GCS objects and the `LastModified` field of S3 objects.
           "includePrefixes": [ # If `includePrefixes` is specified, objects that satisfy the object
               # conditions must have names that start with one of the `includePrefixes`
-              # and that do not start with any of the `excludePrefixes`. If `includePrefixes`
-              # is not specified, all objects except those that have names starting with
-              # one of the `excludePrefixes` must satisfy the object conditions.
+              # and that do not start with any of the `excludePrefixes`. If
+              # `includePrefixes` is not specified, all objects except those that have
+              # names starting with one of the `excludePrefixes` must satisfy the object
+              # conditions.
               #
               # Requirements:
               #
@@ -602,24 +647,26 @@ Returns:
               # The max size of `excludePrefixes` is 1000.
             "A String",
           ],
-          "minTimeElapsedSinceLastModification": "A String", # If unspecified, `minTimeElapsedSinceLastModification` takes a zero value
-              # and `maxTimeElapsedSinceLastModification` takes the maximum possible
-              # value of Duration. Objects that satisfy the object conditions
-              # must either have a `lastModificationTime` greater or equal to
-              # `NOW` - `maxTimeElapsedSinceLastModification` and less than
-              # `NOW` - `minTimeElapsedSinceLastModification`, or not have a
-              # `lastModificationTime`.
+          "minTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` before
+              # `NOW` - `minTimeElapsedSinceLastModification` and objects that don't have a
+              # `lastModificationTime` are transferred.
+              #
+              # Note that, for each `TransferOperation` started by this `TransferJob`,
+              # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+              # `lastModificationTime` refers to the time of the last change to the
+              # object's content or metadata - specifically, this would be the `updated`
+              # property of GCS objects and the `LastModified` field of S3 objects.
         },
-        "gcsDataSource": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data source.
-            # its `lastModificationTime` refers to the object's updated time, which changes
-            # when the content or the metadata of the object is updated.
-          "bucketName": "A String", # Google Cloud Storage bucket name (see
-              # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-              # Required.
+        "gcsDataSource": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data source.
+            # name and its `lastModificationTime` refers to the object's updated time,
+            # which changes when the content or the metadata of the object is updated.
+          "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+              # [Bucket Name
+              # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
         },
-        "httpDataSource": { # An HttpData specifies a list of objects on the web to be transferred over # An HTTP URL data source.
-            # HTTP.  The information of the objects to be transferred is contained in a
-            # file referenced by a URL. The first line in the file must be
+        "httpDataSource": { # An HttpData resource specifies a list of objects on the web to be transferred # An HTTP URL data source.
+            # over HTTP.  The information of the objects to be transferred is contained in
+            # a file referenced by a URL. The first line in the file must be
             # "TsvHttpData-1.0", which specifies the format of the file.  Subsequent lines
             # specify the information of the list of objects, one object per list entry.
             # Each entry has the following tab-delimited fields:
@@ -631,12 +678,13 @@ Returns:
             # * MD5 - The base64-encoded MD5 hash of the object.
             #
             # For an example of a valid TSV file, see
-            # [Transferring data from URLs](https://cloud.google.com/storage/transfer/#urls)
+            # [Transferring data from
+            # URLs](https://cloud.google.com/storage/transfer/create-url-list).
             #
             # When transferring data based on a URL list, keep the following in mind:
             #
-            # * When an object located at `http(s)://hostname:port/<URL-path>` is transferred
-            # to a data sink, the name of the object at the data sink is
+            # * When an object located at `http(s)://hostname:port/<URL-path>` is
+            # transferred to a data sink, the name of the object at the data sink is
             # `<hostname>/<URL-path>`.
             #
             # * If the specified size of an object does not match the actual size of the
@@ -658,10 +706,9 @@ Returns:
             #
             # * [ObjectConditions](#ObjectConditions) have no effect when filtering objects
             # to transfer.
-          "listUrl": "A String", # The URL that points to the file that stores the object list entries.
-              # This file must allow public access.  Currently, only URLs with HTTP and
-              # HTTPS schemes are supported.
-              # Required.
+          "listUrl": "A String", # Required. The URL that points to the file that stores the object list
+              # entries. This file must allow public access.  Currently, only URLs with
+              # HTTP and HTTPS schemes are supported.
         },
         "transferOptions": { # TransferOptions uses three boolean parameters to define the actions # If the option `deleteObjectsUniqueInSink` is `true`, object conditions
             # based on objects' `lastModificationTime` are ignored and do not exclude
@@ -669,31 +716,33 @@ Returns:
             # to be performed on objects in a transfer.
           "overwriteObjectsAlreadyExistingInSink": True or False, # Whether overwriting objects that already exist in the sink is allowed.
           "deleteObjectsFromSourceAfterTransfer": True or False, # Whether objects should be deleted from the source after they are
-              # transferred to the sink.
-          "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.
+              # transferred to the sink.  Note that this option and
+              # `deleteObjectsUniqueInSink` are mutually exclusive.
+          "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.  Note that
+              # this option and `deleteObjectsFromSourceAfterTransfer` are mutually
+              # exclusive.
         },
-        "gcsDataSink": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data sink.
-            # its `lastModificationTime` refers to the object's updated time, which changes
-            # when the content or the metadata of the object is updated.
-          "bucketName": "A String", # Google Cloud Storage bucket name (see
-              # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-              # Required.
+        "gcsDataSink": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data sink.
+            # name and its `lastModificationTime` refers to the object's updated time,
+            # which changes when the content or the metadata of the object is updated.
+          "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+              # [Bucket Name
+              # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
         },
-        "awsS3DataSource": { # An AwsS3Data can be a data source, but not a data sink. # An AWS S3 data source.
-            # In an AwsS3Data, an object's name is the S3 object's key name.
-          "awsAccessKey": { # AWS access key (see # AWS access key used to sign the API requests to the AWS S3 bucket.
-              # Permissions on the bucket must be granted to the access ID of the
+        "awsS3DataSource": { # An AwsS3Data resource can be a data source, but not a data sink. # An AWS S3 data source.
+            # In an AwsS3Data resource, an object's name is the S3 object's key name.
+          "awsAccessKey": { # AWS access key (see # Required. AWS access key used to sign the API requests to the AWS S3
+              # bucket. Permissions on the bucket must be granted to the access ID of the
               # AWS access key.
-              # Required.
-              # [AWS Security Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
-            "secretAccessKey": "A String", # AWS secret access key. This field is not returned in RPC responses.
-                # Required.
-            "accessKeyId": "A String", # AWS access key ID.
-                # Required.
+              # [AWS Security
+              # Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
+            "secretAccessKey": "A String", # Required. AWS secret access key. This field is not returned in RPC
+                # responses.
+            "accessKeyId": "A String", # Required. AWS access key ID.
           },
-          "bucketName": "A String", # S3 Bucket name (see
-              # [Creating a bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
-              # Required.
+          "bucketName": "A String", # Required. S3 Bucket name (see
+              # [Creating a
+              # bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
         },
       },
       "status": "A String", # Status of the job. This value MUST be specified for
@@ -703,27 +752,8 @@ Returns:
           # run. For example, if you change the job status from `ENABLED` to
           # `DISABLED`, and an operation spawned by the transfer is running, the status
           # change would not affect the current operation.
-      "deletionTime": "A String", # This field cannot be changed by user requests.
-      "description": "A String", # A description provided by the user for the job. Its max length is 1024
-          # bytes when Unicode-encoded.
+      "deletionTime": "A String", # Output only. The time that the transfer job was deleted.
       "schedule": { # Transfers can be scheduled to recur or to run just once. # Schedule specification.
-          # Required.
-        "scheduleStartDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The first day the recurring transfer is scheduled to run. If
-            # `scheduleStartDate` is in the past, the transfer will run for the first
-            # time on the following day.
-            # Required.
-            # time zone are either specified elsewhere or are not significant. The date
-            # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-            # represent a year and month where the day is not significant, e.g. credit card
-            # expiration date. The year may be 0 to represent a month and day independent
-            # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-            # and `google.protobuf.Timestamp`.
-          "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
-              # a year.
-          "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-              # if specifying a year/month where the day is not significant.
-          "month": 42, # Month of year. Must be from 1 to 12.
-        },
         "startTimeOfDay": { # Represents a time of day. The date and time zone are either not significant # The time in UTC at which the transfer will be scheduled to start in a day.
             # Transfers may start later than this time. If not specified, recurring and
             # one-time transfers that are scheduled to run today will run immediately;
@@ -740,52 +770,78 @@ Returns:
               # allow the value 60 if it allows leap-seconds.
           "minutes": 42, # Minutes of hour of day. Must be from 0 to 59.
         },
-        "scheduleEndDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The last day the recurring transfer will be run. If `scheduleEndDate`
-            # is the same as `scheduleStartDate`, the transfer will be executed only
-            # once.
-            # time zone are either specified elsewhere or are not significant. The date
-            # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-            # represent a year and month where the day is not significant, e.g. credit card
-            # expiration date. The year may be 0 to represent a month and day independent
-            # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-            # and `google.protobuf.Timestamp`.
+        "scheduleStartDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # Required. The first day the recurring transfer is scheduled to run. If
+            # `scheduleStartDate` is in the past, the transfer will run for the first
+            # time on the following day.
+            # and time zone are either specified elsewhere or are not significant. The date
+            # is relative to the Proleptic Gregorian Calendar. This can represent:
+            #
+            # * A full date, with non-zero year, month and day values
+            # * A month and day value, with a zero year, e.g. an anniversary
+            # * A year on its own, with zero month and day values
+            # * A year and month value, with a zero day, e.g. a credit card expiration date
+            #
+            # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+          "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+              # month and day.
+          "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
+              # if specifying a year by itself or a year and month where the day is not
+              # significant.
           "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
               # a year.
+        },
+        "scheduleEndDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # The last day the recurring transfer will be run. If `scheduleEndDate`
+            # is the same as `scheduleStartDate`, the transfer will be executed only
+            # once.
+            # and time zone are either specified elsewhere or are not significant. The date
+            # is relative to the Proleptic Gregorian Calendar. This can represent:
+            #
+            # * A full date, with non-zero year, month and day values
+            # * A month and day value, with a zero year, e.g. an anniversary
+            # * A year on its own, with zero month and day values
+            # * A year and month value, with a zero day, e.g. a credit card expiration date
+            #
+            # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+          "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+              # month and day.
           "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-              # if specifying a year/month where the day is not significant.
-          "month": 42, # Month of year. Must be from 1 to 12.
+              # if specifying a year by itself or a year and month where the day is not
+              # significant.
+          "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
+              # a year.
         },
       },
-      "projectId": "A String", # The ID of the Google Cloud Platform Console project that owns the job.
-          # Required.
-      "lastModificationTime": "A String", # This field cannot be changed by user requests.
-      "creationTime": "A String", # This field cannot be changed by user requests.
+      "projectId": "A String", # The ID of the Google Cloud Platform Project that owns the job.
+      "lastModificationTime": "A String", # Output only. The time that the transfer job was last modified.
+      "creationTime": "A String", # Output only. The time that the transfer job was created.
       "name": "A String", # A globally unique name assigned by Storage Transfer Service when the
           # job is created. This field should be left empty in requests to create a new
           # transfer job; otherwise, the requests result in an `INVALID_ARGUMENT`
           # error.
+      "description": "A String", # A description provided by the user for the job. Its max length is 1024
+          # bytes when Unicode-encoded.
     }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(pageSize=None, filter=None, pageToken=None, x__xgafv=None)</code>
+    <code class="details" id="list">list(pageSize=None, pageToken=None, x__xgafv=None, filter=None)</code>
   <pre>Lists transfer jobs.
 
 Args:
   pageSize: integer, The list page size. The max allowed value is 256.
-  filter: string, A list of query parameters specified as JSON text in the form of
-{"project_id":"my_project_id",
-"job_names":["jobid1","jobid2",...],
-"job_statuses":["status1","status2",...]}.
-Since `job_names` and `job_statuses` support multiple values, their values
-must be specified with array notation. `project_id` is required. `job_names`
-and `job_statuses` are optional.  The valid values for `job_statuses` are
-case-insensitive: `ENABLED`, `DISABLED`, and `DELETED`.
   pageToken: string, The list page token.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
       2 - v2 error format
+  filter: string, Required. A list of query parameters specified as JSON text in the form of:
+{"project_id":"my_project_id",
+ "job_names":["jobid1","jobid2",...],
+ "job_statuses":["status1","status2",...]}.
+Since `job_names` and `job_statuses` support multiple values, their values
+must be specified with array notation. `project_id` is required.
+`job_names` and `job_statuses` are optional.  The valid values for
+`job_statuses` are case-insensitive: `ENABLED`, `DISABLED`, and `DELETED`.
 
 Returns:
   An object of the form:
@@ -796,17 +852,25 @@ Returns:
       { # This resource represents the configuration of a transfer job that runs
             # periodically.
           "transferSpec": { # Configuration for running a transfer. # Transfer specification.
-              # Required.
-            "objectConditions": { # Conditions that determine which objects will be transferred. # Only objects that satisfy these object conditions are included in the set
+            "objectConditions": { # Conditions that determine which objects will be transferred. Applies only # Only objects that satisfy these object conditions are included in the set
                 # of data source and data sink objects.  Object conditions based on
                 # objects' `lastModificationTime` do not exclude objects in a data sink.
-              "maxTimeElapsedSinceLastModification": "A String", # `maxTimeElapsedSinceLastModification` is the complement to
-                  # `minTimeElapsedSinceLastModification`.
+                # to S3 and GCS objects.
+              "maxTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` on or after
+                  # `NOW` - `maxTimeElapsedSinceLastModification` and objects that don't have
+                  # a `lastModificationTime` are transferred.
+                  #
+                  # Note that, for each `TransferOperation` started by this `TransferJob`,
+                  # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+                  # `lastModificationTime` refers to the time of the last change to the
+                  # object's content or metadata - specifically, this would be the `updated`
+                  # property of GCS objects and the `LastModified` field of S3 objects.
               "includePrefixes": [ # If `includePrefixes` is specified, objects that satisfy the object
                   # conditions must have names that start with one of the `includePrefixes`
-                  # and that do not start with any of the `excludePrefixes`. If `includePrefixes`
-                  # is not specified, all objects except those that have names starting with
-                  # one of the `excludePrefixes` must satisfy the object conditions.
+                  # and that do not start with any of the `excludePrefixes`. If
+                  # `includePrefixes` is not specified, all objects except those that have
+                  # names starting with one of the `excludePrefixes` must satisfy the object
+                  # conditions.
                   #
                   # Requirements:
                   #
@@ -843,24 +907,26 @@ Returns:
                   # The max size of `excludePrefixes` is 1000.
                 "A String",
               ],
-              "minTimeElapsedSinceLastModification": "A String", # If unspecified, `minTimeElapsedSinceLastModification` takes a zero value
-                  # and `maxTimeElapsedSinceLastModification` takes the maximum possible
-                  # value of Duration. Objects that satisfy the object conditions
-                  # must either have a `lastModificationTime` greater or equal to
-                  # `NOW` - `maxTimeElapsedSinceLastModification` and less than
-                  # `NOW` - `minTimeElapsedSinceLastModification`, or not have a
-                  # `lastModificationTime`.
+              "minTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` before
+                  # `NOW` - `minTimeElapsedSinceLastModification` and objects that don't have a
+                  # `lastModificationTime` are transferred.
+                  #
+                  # Note that, for each `TransferOperation` started by this `TransferJob`,
+                  # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+                  # `lastModificationTime` refers to the time of the last change to the
+                  # object's content or metadata - specifically, this would be the `updated`
+                  # property of GCS objects and the `LastModified` field of S3 objects.
             },
-            "gcsDataSource": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data source.
-                # its `lastModificationTime` refers to the object's updated time, which changes
-                # when the content or the metadata of the object is updated.
-              "bucketName": "A String", # Google Cloud Storage bucket name (see
-                  # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-                  # Required.
+            "gcsDataSource": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data source.
+                # name and its `lastModificationTime` refers to the object's updated time,
+                # which changes when the content or the metadata of the object is updated.
+              "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+                  # [Bucket Name
+                  # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
             },
-            "httpDataSource": { # An HttpData specifies a list of objects on the web to be transferred over # An HTTP URL data source.
-                # HTTP.  The information of the objects to be transferred is contained in a
-                # file referenced by a URL. The first line in the file must be
+            "httpDataSource": { # An HttpData resource specifies a list of objects on the web to be transferred # An HTTP URL data source.
+                # over HTTP.  The information of the objects to be transferred is contained in
+                # a file referenced by a URL. The first line in the file must be
                 # "TsvHttpData-1.0", which specifies the format of the file.  Subsequent lines
                 # specify the information of the list of objects, one object per list entry.
                 # Each entry has the following tab-delimited fields:
@@ -872,12 +938,13 @@ Returns:
                 # * MD5 - The base64-encoded MD5 hash of the object.
                 #
                 # For an example of a valid TSV file, see
-                # [Transferring data from URLs](https://cloud.google.com/storage/transfer/#urls)
+                # [Transferring data from
+                # URLs](https://cloud.google.com/storage/transfer/create-url-list).
                 #
                 # When transferring data based on a URL list, keep the following in mind:
                 #
-                # * When an object located at `http(s)://hostname:port/<URL-path>` is transferred
-                # to a data sink, the name of the object at the data sink is
+                # * When an object located at `http(s)://hostname:port/<URL-path>` is
+                # transferred to a data sink, the name of the object at the data sink is
                 # `<hostname>/<URL-path>`.
                 #
                 # * If the specified size of an object does not match the actual size of the
@@ -899,10 +966,9 @@ Returns:
                 #
                 # * [ObjectConditions](#ObjectConditions) have no effect when filtering objects
                 # to transfer.
-              "listUrl": "A String", # The URL that points to the file that stores the object list entries.
-                  # This file must allow public access.  Currently, only URLs with HTTP and
-                  # HTTPS schemes are supported.
-                  # Required.
+              "listUrl": "A String", # Required. The URL that points to the file that stores the object list
+                  # entries. This file must allow public access.  Currently, only URLs with
+                  # HTTP and HTTPS schemes are supported.
             },
             "transferOptions": { # TransferOptions uses three boolean parameters to define the actions # If the option `deleteObjectsUniqueInSink` is `true`, object conditions
                 # based on objects' `lastModificationTime` are ignored and do not exclude
@@ -910,31 +976,33 @@ Returns:
                 # to be performed on objects in a transfer.
               "overwriteObjectsAlreadyExistingInSink": True or False, # Whether overwriting objects that already exist in the sink is allowed.
               "deleteObjectsFromSourceAfterTransfer": True or False, # Whether objects should be deleted from the source after they are
-                  # transferred to the sink.
-              "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.
+                  # transferred to the sink.  Note that this option and
+                  # `deleteObjectsUniqueInSink` are mutually exclusive.
+              "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.  Note that
+                  # this option and `deleteObjectsFromSourceAfterTransfer` are mutually
+                  # exclusive.
             },
-            "gcsDataSink": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data sink.
-                # its `lastModificationTime` refers to the object's updated time, which changes
-                # when the content or the metadata of the object is updated.
-              "bucketName": "A String", # Google Cloud Storage bucket name (see
-                  # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-                  # Required.
+            "gcsDataSink": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data sink.
+                # name and its `lastModificationTime` refers to the object's updated time,
+                # which changes when the content or the metadata of the object is updated.
+              "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+                  # [Bucket Name
+                  # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
             },
-            "awsS3DataSource": { # An AwsS3Data can be a data source, but not a data sink. # An AWS S3 data source.
-                # In an AwsS3Data, an object's name is the S3 object's key name.
-              "awsAccessKey": { # AWS access key (see # AWS access key used to sign the API requests to the AWS S3 bucket.
-                  # Permissions on the bucket must be granted to the access ID of the
+            "awsS3DataSource": { # An AwsS3Data resource can be a data source, but not a data sink. # An AWS S3 data source.
+                # In an AwsS3Data resource, an object's name is the S3 object's key name.
+              "awsAccessKey": { # AWS access key (see # Required. AWS access key used to sign the API requests to the AWS S3
+                  # bucket. Permissions on the bucket must be granted to the access ID of the
                   # AWS access key.
-                  # Required.
-                  # [AWS Security Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
-                "secretAccessKey": "A String", # AWS secret access key. This field is not returned in RPC responses.
-                    # Required.
-                "accessKeyId": "A String", # AWS access key ID.
-                    # Required.
+                  # [AWS Security
+                  # Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
+                "secretAccessKey": "A String", # Required. AWS secret access key. This field is not returned in RPC
+                    # responses.
+                "accessKeyId": "A String", # Required. AWS access key ID.
               },
-              "bucketName": "A String", # S3 Bucket name (see
-                  # [Creating a bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
-                  # Required.
+              "bucketName": "A String", # Required. S3 Bucket name (see
+                  # [Creating a
+                  # bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
             },
           },
           "status": "A String", # Status of the job. This value MUST be specified for
@@ -944,27 +1012,8 @@ Returns:
               # run. For example, if you change the job status from `ENABLED` to
               # `DISABLED`, and an operation spawned by the transfer is running, the status
               # change would not affect the current operation.
-          "deletionTime": "A String", # This field cannot be changed by user requests.
-          "description": "A String", # A description provided by the user for the job. Its max length is 1024
-              # bytes when Unicode-encoded.
+          "deletionTime": "A String", # Output only. The time that the transfer job was deleted.
           "schedule": { # Transfers can be scheduled to recur or to run just once. # Schedule specification.
-              # Required.
-            "scheduleStartDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The first day the recurring transfer is scheduled to run. If
-                # `scheduleStartDate` is in the past, the transfer will run for the first
-                # time on the following day.
-                # Required.
-                # time zone are either specified elsewhere or are not significant. The date
-                # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-                # represent a year and month where the day is not significant, e.g. credit card
-                # expiration date. The year may be 0 to represent a month and day independent
-                # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-                # and `google.protobuf.Timestamp`.
-              "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
-                  # a year.
-              "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-                  # if specifying a year/month where the day is not significant.
-              "month": 42, # Month of year. Must be from 1 to 12.
-            },
             "startTimeOfDay": { # Represents a time of day. The date and time zone are either not significant # The time in UTC at which the transfer will be scheduled to start in a day.
                 # Transfers may start later than this time. If not specified, recurring and
                 # one-time transfers that are scheduled to run today will run immediately;
@@ -981,30 +1030,56 @@ Returns:
                   # allow the value 60 if it allows leap-seconds.
               "minutes": 42, # Minutes of hour of day. Must be from 0 to 59.
             },
-            "scheduleEndDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The last day the recurring transfer will be run. If `scheduleEndDate`
-                # is the same as `scheduleStartDate`, the transfer will be executed only
-                # once.
-                # time zone are either specified elsewhere or are not significant. The date
-                # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-                # represent a year and month where the day is not significant, e.g. credit card
-                # expiration date. The year may be 0 to represent a month and day independent
-                # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-                # and `google.protobuf.Timestamp`.
+            "scheduleStartDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # Required. The first day the recurring transfer is scheduled to run. If
+                # `scheduleStartDate` is in the past, the transfer will run for the first
+                # time on the following day.
+                # and time zone are either specified elsewhere or are not significant. The date
+                # is relative to the Proleptic Gregorian Calendar. This can represent:
+                #
+                # * A full date, with non-zero year, month and day values
+                # * A month and day value, with a zero year, e.g. an anniversary
+                # * A year on its own, with zero month and day values
+                # * A year and month value, with a zero day, e.g. a credit card expiration date
+                #
+                # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+              "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+                  # month and day.
+              "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
+                  # if specifying a year by itself or a year and month where the day is not
+                  # significant.
               "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
                   # a year.
+            },
+            "scheduleEndDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # The last day the recurring transfer will be run. If `scheduleEndDate`
+                # is the same as `scheduleStartDate`, the transfer will be executed only
+                # once.
+                # and time zone are either specified elsewhere or are not significant. The date
+                # is relative to the Proleptic Gregorian Calendar. This can represent:
+                #
+                # * A full date, with non-zero year, month and day values
+                # * A month and day value, with a zero year, e.g. an anniversary
+                # * A year on its own, with zero month and day values
+                # * A year and month value, with a zero day, e.g. a credit card expiration date
+                #
+                # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+              "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+                  # month and day.
               "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-                  # if specifying a year/month where the day is not significant.
-              "month": 42, # Month of year. Must be from 1 to 12.
+                  # if specifying a year by itself or a year and month where the day is not
+                  # significant.
+              "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
+                  # a year.
             },
           },
-          "projectId": "A String", # The ID of the Google Cloud Platform Console project that owns the job.
-              # Required.
-          "lastModificationTime": "A String", # This field cannot be changed by user requests.
-          "creationTime": "A String", # This field cannot be changed by user requests.
+          "projectId": "A String", # The ID of the Google Cloud Platform Project that owns the job.
+          "lastModificationTime": "A String", # Output only. The time that the transfer job was last modified.
+          "creationTime": "A String", # Output only. The time that the transfer job was created.
           "name": "A String", # A globally unique name assigned by Storage Transfer Service when the
               # job is created. This field should be left empty in requests to create a new
               # transfer job; otherwise, the requests result in an `INVALID_ARGUMENT`
               # error.
+          "description": "A String", # A description provided by the user for the job. Its max length is 1024
+              # bytes when Unicode-encoded.
         },
     ],
   }</pre>
@@ -1031,35 +1106,44 @@ transfer operations that are running already. Updating the scheduling
 of a job is not allowed.
 
 Args:
-  jobName: string, The name of job to update.
-Required. (required)
+  jobName: string, Required. The name of job to update. (required)
   body: object, The request body. (required)
     The object takes the form of:
 
 { # Request passed to UpdateTransferJob.
-    "projectId": "A String", # The ID of the Google Cloud Platform Console project that owns the job.
-        # Required.
+    "projectId": "A String", # Required. The ID of the Google Cloud Platform Console project that owns the
+        # job.
     "updateTransferJobFieldMask": "A String", # The field mask of the fields in `transferJob` that are to be updated in
         # this request.  Fields in `transferJob` that can be updated are:
         # `description`, `transferSpec`, and `status`.  To update the `transferSpec`
         # of the job, a complete transfer specification has to be provided. An
         # incomplete specification which misses any required fields will be rejected
         # with the error `INVALID_ARGUMENT`.
-    "transferJob": { # This resource represents the configuration of a transfer job that runs # The job to update.
-        # Required.
+    "transferJob": { # This resource represents the configuration of a transfer job that runs # Required. The job to update. `transferJob` is expected to specify only
+        # three fields: `description`, `transferSpec`, and `status`.  An
+        # UpdateTransferJobRequest that specifies other fields will be rejected with
+        # an error `INVALID_ARGUMENT`.
           # periodically.
         "transferSpec": { # Configuration for running a transfer. # Transfer specification.
-            # Required.
-          "objectConditions": { # Conditions that determine which objects will be transferred. # Only objects that satisfy these object conditions are included in the set
+          "objectConditions": { # Conditions that determine which objects will be transferred. Applies only # Only objects that satisfy these object conditions are included in the set
               # of data source and data sink objects.  Object conditions based on
               # objects' `lastModificationTime` do not exclude objects in a data sink.
-            "maxTimeElapsedSinceLastModification": "A String", # `maxTimeElapsedSinceLastModification` is the complement to
-                # `minTimeElapsedSinceLastModification`.
+              # to S3 and GCS objects.
+            "maxTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` on or after
+                # `NOW` - `maxTimeElapsedSinceLastModification` and objects that don't have
+                # a `lastModificationTime` are transferred.
+                #
+                # Note that, for each `TransferOperation` started by this `TransferJob`,
+                # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+                # `lastModificationTime` refers to the time of the last change to the
+                # object's content or metadata - specifically, this would be the `updated`
+                # property of GCS objects and the `LastModified` field of S3 objects.
             "includePrefixes": [ # If `includePrefixes` is specified, objects that satisfy the object
                 # conditions must have names that start with one of the `includePrefixes`
-                # and that do not start with any of the `excludePrefixes`. If `includePrefixes`
-                # is not specified, all objects except those that have names starting with
-                # one of the `excludePrefixes` must satisfy the object conditions.
+                # and that do not start with any of the `excludePrefixes`. If
+                # `includePrefixes` is not specified, all objects except those that have
+                # names starting with one of the `excludePrefixes` must satisfy the object
+                # conditions.
                 #
                 # Requirements:
                 #
@@ -1096,24 +1180,26 @@ Required. (required)
                 # The max size of `excludePrefixes` is 1000.
               "A String",
             ],
-            "minTimeElapsedSinceLastModification": "A String", # If unspecified, `minTimeElapsedSinceLastModification` takes a zero value
-                # and `maxTimeElapsedSinceLastModification` takes the maximum possible
-                # value of Duration. Objects that satisfy the object conditions
-                # must either have a `lastModificationTime` greater or equal to
-                # `NOW` - `maxTimeElapsedSinceLastModification` and less than
-                # `NOW` - `minTimeElapsedSinceLastModification`, or not have a
-                # `lastModificationTime`.
+            "minTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` before
+                # `NOW` - `minTimeElapsedSinceLastModification` and objects that don't have a
+                # `lastModificationTime` are transferred.
+                #
+                # Note that, for each `TransferOperation` started by this `TransferJob`,
+                # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+                # `lastModificationTime` refers to the time of the last change to the
+                # object's content or metadata - specifically, this would be the `updated`
+                # property of GCS objects and the `LastModified` field of S3 objects.
           },
-          "gcsDataSource": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data source.
-              # its `lastModificationTime` refers to the object's updated time, which changes
-              # when the content or the metadata of the object is updated.
-            "bucketName": "A String", # Google Cloud Storage bucket name (see
-                # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-                # Required.
+          "gcsDataSource": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data source.
+              # name and its `lastModificationTime` refers to the object's updated time,
+              # which changes when the content or the metadata of the object is updated.
+            "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+                # [Bucket Name
+                # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
           },
-          "httpDataSource": { # An HttpData specifies a list of objects on the web to be transferred over # An HTTP URL data source.
-              # HTTP.  The information of the objects to be transferred is contained in a
-              # file referenced by a URL. The first line in the file must be
+          "httpDataSource": { # An HttpData resource specifies a list of objects on the web to be transferred # An HTTP URL data source.
+              # over HTTP.  The information of the objects to be transferred is contained in
+              # a file referenced by a URL. The first line in the file must be
               # "TsvHttpData-1.0", which specifies the format of the file.  Subsequent lines
               # specify the information of the list of objects, one object per list entry.
               # Each entry has the following tab-delimited fields:
@@ -1125,12 +1211,13 @@ Required. (required)
               # * MD5 - The base64-encoded MD5 hash of the object.
               #
               # For an example of a valid TSV file, see
-              # [Transferring data from URLs](https://cloud.google.com/storage/transfer/#urls)
+              # [Transferring data from
+              # URLs](https://cloud.google.com/storage/transfer/create-url-list).
               #
               # When transferring data based on a URL list, keep the following in mind:
               #
-              # * When an object located at `http(s)://hostname:port/<URL-path>` is transferred
-              # to a data sink, the name of the object at the data sink is
+              # * When an object located at `http(s)://hostname:port/<URL-path>` is
+              # transferred to a data sink, the name of the object at the data sink is
               # `<hostname>/<URL-path>`.
               #
               # * If the specified size of an object does not match the actual size of the
@@ -1152,10 +1239,9 @@ Required. (required)
               #
               # * [ObjectConditions](#ObjectConditions) have no effect when filtering objects
               # to transfer.
-            "listUrl": "A String", # The URL that points to the file that stores the object list entries.
-                # This file must allow public access.  Currently, only URLs with HTTP and
-                # HTTPS schemes are supported.
-                # Required.
+            "listUrl": "A String", # Required. The URL that points to the file that stores the object list
+                # entries. This file must allow public access.  Currently, only URLs with
+                # HTTP and HTTPS schemes are supported.
           },
           "transferOptions": { # TransferOptions uses three boolean parameters to define the actions # If the option `deleteObjectsUniqueInSink` is `true`, object conditions
               # based on objects' `lastModificationTime` are ignored and do not exclude
@@ -1163,31 +1249,33 @@ Required. (required)
               # to be performed on objects in a transfer.
             "overwriteObjectsAlreadyExistingInSink": True or False, # Whether overwriting objects that already exist in the sink is allowed.
             "deleteObjectsFromSourceAfterTransfer": True or False, # Whether objects should be deleted from the source after they are
-                # transferred to the sink.
-            "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.
+                # transferred to the sink.  Note that this option and
+                # `deleteObjectsUniqueInSink` are mutually exclusive.
+            "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.  Note that
+                # this option and `deleteObjectsFromSourceAfterTransfer` are mutually
+                # exclusive.
           },
-          "gcsDataSink": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data sink.
-              # its `lastModificationTime` refers to the object's updated time, which changes
-              # when the content or the metadata of the object is updated.
-            "bucketName": "A String", # Google Cloud Storage bucket name (see
-                # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-                # Required.
+          "gcsDataSink": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data sink.
+              # name and its `lastModificationTime` refers to the object's updated time,
+              # which changes when the content or the metadata of the object is updated.
+            "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+                # [Bucket Name
+                # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
           },
-          "awsS3DataSource": { # An AwsS3Data can be a data source, but not a data sink. # An AWS S3 data source.
-              # In an AwsS3Data, an object's name is the S3 object's key name.
-            "awsAccessKey": { # AWS access key (see # AWS access key used to sign the API requests to the AWS S3 bucket.
-                # Permissions on the bucket must be granted to the access ID of the
+          "awsS3DataSource": { # An AwsS3Data resource can be a data source, but not a data sink. # An AWS S3 data source.
+              # In an AwsS3Data resource, an object's name is the S3 object's key name.
+            "awsAccessKey": { # AWS access key (see # Required. AWS access key used to sign the API requests to the AWS S3
+                # bucket. Permissions on the bucket must be granted to the access ID of the
                 # AWS access key.
-                # Required.
-                # [AWS Security Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
-              "secretAccessKey": "A String", # AWS secret access key. This field is not returned in RPC responses.
-                  # Required.
-              "accessKeyId": "A String", # AWS access key ID.
-                  # Required.
+                # [AWS Security
+                # Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
+              "secretAccessKey": "A String", # Required. AWS secret access key. This field is not returned in RPC
+                  # responses.
+              "accessKeyId": "A String", # Required. AWS access key ID.
             },
-            "bucketName": "A String", # S3 Bucket name (see
-                # [Creating a bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
-                # Required.
+            "bucketName": "A String", # Required. S3 Bucket name (see
+                # [Creating a
+                # bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
           },
         },
         "status": "A String", # Status of the job. This value MUST be specified for
@@ -1197,27 +1285,8 @@ Required. (required)
             # run. For example, if you change the job status from `ENABLED` to
             # `DISABLED`, and an operation spawned by the transfer is running, the status
             # change would not affect the current operation.
-        "deletionTime": "A String", # This field cannot be changed by user requests.
-        "description": "A String", # A description provided by the user for the job. Its max length is 1024
-            # bytes when Unicode-encoded.
+        "deletionTime": "A String", # Output only. The time that the transfer job was deleted.
         "schedule": { # Transfers can be scheduled to recur or to run just once. # Schedule specification.
-            # Required.
-          "scheduleStartDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The first day the recurring transfer is scheduled to run. If
-              # `scheduleStartDate` is in the past, the transfer will run for the first
-              # time on the following day.
-              # Required.
-              # time zone are either specified elsewhere or are not significant. The date
-              # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-              # represent a year and month where the day is not significant, e.g. credit card
-              # expiration date. The year may be 0 to represent a month and day independent
-              # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-              # and `google.protobuf.Timestamp`.
-            "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
-                # a year.
-            "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-                # if specifying a year/month where the day is not significant.
-            "month": 42, # Month of year. Must be from 1 to 12.
-          },
           "startTimeOfDay": { # Represents a time of day. The date and time zone are either not significant # The time in UTC at which the transfer will be scheduled to start in a day.
               # Transfers may start later than this time. If not specified, recurring and
               # one-time transfers that are scheduled to run today will run immediately;
@@ -1234,30 +1303,56 @@ Required. (required)
                 # allow the value 60 if it allows leap-seconds.
             "minutes": 42, # Minutes of hour of day. Must be from 0 to 59.
           },
-          "scheduleEndDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The last day the recurring transfer will be run. If `scheduleEndDate`
-              # is the same as `scheduleStartDate`, the transfer will be executed only
-              # once.
-              # time zone are either specified elsewhere or are not significant. The date
-              # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-              # represent a year and month where the day is not significant, e.g. credit card
-              # expiration date. The year may be 0 to represent a month and day independent
-              # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-              # and `google.protobuf.Timestamp`.
+          "scheduleStartDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # Required. The first day the recurring transfer is scheduled to run. If
+              # `scheduleStartDate` is in the past, the transfer will run for the first
+              # time on the following day.
+              # and time zone are either specified elsewhere or are not significant. The date
+              # is relative to the Proleptic Gregorian Calendar. This can represent:
+              #
+              # * A full date, with non-zero year, month and day values
+              # * A month and day value, with a zero year, e.g. an anniversary
+              # * A year on its own, with zero month and day values
+              # * A year and month value, with a zero day, e.g. a credit card expiration date
+              #
+              # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+            "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+                # month and day.
+            "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
+                # if specifying a year by itself or a year and month where the day is not
+                # significant.
             "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
                 # a year.
+          },
+          "scheduleEndDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # The last day the recurring transfer will be run. If `scheduleEndDate`
+              # is the same as `scheduleStartDate`, the transfer will be executed only
+              # once.
+              # and time zone are either specified elsewhere or are not significant. The date
+              # is relative to the Proleptic Gregorian Calendar. This can represent:
+              #
+              # * A full date, with non-zero year, month and day values
+              # * A month and day value, with a zero year, e.g. an anniversary
+              # * A year on its own, with zero month and day values
+              # * A year and month value, with a zero day, e.g. a credit card expiration date
+              #
+              # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+            "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+                # month and day.
             "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-                # if specifying a year/month where the day is not significant.
-            "month": 42, # Month of year. Must be from 1 to 12.
+                # if specifying a year by itself or a year and month where the day is not
+                # significant.
+            "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
+                # a year.
           },
         },
-        "projectId": "A String", # The ID of the Google Cloud Platform Console project that owns the job.
-            # Required.
-        "lastModificationTime": "A String", # This field cannot be changed by user requests.
-        "creationTime": "A String", # This field cannot be changed by user requests.
+        "projectId": "A String", # The ID of the Google Cloud Platform Project that owns the job.
+        "lastModificationTime": "A String", # Output only. The time that the transfer job was last modified.
+        "creationTime": "A String", # Output only. The time that the transfer job was created.
         "name": "A String", # A globally unique name assigned by Storage Transfer Service when the
             # job is created. This field should be left empty in requests to create a new
             # transfer job; otherwise, the requests result in an `INVALID_ARGUMENT`
             # error.
+        "description": "A String", # A description provided by the user for the job. Its max length is 1024
+            # bytes when Unicode-encoded.
       },
   }
 
@@ -1272,17 +1367,25 @@ Returns:
     { # This resource represents the configuration of a transfer job that runs
         # periodically.
       "transferSpec": { # Configuration for running a transfer. # Transfer specification.
-          # Required.
-        "objectConditions": { # Conditions that determine which objects will be transferred. # Only objects that satisfy these object conditions are included in the set
+        "objectConditions": { # Conditions that determine which objects will be transferred. Applies only # Only objects that satisfy these object conditions are included in the set
             # of data source and data sink objects.  Object conditions based on
             # objects' `lastModificationTime` do not exclude objects in a data sink.
-          "maxTimeElapsedSinceLastModification": "A String", # `maxTimeElapsedSinceLastModification` is the complement to
-              # `minTimeElapsedSinceLastModification`.
+            # to S3 and GCS objects.
+          "maxTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` on or after
+              # `NOW` - `maxTimeElapsedSinceLastModification` and objects that don't have
+              # a `lastModificationTime` are transferred.
+              #
+              # Note that, for each `TransferOperation` started by this `TransferJob`,
+              # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+              # `lastModificationTime` refers to the time of the last change to the
+              # object's content or metadata - specifically, this would be the `updated`
+              # property of GCS objects and the `LastModified` field of S3 objects.
           "includePrefixes": [ # If `includePrefixes` is specified, objects that satisfy the object
               # conditions must have names that start with one of the `includePrefixes`
-              # and that do not start with any of the `excludePrefixes`. If `includePrefixes`
-              # is not specified, all objects except those that have names starting with
-              # one of the `excludePrefixes` must satisfy the object conditions.
+              # and that do not start with any of the `excludePrefixes`. If
+              # `includePrefixes` is not specified, all objects except those that have
+              # names starting with one of the `excludePrefixes` must satisfy the object
+              # conditions.
               #
               # Requirements:
               #
@@ -1319,24 +1422,26 @@ Returns:
               # The max size of `excludePrefixes` is 1000.
             "A String",
           ],
-          "minTimeElapsedSinceLastModification": "A String", # If unspecified, `minTimeElapsedSinceLastModification` takes a zero value
-              # and `maxTimeElapsedSinceLastModification` takes the maximum possible
-              # value of Duration. Objects that satisfy the object conditions
-              # must either have a `lastModificationTime` greater or equal to
-              # `NOW` - `maxTimeElapsedSinceLastModification` and less than
-              # `NOW` - `minTimeElapsedSinceLastModification`, or not have a
-              # `lastModificationTime`.
+          "minTimeElapsedSinceLastModification": "A String", # If specified, only objects with a `lastModificationTime` before
+              # `NOW` - `minTimeElapsedSinceLastModification` and objects that don't have a
+              # `lastModificationTime` are transferred.
+              #
+              # Note that, for each `TransferOperation` started by this `TransferJob`,
+              # `NOW` refers to the `start_time` of the 'TransferOperation`. Also,
+              # `lastModificationTime` refers to the time of the last change to the
+              # object's content or metadata - specifically, this would be the `updated`
+              # property of GCS objects and the `LastModified` field of S3 objects.
         },
-        "gcsDataSource": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data source.
-            # its `lastModificationTime` refers to the object's updated time, which changes
-            # when the content or the metadata of the object is updated.
-          "bucketName": "A String", # Google Cloud Storage bucket name (see
-              # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-              # Required.
+        "gcsDataSource": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data source.
+            # name and its `lastModificationTime` refers to the object's updated time,
+            # which changes when the content or the metadata of the object is updated.
+          "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+              # [Bucket Name
+              # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
         },
-        "httpDataSource": { # An HttpData specifies a list of objects on the web to be transferred over # An HTTP URL data source.
-            # HTTP.  The information of the objects to be transferred is contained in a
-            # file referenced by a URL. The first line in the file must be
+        "httpDataSource": { # An HttpData resource specifies a list of objects on the web to be transferred # An HTTP URL data source.
+            # over HTTP.  The information of the objects to be transferred is contained in
+            # a file referenced by a URL. The first line in the file must be
             # "TsvHttpData-1.0", which specifies the format of the file.  Subsequent lines
             # specify the information of the list of objects, one object per list entry.
             # Each entry has the following tab-delimited fields:
@@ -1348,12 +1453,13 @@ Returns:
             # * MD5 - The base64-encoded MD5 hash of the object.
             #
             # For an example of a valid TSV file, see
-            # [Transferring data from URLs](https://cloud.google.com/storage/transfer/#urls)
+            # [Transferring data from
+            # URLs](https://cloud.google.com/storage/transfer/create-url-list).
             #
             # When transferring data based on a URL list, keep the following in mind:
             #
-            # * When an object located at `http(s)://hostname:port/<URL-path>` is transferred
-            # to a data sink, the name of the object at the data sink is
+            # * When an object located at `http(s)://hostname:port/<URL-path>` is
+            # transferred to a data sink, the name of the object at the data sink is
             # `<hostname>/<URL-path>`.
             #
             # * If the specified size of an object does not match the actual size of the
@@ -1375,10 +1481,9 @@ Returns:
             #
             # * [ObjectConditions](#ObjectConditions) have no effect when filtering objects
             # to transfer.
-          "listUrl": "A String", # The URL that points to the file that stores the object list entries.
-              # This file must allow public access.  Currently, only URLs with HTTP and
-              # HTTPS schemes are supported.
-              # Required.
+          "listUrl": "A String", # Required. The URL that points to the file that stores the object list
+              # entries. This file must allow public access.  Currently, only URLs with
+              # HTTP and HTTPS schemes are supported.
         },
         "transferOptions": { # TransferOptions uses three boolean parameters to define the actions # If the option `deleteObjectsUniqueInSink` is `true`, object conditions
             # based on objects' `lastModificationTime` are ignored and do not exclude
@@ -1386,31 +1491,33 @@ Returns:
             # to be performed on objects in a transfer.
           "overwriteObjectsAlreadyExistingInSink": True or False, # Whether overwriting objects that already exist in the sink is allowed.
           "deleteObjectsFromSourceAfterTransfer": True or False, # Whether objects should be deleted from the source after they are
-              # transferred to the sink.
-          "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.
+              # transferred to the sink.  Note that this option and
+              # `deleteObjectsUniqueInSink` are mutually exclusive.
+          "deleteObjectsUniqueInSink": True or False, # Whether objects that exist only in the sink should be deleted.  Note that
+              # this option and `deleteObjectsFromSourceAfterTransfer` are mutually
+              # exclusive.
         },
-        "gcsDataSink": { # In a GcsData, an object's name is the Google Cloud Storage object's name and # A Google Cloud Storage data sink.
-            # its `lastModificationTime` refers to the object's updated time, which changes
-            # when the content or the metadata of the object is updated.
-          "bucketName": "A String", # Google Cloud Storage bucket name (see
-              # [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).
-              # Required.
+        "gcsDataSink": { # In a GcsData resource, an object's name is the Google Cloud Storage object's # A Google Cloud Storage data sink.
+            # name and its `lastModificationTime` refers to the object's updated time,
+            # which changes when the content or the metadata of the object is updated.
+          "bucketName": "A String", # Required. Google Cloud Storage bucket name (see
+              # [Bucket Name
+              # Requirements](https://cloud.google.com/storage/docs/naming#requirements)).
         },
-        "awsS3DataSource": { # An AwsS3Data can be a data source, but not a data sink. # An AWS S3 data source.
-            # In an AwsS3Data, an object's name is the S3 object's key name.
-          "awsAccessKey": { # AWS access key (see # AWS access key used to sign the API requests to the AWS S3 bucket.
-              # Permissions on the bucket must be granted to the access ID of the
+        "awsS3DataSource": { # An AwsS3Data resource can be a data source, but not a data sink. # An AWS S3 data source.
+            # In an AwsS3Data resource, an object's name is the S3 object's key name.
+          "awsAccessKey": { # AWS access key (see # Required. AWS access key used to sign the API requests to the AWS S3
+              # bucket. Permissions on the bucket must be granted to the access ID of the
               # AWS access key.
-              # Required.
-              # [AWS Security Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
-            "secretAccessKey": "A String", # AWS secret access key. This field is not returned in RPC responses.
-                # Required.
-            "accessKeyId": "A String", # AWS access key ID.
-                # Required.
+              # [AWS Security
+              # Credentials](http://docs.aws.amazon.com/general/latest/gr/aws-security-credentials.html)).
+            "secretAccessKey": "A String", # Required. AWS secret access key. This field is not returned in RPC
+                # responses.
+            "accessKeyId": "A String", # Required. AWS access key ID.
           },
-          "bucketName": "A String", # S3 Bucket name (see
-              # [Creating a bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
-              # Required.
+          "bucketName": "A String", # Required. S3 Bucket name (see
+              # [Creating a
+              # bucket](http://docs.aws.amazon.com/AmazonS3/latest/dev/create-bucket-get-location-example.html)).
         },
       },
       "status": "A String", # Status of the job. This value MUST be specified for
@@ -1420,27 +1527,8 @@ Returns:
           # run. For example, if you change the job status from `ENABLED` to
           # `DISABLED`, and an operation spawned by the transfer is running, the status
           # change would not affect the current operation.
-      "deletionTime": "A String", # This field cannot be changed by user requests.
-      "description": "A String", # A description provided by the user for the job. Its max length is 1024
-          # bytes when Unicode-encoded.
+      "deletionTime": "A String", # Output only. The time that the transfer job was deleted.
       "schedule": { # Transfers can be scheduled to recur or to run just once. # Schedule specification.
-          # Required.
-        "scheduleStartDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The first day the recurring transfer is scheduled to run. If
-            # `scheduleStartDate` is in the past, the transfer will run for the first
-            # time on the following day.
-            # Required.
-            # time zone are either specified elsewhere or are not significant. The date
-            # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-            # represent a year and month where the day is not significant, e.g. credit card
-            # expiration date. The year may be 0 to represent a month and day independent
-            # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-            # and `google.protobuf.Timestamp`.
-          "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
-              # a year.
-          "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-              # if specifying a year/month where the day is not significant.
-          "month": 42, # Month of year. Must be from 1 to 12.
-        },
         "startTimeOfDay": { # Represents a time of day. The date and time zone are either not significant # The time in UTC at which the transfer will be scheduled to start in a day.
             # Transfers may start later than this time. If not specified, recurring and
             # one-time transfers that are scheduled to run today will run immediately;
@@ -1457,30 +1545,56 @@ Returns:
               # allow the value 60 if it allows leap-seconds.
           "minutes": 42, # Minutes of hour of day. Must be from 0 to 59.
         },
-        "scheduleEndDate": { # Represents a whole calendar date, e.g. date of birth. The time of day and # The last day the recurring transfer will be run. If `scheduleEndDate`
-            # is the same as `scheduleStartDate`, the transfer will be executed only
-            # once.
-            # time zone are either specified elsewhere or are not significant. The date
-            # is relative to the Proleptic Gregorian Calendar. The day may be 0 to
-            # represent a year and month where the day is not significant, e.g. credit card
-            # expiration date. The year may be 0 to represent a month and day independent
-            # of year, e.g. anniversary date. Related types are google.type.TimeOfDay
-            # and `google.protobuf.Timestamp`.
+        "scheduleStartDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # Required. The first day the recurring transfer is scheduled to run. If
+            # `scheduleStartDate` is in the past, the transfer will run for the first
+            # time on the following day.
+            # and time zone are either specified elsewhere or are not significant. The date
+            # is relative to the Proleptic Gregorian Calendar. This can represent:
+            #
+            # * A full date, with non-zero year, month and day values
+            # * A month and day value, with a zero year, e.g. an anniversary
+            # * A year on its own, with zero month and day values
+            # * A year and month value, with a zero day, e.g. a credit card expiration date
+            #
+            # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+          "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+              # month and day.
+          "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
+              # if specifying a year by itself or a year and month where the day is not
+              # significant.
           "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
               # a year.
+        },
+        "scheduleEndDate": { # Represents a whole or partial calendar date, e.g. a birthday. The time of day # The last day the recurring transfer will be run. If `scheduleEndDate`
+            # is the same as `scheduleStartDate`, the transfer will be executed only
+            # once.
+            # and time zone are either specified elsewhere or are not significant. The date
+            # is relative to the Proleptic Gregorian Calendar. This can represent:
+            #
+            # * A full date, with non-zero year, month and day values
+            # * A month and day value, with a zero year, e.g. an anniversary
+            # * A year on its own, with zero month and day values
+            # * A year and month value, with a zero day, e.g. a credit card expiration date
+            #
+            # Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.
+          "month": 42, # Month of year. Must be from 1 to 12, or 0 if specifying a year without a
+              # month and day.
           "day": 42, # Day of month. Must be from 1 to 31 and valid for the year and month, or 0
-              # if specifying a year/month where the day is not significant.
-          "month": 42, # Month of year. Must be from 1 to 12.
+              # if specifying a year by itself or a year and month where the day is not
+              # significant.
+          "year": 42, # Year of date. Must be from 1 to 9999, or 0 if specifying a date without
+              # a year.
         },
       },
-      "projectId": "A String", # The ID of the Google Cloud Platform Console project that owns the job.
-          # Required.
-      "lastModificationTime": "A String", # This field cannot be changed by user requests.
-      "creationTime": "A String", # This field cannot be changed by user requests.
+      "projectId": "A String", # The ID of the Google Cloud Platform Project that owns the job.
+      "lastModificationTime": "A String", # Output only. The time that the transfer job was last modified.
+      "creationTime": "A String", # Output only. The time that the transfer job was created.
       "name": "A String", # A globally unique name assigned by Storage Transfer Service when the
           # job is created. This field should be left empty in requests to create a new
           # transfer job; otherwise, the requests result in an `INVALID_ARGUMENT`
           # error.
+      "description": "A String", # A description provided by the user for the job. Its max length is 1024
+          # bytes when Unicode-encoded.
     }</pre>
 </div>
 
