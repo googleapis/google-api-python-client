@@ -709,7 +709,7 @@ class MediaIoBaseDownload(object):
 
     Raises:
       googleapiclient.errors.HttpError if the response was not a 2xx.
-      httplib2.HttpLib2Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occurred.
     """
         headers = self._headers.copy()
         headers["range"] = "bytes=%d-%d" % (
@@ -860,7 +860,7 @@ class HttpRequest(object):
 
     Raises:
       googleapiclient.errors.HttpError if the response was not a 2xx.
-      httplib2.HttpLib2Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occurred.
     """
         if http is None:
             http = self.http
@@ -956,7 +956,7 @@ class HttpRequest(object):
 
     Raises:
       googleapiclient.errors.HttpError if the response was not a 2xx.
-      httplib2.HttpLib2Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occurred.
     """
         if http is None:
             http = self.http
@@ -1419,7 +1419,7 @@ class BatchHttpRequest(object):
       request: list, list of request objects to send.
 
     Raises:
-      httplib2.HttpLib2Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occurred.
       googleapiclient.errors.BatchError if the response is the wrong format.
     """
         message = MIMEMultipart("mixed")
@@ -1495,7 +1495,7 @@ class BatchHttpRequest(object):
       None
 
     Raises:
-      httplib2.HttpLib2Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occurred.
       googleapiclient.errors.BatchError if the response is the wrong format.
     """
         # If we have no requests return
