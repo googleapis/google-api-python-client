@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2018 Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,27 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#!/bin/bash
+
 set -eo pipefail
 
-cd github/google-api-python-client
+# Start the releasetool reporter
+python3 -m pip install gcp-releasetool
+python3 -m releasetool publish-reporter-script > /tmp/publisher-script; source /tmp/publisher-script
+
+# Ensure that we have the latest versions of Twine, Wheel, and Setuptools.
+python3 -m pip install --upgrade twine wheel setuptools
 
 # Disable buffering, so that the logs stream through.
 export PYTHONUNBUFFERED=1
 
-# Debug: show build environment
-env | grep KOKORO
-
-# Setup service account credentials.
-export GOOGLE_APPLICATION_CREDENTIALS=${KOKORO_GFILE_DIR}/service-account.json
-
-# Setup project id.
-export PROJECT_ID=$(cat "${KOKORO_GFILE_DIR}/project-id.json")
-
-# Remove old nox
-python3.6 -m pip uninstall --yes --quiet nox-automation
-
-# Install nox
-python3.6 -m pip install --upgrade --quiet nox
-python3.6 -m nox --version
-
-python3.6 -m nox
+# Move into the package, build the distribution and upload.
+TWINE_PASSWORD=$(cat "${KOKORO_KEYSTORE_DIR}/73713_google_cloud_pypi_password")
+cd github/google-api-python-client
+python3 setup.py sdist bdist_wheel
+twine upload --username gcloudpypi --password "${TWINE_PASSWORD}" dist/*
