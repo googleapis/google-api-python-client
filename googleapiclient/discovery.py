@@ -131,10 +131,10 @@ def fix_method_name(name):
     name: string, method name.
 
   Returns:
-    The name with '_' appended if the name is a reserved word and '$' 
+    The name with '_' appended if the name is a reserved word and '$' and '-'
     replaced with '_'. 
   """
-    name = name.replace("$", "_")
+    name = name.replace("$", "_").replace("-", "_")
     if keyword.iskeyword(name) or name in RESERVED_WORDS:
         return name + "_"
     else:

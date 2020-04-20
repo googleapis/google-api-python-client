@@ -219,7 +219,7 @@ class BaseModel(Model):
                 return self.no_content_response
             return self.deserialize(content)
         else:
-            LOGGER.debug("Content from bad request was: %s" % content)
+            LOGGER.debug("Content from bad request was: %r" % content)
             raise HttpError(resp, content)
 
     def serialize(self, body_value):
