@@ -1,4 +1,55 @@
-v1.7.11
+# Changelog
+
+### [1.8.1](https://www.github.com/googleapis/google-api-python-client/compare/v1.8.0...v1.8.1) (2020-04-20)
+
+
+### Bug Fixes
+
+* Adding ConnectionError to retry mechanism ([#822](https://www.github.com/googleapis/google-api-python-client/issues/822)) ([c7516a2](https://www.github.com/googleapis/google-api-python-client/commit/c7516a2ea2c229479633690c109f8763dc0b30ed)), closes [googleapis#558](https://www.github.com/googleapis/googleapis/issues/558)
+* replace '-' in method names with '_' ([#863](https://www.github.com/googleapis/google-api-python-client/issues/863)) ([8ed729f](https://www.github.com/googleapis/google-api-python-client/commit/8ed729f1d868a8713ab442bf0bf59e77ba36afb6))
+
+### v1.8.0
+  Version 1.8.0
+
+  Release to support API endpoint override.
+
+  New Features
+  - Add api endpoint override. ([#829](https://github.com/googleapis/google-api-python-client/pull/829))
+
+  Implementation Changes
+  - Don't set http.redirect_codes if the attr doesn't exist and allow more httplib2 versions. ([#841](https://github.com/googleapis/google-api-python-client/pull/841))
+
+### v1.7.12
+  Version 1.7.12
+  
+  Bugfix release
+  
+  Implementation Changes
+  - Look for field 'detail' in error message. ([#739](https://github.com/googleapis/google-api-python-client/pull/739))
+  - Exclude 308s from httplib2 redirect codes list ([#813](https://github.com/googleapis/google-api-python-client/pull/813))
+  
+  Documentation 
+  - Remove oauth2client from docs ([#738](https://github.com/googleapis/google-api-python-client/pull/738))
+  - Fix typo. ([#745](https://github.com/googleapis/google-api-python-client/pull/745))
+  - Remove compatibility badges. ([#746](https://github.com/googleapis/google-api-python-client/pull/746))
+  - Fix TypeError: search_analytics_api_sample.py #732 ([#742](https://github.com/googleapis/google-api-python-client/pull/742))
+  - Correct response access ([#750](https://github.com/googleapis/google-api-python-client/pull/750))
+  - Fix link to API explorer ([#760](https://github.com/googleapis/google-api-python-client/pull/760))
+  - Fix argument typo in oauth2 code example ([#763](https://github.com/googleapis/google-api-python-client/pull/763))
+  - Recommend install with virtualenv ([#768](https://github.com/googleapis/google-api-python-client/pull/768))
+  - Fix capitalization in docs/README.md ([#770](https://github.com/googleapis/google-api-python-client/pull/770))
+
+  - Remove compatibility badges ([#796](https://github.com/googleapis/google-api-python-client/pull/796))
+  - Remove mentions of pycrypto ([#799](https://github.com/googleapis/google-api-python-client/pull/799))
+  - Fix typo in model.py
+  - Add note about Google Ads llibrary ([#814](https://github.com/googleapis/google-api-python-client/pull/814))
+
+  
+  Internal / Testing Changes
+  - Blacken ([#772](https://github.com/googleapis/google-api-python-client/pull/722))
+  - Move kokoro configs ([#832](https://github.com/googleapis/google-api-python-client/pull/832))
+  
+### v1.7.11
   Version 1.7.11
 
   Bugfix release
@@ -10,7 +61,7 @@ v1.7.11
   - Fix typo in filename used in 'docs/auth.md' ([#736](https://github.com/googleapis/google-api-python-client/pull/736))
 
   
-v1.7.10
+### v1.7.10
   Version 1.7.10
 
   Bugfix release
@@ -32,21 +83,21 @@ v1.7.10
   - tox.ini: Look for Python syntax errors and undefined names ([#721](https://github.com/googleapis/google-api-python-client/pull/721))
 
 
-v1.7.9
+### v1.7.9
   Version 1.7.9
 
   Bugfix release
   - Remove Django Samples. ([#657](https://github.com/googleapis/google-api-python-client/pull/657))
   - Call request_orig with kwargs ([#658](https://github.com/googleapis/google-api-python-client/pull/658))
 
-v1.7.8
+### v1.7.8
   Version 1.7.8
 
   Bugfix release
   - Convert '$' in method name to '_' ([#616](https://github.com/googleapis/google-api-python-client/pull/616))
   - Alias unitest2 import as unittest in test__auth.py ([#613](https://github.com/googleapis/google-api-python-client/pull/613))
 
-v1.7.7
+### v1.7.7
   Version 1.7.7
 
     Bugfix release
@@ -59,28 +110,28 @@ v1.7.7
 
     - Add badges ([#455](https://github.com/google/google-api-python-client/pull/455))
 
-v1.7.6
+### v1.7.6
   Version 1.7.6
 
   Bugfix release
 
   - Add client-side limit for batch requests (#585)
 
-v1.7.5
+### v1.7.5
   Version 1.7.5
 
   Bugfix release
 
   - Fix the client to respect the passed in developerKey and credentials
 
-v1.7.4
+### v1.7.4
   Version 1.7.4
 
   Bugfix release
 
   - Catch ServerNotFoundError to retry the request (#532)
 
-v1.7.3
+### v1.7.3
   Version 1.7.3
 
   Bugfix release
@@ -88,21 +139,21 @@ v1.7.3
   - Make apiclient.sample_tools gracefully fail to import (#525).
 
 
-v1.7.2
+### v1.7.2
   Version 1.7.2
 
   Bugfix release
 
   - Remove unnecessary check in apiclient/__ini__.py (#522).
 
-v1.7.1
+### v1.7.1
   Version 1.7.1
 
   Bugfix release
 
   - Remove unnecessary check in setup.py (#518).
 
-v1.7.0
+### v1.7.0
   Version 1.7.0
 
   This release drops the hard requirement on oauth2client and installs
@@ -112,7 +163,7 @@ v1.7.0
   - Drop oauth2client dependency (#499)
   - Include tests in source distribution (#514)
 
-v1.6.7
+### v1.6.7
   Version 1.6.7
 
   Bugfix release
@@ -129,7 +180,7 @@ v1.6.7
   - discovery.py: remove unused oauth2client import. (#492)
   - Update README to reference GCP API client libraries. (#490)
 
-v1.6.6
+### v1.6.6
   Version 1.6.6
 
   Bugfix release
@@ -138,7 +189,7 @@ v1.6.6
   - Increase the default media chunksize to 100MB. (#482)
   - Remove unnecessary parsing of mime headers in HttpRequest.__init__ (#467)
 
-v1.6.5
+### v1.6.5
   Version 1.6.5
 
   Bugfix release
@@ -157,14 +208,14 @@ v1.6.5
   - Handle variant error format gracefully. (#459)
   - Avoid testing against Django >= 2.0.0 on Python 2. (#460)
 
-v1.6.4
+### v1.6.4
   Version 1.6.4
 
   Bugfix release
 
   - Warn when google-auth credentials are used but google-auth-httplib2 isn't available. (#443)
 
-v1.6.3
+### v1.6.3
   Version 1.6.3
 
   Bugfix release
@@ -180,7 +231,7 @@ v1.6.3
   - Don't treat httplib2.Credentials as oauth credentials. (#425)
   - Various fixes to the Django sample. (#413)
 
-v1.6.2
+### v1.6.2
   Version 1.6.2
 
   Bugfix release
@@ -189,14 +240,14 @@ v1.6.2
     when a developerKey was specified. (#347)
   - Official support for Python 3.5 and 3.6. (#341)
  
-v1.6.1
+### v1.6.1
   Version 1.6.1
 
   Bugfix release
 
   - Fixed a bug where using google-auth with scoped credentials would fail. (#328)
 
-v1.6.0
+### v1.6.0
   Version 1.6.0
 
   Release to drop support for Python 2.6 and add support for google-auth.
@@ -217,7 +268,7 @@ v1.6.0
   - Fixed resumable upload failure when receiving a 308 response. (#312)
   - Clarified the support versions of Python 3. (#316)
 
-v1.5.5
+### v1.5.5
   Version 1.5.5
 
   Bugfix release
@@ -227,7 +278,7 @@ v1.5.5
   - Refresh all discovery docs, not just the preferred ones. (#298)
   - Update minimum httplib2 dependency to >=0.9.2.
 
-v1.5.4
+### v1.5.4
   Version 1.5.4
 
   Bugfix release
@@ -237,14 +288,14 @@ v1.5.4
   - Allow oauth2client 4.0.0, with the caveat that file-based discovery
     caching is disabled.
 
-v1.5.3
+### v1.5.3
   Version 1.5.3
 
   Bugfix release
 
   - Fixed import error with oauth2client >= 3.0.0. (#270)
 
-v1.5.2
+### v1.5.2
   Version 1.5.2
 
   Bugfix release
@@ -255,7 +306,7 @@ v1.5.2
   - Obtain access token if necessary in BatchHttpRequest.execute(). (#232)
   - Warn when running tests using HttpMock without having a cache. (#261)
 
-v1.5.1
+### v1.5.1
   Version 1.5.1
 
   Bugfix release
@@ -268,7 +319,7 @@ v1.5.1
   - Use named loggers instead of the root logger. (#206)
   - New search console example. (#212)
 
-v1.5.0
+### v1.5.0
   Version 1.5.0
 
   Release to support oauth2client >= 2.0.0.
@@ -279,22 +330,22 @@ v1.5.0
   - Handle SSL errors with retries (#160)
   - Fix incompatibility with oauth2client v2.0.0 (#182)
 
-v1.4.2
+### v1.4.2
   Version 1.4.2
 
   Add automatic caching for the discovery docs.
 
-v1.4.1
+### v1.4.1
   Version 1.4.1
 
   Add the googleapiclient.discovery.Resource.new_batch_http_request method.
 
-v1.4.0
+### v1.4.0
   Version 1.4.0
 
   Python 3 support.
 
-v1.3.2
+### v1.3.2
   Version 1.3.2
 
   Small bugfix release.
@@ -304,12 +355,12 @@ v1.3.2
   - Better handling of `content-length` in media requests.
   - Add support for methodPath entries containing colon.
 
-v1.3.1
+### v1.3.1
   Version 1.3.1
 
   Quick release for a fix around aliasing in v1.3.
 
-v1.3
+### v1.3
   Version 1.3
 
   Add support for the Google Application Default Credentials.
@@ -328,7 +379,7 @@ v1.3
       setup.py attempts to detect this and prevents it. Simply remove
       the previous version and reinstall to fix this.
 
-v1.2
+### v1.2
   Version 1.2
 
   The use of the gflags library is now deprecated, and is no longer a
@@ -354,7 +405,7 @@ v1.2
   - Update AdExchange Buyer API examples to version v1.2.
 
 
-v1.1
+### v1.1
   Version 1.1
 
   Add PEM support to SignedJWTAssertionCredentials (used to only support
@@ -382,12 +433,12 @@ v1.1
   - Ensure that dataWrapper feature is checked before using the 'data' value.
   - HMAC verification does not use a constant time algorithm.
 
-v1.0
+### v1.0
  Version 1.0
 
   - Changes to the code for running tests and building releases.
 
-v1.0c3
+### v1.0c3
  Version 1.0 Release Candidate 3
 
   - In samples and oauth2 decorator, escape untrusted content before displaying it.
@@ -410,7 +461,7 @@ v1.0c3
   - oauth2client support for URL-encoded format of exchange token response (e.g.  Facebook)
   - Build cleaner and easier to read docs for dynamic surfaces.
 
-v1.0c2
+### v1.0c2
  Version 1.0 Release Candidate 2
 
   - Parameter values of None should be treated as missing. Fixes issue #144.
@@ -418,7 +469,7 @@ v1.0c2
   - Move all remaining samples over to client_secrets.json. Fixes issue #156.
   - Make locked_file.py understand win32file primitives for better awesomeness.
 
-v1.0c1
+### v1.0c1
  Version 1.0 Release Candidate 1
 
  - Documentation for the library has switched to epydoc:
@@ -443,7 +494,7 @@ v1.0c1
    * new analytics api samples. Reviewed here: http://codereview.appspot.com/5494058/
  - Convert all inline samples to the Farm API for consistency.
 
-v1.0beta8
+### v1.0beta8
  - Updated meda upload support.
  - Many fixes for batch requests.
  - Better handling for requests that don't require a body.
@@ -458,7 +509,7 @@ v1.0beta8
       'body' parameter in your call. The solution is to remove the unneeded
       body={} parameter.
 
-v1.0beta7
+### v1.0beta7
  - Support for batch requests.  http://code.google.com/p/google-api-python-client/wiki/Batch
  - Support for media upload.  http://code.google.com/p/google-api-python-client/wiki/MediaUpload
  - Better handling for APIs that return something other than JSON.

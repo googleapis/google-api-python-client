@@ -466,7 +466,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         plus = build_from_document(
             discovery, base=base, credentials=self.MOCK_CREDENTIALS
         )
-        self.assertEquals("https://www.googleapis.com/plus/v1/", plus._baseUrl)
+        self.assertEqual("https://www.googleapis.com/plus/v1/", plus._baseUrl)
 
     def test_building_with_optional_http_with_authorization(self):
         discovery = open(datafile("plus.json")).read()
@@ -503,7 +503,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         plus = build_from_document(
             discovery, base="https://www.googleapis.com/", http=http
         )
-        self.assertEquals(plus._http, http)
+        self.assertEqual(plus._http, http)
 
     def test_building_with_developer_key_skips_adc(self):
         discovery = open(datafile("plus.json")).read()
@@ -514,6 +514,25 @@ class DiscoveryFromDocument(unittest.TestCase):
         # It should not be an AuthorizedHttp, because that would indicate that
         # application default credentials were used.
         self.assertNotIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
+
+    def test_api_endpoint_override_from_client_options(self):
+        discovery = open(datafile("plus.json")).read()
+        api_endpoint = "https://foo.googleapis.com/"
+        options = google.api_core.client_options.ClientOptions(
+            api_endpoint=api_endpoint
+        )
+        plus = build_from_document(discovery, client_options=options)
+
+        self.assertEqual(plus._baseUrl, api_endpoint)
+
+    def test_api_endpoint_override_from_client_options_dict(self):
+        discovery = open(datafile("plus.json")).read()
+        api_endpoint = "https://foo.googleapis.com/"
+        plus = build_from_document(
+            discovery, client_options={"api_endpoint": api_endpoint}
+        )
+
+        self.assertEqual(plus._baseUrl, api_endpoint)
 
 
 class DiscoveryFromHttp(unittest.TestCase):
@@ -587,6 +606,39 @@ class DiscoveryFromHttp(unittest.TestCase):
         )
         zoo = build("zoo", "v1", http=http, cache_discovery=False)
         self.assertTrue(hasattr(zoo, "animals"))
+
+    def test_api_endpoint_override_from_client_options(self):
+        http = HttpMockSequence(
+            [
+                ({"status": "404"}, "Not found"),
+                ({"status": "200"}, open(datafile("zoo.json"), "rb").read()),
+            ]
+        )
+        api_endpoint = "https://foo.googleapis.com/"
+        options = google.api_core.client_options.ClientOptions(
+            api_endpoint=api_endpoint
+        )
+        zoo = build(
+            "zoo", "v1", http=http, cache_discovery=False, client_options=options
+        )
+        self.assertEqual(zoo._baseUrl, api_endpoint)
+
+    def test_api_endpoint_override_from_client_options_dict(self):
+        http = HttpMockSequence(
+            [
+                ({"status": "404"}, "Not found"),
+                ({"status": "200"}, open(datafile("zoo.json"), "rb").read()),
+            ]
+        )
+        api_endpoint = "https://foo.googleapis.com/"
+        zoo = build(
+            "zoo",
+            "v1",
+            http=http,
+            cache_discovery=False,
+            client_options={"api_endpoint": api_endpoint},
+        )
+        self.assertEqual(zoo._baseUrl, api_endpoint)
 
 
 class DiscoveryFromAppEngineCache(unittest.TestCase):
@@ -928,8 +980,8 @@ class Discovery(unittest.TestCase):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
         zoo = build("zoo", "v1", http=self.http)
         request = zoo.animals().crossbreed(media_body=datafile("small.png"))
-        self.assertEquals("image/png", request.headers["content-type"])
-        self.assertEquals(b"PNG", request.body[1:4])
+        self.assertEqual("image/png", request.headers["content-type"])
+        self.assertEqual(b"PNG", request.body[1:4])
 
     def test_simple_media_raise_correct_exceptions(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
@@ -952,8 +1004,8 @@ class Discovery(unittest.TestCase):
         zoo = build("zoo", "v1", http=self.http)
 
         request = zoo.animals().insert(media_body=datafile("small.png"))
-        self.assertEquals("image/png", request.headers["content-type"])
-        self.assertEquals(b"PNG", request.body[1:4])
+        self.assertEqual("image/png", request.headers["content-type"])
+        self.assertEqual(b"PNG", request.body[1:4])
         assertUrisEqual(
             self,
             "https://www.googleapis.com/upload/zoo/v1/animals?uploadType=media&alt=json",
@@ -973,8 +1025,8 @@ class Discovery(unittest.TestCase):
         request = zoo.animals().insert(
             media_body=datafile("small-png"), media_mime_type="image/png"
         )
-        self.assertEquals("image/png", request.headers["content-type"])
-        self.assertEquals(b"PNG", request.body[1:4])
+        self.assertEqual("image/png", request.headers["content-type"])
+        self.assertEqual(b"PNG", request.body[1:4])
         assertUrisEqual(
             self,
             "https://www.googleapis.com/upload/zoo/v1/animals?uploadType=media&alt=json",
@@ -1045,13 +1097,13 @@ class Discovery(unittest.TestCase):
         media_upload = MediaFileUpload(datafile("small.png"), resumable=True)
         request = zoo.animals().insert(media_body=media_upload, body={})
         self.assertTrue(request.headers["content-type"].startswith("application/json"))
-        self.assertEquals('{"data": {}}', request.body)
-        self.assertEquals(media_upload, request.resumable)
+        self.assertEqual('{"data": {}}', request.body)
+        self.assertEqual(media_upload, request.resumable)
 
-        self.assertEquals("image/png", request.resumable.mimetype())
+        self.assertEqual("image/png", request.resumable.mimetype())
 
         self.assertNotEquals(request.body, None)
-        self.assertEquals(request.resumable_uri, None)
+        self.assertEqual(request.resumable_uri, None)
 
         http = HttpMockSequence(
             [
@@ -1078,32 +1130,32 @@ class Discovery(unittest.TestCase):
         )
 
         status, body = request.next_chunk(http=http)
-        self.assertEquals(None, body)
+        self.assertEqual(None, body)
         self.assertTrue(isinstance(status, MediaUploadProgress))
-        self.assertEquals(0, status.resumable_progress)
+        self.assertEqual(0, status.resumable_progress)
 
         # Two requests should have been made and the resumable_uri should have been
         # updated for each one.
-        self.assertEquals(request.resumable_uri, "http://upload.example.com/2")
-        self.assertEquals(media_upload, request.resumable)
-        self.assertEquals(0, request.resumable_progress)
+        self.assertEqual(request.resumable_uri, "http://upload.example.com/2")
+        self.assertEqual(media_upload, request.resumable)
+        self.assertEqual(0, request.resumable_progress)
 
         # This next chuck call should upload the first chunk
         status, body = request.next_chunk(http=http)
-        self.assertEquals(request.resumable_uri, "http://upload.example.com/3")
-        self.assertEquals(media_upload, request.resumable)
-        self.assertEquals(13, request.resumable_progress)
+        self.assertEqual(request.resumable_uri, "http://upload.example.com/3")
+        self.assertEqual(media_upload, request.resumable)
+        self.assertEqual(13, request.resumable_progress)
 
         # This call will upload the next chunk
         status, body = request.next_chunk(http=http)
-        self.assertEquals(request.resumable_uri, "http://upload.example.com/4")
-        self.assertEquals(media_upload.size() - 1, request.resumable_progress)
-        self.assertEquals('{"data": {}}', request.body)
+        self.assertEqual(request.resumable_uri, "http://upload.example.com/4")
+        self.assertEqual(media_upload.size() - 1, request.resumable_progress)
+        self.assertEqual('{"data": {}}', request.body)
 
         # Final call to next_chunk should complete the upload.
         status, body = request.next_chunk(http=http)
-        self.assertEquals(body, {"foo": "bar"})
-        self.assertEquals(status, None)
+        self.assertEqual(body, {"foo": "bar"})
+        self.assertEqual(status, None)
 
     def test_resumable_media_good_upload(self):
         """Not a multipart upload."""
@@ -1112,12 +1164,12 @@ class Discovery(unittest.TestCase):
 
         media_upload = MediaFileUpload(datafile("small.png"), resumable=True)
         request = zoo.animals().insert(media_body=media_upload, body=None)
-        self.assertEquals(media_upload, request.resumable)
+        self.assertEqual(media_upload, request.resumable)
 
-        self.assertEquals("image/png", request.resumable.mimetype())
+        self.assertEqual("image/png", request.resumable.mimetype())
 
-        self.assertEquals(request.body, None)
-        self.assertEquals(request.resumable_uri, None)
+        self.assertEqual(request.body, None)
+        self.assertEqual(request.resumable_uri, None)
 
         http = HttpMockSequence(
             [
@@ -1143,26 +1195,26 @@ class Discovery(unittest.TestCase):
         )
 
         status, body = request.next_chunk(http=http)
-        self.assertEquals(None, body)
+        self.assertEqual(None, body)
         self.assertTrue(isinstance(status, MediaUploadProgress))
-        self.assertEquals(13, status.resumable_progress)
+        self.assertEqual(13, status.resumable_progress)
 
         # Two requests should have been made and the resumable_uri should have been
         # updated for each one.
-        self.assertEquals(request.resumable_uri, "http://upload.example.com/2")
+        self.assertEqual(request.resumable_uri, "http://upload.example.com/2")
 
-        self.assertEquals(media_upload, request.resumable)
-        self.assertEquals(13, request.resumable_progress)
+        self.assertEqual(media_upload, request.resumable)
+        self.assertEqual(13, request.resumable_progress)
 
         status, body = request.next_chunk(http=http)
-        self.assertEquals(request.resumable_uri, "http://upload.example.com/3")
-        self.assertEquals(media_upload.size() - 1, request.resumable_progress)
-        self.assertEquals(request.body, None)
+        self.assertEqual(request.resumable_uri, "http://upload.example.com/3")
+        self.assertEqual(media_upload.size() - 1, request.resumable_progress)
+        self.assertEqual(request.body, None)
 
         # Final call to next_chunk should complete the upload.
         status, body = request.next_chunk(http=http)
-        self.assertEquals(body, {"foo": "bar"})
-        self.assertEquals(status, None)
+        self.assertEqual(body, {"foo": "bar"})
+        self.assertEqual(status, None)
 
     def test_resumable_media_good_upload_from_execute(self):
         """Not a multipart upload."""
@@ -1201,7 +1253,7 @@ class Discovery(unittest.TestCase):
         )
 
         body = request.execute(http=http)
-        self.assertEquals(body, {"foo": "bar"})
+        self.assertEqual(body, {"foo": "bar"})
 
     def test_resumable_media_fail_unknown_response_code_first_request(self):
         """Not a multipart upload."""
@@ -1247,7 +1299,7 @@ class Discovery(unittest.TestCase):
         )
 
         status, body = request.next_chunk(http=http)
-        self.assertEquals(
+        self.assertEqual(
             status.resumable_progress,
             7,
             "Should have first checked length and then tried to PUT more.",
@@ -1571,9 +1623,9 @@ class Discovery(unittest.TestCase):
         media_upload = MediaFileUpload(datafile("empty"), resumable=True)
         request = zoo.animals().insert(media_body=media_upload, body=None)
 
-        self.assertEquals(media_upload, request.resumable)
-        self.assertEquals(request.body, None)
-        self.assertEquals(request.resumable_uri, None)
+        self.assertEqual(media_upload, request.resumable)
+        self.assertEqual(request.body, None)
+        self.assertEqual(request.resumable_uri, None)
 
         http = HttpMockSequence(
             [
@@ -1590,9 +1642,9 @@ class Discovery(unittest.TestCase):
         )
 
         status, body = request.next_chunk(http=http)
-        self.assertEquals(None, body)
+        self.assertEqual(None, body)
         self.assertTrue(isinstance(status, MediaUploadProgress))
-        self.assertEquals(0, status.progress())
+        self.assertEqual(0, status.progress())
 
 
 class Next(unittest.TestCase):
