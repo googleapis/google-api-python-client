@@ -26,16 +26,18 @@ __author__ = "jcgregorio@google.com (Joe Gregorio)"
 import copy
 import json
 import os
+import pkg_resources
 import platform
 import unittest2 as unittest
 import httplib2
 import googleapiclient.model
 
-from googleapiclient import __version__
 from googleapiclient.errors import HttpError
 from googleapiclient.model import JsonModel
 
 from six.moves.urllib.parse import parse_qs
+
+_LIBRARY_VERSION = pkg_resources.get_distribution("google-api-python-client").version
 
 
 class Model(unittest.TestCase):
@@ -171,7 +173,7 @@ class Model(unittest.TestCase):
             headers["x-goog-api-client"],
             "gccl/1.23.4"
             + " gdcl/"
-            + __version__
+            + _LIBRARY_VERSION
             + " gl-python/"
             + platform.python_version(),
         )

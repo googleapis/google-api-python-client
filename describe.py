@@ -354,7 +354,10 @@ def document_collection_recursive(resource, path, root_discovery, discovery):
     html = document_collection(resource, path, root_discovery, discovery)
 
     f = open(os.path.join(FLAGS.dest, path + "html"), "w")
-    f.write(html.encode("utf-8"))
+    if sys.version_info.major < 3:
+        html = html.encode("utf-8")
+
+    f.write(html)
     f.close()
 
     for name in dir(resource):
@@ -456,7 +459,10 @@ if __name__ == "__main__":
                 markdown.append("\n")
 
             with open("docs/dyn/index.md", "w") as f:
-                f.write("\n".join(markdown).encode("utf-8"))
+                markdown = "\n".join(markdown)
+                if sys.version_info.major < 3:
+                    markdown = markdown.encode("utf-8")
+                f.write(markdown)
 
         else:
             sys.exit("Failed to load the discovery document.")

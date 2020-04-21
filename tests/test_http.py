@@ -132,32 +132,31 @@ class HttpMockWithErrors(object):
     def request(self, *args, **kwargs):
         if not self.num_errors:
             return httplib2.Response(self.success_json), self.success_data
+        elif self.num_errors == 5 and PY3:
+            ex = ConnectionResetError  # noqa: F821
+        elif self.num_errors == 4:
+            ex = httplib2.ServerNotFoundError()
+        elif self.num_errors == 3:
+            ex = socket.error()
+            ex.errno = socket.errno.EPIPE
+        elif self.num_errors == 2:
+            ex = ssl.SSLError()
         else:
-            self.num_errors -= 1
-            if self.num_errors == 1:  # initial == 2
-                raise ssl.SSLError()
-            if self.num_errors == 3:  # initial == 4
-                raise httplib2.ServerNotFoundError()
-            else:  # initial != 2,4
-                if self.num_errors == 2:
-                    # first try a broken pipe error (#218)
-                    ex = socket.error()
-                    ex.errno = socket.errno.EPIPE
+            # Initialize the timeout error code to the platform's error code.
+            try:
+                # For Windows:
+                ex = socket.error()
+                ex.errno = socket.errno.WSAETIMEDOUT
+            except AttributeError:
+                # For Linux/Mac:
+                if PY3:
+                    ex = socket.timeout()
                 else:
-                    # Initialize the timeout error code to the platform's error code.
-                    try:
-                        # For Windows:
-                        ex = socket.error()
-                        ex.errno = socket.errno.WSAETIMEDOUT
-                    except AttributeError:
-                        # For Linux/Mac:
-                        if PY3:
-                            ex = socket.timeout()
-                        else:
-                            ex = socket.error()
-                            ex.errno = socket.errno.ETIMEDOUT
-                # Now raise the correct error.
-                raise ex
+                    ex = socket.error()
+                    ex.errno = socket.errno.ETIMEDOUT
+
+        self.num_errors -= 1
+        raise ex
 
 
 class HttpMockWithNonRetriableErrors(object):
@@ -562,14 +561,14 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
     def test_media_io_base_download_retries_connection_errors(self):
         self.request.http = HttpMockWithErrors(
-            4, {"status": "200", "content-range": "0-2/3"}, b"123"
+            5, {"status": "200", "content-range": "0-2/3"}, b"123"
         )
 
         download = MediaIoBaseDownload(fd=self.fd, request=self.request, chunksize=3)
         download._sleep = lambda _x: 0  # do nothing
         download._rand = lambda: 10
 
-        status, done = download.next_chunk(num_retries=4)
+        status, done = download.next_chunk(num_retries=5)
 
         self.assertEqual(self.fd.getvalue(), b"123")
         self.assertEqual(True, done)
@@ -899,13 +898,13 @@ class TestHttpRequest(unittest.TestCase):
     def test_retry_connection_errors_non_resumable(self):
         model = JsonModel()
         request = HttpRequest(
-            HttpMockWithErrors(4, {"status": "200"}, '{"foo": "bar"}'),
+            HttpMockWithErrors(5, {"status": "200"}, '{"foo": "bar"}'),
             model.response,
             u"https://www.example.com/json_api_endpoint",
         )
         request._sleep = lambda _x: 0  # do nothing
         request._rand = lambda: 10
-        response = request.execute(num_retries=4)
+        response = request.execute(num_retries=5)
         self.assertEqual({u"foo": u"bar"}, response)
 
     def test_retry_connection_errors_resumable(self):
@@ -918,7 +917,7 @@ class TestHttpRequest(unittest.TestCase):
 
         request = HttpRequest(
             HttpMockWithErrors(
-                4, {"status": "200", "location": "location"}, '{"foo": "bar"}'
+                5, {"status": "200", "location": "location"}, '{"foo": "bar"}'
             ),
             model.response,
             u"https://www.example.com/file_upload",
@@ -927,7 +926,7 @@ class TestHttpRequest(unittest.TestCase):
         )
         request._sleep = lambda _x: 0  # do nothing
         request._rand = lambda: 10
-        response = request.execute(num_retries=4)
+        response = request.execute(num_retries=5)
         self.assertEqual({u"foo": u"bar"}, response)
 
     def test_retry(self):
@@ -1122,7 +1121,7 @@ class TestBatch(unittest.TestCase):
 
     def test_id_to_from_content_id_header(self):
         batch = BatchHttpRequest()
-        self.assertEquals("12", batch._header_to_id(batch._id_to_header("12")))
+        self.assertEqual("12", batch._header_to_id(batch._id_to_header("12")))
 
     def test_invalid_content_id_header(self):
         batch = BatchHttpRequest()
@@ -1646,7 +1645,11 @@ class TestHttpBuild(unittest.TestCase):
     def test_build_http_default_timeout_can_be_set_to_zero(self):
         socket.setdefaulttimeout(0)
         http = build_http()
-        self.assertEquals(http.timeout, 0)
+        self.assertEqual(http.timeout, 0)
+    
+    def test_build_http_default_308_is_excluded_as_redirect(self):
+        http = build_http()
+        self.assertTrue(308 not in http.redirect_codes)
 
 
 if __name__ == "__main__":
