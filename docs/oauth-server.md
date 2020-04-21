@@ -8,13 +8,13 @@ If you have a G Suite domain—if you use [G Suite](https://gsuite.google.com/),
 
 > **Note:** When you use [G Suite Marketplace](https://www.google.com/enterprise/marketplace/) to install an application for your domain, the required permissions are automatically granted to the application. You do not need to manually authorize the service accounts that the application uses.
 
-> **Note:** Although you can use service accounts in applications that run from a Google Apps domain, service accounts are not members of your Google Apps account and aren't subject to domain policies set by Google Apps administrators. For example, a policy set in the Google Apps admin console to restrict the ability of Apps end users to share documents outside of the domain would not apply to service accounts.
+> **Note:** Although you can use service accounts in applications that run from a G Suite domain, service accounts are not members of your G Suite account and aren't subject to domain policies set by G Suite administrators. For example, a policy set in the G Suite Admin console to restrict the ability of G Suite end users to share documents outside of the domain would not apply to service accounts. Similarly, that policy would prevent users from sharing documents with service accounts, because service acounts are always outside of the domain. If you're using G Suite domain-wide delegation, this isn't relevant to you - you are accessing APIs while acting as a domain user, not as the service account itself.
 
 This document describes how an application can complete the server-to-server OAuth 2.0 flow by using the Google APIs Client Library for Python.
 
 ## Overview
 
-To support server-to-server interactions, first create a service account for your project in the API Console. If you want to access user data for users in your Google Apps domain, then delegate domain-wide access to the service account.
+To support server-to-server interactions, first create a service account for your project in the API Console. If you want to access user data for users in your G Suite domain, then delegate domain-wide access to the service account.
 
 Then, your application prepares to make authorized API calls by using the service account's credentials to request an access token from the OAuth 2.0 auth server.
 
@@ -44,19 +44,19 @@ Take note of the service account's email address and store the service account's
 
 ## Delegating domain-wide authority to the service account
 
-If your application runs in a Google Apps domain and accesses user data, the service account that you created needs to be granted access to the user data that you want to access.
+If your application runs in a G Suite domain and accesses user data, the service account that you created needs to be granted access to the user data that you want to access.
 
-The following steps must be performed by an administrator of the Google Apps domain:
+The following steps must be performed by an administrator of the G Suite domain:
 
-1. Go to your Google Apps domain’s [Admin console](http://admin.google.com/).
+1. Go to your G Suite domain’s [Admin console](https://admin.google.com/).
 1. Select **Security** from the list of controls. If you don't see **Security** listed, select **More controls** from the gray bar at the bottom of the page, then select **Security** from the list of controls. If you can't see the controls, make sure you're signed in as an administrator for the domain.
 1. Select **Advanced settings** from the list of options.
 1. Select **Manage third party OAuth Client access** in the **Authentication** section.
 1. In the **Client name** field enter the service account's **Client ID**.
-1. In the **One or More API Scopes** field enter the list of scopes that your application should be granted access to. For example, if your application needs domain-wide access to the Google Drive API and the Google Calendar API, enter: `https://www.googleapis.com/auth/drive`, `https://www.googleapis.com/auth/calendar`.
+1. In the **One or More API Scopes** field enter the list of scopes that your application should be granted access to. For example, if your application needs domain-wide access to the Google Drive API and the Google Calendar API, enter: `https://www.googleapis.com/auth/drive, https://www.googleapis.com/auth/calendar`.
 1. Click **Authorize**.
 
-Your application now has the authority to make API calls as users in your domain (to "impersonate" users). When you prepare to make authorized API calls, you specify the user to impersonate.
+Your application now has the authority to make API calls as users in your domain (to "impersonate" users). When you prepare to make authorized API calls, you specify the user to impersonate in the `subject` argument.
 
 ## Preparing to make an authorized API call
 
@@ -109,6 +109,21 @@ credentials = service_account.Credentials.from_service_account_file(
 ```
 
 Use the `Credentials` object to call Google APIs in your application.
+
+#### Using Domain-wide Delegation
+
+```python
+from google.oauth2 import service_account
+
+SCOPES = ['https://www.googleapis.com/auth/sqlservice.admin']
+SERVICE_ACCOUNT_FILE = '/path/to/service.json'
+
+credentials = service_account.Credentials.from_service_account_file(
+        SERVICE_ACCOUNT_FILE, scopes=SCOPES, subject='user@domain.com')
+```
+
+Use the `Credentials` object to call Google APIs in your application. The API requests would be authorized as `user@domain.com`, if you've authorized the service account accordingly in the G Suite Admin console.
+
 
 ## Calling Google APIs
 
