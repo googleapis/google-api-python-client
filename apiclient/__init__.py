@@ -19,8 +19,6 @@ except ImportError:
     sample_tools = None
 from googleapiclient import schema
 
-__version__ = googleapiclient.__version__
-
 _SUBMODULES = {
     "channel": channel,
     "discovery": discovery,

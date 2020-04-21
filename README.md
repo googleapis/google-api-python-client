@@ -10,11 +10,13 @@ These client libraries are officially supported by Google.  However, the librari
 
 See the [docs folder](docs/README.md) for more detailed instructions and additional documentation.
 
-## Google Cloud Platform / Google Ads
+## Other Google API libraries
 
 For Google Cloud Platform APIs such as Datastore, Cloud Storage or Pub/Sub, we recommend using [Cloud Client Libraries for Python](https://github.com/GoogleCloudPlatform/google-cloud-python).
 
 For Google Ads API, we recommend using [Google Ads API Client Library for Python](https://github.com/googleads/google-ads-python/).
+
+For Google Firebase Admin API, we recommend using [Firebase Admin Python SDK](https://github.com/firebase/firebase-admin-python).
 
 ## Installation
 

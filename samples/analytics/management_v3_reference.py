@@ -98,7 +98,7 @@ def traverse_hiearchy(service):
     service: The service object built by the Google API Python client library.
 
   Raises:
-    HttpError: If an error occured when accessing the API.
+    HttpError: If an error occurred when accessing the API.
     AccessTokenRefreshError: If the current token was invalid.
   """
 
