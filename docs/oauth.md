@@ -49,7 +49,7 @@ The example below uses the `Flow` class to handle the installed appplication aut
 
 #### from_client_secrets_file()
 
-The [google_auth_oauthlib.Flow.from_client_secrets()](https://google-auth-oauthlib.readthedocs.io/en/latest/reference/google_auth_oauthlib.flow.html#google_auth_oauthlib.flow.Flow.from_client_secrets_file) method creates a `Flow` object from a [client_secrets.json](client_secrets.md) file. This [JSON](http://www.json.org/) formatted file stores your client ID, client secret, and other OAuth 2.0 parameters.
+The [google_auth_oauthlib.Flow.from_client_secrets()](https://google-auth-oauthlib.readthedocs.io/en/latest/reference/google_auth_oauthlib.flow.html#google_auth_oauthlib.flow.Flow.from_client_secrets_file) method creates a `Flow` object from a [client_secrets.json](client-secrets.md) file. This [JSON](http://www.json.org/) formatted file stores your client ID, client secret, and other OAuth 2.0 parameters.
 
 The following shows how you can use `from_client_secrets_file()` to create a `Flow` object:
 
