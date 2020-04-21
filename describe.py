@@ -247,6 +247,12 @@ def method(name, doc):
   """
 
     params = method_params(doc)
+    if sys.version_info.major >= 3:
+        import html
+        doc = html.escape(doc)
+    else:
+        import cgi
+        doc = cgi.escape(doc)
     return string.Template(METHOD_TEMPLATE).substitute(
         name=name, params=params, doc=doc
     )
