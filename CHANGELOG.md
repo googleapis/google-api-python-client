@@ -1,5 +1,13 @@
 # Changelog
 
+### [1.8.2](https://www.github.com/googleapis/google-api-python-client/compare/v1.8.1...v1.8.2) (2020-04-21)
+
+
+### Bug Fixes
+
+* Remove `apiclient.__version__` ([#871](https://www.github.com/googleapis/google-api-python-client/issues/871)) ([c7516a2](https://github.com/googleapis/google-api-python-client/commit/1d8ec6874e1c6081893de7cd7cbc86d1f6580320d)), closes [googleapis#870](https://www.github.com/googleapis/googleapis/issues/870)
+
+
 ### [1.8.1](https://www.github.com/googleapis/google-api-python-client/compare/v1.8.0...v1.8.1) (2020-04-20)
 
 
