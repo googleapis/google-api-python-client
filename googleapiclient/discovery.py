@@ -277,7 +277,7 @@ def _retrieve_discovery_doc(url, http, cache_discovery, cache=None, developerKey
         actual_url = _add_query_parameter(url, "userIp", os.environ["REMOTE_ADDR"])
     if developerKey:
         actual_url = _add_query_parameter(url, "key", developerKey)
-    logger.info("URL being requested: GET %s", actual_url)
+    logger.debug("URL being requested: GET %s", actual_url)
 
     resp, content = http.request(actual_url)
 
@@ -908,7 +908,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                     ) % multipart_boundary
                     url = _add_query_parameter(url, "uploadType", "multipart")
 
-        logger.info("URL being requested: %s %s" % (httpMethod, url))
+        logger.debug("URL being requested: %s %s" % (httpMethod, url))
         return self._requestBuilder(
             self._http,
             model.response,
@@ -1028,14 +1028,14 @@ Returns:
             request.uri = _add_query_parameter(
                 request.uri, pageTokenName, nextPageToken
             )
-            logger.info("Next page request URL: %s %s" % (methodName, request.uri))
+            logger.debug("Next page request URL: %s %s" % (methodName, request.uri))
         else:
             # Replace pageToken value in request body
             model = self._model
             body = model.deserialize(request.body)
             body[pageTokenName] = nextPageToken
             request.body = model.serialize(body)
-            logger.info("Next page request body: %s %s" % (methodName, body))
+            logger.debug("Next page request body: %s %s" % (methodName, body))
 
         return request
 
