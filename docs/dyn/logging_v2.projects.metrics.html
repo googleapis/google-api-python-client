@@ -72,10 +72,10 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="logging_v2.html">Stackdriver Logging API</a> . <a href="logging_v2.projects.html">projects</a> . <a href="logging_v2.projects.metrics.html">metrics</a></h1>
+<h1><a href="logging_v2.html">Cloud Logging API</a> . <a href="logging_v2.projects.html">projects</a> . <a href="logging_v2.projects.metrics.html">metrics</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#create">create(parent, body, x__xgafv=None)</a></code></p>
+  <code><a href="#create">create(parent, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Creates a logs-based metric.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(metricName, x__xgafv=None)</a></code></p>
@@ -90,22 +90,23 @@ h1, h2, h3 {
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#update">update(metricName, body, x__xgafv=None)</a></code></p>
+  <code><a href="#update">update(metricName, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Creates or updates a logs-based metric.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="create">create(parent, body, x__xgafv=None)</code>
+    <code class="details" id="create">create(parent, body=None, x__xgafv=None)</code>
   <pre>Creates a logs-based metric.
 
 Args:
-  parent: string, The resource name of the project in which to create the metric:
+  parent: string, Required. The resource name of the project in which to create the metric:
 "projects/[PROJECT_ID]"
 The new metric must be provided in the request. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
     "updateTime": "A String", # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
+    "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
     "name": "A String", # Required. The client-assigned metric identifier. Examples: "error_count", "nginx/requests".Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*',()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: "projects/my-project/metrics/nginx%2Frequests".
     "metricDescriptor": { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type's existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of "1". Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
       "description": "A String", # A detailed description of the metric, which can be used in documentation.
@@ -121,39 +122,36 @@ The new metric must be provided in the request. (required)
         },
       ],
       "launchStage": "A String", # Optional. The launch stage of the metric definition.
-      "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-          # "custom.googleapis.com/invoice/paid/amount"
-          # "external.googleapis.com/prometheus/up"
-          # "appengine.googleapis.com/http/server/response_latencies"
-      "unit": "A String", # The unit in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
+      "unit": "A String", # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
           # bit bit
           # By byte
           # s second
           # min minute
           # h hour
           # d dayPrefixes (PREFIX)
-          # k kilo (10**3)
-          # M mega (10**6)
-          # G giga (10**9)
-          # T tera (10**12)
-          # P peta (10**15)
-          # E exa (10**18)
-          # Z zetta (10**21)
-          # Y yotta (10**24)
-          # m milli (10**-3)
-          # u micro (10**-6)
-          # n nano (10**-9)
-          # p pico (10**-12)
-          # f femto (10**-15)
-          # a atto (10**-18)
-          # z zepto (10**-21)
-          # y yocto (10**-24)
-          # Ki kibi (2**10)
-          # Mi mebi (2**20)
-          # Gi gibi (2**30)
-          # Ti tebi (2**40)GrammarThe grammar also includes these connectors:
-          # / division (as an infix operator, e.g. 1/s).
-          # . multiplication (as an infix operator, e.g. GBy.d)The grammar for a unit is as follows:
+          # k kilo (10^3)
+          # M mega (10^6)
+          # G giga (10^9)
+          # T tera (10^12)
+          # P peta (10^15)
+          # E exa (10^18)
+          # Z zetta (10^21)
+          # Y yotta (10^24)
+          # m milli (10^-3)
+          # u micro (10^-6)
+          # n nano (10^-9)
+          # p pico (10^-12)
+          # f femto (10^-15)
+          # a atto (10^-18)
+          # z zepto (10^-21)
+          # y yocto (10^-24)
+          # Ki kibi (2^10)
+          # Mi mebi (2^20)
+          # Gi gibi (2^30)
+          # Ti tebi (2^40)
+          # Pi pebi (2^50)GrammarThe grammar also includes these connectors:
+          # / division or ratio (as an infix operator). For examples,  kBy/{email} or MiBy/10ms (although you should almost never  have /s in a metric unit; rates should always be computed at  query time from the underlying cumulative or delta value).
+          # . multiplication or composition (as an infix operator). For  examples, GBy.d or k{watt}.h.The grammar for a unit is as follows:
           # Expression = Component { "." Component } { "/" Component } ;
           #
           # Component = ( [ PREFIX ] UNIT | "%" ) [ Annotation ]
@@ -163,28 +161,36 @@ The new metric must be provided in the request. (required)
           #
           # Annotation = "{" NAME "}" ;
           # Notes:
-          # Annotation is just a comment if it follows a UNIT and is  equivalent to 1 if it is used alone. For examples,  {requests}/s == 1/s, By{transmitted}/s == By/s.
-          # NAME is a sequence of non-blank printable ASCII characters not  containing '{' or '}'.
-          # 1 represents dimensionless value 1, such as in 1/s.
-          # % represents dimensionless value 1/100, and annotates values giving  a percentage.
+          # Annotation is just a comment if it follows a UNIT. If the annotation  is used alone, then the unit is equivalent to 1. For examples,  {request}/s == 1/s, By{transmitted}/s == By/s.
+          # NAME is a sequence of non-blank printable ASCII characters not  containing { or }.
+          # 1 represents a unitary dimensionless  unit (https://en.wikipedia.org/wiki/Dimensionless_quantity) of 1, such  as in 1/s. It is typically used when none of the basic units are  appropriate. For example, "new users per day" can be represented as  1/d or {new-users}/d (and a metric value 5 would mean "5 new  users). Alternatively, "thousands of page views per day" would be  represented as 1000/d or k1/d or k{page_views}/d (and a metric  value of 5.3 would mean "5300 page views per day").
+          # % represents dimensionless value of 1/100, and annotates values giving  a percentage (so the metric values are typically in the range of 0..100,  and a metric value 3 means "3 percent").
+          # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means "3 percent").
+      "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+          # "custom.googleapis.com/invoice/paid/amount"
+          # "external.googleapis.com/prometheus/up"
+          # "appengine.googleapis.com/http/server/response_latencies"
+      "monitoredResourceTypes": [ # Read-only. If present, then a time series, which is identified partially by a metric type and a MonitoredResourceDescriptor, that is associated with this metric type can only be associated with one of the monitored resource types listed here.
+        "A String",
+      ],
       "metadata": { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-        "launchStage": "A String", # Deprecated. Please use the MetricDescriptor.launch_stage instead. The launch stage of the metric definition.
+        "launchStage": "A String", # Deprecated. Must use the MetricDescriptor.launch_stage instead.
         "ingestDelay": "A String", # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
         "samplePeriod": "A String", # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
       },
     },
-    "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i > 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
-      "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): scale * (growth_factor ^ i).  Lower bound (1 <= i < N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
+    "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
+      "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
         "scale": 3.14, # Must be greater than 0.
         "growthFactor": 3.14, # Must be greater than 1.
         "numFiniteBuckets": 42, # Must be greater than 0.
       },
-      "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): offset + (width * i).  Lower bound (1 <= i < N): offset + (width * (i - 1)). # The linear bucket.
+      "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
         "width": 3.14, # Must be greater than 0.
         "numFiniteBuckets": 42, # Must be greater than 0.
         "offset": 3.14, # Lower bound of the first bucket.
       },
-      "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): boundsi  Lower bound (1 <= i < N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
+      "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
         "bounds": [ # The values must be monotonically increasing.
           3.14,
         ],
@@ -194,9 +200,8 @@ The new metric must be provided in the request. (required)
       "a_key": "A String",
     },
     "filter": "A String", # Required. An advanced logs filter which is used to match log entries. Example:
-        # "resource.type=gae_app AND severity>=ERROR"
+        # "resource.type=gae_app AND severity&gt;=ERROR"
         # The maximum length of the filter is 20000 characters.
-    "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
     "version": "A String", # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
     "createTime": "A String", # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
     "description": "A String", # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
@@ -212,6 +217,7 @@ Returns:
 
     { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
       "updateTime": "A String", # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
+      "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
       "name": "A String", # Required. The client-assigned metric identifier. Examples: "error_count", "nginx/requests".Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*',()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: "projects/my-project/metrics/nginx%2Frequests".
       "metricDescriptor": { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type's existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of "1". Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
         "description": "A String", # A detailed description of the metric, which can be used in documentation.
@@ -227,39 +233,36 @@ Returns:
           },
         ],
         "launchStage": "A String", # Optional. The launch stage of the metric definition.
-        "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-            # "custom.googleapis.com/invoice/paid/amount"
-            # "external.googleapis.com/prometheus/up"
-            # "appengine.googleapis.com/http/server/response_latencies"
-        "unit": "A String", # The unit in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
+        "unit": "A String", # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
             # bit bit
             # By byte
             # s second
             # min minute
             # h hour
             # d dayPrefixes (PREFIX)
-            # k kilo (10**3)
-            # M mega (10**6)
-            # G giga (10**9)
-            # T tera (10**12)
-            # P peta (10**15)
-            # E exa (10**18)
-            # Z zetta (10**21)
-            # Y yotta (10**24)
-            # m milli (10**-3)
-            # u micro (10**-6)
-            # n nano (10**-9)
-            # p pico (10**-12)
-            # f femto (10**-15)
-            # a atto (10**-18)
-            # z zepto (10**-21)
-            # y yocto (10**-24)
-            # Ki kibi (2**10)
-            # Mi mebi (2**20)
-            # Gi gibi (2**30)
-            # Ti tebi (2**40)GrammarThe grammar also includes these connectors:
-            # / division (as an infix operator, e.g. 1/s).
-            # . multiplication (as an infix operator, e.g. GBy.d)The grammar for a unit is as follows:
+            # k kilo (10^3)
+            # M mega (10^6)
+            # G giga (10^9)
+            # T tera (10^12)
+            # P peta (10^15)
+            # E exa (10^18)
+            # Z zetta (10^21)
+            # Y yotta (10^24)
+            # m milli (10^-3)
+            # u micro (10^-6)
+            # n nano (10^-9)
+            # p pico (10^-12)
+            # f femto (10^-15)
+            # a atto (10^-18)
+            # z zepto (10^-21)
+            # y yocto (10^-24)
+            # Ki kibi (2^10)
+            # Mi mebi (2^20)
+            # Gi gibi (2^30)
+            # Ti tebi (2^40)
+            # Pi pebi (2^50)GrammarThe grammar also includes these connectors:
+            # / division or ratio (as an infix operator). For examples,  kBy/{email} or MiBy/10ms (although you should almost never  have /s in a metric unit; rates should always be computed at  query time from the underlying cumulative or delta value).
+            # . multiplication or composition (as an infix operator). For  examples, GBy.d or k{watt}.h.The grammar for a unit is as follows:
             # Expression = Component { "." Component } { "/" Component } ;
             #
             # Component = ( [ PREFIX ] UNIT | "%" ) [ Annotation ]
@@ -269,28 +272,36 @@ Returns:
             #
             # Annotation = "{" NAME "}" ;
             # Notes:
-            # Annotation is just a comment if it follows a UNIT and is  equivalent to 1 if it is used alone. For examples,  {requests}/s == 1/s, By{transmitted}/s == By/s.
-            # NAME is a sequence of non-blank printable ASCII characters not  containing '{' or '}'.
-            # 1 represents dimensionless value 1, such as in 1/s.
-            # % represents dimensionless value 1/100, and annotates values giving  a percentage.
+            # Annotation is just a comment if it follows a UNIT. If the annotation  is used alone, then the unit is equivalent to 1. For examples,  {request}/s == 1/s, By{transmitted}/s == By/s.
+            # NAME is a sequence of non-blank printable ASCII characters not  containing { or }.
+            # 1 represents a unitary dimensionless  unit (https://en.wikipedia.org/wiki/Dimensionless_quantity) of 1, such  as in 1/s. It is typically used when none of the basic units are  appropriate. For example, "new users per day" can be represented as  1/d or {new-users}/d (and a metric value 5 would mean "5 new  users). Alternatively, "thousands of page views per day" would be  represented as 1000/d or k1/d or k{page_views}/d (and a metric  value of 5.3 would mean "5300 page views per day").
+            # % represents dimensionless value of 1/100, and annotates values giving  a percentage (so the metric values are typically in the range of 0..100,  and a metric value 3 means "3 percent").
+            # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means "3 percent").
+        "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+            # "custom.googleapis.com/invoice/paid/amount"
+            # "external.googleapis.com/prometheus/up"
+            # "appengine.googleapis.com/http/server/response_latencies"
+        "monitoredResourceTypes": [ # Read-only. If present, then a time series, which is identified partially by a metric type and a MonitoredResourceDescriptor, that is associated with this metric type can only be associated with one of the monitored resource types listed here.
+          "A String",
+        ],
         "metadata": { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-          "launchStage": "A String", # Deprecated. Please use the MetricDescriptor.launch_stage instead. The launch stage of the metric definition.
+          "launchStage": "A String", # Deprecated. Must use the MetricDescriptor.launch_stage instead.
           "ingestDelay": "A String", # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
           "samplePeriod": "A String", # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
         },
       },
-      "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i > 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
-        "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): scale * (growth_factor ^ i).  Lower bound (1 <= i < N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
+      "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
+        "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
           "scale": 3.14, # Must be greater than 0.
           "growthFactor": 3.14, # Must be greater than 1.
           "numFiniteBuckets": 42, # Must be greater than 0.
         },
-        "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): offset + (width * i).  Lower bound (1 <= i < N): offset + (width * (i - 1)). # The linear bucket.
+        "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
           "width": 3.14, # Must be greater than 0.
           "numFiniteBuckets": 42, # Must be greater than 0.
           "offset": 3.14, # Lower bound of the first bucket.
         },
-        "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): boundsi  Lower bound (1 <= i < N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
+        "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
           "bounds": [ # The values must be monotonically increasing.
             3.14,
           ],
@@ -300,9 +311,8 @@ Returns:
         "a_key": "A String",
       },
       "filter": "A String", # Required. An advanced logs filter which is used to match log entries. Example:
-          # "resource.type=gae_app AND severity>=ERROR"
+          # "resource.type=gae_app AND severity&gt;=ERROR"
           # The maximum length of the filter is 20000 characters.
-      "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
       "version": "A String", # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
       "createTime": "A String", # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
       "description": "A String", # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
@@ -314,7 +324,7 @@ Returns:
   <pre>Deletes a logs-based metric.
 
 Args:
-  metricName: string, The resource name of the metric to delete:
+  metricName: string, Required. The resource name of the metric to delete:
 "projects/[PROJECT_ID]/metrics/[METRIC_ID]"
  (required)
   x__xgafv: string, V1 error format.
@@ -338,7 +348,7 @@ Returns:
   <pre>Gets a logs-based metric.
 
 Args:
-  metricName: string, The resource name of the desired metric:
+  metricName: string, Required. The resource name of the desired metric:
 "projects/[PROJECT_ID]/metrics/[METRIC_ID]"
  (required)
   x__xgafv: string, V1 error format.
@@ -351,6 +361,7 @@ Returns:
 
     { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
       "updateTime": "A String", # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
+      "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
       "name": "A String", # Required. The client-assigned metric identifier. Examples: "error_count", "nginx/requests".Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*',()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: "projects/my-project/metrics/nginx%2Frequests".
       "metricDescriptor": { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type's existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of "1". Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
         "description": "A String", # A detailed description of the metric, which can be used in documentation.
@@ -366,39 +377,36 @@ Returns:
           },
         ],
         "launchStage": "A String", # Optional. The launch stage of the metric definition.
-        "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-            # "custom.googleapis.com/invoice/paid/amount"
-            # "external.googleapis.com/prometheus/up"
-            # "appengine.googleapis.com/http/server/response_latencies"
-        "unit": "A String", # The unit in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
+        "unit": "A String", # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
             # bit bit
             # By byte
             # s second
             # min minute
             # h hour
             # d dayPrefixes (PREFIX)
-            # k kilo (10**3)
-            # M mega (10**6)
-            # G giga (10**9)
-            # T tera (10**12)
-            # P peta (10**15)
-            # E exa (10**18)
-            # Z zetta (10**21)
-            # Y yotta (10**24)
-            # m milli (10**-3)
-            # u micro (10**-6)
-            # n nano (10**-9)
-            # p pico (10**-12)
-            # f femto (10**-15)
-            # a atto (10**-18)
-            # z zepto (10**-21)
-            # y yocto (10**-24)
-            # Ki kibi (2**10)
-            # Mi mebi (2**20)
-            # Gi gibi (2**30)
-            # Ti tebi (2**40)GrammarThe grammar also includes these connectors:
-            # / division (as an infix operator, e.g. 1/s).
-            # . multiplication (as an infix operator, e.g. GBy.d)The grammar for a unit is as follows:
+            # k kilo (10^3)
+            # M mega (10^6)
+            # G giga (10^9)
+            # T tera (10^12)
+            # P peta (10^15)
+            # E exa (10^18)
+            # Z zetta (10^21)
+            # Y yotta (10^24)
+            # m milli (10^-3)
+            # u micro (10^-6)
+            # n nano (10^-9)
+            # p pico (10^-12)
+            # f femto (10^-15)
+            # a atto (10^-18)
+            # z zepto (10^-21)
+            # y yocto (10^-24)
+            # Ki kibi (2^10)
+            # Mi mebi (2^20)
+            # Gi gibi (2^30)
+            # Ti tebi (2^40)
+            # Pi pebi (2^50)GrammarThe grammar also includes these connectors:
+            # / division or ratio (as an infix operator). For examples,  kBy/{email} or MiBy/10ms (although you should almost never  have /s in a metric unit; rates should always be computed at  query time from the underlying cumulative or delta value).
+            # . multiplication or composition (as an infix operator). For  examples, GBy.d or k{watt}.h.The grammar for a unit is as follows:
             # Expression = Component { "." Component } { "/" Component } ;
             #
             # Component = ( [ PREFIX ] UNIT | "%" ) [ Annotation ]
@@ -408,28 +416,36 @@ Returns:
             #
             # Annotation = "{" NAME "}" ;
             # Notes:
-            # Annotation is just a comment if it follows a UNIT and is  equivalent to 1 if it is used alone. For examples,  {requests}/s == 1/s, By{transmitted}/s == By/s.
-            # NAME is a sequence of non-blank printable ASCII characters not  containing '{' or '}'.
-            # 1 represents dimensionless value 1, such as in 1/s.
-            # % represents dimensionless value 1/100, and annotates values giving  a percentage.
+            # Annotation is just a comment if it follows a UNIT. If the annotation  is used alone, then the unit is equivalent to 1. For examples,  {request}/s == 1/s, By{transmitted}/s == By/s.
+            # NAME is a sequence of non-blank printable ASCII characters not  containing { or }.
+            # 1 represents a unitary dimensionless  unit (https://en.wikipedia.org/wiki/Dimensionless_quantity) of 1, such  as in 1/s. It is typically used when none of the basic units are  appropriate. For example, "new users per day" can be represented as  1/d or {new-users}/d (and a metric value 5 would mean "5 new  users). Alternatively, "thousands of page views per day" would be  represented as 1000/d or k1/d or k{page_views}/d (and a metric  value of 5.3 would mean "5300 page views per day").
+            # % represents dimensionless value of 1/100, and annotates values giving  a percentage (so the metric values are typically in the range of 0..100,  and a metric value 3 means "3 percent").
+            # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means "3 percent").
+        "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+            # "custom.googleapis.com/invoice/paid/amount"
+            # "external.googleapis.com/prometheus/up"
+            # "appengine.googleapis.com/http/server/response_latencies"
+        "monitoredResourceTypes": [ # Read-only. If present, then a time series, which is identified partially by a metric type and a MonitoredResourceDescriptor, that is associated with this metric type can only be associated with one of the monitored resource types listed here.
+          "A String",
+        ],
         "metadata": { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-          "launchStage": "A String", # Deprecated. Please use the MetricDescriptor.launch_stage instead. The launch stage of the metric definition.
+          "launchStage": "A String", # Deprecated. Must use the MetricDescriptor.launch_stage instead.
           "ingestDelay": "A String", # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
           "samplePeriod": "A String", # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
         },
       },
-      "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i > 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
-        "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): scale * (growth_factor ^ i).  Lower bound (1 <= i < N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
+      "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
+        "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
           "scale": 3.14, # Must be greater than 0.
           "growthFactor": 3.14, # Must be greater than 1.
           "numFiniteBuckets": 42, # Must be greater than 0.
         },
-        "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): offset + (width * i).  Lower bound (1 <= i < N): offset + (width * (i - 1)). # The linear bucket.
+        "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
           "width": 3.14, # Must be greater than 0.
           "numFiniteBuckets": 42, # Must be greater than 0.
           "offset": 3.14, # Lower bound of the first bucket.
         },
-        "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): boundsi  Lower bound (1 <= i < N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
+        "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
           "bounds": [ # The values must be monotonically increasing.
             3.14,
           ],
@@ -439,9 +455,8 @@ Returns:
         "a_key": "A String",
       },
       "filter": "A String", # Required. An advanced logs filter which is used to match log entries. Example:
-          # "resource.type=gae_app AND severity>=ERROR"
+          # "resource.type=gae_app AND severity&gt;=ERROR"
           # The maximum length of the filter is 20000 characters.
-      "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
       "version": "A String", # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
       "createTime": "A String", # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
       "description": "A String", # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
@@ -470,6 +485,7 @@ Returns:
     "metrics": [ # A list of logs-based metrics.
       { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
           "updateTime": "A String", # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
+          "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
           "name": "A String", # Required. The client-assigned metric identifier. Examples: "error_count", "nginx/requests".Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*',()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: "projects/my-project/metrics/nginx%2Frequests".
           "metricDescriptor": { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type's existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of "1". Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
             "description": "A String", # A detailed description of the metric, which can be used in documentation.
@@ -485,39 +501,36 @@ Returns:
               },
             ],
             "launchStage": "A String", # Optional. The launch stage of the metric definition.
-            "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-                # "custom.googleapis.com/invoice/paid/amount"
-                # "external.googleapis.com/prometheus/up"
-                # "appengine.googleapis.com/http/server/response_latencies"
-            "unit": "A String", # The unit in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
+            "unit": "A String", # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
                 # bit bit
                 # By byte
                 # s second
                 # min minute
                 # h hour
                 # d dayPrefixes (PREFIX)
-                # k kilo (10**3)
-                # M mega (10**6)
-                # G giga (10**9)
-                # T tera (10**12)
-                # P peta (10**15)
-                # E exa (10**18)
-                # Z zetta (10**21)
-                # Y yotta (10**24)
-                # m milli (10**-3)
-                # u micro (10**-6)
-                # n nano (10**-9)
-                # p pico (10**-12)
-                # f femto (10**-15)
-                # a atto (10**-18)
-                # z zepto (10**-21)
-                # y yocto (10**-24)
-                # Ki kibi (2**10)
-                # Mi mebi (2**20)
-                # Gi gibi (2**30)
-                # Ti tebi (2**40)GrammarThe grammar also includes these connectors:
-                # / division (as an infix operator, e.g. 1/s).
-                # . multiplication (as an infix operator, e.g. GBy.d)The grammar for a unit is as follows:
+                # k kilo (10^3)
+                # M mega (10^6)
+                # G giga (10^9)
+                # T tera (10^12)
+                # P peta (10^15)
+                # E exa (10^18)
+                # Z zetta (10^21)
+                # Y yotta (10^24)
+                # m milli (10^-3)
+                # u micro (10^-6)
+                # n nano (10^-9)
+                # p pico (10^-12)
+                # f femto (10^-15)
+                # a atto (10^-18)
+                # z zepto (10^-21)
+                # y yocto (10^-24)
+                # Ki kibi (2^10)
+                # Mi mebi (2^20)
+                # Gi gibi (2^30)
+                # Ti tebi (2^40)
+                # Pi pebi (2^50)GrammarThe grammar also includes these connectors:
+                # / division or ratio (as an infix operator). For examples,  kBy/{email} or MiBy/10ms (although you should almost never  have /s in a metric unit; rates should always be computed at  query time from the underlying cumulative or delta value).
+                # . multiplication or composition (as an infix operator). For  examples, GBy.d or k{watt}.h.The grammar for a unit is as follows:
                 # Expression = Component { "." Component } { "/" Component } ;
                 #
                 # Component = ( [ PREFIX ] UNIT | "%" ) [ Annotation ]
@@ -527,28 +540,36 @@ Returns:
                 #
                 # Annotation = "{" NAME "}" ;
                 # Notes:
-                # Annotation is just a comment if it follows a UNIT and is  equivalent to 1 if it is used alone. For examples,  {requests}/s == 1/s, By{transmitted}/s == By/s.
-                # NAME is a sequence of non-blank printable ASCII characters not  containing '{' or '}'.
-                # 1 represents dimensionless value 1, such as in 1/s.
-                # % represents dimensionless value 1/100, and annotates values giving  a percentage.
+                # Annotation is just a comment if it follows a UNIT. If the annotation  is used alone, then the unit is equivalent to 1. For examples,  {request}/s == 1/s, By{transmitted}/s == By/s.
+                # NAME is a sequence of non-blank printable ASCII characters not  containing { or }.
+                # 1 represents a unitary dimensionless  unit (https://en.wikipedia.org/wiki/Dimensionless_quantity) of 1, such  as in 1/s. It is typically used when none of the basic units are  appropriate. For example, "new users per day" can be represented as  1/d or {new-users}/d (and a metric value 5 would mean "5 new  users). Alternatively, "thousands of page views per day" would be  represented as 1000/d or k1/d or k{page_views}/d (and a metric  value of 5.3 would mean "5300 page views per day").
+                # % represents dimensionless value of 1/100, and annotates values giving  a percentage (so the metric values are typically in the range of 0..100,  and a metric value 3 means "3 percent").
+                # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means "3 percent").
+            "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+                # "custom.googleapis.com/invoice/paid/amount"
+                # "external.googleapis.com/prometheus/up"
+                # "appengine.googleapis.com/http/server/response_latencies"
+            "monitoredResourceTypes": [ # Read-only. If present, then a time series, which is identified partially by a metric type and a MonitoredResourceDescriptor, that is associated with this metric type can only be associated with one of the monitored resource types listed here.
+              "A String",
+            ],
             "metadata": { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-              "launchStage": "A String", # Deprecated. Please use the MetricDescriptor.launch_stage instead. The launch stage of the metric definition.
+              "launchStage": "A String", # Deprecated. Must use the MetricDescriptor.launch_stage instead.
               "ingestDelay": "A String", # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
               "samplePeriod": "A String", # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
             },
           },
-          "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i > 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
-            "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): scale * (growth_factor ^ i).  Lower bound (1 <= i < N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
+          "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
+            "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
               "scale": 3.14, # Must be greater than 0.
               "growthFactor": 3.14, # Must be greater than 1.
               "numFiniteBuckets": 42, # Must be greater than 0.
             },
-            "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): offset + (width * i).  Lower bound (1 <= i < N): offset + (width * (i - 1)). # The linear bucket.
+            "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
               "width": 3.14, # Must be greater than 0.
               "numFiniteBuckets": 42, # Must be greater than 0.
               "offset": 3.14, # Lower bound of the first bucket.
             },
-            "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): boundsi  Lower bound (1 <= i < N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
+            "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
               "bounds": [ # The values must be monotonically increasing.
                 3.14,
               ],
@@ -558,9 +579,8 @@ Returns:
             "a_key": "A String",
           },
           "filter": "A String", # Required. An advanced logs filter which is used to match log entries. Example:
-              # "resource.type=gae_app AND severity>=ERROR"
+              # "resource.type=gae_app AND severity&gt;=ERROR"
               # The maximum length of the filter is 20000 characters.
-          "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
           "version": "A String", # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
           "createTime": "A String", # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
           "description": "A String", # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
@@ -585,18 +605,19 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="update">update(metricName, body, x__xgafv=None)</code>
+    <code class="details" id="update">update(metricName, body=None, x__xgafv=None)</code>
   <pre>Creates or updates a logs-based metric.
 
 Args:
-  metricName: string, The resource name of the metric to update:
+  metricName: string, Required. The resource name of the metric to update:
 "projects/[PROJECT_ID]/metrics/[METRIC_ID]"
 The updated metric must be provided in the request and it's name field must be the same as [METRIC_ID] If the metric does not exist in [PROJECT_ID], then a new metric is created. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
     "updateTime": "A String", # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
+    "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
     "name": "A String", # Required. The client-assigned metric identifier. Examples: "error_count", "nginx/requests".Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*',()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: "projects/my-project/metrics/nginx%2Frequests".
     "metricDescriptor": { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type's existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of "1". Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
       "description": "A String", # A detailed description of the metric, which can be used in documentation.
@@ -612,39 +633,36 @@ The updated metric must be provided in the request and it's name field must be t
         },
       ],
       "launchStage": "A String", # Optional. The launch stage of the metric definition.
-      "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-          # "custom.googleapis.com/invoice/paid/amount"
-          # "external.googleapis.com/prometheus/up"
-          # "appengine.googleapis.com/http/server/response_latencies"
-      "unit": "A String", # The unit in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
+      "unit": "A String", # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
           # bit bit
           # By byte
           # s second
           # min minute
           # h hour
           # d dayPrefixes (PREFIX)
-          # k kilo (10**3)
-          # M mega (10**6)
-          # G giga (10**9)
-          # T tera (10**12)
-          # P peta (10**15)
-          # E exa (10**18)
-          # Z zetta (10**21)
-          # Y yotta (10**24)
-          # m milli (10**-3)
-          # u micro (10**-6)
-          # n nano (10**-9)
-          # p pico (10**-12)
-          # f femto (10**-15)
-          # a atto (10**-18)
-          # z zepto (10**-21)
-          # y yocto (10**-24)
-          # Ki kibi (2**10)
-          # Mi mebi (2**20)
-          # Gi gibi (2**30)
-          # Ti tebi (2**40)GrammarThe grammar also includes these connectors:
-          # / division (as an infix operator, e.g. 1/s).
-          # . multiplication (as an infix operator, e.g. GBy.d)The grammar for a unit is as follows:
+          # k kilo (10^3)
+          # M mega (10^6)
+          # G giga (10^9)
+          # T tera (10^12)
+          # P peta (10^15)
+          # E exa (10^18)
+          # Z zetta (10^21)
+          # Y yotta (10^24)
+          # m milli (10^-3)
+          # u micro (10^-6)
+          # n nano (10^-9)
+          # p pico (10^-12)
+          # f femto (10^-15)
+          # a atto (10^-18)
+          # z zepto (10^-21)
+          # y yocto (10^-24)
+          # Ki kibi (2^10)
+          # Mi mebi (2^20)
+          # Gi gibi (2^30)
+          # Ti tebi (2^40)
+          # Pi pebi (2^50)GrammarThe grammar also includes these connectors:
+          # / division or ratio (as an infix operator). For examples,  kBy/{email} or MiBy/10ms (although you should almost never  have /s in a metric unit; rates should always be computed at  query time from the underlying cumulative or delta value).
+          # . multiplication or composition (as an infix operator). For  examples, GBy.d or k{watt}.h.The grammar for a unit is as follows:
           # Expression = Component { "." Component } { "/" Component } ;
           #
           # Component = ( [ PREFIX ] UNIT | "%" ) [ Annotation ]
@@ -654,28 +672,36 @@ The updated metric must be provided in the request and it's name field must be t
           #
           # Annotation = "{" NAME "}" ;
           # Notes:
-          # Annotation is just a comment if it follows a UNIT and is  equivalent to 1 if it is used alone. For examples,  {requests}/s == 1/s, By{transmitted}/s == By/s.
-          # NAME is a sequence of non-blank printable ASCII characters not  containing '{' or '}'.
-          # 1 represents dimensionless value 1, such as in 1/s.
-          # % represents dimensionless value 1/100, and annotates values giving  a percentage.
+          # Annotation is just a comment if it follows a UNIT. If the annotation  is used alone, then the unit is equivalent to 1. For examples,  {request}/s == 1/s, By{transmitted}/s == By/s.
+          # NAME is a sequence of non-blank printable ASCII characters not  containing { or }.
+          # 1 represents a unitary dimensionless  unit (https://en.wikipedia.org/wiki/Dimensionless_quantity) of 1, such  as in 1/s. It is typically used when none of the basic units are  appropriate. For example, "new users per day" can be represented as  1/d or {new-users}/d (and a metric value 5 would mean "5 new  users). Alternatively, "thousands of page views per day" would be  represented as 1000/d or k1/d or k{page_views}/d (and a metric  value of 5.3 would mean "5300 page views per day").
+          # % represents dimensionless value of 1/100, and annotates values giving  a percentage (so the metric values are typically in the range of 0..100,  and a metric value 3 means "3 percent").
+          # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means "3 percent").
+      "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+          # "custom.googleapis.com/invoice/paid/amount"
+          # "external.googleapis.com/prometheus/up"
+          # "appengine.googleapis.com/http/server/response_latencies"
+      "monitoredResourceTypes": [ # Read-only. If present, then a time series, which is identified partially by a metric type and a MonitoredResourceDescriptor, that is associated with this metric type can only be associated with one of the monitored resource types listed here.
+        "A String",
+      ],
       "metadata": { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-        "launchStage": "A String", # Deprecated. Please use the MetricDescriptor.launch_stage instead. The launch stage of the metric definition.
+        "launchStage": "A String", # Deprecated. Must use the MetricDescriptor.launch_stage instead.
         "ingestDelay": "A String", # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
         "samplePeriod": "A String", # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
       },
     },
-    "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i > 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
-      "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): scale * (growth_factor ^ i).  Lower bound (1 <= i < N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
+    "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
+      "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
         "scale": 3.14, # Must be greater than 0.
         "growthFactor": 3.14, # Must be greater than 1.
         "numFiniteBuckets": 42, # Must be greater than 0.
       },
-      "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): offset + (width * i).  Lower bound (1 <= i < N): offset + (width * (i - 1)). # The linear bucket.
+      "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
         "width": 3.14, # Must be greater than 0.
         "numFiniteBuckets": 42, # Must be greater than 0.
         "offset": 3.14, # Lower bound of the first bucket.
       },
-      "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): boundsi  Lower bound (1 <= i < N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
+      "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
         "bounds": [ # The values must be monotonically increasing.
           3.14,
         ],
@@ -685,9 +711,8 @@ The updated metric must be provided in the request and it's name field must be t
       "a_key": "A String",
     },
     "filter": "A String", # Required. An advanced logs filter which is used to match log entries. Example:
-        # "resource.type=gae_app AND severity>=ERROR"
+        # "resource.type=gae_app AND severity&gt;=ERROR"
         # The maximum length of the filter is 20000 characters.
-    "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
     "version": "A String", # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
     "createTime": "A String", # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
     "description": "A String", # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
@@ -703,6 +728,7 @@ Returns:
 
     { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
       "updateTime": "A String", # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
+      "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
       "name": "A String", # Required. The client-assigned metric identifier. Examples: "error_count", "nginx/requests".Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*',()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: "projects/my-project/metrics/nginx%2Frequests".
       "metricDescriptor": { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type's existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of "1". Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
         "description": "A String", # A detailed description of the metric, which can be used in documentation.
@@ -718,39 +744,36 @@ Returns:
           },
         ],
         "launchStage": "A String", # Optional. The launch stage of the metric definition.
-        "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-            # "custom.googleapis.com/invoice/paid/amount"
-            # "external.googleapis.com/prometheus/up"
-            # "appengine.googleapis.com/http/server/response_latencies"
-        "unit": "A String", # The unit in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
+        "unit": "A String", # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
             # bit bit
             # By byte
             # s second
             # min minute
             # h hour
             # d dayPrefixes (PREFIX)
-            # k kilo (10**3)
-            # M mega (10**6)
-            # G giga (10**9)
-            # T tera (10**12)
-            # P peta (10**15)
-            # E exa (10**18)
-            # Z zetta (10**21)
-            # Y yotta (10**24)
-            # m milli (10**-3)
-            # u micro (10**-6)
-            # n nano (10**-9)
-            # p pico (10**-12)
-            # f femto (10**-15)
-            # a atto (10**-18)
-            # z zepto (10**-21)
-            # y yocto (10**-24)
-            # Ki kibi (2**10)
-            # Mi mebi (2**20)
-            # Gi gibi (2**30)
-            # Ti tebi (2**40)GrammarThe grammar also includes these connectors:
-            # / division (as an infix operator, e.g. 1/s).
-            # . multiplication (as an infix operator, e.g. GBy.d)The grammar for a unit is as follows:
+            # k kilo (10^3)
+            # M mega (10^6)
+            # G giga (10^9)
+            # T tera (10^12)
+            # P peta (10^15)
+            # E exa (10^18)
+            # Z zetta (10^21)
+            # Y yotta (10^24)
+            # m milli (10^-3)
+            # u micro (10^-6)
+            # n nano (10^-9)
+            # p pico (10^-12)
+            # f femto (10^-15)
+            # a atto (10^-18)
+            # z zepto (10^-21)
+            # y yocto (10^-24)
+            # Ki kibi (2^10)
+            # Mi mebi (2^20)
+            # Gi gibi (2^30)
+            # Ti tebi (2^40)
+            # Pi pebi (2^50)GrammarThe grammar also includes these connectors:
+            # / division or ratio (as an infix operator). For examples,  kBy/{email} or MiBy/10ms (although you should almost never  have /s in a metric unit; rates should always be computed at  query time from the underlying cumulative or delta value).
+            # . multiplication or composition (as an infix operator). For  examples, GBy.d or k{watt}.h.The grammar for a unit is as follows:
             # Expression = Component { "." Component } { "/" Component } ;
             #
             # Component = ( [ PREFIX ] UNIT | "%" ) [ Annotation ]
@@ -760,28 +783,36 @@ Returns:
             #
             # Annotation = "{" NAME "}" ;
             # Notes:
-            # Annotation is just a comment if it follows a UNIT and is  equivalent to 1 if it is used alone. For examples,  {requests}/s == 1/s, By{transmitted}/s == By/s.
-            # NAME is a sequence of non-blank printable ASCII characters not  containing '{' or '}'.
-            # 1 represents dimensionless value 1, such as in 1/s.
-            # % represents dimensionless value 1/100, and annotates values giving  a percentage.
+            # Annotation is just a comment if it follows a UNIT. If the annotation  is used alone, then the unit is equivalent to 1. For examples,  {request}/s == 1/s, By{transmitted}/s == By/s.
+            # NAME is a sequence of non-blank printable ASCII characters not  containing { or }.
+            # 1 represents a unitary dimensionless  unit (https://en.wikipedia.org/wiki/Dimensionless_quantity) of 1, such  as in 1/s. It is typically used when none of the basic units are  appropriate. For example, "new users per day" can be represented as  1/d or {new-users}/d (and a metric value 5 would mean "5 new  users). Alternatively, "thousands of page views per day" would be  represented as 1000/d or k1/d or k{page_views}/d (and a metric  value of 5.3 would mean "5300 page views per day").
+            # % represents dimensionless value of 1/100, and annotates values giving  a percentage (so the metric values are typically in the range of 0..100,  and a metric value 3 means "3 percent").
+            # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means "3 percent").
+        "type": "A String", # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+            # "custom.googleapis.com/invoice/paid/amount"
+            # "external.googleapis.com/prometheus/up"
+            # "appengine.googleapis.com/http/server/response_latencies"
+        "monitoredResourceTypes": [ # Read-only. If present, then a time series, which is identified partially by a metric type and a MonitoredResourceDescriptor, that is associated with this metric type can only be associated with one of the monitored resource types listed here.
+          "A String",
+        ],
         "metadata": { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-          "launchStage": "A String", # Deprecated. Please use the MetricDescriptor.launch_stage instead. The launch stage of the metric definition.
+          "launchStage": "A String", # Deprecated. Must use the MetricDescriptor.launch_stage instead.
           "ingestDelay": "A String", # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
           "samplePeriod": "A String", # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
         },
       },
-      "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i > 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
-        "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): scale * (growth_factor ^ i).  Lower bound (1 <= i < N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
+      "bucketOptions": { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
+        "exponentialBuckets": { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
           "scale": 3.14, # Must be greater than 0.
           "growthFactor": 3.14, # Must be greater than 1.
           "numFiniteBuckets": 42, # Must be greater than 0.
         },
-        "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): offset + (width * i).  Lower bound (1 <= i < N): offset + (width * (i - 1)). # The linear bucket.
+        "linearBuckets": { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
           "width": 3.14, # Must be greater than 0.
           "numFiniteBuckets": 42, # Must be greater than 0.
           "offset": 3.14, # Lower bound of the first bucket.
         },
-        "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 <= i < N-1): boundsi  Lower bound (1 <= i < N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
+        "explicitBuckets": { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
           "bounds": [ # The values must be monotonically increasing.
             3.14,
           ],
@@ -791,9 +822,8 @@ Returns:
         "a_key": "A String",
       },
       "filter": "A String", # Required. An advanced logs filter which is used to match log entries. Example:
-          # "resource.type=gae_app AND severity>=ERROR"
+          # "resource.type=gae_app AND severity&gt;=ERROR"
           # The maximum length of the filter is 20000 characters.
-      "valueExtractor": "A String", # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, ".*quantity=(\d+).*")
       "version": "A String", # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
       "createTime": "A String", # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
       "description": "A String", # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.

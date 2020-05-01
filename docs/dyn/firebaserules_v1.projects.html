@@ -85,11 +85,11 @@ h1, h2, h3 {
 <p class="firstline">Returns the rulesets Resource.</p>
 
 <p class="toc_element">
-  <code><a href="#test">test(name, body, x__xgafv=None)</a></code></p>
+  <code><a href="#test">test(name, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Test `Source` for syntactic and semantic correctness. Issues present, if</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="test">test(name, body, x__xgafv=None)</code>
+    <code class="details" id="test">test(name, body=None, x__xgafv=None)</code>
   <pre>Test `Source` for syntactic and semantic correctness. Issues present, if
 any, will be returned to the caller with a description, severity, and
 source location.
@@ -107,9 +107,9 @@ _*Example*_
     service firebase.storage {
       match /users/{userId}/images/{imageName} {
           allow write: if userId == request.auth.uid
-              && (imageName.matches('*.png$')
+              &amp;&amp; (imageName.matches('*.png$')
               || imageName.matches('*.jpg$'))
-              && resource.mimeType.matches('^image/')
+              &amp;&amp; resource.mimeType.matches('^image/')
       }
     }
 
@@ -121,7 +121,7 @@ Format: `projects/{project_id}`
 
 For tests against a `Ruleset`, this must be the `Ruleset` resource name:
 Format: `projects/{project_id}/rulesets/{ruleset_id}` (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # The request for FirebaseRulesService.TestRuleset.
@@ -150,6 +150,10 @@ Format: `projects/{project_id}/rulesets/{ruleset_id}` (required)
             #
             # The `resource` is the value of the target resource as it appears in
             # persistent storage before the request is executed.
+          "resource": "", # Optional resource value as it appears in persistent storage before the
+              # request is fulfilled.
+              #
+              # The resource type depends on the `request.path` value.
           "functionMocks": [ # Optional function mocks for service-defined functions. If not set, any
               # service defined function is expected to return an error, which may or may
               # not influence the test outcome.
@@ -209,20 +213,18 @@ Format: `projects/{project_id}/rulesets/{ruleset_id}` (required)
               # Request field  | Type
               # ---------------|-----------------
               # auth.uid       | `string`
-              # auth.token     | `map<string, string>`
-              # headers        | `map<string, string>`
+              # auth.token     | `map&lt;string, string&gt;`
+              # headers        | `map&lt;string, string&gt;`
               # method         | `string`
-              # params         | `map<string, string>`
+              # params         | `map&lt;string, string&gt;`
               # path           | `string`
               # time           | `google.protobuf.Timestamp`
               #
               # If the request value is not well-formed for the service, the request will
               # be rejected as an invalid argument.
-          "resource": "", # Optional resource value as it appears in persistent storage before the
-              # request is fulfilled.
-              #
-              # The resource type depends on the `request.path` value.
           "expectation": "A String", # Test expectation.
+          "expressionReportLevel": "A String", # Specifies what should be included in the response.
+          "pathEncoding": "A String", # Specifies whether paths (such as request.path) are encoded and how.
         },
       ],
     },
@@ -242,21 +244,27 @@ Returns:
         # `TestSuite`.
       { # Test result message containing the state of the test as well as a
           # description and source position for test failures.
-        "debugMessages": [ # Debug messages related to test execution issues encountered during
-            # evaluation.
+        "errorPosition": { # Position in the `Source` content including its line, column number, and an # Position in the `Source` or `Ruleset` where the principle runtime error
+            # occurs.
             #
-            # Debug messages may be related to too many or too few invocations of
-            # function mocks or to runtime errors that occur during evaluation.
+            # Evaluation of an expression may result in an error. Rules are deny by
+            # default, so a `DENY` expectation when an error is generated is valid.
+            # When there is a `DENY` with an error, the `SourcePosition` is returned.
             #
-            # For example: ```Unable to read variable [name: "resource"]```
-          "A String",
-        ],
+            # E.g. `error_position { line: 19 column: 37 }`
+            # index of the `File` in the `Source` message. Used for debug purposes.
+          "column": 42, # First column on the source line associated with the source fragment.
+          "line": 42, # Line number of the source fragment. 1-based.
+          "currentOffset": 42, # Start position relative to the beginning of the file.
+          "endOffset": 42, # End position relative to the beginning of the file.
+          "fileName": "A String", # Name of the `File`.
+        },
         "visitedExpressions": [ # The set of visited permission expressions for a given test. This returns
             # the positions and evaluation results of all visited permission
             # expressions which were relevant to the test case, e.g.
             # ```
             # match /path {
-            #   allow read if: <expr>
+            #   allow read if: &lt;expr&gt;
             # }
             # ```
             # For a detailed report of the intermediate evaluation states, see the
@@ -266,6 +274,8 @@ Returns:
                 # index of the `File` in the `Source` message. Used for debug purposes.
               "column": 42, # First column on the source line associated with the source fragment.
               "line": 42, # Line number of the source fragment. 1-based.
+              "currentOffset": 42, # Start position relative to the beginning of the file.
+              "endOffset": 42, # End position relative to the beginning of the file.
               "fileName": "A String", # Name of the `File`.
             },
             "value": "", # The evaluated value for the visited expression, e.g. true/false
@@ -285,19 +295,42 @@ Returns:
             ],
           },
         ],
-        "errorPosition": { # Position in the `Source` content including its line, column number, and an # Position in the `Source` or `Ruleset` where the principle runtime error
-            # occurs.
+        "debugMessages": [ # Debug messages related to test execution issues encountered during
+            # evaluation.
             #
-            # Evaluation of an expression may result in an error. Rules are deny by
-            # default, so a `DENY` expectation when an error is generated is valid.
-            # When there is a `DENY` with an error, the `SourcePosition` is returned.
+            # Debug messages may be related to too many or too few invocations of
+            # function mocks or to runtime errors that occur during evaluation.
             #
-            # E.g. `error_position { line: 19 column: 37 }`
-            # index of the `File` in the `Source` message. Used for debug purposes.
-          "column": 42, # First column on the source line associated with the source fragment.
-          "line": 42, # Line number of the source fragment. 1-based.
-          "fileName": "A String", # Name of the `File`.
-        },
+            # For example: ```Unable to read variable [name: "resource"]```
+          "A String",
+        ],
+        "expressionReports": [ # The mapping from expression in the ruleset AST to the values they were
+            # evaluated to. Partially-nested to mirror AST structure. Note that this
+            # field is actually tracking expressions and not permission statements in
+            # contrast to the "visited_expressions" field above. Literal expressions
+            # are omitted.
+          { # Describes where in a file an expression is found and what it was
+              # evaluated to over the course of its use.
+            "sourcePosition": { # Position in the `Source` content including its line, column number, and an # Position of expression in original rules source.
+                # index of the `File` in the `Source` message. Used for debug purposes.
+              "column": 42, # First column on the source line associated with the source fragment.
+              "line": 42, # Line number of the source fragment. 1-based.
+              "currentOffset": 42, # Start position relative to the beginning of the file.
+              "endOffset": 42, # End position relative to the beginning of the file.
+              "fileName": "A String", # Name of the `File`.
+            },
+            "values": [ # Values that this expression evaluated to when encountered.
+              { # Tuple for how many times an Expression was evaluated to a particular
+                  # ExpressionValue.
+                "count": 42, # The amount of times that expression returned.
+                "value": "", # The return value of the expression
+              },
+            ],
+            "children": [ # Subexpressions
+              # Object with schema name: ExpressionReport
+            ],
+          },
+        ],
       },
     ],
     "issues": [ # Syntactic and semantic `Source` issues of varying severity. Issues of
@@ -307,6 +340,8 @@ Returns:
             # index of the `File` in the `Source` message. Used for debug purposes.
           "column": 42, # First column on the source line associated with the source fragment.
           "line": 42, # Line number of the source fragment. 1-based.
+          "currentOffset": 42, # Start position relative to the beginning of the file.
+          "endOffset": 42, # End position relative to the beginning of the file.
           "fileName": "A String", # Name of the `File`.
         },
         "severity": "A String", # The severity of the issue.

@@ -81,7 +81,7 @@ h1, h2, h3 {
   <code><a href="#get">get(projectId, datasetId, tableId, selectedFields=None)</a></code></p>
 <p class="firstline">Gets the specified table resource by table ID. This method does not return the data in the table, it only returns the table resource, which describes the structure of this table.</p>
 <p class="toc_element">
-  <code><a href="#insert">insert(projectId, datasetId, body)</a></code></p>
+  <code><a href="#insert">insert(projectId, datasetId, body=None)</a></code></p>
 <p class="firstline">Creates a new, empty table in the dataset.</p>
 <p class="toc_element">
   <code><a href="#list">list(projectId, datasetId, pageToken=None, maxResults=None)</a></code></p>
@@ -90,10 +90,10 @@ h1, h2, h3 {
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#patch">patch(projectId, datasetId, tableId, body)</a></code></p>
+  <code><a href="#patch">patch(projectId, datasetId, tableId, body=None)</a></code></p>
 <p class="firstline">Updates information in an existing table. The update method replaces the entire table resource, whereas the patch method only replaces fields that are provided in the submitted table resource. This method supports patch semantics.</p>
 <p class="toc_element">
-  <code><a href="#update">update(projectId, datasetId, tableId, body)</a></code></p>
+  <code><a href="#update">update(projectId, datasetId, tableId, body=None)</a></code></p>
 <p class="firstline">Updates information in an existing table. The update method replaces the entire table resource, whereas the patch method only replaces fields that are provided in the submitted table resource.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -127,13 +127,15 @@ Returns:
       },
       "materializedView": { # [Optional] Materialized view definition.
         "lastRefreshTime": "A String", # [Output-only] [TrustedTester] The time when this materialized view was last modified, in milliseconds since the epoch.
+        "enableRefresh": True or False, # [Optional] [TrustedTester] Enable automatic refresh of the materialized view when the base table is updated. The default value is "true".
         "query": "A String", # [Required] A query whose result is persisted.
+        "refreshIntervalMs": "A String", # [Optional] [TrustedTester] The maximum frequency at which this materialized view will be refreshed. The default value is "1800000" (30 minutes).
       },
-      "requirePartitionFilter": false, # [Beta] [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
+      "requirePartitionFilter": false, # [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
       "timePartitioning": { # Time-based partitioning specification for this table. Only one of timePartitioning and rangePartitioning should be specified.
-        "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
-        "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
         "requirePartitionFilter": True or False,
+        "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
+        "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
         "expirationMs": "A String", # [Optional] Number of milliseconds for which to keep the storage for partitions in the table. The storage in a partition will have an expiration time of its partition time plus this value.
       },
       "id": "A String", # [Output-only] An opaque ID uniquely identifying the table.
@@ -169,10 +171,15 @@ Returns:
       "schema": { # [Optional] Describes the schema of this table.
         "fields": [ # Describes the fields in a table.
           {
-            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
             "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
               # Object with schema name: TableFieldSchema
             ],
+            "policyTags": {
+              "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+                "A String",
+              ],
+            },
             "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
             "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
             "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -180,7 +187,7 @@ Returns:
                 "A String",
               ],
             },
-            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
           },
         ],
       },
@@ -210,9 +217,9 @@ Returns:
             "trainingOptions": { # [Output-only, Beta] Training options used by this training run. These options are mutable for subsequent training runs. Default values are explicitly stored for options not specified in the input query of the first training run. For subsequent training runs, any option not explicitly specified in the input query will be copied from the previous training run.
               "learnRateStrategy": "A String",
               "l1Reg": 3.14,
-              "lineSearchInitLearnRate": 3.14,
-              "warmStart": True or False,
               "maxIteration": "A String",
+              "warmStart": True or False,
+              "lineSearchInitLearnRate": 3.14,
               "learnRate": 3.14,
               "earlyStop": True or False,
               "minRelProgress": 3.14,
@@ -235,11 +242,14 @@ Returns:
           "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
           "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
           "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped. When autodetect is on, the behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
           "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
         },
-        "hivePartitioningMode": "A String", # [Optional, Experimental] If hive partitioning is enabled, which mode to use. Two modes are supported: - AUTO: automatically infer partition key name(s) and type(s). - STRINGS: automatic infer partition key name(s). All types are strings. Not all storage formats support hive partitioning -- requesting hive partitioning on an unsupported format will lead to an error.
-        "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
+        "hivePartitioningOptions": { # [Optional, Trusted Tester] Options to configure hive partitioning support.
+          "sourceUriPrefix": "A String", # [Optional, Trusted Tester] When hive partition detection is requested, a common prefix for all source uris should be supplied. The prefix must end immediately before the partition key encoding begins. For example, consider files following this data layout. gs://bucket/path_to_table/dt=2019-01-01/country=BR/id=7/file.avro gs://bucket/path_to_table/dt=2018-12-31/country=CA/id=3/file.avro When hive partitioning is requested with either AUTO or STRINGS detection, the common prefix can be either of gs://bucket/path_to_table or gs://bucket/path_to_table/ (trailing slash does not matter).
+          "mode": "A String", # [Optional, Trusted Tester] When set, what mode of hive partitioning to use when reading data. Two modes are supported. (1) AUTO: automatically infer partition key name(s) and type(s). (2) STRINGS: automatically infer partition key name(s). All types are interpreted as strings. Not all storage formats support hive partitioning. Requesting hive partitioning on an unsupported format will lead to an error. Currently supported types include: AVRO, CSV, JSON, ORC and Parquet.
+        },
+        "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
         "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. This is only valid for CSV, JSON, and Google Sheets. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
         "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Bigtable: This setting is ignored. Google Cloud Datastore backups: This setting is ignored. Avro: This setting is ignored.
         "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud. For Google Cloud Storage URIs: Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources. For Google Cloud Bigtable URIs: Exactly one URI can be specified and it has be a fully specified and valid HTTPS URL for a Google Cloud Bigtable table. For Google Cloud Datastore backups, exactly one URI can be specified. Also, the '*' wildcard character is not allowed.
@@ -250,7 +260,7 @@ Returns:
           "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
           "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
             {
-              "familyId": "A String", # Identifier of the column family.
+              "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
               "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
               "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
               "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
@@ -263,22 +273,27 @@ Returns:
                   "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
                 },
               ],
-              "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
+              "familyId": "A String", # Identifier of the column family.
             },
           ],
         },
-        "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
+        "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
         "googleSheetsOptions": { # [Optional] Additional options if sourceFormat is set to GOOGLE_SHEETS.
-          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N > 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
-          "range": "A String", # [Beta] [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
+          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
+          "range": "A String", # [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
         },
         "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Bigtable, Cloud Datastore backups, and Avro formats.
           "fields": [ # Describes the fields in a table.
             {
-              "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+              "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
               "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
                 # Object with schema name: TableFieldSchema
               ],
+              "policyTags": {
+                "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+                  "A String",
+                ],
+              },
               "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
               "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
               "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -286,7 +301,7 @@ Returns:
                   "A String",
                 ],
               },
-              "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+              "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
             },
           ],
         },
@@ -306,13 +321,13 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="insert">insert(projectId, datasetId, body)</code>
+    <code class="details" id="insert">insert(projectId, datasetId, body=None)</code>
   <pre>Creates a new, empty table in the dataset.
 
 Args:
   projectId: string, Project ID of the new table (required)
   datasetId: string, Dataset ID of the new table (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 {
@@ -322,13 +337,15 @@ Args:
     },
     "materializedView": { # [Optional] Materialized view definition.
       "lastRefreshTime": "A String", # [Output-only] [TrustedTester] The time when this materialized view was last modified, in milliseconds since the epoch.
+      "enableRefresh": True or False, # [Optional] [TrustedTester] Enable automatic refresh of the materialized view when the base table is updated. The default value is "true".
       "query": "A String", # [Required] A query whose result is persisted.
+      "refreshIntervalMs": "A String", # [Optional] [TrustedTester] The maximum frequency at which this materialized view will be refreshed. The default value is "1800000" (30 minutes).
     },
-    "requirePartitionFilter": false, # [Beta] [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
+    "requirePartitionFilter": false, # [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
     "timePartitioning": { # Time-based partitioning specification for this table. Only one of timePartitioning and rangePartitioning should be specified.
-      "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
-      "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
       "requirePartitionFilter": True or False,
+      "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
+      "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
       "expirationMs": "A String", # [Optional] Number of milliseconds for which to keep the storage for partitions in the table. The storage in a partition will have an expiration time of its partition time plus this value.
     },
     "id": "A String", # [Output-only] An opaque ID uniquely identifying the table.
@@ -364,10 +381,15 @@ Args:
     "schema": { # [Optional] Describes the schema of this table.
       "fields": [ # Describes the fields in a table.
         {
-          "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+          "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
           "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
             # Object with schema name: TableFieldSchema
           ],
+          "policyTags": {
+            "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+              "A String",
+            ],
+          },
           "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
           "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
           "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -375,7 +397,7 @@ Args:
               "A String",
             ],
           },
-          "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+          "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
         },
       ],
     },
@@ -405,9 +427,9 @@ Args:
           "trainingOptions": { # [Output-only, Beta] Training options used by this training run. These options are mutable for subsequent training runs. Default values are explicitly stored for options not specified in the input query of the first training run. For subsequent training runs, any option not explicitly specified in the input query will be copied from the previous training run.
             "learnRateStrategy": "A String",
             "l1Reg": 3.14,
-            "lineSearchInitLearnRate": 3.14,
-            "warmStart": True or False,
             "maxIteration": "A String",
+            "warmStart": True or False,
+            "lineSearchInitLearnRate": 3.14,
             "learnRate": 3.14,
             "earlyStop": True or False,
             "minRelProgress": 3.14,
@@ -430,11 +452,14 @@ Args:
         "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
         "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
         "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped. When autodetect is on, the behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
         "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
       },
-      "hivePartitioningMode": "A String", # [Optional, Experimental] If hive partitioning is enabled, which mode to use. Two modes are supported: - AUTO: automatically infer partition key name(s) and type(s). - STRINGS: automatic infer partition key name(s). All types are strings. Not all storage formats support hive partitioning -- requesting hive partitioning on an unsupported format will lead to an error.
-      "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
+      "hivePartitioningOptions": { # [Optional, Trusted Tester] Options to configure hive partitioning support.
+        "sourceUriPrefix": "A String", # [Optional, Trusted Tester] When hive partition detection is requested, a common prefix for all source uris should be supplied. The prefix must end immediately before the partition key encoding begins. For example, consider files following this data layout. gs://bucket/path_to_table/dt=2019-01-01/country=BR/id=7/file.avro gs://bucket/path_to_table/dt=2018-12-31/country=CA/id=3/file.avro When hive partitioning is requested with either AUTO or STRINGS detection, the common prefix can be either of gs://bucket/path_to_table or gs://bucket/path_to_table/ (trailing slash does not matter).
+        "mode": "A String", # [Optional, Trusted Tester] When set, what mode of hive partitioning to use when reading data. Two modes are supported. (1) AUTO: automatically infer partition key name(s) and type(s). (2) STRINGS: automatically infer partition key name(s). All types are interpreted as strings. Not all storage formats support hive partitioning. Requesting hive partitioning on an unsupported format will lead to an error. Currently supported types include: AVRO, CSV, JSON, ORC and Parquet.
+      },
+      "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
       "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. This is only valid for CSV, JSON, and Google Sheets. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
       "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Bigtable: This setting is ignored. Google Cloud Datastore backups: This setting is ignored. Avro: This setting is ignored.
       "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud. For Google Cloud Storage URIs: Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources. For Google Cloud Bigtable URIs: Exactly one URI can be specified and it has be a fully specified and valid HTTPS URL for a Google Cloud Bigtable table. For Google Cloud Datastore backups, exactly one URI can be specified. Also, the '*' wildcard character is not allowed.
@@ -445,7 +470,7 @@ Args:
         "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
         "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
           {
-            "familyId": "A String", # Identifier of the column family.
+            "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
             "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
             "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
             "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
@@ -458,22 +483,27 @@ Args:
                 "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
               },
             ],
-            "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
+            "familyId": "A String", # Identifier of the column family.
           },
         ],
       },
-      "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
+      "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
       "googleSheetsOptions": { # [Optional] Additional options if sourceFormat is set to GOOGLE_SHEETS.
-        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N > 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
-        "range": "A String", # [Beta] [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
+        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
+        "range": "A String", # [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
       },
       "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Bigtable, Cloud Datastore backups, and Avro formats.
         "fields": [ # Describes the fields in a table.
           {
-            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
             "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
               # Object with schema name: TableFieldSchema
             ],
+            "policyTags": {
+              "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+                "A String",
+              ],
+            },
             "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
             "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
             "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -481,7 +511,7 @@ Args:
                 "A String",
               ],
             },
-            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
           },
         ],
       },
@@ -510,13 +540,15 @@ Returns:
       },
       "materializedView": { # [Optional] Materialized view definition.
         "lastRefreshTime": "A String", # [Output-only] [TrustedTester] The time when this materialized view was last modified, in milliseconds since the epoch.
+        "enableRefresh": True or False, # [Optional] [TrustedTester] Enable automatic refresh of the materialized view when the base table is updated. The default value is "true".
         "query": "A String", # [Required] A query whose result is persisted.
+        "refreshIntervalMs": "A String", # [Optional] [TrustedTester] The maximum frequency at which this materialized view will be refreshed. The default value is "1800000" (30 minutes).
       },
-      "requirePartitionFilter": false, # [Beta] [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
+      "requirePartitionFilter": false, # [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
       "timePartitioning": { # Time-based partitioning specification for this table. Only one of timePartitioning and rangePartitioning should be specified.
-        "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
-        "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
         "requirePartitionFilter": True or False,
+        "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
+        "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
         "expirationMs": "A String", # [Optional] Number of milliseconds for which to keep the storage for partitions in the table. The storage in a partition will have an expiration time of its partition time plus this value.
       },
       "id": "A String", # [Output-only] An opaque ID uniquely identifying the table.
@@ -552,10 +584,15 @@ Returns:
       "schema": { # [Optional] Describes the schema of this table.
         "fields": [ # Describes the fields in a table.
           {
-            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
             "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
               # Object with schema name: TableFieldSchema
             ],
+            "policyTags": {
+              "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+                "A String",
+              ],
+            },
             "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
             "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
             "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -563,7 +600,7 @@ Returns:
                 "A String",
               ],
             },
-            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
           },
         ],
       },
@@ -593,9 +630,9 @@ Returns:
             "trainingOptions": { # [Output-only, Beta] Training options used by this training run. These options are mutable for subsequent training runs. Default values are explicitly stored for options not specified in the input query of the first training run. For subsequent training runs, any option not explicitly specified in the input query will be copied from the previous training run.
               "learnRateStrategy": "A String",
               "l1Reg": 3.14,
-              "lineSearchInitLearnRate": 3.14,
-              "warmStart": True or False,
               "maxIteration": "A String",
+              "warmStart": True or False,
+              "lineSearchInitLearnRate": 3.14,
               "learnRate": 3.14,
               "earlyStop": True or False,
               "minRelProgress": 3.14,
@@ -618,11 +655,14 @@ Returns:
           "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
           "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
           "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped. When autodetect is on, the behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
           "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
         },
-        "hivePartitioningMode": "A String", # [Optional, Experimental] If hive partitioning is enabled, which mode to use. Two modes are supported: - AUTO: automatically infer partition key name(s) and type(s). - STRINGS: automatic infer partition key name(s). All types are strings. Not all storage formats support hive partitioning -- requesting hive partitioning on an unsupported format will lead to an error.
-        "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
+        "hivePartitioningOptions": { # [Optional, Trusted Tester] Options to configure hive partitioning support.
+          "sourceUriPrefix": "A String", # [Optional, Trusted Tester] When hive partition detection is requested, a common prefix for all source uris should be supplied. The prefix must end immediately before the partition key encoding begins. For example, consider files following this data layout. gs://bucket/path_to_table/dt=2019-01-01/country=BR/id=7/file.avro gs://bucket/path_to_table/dt=2018-12-31/country=CA/id=3/file.avro When hive partitioning is requested with either AUTO or STRINGS detection, the common prefix can be either of gs://bucket/path_to_table or gs://bucket/path_to_table/ (trailing slash does not matter).
+          "mode": "A String", # [Optional, Trusted Tester] When set, what mode of hive partitioning to use when reading data. Two modes are supported. (1) AUTO: automatically infer partition key name(s) and type(s). (2) STRINGS: automatically infer partition key name(s). All types are interpreted as strings. Not all storage formats support hive partitioning. Requesting hive partitioning on an unsupported format will lead to an error. Currently supported types include: AVRO, CSV, JSON, ORC and Parquet.
+        },
+        "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
         "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. This is only valid for CSV, JSON, and Google Sheets. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
         "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Bigtable: This setting is ignored. Google Cloud Datastore backups: This setting is ignored. Avro: This setting is ignored.
         "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud. For Google Cloud Storage URIs: Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources. For Google Cloud Bigtable URIs: Exactly one URI can be specified and it has be a fully specified and valid HTTPS URL for a Google Cloud Bigtable table. For Google Cloud Datastore backups, exactly one URI can be specified. Also, the '*' wildcard character is not allowed.
@@ -633,7 +673,7 @@ Returns:
           "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
           "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
             {
-              "familyId": "A String", # Identifier of the column family.
+              "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
               "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
               "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
               "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
@@ -646,22 +686,27 @@ Returns:
                   "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
                 },
               ],
-              "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
+              "familyId": "A String", # Identifier of the column family.
             },
           ],
         },
-        "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
+        "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
         "googleSheetsOptions": { # [Optional] Additional options if sourceFormat is set to GOOGLE_SHEETS.
-          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N > 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
-          "range": "A String", # [Beta] [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
+          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
+          "range": "A String", # [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
         },
         "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Bigtable, Cloud Datastore backups, and Avro formats.
           "fields": [ # Describes the fields in a table.
             {
-              "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+              "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
               "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
                 # Object with schema name: TableFieldSchema
               ],
+              "policyTags": {
+                "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+                  "A String",
+                ],
+              },
               "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
               "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
               "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -669,7 +714,7 @@ Returns:
                   "A String",
                 ],
               },
-              "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+              "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
             },
           ],
         },
@@ -714,25 +759,33 @@ Returns:
           ],
         },
         "kind": "bigquery#table", # The resource type.
+        "rangePartitioning": { # The range partitioning specification for this table, if configured.
+          "field": "A String", # [TrustedTester] [Required] The table is partitioned by this field. The field must be a top-level NULLABLE/REQUIRED field. The only supported type is INTEGER/INT64.
+          "range": { # [TrustedTester] [Required] Defines the ranges for range partitioning.
+            "start": "A String", # [TrustedTester] [Required] The start of range partitioning, inclusive.
+            "interval": "A String", # [TrustedTester] [Required] The width of each interval.
+            "end": "A String", # [TrustedTester] [Required] The end of range partitioning, exclusive.
+          },
+        },
         "labels": { # The labels associated with this table. You can use these to organize and group your tables.
           "a_key": "A String",
         },
         "creationTime": "A String", # The time when this table was created, in milliseconds since the epoch.
-        "id": "A String", # An opaque ID of the table
-        "friendlyName": "A String", # The user-friendly name for this table.
-        "timePartitioning": { # The time-based partitioning specification for this table, if configured.
-          "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
-          "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
-          "requirePartitionFilter": True or False,
-          "expirationMs": "A String", # [Optional] Number of milliseconds for which to keep the storage for partitions in the table. The storage in a partition will have an expiration time of its partition time plus this value.
-        },
-        "expirationTime": "A String", # [Optional] The time when this table expires, in milliseconds since the epoch. If not present, the table will persist indefinitely. Expired tables will be deleted and their storage reclaimed.
-        "type": "A String", # The type of table. Possible values are: TABLE, VIEW.
         "tableReference": { # A reference uniquely identifying the table.
           "projectId": "A String", # [Required] The ID of the project containing this table.
           "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
           "datasetId": "A String", # [Required] The ID of the dataset containing this table.
         },
+        "friendlyName": "A String", # The user-friendly name for this table.
+        "timePartitioning": { # The time-based partitioning specification for this table, if configured.
+          "requirePartitionFilter": True or False,
+          "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
+          "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
+          "expirationMs": "A String", # [Optional] Number of milliseconds for which to keep the storage for partitions in the table. The storage in a partition will have an expiration time of its partition time plus this value.
+        },
+        "expirationTime": "A String", # [Optional] The time when this table expires, in milliseconds since the epoch. If not present, the table will persist indefinitely. Expired tables will be deleted and their storage reclaimed.
+        "type": "A String", # The type of table. Possible values are: TABLE, VIEW.
+        "id": "A String", # An opaque ID of the table
         "view": { # Additional details for a view.
           "useLegacySql": True or False, # True if view is defined in legacy SQL dialect, false if in standard SQL.
         },
@@ -756,14 +809,14 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="patch">patch(projectId, datasetId, tableId, body)</code>
+    <code class="details" id="patch">patch(projectId, datasetId, tableId, body=None)</code>
   <pre>Updates information in an existing table. The update method replaces the entire table resource, whereas the patch method only replaces fields that are provided in the submitted table resource. This method supports patch semantics.
 
 Args:
   projectId: string, Project ID of the table to update (required)
   datasetId: string, Dataset ID of the table to update (required)
   tableId: string, Table ID of the table to update (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 {
@@ -773,13 +826,15 @@ Args:
     },
     "materializedView": { # [Optional] Materialized view definition.
       "lastRefreshTime": "A String", # [Output-only] [TrustedTester] The time when this materialized view was last modified, in milliseconds since the epoch.
+      "enableRefresh": True or False, # [Optional] [TrustedTester] Enable automatic refresh of the materialized view when the base table is updated. The default value is "true".
       "query": "A String", # [Required] A query whose result is persisted.
+      "refreshIntervalMs": "A String", # [Optional] [TrustedTester] The maximum frequency at which this materialized view will be refreshed. The default value is "1800000" (30 minutes).
     },
-    "requirePartitionFilter": false, # [Beta] [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
+    "requirePartitionFilter": false, # [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
     "timePartitioning": { # Time-based partitioning specification for this table. Only one of timePartitioning and rangePartitioning should be specified.
-      "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
-      "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
       "requirePartitionFilter": True or False,
+      "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
+      "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
       "expirationMs": "A String", # [Optional] Number of milliseconds for which to keep the storage for partitions in the table. The storage in a partition will have an expiration time of its partition time plus this value.
     },
     "id": "A String", # [Output-only] An opaque ID uniquely identifying the table.
@@ -815,10 +870,15 @@ Args:
     "schema": { # [Optional] Describes the schema of this table.
       "fields": [ # Describes the fields in a table.
         {
-          "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+          "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
           "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
             # Object with schema name: TableFieldSchema
           ],
+          "policyTags": {
+            "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+              "A String",
+            ],
+          },
           "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
           "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
           "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -826,7 +886,7 @@ Args:
               "A String",
             ],
           },
-          "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+          "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
         },
       ],
     },
@@ -856,9 +916,9 @@ Args:
           "trainingOptions": { # [Output-only, Beta] Training options used by this training run. These options are mutable for subsequent training runs. Default values are explicitly stored for options not specified in the input query of the first training run. For subsequent training runs, any option not explicitly specified in the input query will be copied from the previous training run.
             "learnRateStrategy": "A String",
             "l1Reg": 3.14,
-            "lineSearchInitLearnRate": 3.14,
-            "warmStart": True or False,
             "maxIteration": "A String",
+            "warmStart": True or False,
+            "lineSearchInitLearnRate": 3.14,
             "learnRate": 3.14,
             "earlyStop": True or False,
             "minRelProgress": 3.14,
@@ -881,11 +941,14 @@ Args:
         "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
         "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
         "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped. When autodetect is on, the behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
         "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
       },
-      "hivePartitioningMode": "A String", # [Optional, Experimental] If hive partitioning is enabled, which mode to use. Two modes are supported: - AUTO: automatically infer partition key name(s) and type(s). - STRINGS: automatic infer partition key name(s). All types are strings. Not all storage formats support hive partitioning -- requesting hive partitioning on an unsupported format will lead to an error.
-      "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
+      "hivePartitioningOptions": { # [Optional, Trusted Tester] Options to configure hive partitioning support.
+        "sourceUriPrefix": "A String", # [Optional, Trusted Tester] When hive partition detection is requested, a common prefix for all source uris should be supplied. The prefix must end immediately before the partition key encoding begins. For example, consider files following this data layout. gs://bucket/path_to_table/dt=2019-01-01/country=BR/id=7/file.avro gs://bucket/path_to_table/dt=2018-12-31/country=CA/id=3/file.avro When hive partitioning is requested with either AUTO or STRINGS detection, the common prefix can be either of gs://bucket/path_to_table or gs://bucket/path_to_table/ (trailing slash does not matter).
+        "mode": "A String", # [Optional, Trusted Tester] When set, what mode of hive partitioning to use when reading data. Two modes are supported. (1) AUTO: automatically infer partition key name(s) and type(s). (2) STRINGS: automatically infer partition key name(s). All types are interpreted as strings. Not all storage formats support hive partitioning. Requesting hive partitioning on an unsupported format will lead to an error. Currently supported types include: AVRO, CSV, JSON, ORC and Parquet.
+      },
+      "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
       "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. This is only valid for CSV, JSON, and Google Sheets. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
       "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Bigtable: This setting is ignored. Google Cloud Datastore backups: This setting is ignored. Avro: This setting is ignored.
       "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud. For Google Cloud Storage URIs: Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources. For Google Cloud Bigtable URIs: Exactly one URI can be specified and it has be a fully specified and valid HTTPS URL for a Google Cloud Bigtable table. For Google Cloud Datastore backups, exactly one URI can be specified. Also, the '*' wildcard character is not allowed.
@@ -896,7 +959,7 @@ Args:
         "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
         "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
           {
-            "familyId": "A String", # Identifier of the column family.
+            "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
             "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
             "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
             "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
@@ -909,22 +972,27 @@ Args:
                 "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
               },
             ],
-            "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
+            "familyId": "A String", # Identifier of the column family.
           },
         ],
       },
-      "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
+      "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
       "googleSheetsOptions": { # [Optional] Additional options if sourceFormat is set to GOOGLE_SHEETS.
-        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N > 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
-        "range": "A String", # [Beta] [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
+        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
+        "range": "A String", # [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
       },
       "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Bigtable, Cloud Datastore backups, and Avro formats.
         "fields": [ # Describes the fields in a table.
           {
-            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
             "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
               # Object with schema name: TableFieldSchema
             ],
+            "policyTags": {
+              "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+                "A String",
+              ],
+            },
             "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
             "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
             "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -932,7 +1000,7 @@ Args:
                 "A String",
               ],
             },
-            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
           },
         ],
       },
@@ -961,13 +1029,15 @@ Returns:
       },
       "materializedView": { # [Optional] Materialized view definition.
         "lastRefreshTime": "A String", # [Output-only] [TrustedTester] The time when this materialized view was last modified, in milliseconds since the epoch.
+        "enableRefresh": True or False, # [Optional] [TrustedTester] Enable automatic refresh of the materialized view when the base table is updated. The default value is "true".
         "query": "A String", # [Required] A query whose result is persisted.
+        "refreshIntervalMs": "A String", # [Optional] [TrustedTester] The maximum frequency at which this materialized view will be refreshed. The default value is "1800000" (30 minutes).
       },
-      "requirePartitionFilter": false, # [Beta] [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
+      "requirePartitionFilter": false, # [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
       "timePartitioning": { # Time-based partitioning specification for this table. Only one of timePartitioning and rangePartitioning should be specified.
-        "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
-        "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
         "requirePartitionFilter": True or False,
+        "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
+        "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
         "expirationMs": "A String", # [Optional] Number of milliseconds for which to keep the storage for partitions in the table. The storage in a partition will have an expiration time of its partition time plus this value.
       },
       "id": "A String", # [Output-only] An opaque ID uniquely identifying the table.
@@ -1003,10 +1073,15 @@ Returns:
       "schema": { # [Optional] Describes the schema of this table.
         "fields": [ # Describes the fields in a table.
           {
-            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
             "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
               # Object with schema name: TableFieldSchema
             ],
+            "policyTags": {
+              "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+                "A String",
+              ],
+            },
             "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
             "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
             "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -1014,7 +1089,7 @@ Returns:
                 "A String",
               ],
             },
-            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
           },
         ],
       },
@@ -1044,9 +1119,9 @@ Returns:
             "trainingOptions": { # [Output-only, Beta] Training options used by this training run. These options are mutable for subsequent training runs. Default values are explicitly stored for options not specified in the input query of the first training run. For subsequent training runs, any option not explicitly specified in the input query will be copied from the previous training run.
               "learnRateStrategy": "A String",
               "l1Reg": 3.14,
-              "lineSearchInitLearnRate": 3.14,
-              "warmStart": True or False,
               "maxIteration": "A String",
+              "warmStart": True or False,
+              "lineSearchInitLearnRate": 3.14,
               "learnRate": 3.14,
               "earlyStop": True or False,
               "minRelProgress": 3.14,
@@ -1069,11 +1144,14 @@ Returns:
           "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
           "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
           "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped. When autodetect is on, the behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
           "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
         },
-        "hivePartitioningMode": "A String", # [Optional, Experimental] If hive partitioning is enabled, which mode to use. Two modes are supported: - AUTO: automatically infer partition key name(s) and type(s). - STRINGS: automatic infer partition key name(s). All types are strings. Not all storage formats support hive partitioning -- requesting hive partitioning on an unsupported format will lead to an error.
-        "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
+        "hivePartitioningOptions": { # [Optional, Trusted Tester] Options to configure hive partitioning support.
+          "sourceUriPrefix": "A String", # [Optional, Trusted Tester] When hive partition detection is requested, a common prefix for all source uris should be supplied. The prefix must end immediately before the partition key encoding begins. For example, consider files following this data layout. gs://bucket/path_to_table/dt=2019-01-01/country=BR/id=7/file.avro gs://bucket/path_to_table/dt=2018-12-31/country=CA/id=3/file.avro When hive partitioning is requested with either AUTO or STRINGS detection, the common prefix can be either of gs://bucket/path_to_table or gs://bucket/path_to_table/ (trailing slash does not matter).
+          "mode": "A String", # [Optional, Trusted Tester] When set, what mode of hive partitioning to use when reading data. Two modes are supported. (1) AUTO: automatically infer partition key name(s) and type(s). (2) STRINGS: automatically infer partition key name(s). All types are interpreted as strings. Not all storage formats support hive partitioning. Requesting hive partitioning on an unsupported format will lead to an error. Currently supported types include: AVRO, CSV, JSON, ORC and Parquet.
+        },
+        "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
         "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. This is only valid for CSV, JSON, and Google Sheets. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
         "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Bigtable: This setting is ignored. Google Cloud Datastore backups: This setting is ignored. Avro: This setting is ignored.
         "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud. For Google Cloud Storage URIs: Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources. For Google Cloud Bigtable URIs: Exactly one URI can be specified and it has be a fully specified and valid HTTPS URL for a Google Cloud Bigtable table. For Google Cloud Datastore backups, exactly one URI can be specified. Also, the '*' wildcard character is not allowed.
@@ -1084,7 +1162,7 @@ Returns:
           "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
           "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
             {
-              "familyId": "A String", # Identifier of the column family.
+              "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
               "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
               "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
               "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
@@ -1097,22 +1175,27 @@ Returns:
                   "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
                 },
               ],
-              "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
+              "familyId": "A String", # Identifier of the column family.
             },
           ],
         },
-        "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
+        "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
         "googleSheetsOptions": { # [Optional] Additional options if sourceFormat is set to GOOGLE_SHEETS.
-          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N > 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
-          "range": "A String", # [Beta] [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
+          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
+          "range": "A String", # [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
         },
         "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Bigtable, Cloud Datastore backups, and Avro formats.
           "fields": [ # Describes the fields in a table.
             {
-              "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+              "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
               "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
                 # Object with schema name: TableFieldSchema
               ],
+              "policyTags": {
+                "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+                  "A String",
+                ],
+              },
               "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
               "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
               "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -1120,7 +1203,7 @@ Returns:
                   "A String",
                 ],
               },
-              "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+              "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
             },
           ],
         },
@@ -1140,14 +1223,14 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="update">update(projectId, datasetId, tableId, body)</code>
+    <code class="details" id="update">update(projectId, datasetId, tableId, body=None)</code>
   <pre>Updates information in an existing table. The update method replaces the entire table resource, whereas the patch method only replaces fields that are provided in the submitted table resource.
 
 Args:
   projectId: string, Project ID of the table to update (required)
   datasetId: string, Dataset ID of the table to update (required)
   tableId: string, Table ID of the table to update (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 {
@@ -1157,13 +1240,15 @@ Args:
     },
     "materializedView": { # [Optional] Materialized view definition.
       "lastRefreshTime": "A String", # [Output-only] [TrustedTester] The time when this materialized view was last modified, in milliseconds since the epoch.
+      "enableRefresh": True or False, # [Optional] [TrustedTester] Enable automatic refresh of the materialized view when the base table is updated. The default value is "true".
       "query": "A String", # [Required] A query whose result is persisted.
+      "refreshIntervalMs": "A String", # [Optional] [TrustedTester] The maximum frequency at which this materialized view will be refreshed. The default value is "1800000" (30 minutes).
     },
-    "requirePartitionFilter": false, # [Beta] [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
+    "requirePartitionFilter": false, # [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
     "timePartitioning": { # Time-based partitioning specification for this table. Only one of timePartitioning and rangePartitioning should be specified.
-      "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
-      "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
       "requirePartitionFilter": True or False,
+      "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
+      "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
       "expirationMs": "A String", # [Optional] Number of milliseconds for which to keep the storage for partitions in the table. The storage in a partition will have an expiration time of its partition time plus this value.
     },
     "id": "A String", # [Output-only] An opaque ID uniquely identifying the table.
@@ -1199,10 +1284,15 @@ Args:
     "schema": { # [Optional] Describes the schema of this table.
       "fields": [ # Describes the fields in a table.
         {
-          "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+          "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
           "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
             # Object with schema name: TableFieldSchema
           ],
+          "policyTags": {
+            "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+              "A String",
+            ],
+          },
           "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
           "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
           "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -1210,7 +1300,7 @@ Args:
               "A String",
             ],
           },
-          "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+          "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
         },
       ],
     },
@@ -1240,9 +1330,9 @@ Args:
           "trainingOptions": { # [Output-only, Beta] Training options used by this training run. These options are mutable for subsequent training runs. Default values are explicitly stored for options not specified in the input query of the first training run. For subsequent training runs, any option not explicitly specified in the input query will be copied from the previous training run.
             "learnRateStrategy": "A String",
             "l1Reg": 3.14,
-            "lineSearchInitLearnRate": 3.14,
-            "warmStart": True or False,
             "maxIteration": "A String",
+            "warmStart": True or False,
+            "lineSearchInitLearnRate": 3.14,
             "learnRate": 3.14,
             "earlyStop": True or False,
             "minRelProgress": 3.14,
@@ -1265,11 +1355,14 @@ Args:
         "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
         "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
         "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped. When autodetect is on, the behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
         "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
       },
-      "hivePartitioningMode": "A String", # [Optional, Experimental] If hive partitioning is enabled, which mode to use. Two modes are supported: - AUTO: automatically infer partition key name(s) and type(s). - STRINGS: automatic infer partition key name(s). All types are strings. Not all storage formats support hive partitioning -- requesting hive partitioning on an unsupported format will lead to an error.
-      "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
+      "hivePartitioningOptions": { # [Optional, Trusted Tester] Options to configure hive partitioning support.
+        "sourceUriPrefix": "A String", # [Optional, Trusted Tester] When hive partition detection is requested, a common prefix for all source uris should be supplied. The prefix must end immediately before the partition key encoding begins. For example, consider files following this data layout. gs://bucket/path_to_table/dt=2019-01-01/country=BR/id=7/file.avro gs://bucket/path_to_table/dt=2018-12-31/country=CA/id=3/file.avro When hive partitioning is requested with either AUTO or STRINGS detection, the common prefix can be either of gs://bucket/path_to_table or gs://bucket/path_to_table/ (trailing slash does not matter).
+        "mode": "A String", # [Optional, Trusted Tester] When set, what mode of hive partitioning to use when reading data. Two modes are supported. (1) AUTO: automatically infer partition key name(s) and type(s). (2) STRINGS: automatically infer partition key name(s). All types are interpreted as strings. Not all storage formats support hive partitioning. Requesting hive partitioning on an unsupported format will lead to an error. Currently supported types include: AVRO, CSV, JSON, ORC and Parquet.
+      },
+      "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
       "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. This is only valid for CSV, JSON, and Google Sheets. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
       "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Bigtable: This setting is ignored. Google Cloud Datastore backups: This setting is ignored. Avro: This setting is ignored.
       "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud. For Google Cloud Storage URIs: Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources. For Google Cloud Bigtable URIs: Exactly one URI can be specified and it has be a fully specified and valid HTTPS URL for a Google Cloud Bigtable table. For Google Cloud Datastore backups, exactly one URI can be specified. Also, the '*' wildcard character is not allowed.
@@ -1280,7 +1373,7 @@ Args:
         "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
         "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
           {
-            "familyId": "A String", # Identifier of the column family.
+            "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
             "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
             "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
             "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
@@ -1293,22 +1386,27 @@ Args:
                 "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
               },
             ],
-            "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
+            "familyId": "A String", # Identifier of the column family.
           },
         ],
       },
-      "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
+      "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
       "googleSheetsOptions": { # [Optional] Additional options if sourceFormat is set to GOOGLE_SHEETS.
-        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N > 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
-        "range": "A String", # [Beta] [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
+        "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
+        "range": "A String", # [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
       },
       "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Bigtable, Cloud Datastore backups, and Avro formats.
         "fields": [ # Describes the fields in a table.
           {
-            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
             "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
               # Object with schema name: TableFieldSchema
             ],
+            "policyTags": {
+              "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+                "A String",
+              ],
+            },
             "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
             "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
             "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -1316,7 +1414,7 @@ Args:
                 "A String",
               ],
             },
-            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
           },
         ],
       },
@@ -1345,13 +1443,15 @@ Returns:
       },
       "materializedView": { # [Optional] Materialized view definition.
         "lastRefreshTime": "A String", # [Output-only] [TrustedTester] The time when this materialized view was last modified, in milliseconds since the epoch.
+        "enableRefresh": True or False, # [Optional] [TrustedTester] Enable automatic refresh of the materialized view when the base table is updated. The default value is "true".
         "query": "A String", # [Required] A query whose result is persisted.
+        "refreshIntervalMs": "A String", # [Optional] [TrustedTester] The maximum frequency at which this materialized view will be refreshed. The default value is "1800000" (30 minutes).
       },
-      "requirePartitionFilter": false, # [Beta] [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
+      "requirePartitionFilter": false, # [Optional] If set to true, queries over this table require a partition filter that can be used for partition elimination to be specified.
       "timePartitioning": { # Time-based partitioning specification for this table. Only one of timePartitioning and rangePartitioning should be specified.
-        "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
-        "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
         "requirePartitionFilter": True or False,
+        "type": "A String", # [Required] The only type supported is DAY, which will generate one partition per day.
+        "field": "A String", # [Beta] [Optional] If not set, the table is partitioned by pseudo column, referenced via either '_PARTITIONTIME' as TIMESTAMP type, or '_PARTITIONDATE' as DATE type. If field is specified, the table is instead partitioned by this field. The field must be a top-level TIMESTAMP or DATE field. Its mode must be NULLABLE or REQUIRED.
         "expirationMs": "A String", # [Optional] Number of milliseconds for which to keep the storage for partitions in the table. The storage in a partition will have an expiration time of its partition time plus this value.
       },
       "id": "A String", # [Output-only] An opaque ID uniquely identifying the table.
@@ -1387,10 +1487,15 @@ Returns:
       "schema": { # [Optional] Describes the schema of this table.
         "fields": [ # Describes the fields in a table.
           {
-            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
             "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
               # Object with schema name: TableFieldSchema
             ],
+            "policyTags": {
+              "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+                "A String",
+              ],
+            },
             "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
             "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
             "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -1398,7 +1503,7 @@ Returns:
                 "A String",
               ],
             },
-            "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+            "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
           },
         ],
       },
@@ -1428,9 +1533,9 @@ Returns:
             "trainingOptions": { # [Output-only, Beta] Training options used by this training run. These options are mutable for subsequent training runs. Default values are explicitly stored for options not specified in the input query of the first training run. For subsequent training runs, any option not explicitly specified in the input query will be copied from the previous training run.
               "learnRateStrategy": "A String",
               "l1Reg": 3.14,
-              "lineSearchInitLearnRate": 3.14,
-              "warmStart": True or False,
               "maxIteration": "A String",
+              "warmStart": True or False,
+              "lineSearchInitLearnRate": 3.14,
               "learnRate": 3.14,
               "earlyStop": True or False,
               "minRelProgress": 3.14,
@@ -1453,11 +1558,14 @@ Returns:
           "encoding": "A String", # [Optional] The character encoding of the data. The supported values are UTF-8 or ISO-8859-1. The default value is UTF-8. BigQuery decodes the data after the raw, binary data has been split using the values of the quote and fieldDelimiter properties.
           "quote": """, # [Optional] The value that is used to quote data sections in a CSV file. BigQuery converts the string to ISO-8859-1 encoding, and then uses the first byte of the encoded string to split the data in its raw, binary state. The default value is a double-quote ('"'). If your data does not contain quoted sections, set the property value to an empty string. If your data contains quoted newline characters, you must also set the allowQuotedNewlines property to true.
           "allowJaggedRows": True or False, # [Optional] Indicates if BigQuery should accept rows that are missing trailing optional columns. If true, BigQuery treats missing trailing columns as null values. If false, records with missing trailing columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false.
-          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped.
+          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped. When autodetect is on, the behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
           "allowQuotedNewlines": True or False, # [Optional] Indicates if BigQuery should allow quoted data sections that contain newline characters in a CSV file. The default value is false.
         },
-        "hivePartitioningMode": "A String", # [Optional, Experimental] If hive partitioning is enabled, which mode to use. Two modes are supported: - AUTO: automatically infer partition key name(s) and type(s). - STRINGS: automatic infer partition key name(s). All types are strings. Not all storage formats support hive partitioning -- requesting hive partitioning on an unsupported format will lead to an error.
-        "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
+        "hivePartitioningOptions": { # [Optional, Trusted Tester] Options to configure hive partitioning support.
+          "sourceUriPrefix": "A String", # [Optional, Trusted Tester] When hive partition detection is requested, a common prefix for all source uris should be supplied. The prefix must end immediately before the partition key encoding begins. For example, consider files following this data layout. gs://bucket/path_to_table/dt=2019-01-01/country=BR/id=7/file.avro gs://bucket/path_to_table/dt=2018-12-31/country=CA/id=3/file.avro When hive partitioning is requested with either AUTO or STRINGS detection, the common prefix can be either of gs://bucket/path_to_table or gs://bucket/path_to_table/ (trailing slash does not matter).
+          "mode": "A String", # [Optional, Trusted Tester] When set, what mode of hive partitioning to use when reading data. Two modes are supported. (1) AUTO: automatically infer partition key name(s) and type(s). (2) STRINGS: automatically infer partition key name(s). All types are interpreted as strings. Not all storage formats support hive partitioning. Requesting hive partitioning on an unsupported format will lead to an error. Currently supported types include: AVRO, CSV, JSON, ORC and Parquet.
+        },
+        "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
         "maxBadRecords": 42, # [Optional] The maximum number of bad records that BigQuery can ignore when reading data. If the number of bad records exceeds this value, an invalid error is returned in the job result. This is only valid for CSV, JSON, and Google Sheets. The default value is 0, which requires that all records are valid. This setting is ignored for Google Cloud Bigtable, Google Cloud Datastore backups and Avro formats.
         "ignoreUnknownValues": True or False, # [Optional] Indicates if BigQuery should allow extra values that are not represented in the table schema. If true, the extra values are ignored. If false, records with extra columns are treated as bad records, and if there are too many bad records, an invalid error is returned in the job result. The default value is false. The sourceFormat property determines what BigQuery treats as an extra value: CSV: Trailing columns JSON: Named values that don't match any column names Google Cloud Bigtable: This setting is ignored. Google Cloud Datastore backups: This setting is ignored. Avro: This setting is ignored.
         "sourceUris": [ # [Required] The fully-qualified URIs that point to your data in Google Cloud. For Google Cloud Storage URIs: Each URI can contain one '*' wildcard character and it must come after the 'bucket' name. Size limits related to load jobs apply to external data sources. For Google Cloud Bigtable URIs: Exactly one URI can be specified and it has be a fully specified and valid HTTPS URL for a Google Cloud Bigtable table. For Google Cloud Datastore backups, exactly one URI can be specified. Also, the '*' wildcard character is not allowed.
@@ -1468,7 +1576,7 @@ Returns:
           "ignoreUnspecifiedColumnFamilies": True or False, # [Optional] If field is true, then the column families that are not specified in columnFamilies list are not exposed in the table schema. Otherwise, they are read with BYTES type values. The default value is false.
           "columnFamilies": [ # [Optional] List of column families to expose in the table schema along with their types. This list restricts the column families that can be referenced in queries and specifies their value types. You can use this list to do type conversions - see the 'type' field for more details. If you leave this list empty, all column families are present in the table schema and their values are read as BYTES. During a query only the column families referenced in that query are read from Bigtable.
             {
-              "familyId": "A String", # Identifier of the column family.
+              "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
               "type": "A String", # [Optional] The type to convert the value in cells of this column family. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. This can be overridden for a specific column by listing that column in 'columns' and specifying a type for it.
               "onlyReadLatest": True or False, # [Optional] If this is set only the latest version of value are exposed for all columns in this column family. This can be overridden for a specific column by listing that column in 'columns' and specifying a different setting for that column.
               "columns": [ # [Optional] Lists of columns that should be exposed as individual fields as opposed to a list of (column name, value) pairs. All columns whose qualifier matches a qualifier in this list can be accessed as .. Other columns can be accessed as a list through .Column field.
@@ -1481,22 +1589,27 @@ Returns:
                   "type": "A String", # [Optional] The type to convert the value in cells of this column. The values are expected to be encoded using HBase Bytes.toBytes function when using the BINARY encoding value. Following BigQuery types are allowed (case-sensitive) - BYTES STRING INTEGER FLOAT BOOLEAN Default type is BYTES. 'type' can also be set at the column family level. However, the setting at this level takes precedence if 'type' is set at both levels.
                 },
               ],
-              "encoding": "A String", # [Optional] The encoding of the values when the type is not STRING. Acceptable encoding values are: TEXT - indicates values are alphanumeric text strings. BINARY - indicates values are encoded using HBase Bytes.toBytes family of functions. This can be overridden for a specific column by listing that column in 'columns' and specifying an encoding for it.
+              "familyId": "A String", # Identifier of the column family.
             },
           ],
         },
-        "autodetect": True or False, # Try to detect schema and format options automatically. Any option specified explicitly will be honored.
+        "sourceFormat": "A String", # [Required] The data format. For CSV files, specify "CSV". For Google sheets, specify "GOOGLE_SHEETS". For newline-delimited JSON, specify "NEWLINE_DELIMITED_JSON". For Avro files, specify "AVRO". For Google Cloud Datastore backups, specify "DATASTORE_BACKUP". [Beta] For Google Cloud Bigtable, specify "BIGTABLE".
         "googleSheetsOptions": { # [Optional] Additional options if sourceFormat is set to GOOGLE_SHEETS.
-          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N > 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
-          "range": "A String", # [Beta] [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
+          "skipLeadingRows": "A String", # [Optional] The number of rows at the top of a sheet that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows that should be skipped. When autodetect is on, behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N &gt; 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.
+          "range": "A String", # [Optional] Range of a sheet to query from. Only used when non-empty. Typical format: sheet_name!top_left_cell_id:bottom_right_cell_id For example: sheet1!A1:B20
         },
         "schema": { # [Optional] The schema for the data. Schema is required for CSV and JSON formats. Schema is disallowed for Google Cloud Bigtable, Cloud Datastore backups, and Avro formats.
           "fields": [ # Describes the fields in a table.
             {
-              "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
+              "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
               "fields": [ # [Optional] Describes the nested schema fields if the type property is set to RECORD.
                 # Object with schema name: TableFieldSchema
               ],
+              "policyTags": {
+                "names": [ # A list of category resource names. For example, "projects/1/location/eu/taxonomies/2/policyTags/3". At most 1 policy tag is allowed.
+                  "A String",
+                ],
+              },
               "mode": "A String", # [Optional] The field mode. Possible values include NULLABLE, REQUIRED and REPEATED. The default value is NULLABLE.
               "type": "A String", # [Required] The field data type. Possible values include STRING, BYTES, INTEGER, INT64 (same as INTEGER), FLOAT, FLOAT64 (same as FLOAT), BOOLEAN, BOOL (same as BOOLEAN), TIMESTAMP, DATE, TIME, DATETIME, RECORD (where RECORD indicates that the field contains a nested schema) or STRUCT (same as RECORD).
               "categories": { # [Optional] The categories attached to this field, used for field-level access control.
@@ -1504,7 +1617,7 @@ Returns:
                   "A String",
                 ],
               },
-              "name": "A String", # [Required] The field name. The name must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_), and must start with a letter or underscore. The maximum length is 128 characters.
+              "description": "A String", # [Optional] The field description. The maximum length is 1,024 characters.
             },
           ],
         },

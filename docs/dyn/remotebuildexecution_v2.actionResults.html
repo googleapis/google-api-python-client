@@ -78,7 +78,7 @@ h1, h2, h3 {
   <code><a href="#get">get(instanceName, hash, sizeBytes, inlineStdout=None, inlineOutputFiles=None, inlineStderr=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Retrieve a cached execution result.</p>
 <p class="toc_element">
-  <code><a href="#update">update(instanceName, hash, sizeBytes, body, resultsCachePolicy_priority=None, x__xgafv=None)</a></code></p>
+  <code><a href="#update">update(instanceName, hash, sizeBytes, body=None, resultsCachePolicy_priority=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Upload a new execution result.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -138,16 +138,20 @@ Returns:
           # may be links to other output files, or input files, or even absolute paths
           # outside of the working directory, if the server supports
           # SymlinkAbsolutePathStrategy.ALLOWED.
-          # For each output file requested in the `output_files` field of the Action,
-          # if the corresponding file existed after
+          # For each output file requested in the `output_files` or `output_paths`
+          # field of the Action, if the corresponding file existed after
           # the action completed, a single entry will be present either in this field,
           # or in the `output_files` field, if the file was not a symbolic link.
           #
-          # If an output symbolic link of the same name was found, but its target
-          # type was not a regular file, the server will return a FAILED_PRECONDITION.
+          # If an output symbolic link of the same name as listed in `output_files` of
+          # the Command was found, but its target type was not a regular file, the
+          # server will return a FAILED_PRECONDITION.
           # If the action does not produce the requested output, then that output
           # will be omitted from the list. The server is free to arrange the output
           # list as desired; clients MUST NOT assume that the output list is sorted.
+          #
+          # DEPRECATED as of v2.1. Servers that wish to be compatible with v2.0 API
+          # should still populate this field in addition to `output_symlinks`.
         { # An `OutputSymlink` is similar to a
             # Symlink, but it is used as an
             # output in an `ActionResult`.
@@ -156,6 +160,17 @@ Returns:
           "path": "A String", # The full path of the symlink relative to the working directory, including the
               # filename. The path separator is a forward slash `/`. Since this is a
               # relative path, it MUST NOT begin with a leading forward slash.
+          "nodeProperties": [ # The supported node properties of the OutputSymlink, if requested by the
+              # Action.
+            { # A single property for FileNodes,
+                # DirectoryNodes, and
+                # SymlinkNodes. The server is
+                # responsible for specifying the property `name`s that it accepts. If
+                # permitted by the server, the same `name` may occur multiple times.
+              "name": "A String", # The property name.
+              "value": "A String", # The property value.
+            },
+          ],
           "target": "A String", # The target path of the symlink. The path separator is a forward slash `/`.
               # The target path can be relative to the parent directory of the symlink or
               # it can be an absolute path starting with `/`. Support for absolute paths
@@ -167,8 +182,7 @@ Returns:
       "stderrDigest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest for a blob containing the standard error of the action, which
           # can be retrieved from the
           # ContentAddressableStorage.
-          # and its hash. The hash algorithm to use is defined by the server, but servers
-          # SHOULD use SHA-256.
+          # and its hash. The hash algorithm to use is defined by the server.
           #
           # The size is considered to be an integral part of the digest and cannot be
           # separated. That is, even if the `hash` field is correctly specified but
@@ -215,8 +229,7 @@ Returns:
       "stdoutDigest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest for a blob containing the standard output of the action, which
           # can be retrieved from the
           # ContentAddressableStorage.
-          # and its hash. The hash algorithm to use is defined by the server, but servers
-          # SHOULD use SHA-256.
+          # and its hash. The hash algorithm to use is defined by the server.
           #
           # The size is considered to be an integral part of the digest and cannot be
           # separated. That is, even if the `hash` field is correctly specified but
@@ -250,13 +263,54 @@ Returns:
         "hash": "A String", # The hash. In the case of SHA-256, it will always be a lowercase hex string
             # exactly 64 characters long.
       },
-      "outputFiles": [ # The output files of the action. For each output file requested in the
-          # `output_files` field of the Action, if the corresponding file existed after
-          # the action completed, a single entry will be present either in this field,
-          # or the `output_file_symlinks` field if the file was a symbolic link to
-          # another file.
+      "outputSymlinks": [ # New in v2.1: this field will only be populated if the command
+          # `output_paths` field was used, and not the pre v2.1 `output_files` or
+          # `output_directories` fields.
+          # The output paths of the action that are symbolic links to other paths. Those
+          # may be links to other outputs, or inputs, or even absolute paths
+          # outside of the working directory, if the server supports
+          # SymlinkAbsolutePathStrategy.ALLOWED.
+          # A single entry for each output requested in `output_paths`
+          # field of the Action, if the corresponding path existed after
+          # the action completed and was a symbolic link.
           #
-          # If an output of the same name was found, but was a directory rather
+          # If the action does not produce a requested output, then that output
+          # will be omitted from the list. The server is free to arrange the output
+          # list as desired; clients MUST NOT assume that the output list is sorted.
+        { # An `OutputSymlink` is similar to a
+            # Symlink, but it is used as an
+            # output in an `ActionResult`.
+            #
+            # `OutputSymlink` is binary-compatible with `SymlinkNode`.
+          "path": "A String", # The full path of the symlink relative to the working directory, including the
+              # filename. The path separator is a forward slash `/`. Since this is a
+              # relative path, it MUST NOT begin with a leading forward slash.
+          "nodeProperties": [ # The supported node properties of the OutputSymlink, if requested by the
+              # Action.
+            { # A single property for FileNodes,
+                # DirectoryNodes, and
+                # SymlinkNodes. The server is
+                # responsible for specifying the property `name`s that it accepts. If
+                # permitted by the server, the same `name` may occur multiple times.
+              "name": "A String", # The property name.
+              "value": "A String", # The property value.
+            },
+          ],
+          "target": "A String", # The target path of the symlink. The path separator is a forward slash `/`.
+              # The target path can be relative to the parent directory of the symlink or
+              # it can be an absolute path starting with `/`. Support for absolute paths
+              # can be checked using the Capabilities
+              # API. The canonical form forbids the substrings `/./` and `//` in the target
+              # path. `..` components are allowed anywhere in the target path.
+        },
+      ],
+      "outputFiles": [ # The output files of the action. For each output file requested in the
+          # `output_files` or `output_paths` field of the Action, if the corresponding
+          # file existed after the action completed, a single entry will be present
+          # either in this field, or the `output_file_symlinks` field if the file was
+          # a symbolic link to another file (`output_symlinks` field after v2.1).
+          #
+          # If an output listed in `output_files` was found, but was a directory rather
           # than a regular file, the server will return a FAILED_PRECONDITION.
           # If the action does not produce the requested output, then that output
           # will be omitted from the list. The server is free to arrange the output
@@ -269,14 +323,18 @@ Returns:
               # filename. The path separator is a forward slash `/`. Since this is a
               # relative path, it MUST NOT begin with a leading forward slash.
           "isExecutable": True or False, # True if file is executable, false otherwise.
-          "contents": "A String", # The contents of the file if inlining was requested. The server SHOULD NOT inline
-              # file contents unless requested by the client in the
-              # GetActionResultRequest
-              # message. The server MAY omit inlining, even if requested, and MUST do so if inlining
-              # would cause the response to exceed message size limits.
+          "nodeProperties": [ # The supported node properties of the OutputFile, if requested by the Action.
+            { # A single property for FileNodes,
+                # DirectoryNodes, and
+                # SymlinkNodes. The server is
+                # responsible for specifying the property `name`s that it accepts. If
+                # permitted by the server, the same `name` may occur multiple times.
+              "name": "A String", # The property name.
+              "value": "A String", # The property value.
+            },
+          ],
           "digest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest of the file's content.
-              # and its hash. The hash algorithm to use is defined by the server, but servers
-              # SHOULD use SHA-256.
+              # and its hash. The hash algorithm to use is defined by the server.
               #
               # The size is considered to be an integral part of the digest and cannot be
               # separated. That is, even if the `hash` field is correctly specified but
@@ -310,6 +368,11 @@ Returns:
             "hash": "A String", # The hash. In the case of SHA-256, it will always be a lowercase hex string
                 # exactly 64 characters long.
           },
+          "contents": "A String", # The contents of the file if inlining was requested. The server SHOULD NOT inline
+              # file contents unless requested by the client in the
+              # GetActionResultRequest
+              # message. The server MAY omit inlining, even if requested, and MUST do so if inlining
+              # would cause the response to exceed message size limits.
         },
       ],
       "outputDirectorySymlinks": [ # The output directories of the action that are symbolic links to other
@@ -327,6 +390,9 @@ Returns:
           # If the action does not produce the requested output, then that output
           # will be omitted from the list. The server is free to arrange the output
           # list as desired; clients MUST NOT assume that the output list is sorted.
+          #
+          # DEPRECATED as of v2.1. Servers that wish to be compatible with v2.0 API
+          # should still populate this field in addition to `output_symlinks`.
         { # An `OutputSymlink` is similar to a
             # Symlink, but it is used as an
             # output in an `ActionResult`.
@@ -335,6 +401,17 @@ Returns:
           "path": "A String", # The full path of the symlink relative to the working directory, including the
               # filename. The path separator is a forward slash `/`. Since this is a
               # relative path, it MUST NOT begin with a leading forward slash.
+          "nodeProperties": [ # The supported node properties of the OutputSymlink, if requested by the
+              # Action.
+            { # A single property for FileNodes,
+                # DirectoryNodes, and
+                # SymlinkNodes. The server is
+                # responsible for specifying the property `name`s that it accepts. If
+                # permitted by the server, the same `name` may occur multiple times.
+              "name": "A String", # The property name.
+              "value": "A String", # The property value.
+            },
+          ],
           "target": "A String", # The target path of the symlink. The path separator is a forward slash `/`.
               # The target path can be relative to the parent directory of the symlink or
               # it can be an absolute path starting with `/`. Support for absolute paths
@@ -344,9 +421,9 @@ Returns:
         },
       ],
       "outputDirectories": [ # The output directories of the action. For each output directory requested
-          # in the `output_directories` field of the Action, if the corresponding
-          # directory existed after the action completed, a single entry will be
-          # present in the output list, which will contain the digest of a
+          # in the `output_directories` or `output_paths` field of the Action, if the
+          # corresponding directory existed after the action completed, a single entry
+          # will be present in the output list, which will contain the digest of a
           # Tree message containing the
           # directory tree, and the path equal exactly to the corresponding Action
           # output_directories member.
@@ -402,7 +479,8 @@ Returns:
           #   }
           # }
           # ```
-          # If an output of the same name was found, but was not a directory, the
+          # If an output of the same name as listed in `output_files` of
+          # the Command was found in `output_directories`, but was not a directory, the
           # server will return a FAILED_PRECONDITION.
         { # An `OutputDirectory` is the output in an `ActionResult` corresponding to a
             # directory's full contents rather than a single file.
@@ -413,8 +491,7 @@ Returns:
           "treeDigest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest of the encoded
               # Tree proto containing the
               # directory's contents.
-              # and its hash. The hash algorithm to use is defined by the server, but servers
-              # SHOULD use SHA-256.
+              # and its hash. The hash algorithm to use is defined by the server.
               #
               # The size is considered to be an integral part of the digest and cannot be
               # separated. That is, even if the `hash` field is correctly specified but
@@ -455,7 +532,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="update">update(instanceName, hash, sizeBytes, body, resultsCachePolicy_priority=None, x__xgafv=None)</code>
+    <code class="details" id="update">update(instanceName, hash, sizeBytes, body=None, resultsCachePolicy_priority=None, x__xgafv=None)</code>
   <pre>Upload a new execution result.
 
 In order to allow the server to perform access control based on the type of
@@ -482,7 +559,7 @@ omitted. (required)
   hash: string, The hash. In the case of SHA-256, it will always be a lowercase hex string
 exactly 64 characters long. (required)
   sizeBytes: string, The size of the blob, in bytes. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # An ActionResult represents the result of an
@@ -503,16 +580,20 @@ exactly 64 characters long. (required)
         # may be links to other output files, or input files, or even absolute paths
         # outside of the working directory, if the server supports
         # SymlinkAbsolutePathStrategy.ALLOWED.
-        # For each output file requested in the `output_files` field of the Action,
-        # if the corresponding file existed after
+        # For each output file requested in the `output_files` or `output_paths`
+        # field of the Action, if the corresponding file existed after
         # the action completed, a single entry will be present either in this field,
         # or in the `output_files` field, if the file was not a symbolic link.
         # 
-        # If an output symbolic link of the same name was found, but its target
-        # type was not a regular file, the server will return a FAILED_PRECONDITION.
+        # If an output symbolic link of the same name as listed in `output_files` of
+        # the Command was found, but its target type was not a regular file, the
+        # server will return a FAILED_PRECONDITION.
         # If the action does not produce the requested output, then that output
         # will be omitted from the list. The server is free to arrange the output
         # list as desired; clients MUST NOT assume that the output list is sorted.
+        # 
+        # DEPRECATED as of v2.1. Servers that wish to be compatible with v2.0 API
+        # should still populate this field in addition to `output_symlinks`.
       { # An `OutputSymlink` is similar to a
           # Symlink, but it is used as an
           # output in an `ActionResult`.
@@ -521,6 +602,17 @@ exactly 64 characters long. (required)
         "path": "A String", # The full path of the symlink relative to the working directory, including the
             # filename. The path separator is a forward slash `/`. Since this is a
             # relative path, it MUST NOT begin with a leading forward slash.
+        "nodeProperties": [ # The supported node properties of the OutputSymlink, if requested by the
+            # Action.
+          { # A single property for FileNodes,
+              # DirectoryNodes, and
+              # SymlinkNodes. The server is
+              # responsible for specifying the property `name`s that it accepts. If
+              # permitted by the server, the same `name` may occur multiple times.
+            "name": "A String", # The property name.
+            "value": "A String", # The property value.
+          },
+        ],
         "target": "A String", # The target path of the symlink. The path separator is a forward slash `/`.
             # The target path can be relative to the parent directory of the symlink or
             # it can be an absolute path starting with `/`. Support for absolute paths
@@ -532,8 +624,7 @@ exactly 64 characters long. (required)
     "stderrDigest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest for a blob containing the standard error of the action, which
         # can be retrieved from the
         # ContentAddressableStorage.
-        # and its hash. The hash algorithm to use is defined by the server, but servers
-        # SHOULD use SHA-256.
+        # and its hash. The hash algorithm to use is defined by the server.
         #
         # The size is considered to be an integral part of the digest and cannot be
         # separated. That is, even if the `hash` field is correctly specified but
@@ -580,8 +671,7 @@ exactly 64 characters long. (required)
     "stdoutDigest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest for a blob containing the standard output of the action, which
         # can be retrieved from the
         # ContentAddressableStorage.
-        # and its hash. The hash algorithm to use is defined by the server, but servers
-        # SHOULD use SHA-256.
+        # and its hash. The hash algorithm to use is defined by the server.
         #
         # The size is considered to be an integral part of the digest and cannot be
         # separated. That is, even if the `hash` field is correctly specified but
@@ -615,13 +705,54 @@ exactly 64 characters long. (required)
       "hash": "A String", # The hash. In the case of SHA-256, it will always be a lowercase hex string
           # exactly 64 characters long.
     },
-    "outputFiles": [ # The output files of the action. For each output file requested in the
-        # `output_files` field of the Action, if the corresponding file existed after
-        # the action completed, a single entry will be present either in this field,
-        # or the `output_file_symlinks` field if the file was a symbolic link to
-        # another file.
+    "outputSymlinks": [ # New in v2.1: this field will only be populated if the command
+        # `output_paths` field was used, and not the pre v2.1 `output_files` or
+        # `output_directories` fields.
+        # The output paths of the action that are symbolic links to other paths. Those
+        # may be links to other outputs, or inputs, or even absolute paths
+        # outside of the working directory, if the server supports
+        # SymlinkAbsolutePathStrategy.ALLOWED.
+        # A single entry for each output requested in `output_paths`
+        # field of the Action, if the corresponding path existed after
+        # the action completed and was a symbolic link.
         # 
-        # If an output of the same name was found, but was a directory rather
+        # If the action does not produce a requested output, then that output
+        # will be omitted from the list. The server is free to arrange the output
+        # list as desired; clients MUST NOT assume that the output list is sorted.
+      { # An `OutputSymlink` is similar to a
+          # Symlink, but it is used as an
+          # output in an `ActionResult`.
+          #
+          # `OutputSymlink` is binary-compatible with `SymlinkNode`.
+        "path": "A String", # The full path of the symlink relative to the working directory, including the
+            # filename. The path separator is a forward slash `/`. Since this is a
+            # relative path, it MUST NOT begin with a leading forward slash.
+        "nodeProperties": [ # The supported node properties of the OutputSymlink, if requested by the
+            # Action.
+          { # A single property for FileNodes,
+              # DirectoryNodes, and
+              # SymlinkNodes. The server is
+              # responsible for specifying the property `name`s that it accepts. If
+              # permitted by the server, the same `name` may occur multiple times.
+            "name": "A String", # The property name.
+            "value": "A String", # The property value.
+          },
+        ],
+        "target": "A String", # The target path of the symlink. The path separator is a forward slash `/`.
+            # The target path can be relative to the parent directory of the symlink or
+            # it can be an absolute path starting with `/`. Support for absolute paths
+            # can be checked using the Capabilities
+            # API. The canonical form forbids the substrings `/./` and `//` in the target
+            # path. `..` components are allowed anywhere in the target path.
+      },
+    ],
+    "outputFiles": [ # The output files of the action. For each output file requested in the
+        # `output_files` or `output_paths` field of the Action, if the corresponding
+        # file existed after the action completed, a single entry will be present
+        # either in this field, or the `output_file_symlinks` field if the file was
+        # a symbolic link to another file (`output_symlinks` field after v2.1).
+        # 
+        # If an output listed in `output_files` was found, but was a directory rather
         # than a regular file, the server will return a FAILED_PRECONDITION.
         # If the action does not produce the requested output, then that output
         # will be omitted from the list. The server is free to arrange the output
@@ -634,14 +765,18 @@ exactly 64 characters long. (required)
             # filename. The path separator is a forward slash `/`. Since this is a
             # relative path, it MUST NOT begin with a leading forward slash.
         "isExecutable": True or False, # True if file is executable, false otherwise.
-        "contents": "A String", # The contents of the file if inlining was requested. The server SHOULD NOT inline
-            # file contents unless requested by the client in the
-            # GetActionResultRequest
-            # message. The server MAY omit inlining, even if requested, and MUST do so if inlining
-            # would cause the response to exceed message size limits.
+        "nodeProperties": [ # The supported node properties of the OutputFile, if requested by the Action.
+          { # A single property for FileNodes,
+              # DirectoryNodes, and
+              # SymlinkNodes. The server is
+              # responsible for specifying the property `name`s that it accepts. If
+              # permitted by the server, the same `name` may occur multiple times.
+            "name": "A String", # The property name.
+            "value": "A String", # The property value.
+          },
+        ],
         "digest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest of the file's content.
-            # and its hash. The hash algorithm to use is defined by the server, but servers
-            # SHOULD use SHA-256.
+            # and its hash. The hash algorithm to use is defined by the server.
             #
             # The size is considered to be an integral part of the digest and cannot be
             # separated. That is, even if the `hash` field is correctly specified but
@@ -675,6 +810,11 @@ exactly 64 characters long. (required)
           "hash": "A String", # The hash. In the case of SHA-256, it will always be a lowercase hex string
               # exactly 64 characters long.
         },
+        "contents": "A String", # The contents of the file if inlining was requested. The server SHOULD NOT inline
+            # file contents unless requested by the client in the
+            # GetActionResultRequest
+            # message. The server MAY omit inlining, even if requested, and MUST do so if inlining
+            # would cause the response to exceed message size limits.
       },
     ],
     "outputDirectorySymlinks": [ # The output directories of the action that are symbolic links to other
@@ -692,6 +832,9 @@ exactly 64 characters long. (required)
         # If the action does not produce the requested output, then that output
         # will be omitted from the list. The server is free to arrange the output
         # list as desired; clients MUST NOT assume that the output list is sorted.
+        # 
+        # DEPRECATED as of v2.1. Servers that wish to be compatible with v2.0 API
+        # should still populate this field in addition to `output_symlinks`.
       { # An `OutputSymlink` is similar to a
           # Symlink, but it is used as an
           # output in an `ActionResult`.
@@ -700,6 +843,17 @@ exactly 64 characters long. (required)
         "path": "A String", # The full path of the symlink relative to the working directory, including the
             # filename. The path separator is a forward slash `/`. Since this is a
             # relative path, it MUST NOT begin with a leading forward slash.
+        "nodeProperties": [ # The supported node properties of the OutputSymlink, if requested by the
+            # Action.
+          { # A single property for FileNodes,
+              # DirectoryNodes, and
+              # SymlinkNodes. The server is
+              # responsible for specifying the property `name`s that it accepts. If
+              # permitted by the server, the same `name` may occur multiple times.
+            "name": "A String", # The property name.
+            "value": "A String", # The property value.
+          },
+        ],
         "target": "A String", # The target path of the symlink. The path separator is a forward slash `/`.
             # The target path can be relative to the parent directory of the symlink or
             # it can be an absolute path starting with `/`. Support for absolute paths
@@ -709,9 +863,9 @@ exactly 64 characters long. (required)
       },
     ],
     "outputDirectories": [ # The output directories of the action. For each output directory requested
-        # in the `output_directories` field of the Action, if the corresponding
-        # directory existed after the action completed, a single entry will be
-        # present in the output list, which will contain the digest of a
+        # in the `output_directories` or `output_paths` field of the Action, if the
+        # corresponding directory existed after the action completed, a single entry
+        # will be present in the output list, which will contain the digest of a
         # Tree message containing the
         # directory tree, and the path equal exactly to the corresponding Action
         # output_directories member.
@@ -767,7 +921,8 @@ exactly 64 characters long. (required)
         #   }
         # }
         # ```
-        # If an output of the same name was found, but was not a directory, the
+        # If an output of the same name as listed in `output_files` of
+        # the Command was found in `output_directories`, but was not a directory, the
         # server will return a FAILED_PRECONDITION.
       { # An `OutputDirectory` is the output in an `ActionResult` corresponding to a
           # directory's full contents rather than a single file.
@@ -778,8 +933,7 @@ exactly 64 characters long. (required)
         "treeDigest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest of the encoded
             # Tree proto containing the
             # directory's contents.
-            # and its hash. The hash algorithm to use is defined by the server, but servers
-            # SHOULD use SHA-256.
+            # and its hash. The hash algorithm to use is defined by the server.
             #
             # The size is considered to be an integral part of the digest and cannot be
             # separated. That is, even if the `hash` field is correctly specified but
@@ -852,16 +1006,20 @@ Returns:
           # may be links to other output files, or input files, or even absolute paths
           # outside of the working directory, if the server supports
           # SymlinkAbsolutePathStrategy.ALLOWED.
-          # For each output file requested in the `output_files` field of the Action,
-          # if the corresponding file existed after
+          # For each output file requested in the `output_files` or `output_paths`
+          # field of the Action, if the corresponding file existed after
           # the action completed, a single entry will be present either in this field,
           # or in the `output_files` field, if the file was not a symbolic link.
           #
-          # If an output symbolic link of the same name was found, but its target
-          # type was not a regular file, the server will return a FAILED_PRECONDITION.
+          # If an output symbolic link of the same name as listed in `output_files` of
+          # the Command was found, but its target type was not a regular file, the
+          # server will return a FAILED_PRECONDITION.
           # If the action does not produce the requested output, then that output
           # will be omitted from the list. The server is free to arrange the output
           # list as desired; clients MUST NOT assume that the output list is sorted.
+          #
+          # DEPRECATED as of v2.1. Servers that wish to be compatible with v2.0 API
+          # should still populate this field in addition to `output_symlinks`.
         { # An `OutputSymlink` is similar to a
             # Symlink, but it is used as an
             # output in an `ActionResult`.
@@ -870,6 +1028,17 @@ Returns:
           "path": "A String", # The full path of the symlink relative to the working directory, including the
               # filename. The path separator is a forward slash `/`. Since this is a
               # relative path, it MUST NOT begin with a leading forward slash.
+          "nodeProperties": [ # The supported node properties of the OutputSymlink, if requested by the
+              # Action.
+            { # A single property for FileNodes,
+                # DirectoryNodes, and
+                # SymlinkNodes. The server is
+                # responsible for specifying the property `name`s that it accepts. If
+                # permitted by the server, the same `name` may occur multiple times.
+              "name": "A String", # The property name.
+              "value": "A String", # The property value.
+            },
+          ],
           "target": "A String", # The target path of the symlink. The path separator is a forward slash `/`.
               # The target path can be relative to the parent directory of the symlink or
               # it can be an absolute path starting with `/`. Support for absolute paths
@@ -881,8 +1050,7 @@ Returns:
       "stderrDigest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest for a blob containing the standard error of the action, which
           # can be retrieved from the
           # ContentAddressableStorage.
-          # and its hash. The hash algorithm to use is defined by the server, but servers
-          # SHOULD use SHA-256.
+          # and its hash. The hash algorithm to use is defined by the server.
           #
           # The size is considered to be an integral part of the digest and cannot be
           # separated. That is, even if the `hash` field is correctly specified but
@@ -929,8 +1097,7 @@ Returns:
       "stdoutDigest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest for a blob containing the standard output of the action, which
           # can be retrieved from the
           # ContentAddressableStorage.
-          # and its hash. The hash algorithm to use is defined by the server, but servers
-          # SHOULD use SHA-256.
+          # and its hash. The hash algorithm to use is defined by the server.
           #
           # The size is considered to be an integral part of the digest and cannot be
           # separated. That is, even if the `hash` field is correctly specified but
@@ -964,13 +1131,54 @@ Returns:
         "hash": "A String", # The hash. In the case of SHA-256, it will always be a lowercase hex string
             # exactly 64 characters long.
       },
-      "outputFiles": [ # The output files of the action. For each output file requested in the
-          # `output_files` field of the Action, if the corresponding file existed after
-          # the action completed, a single entry will be present either in this field,
-          # or the `output_file_symlinks` field if the file was a symbolic link to
-          # another file.
+      "outputSymlinks": [ # New in v2.1: this field will only be populated if the command
+          # `output_paths` field was used, and not the pre v2.1 `output_files` or
+          # `output_directories` fields.
+          # The output paths of the action that are symbolic links to other paths. Those
+          # may be links to other outputs, or inputs, or even absolute paths
+          # outside of the working directory, if the server supports
+          # SymlinkAbsolutePathStrategy.ALLOWED.
+          # A single entry for each output requested in `output_paths`
+          # field of the Action, if the corresponding path existed after
+          # the action completed and was a symbolic link.
           #
-          # If an output of the same name was found, but was a directory rather
+          # If the action does not produce a requested output, then that output
+          # will be omitted from the list. The server is free to arrange the output
+          # list as desired; clients MUST NOT assume that the output list is sorted.
+        { # An `OutputSymlink` is similar to a
+            # Symlink, but it is used as an
+            # output in an `ActionResult`.
+            #
+            # `OutputSymlink` is binary-compatible with `SymlinkNode`.
+          "path": "A String", # The full path of the symlink relative to the working directory, including the
+              # filename. The path separator is a forward slash `/`. Since this is a
+              # relative path, it MUST NOT begin with a leading forward slash.
+          "nodeProperties": [ # The supported node properties of the OutputSymlink, if requested by the
+              # Action.
+            { # A single property for FileNodes,
+                # DirectoryNodes, and
+                # SymlinkNodes. The server is
+                # responsible for specifying the property `name`s that it accepts. If
+                # permitted by the server, the same `name` may occur multiple times.
+              "name": "A String", # The property name.
+              "value": "A String", # The property value.
+            },
+          ],
+          "target": "A String", # The target path of the symlink. The path separator is a forward slash `/`.
+              # The target path can be relative to the parent directory of the symlink or
+              # it can be an absolute path starting with `/`. Support for absolute paths
+              # can be checked using the Capabilities
+              # API. The canonical form forbids the substrings `/./` and `//` in the target
+              # path. `..` components are allowed anywhere in the target path.
+        },
+      ],
+      "outputFiles": [ # The output files of the action. For each output file requested in the
+          # `output_files` or `output_paths` field of the Action, if the corresponding
+          # file existed after the action completed, a single entry will be present
+          # either in this field, or the `output_file_symlinks` field if the file was
+          # a symbolic link to another file (`output_symlinks` field after v2.1).
+          #
+          # If an output listed in `output_files` was found, but was a directory rather
           # than a regular file, the server will return a FAILED_PRECONDITION.
           # If the action does not produce the requested output, then that output
           # will be omitted from the list. The server is free to arrange the output
@@ -983,14 +1191,18 @@ Returns:
               # filename. The path separator is a forward slash `/`. Since this is a
               # relative path, it MUST NOT begin with a leading forward slash.
           "isExecutable": True or False, # True if file is executable, false otherwise.
-          "contents": "A String", # The contents of the file if inlining was requested. The server SHOULD NOT inline
-              # file contents unless requested by the client in the
-              # GetActionResultRequest
-              # message. The server MAY omit inlining, even if requested, and MUST do so if inlining
-              # would cause the response to exceed message size limits.
+          "nodeProperties": [ # The supported node properties of the OutputFile, if requested by the Action.
+            { # A single property for FileNodes,
+                # DirectoryNodes, and
+                # SymlinkNodes. The server is
+                # responsible for specifying the property `name`s that it accepts. If
+                # permitted by the server, the same `name` may occur multiple times.
+              "name": "A String", # The property name.
+              "value": "A String", # The property value.
+            },
+          ],
           "digest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest of the file's content.
-              # and its hash. The hash algorithm to use is defined by the server, but servers
-              # SHOULD use SHA-256.
+              # and its hash. The hash algorithm to use is defined by the server.
               #
               # The size is considered to be an integral part of the digest and cannot be
               # separated. That is, even if the `hash` field is correctly specified but
@@ -1024,6 +1236,11 @@ Returns:
             "hash": "A String", # The hash. In the case of SHA-256, it will always be a lowercase hex string
                 # exactly 64 characters long.
           },
+          "contents": "A String", # The contents of the file if inlining was requested. The server SHOULD NOT inline
+              # file contents unless requested by the client in the
+              # GetActionResultRequest
+              # message. The server MAY omit inlining, even if requested, and MUST do so if inlining
+              # would cause the response to exceed message size limits.
         },
       ],
       "outputDirectorySymlinks": [ # The output directories of the action that are symbolic links to other
@@ -1041,6 +1258,9 @@ Returns:
           # If the action does not produce the requested output, then that output
           # will be omitted from the list. The server is free to arrange the output
           # list as desired; clients MUST NOT assume that the output list is sorted.
+          #
+          # DEPRECATED as of v2.1. Servers that wish to be compatible with v2.0 API
+          # should still populate this field in addition to `output_symlinks`.
         { # An `OutputSymlink` is similar to a
             # Symlink, but it is used as an
             # output in an `ActionResult`.
@@ -1049,6 +1269,17 @@ Returns:
           "path": "A String", # The full path of the symlink relative to the working directory, including the
               # filename. The path separator is a forward slash `/`. Since this is a
               # relative path, it MUST NOT begin with a leading forward slash.
+          "nodeProperties": [ # The supported node properties of the OutputSymlink, if requested by the
+              # Action.
+            { # A single property for FileNodes,
+                # DirectoryNodes, and
+                # SymlinkNodes. The server is
+                # responsible for specifying the property `name`s that it accepts. If
+                # permitted by the server, the same `name` may occur multiple times.
+              "name": "A String", # The property name.
+              "value": "A String", # The property value.
+            },
+          ],
           "target": "A String", # The target path of the symlink. The path separator is a forward slash `/`.
               # The target path can be relative to the parent directory of the symlink or
               # it can be an absolute path starting with `/`. Support for absolute paths
@@ -1058,9 +1289,9 @@ Returns:
         },
       ],
       "outputDirectories": [ # The output directories of the action. For each output directory requested
-          # in the `output_directories` field of the Action, if the corresponding
-          # directory existed after the action completed, a single entry will be
-          # present in the output list, which will contain the digest of a
+          # in the `output_directories` or `output_paths` field of the Action, if the
+          # corresponding directory existed after the action completed, a single entry
+          # will be present in the output list, which will contain the digest of a
           # Tree message containing the
           # directory tree, and the path equal exactly to the corresponding Action
           # output_directories member.
@@ -1116,7 +1347,8 @@ Returns:
           #   }
           # }
           # ```
-          # If an output of the same name was found, but was not a directory, the
+          # If an output of the same name as listed in `output_files` of
+          # the Command was found in `output_directories`, but was not a directory, the
           # server will return a FAILED_PRECONDITION.
         { # An `OutputDirectory` is the output in an `ActionResult` corresponding to a
             # directory's full contents rather than a single file.
@@ -1127,8 +1359,7 @@ Returns:
           "treeDigest": { # A content digest. A digest for a given blob consists of the size of the blob # The digest of the encoded
               # Tree proto containing the
               # directory's contents.
-              # and its hash. The hash algorithm to use is defined by the server, but servers
-              # SHOULD use SHA-256.
+              # and its hash. The hash algorithm to use is defined by the server.
               #
               # The size is considered to be an integral part of the digest and cannot be
               # separated. That is, even if the `hash` field is correctly specified but
