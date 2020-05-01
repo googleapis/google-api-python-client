@@ -81,10 +81,10 @@ h1, h2, h3 {
   <code><a href="#get">get(bucket, projection=None, ifMetagenerationMatch=None, userProject=None, provisionalUserProject=None, ifMetagenerationNotMatch=None)</a></code></p>
 <p class="firstline">Returns metadata for the specified bucket.</p>
 <p class="toc_element">
-  <code><a href="#getIamPolicy">getIamPolicy(bucket, userProject=None, provisionalUserProject=None)</a></code></p>
+  <code><a href="#getIamPolicy">getIamPolicy(bucket, userProject=None, optionsRequestedPolicyVersion=None, provisionalUserProject=None)</a></code></p>
 <p class="firstline">Returns an IAM policy for the specified bucket.</p>
 <p class="toc_element">
-  <code><a href="#insert">insert(project, body, projection=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None)</a></code></p>
+  <code><a href="#insert">insert(project, body=None, projection=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None)</a></code></p>
 <p class="firstline">Creates a new bucket.</p>
 <p class="toc_element">
   <code><a href="#list">list(project, projection=None, pageToken=None, userProject=None, prefix=None, maxResults=None, provisionalUserProject=None)</a></code></p>
@@ -96,16 +96,16 @@ h1, h2, h3 {
   <code><a href="#lockRetentionPolicy">lockRetentionPolicy(bucket, ifMetagenerationMatch, userProject=None, provisionalUserProject=None)</a></code></p>
 <p class="firstline">Locks retention policy on a bucket.</p>
 <p class="toc_element">
-  <code><a href="#patch">patch(bucket, body, projection=None, ifMetagenerationMatch=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None, ifMetagenerationNotMatch=None)</a></code></p>
+  <code><a href="#patch">patch(bucket, body=None, projection=None, ifMetagenerationMatch=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None, ifMetagenerationNotMatch=None)</a></code></p>
 <p class="firstline">Patches a bucket. Changes to the bucket will be readable immediately after writing, but configuration changes may take time to propagate.</p>
 <p class="toc_element">
-  <code><a href="#setIamPolicy">setIamPolicy(bucket, body, userProject=None, provisionalUserProject=None)</a></code></p>
+  <code><a href="#setIamPolicy">setIamPolicy(bucket, body=None, userProject=None, provisionalUserProject=None)</a></code></p>
 <p class="firstline">Updates an IAM policy for the specified bucket.</p>
 <p class="toc_element">
   <code><a href="#testIamPermissions">testIamPermissions(bucket, permissions, userProject=None, provisionalUserProject=None)</a></code></p>
 <p class="firstline">Tests a set of permissions on the given bucket to see which, if any, are held by the caller.</p>
 <p class="toc_element">
-  <code><a href="#update">update(bucket, body, projection=None, ifMetagenerationMatch=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None, ifMetagenerationNotMatch=None)</a></code></p>
+  <code><a href="#update">update(bucket, body=None, projection=None, ifMetagenerationMatch=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None, ifMetagenerationNotMatch=None)</a></code></p>
 <p class="firstline">Updates a bucket. Changes to the bucket will be readable immediately after writing, but configuration changes may take time to propagate.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -158,6 +158,9 @@ Returns:
       "encryption": { # Encryption configuration for a bucket.
         "defaultKmsKeyName": "A String", # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
       },
+      "zoneAffinity": [ # The zone or zones from which the bucket is intended to use zonal quota. Requests for data from outside the specified affinities are still allowed but won't be able to use zonal quota. The zone or zones need to be within the bucket location otherwise the requests will fail with a 400 Bad Request response.
+        "A String",
+      ],
       "projectNumber": "A String", # The project number of the project the bucket belongs to.
       "etag": "A String", # HTTP 1.1 Entity tag for the bucket.
       "location": "A String", # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer's guide for the authoritative list.
@@ -221,10 +224,12 @@ Returns:
               "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
             },
             "condition": { # The condition(s) under which the action will be taken.
-              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+              "daysSinceCustomTime": 42, # Number of days elapsed since the user-specified timestamp set on an object. The condition is satisfied if the days elapsed is at least this number. If no custom timestamp is specified on an object, the condition does not apply.
+              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, ARCHIVE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
                 "A String",
               ],
               "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+              "customTimeBefore": "A String", # A timestamp in RFC 3339 format. This condition is satisfied when the custom time on an object is before this timestamp.
               "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
               "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
               "matchesPattern": "A String", # A regular expression that satisfies the RE2 syntax. This condition is satisfied when the name of the object matches the RE2 pattern. Note: This feature is currently in the "Early Access" launch stage and is only available to a whitelisted set of users; that means that this feature may be changed in backward-incompatible ways and that it is not guaranteed to be released.
@@ -274,24 +279,30 @@ Returns:
         "isLocked": True or False, # Once locked, an object retention policy cannot be modified.
         "retentionPeriod": "A String", # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
       },
-      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
       "iamConfiguration": { # The bucket's IAM configuration.
-        "bucketPolicyOnly": { # The bucket's Bucket Policy Only configuration.
-          "enabled": True or False, # If set, access checks only use bucket-level IAM policies or above.
-          "lockedTime": "A String", # The deadline time for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
+        "uniformBucketLevelAccess": { # The bucket's uniform bucket-level access configuration.
+          "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+          "lockedTime": "A String", # The deadline for changing iamConfiguration.uniformBucketLevelAccess.enabled from true to false in RFC 3339  format. iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until the locked time, after which the field is immutable.
+        },
+        "bucketPolicyOnly": { # The bucket's uniform bucket-level access configuration. The feature was formerly known as Bucket Policy Only. For backward compatibility, this field will be populated with identical information as the uniformBucketLevelAccess field. We recommend using the uniformBucketLevelAccess field to enable and disable the feature.
+          "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+          "lockedTime": "A String", # The deadline for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
         },
       },
+      "zoneSeparation": True or False, # If set, objects placed in this bucket are required to be separated by disaster domain.
       "selfLink": "A String", # The URI of this bucket.
     }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="getIamPolicy">getIamPolicy(bucket, userProject=None, provisionalUserProject=None)</code>
+    <code class="details" id="getIamPolicy">getIamPolicy(bucket, userProject=None, optionsRequestedPolicyVersion=None, provisionalUserProject=None)</code>
   <pre>Returns an IAM policy for the specified bucket.
 
 Args:
   bucket: string, Name of a bucket. (required)
   userProject: string, The project to be billed for this request. Required for Requester Pays buckets.
+  optionsRequestedPolicyVersion: integer, The IAM policy format version to be returned. If the optionsRequestedPolicyVersion is for an older version that doesn't support part of the requested IAM policy, the request fails.
   provisionalUserProject: string, The project to be billed for this request if the target bucket is requester-pays bucket.
 
 Returns:
@@ -324,7 +335,7 @@ Returns:
             # - projectViewer:projectid — Viewers of the given project. For example, projectViewer:my-example-project
           "A String",
         ],
-        "condition": { # Represents an expression text. Example: title: "User account presence" description: "Determines whether the request has a user account" expression: "size(request.user) > 0" # The condition that is associated with this binding. NOTE: an unsatisfied condition will not allow user access via current binding. Different bindings, including their conditions, are examined independently.
+        "condition": { # Represents an expression text. Example: title: "User account presence" description: "Determines whether the request has a user account" expression: "size(request.user) &gt; 0" # The condition that is associated with this binding. NOTE: an unsatisfied condition will not allow user access via current binding. Different bindings, including their conditions, are examined independently.
           "title": "A String", # An optional title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.
           "expression": "A String", # Textual representation of an expression in Common Expression Language syntax. The application context of the containing message determines which well-known feature set of CEL is supported.
           "description": "A String", # An optional description of the expression. This is a longer text which describes the expression, e.g. when hovered over it in a UI.
@@ -334,16 +345,17 @@ Returns:
     ],
     "etag": "A String", # HTTP 1.1  Entity tag for the policy.
     "kind": "storage#policy", # The kind of item this is. For policies, this is always storage#policy. This field is ignored on input.
+    "version": 42, # The IAM policy format version.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="insert">insert(project, body, projection=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None)</code>
+    <code class="details" id="insert">insert(project, body=None, projection=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None)</code>
   <pre>Creates a new bucket.
 
 Args:
   project: string, A valid API project identifier. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # A bucket.
@@ -365,6 +377,9 @@ Args:
     "encryption": { # Encryption configuration for a bucket.
       "defaultKmsKeyName": "A String", # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
     },
+    "zoneAffinity": [ # The zone or zones from which the bucket is intended to use zonal quota. Requests for data from outside the specified affinities are still allowed but won't be able to use zonal quota. The zone or zones need to be within the bucket location otherwise the requests will fail with a 400 Bad Request response.
+      "A String",
+    ],
     "projectNumber": "A String", # The project number of the project the bucket belongs to.
     "etag": "A String", # HTTP 1.1 Entity tag for the bucket.
     "location": "A String", # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer's guide for the authoritative list.
@@ -428,10 +443,12 @@ Args:
             "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
           },
           "condition": { # The condition(s) under which the action will be taken.
-            "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+            "daysSinceCustomTime": 42, # Number of days elapsed since the user-specified timestamp set on an object. The condition is satisfied if the days elapsed is at least this number. If no custom timestamp is specified on an object, the condition does not apply.
+            "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, ARCHIVE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
               "A String",
             ],
             "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+            "customTimeBefore": "A String", # A timestamp in RFC 3339 format. This condition is satisfied when the custom time on an object is before this timestamp.
             "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
             "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
             "matchesPattern": "A String", # A regular expression that satisfies the RE2 syntax. This condition is satisfied when the name of the object matches the RE2 pattern. Note: This feature is currently in the "Early Access" launch stage and is only available to a whitelisted set of users; that means that this feature may be changed in backward-incompatible ways and that it is not guaranteed to be released.
@@ -481,13 +498,18 @@ Args:
       "isLocked": True or False, # Once locked, an object retention policy cannot be modified.
       "retentionPeriod": "A String", # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
     },
-    "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+    "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
     "iamConfiguration": { # The bucket's IAM configuration.
-      "bucketPolicyOnly": { # The bucket's Bucket Policy Only configuration.
-        "enabled": True or False, # If set, access checks only use bucket-level IAM policies or above.
-        "lockedTime": "A String", # The deadline time for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
+      "uniformBucketLevelAccess": { # The bucket's uniform bucket-level access configuration.
+        "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+        "lockedTime": "A String", # The deadline for changing iamConfiguration.uniformBucketLevelAccess.enabled from true to false in RFC 3339  format. iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until the locked time, after which the field is immutable.
+      },
+      "bucketPolicyOnly": { # The bucket's uniform bucket-level access configuration. The feature was formerly known as Bucket Policy Only. For backward compatibility, this field will be populated with identical information as the uniformBucketLevelAccess field. We recommend using the uniformBucketLevelAccess field to enable and disable the feature.
+        "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+        "lockedTime": "A String", # The deadline for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
       },
     },
+    "zoneSeparation": True or False, # If set, objects placed in this bucket are required to be separated by disaster domain.
     "selfLink": "A String", # The URI of this bucket.
   }
 
@@ -535,6 +557,9 @@ Returns:
       "encryption": { # Encryption configuration for a bucket.
         "defaultKmsKeyName": "A String", # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
       },
+      "zoneAffinity": [ # The zone or zones from which the bucket is intended to use zonal quota. Requests for data from outside the specified affinities are still allowed but won't be able to use zonal quota. The zone or zones need to be within the bucket location otherwise the requests will fail with a 400 Bad Request response.
+        "A String",
+      ],
       "projectNumber": "A String", # The project number of the project the bucket belongs to.
       "etag": "A String", # HTTP 1.1 Entity tag for the bucket.
       "location": "A String", # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer's guide for the authoritative list.
@@ -598,10 +623,12 @@ Returns:
               "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
             },
             "condition": { # The condition(s) under which the action will be taken.
-              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+              "daysSinceCustomTime": 42, # Number of days elapsed since the user-specified timestamp set on an object. The condition is satisfied if the days elapsed is at least this number. If no custom timestamp is specified on an object, the condition does not apply.
+              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, ARCHIVE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
                 "A String",
               ],
               "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+              "customTimeBefore": "A String", # A timestamp in RFC 3339 format. This condition is satisfied when the custom time on an object is before this timestamp.
               "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
               "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
               "matchesPattern": "A String", # A regular expression that satisfies the RE2 syntax. This condition is satisfied when the name of the object matches the RE2 pattern. Note: This feature is currently in the "Early Access" launch stage and is only available to a whitelisted set of users; that means that this feature may be changed in backward-incompatible ways and that it is not guaranteed to be released.
@@ -651,13 +678,18 @@ Returns:
         "isLocked": True or False, # Once locked, an object retention policy cannot be modified.
         "retentionPeriod": "A String", # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
       },
-      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
       "iamConfiguration": { # The bucket's IAM configuration.
-        "bucketPolicyOnly": { # The bucket's Bucket Policy Only configuration.
-          "enabled": True or False, # If set, access checks only use bucket-level IAM policies or above.
-          "lockedTime": "A String", # The deadline time for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
+        "uniformBucketLevelAccess": { # The bucket's uniform bucket-level access configuration.
+          "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+          "lockedTime": "A String", # The deadline for changing iamConfiguration.uniformBucketLevelAccess.enabled from true to false in RFC 3339  format. iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until the locked time, after which the field is immutable.
+        },
+        "bucketPolicyOnly": { # The bucket's uniform bucket-level access configuration. The feature was formerly known as Bucket Policy Only. For backward compatibility, this field will be populated with identical information as the uniformBucketLevelAccess field. We recommend using the uniformBucketLevelAccess field to enable and disable the feature.
+          "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+          "lockedTime": "A String", # The deadline for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
         },
       },
+      "zoneSeparation": True or False, # If set, objects placed in this bucket are required to be separated by disaster domain.
       "selfLink": "A String", # The URI of this bucket.
     }</pre>
 </div>
@@ -703,6 +735,9 @@ Returns:
           "encryption": { # Encryption configuration for a bucket.
             "defaultKmsKeyName": "A String", # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
           },
+          "zoneAffinity": [ # The zone or zones from which the bucket is intended to use zonal quota. Requests for data from outside the specified affinities are still allowed but won't be able to use zonal quota. The zone or zones need to be within the bucket location otherwise the requests will fail with a 400 Bad Request response.
+            "A String",
+          ],
           "projectNumber": "A String", # The project number of the project the bucket belongs to.
           "etag": "A String", # HTTP 1.1 Entity tag for the bucket.
           "location": "A String", # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer's guide for the authoritative list.
@@ -766,10 +801,12 @@ Returns:
                   "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
                 },
                 "condition": { # The condition(s) under which the action will be taken.
-                  "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+                  "daysSinceCustomTime": 42, # Number of days elapsed since the user-specified timestamp set on an object. The condition is satisfied if the days elapsed is at least this number. If no custom timestamp is specified on an object, the condition does not apply.
+                  "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, ARCHIVE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
                     "A String",
                   ],
                   "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+                  "customTimeBefore": "A String", # A timestamp in RFC 3339 format. This condition is satisfied when the custom time on an object is before this timestamp.
                   "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
                   "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
                   "matchesPattern": "A String", # A regular expression that satisfies the RE2 syntax. This condition is satisfied when the name of the object matches the RE2 pattern. Note: This feature is currently in the "Early Access" launch stage and is only available to a whitelisted set of users; that means that this feature may be changed in backward-incompatible ways and that it is not guaranteed to be released.
@@ -819,13 +856,18 @@ Returns:
             "isLocked": True or False, # Once locked, an object retention policy cannot be modified.
             "retentionPeriod": "A String", # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
           },
-          "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+          "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
           "iamConfiguration": { # The bucket's IAM configuration.
-            "bucketPolicyOnly": { # The bucket's Bucket Policy Only configuration.
-              "enabled": True or False, # If set, access checks only use bucket-level IAM policies or above.
-              "lockedTime": "A String", # The deadline time for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
+            "uniformBucketLevelAccess": { # The bucket's uniform bucket-level access configuration.
+              "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+              "lockedTime": "A String", # The deadline for changing iamConfiguration.uniformBucketLevelAccess.enabled from true to false in RFC 3339  format. iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until the locked time, after which the field is immutable.
+            },
+            "bucketPolicyOnly": { # The bucket's uniform bucket-level access configuration. The feature was formerly known as Bucket Policy Only. For backward compatibility, this field will be populated with identical information as the uniformBucketLevelAccess field. We recommend using the uniformBucketLevelAccess field to enable and disable the feature.
+              "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+              "lockedTime": "A String", # The deadline for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
             },
           },
+          "zoneSeparation": True or False, # If set, objects placed in this bucket are required to be separated by disaster domain.
           "selfLink": "A String", # The URI of this bucket.
         },
     ],
@@ -879,6 +921,9 @@ Returns:
       "encryption": { # Encryption configuration for a bucket.
         "defaultKmsKeyName": "A String", # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
       },
+      "zoneAffinity": [ # The zone or zones from which the bucket is intended to use zonal quota. Requests for data from outside the specified affinities are still allowed but won't be able to use zonal quota. The zone or zones need to be within the bucket location otherwise the requests will fail with a 400 Bad Request response.
+        "A String",
+      ],
       "projectNumber": "A String", # The project number of the project the bucket belongs to.
       "etag": "A String", # HTTP 1.1 Entity tag for the bucket.
       "location": "A String", # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer's guide for the authoritative list.
@@ -942,10 +987,12 @@ Returns:
               "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
             },
             "condition": { # The condition(s) under which the action will be taken.
-              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+              "daysSinceCustomTime": 42, # Number of days elapsed since the user-specified timestamp set on an object. The condition is satisfied if the days elapsed is at least this number. If no custom timestamp is specified on an object, the condition does not apply.
+              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, ARCHIVE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
                 "A String",
               ],
               "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+              "customTimeBefore": "A String", # A timestamp in RFC 3339 format. This condition is satisfied when the custom time on an object is before this timestamp.
               "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
               "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
               "matchesPattern": "A String", # A regular expression that satisfies the RE2 syntax. This condition is satisfied when the name of the object matches the RE2 pattern. Note: This feature is currently in the "Early Access" launch stage and is only available to a whitelisted set of users; that means that this feature may be changed in backward-incompatible ways and that it is not guaranteed to be released.
@@ -995,24 +1042,29 @@ Returns:
         "isLocked": True or False, # Once locked, an object retention policy cannot be modified.
         "retentionPeriod": "A String", # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
       },
-      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
       "iamConfiguration": { # The bucket's IAM configuration.
-        "bucketPolicyOnly": { # The bucket's Bucket Policy Only configuration.
-          "enabled": True or False, # If set, access checks only use bucket-level IAM policies or above.
-          "lockedTime": "A String", # The deadline time for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
+        "uniformBucketLevelAccess": { # The bucket's uniform bucket-level access configuration.
+          "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+          "lockedTime": "A String", # The deadline for changing iamConfiguration.uniformBucketLevelAccess.enabled from true to false in RFC 3339  format. iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until the locked time, after which the field is immutable.
+        },
+        "bucketPolicyOnly": { # The bucket's uniform bucket-level access configuration. The feature was formerly known as Bucket Policy Only. For backward compatibility, this field will be populated with identical information as the uniformBucketLevelAccess field. We recommend using the uniformBucketLevelAccess field to enable and disable the feature.
+          "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+          "lockedTime": "A String", # The deadline for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
         },
       },
+      "zoneSeparation": True or False, # If set, objects placed in this bucket are required to be separated by disaster domain.
       "selfLink": "A String", # The URI of this bucket.
     }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="patch">patch(bucket, body, projection=None, ifMetagenerationMatch=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None, ifMetagenerationNotMatch=None)</code>
+    <code class="details" id="patch">patch(bucket, body=None, projection=None, ifMetagenerationMatch=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None, ifMetagenerationNotMatch=None)</code>
   <pre>Patches a bucket. Changes to the bucket will be readable immediately after writing, but configuration changes may take time to propagate.
 
 Args:
   bucket: string, Name of a bucket. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # A bucket.
@@ -1034,6 +1086,9 @@ Args:
     "encryption": { # Encryption configuration for a bucket.
       "defaultKmsKeyName": "A String", # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
     },
+    "zoneAffinity": [ # The zone or zones from which the bucket is intended to use zonal quota. Requests for data from outside the specified affinities are still allowed but won't be able to use zonal quota. The zone or zones need to be within the bucket location otherwise the requests will fail with a 400 Bad Request response.
+      "A String",
+    ],
     "projectNumber": "A String", # The project number of the project the bucket belongs to.
     "etag": "A String", # HTTP 1.1 Entity tag for the bucket.
     "location": "A String", # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer's guide for the authoritative list.
@@ -1097,10 +1152,12 @@ Args:
             "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
           },
           "condition": { # The condition(s) under which the action will be taken.
-            "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+            "daysSinceCustomTime": 42, # Number of days elapsed since the user-specified timestamp set on an object. The condition is satisfied if the days elapsed is at least this number. If no custom timestamp is specified on an object, the condition does not apply.
+            "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, ARCHIVE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
               "A String",
             ],
             "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+            "customTimeBefore": "A String", # A timestamp in RFC 3339 format. This condition is satisfied when the custom time on an object is before this timestamp.
             "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
             "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
             "matchesPattern": "A String", # A regular expression that satisfies the RE2 syntax. This condition is satisfied when the name of the object matches the RE2 pattern. Note: This feature is currently in the "Early Access" launch stage and is only available to a whitelisted set of users; that means that this feature may be changed in backward-incompatible ways and that it is not guaranteed to be released.
@@ -1150,13 +1207,18 @@ Args:
       "isLocked": True or False, # Once locked, an object retention policy cannot be modified.
       "retentionPeriod": "A String", # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
     },
-    "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+    "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
     "iamConfiguration": { # The bucket's IAM configuration.
-      "bucketPolicyOnly": { # The bucket's Bucket Policy Only configuration.
-        "enabled": True or False, # If set, access checks only use bucket-level IAM policies or above.
-        "lockedTime": "A String", # The deadline time for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
+      "uniformBucketLevelAccess": { # The bucket's uniform bucket-level access configuration.
+        "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+        "lockedTime": "A String", # The deadline for changing iamConfiguration.uniformBucketLevelAccess.enabled from true to false in RFC 3339  format. iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until the locked time, after which the field is immutable.
+      },
+      "bucketPolicyOnly": { # The bucket's uniform bucket-level access configuration. The feature was formerly known as Bucket Policy Only. For backward compatibility, this field will be populated with identical information as the uniformBucketLevelAccess field. We recommend using the uniformBucketLevelAccess field to enable and disable the feature.
+        "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+        "lockedTime": "A String", # The deadline for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
       },
     },
+    "zoneSeparation": True or False, # If set, objects placed in this bucket are required to be separated by disaster domain.
     "selfLink": "A String", # The URI of this bucket.
   }
 
@@ -1206,6 +1268,9 @@ Returns:
       "encryption": { # Encryption configuration for a bucket.
         "defaultKmsKeyName": "A String", # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
       },
+      "zoneAffinity": [ # The zone or zones from which the bucket is intended to use zonal quota. Requests for data from outside the specified affinities are still allowed but won't be able to use zonal quota. The zone or zones need to be within the bucket location otherwise the requests will fail with a 400 Bad Request response.
+        "A String",
+      ],
       "projectNumber": "A String", # The project number of the project the bucket belongs to.
       "etag": "A String", # HTTP 1.1 Entity tag for the bucket.
       "location": "A String", # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer's guide for the authoritative list.
@@ -1269,10 +1334,12 @@ Returns:
               "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
             },
             "condition": { # The condition(s) under which the action will be taken.
-              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+              "daysSinceCustomTime": 42, # Number of days elapsed since the user-specified timestamp set on an object. The condition is satisfied if the days elapsed is at least this number. If no custom timestamp is specified on an object, the condition does not apply.
+              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, ARCHIVE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
                 "A String",
               ],
               "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+              "customTimeBefore": "A String", # A timestamp in RFC 3339 format. This condition is satisfied when the custom time on an object is before this timestamp.
               "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
               "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
               "matchesPattern": "A String", # A regular expression that satisfies the RE2 syntax. This condition is satisfied when the name of the object matches the RE2 pattern. Note: This feature is currently in the "Early Access" launch stage and is only available to a whitelisted set of users; that means that this feature may be changed in backward-incompatible ways and that it is not guaranteed to be released.
@@ -1322,24 +1389,29 @@ Returns:
         "isLocked": True or False, # Once locked, an object retention policy cannot be modified.
         "retentionPeriod": "A String", # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
       },
-      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
       "iamConfiguration": { # The bucket's IAM configuration.
-        "bucketPolicyOnly": { # The bucket's Bucket Policy Only configuration.
-          "enabled": True or False, # If set, access checks only use bucket-level IAM policies or above.
-          "lockedTime": "A String", # The deadline time for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
+        "uniformBucketLevelAccess": { # The bucket's uniform bucket-level access configuration.
+          "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+          "lockedTime": "A String", # The deadline for changing iamConfiguration.uniformBucketLevelAccess.enabled from true to false in RFC 3339  format. iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until the locked time, after which the field is immutable.
+        },
+        "bucketPolicyOnly": { # The bucket's uniform bucket-level access configuration. The feature was formerly known as Bucket Policy Only. For backward compatibility, this field will be populated with identical information as the uniformBucketLevelAccess field. We recommend using the uniformBucketLevelAccess field to enable and disable the feature.
+          "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+          "lockedTime": "A String", # The deadline for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
         },
       },
+      "zoneSeparation": True or False, # If set, objects placed in this bucket are required to be separated by disaster domain.
       "selfLink": "A String", # The URI of this bucket.
     }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="setIamPolicy">setIamPolicy(bucket, body, userProject=None, provisionalUserProject=None)</code>
+    <code class="details" id="setIamPolicy">setIamPolicy(bucket, body=None, userProject=None, provisionalUserProject=None)</code>
   <pre>Updates an IAM policy for the specified bucket.
 
 Args:
   bucket: string, Name of a bucket. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # A bucket/object IAM policy.
@@ -1369,7 +1441,7 @@ Args:
           # - projectViewer:projectid — Viewers of the given project. For example, projectViewer:my-example-project
         "A String",
       ],
-      "condition": { # Represents an expression text. Example: title: "User account presence" description: "Determines whether the request has a user account" expression: "size(request.user) > 0" # The condition that is associated with this binding. NOTE: an unsatisfied condition will not allow user access via current binding. Different bindings, including their conditions, are examined independently.
+      "condition": { # Represents an expression text. Example: title: "User account presence" description: "Determines whether the request has a user account" expression: "size(request.user) &gt; 0" # The condition that is associated with this binding. NOTE: an unsatisfied condition will not allow user access via current binding. Different bindings, including their conditions, are examined independently.
         "title": "A String", # An optional title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.
         "expression": "A String", # Textual representation of an expression in Common Expression Language syntax. The application context of the containing message determines which well-known feature set of CEL is supported.
         "description": "A String", # An optional description of the expression. This is a longer text which describes the expression, e.g. when hovered over it in a UI.
@@ -1379,6 +1451,7 @@ Args:
   ],
   "etag": "A String", # HTTP 1.1  Entity tag for the policy.
   "kind": "storage#policy", # The kind of item this is. For policies, this is always storage#policy. This field is ignored on input.
+  "version": 42, # The IAM policy format version.
 }
 
   userProject: string, The project to be billed for this request. Required for Requester Pays buckets.
@@ -1414,7 +1487,7 @@ Returns:
             # - projectViewer:projectid — Viewers of the given project. For example, projectViewer:my-example-project
           "A String",
         ],
-        "condition": { # Represents an expression text. Example: title: "User account presence" description: "Determines whether the request has a user account" expression: "size(request.user) > 0" # The condition that is associated with this binding. NOTE: an unsatisfied condition will not allow user access via current binding. Different bindings, including their conditions, are examined independently.
+        "condition": { # Represents an expression text. Example: title: "User account presence" description: "Determines whether the request has a user account" expression: "size(request.user) &gt; 0" # The condition that is associated with this binding. NOTE: an unsatisfied condition will not allow user access via current binding. Different bindings, including their conditions, are examined independently.
           "title": "A String", # An optional title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.
           "expression": "A String", # Textual representation of an expression in Common Expression Language syntax. The application context of the containing message determines which well-known feature set of CEL is supported.
           "description": "A String", # An optional description of the expression. This is a longer text which describes the expression, e.g. when hovered over it in a UI.
@@ -1424,6 +1497,7 @@ Returns:
     ],
     "etag": "A String", # HTTP 1.1  Entity tag for the policy.
     "kind": "storage#policy", # The kind of item this is. For policies, this is always storage#policy. This field is ignored on input.
+    "version": 42, # The IAM policy format version.
   }</pre>
 </div>
 
@@ -1463,12 +1537,12 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="update">update(bucket, body, projection=None, ifMetagenerationMatch=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None, ifMetagenerationNotMatch=None)</code>
+    <code class="details" id="update">update(bucket, body=None, projection=None, ifMetagenerationMatch=None, userProject=None, predefinedDefaultObjectAcl=None, predefinedAcl=None, provisionalUserProject=None, ifMetagenerationNotMatch=None)</code>
   <pre>Updates a bucket. Changes to the bucket will be readable immediately after writing, but configuration changes may take time to propagate.
 
 Args:
   bucket: string, Name of a bucket. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # A bucket.
@@ -1490,6 +1564,9 @@ Args:
     "encryption": { # Encryption configuration for a bucket.
       "defaultKmsKeyName": "A String", # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
     },
+    "zoneAffinity": [ # The zone or zones from which the bucket is intended to use zonal quota. Requests for data from outside the specified affinities are still allowed but won't be able to use zonal quota. The zone or zones need to be within the bucket location otherwise the requests will fail with a 400 Bad Request response.
+      "A String",
+    ],
     "projectNumber": "A String", # The project number of the project the bucket belongs to.
     "etag": "A String", # HTTP 1.1 Entity tag for the bucket.
     "location": "A String", # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer's guide for the authoritative list.
@@ -1553,10 +1630,12 @@ Args:
             "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
           },
           "condition": { # The condition(s) under which the action will be taken.
-            "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+            "daysSinceCustomTime": 42, # Number of days elapsed since the user-specified timestamp set on an object. The condition is satisfied if the days elapsed is at least this number. If no custom timestamp is specified on an object, the condition does not apply.
+            "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, ARCHIVE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
               "A String",
             ],
             "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+            "customTimeBefore": "A String", # A timestamp in RFC 3339 format. This condition is satisfied when the custom time on an object is before this timestamp.
             "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
             "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
             "matchesPattern": "A String", # A regular expression that satisfies the RE2 syntax. This condition is satisfied when the name of the object matches the RE2 pattern. Note: This feature is currently in the "Early Access" launch stage and is only available to a whitelisted set of users; that means that this feature may be changed in backward-incompatible ways and that it is not guaranteed to be released.
@@ -1606,13 +1685,18 @@ Args:
       "isLocked": True or False, # Once locked, an object retention policy cannot be modified.
       "retentionPeriod": "A String", # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
     },
-    "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+    "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
     "iamConfiguration": { # The bucket's IAM configuration.
-      "bucketPolicyOnly": { # The bucket's Bucket Policy Only configuration.
-        "enabled": True or False, # If set, access checks only use bucket-level IAM policies or above.
-        "lockedTime": "A String", # The deadline time for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
+      "uniformBucketLevelAccess": { # The bucket's uniform bucket-level access configuration.
+        "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+        "lockedTime": "A String", # The deadline for changing iamConfiguration.uniformBucketLevelAccess.enabled from true to false in RFC 3339  format. iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until the locked time, after which the field is immutable.
+      },
+      "bucketPolicyOnly": { # The bucket's uniform bucket-level access configuration. The feature was formerly known as Bucket Policy Only. For backward compatibility, this field will be populated with identical information as the uniformBucketLevelAccess field. We recommend using the uniformBucketLevelAccess field to enable and disable the feature.
+        "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+        "lockedTime": "A String", # The deadline for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
       },
     },
+    "zoneSeparation": True or False, # If set, objects placed in this bucket are required to be separated by disaster domain.
     "selfLink": "A String", # The URI of this bucket.
   }
 
@@ -1662,6 +1746,9 @@ Returns:
       "encryption": { # Encryption configuration for a bucket.
         "defaultKmsKeyName": "A String", # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
       },
+      "zoneAffinity": [ # The zone or zones from which the bucket is intended to use zonal quota. Requests for data from outside the specified affinities are still allowed but won't be able to use zonal quota. The zone or zones need to be within the bucket location otherwise the requests will fail with a 400 Bad Request response.
+        "A String",
+      ],
       "projectNumber": "A String", # The project number of the project the bucket belongs to.
       "etag": "A String", # HTTP 1.1 Entity tag for the bucket.
       "location": "A String", # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer's guide for the authoritative list.
@@ -1725,10 +1812,12 @@ Returns:
               "storageClass": "A String", # Target storage class. Required iff the type of the action is SetStorageClass.
             },
             "condition": { # The condition(s) under which the action will be taken.
-              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
+              "daysSinceCustomTime": 42, # Number of days elapsed since the user-specified timestamp set on an object. The condition is satisfied if the days elapsed is at least this number. If no custom timestamp is specified on an object, the condition does not apply.
+              "matchesStorageClass": [ # Objects having any of the storage classes specified by this condition will be matched. Values include MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, ARCHIVE, STANDARD, and DURABLE_REDUCED_AVAILABILITY.
                 "A String",
               ],
               "age": 42, # Age of an object (in days). This condition is satisfied when an object reaches the specified age.
+              "customTimeBefore": "A String", # A timestamp in RFC 3339 format. This condition is satisfied when the custom time on an object is before this timestamp.
               "numNewerVersions": 42, # Relevant only for versioned objects. If the value is N, this condition is satisfied when there are at least N versions (including the live version) newer than this version of the object.
               "createdBefore": "A String", # A date in RFC 3339 format with only the date part (for instance, "2013-01-15"). This condition is satisfied when an object is created before midnight of the specified date in UTC.
               "matchesPattern": "A String", # A regular expression that satisfies the RE2 syntax. This condition is satisfied when the name of the object matches the RE2 pattern. Note: This feature is currently in the "Early Access" launch stage and is only available to a whitelisted set of users; that means that this feature may be changed in backward-incompatible ways and that it is not guaranteed to be released.
@@ -1778,13 +1867,18 @@ Returns:
         "isLocked": True or False, # Once locked, an object retention policy cannot be modified.
         "retentionPeriod": "A String", # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
       },
-      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+      "storageClass": "A String", # The bucket's default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
       "iamConfiguration": { # The bucket's IAM configuration.
-        "bucketPolicyOnly": { # The bucket's Bucket Policy Only configuration.
-          "enabled": True or False, # If set, access checks only use bucket-level IAM policies or above.
-          "lockedTime": "A String", # The deadline time for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
+        "uniformBucketLevelAccess": { # The bucket's uniform bucket-level access configuration.
+          "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+          "lockedTime": "A String", # The deadline for changing iamConfiguration.uniformBucketLevelAccess.enabled from true to false in RFC 3339  format. iamConfiguration.uniformBucketLevelAccess.enabled may be changed from true to false until the locked time, after which the field is immutable.
+        },
+        "bucketPolicyOnly": { # The bucket's uniform bucket-level access configuration. The feature was formerly known as Bucket Policy Only. For backward compatibility, this field will be populated with identical information as the uniformBucketLevelAccess field. We recommend using the uniformBucketLevelAccess field to enable and disable the feature.
+          "enabled": True or False, # If set, access is controlled only by bucket-level or above IAM policies.
+          "lockedTime": "A String", # The deadline for changing iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC 3339 format. iamConfiguration.bucketPolicyOnly.enabled may be changed from true to false until the locked time, after which the field is immutable.
         },
       },
+      "zoneSeparation": True or False, # If set, objects placed in this bucket are required to be separated by disaster domain.
       "selfLink": "A String", # The URI of this bucket.
     }</pre>
 </div>

@@ -75,7 +75,7 @@ h1, h2, h3 {
 <h1><a href="remotebuildexecution_v1alpha.html">Remote Build Execution API</a> . <a href="remotebuildexecution_v1alpha.projects.html">projects</a> . <a href="remotebuildexecution_v1alpha.projects.instances.html">instances</a> . <a href="remotebuildexecution_v1alpha.projects.instances.workerpools.html">workerpools</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#create">create(parent, body, x__xgafv=None)</a></code></p>
+  <code><a href="#create">create(parent, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Creates a new worker pool with a specified size and configuration.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(name, x__xgafv=None)</a></code></p>
@@ -87,11 +87,11 @@ h1, h2, h3 {
   <code><a href="#list">list(parent, x__xgafv=None, filter=None)</a></code></p>
 <p class="firstline">Lists worker pools in an instance.</p>
 <p class="toc_element">
-  <code><a href="#patch">patch(name, body, x__xgafv=None)</a></code></p>
+  <code><a href="#patch">patch(name, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Updates an existing worker pool with a specified size and/or configuration.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="create">create(parent, body, x__xgafv=None)</code>
+    <code class="details" id="create">create(parent, body=None, x__xgafv=None)</code>
   <pre>Creates a new worker pool with a specified size and configuration.
 Returns a long running operation which contains a worker pool on
 completion. While the long running operation is in progress, any call to
@@ -100,14 +100,16 @@ completion. While the long running operation is in progress, any call to
 Args:
   parent: string, Resource name of the instance in which to create the new worker pool.
 Format: `projects/[PROJECT_ID]/instances/[INSTANCE_ID]`. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # The request used for `CreateWorkerPool`.
     "workerPool": { # A worker pool resource in the Remote Build Execution API. # Specifies the worker pool to create.
         # The name in the worker pool, if specified, is ignored.
-      "workerCount": "A String", # The desired number of workers in the worker pool. Must be a value between
-          # 0 and 1000.
+      "autoscale": { # Autoscale defines the autoscaling policy of a worker pool. # The autoscale policy to apply on a pool.
+        "minSize": "A String", # The minimal number of workers. Must be greater than 0.
+        "maxSize": "A String", # The maximal number of workers. Must be equal to or greater than min_size.
+      },
       "state": "A String", # Output only. State of the worker pool.
       "workerConfig": { # Defines the configuration to be used for a creating workers in # Specifies the properties, such as machine type and disk size, used for
           # creating workers in a worker pool.
@@ -116,27 +118,41 @@ Format: `projects/[PROJECT_ID]/instances/[INSTANCE_ID]`. (required)
             # See https://cloud.google.com/compute/docs/machine-types for a list of
             # supported machine types. Note that `f1-micro` and `g1-small` are not yet
             # supported.
+        "maxConcurrentActions": "A String", # The maximum number of actions a worker can execute concurrently.
+        "accelerator": { # AcceleratorConfig defines the accelerator cards to attach to the VM. # The accelerator card attached to each VM.
+          "acceleratorCount": "A String", # The number of guest accelerator cards exposed to each VM.
+          "acceleratorType": "A String", # The type of accelerator to attach to each VM, e.g. "nvidia-tesla-k80" for
+              # nVidia Tesla K80.
+        },
+        "reserved": True or False, # Determines whether the worker is reserved (equivalent to a Compute Engine
+            # on-demand VM and therefore won't be preempted).
+            # See [Preemptible VMs](https://cloud.google.com/preemptible-vms/) for more
+            # details.
         "labels": { # Labels associated with the workers.
             # Label keys and values can be no longer than 63 characters, can only contain
             # lowercase letters, numeric characters, underscores and dashes.
-            # International letters are permitted. Keys must start with a letter but
-            # values are optional.
-            # This field is currently ignored in all requests.
+            # International letters are permitted. Label keys must start with a letter.
+            # Label values are optional.
+            # There can not be more than 64 labels per resource.
           "a_key": "A String",
         },
         "diskType": "A String", # Required. Disk Type to use for the worker.
             # See [Storage
             # options](https://cloud.google.com/compute/docs/disks/#introduction).
-            # Currently only `pd-standard` is supported.
+            # Currently only `pd-standard` and `pd-ssd` are supported.
         "diskSizeGb": "A String", # Required. Size of the disk attached to the worker, in GB.
             # See https://cloud.google.com/compute/docs/disks/
         "minCpuPlatform": "A String", # Minimum CPU platform to use when creating the worker.
             # See [CPU Platforms](https://cloud.google.com/compute/docs/cpu-platforms).
-        "reserved": True or False, # Determines whether the worker is reserved (equivalent to a Compute Engine
-            # on-demand VM and therefore won't be preempted).
-            # See [Preemptible VMs](https://cloud.google.com/preemptible-vms/) for more
-            # details.
+        "networkAccess": "A String", # Determines the type of network access granted to workers. Possible values:
+            #
+            # - "public": Workers can connect to the public internet.
+            # - "private": Workers can only connect to Google APIs and services.
+            # - "restricted-private": Workers can only connect to Google APIs that are
+            #   reachable through `restricted.googleapis.com` (`199.36.153.4/30`).
       },
+      "workerCount": "A String", # The desired number of workers in the worker pool. Must be a value between
+          # 0 and 15000.
       "name": "A String", # WorkerPool resource name formatted as:
           # `projects/[PROJECT_ID]/instances/[INSTANCE_ID]/workerpools/[POOL_ID]`.
           # name should not be populated when creating a worker pool since it is
@@ -287,8 +303,10 @@ Returns:
   An object of the form:
 
     { # A worker pool resource in the Remote Build Execution API.
-    "workerCount": "A String", # The desired number of workers in the worker pool. Must be a value between
-        # 0 and 1000.
+    "autoscale": { # Autoscale defines the autoscaling policy of a worker pool. # The autoscale policy to apply on a pool.
+      "minSize": "A String", # The minimal number of workers. Must be greater than 0.
+      "maxSize": "A String", # The maximal number of workers. Must be equal to or greater than min_size.
+    },
     "state": "A String", # Output only. State of the worker pool.
     "workerConfig": { # Defines the configuration to be used for a creating workers in # Specifies the properties, such as machine type and disk size, used for
         # creating workers in a worker pool.
@@ -297,27 +315,41 @@ Returns:
           # See https://cloud.google.com/compute/docs/machine-types for a list of
           # supported machine types. Note that `f1-micro` and `g1-small` are not yet
           # supported.
+      "maxConcurrentActions": "A String", # The maximum number of actions a worker can execute concurrently.
+      "accelerator": { # AcceleratorConfig defines the accelerator cards to attach to the VM. # The accelerator card attached to each VM.
+        "acceleratorCount": "A String", # The number of guest accelerator cards exposed to each VM.
+        "acceleratorType": "A String", # The type of accelerator to attach to each VM, e.g. "nvidia-tesla-k80" for
+            # nVidia Tesla K80.
+      },
+      "reserved": True or False, # Determines whether the worker is reserved (equivalent to a Compute Engine
+          # on-demand VM and therefore won't be preempted).
+          # See [Preemptible VMs](https://cloud.google.com/preemptible-vms/) for more
+          # details.
       "labels": { # Labels associated with the workers.
           # Label keys and values can be no longer than 63 characters, can only contain
           # lowercase letters, numeric characters, underscores and dashes.
-          # International letters are permitted. Keys must start with a letter but
-          # values are optional.
-          # This field is currently ignored in all requests.
+          # International letters are permitted. Label keys must start with a letter.
+          # Label values are optional.
+          # There can not be more than 64 labels per resource.
         "a_key": "A String",
       },
       "diskType": "A String", # Required. Disk Type to use for the worker.
           # See [Storage
           # options](https://cloud.google.com/compute/docs/disks/#introduction).
-          # Currently only `pd-standard` is supported.
+          # Currently only `pd-standard` and `pd-ssd` are supported.
       "diskSizeGb": "A String", # Required. Size of the disk attached to the worker, in GB.
           # See https://cloud.google.com/compute/docs/disks/
       "minCpuPlatform": "A String", # Minimum CPU platform to use when creating the worker.
           # See [CPU Platforms](https://cloud.google.com/compute/docs/cpu-platforms).
-      "reserved": True or False, # Determines whether the worker is reserved (equivalent to a Compute Engine
-          # on-demand VM and therefore won't be preempted).
-          # See [Preemptible VMs](https://cloud.google.com/preemptible-vms/) for more
-          # details.
+      "networkAccess": "A String", # Determines the type of network access granted to workers. Possible values:
+          #
+          # - "public": Workers can connect to the public internet.
+          # - "private": Workers can only connect to Google APIs and services.
+          # - "restricted-private": Workers can only connect to Google APIs that are
+          #   reachable through `restricted.googleapis.com` (`199.36.153.4/30`).
     },
+    "workerCount": "A String", # The desired number of workers in the worker pool. Must be a value between
+        # 0 and 15000.
     "name": "A String", # WorkerPool resource name formatted as:
         # `projects/[PROJECT_ID]/instances/[INSTANCE_ID]/workerpools/[POOL_ID]`.
         # name should not be populated when creating a worker pool since it is
@@ -336,23 +368,31 @@ Format: `projects/[PROJECT_ID]/instances/[INSTANCE_ID]`. (required)
     Allowed values
       1 - v1 error format
       2 - v2 error format
-  filter: string, Optional. A filter to constrain the pools returned. Filters have the form:
+  filter: string, Optional. A filter expression that filters resources listed in
+the response. The expression must specify the field name, a comparison
+operator, and the value that you want to use for filtering. The value
+must be a string, a number, or a boolean. String values are
+case-insensitive.
+The comparison operator must be either `:`, `=`, `!=`, `&gt;`, `&gt;=`, `&lt;=` or
+`&lt;`.
+The `:` operator can be used with string fields to match substrings.
+For non-string fields it is equivalent to the `=` operator.
+The `:*` comparison can be used to test  whether a key has been defined.
 
-<field> <operator> <value> [[AND|OR] <field> <operator> <value>]...
+You can also filter on nested fields.
 
-<field> is the path for a field or map key in the Pool proto message.
-e.g. "configuration.disk_size_gb" or "configuration.labels.key".
-<operator> can be one of "<", "<=", ">=", ">", "=", "!=", ":".
-":" is a HAS operation for strings and repeated primitive fields.
-<value> is the value to test, case-insensitive for strings. "*" stands for
-any value and can be used to test for key presence.
-Parenthesis determine AND/OR precedence. In space separated restrictions,
-AND is implicit, e.g. "a = b x = y" is equivalent to "a = b AND x = y".
+To filter on multiple expressions, you can separate expression using
+`AND` and `OR` operators, using parentheses to specify precedence. If
+neither operator is specified, `AND` is assumed.
 
-Example filter:
-configuration.labels.key1 = * AND (state = RUNNING OR state = UPDATING)
+Examples:
 
-This field is currently ignored in all requests.
+Include only pools with more than 100 reserved workers:
+`(worker_count &gt; 100) (worker_config.reserved = true)`
+
+Include only pools with a certain label or machines of the n1-standard
+family:
+`worker_config.labels.key1 : * OR worker_config.machine_type: n1-standard`
 
 Returns:
   An object of the form:
@@ -360,8 +400,10 @@ Returns:
     {
     "workerPools": [ # The list of worker pools in a given instance.
       { # A worker pool resource in the Remote Build Execution API.
-        "workerCount": "A String", # The desired number of workers in the worker pool. Must be a value between
-            # 0 and 1000.
+        "autoscale": { # Autoscale defines the autoscaling policy of a worker pool. # The autoscale policy to apply on a pool.
+          "minSize": "A String", # The minimal number of workers. Must be greater than 0.
+          "maxSize": "A String", # The maximal number of workers. Must be equal to or greater than min_size.
+        },
         "state": "A String", # Output only. State of the worker pool.
         "workerConfig": { # Defines the configuration to be used for a creating workers in # Specifies the properties, such as machine type and disk size, used for
             # creating workers in a worker pool.
@@ -370,27 +412,41 @@ Returns:
               # See https://cloud.google.com/compute/docs/machine-types for a list of
               # supported machine types. Note that `f1-micro` and `g1-small` are not yet
               # supported.
+          "maxConcurrentActions": "A String", # The maximum number of actions a worker can execute concurrently.
+          "accelerator": { # AcceleratorConfig defines the accelerator cards to attach to the VM. # The accelerator card attached to each VM.
+            "acceleratorCount": "A String", # The number of guest accelerator cards exposed to each VM.
+            "acceleratorType": "A String", # The type of accelerator to attach to each VM, e.g. "nvidia-tesla-k80" for
+                # nVidia Tesla K80.
+          },
+          "reserved": True or False, # Determines whether the worker is reserved (equivalent to a Compute Engine
+              # on-demand VM and therefore won't be preempted).
+              # See [Preemptible VMs](https://cloud.google.com/preemptible-vms/) for more
+              # details.
           "labels": { # Labels associated with the workers.
               # Label keys and values can be no longer than 63 characters, can only contain
               # lowercase letters, numeric characters, underscores and dashes.
-              # International letters are permitted. Keys must start with a letter but
-              # values are optional.
-              # This field is currently ignored in all requests.
+              # International letters are permitted. Label keys must start with a letter.
+              # Label values are optional.
+              # There can not be more than 64 labels per resource.
             "a_key": "A String",
           },
           "diskType": "A String", # Required. Disk Type to use for the worker.
               # See [Storage
               # options](https://cloud.google.com/compute/docs/disks/#introduction).
-              # Currently only `pd-standard` is supported.
+              # Currently only `pd-standard` and `pd-ssd` are supported.
           "diskSizeGb": "A String", # Required. Size of the disk attached to the worker, in GB.
               # See https://cloud.google.com/compute/docs/disks/
           "minCpuPlatform": "A String", # Minimum CPU platform to use when creating the worker.
               # See [CPU Platforms](https://cloud.google.com/compute/docs/cpu-platforms).
-          "reserved": True or False, # Determines whether the worker is reserved (equivalent to a Compute Engine
-              # on-demand VM and therefore won't be preempted).
-              # See [Preemptible VMs](https://cloud.google.com/preemptible-vms/) for more
-              # details.
+          "networkAccess": "A String", # Determines the type of network access granted to workers. Possible values:
+              #
+              # - "public": Workers can connect to the public internet.
+              # - "private": Workers can only connect to Google APIs and services.
+              # - "restricted-private": Workers can only connect to Google APIs that are
+              #   reachable through `restricted.googleapis.com` (`199.36.153.4/30`).
         },
+        "workerCount": "A String", # The desired number of workers in the worker pool. Must be a value between
+            # 0 and 15000.
         "name": "A String", # WorkerPool resource name formatted as:
             # `projects/[PROJECT_ID]/instances/[INSTANCE_ID]/workerpools/[POOL_ID]`.
             # name should not be populated when creating a worker pool since it is
@@ -401,7 +457,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="patch">patch(name, body, x__xgafv=None)</code>
+    <code class="details" id="patch">patch(name, body=None, x__xgafv=None)</code>
   <pre>Updates an existing worker pool with a specified size and/or configuration.
 Returns a long running operation, which contains a worker pool on
 completion. While the long running operation is in progress, any call to
@@ -412,7 +468,7 @@ Args:
 `projects/[PROJECT_ID]/instances/[INSTANCE_ID]/workerpools/[POOL_ID]`.
 name should not be populated when creating a worker pool since it is
 provided in the `poolId` field. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # The request used for UpdateWorkerPool.
@@ -424,8 +480,10 @@ provided in the `poolId` field. (required)
         # to the default value (zero, false, empty string) an explicit update_mask
         # must be provided.
     "workerPool": { # A worker pool resource in the Remote Build Execution API. # Specifies the worker pool to update.
-      "workerCount": "A String", # The desired number of workers in the worker pool. Must be a value between
-          # 0 and 1000.
+      "autoscale": { # Autoscale defines the autoscaling policy of a worker pool. # The autoscale policy to apply on a pool.
+        "minSize": "A String", # The minimal number of workers. Must be greater than 0.
+        "maxSize": "A String", # The maximal number of workers. Must be equal to or greater than min_size.
+      },
       "state": "A String", # Output only. State of the worker pool.
       "workerConfig": { # Defines the configuration to be used for a creating workers in # Specifies the properties, such as machine type and disk size, used for
           # creating workers in a worker pool.
@@ -434,27 +492,41 @@ provided in the `poolId` field. (required)
             # See https://cloud.google.com/compute/docs/machine-types for a list of
             # supported machine types. Note that `f1-micro` and `g1-small` are not yet
             # supported.
+        "maxConcurrentActions": "A String", # The maximum number of actions a worker can execute concurrently.
+        "accelerator": { # AcceleratorConfig defines the accelerator cards to attach to the VM. # The accelerator card attached to each VM.
+          "acceleratorCount": "A String", # The number of guest accelerator cards exposed to each VM.
+          "acceleratorType": "A String", # The type of accelerator to attach to each VM, e.g. "nvidia-tesla-k80" for
+              # nVidia Tesla K80.
+        },
+        "reserved": True or False, # Determines whether the worker is reserved (equivalent to a Compute Engine
+            # on-demand VM and therefore won't be preempted).
+            # See [Preemptible VMs](https://cloud.google.com/preemptible-vms/) for more
+            # details.
         "labels": { # Labels associated with the workers.
             # Label keys and values can be no longer than 63 characters, can only contain
             # lowercase letters, numeric characters, underscores and dashes.
-            # International letters are permitted. Keys must start with a letter but
-            # values are optional.
-            # This field is currently ignored in all requests.
+            # International letters are permitted. Label keys must start with a letter.
+            # Label values are optional.
+            # There can not be more than 64 labels per resource.
           "a_key": "A String",
         },
         "diskType": "A String", # Required. Disk Type to use for the worker.
             # See [Storage
             # options](https://cloud.google.com/compute/docs/disks/#introduction).
-            # Currently only `pd-standard` is supported.
+            # Currently only `pd-standard` and `pd-ssd` are supported.
         "diskSizeGb": "A String", # Required. Size of the disk attached to the worker, in GB.
             # See https://cloud.google.com/compute/docs/disks/
         "minCpuPlatform": "A String", # Minimum CPU platform to use when creating the worker.
             # See [CPU Platforms](https://cloud.google.com/compute/docs/cpu-platforms).
-        "reserved": True or False, # Determines whether the worker is reserved (equivalent to a Compute Engine
-            # on-demand VM and therefore won't be preempted).
-            # See [Preemptible VMs](https://cloud.google.com/preemptible-vms/) for more
-            # details.
+        "networkAccess": "A String", # Determines the type of network access granted to workers. Possible values:
+            #
+            # - "public": Workers can connect to the public internet.
+            # - "private": Workers can only connect to Google APIs and services.
+            # - "restricted-private": Workers can only connect to Google APIs that are
+            #   reachable through `restricted.googleapis.com` (`199.36.153.4/30`).
       },
+      "workerCount": "A String", # The desired number of workers in the worker pool. Must be a value between
+          # 0 and 15000.
       "name": "A String", # WorkerPool resource name formatted as:
           # `projects/[PROJECT_ID]/instances/[INSTANCE_ID]/workerpools/[POOL_ID]`.
           # name should not be populated when creating a worker pool since it is

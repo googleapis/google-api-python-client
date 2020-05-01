@@ -75,17 +75,17 @@ h1, h2, h3 {
 <h1><a href="servicecontrol_v1.html">Service Control API</a> . <a href="servicecontrol_v1.services.html">services</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#allocateQuota">allocateQuota(serviceName, body, x__xgafv=None)</a></code></p>
+  <code><a href="#allocateQuota">allocateQuota(serviceName, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Attempts to allocate quota for the specified consumer. It should be called</p>
 <p class="toc_element">
-  <code><a href="#check">check(serviceName, body, x__xgafv=None)</a></code></p>
+  <code><a href="#check">check(serviceName, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Checks whether an operation on a service should be allowed to proceed</p>
 <p class="toc_element">
-  <code><a href="#report">report(serviceName, body, x__xgafv=None)</a></code></p>
+  <code><a href="#report">report(serviceName, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Reports operation results to Google Service Control, such as logs and</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="allocateQuota">allocateQuota(serviceName, body, x__xgafv=None)</code>
+    <code class="details" id="allocateQuota">allocateQuota(serviceName, body=None, x__xgafv=None)</code>
   <pre>Attempts to allocate quota for the specified consumer. It should be called
 before the operation is executed.
 
@@ -103,7 +103,7 @@ Args:
 `"pubsub.googleapis.com"`.
 
 See google.api.Service for the definition of a service name. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Request message for the AllocateQuota method.
@@ -142,6 +142,7 @@ See google.api.Service for the definition of a service name. (required)
               "labels": { # The labels describing the metric value.
                   # See comments on google.api.servicecontrol.v1.Operation.labels for
                   # the overriding relationship.
+                  # Note that this map must not contain monitored resource labels.
                 "a_key": "A String",
               },
               "doubleValue": 3.14, # A double precision floating point value.
@@ -158,7 +159,11 @@ See google.api.Service for the definition of a service name. (required)
                   #   - the minimum and maximum of the samples
                   #   - the sum-squared-deviation of the samples, used to compute variance
                   #   - a histogram of the values of the sample points
-                "count": "A String", # The total number of samples in the distribution. Must be >= 0.
+                "count": "A String", # The total number of samples in the distribution. Must be &gt;= 0.
+                "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
+                    #   Sum[i=1..count]((x_i - mean)^2)
+                    # where each x_i is a sample values. If `count` is zero then this field
+                    # must be zero, otherwise validation of the request fails.
                 "bucketCounts": [ # The number of samples in each histogram bucket. `bucket_counts` are
                     # optional. If present, they must sum to the `count` value.
                     #
@@ -176,7 +181,7 @@ See google.api.Service for the definition of a service name. (required)
                   "scale": 3.14, # The i'th exponential bucket covers the interval
                       #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                       # where i ranges from 1 to num_finite_buckets inclusive.
-                      # Must be > 0.
+                      # Must be &gt; 0.
                   "growthFactor": 3.14, # The i'th exponential bucket covers the interval
                       #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                       # where i ranges from 1 to num_finite_buckets inclusive.
@@ -185,12 +190,34 @@ See google.api.Service for the definition of a service name. (required)
                       # the total number of buckets is `num_finite_buckets` + 2.
                       # See comments on `bucket_options` for details.
                 },
-                "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
                 "maximum": 3.14, # The maximum of the population of values. Ignored if `count` is zero.
-                "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
-                    #   Sum[i=1..count]((x_i - mean)^2)
-                    # where each x_i is a sample values. If `count` is zero then this field
-                    # must be zero, otherwise validation of the request fails.
+                "exemplars": [ # Example points. Must be in increasing order of `value` field.
+                  { # Exemplars are example points that may be used to annotate aggregated
+                      # distribution values. They are metadata that gives information about a
+                      # particular value added to a Distribution bucket, such as a trace ID that
+                      # was active when a value was added. They may contain further information,
+                      # such as a example values and timestamps, origin, etc.
+                    "timestamp": "A String", # The observation (sampling) time of the above value.
+                    "attachments": [ # Contextual information about the example value. Examples are:
+                        #
+                        #   Trace: type.googleapis.com/google.monitoring.v3.SpanContext
+                        #
+                        #   Literal string: type.googleapis.com/google.protobuf.StringValue
+                        #
+                        #   Labels dropped during aggregation:
+                        #     type.googleapis.com/google.monitoring.v3.DroppedLabels
+                        #
+                        # There may be only a single attachment of any given message type in a
+                        # single exemplar, and this is enforced by the system.
+                      {
+                        "a_key": "", # Properties of the object. Contains field @type with type URL.
+                      },
+                    ],
+                    "value": 3.14, # Value of the exemplar point. This value determines to which bucket the
+                        # exemplar belongs.
+                  },
+                ],
+                "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
                 "linearBuckets": { # Describing buckets with constant width. # Buckets with constant width.
                   "width": 3.14, # The i'th linear bucket covers the interval
                       #   [offset + (i-1) * width, offset + i * width)
@@ -217,7 +244,7 @@ See google.api.Service for the definition of a service name. (required)
                       #
                       # bucket number                   lower bound    upper bound
                       #  i == 0 (underflow)              -inf           bound[i]
-                      #  0 < i < bound_size()            bound[i-1]     bound[i]
+                      #  0 &lt; i &lt; bound_size()            bound[i-1]     bound[i]
                       #  i == bound_size() (overflow)    bound[i-1]     +inf
                     3.14,
                   ],
@@ -251,17 +278,18 @@ See google.api.Service for the definition of a service name. (required)
       "consumerId": "A String", # Identity of the consumer for whom this quota operation is being performed.
           #
           # This can be in one of the following formats:
-          #   project:<project_id>,
-          #   project_number:<project_number>,
-          #   api_key:<api_key>.
+          #   project:&lt;project_id&gt;,
+          #   project_number:&lt;project_number&gt;,
+          #   api_key:&lt;api_key&gt;.
       "operationId": "A String", # Identity of the operation. This is expected to be unique within the scope
           # of the service that generated the operation, and guarantees idempotency in
           # case of retries.
           #
-          # UUID version 4 is recommended, though not required. In scenarios where an
-          # operation is computed from existing information and an idempotent id is
-          # desirable for deduplication purpose, UUID version 5 is recommended. See
-          # RFC 4122 for details.
+          # In order to ensure best performance and latency in the Quota backends,
+          # operation_ids are optimally associated with time, so that related
+          # operations can be accessed fast in storage. For this reason, the
+          # recommended token for services that intend to operate at a high QPS is
+          # Unix time in nanos + UUID
     },
   }
 
@@ -274,16 +302,16 @@ Returns:
   An object of the form:
 
     { # Response message for the AllocateQuota method.
-    "serviceConfigId": "A String", # ID of the actual config used to process the request.
     "allocateErrors": [ # Indicates the decision of the allocate.
       { # Represents error information for QuotaOperation.
         "code": "A String", # Error code.
         "description": "A String", # Free-form text that provides details on the cause of the error.
         "subject": "A String", # Subject to whom this error applies. See the specific enum for more details
-            # on this field. For example, "clientip:<ip address of client>" or
-            # "project:<Google developer project id>".
+            # on this field. For example, "clientip:&lt;ip address of client&gt;" or
+            # "project:&lt;Google developer project id&gt;".
       },
     ],
+    "serviceConfigId": "A String", # ID of the actual config used to process the request.
     "quotaMetrics": [ # Quota metrics to indicate the result of allocation. Depending on the
         # request, one or more of the following metrics will be included:
         #
@@ -313,6 +341,7 @@ Returns:
             "labels": { # The labels describing the metric value.
                 # See comments on google.api.servicecontrol.v1.Operation.labels for
                 # the overriding relationship.
+                # Note that this map must not contain monitored resource labels.
               "a_key": "A String",
             },
             "doubleValue": 3.14, # A double precision floating point value.
@@ -329,7 +358,11 @@ Returns:
                 #   - the minimum and maximum of the samples
                 #   - the sum-squared-deviation of the samples, used to compute variance
                 #   - a histogram of the values of the sample points
-              "count": "A String", # The total number of samples in the distribution. Must be >= 0.
+              "count": "A String", # The total number of samples in the distribution. Must be &gt;= 0.
+              "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
+                  #   Sum[i=1..count]((x_i - mean)^2)
+                  # where each x_i is a sample values. If `count` is zero then this field
+                  # must be zero, otherwise validation of the request fails.
               "bucketCounts": [ # The number of samples in each histogram bucket. `bucket_counts` are
                   # optional. If present, they must sum to the `count` value.
                   #
@@ -347,7 +380,7 @@ Returns:
                 "scale": 3.14, # The i'th exponential bucket covers the interval
                     #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                     # where i ranges from 1 to num_finite_buckets inclusive.
-                    # Must be > 0.
+                    # Must be &gt; 0.
                 "growthFactor": 3.14, # The i'th exponential bucket covers the interval
                     #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                     # where i ranges from 1 to num_finite_buckets inclusive.
@@ -356,12 +389,34 @@ Returns:
                     # the total number of buckets is `num_finite_buckets` + 2.
                     # See comments on `bucket_options` for details.
               },
-              "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
               "maximum": 3.14, # The maximum of the population of values. Ignored if `count` is zero.
-              "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
-                  #   Sum[i=1..count]((x_i - mean)^2)
-                  # where each x_i is a sample values. If `count` is zero then this field
-                  # must be zero, otherwise validation of the request fails.
+              "exemplars": [ # Example points. Must be in increasing order of `value` field.
+                { # Exemplars are example points that may be used to annotate aggregated
+                    # distribution values. They are metadata that gives information about a
+                    # particular value added to a Distribution bucket, such as a trace ID that
+                    # was active when a value was added. They may contain further information,
+                    # such as a example values and timestamps, origin, etc.
+                  "timestamp": "A String", # The observation (sampling) time of the above value.
+                  "attachments": [ # Contextual information about the example value. Examples are:
+                      #
+                      #   Trace: type.googleapis.com/google.monitoring.v3.SpanContext
+                      #
+                      #   Literal string: type.googleapis.com/google.protobuf.StringValue
+                      #
+                      #   Labels dropped during aggregation:
+                      #     type.googleapis.com/google.monitoring.v3.DroppedLabels
+                      #
+                      # There may be only a single attachment of any given message type in a
+                      # single exemplar, and this is enforced by the system.
+                    {
+                      "a_key": "", # Properties of the object. Contains field @type with type URL.
+                    },
+                  ],
+                  "value": 3.14, # Value of the exemplar point. This value determines to which bucket the
+                      # exemplar belongs.
+                },
+              ],
+              "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
               "linearBuckets": { # Describing buckets with constant width. # Buckets with constant width.
                 "width": 3.14, # The i'th linear bucket covers the interval
                     #   [offset + (i-1) * width, offset + i * width)
@@ -388,7 +443,7 @@ Returns:
                     #
                     # bucket number                   lower bound    upper bound
                     #  i == 0 (underflow)              -inf           bound[i]
-                    #  0 < i < bound_size()            bound[i-1]     bound[i]
+                    #  0 &lt; i &lt; bound_size()            bound[i-1]     bound[i]
                     #  i == bound_size() (overflow)    bound[i-1]     +inf
                   3.14,
                 ],
@@ -409,7 +464,8 @@ Returns:
       "unusedArguments": [ # A list of label keys that were unused by the server in processing the
           # request. Thus, for similar requests repeated in a certain future time
           # window, the caller can choose to ignore these labels in the requests
-          # to achieve better client-side cache hits and quota aggregation.
+          # to achieve better client-side cache hits and quota aggregation for rate
+          # quota. This field is not populated for allocation quota checks.
         "A String",
       ],
     },
@@ -419,7 +475,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="check">check(serviceName, body, x__xgafv=None)</code>
+    <code class="details" id="check">check(serviceName, body=None, x__xgafv=None)</code>
   <pre>Checks whether an operation on a service should be allowed to proceed
 based on the configuration of the service and related policies. It must be
 called before the operation is executed.
@@ -444,20 +500,116 @@ Args:
 See
 [google.api.Service](https://cloud.google.com/service-management/reference/rpc/google.api#google.api.Service)
 for the definition of a service name. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Request message for the Check method.
     "skipActivationCheck": True or False, # Indicates if service activation check should be skipped for this request.
         # Default behavior is to perform the check and apply relevant quota.
         # WARNING: Setting this flag to "true" will disable quota enforcement.
-    "serviceConfigId": "A String", # Specifies which version of service configuration should be used to process
-        # the request.
-        # 
-        # If unspecified or no matching version can be found, the
-        # latest one will be used.
     "operation": { # Represents information regarding an operation. # The operation to be checked.
       "operationName": "A String", # Fully qualified name of the operation. Reserved for future use.
+      "traceSpans": [ # Unimplemented. A list of Cloud Trace spans. The span names shall contain
+          # the id of the destination project which can be either the produce or the
+          # consumer project.
+        { # A span represents a single operation within a trace. Spans can be
+            # nested to form a trace tree. Often, a trace contains a root span
+            # that describes the end-to-end latency, and one or more subspans for
+            # its sub-operations. A trace can also contain multiple root spans,
+            # or none at all. Spans do not need to be contiguous&amp;mdash;there may be
+            # gaps or overlaps between spans in a trace.
+          "status": { # The `Status` type defines a logical error model that is suitable for # An optional final status for this span.
+              # different programming environments, including REST APIs and RPC APIs. It is
+              # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+              # three pieces of data: error code, error message, and error details.
+              #
+              # You can find out more about this error model and how to work with it in the
+              # [API Design Guide](https://cloud.google.com/apis/design/errors).
+            "message": "A String", # A developer-facing error message, which should be in English. Any
+                # user-facing error message should be localized and sent in the
+                # google.rpc.Status.details field, or localized by the client.
+            "code": 42, # The status code, which should be an enum value of google.rpc.Code.
+            "details": [ # A list of messages that carry the error details.  There is a common set of
+                # message types for APIs to use.
+              {
+                "a_key": "", # Properties of the object. Contains field @type with type URL.
+              },
+            ],
+          },
+          "childSpanCount": 42, # An optional number of child spans that were generated while this span
+              # was active. If set, allows implementation to detect missing child spans.
+          "displayName": { # Represents a string that might be shortened to a specified length. # A description of the span's operation (up to 128 bytes).
+              # Stackdriver Trace displays the description in the
+              # Google Cloud Platform Console.
+              # For example, the display name can be a qualified method name or a file name
+              # and a line number where the operation is called. A best practice is to use
+              # the same display name within an application and at the same call point.
+              # This makes it easier to correlate spans in different traces.
+            "value": "A String", # The shortened string. For example, if the original string is 500
+                # bytes long and the limit of the string is 128 bytes, then
+                # `value` contains the first 128 bytes of the 500-byte string.
+                #
+                # Truncation always happens on a UTF8 character boundary. If there
+                # are multi-byte characters in the string, then the length of the
+                # shortened string might be less than the size limit.
+            "truncatedByteCount": 42, # The number of bytes removed from the original string. If this
+                # value is 0, then the string was not shortened.
+          },
+          "name": "A String", # The resource name of the span in the following format:
+              #
+              #     projects/[PROJECT_ID]/traces/[TRACE_ID]/spans/SPAN_ID is a unique identifier for a trace within a project;
+              # it is a 32-character hexadecimal encoding of a 16-byte array.
+              #
+              # [SPAN_ID] is a unique identifier for a span within a trace; it
+              # is a 16-character hexadecimal encoding of an 8-byte array.
+          "spanKind": "A String", # Distinguishes between spans generated in a particular context. For example,
+              # two spans with the same name may be distinguished using `CLIENT` (caller)
+              # and `SERVER` (callee) to identify an RPC call.
+          "parentSpanId": "A String", # The [SPAN_ID] of this span's parent span. If this is a root span,
+              # then this field must be empty.
+          "startTime": "A String", # The start time of the span. On the client side, this is the time kept by
+              # the local machine where the span execution starts. On the server side, this
+              # is the time when the server's application handler starts running.
+          "spanId": "A String", # The [SPAN_ID] portion of the span's resource name.
+          "attributes": { # A set of attributes, each in the format `[KEY]:[VALUE]`. # A set of attributes on the span. You can have up to 32 attributes per
+              # span.
+            "droppedAttributesCount": 42, # The number of attributes that were discarded. Attributes can be discarded
+                # because their keys are too long or because there are too many attributes.
+                # If this value is 0 then all attributes are valid.
+            "attributeMap": { # The set of attributes. Each attribute's key can be up to 128 bytes
+                # long. The value can be a string up to 256 bytes, a signed 64-bit integer,
+                # or the Boolean values `true` and `false`. For example:
+                #
+                #     "/instance_id": "my-instance"
+                #     "/http/user_agent": ""
+                #     "/http/request_bytes": 300
+                #     "abc.com/myattribute": true
+              "a_key": { # The allowed types for [VALUE] in a `[KEY]:[VALUE]` attribute.
+                "stringValue": { # Represents a string that might be shortened to a specified length. # A string up to 256 bytes long.
+                  "value": "A String", # The shortened string. For example, if the original string is 500
+                      # bytes long and the limit of the string is 128 bytes, then
+                      # `value` contains the first 128 bytes of the 500-byte string.
+                      #
+                      # Truncation always happens on a UTF8 character boundary. If there
+                      # are multi-byte characters in the string, then the length of the
+                      # shortened string might be less than the size limit.
+                  "truncatedByteCount": 42, # The number of bytes removed from the original string. If this
+                      # value is 0, then the string was not shortened.
+                },
+                "boolValue": True or False, # A Boolean value represented by `true` or `false`.
+                "intValue": "A String", # A 64-bit signed integer.
+              },
+            },
+          },
+          "endTime": "A String", # The end time of the span. On the client side, this is the time kept by
+              # the local machine where the span execution ends. On the server side, this
+              # is the time when the server application handler stops running.
+          "sameProcessAsParentSpan": True or False, # (Optional) Set this parameter to indicate whether this span is in
+              # the same process as its parent. If you do not set this parameter,
+              # Stackdriver Trace is unable to take advantage of this helpful
+              # information.
+        },
+      ],
       "metricValueSets": [ # Represents information about this operation. Each MetricValueSet
           # corresponds to a metric defined in the service configuration.
           # The data type used in the MetricValueSet must agree with
@@ -487,6 +639,7 @@ for the definition of a service name. (required)
               "labels": { # The labels describing the metric value.
                   # See comments on google.api.servicecontrol.v1.Operation.labels for
                   # the overriding relationship.
+                  # Note that this map must not contain monitored resource labels.
                 "a_key": "A String",
               },
               "doubleValue": 3.14, # A double precision floating point value.
@@ -503,7 +656,11 @@ for the definition of a service name. (required)
                   #   - the minimum and maximum of the samples
                   #   - the sum-squared-deviation of the samples, used to compute variance
                   #   - a histogram of the values of the sample points
-                "count": "A String", # The total number of samples in the distribution. Must be >= 0.
+                "count": "A String", # The total number of samples in the distribution. Must be &gt;= 0.
+                "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
+                    #   Sum[i=1..count]((x_i - mean)^2)
+                    # where each x_i is a sample values. If `count` is zero then this field
+                    # must be zero, otherwise validation of the request fails.
                 "bucketCounts": [ # The number of samples in each histogram bucket. `bucket_counts` are
                     # optional. If present, they must sum to the `count` value.
                     #
@@ -521,7 +678,7 @@ for the definition of a service name. (required)
                   "scale": 3.14, # The i'th exponential bucket covers the interval
                       #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                       # where i ranges from 1 to num_finite_buckets inclusive.
-                      # Must be > 0.
+                      # Must be &gt; 0.
                   "growthFactor": 3.14, # The i'th exponential bucket covers the interval
                       #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                       # where i ranges from 1 to num_finite_buckets inclusive.
@@ -530,12 +687,34 @@ for the definition of a service name. (required)
                       # the total number of buckets is `num_finite_buckets` + 2.
                       # See comments on `bucket_options` for details.
                 },
-                "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
                 "maximum": 3.14, # The maximum of the population of values. Ignored if `count` is zero.
-                "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
-                    #   Sum[i=1..count]((x_i - mean)^2)
-                    # where each x_i is a sample values. If `count` is zero then this field
-                    # must be zero, otherwise validation of the request fails.
+                "exemplars": [ # Example points. Must be in increasing order of `value` field.
+                  { # Exemplars are example points that may be used to annotate aggregated
+                      # distribution values. They are metadata that gives information about a
+                      # particular value added to a Distribution bucket, such as a trace ID that
+                      # was active when a value was added. They may contain further information,
+                      # such as a example values and timestamps, origin, etc.
+                    "timestamp": "A String", # The observation (sampling) time of the above value.
+                    "attachments": [ # Contextual information about the example value. Examples are:
+                        #
+                        #   Trace: type.googleapis.com/google.monitoring.v3.SpanContext
+                        #
+                        #   Literal string: type.googleapis.com/google.protobuf.StringValue
+                        #
+                        #   Labels dropped during aggregation:
+                        #     type.googleapis.com/google.monitoring.v3.DroppedLabels
+                        #
+                        # There may be only a single attachment of any given message type in a
+                        # single exemplar, and this is enforced by the system.
+                      {
+                        "a_key": "", # Properties of the object. Contains field @type with type URL.
+                      },
+                    ],
+                    "value": 3.14, # Value of the exemplar point. This value determines to which bucket the
+                        # exemplar belongs.
+                  },
+                ],
+                "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
                 "linearBuckets": { # Describing buckets with constant width. # Buckets with constant width.
                   "width": 3.14, # The i'th linear bucket covers the interval
                       #   [offset + (i-1) * width, offset + i * width)
@@ -562,7 +741,7 @@ for the definition of a service name. (required)
                       #
                       # bucket number                   lower bound    upper bound
                       #  i == 0 (underflow)              -inf           bound[i]
-                      #  0 < i < bound_size()            bound[i-1]     bound[i]
+                      #  0 &lt; i &lt; bound_size()            bound[i-1]     bound[i]
                       #  i == bound_size() (overflow)    bound[i-1]     +inf
                     3.14,
                   ],
@@ -603,13 +782,18 @@ for the definition of a service name. (required)
           # check will be performed.
         "quotaMode": "A String", # Quota mode for this operation.
       },
-      "resourceContainer": "A String", # DO NOT USE. This field is deprecated, use "resources" field instead.
-          # The resource name of the parent of a resource in the resource hierarchy.
+      "consumerId": "A String", # Identity of the consumer who is using the service.
+          # This field should be filled in for the operations initiated by a
+          # consumer, but not for service-initiated operations that are
+          # not related to a specific consumer.
           #
-          # This can be in one of the following formats:
-          #     - “projects/<project-id or project-number>”
-          #     - “folders/<folder-id>”
-          #     - “organizations/<organization-id>”
+          # - This can be in one of the following formats:
+          #     - project:PROJECT_ID,
+          #     - project`_`number:PROJECT_NUMBER,
+          #     - projects/PROJECT_ID or PROJECT_NUMBER,
+          #     - folders/FOLDER_NUMBER,
+          #     - organizations/ORGANIZATION_NUMBER,
+          #     - api`_`key:API_KEY.
       "userLabels": { # User defined labels for the resource that this operation is associated
           # with. Only a combination of 1000 user labels per consumer project are
           # allowed.
@@ -627,8 +811,9 @@ for the definition of a service name. (required)
                 # being served from cache. This field is only meaningful if `cache_hit` is
                 # True.
             "protocol": "A String", # Protocol used for the request. Examples: "HTTP/1.1", "HTTP/2", "websocket"
-            "cacheHit": True or False, # Whether or not an entity was served from cache
-                # (with or without validation).
+            "requestMethod": "A String", # The request method. Examples: `"GET"`, `"HEAD"`, `"PUT"`, `"POST"`.
+            "latency": "A String", # The request processing latency on the server, from the time the request was
+                # received until the response was sent.
             "cacheFillBytes": "A String", # The number of HTTP response bytes inserted into cache. Set only when a
                 # cache fill was attempted.
             "requestUrl": "A String", # The scheme (http, https), the host name, the path, and the query
@@ -637,9 +822,8 @@ for the definition of a service name. (required)
             "serverIp": "A String", # The IP address (IPv4 or IPv6) of the origin server that the request was
                 # sent to.
             "cacheLookup": True or False, # Whether or not a cache lookup was attempted.
-            "latency": "A String", # The request processing latency on the server, from the time the request was
-                # received until the response was sent.
-            "requestMethod": "A String", # The request method. Examples: `"GET"`, `"HEAD"`, `"PUT"`, `"POST"`.
+            "cacheHit": True or False, # Whether or not an entity was served from cache
+                # (with or without validation).
             "referer": "A String", # The referer URL of the request, as defined in
                 # [HTTP/1.1 Header Field
                 # Definitions](http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html).
@@ -653,13 +837,11 @@ for the definition of a service name. (required)
             "responseSize": "A String", # The size of the HTTP response message sent back to the client, in bytes,
                 # including the response headers and the response body.
           },
-          "severity": "A String", # The severity of the log entry. The default value is
-              # `LogSeverity.DEFAULT`.
+          "textPayload": "A String", # The log entry payload, represented as a Unicode string (UTF-8).
           "trace": "A String", # Optional. Resource name of the trace associated with the log entry, if any.
               # If this field contains a relative resource name, you can assume the name is
               # relative to `//tracing.googleapis.com`. Example:
               # `projects/my-projectid/traces/06796866738c859f2f19b7cfb3214824`
-          "textPayload": "A String", # The log entry payload, represented as a Unicode string (UTF-8).
           "timestamp": "A String", # The time the event described by the log entry occurred. If
               # omitted, defaults to operation start time.
           "labels": { # A set of user-defined (key, value) data that provides additional
@@ -670,13 +852,15 @@ for the definition of a service name. (required)
               # is expressed as a JSON object.
             "a_key": "", # Properties of the object.
           },
+          "name": "A String", # Required. The log to which this log entry belongs. Examples: `"syslog"`,
+              # `"book_log"`.
+          "insertId": "A String", # A unique ID for the log entry used for deduplication. If omitted,
+              # the implementation will generate one based on operation_id.
           "protoPayload": { # The log entry payload, represented as a protocol buffer that is
               # expressed as a JSON object. The only accepted type currently is
               # AuditLog.
             "a_key": "", # Properties of the object. Contains field @type with type URL.
           },
-          "insertId": "A String", # A unique ID for the log entry used for deduplication. If omitted,
-              # the implementation will generate one based on operation_id.
           "operation": { # Additional information about a potentially long-running operation with which # Optional. Information about an operation associated with the log entry, if
               # applicable.
               # a log entry is associated.
@@ -688,22 +872,24 @@ for the definition of a service name. (required)
                 # `"MyDivision.MyBigCompany.com"`, `"github.com/MyProject/MyApplication"`.
             "first": True or False, # Optional. Set this to True if this is the first log entry in the operation.
           },
-          "name": "A String", # Required. The log to which this log entry belongs. Examples: `"syslog"`,
-              # `"book_log"`.
+          "sourceLocation": { # Additional information about the source code location that produced the log # Optional. Source code location information associated with the log entry,
+              # if any.
+              # entry.
+            "function": "A String", # Optional. Human-readable name of the function or method being invoked, with
+                # optional context such as the class or package name. This information may be
+                # used in contexts such as the logs viewer, where a file and line number are
+                # less meaningful. The format can vary by language. For example:
+                # `qual.if.ied.Class.method` (Java), `dir/package.func` (Go), `function`
+                # (Python).
+            "line": "A String", # Optional. Line within the source file. 1-based; 0 indicates no line number
+                # available.
+            "file": "A String", # Optional. Source file name. Depending on the runtime environment, this
+                # might be a simple name or a fully-qualified name.
+          },
+          "severity": "A String", # The severity of the log entry. The default value is
+              # `LogSeverity.DEFAULT`.
         },
       ],
-      "consumerId": "A String", # Identity of the consumer who is using the service.
-          # This field should be filled in for the operations initiated by a
-          # consumer, but not for service-initiated operations that are
-          # not related to a specific consumer.
-          #
-          # - This can be in one of the following formats:
-          #     - project:PROJECT_ID,
-          #     - project`_`number:PROJECT_NUMBER,
-          #     - projects/PROJECT_ID or PROJECT_NUMBER,
-          #     - folders/FOLDER_NUMBER,
-          #     - organizations/ORGANIZATION_NUMBER,
-          #     - api`_`key:API_KEY.
       "startTime": "A String", # Required. Start time of the operation.
       "endTime": "A String", # End time of the operation.
           # Required when the operation is used in ServiceController.Report,
@@ -713,9 +899,9 @@ for the definition of a service name. (required)
         { # Describes a resource associated with this operation.
           "resourceContainer": "A String", # The identifier of the parent of this resource instance.
               # Must be in one of the following formats:
-              #     - “projects/<project-id or project-number>”
-              #     - “folders/<folder-id>”
-              #     - “organizations/<organization-id>”
+              #     - “projects/&lt;project-id or project-number&gt;”
+              #     - “folders/&lt;folder-id&gt;”
+              #     - “organizations/&lt;organization-id&gt;”
           "resourceName": "A String", # Name of the resource. This is used for auditing purposes.
           "resourceLocation": "A String", # The location of the resource. If not empty, the resource will be checked
               # against location policy. The value must be a valid zone, region or
@@ -732,6 +918,11 @@ for the definition of a service name. (required)
           # and an idempotent id is desirable for deduplication purpose, UUID version 5
           # is recommended. See RFC 4122 for details.
     },
+    "serviceConfigId": "A String", # Specifies which version of service configuration should be used to process
+        # the request.
+        # 
+        # If unspecified or no matching version can be found, the
+        # latest one will be used.
     "requestProjectSettings": True or False, # Requests the project settings to be returned as part of the check response.
   }
 
@@ -794,14 +985,24 @@ Returns:
         "detail": "A String", # Free-form text providing details on the error cause of the error.
         "subject": "A String", # Subject to whom this error applies. See the specific code enum for more
             # details on this field. For example:
-            #     - “project:<project-id or project-number>”
-            #     - “folder:<folder-id>”
-            #     - “organization:<organization-id>”
+            #     - “project:&lt;project-id or project-number&gt;”
+            #     - “folder:&lt;folder-id&gt;”
+            #     - “organization:&lt;organization-id&gt;”
       },
     ],
-    "serviceRolloutId": "A String", # Unimplemented. The current service rollout id used to process the request.
+    "serviceRolloutId": "A String", # The current service rollout id used to process the request.
     "serviceConfigId": "A String", # The actual config id used to process the request.
     "quotaInfo": { # Contains the quota information for a quota check response. # Quota information for the check request associated with this response.
+      "quotaConsumed": { # Map of quota group name to the actual number of tokens consumed. If the
+          # quota check was not successful, then this will not be populated due to no
+          # quota consumption.
+          #
+          # We are not merging this field with 'quota_metrics' field because of the
+          # complexity of scaling in Chemist client code base. For simplicity, we will
+          # keep this field for Castor (that scales quota usage) and 'quota_metrics'
+          # for SuperQuota (that doesn't scale quota usage).
+        "a_key": 42,
+      },
       "quotaMetrics": [ # Quota metrics to indicate the usage. Depending on the check request, one or
           # more of the following metrics will be included:
           #
@@ -835,6 +1036,7 @@ Returns:
               "labels": { # The labels describing the metric value.
                   # See comments on google.api.servicecontrol.v1.Operation.labels for
                   # the overriding relationship.
+                  # Note that this map must not contain monitored resource labels.
                 "a_key": "A String",
               },
               "doubleValue": 3.14, # A double precision floating point value.
@@ -851,7 +1053,11 @@ Returns:
                   #   - the minimum and maximum of the samples
                   #   - the sum-squared-deviation of the samples, used to compute variance
                   #   - a histogram of the values of the sample points
-                "count": "A String", # The total number of samples in the distribution. Must be >= 0.
+                "count": "A String", # The total number of samples in the distribution. Must be &gt;= 0.
+                "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
+                    #   Sum[i=1..count]((x_i - mean)^2)
+                    # where each x_i is a sample values. If `count` is zero then this field
+                    # must be zero, otherwise validation of the request fails.
                 "bucketCounts": [ # The number of samples in each histogram bucket. `bucket_counts` are
                     # optional. If present, they must sum to the `count` value.
                     #
@@ -869,7 +1075,7 @@ Returns:
                   "scale": 3.14, # The i'th exponential bucket covers the interval
                       #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                       # where i ranges from 1 to num_finite_buckets inclusive.
-                      # Must be > 0.
+                      # Must be &gt; 0.
                   "growthFactor": 3.14, # The i'th exponential bucket covers the interval
                       #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                       # where i ranges from 1 to num_finite_buckets inclusive.
@@ -878,12 +1084,34 @@ Returns:
                       # the total number of buckets is `num_finite_buckets` + 2.
                       # See comments on `bucket_options` for details.
                 },
-                "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
                 "maximum": 3.14, # The maximum of the population of values. Ignored if `count` is zero.
-                "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
-                    #   Sum[i=1..count]((x_i - mean)^2)
-                    # where each x_i is a sample values. If `count` is zero then this field
-                    # must be zero, otherwise validation of the request fails.
+                "exemplars": [ # Example points. Must be in increasing order of `value` field.
+                  { # Exemplars are example points that may be used to annotate aggregated
+                      # distribution values. They are metadata that gives information about a
+                      # particular value added to a Distribution bucket, such as a trace ID that
+                      # was active when a value was added. They may contain further information,
+                      # such as a example values and timestamps, origin, etc.
+                    "timestamp": "A String", # The observation (sampling) time of the above value.
+                    "attachments": [ # Contextual information about the example value. Examples are:
+                        #
+                        #   Trace: type.googleapis.com/google.monitoring.v3.SpanContext
+                        #
+                        #   Literal string: type.googleapis.com/google.protobuf.StringValue
+                        #
+                        #   Labels dropped during aggregation:
+                        #     type.googleapis.com/google.monitoring.v3.DroppedLabels
+                        #
+                        # There may be only a single attachment of any given message type in a
+                        # single exemplar, and this is enforced by the system.
+                      {
+                        "a_key": "", # Properties of the object. Contains field @type with type URL.
+                      },
+                    ],
+                    "value": 3.14, # Value of the exemplar point. This value determines to which bucket the
+                        # exemplar belongs.
+                  },
+                ],
+                "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
                 "linearBuckets": { # Describing buckets with constant width. # Buckets with constant width.
                   "width": 3.14, # The i'th linear bucket covers the interval
                       #   [offset + (i-1) * width, offset + i * width)
@@ -910,7 +1138,7 @@ Returns:
                       #
                       # bucket number                   lower bound    upper bound
                       #  i == 0 (underflow)              -inf           bound[i]
-                      #  0 < i < bound_size()            bound[i-1]     bound[i]
+                      #  0 &lt; i &lt; bound_size()            bound[i-1]     bound[i]
                       #  i == bound_size() (overflow)    bound[i-1]     +inf
                     3.14,
                   ],
@@ -934,16 +1162,6 @@ Returns:
           # Deprecated: Use quota_metrics to get per quota group limit exceeded status.
         "A String",
       ],
-      "quotaConsumed": { # Map of quota group name to the actual number of tokens consumed. If the
-          # quota check was not successful, then this will not be populated due to no
-          # quota consumption.
-          #
-          # We are not merging this field with 'quota_metrics' field because of the
-          # complexity of scaling in Chemist client code base. For simplicity, we will
-          # keep this field for Castor (that scales quota usage) and 'quota_metrics'
-          # for SuperQuota (that doesn't scale quota usage).
-        "a_key": 42,
-      },
     },
     "operationId": "A String", # The same operation_id value used in the CheckRequest.
         # Used for logging and diagnostics purposes.
@@ -951,7 +1169,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="report">report(serviceName, body, x__xgafv=None)</code>
+    <code class="details" id="report">report(serviceName, body=None, x__xgafv=None)</code>
   <pre>Reports operation results to Google Service Control, such as logs and
 metrics. It should be called after an operation is completed.
 
@@ -961,7 +1179,8 @@ reduce data loss during client crashes. Clients should carefully choose
 the aggregation time window to avoid data loss risk more than 0.01%
 for business and compliance reasons.
 
-NOTE: the ReportRequest has the size limit of 1MB.
+NOTE: the ReportRequest has the size limit (wire-format byte size) of
+1MB.
 
 This method requires the `servicemanagement.services.report` permission
 on the specified service. For more information, see
@@ -974,7 +1193,7 @@ Args:
 See
 [google.api.Service](https://cloud.google.com/service-management/reference/rpc/google.api#google.api.Service)
 for the definition of a service name. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Request message for the Report method.
@@ -985,11 +1204,112 @@ for the definition of a service name. (required)
         # be used only when multiple operations are natually available at the time
         # of the report.
         # 
-        # If multiple operations are in a single request, the total request size
-        # should be no larger than 1MB. See ReportResponse.report_errors for
-        # partial failure behavior.
+        # There is no limit on the number of operations in the same ReportRequest,
+        # however the ReportRequest size should be no larger than 1MB. See
+        # ReportResponse.report_errors for partial failure behavior.
       { # Represents information regarding an operation.
         "operationName": "A String", # Fully qualified name of the operation. Reserved for future use.
+        "traceSpans": [ # Unimplemented. A list of Cloud Trace spans. The span names shall contain
+            # the id of the destination project which can be either the produce or the
+            # consumer project.
+          { # A span represents a single operation within a trace. Spans can be
+              # nested to form a trace tree. Often, a trace contains a root span
+              # that describes the end-to-end latency, and one or more subspans for
+              # its sub-operations. A trace can also contain multiple root spans,
+              # or none at all. Spans do not need to be contiguous&amp;mdash;there may be
+              # gaps or overlaps between spans in a trace.
+            "status": { # The `Status` type defines a logical error model that is suitable for # An optional final status for this span.
+                # different programming environments, including REST APIs and RPC APIs. It is
+                # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+                # three pieces of data: error code, error message, and error details.
+                #
+                # You can find out more about this error model and how to work with it in the
+                # [API Design Guide](https://cloud.google.com/apis/design/errors).
+              "message": "A String", # A developer-facing error message, which should be in English. Any
+                  # user-facing error message should be localized and sent in the
+                  # google.rpc.Status.details field, or localized by the client.
+              "code": 42, # The status code, which should be an enum value of google.rpc.Code.
+              "details": [ # A list of messages that carry the error details.  There is a common set of
+                  # message types for APIs to use.
+                {
+                  "a_key": "", # Properties of the object. Contains field @type with type URL.
+                },
+              ],
+            },
+            "childSpanCount": 42, # An optional number of child spans that were generated while this span
+                # was active. If set, allows implementation to detect missing child spans.
+            "displayName": { # Represents a string that might be shortened to a specified length. # A description of the span's operation (up to 128 bytes).
+                # Stackdriver Trace displays the description in the
+                # Google Cloud Platform Console.
+                # For example, the display name can be a qualified method name or a file name
+                # and a line number where the operation is called. A best practice is to use
+                # the same display name within an application and at the same call point.
+                # This makes it easier to correlate spans in different traces.
+              "value": "A String", # The shortened string. For example, if the original string is 500
+                  # bytes long and the limit of the string is 128 bytes, then
+                  # `value` contains the first 128 bytes of the 500-byte string.
+                  #
+                  # Truncation always happens on a UTF8 character boundary. If there
+                  # are multi-byte characters in the string, then the length of the
+                  # shortened string might be less than the size limit.
+              "truncatedByteCount": 42, # The number of bytes removed from the original string. If this
+                  # value is 0, then the string was not shortened.
+            },
+            "name": "A String", # The resource name of the span in the following format:
+                #
+                #     projects/[PROJECT_ID]/traces/[TRACE_ID]/spans/SPAN_ID is a unique identifier for a trace within a project;
+                # it is a 32-character hexadecimal encoding of a 16-byte array.
+                #
+                # [SPAN_ID] is a unique identifier for a span within a trace; it
+                # is a 16-character hexadecimal encoding of an 8-byte array.
+            "spanKind": "A String", # Distinguishes between spans generated in a particular context. For example,
+                # two spans with the same name may be distinguished using `CLIENT` (caller)
+                # and `SERVER` (callee) to identify an RPC call.
+            "parentSpanId": "A String", # The [SPAN_ID] of this span's parent span. If this is a root span,
+                # then this field must be empty.
+            "startTime": "A String", # The start time of the span. On the client side, this is the time kept by
+                # the local machine where the span execution starts. On the server side, this
+                # is the time when the server's application handler starts running.
+            "spanId": "A String", # The [SPAN_ID] portion of the span's resource name.
+            "attributes": { # A set of attributes, each in the format `[KEY]:[VALUE]`. # A set of attributes on the span. You can have up to 32 attributes per
+                # span.
+              "droppedAttributesCount": 42, # The number of attributes that were discarded. Attributes can be discarded
+                  # because their keys are too long or because there are too many attributes.
+                  # If this value is 0 then all attributes are valid.
+              "attributeMap": { # The set of attributes. Each attribute's key can be up to 128 bytes
+                  # long. The value can be a string up to 256 bytes, a signed 64-bit integer,
+                  # or the Boolean values `true` and `false`. For example:
+                  #
+                  #     "/instance_id": "my-instance"
+                  #     "/http/user_agent": ""
+                  #     "/http/request_bytes": 300
+                  #     "abc.com/myattribute": true
+                "a_key": { # The allowed types for [VALUE] in a `[KEY]:[VALUE]` attribute.
+                  "stringValue": { # Represents a string that might be shortened to a specified length. # A string up to 256 bytes long.
+                    "value": "A String", # The shortened string. For example, if the original string is 500
+                        # bytes long and the limit of the string is 128 bytes, then
+                        # `value` contains the first 128 bytes of the 500-byte string.
+                        #
+                        # Truncation always happens on a UTF8 character boundary. If there
+                        # are multi-byte characters in the string, then the length of the
+                        # shortened string might be less than the size limit.
+                    "truncatedByteCount": 42, # The number of bytes removed from the original string. If this
+                        # value is 0, then the string was not shortened.
+                  },
+                  "boolValue": True or False, # A Boolean value represented by `true` or `false`.
+                  "intValue": "A String", # A 64-bit signed integer.
+                },
+              },
+            },
+            "endTime": "A String", # The end time of the span. On the client side, this is the time kept by
+                # the local machine where the span execution ends. On the server side, this
+                # is the time when the server application handler stops running.
+            "sameProcessAsParentSpan": True or False, # (Optional) Set this parameter to indicate whether this span is in
+                # the same process as its parent. If you do not set this parameter,
+                # Stackdriver Trace is unable to take advantage of this helpful
+                # information.
+          },
+        ],
         "metricValueSets": [ # Represents information about this operation. Each MetricValueSet
             # corresponds to a metric defined in the service configuration.
             # The data type used in the MetricValueSet must agree with
@@ -1019,6 +1339,7 @@ for the definition of a service name. (required)
                 "labels": { # The labels describing the metric value.
                     # See comments on google.api.servicecontrol.v1.Operation.labels for
                     # the overriding relationship.
+                    # Note that this map must not contain monitored resource labels.
                   "a_key": "A String",
                 },
                 "doubleValue": 3.14, # A double precision floating point value.
@@ -1035,7 +1356,11 @@ for the definition of a service name. (required)
                     #   - the minimum and maximum of the samples
                     #   - the sum-squared-deviation of the samples, used to compute variance
                     #   - a histogram of the values of the sample points
-                  "count": "A String", # The total number of samples in the distribution. Must be >= 0.
+                  "count": "A String", # The total number of samples in the distribution. Must be &gt;= 0.
+                  "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
+                      #   Sum[i=1..count]((x_i - mean)^2)
+                      # where each x_i is a sample values. If `count` is zero then this field
+                      # must be zero, otherwise validation of the request fails.
                   "bucketCounts": [ # The number of samples in each histogram bucket. `bucket_counts` are
                       # optional. If present, they must sum to the `count` value.
                       #
@@ -1053,7 +1378,7 @@ for the definition of a service name. (required)
                     "scale": 3.14, # The i'th exponential bucket covers the interval
                         #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                         # where i ranges from 1 to num_finite_buckets inclusive.
-                        # Must be > 0.
+                        # Must be &gt; 0.
                     "growthFactor": 3.14, # The i'th exponential bucket covers the interval
                         #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                         # where i ranges from 1 to num_finite_buckets inclusive.
@@ -1062,12 +1387,34 @@ for the definition of a service name. (required)
                         # the total number of buckets is `num_finite_buckets` + 2.
                         # See comments on `bucket_options` for details.
                   },
-                  "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
                   "maximum": 3.14, # The maximum of the population of values. Ignored if `count` is zero.
-                  "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
-                      #   Sum[i=1..count]((x_i - mean)^2)
-                      # where each x_i is a sample values. If `count` is zero then this field
-                      # must be zero, otherwise validation of the request fails.
+                  "exemplars": [ # Example points. Must be in increasing order of `value` field.
+                    { # Exemplars are example points that may be used to annotate aggregated
+                        # distribution values. They are metadata that gives information about a
+                        # particular value added to a Distribution bucket, such as a trace ID that
+                        # was active when a value was added. They may contain further information,
+                        # such as a example values and timestamps, origin, etc.
+                      "timestamp": "A String", # The observation (sampling) time of the above value.
+                      "attachments": [ # Contextual information about the example value. Examples are:
+                          #
+                          #   Trace: type.googleapis.com/google.monitoring.v3.SpanContext
+                          #
+                          #   Literal string: type.googleapis.com/google.protobuf.StringValue
+                          #
+                          #   Labels dropped during aggregation:
+                          #     type.googleapis.com/google.monitoring.v3.DroppedLabels
+                          #
+                          # There may be only a single attachment of any given message type in a
+                          # single exemplar, and this is enforced by the system.
+                        {
+                          "a_key": "", # Properties of the object. Contains field @type with type URL.
+                        },
+                      ],
+                      "value": 3.14, # Value of the exemplar point. This value determines to which bucket the
+                          # exemplar belongs.
+                    },
+                  ],
+                  "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
                   "linearBuckets": { # Describing buckets with constant width. # Buckets with constant width.
                     "width": 3.14, # The i'th linear bucket covers the interval
                         #   [offset + (i-1) * width, offset + i * width)
@@ -1094,7 +1441,7 @@ for the definition of a service name. (required)
                         #
                         # bucket number                   lower bound    upper bound
                         #  i == 0 (underflow)              -inf           bound[i]
-                        #  0 < i < bound_size()            bound[i-1]     bound[i]
+                        #  0 &lt; i &lt; bound_size()            bound[i-1]     bound[i]
                         #  i == bound_size() (overflow)    bound[i-1]     +inf
                       3.14,
                     ],
@@ -1135,13 +1482,18 @@ for the definition of a service name. (required)
             # check will be performed.
           "quotaMode": "A String", # Quota mode for this operation.
         },
-        "resourceContainer": "A String", # DO NOT USE. This field is deprecated, use "resources" field instead.
-            # The resource name of the parent of a resource in the resource hierarchy.
+        "consumerId": "A String", # Identity of the consumer who is using the service.
+            # This field should be filled in for the operations initiated by a
+            # consumer, but not for service-initiated operations that are
+            # not related to a specific consumer.
             #
-            # This can be in one of the following formats:
-            #     - “projects/<project-id or project-number>”
-            #     - “folders/<folder-id>”
-            #     - “organizations/<organization-id>”
+            # - This can be in one of the following formats:
+            #     - project:PROJECT_ID,
+            #     - project`_`number:PROJECT_NUMBER,
+            #     - projects/PROJECT_ID or PROJECT_NUMBER,
+            #     - folders/FOLDER_NUMBER,
+            #     - organizations/ORGANIZATION_NUMBER,
+            #     - api`_`key:API_KEY.
         "userLabels": { # User defined labels for the resource that this operation is associated
             # with. Only a combination of 1000 user labels per consumer project are
             # allowed.
@@ -1159,8 +1511,9 @@ for the definition of a service name. (required)
                   # being served from cache. This field is only meaningful if `cache_hit` is
                   # True.
               "protocol": "A String", # Protocol used for the request. Examples: "HTTP/1.1", "HTTP/2", "websocket"
-              "cacheHit": True or False, # Whether or not an entity was served from cache
-                  # (with or without validation).
+              "requestMethod": "A String", # The request method. Examples: `"GET"`, `"HEAD"`, `"PUT"`, `"POST"`.
+              "latency": "A String", # The request processing latency on the server, from the time the request was
+                  # received until the response was sent.
               "cacheFillBytes": "A String", # The number of HTTP response bytes inserted into cache. Set only when a
                   # cache fill was attempted.
               "requestUrl": "A String", # The scheme (http, https), the host name, the path, and the query
@@ -1169,9 +1522,8 @@ for the definition of a service name. (required)
               "serverIp": "A String", # The IP address (IPv4 or IPv6) of the origin server that the request was
                   # sent to.
               "cacheLookup": True or False, # Whether or not a cache lookup was attempted.
-              "latency": "A String", # The request processing latency on the server, from the time the request was
-                  # received until the response was sent.
-              "requestMethod": "A String", # The request method. Examples: `"GET"`, `"HEAD"`, `"PUT"`, `"POST"`.
+              "cacheHit": True or False, # Whether or not an entity was served from cache
+                  # (with or without validation).
               "referer": "A String", # The referer URL of the request, as defined in
                   # [HTTP/1.1 Header Field
                   # Definitions](http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html).
@@ -1185,13 +1537,11 @@ for the definition of a service name. (required)
               "responseSize": "A String", # The size of the HTTP response message sent back to the client, in bytes,
                   # including the response headers and the response body.
             },
-            "severity": "A String", # The severity of the log entry. The default value is
-                # `LogSeverity.DEFAULT`.
+            "textPayload": "A String", # The log entry payload, represented as a Unicode string (UTF-8).
             "trace": "A String", # Optional. Resource name of the trace associated with the log entry, if any.
                 # If this field contains a relative resource name, you can assume the name is
                 # relative to `//tracing.googleapis.com`. Example:
                 # `projects/my-projectid/traces/06796866738c859f2f19b7cfb3214824`
-            "textPayload": "A String", # The log entry payload, represented as a Unicode string (UTF-8).
             "timestamp": "A String", # The time the event described by the log entry occurred. If
                 # omitted, defaults to operation start time.
             "labels": { # A set of user-defined (key, value) data that provides additional
@@ -1202,13 +1552,15 @@ for the definition of a service name. (required)
                 # is expressed as a JSON object.
               "a_key": "", # Properties of the object.
             },
+            "name": "A String", # Required. The log to which this log entry belongs. Examples: `"syslog"`,
+                # `"book_log"`.
+            "insertId": "A String", # A unique ID for the log entry used for deduplication. If omitted,
+                # the implementation will generate one based on operation_id.
             "protoPayload": { # The log entry payload, represented as a protocol buffer that is
                 # expressed as a JSON object. The only accepted type currently is
                 # AuditLog.
               "a_key": "", # Properties of the object. Contains field @type with type URL.
             },
-            "insertId": "A String", # A unique ID for the log entry used for deduplication. If omitted,
-                # the implementation will generate one based on operation_id.
             "operation": { # Additional information about a potentially long-running operation with which # Optional. Information about an operation associated with the log entry, if
                 # applicable.
                 # a log entry is associated.
@@ -1220,22 +1572,24 @@ for the definition of a service name. (required)
                   # `"MyDivision.MyBigCompany.com"`, `"github.com/MyProject/MyApplication"`.
               "first": True or False, # Optional. Set this to True if this is the first log entry in the operation.
             },
-            "name": "A String", # Required. The log to which this log entry belongs. Examples: `"syslog"`,
-                # `"book_log"`.
+            "sourceLocation": { # Additional information about the source code location that produced the log # Optional. Source code location information associated with the log entry,
+                # if any.
+                # entry.
+              "function": "A String", # Optional. Human-readable name of the function or method being invoked, with
+                  # optional context such as the class or package name. This information may be
+                  # used in contexts such as the logs viewer, where a file and line number are
+                  # less meaningful. The format can vary by language. For example:
+                  # `qual.if.ied.Class.method` (Java), `dir/package.func` (Go), `function`
+                  # (Python).
+              "line": "A String", # Optional. Line within the source file. 1-based; 0 indicates no line number
+                  # available.
+              "file": "A String", # Optional. Source file name. Depending on the runtime environment, this
+                  # might be a simple name or a fully-qualified name.
+            },
+            "severity": "A String", # The severity of the log entry. The default value is
+                # `LogSeverity.DEFAULT`.
           },
         ],
-        "consumerId": "A String", # Identity of the consumer who is using the service.
-            # This field should be filled in for the operations initiated by a
-            # consumer, but not for service-initiated operations that are
-            # not related to a specific consumer.
-            #
-            # - This can be in one of the following formats:
-            #     - project:PROJECT_ID,
-            #     - project`_`number:PROJECT_NUMBER,
-            #     - projects/PROJECT_ID or PROJECT_NUMBER,
-            #     - folders/FOLDER_NUMBER,
-            #     - organizations/ORGANIZATION_NUMBER,
-            #     - api`_`key:API_KEY.
         "startTime": "A String", # Required. Start time of the operation.
         "endTime": "A String", # End time of the operation.
             # Required when the operation is used in ServiceController.Report,
@@ -1245,9 +1599,9 @@ for the definition of a service name. (required)
           { # Describes a resource associated with this operation.
             "resourceContainer": "A String", # The identifier of the parent of this resource instance.
                 # Must be in one of the following formats:
-                #     - “projects/<project-id or project-number>”
-                #     - “folders/<folder-id>”
-                #     - “organizations/<organization-id>”
+                #     - “projects/&lt;project-id or project-number&gt;”
+                #     - “folders/&lt;folder-id&gt;”
+                #     - “organizations/&lt;organization-id&gt;”
             "resourceName": "A String", # Name of the resource. This is used for auditing purposes.
             "resourceLocation": "A String", # The location of the resource. If not empty, the resource will be checked
                 # against location policy. The value must be a valid zone, region or
@@ -1327,6 +1681,16 @@ Returns:
         # If there is no quota release request, report_quota_info will be empty.
       { # Contains additional info about the report operation.
         "quotaInfo": { # Contains the quota information for a quota check response. # Quota usage info when processing the `Operation`.
+          "quotaConsumed": { # Map of quota group name to the actual number of tokens consumed. If the
+              # quota check was not successful, then this will not be populated due to no
+              # quota consumption.
+              #
+              # We are not merging this field with 'quota_metrics' field because of the
+              # complexity of scaling in Chemist client code base. For simplicity, we will
+              # keep this field for Castor (that scales quota usage) and 'quota_metrics'
+              # for SuperQuota (that doesn't scale quota usage).
+            "a_key": 42,
+          },
           "quotaMetrics": [ # Quota metrics to indicate the usage. Depending on the check request, one or
               # more of the following metrics will be included:
               #
@@ -1360,6 +1724,7 @@ Returns:
                   "labels": { # The labels describing the metric value.
                       # See comments on google.api.servicecontrol.v1.Operation.labels for
                       # the overriding relationship.
+                      # Note that this map must not contain monitored resource labels.
                     "a_key": "A String",
                   },
                   "doubleValue": 3.14, # A double precision floating point value.
@@ -1376,7 +1741,11 @@ Returns:
                       #   - the minimum and maximum of the samples
                       #   - the sum-squared-deviation of the samples, used to compute variance
                       #   - a histogram of the values of the sample points
-                    "count": "A String", # The total number of samples in the distribution. Must be >= 0.
+                    "count": "A String", # The total number of samples in the distribution. Must be &gt;= 0.
+                    "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
+                        #   Sum[i=1..count]((x_i - mean)^2)
+                        # where each x_i is a sample values. If `count` is zero then this field
+                        # must be zero, otherwise validation of the request fails.
                     "bucketCounts": [ # The number of samples in each histogram bucket. `bucket_counts` are
                         # optional. If present, they must sum to the `count` value.
                         #
@@ -1394,7 +1763,7 @@ Returns:
                       "scale": 3.14, # The i'th exponential bucket covers the interval
                           #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                           # where i ranges from 1 to num_finite_buckets inclusive.
-                          # Must be > 0.
+                          # Must be &gt; 0.
                       "growthFactor": 3.14, # The i'th exponential bucket covers the interval
                           #   [scale * growth_factor^(i-1), scale * growth_factor^i)
                           # where i ranges from 1 to num_finite_buckets inclusive.
@@ -1403,12 +1772,34 @@ Returns:
                           # the total number of buckets is `num_finite_buckets` + 2.
                           # See comments on `bucket_options` for details.
                     },
-                    "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
                     "maximum": 3.14, # The maximum of the population of values. Ignored if `count` is zero.
-                    "sumOfSquaredDeviation": 3.14, # The sum of squared deviations from the mean:
-                        #   Sum[i=1..count]((x_i - mean)^2)
-                        # where each x_i is a sample values. If `count` is zero then this field
-                        # must be zero, otherwise validation of the request fails.
+                    "exemplars": [ # Example points. Must be in increasing order of `value` field.
+                      { # Exemplars are example points that may be used to annotate aggregated
+                          # distribution values. They are metadata that gives information about a
+                          # particular value added to a Distribution bucket, such as a trace ID that
+                          # was active when a value was added. They may contain further information,
+                          # such as a example values and timestamps, origin, etc.
+                        "timestamp": "A String", # The observation (sampling) time of the above value.
+                        "attachments": [ # Contextual information about the example value. Examples are:
+                            #
+                            #   Trace: type.googleapis.com/google.monitoring.v3.SpanContext
+                            #
+                            #   Literal string: type.googleapis.com/google.protobuf.StringValue
+                            #
+                            #   Labels dropped during aggregation:
+                            #     type.googleapis.com/google.monitoring.v3.DroppedLabels
+                            #
+                            # There may be only a single attachment of any given message type in a
+                            # single exemplar, and this is enforced by the system.
+                          {
+                            "a_key": "", # Properties of the object. Contains field @type with type URL.
+                          },
+                        ],
+                        "value": 3.14, # Value of the exemplar point. This value determines to which bucket the
+                            # exemplar belongs.
+                      },
+                    ],
+                    "minimum": 3.14, # The minimum of the population of values. Ignored if `count` is zero.
                     "linearBuckets": { # Describing buckets with constant width. # Buckets with constant width.
                       "width": 3.14, # The i'th linear bucket covers the interval
                           #   [offset + (i-1) * width, offset + i * width)
@@ -1435,7 +1826,7 @@ Returns:
                           #
                           # bucket number                   lower bound    upper bound
                           #  i == 0 (underflow)              -inf           bound[i]
-                          #  0 < i < bound_size()            bound[i-1]     bound[i]
+                          #  0 &lt; i &lt; bound_size()            bound[i-1]     bound[i]
                           #  i == bound_size() (overflow)    bound[i-1]     +inf
                         3.14,
                       ],
@@ -1459,22 +1850,12 @@ Returns:
               # Deprecated: Use quota_metrics to get per quota group limit exceeded status.
             "A String",
           ],
-          "quotaConsumed": { # Map of quota group name to the actual number of tokens consumed. If the
-              # quota check was not successful, then this will not be populated due to no
-              # quota consumption.
-              #
-              # We are not merging this field with 'quota_metrics' field because of the
-              # complexity of scaling in Chemist client code base. For simplicity, we will
-              # keep this field for Castor (that scales quota usage) and 'quota_metrics'
-              # for SuperQuota (that doesn't scale quota usage).
-            "a_key": 42,
-          },
         },
         "operationId": "A String", # The Operation.operation_id value from the request.
       },
     ],
     "serviceConfigId": "A String", # The actual config id used to process the request.
-    "serviceRolloutId": "A String", # Unimplemented. The current service rollout id used to process the request.
+    "serviceRolloutId": "A String", # The current service rollout id used to process the request.
   }</pre>
 </div>
 

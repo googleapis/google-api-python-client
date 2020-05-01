@@ -75,7 +75,7 @@ h1, h2, h3 {
 <h1><a href="dns_v1.html">Google Cloud DNS API</a> . <a href="dns_v1.managedZones.html">managedZones</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#create">create(project, body, clientOperationId=None)</a></code></p>
+  <code><a href="#create">create(project, body=None, clientOperationId=None)</a></code></p>
 <p class="firstline">Create a new ManagedZone.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(project, managedZone, clientOperationId=None)</a></code></p>
@@ -90,29 +90,38 @@ h1, h2, h3 {
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#patch">patch(project, managedZone, body, clientOperationId=None)</a></code></p>
+  <code><a href="#patch">patch(project, managedZone, body=None, clientOperationId=None)</a></code></p>
 <p class="firstline">Apply a partial update to an existing ManagedZone.</p>
 <p class="toc_element">
-  <code><a href="#update">update(project, managedZone, body, clientOperationId=None)</a></code></p>
+  <code><a href="#update">update(project, managedZone, body=None, clientOperationId=None)</a></code></p>
 <p class="firstline">Update an existing ManagedZone.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="create">create(project, body, clientOperationId=None)</code>
+    <code class="details" id="create">create(project, body=None, clientOperationId=None)</code>
   <pre>Create a new ManagedZone.
 
 Args:
   project: string, Identifies the project addressed by this request. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # A zone is a subtree of the DNS namespace under one administrative responsibility. A ManagedZone is a resource that represents a DNS zone hosted by the Cloud DNS service.
   "kind": "dns#managedZone", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZone".
+  "labels": { # User labels.
+    "a_key": "A String",
+  },
   "description": "A String", # A mutable string of at most 1024 characters associated with this resource for the user's convenience. Has no effect on the managed zone's function.
   "nameServers": [ # Delegate your managed_zone to these virtual name servers; defined by the server (output only)
     "A String",
   ],
-  "labels": { # User labels.
-    "a_key": "A String",
+  "forwardingConfig": { # The presence for this field indicates that outbound forwarding is enabled for this zone. The value of this field contains the set of destinations to forward to.
+    "kind": "dns#managedZoneForwardingConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfig".
+    "targetNameServers": [ # List of target name servers to forward to. Cloud DNS will select the best available name server if more than one target is given.
+      {
+        "ipv4Address": "A String", # IPv4 address of a target name server.
+        "kind": "dns#managedZoneForwardingConfigNameServerTarget", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfigNameServerTarget".
+      },
+    ],
   },
   "creationTime": "A String", # The time that this resource was created on the server. This is in RFC3339 text format. Output only.
   "visibility": "A String", # The zone's visibility: public zones are exposed to the Internet, while private zones are visible only to Virtual Private Cloud resources.
@@ -129,7 +138,7 @@ Args:
   "dnsName": "A String", # The DNS name of this managed zone, for instance "example.com.".
   "dnssecConfig": { # DNSSEC configuration.
     "kind": "dns#managedZoneDnsSecConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneDnsSecConfig".
-    "defaultKeySpecs": [ # Specifies parameters that will be used for generating initial DnsKeys for this ManagedZone. Output only while state is not OFF.
+    "defaultKeySpecs": [ # Specifies parameters for generating initial DnsKeys for this ManagedZone. Can only be changed while the state is OFF.
       { # Parameters for DnsKey key generation. Used for generating initial keys for a new ManagedZone and as default when adding a new DnsKey.
         "keyType": "A String", # Specifies whether this is a key signing key (KSK) or a zone signing key (ZSK). Key signing keys have the Secure Entry Point flag set and, when active, will only be used to sign resource record sets of type DNSKEY. Zone signing keys do not have the Secure Entry Point flag set and will be used to sign all other types of resource record sets.
         "keyLength": 42, # Length of the keys in bits.
@@ -138,7 +147,15 @@ Args:
       },
     ],
     "state": "A String", # Specifies whether DNSSEC is enabled, and what mode it is in.
-    "nonExistence": "A String", # Specifies the mechanism used to provide authenticated denial-of-existence responses. Output only while state is not OFF.
+    "nonExistence": "A String", # Specifies the mechanism for authenticated denial-of-existence responses. Can only be changed while the state is OFF.
+  },
+  "peeringConfig": { # The presence of this field indicates that DNS Peering is enabled for this zone. The value of this field contains the network to peer with.
+    "kind": "dns#managedZonePeeringConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfig".
+    "targetNetwork": { # The network with which to peer.
+      "kind": "dns#managedZonePeeringConfigTargetNetwork", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfigTargetNetwork".
+      "deactivateTime": "A String", # The time at which the zone was deactivated, in RFC 3339 date-time format. An empty string indicates that the peering connection is active. The producer network can deactivate a zone. The zone is automatically deactivated if the producer network that the zone targeted is deleted. Output only.
+      "networkUrl": "A String", # The fully qualified URL of the VPC network to forward queries to. This should be formatted like https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}
+    },
   },
   "id": "A String", # Unique identifier for the resource; defined by the server (output only)
   "name": "A String", # User assigned name for this resource. Must be unique within the project. The name must be 1-63 characters long, must begin with a letter, end with a letter or digit, and only contain lowercase letters, digits or dashes.
@@ -151,12 +168,21 @@ Returns:
 
     { # A zone is a subtree of the DNS namespace under one administrative responsibility. A ManagedZone is a resource that represents a DNS zone hosted by the Cloud DNS service.
     "kind": "dns#managedZone", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZone".
+    "labels": { # User labels.
+      "a_key": "A String",
+    },
     "description": "A String", # A mutable string of at most 1024 characters associated with this resource for the user's convenience. Has no effect on the managed zone's function.
     "nameServers": [ # Delegate your managed_zone to these virtual name servers; defined by the server (output only)
       "A String",
     ],
-    "labels": { # User labels.
-      "a_key": "A String",
+    "forwardingConfig": { # The presence for this field indicates that outbound forwarding is enabled for this zone. The value of this field contains the set of destinations to forward to.
+      "kind": "dns#managedZoneForwardingConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfig".
+      "targetNameServers": [ # List of target name servers to forward to. Cloud DNS will select the best available name server if more than one target is given.
+        {
+          "ipv4Address": "A String", # IPv4 address of a target name server.
+          "kind": "dns#managedZoneForwardingConfigNameServerTarget", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfigNameServerTarget".
+        },
+      ],
     },
     "creationTime": "A String", # The time that this resource was created on the server. This is in RFC3339 text format. Output only.
     "visibility": "A String", # The zone's visibility: public zones are exposed to the Internet, while private zones are visible only to Virtual Private Cloud resources.
@@ -173,7 +199,7 @@ Returns:
     "dnsName": "A String", # The DNS name of this managed zone, for instance "example.com.".
     "dnssecConfig": { # DNSSEC configuration.
       "kind": "dns#managedZoneDnsSecConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneDnsSecConfig".
-      "defaultKeySpecs": [ # Specifies parameters that will be used for generating initial DnsKeys for this ManagedZone. Output only while state is not OFF.
+      "defaultKeySpecs": [ # Specifies parameters for generating initial DnsKeys for this ManagedZone. Can only be changed while the state is OFF.
         { # Parameters for DnsKey key generation. Used for generating initial keys for a new ManagedZone and as default when adding a new DnsKey.
           "keyType": "A String", # Specifies whether this is a key signing key (KSK) or a zone signing key (ZSK). Key signing keys have the Secure Entry Point flag set and, when active, will only be used to sign resource record sets of type DNSKEY. Zone signing keys do not have the Secure Entry Point flag set and will be used to sign all other types of resource record sets.
           "keyLength": 42, # Length of the keys in bits.
@@ -182,7 +208,15 @@ Returns:
         },
       ],
       "state": "A String", # Specifies whether DNSSEC is enabled, and what mode it is in.
-      "nonExistence": "A String", # Specifies the mechanism used to provide authenticated denial-of-existence responses. Output only while state is not OFF.
+      "nonExistence": "A String", # Specifies the mechanism for authenticated denial-of-existence responses. Can only be changed while the state is OFF.
+    },
+    "peeringConfig": { # The presence of this field indicates that DNS Peering is enabled for this zone. The value of this field contains the network to peer with.
+      "kind": "dns#managedZonePeeringConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfig".
+      "targetNetwork": { # The network with which to peer.
+        "kind": "dns#managedZonePeeringConfigTargetNetwork", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfigTargetNetwork".
+        "deactivateTime": "A String", # The time at which the zone was deactivated, in RFC 3339 date-time format. An empty string indicates that the peering connection is active. The producer network can deactivate a zone. The zone is automatically deactivated if the producer network that the zone targeted is deleted. Output only.
+        "networkUrl": "A String", # The fully qualified URL of the VPC network to forward queries to. This should be formatted like https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}
+      },
     },
     "id": "A String", # Unique identifier for the resource; defined by the server (output only)
     "name": "A String", # User assigned name for this resource. Must be unique within the project. The name must be 1-63 characters long, must begin with a letter, end with a letter or digit, and only contain lowercase letters, digits or dashes.
@@ -214,12 +248,21 @@ Returns:
 
     { # A zone is a subtree of the DNS namespace under one administrative responsibility. A ManagedZone is a resource that represents a DNS zone hosted by the Cloud DNS service.
     "kind": "dns#managedZone", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZone".
+    "labels": { # User labels.
+      "a_key": "A String",
+    },
     "description": "A String", # A mutable string of at most 1024 characters associated with this resource for the user's convenience. Has no effect on the managed zone's function.
     "nameServers": [ # Delegate your managed_zone to these virtual name servers; defined by the server (output only)
       "A String",
     ],
-    "labels": { # User labels.
-      "a_key": "A String",
+    "forwardingConfig": { # The presence for this field indicates that outbound forwarding is enabled for this zone. The value of this field contains the set of destinations to forward to.
+      "kind": "dns#managedZoneForwardingConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfig".
+      "targetNameServers": [ # List of target name servers to forward to. Cloud DNS will select the best available name server if more than one target is given.
+        {
+          "ipv4Address": "A String", # IPv4 address of a target name server.
+          "kind": "dns#managedZoneForwardingConfigNameServerTarget", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfigNameServerTarget".
+        },
+      ],
     },
     "creationTime": "A String", # The time that this resource was created on the server. This is in RFC3339 text format. Output only.
     "visibility": "A String", # The zone's visibility: public zones are exposed to the Internet, while private zones are visible only to Virtual Private Cloud resources.
@@ -236,7 +279,7 @@ Returns:
     "dnsName": "A String", # The DNS name of this managed zone, for instance "example.com.".
     "dnssecConfig": { # DNSSEC configuration.
       "kind": "dns#managedZoneDnsSecConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneDnsSecConfig".
-      "defaultKeySpecs": [ # Specifies parameters that will be used for generating initial DnsKeys for this ManagedZone. Output only while state is not OFF.
+      "defaultKeySpecs": [ # Specifies parameters for generating initial DnsKeys for this ManagedZone. Can only be changed while the state is OFF.
         { # Parameters for DnsKey key generation. Used for generating initial keys for a new ManagedZone and as default when adding a new DnsKey.
           "keyType": "A String", # Specifies whether this is a key signing key (KSK) or a zone signing key (ZSK). Key signing keys have the Secure Entry Point flag set and, when active, will only be used to sign resource record sets of type DNSKEY. Zone signing keys do not have the Secure Entry Point flag set and will be used to sign all other types of resource record sets.
           "keyLength": 42, # Length of the keys in bits.
@@ -245,7 +288,15 @@ Returns:
         },
       ],
       "state": "A String", # Specifies whether DNSSEC is enabled, and what mode it is in.
-      "nonExistence": "A String", # Specifies the mechanism used to provide authenticated denial-of-existence responses. Output only while state is not OFF.
+      "nonExistence": "A String", # Specifies the mechanism for authenticated denial-of-existence responses. Can only be changed while the state is OFF.
+    },
+    "peeringConfig": { # The presence of this field indicates that DNS Peering is enabled for this zone. The value of this field contains the network to peer with.
+      "kind": "dns#managedZonePeeringConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfig".
+      "targetNetwork": { # The network with which to peer.
+        "kind": "dns#managedZonePeeringConfigTargetNetwork", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfigTargetNetwork".
+        "deactivateTime": "A String", # The time at which the zone was deactivated, in RFC 3339 date-time format. An empty string indicates that the peering connection is active. The producer network can deactivate a zone. The zone is automatically deactivated if the producer network that the zone targeted is deleted. Output only.
+        "networkUrl": "A String", # The fully qualified URL of the VPC network to forward queries to. This should be formatted like https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}
+      },
     },
     "id": "A String", # Unique identifier for the resource; defined by the server (output only)
     "name": "A String", # User assigned name for this resource. Must be unique within the project. The name must be 1-63 characters long, must begin with a letter, end with a letter or digit, and only contain lowercase letters, digits or dashes.
@@ -276,12 +327,21 @@ Returns:
     "managedZones": [ # The managed zone resources.
       { # A zone is a subtree of the DNS namespace under one administrative responsibility. A ManagedZone is a resource that represents a DNS zone hosted by the Cloud DNS service.
         "kind": "dns#managedZone", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZone".
+        "labels": { # User labels.
+          "a_key": "A String",
+        },
         "description": "A String", # A mutable string of at most 1024 characters associated with this resource for the user's convenience. Has no effect on the managed zone's function.
         "nameServers": [ # Delegate your managed_zone to these virtual name servers; defined by the server (output only)
           "A String",
         ],
-        "labels": { # User labels.
-          "a_key": "A String",
+        "forwardingConfig": { # The presence for this field indicates that outbound forwarding is enabled for this zone. The value of this field contains the set of destinations to forward to.
+          "kind": "dns#managedZoneForwardingConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfig".
+          "targetNameServers": [ # List of target name servers to forward to. Cloud DNS will select the best available name server if more than one target is given.
+            {
+              "ipv4Address": "A String", # IPv4 address of a target name server.
+              "kind": "dns#managedZoneForwardingConfigNameServerTarget", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfigNameServerTarget".
+            },
+          ],
         },
         "creationTime": "A String", # The time that this resource was created on the server. This is in RFC3339 text format. Output only.
         "visibility": "A String", # The zone's visibility: public zones are exposed to the Internet, while private zones are visible only to Virtual Private Cloud resources.
@@ -298,7 +358,7 @@ Returns:
         "dnsName": "A String", # The DNS name of this managed zone, for instance "example.com.".
         "dnssecConfig": { # DNSSEC configuration.
           "kind": "dns#managedZoneDnsSecConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneDnsSecConfig".
-          "defaultKeySpecs": [ # Specifies parameters that will be used for generating initial DnsKeys for this ManagedZone. Output only while state is not OFF.
+          "defaultKeySpecs": [ # Specifies parameters for generating initial DnsKeys for this ManagedZone. Can only be changed while the state is OFF.
             { # Parameters for DnsKey key generation. Used for generating initial keys for a new ManagedZone and as default when adding a new DnsKey.
               "keyType": "A String", # Specifies whether this is a key signing key (KSK) or a zone signing key (ZSK). Key signing keys have the Secure Entry Point flag set and, when active, will only be used to sign resource record sets of type DNSKEY. Zone signing keys do not have the Secure Entry Point flag set and will be used to sign all other types of resource record sets.
               "keyLength": 42, # Length of the keys in bits.
@@ -307,7 +367,15 @@ Returns:
             },
           ],
           "state": "A String", # Specifies whether DNSSEC is enabled, and what mode it is in.
-          "nonExistence": "A String", # Specifies the mechanism used to provide authenticated denial-of-existence responses. Output only while state is not OFF.
+          "nonExistence": "A String", # Specifies the mechanism for authenticated denial-of-existence responses. Can only be changed while the state is OFF.
+        },
+        "peeringConfig": { # The presence of this field indicates that DNS Peering is enabled for this zone. The value of this field contains the network to peer with.
+          "kind": "dns#managedZonePeeringConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfig".
+          "targetNetwork": { # The network with which to peer.
+            "kind": "dns#managedZonePeeringConfigTargetNetwork", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfigTargetNetwork".
+            "deactivateTime": "A String", # The time at which the zone was deactivated, in RFC 3339 date-time format. An empty string indicates that the peering connection is active. The producer network can deactivate a zone. The zone is automatically deactivated if the producer network that the zone targeted is deleted. Output only.
+            "networkUrl": "A String", # The fully qualified URL of the VPC network to forward queries to. This should be formatted like https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}
+          },
         },
         "id": "A String", # Unique identifier for the resource; defined by the server (output only)
         "name": "A String", # User assigned name for this resource. Must be unique within the project. The name must be 1-63 characters long, must begin with a letter, end with a letter or digit, and only contain lowercase letters, digits or dashes.
@@ -331,23 +399,32 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="patch">patch(project, managedZone, body, clientOperationId=None)</code>
+    <code class="details" id="patch">patch(project, managedZone, body=None, clientOperationId=None)</code>
   <pre>Apply a partial update to an existing ManagedZone.
 
 Args:
   project: string, Identifies the project addressed by this request. (required)
   managedZone: string, Identifies the managed zone addressed by this request. Can be the managed zone name or id. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # A zone is a subtree of the DNS namespace under one administrative responsibility. A ManagedZone is a resource that represents a DNS zone hosted by the Cloud DNS service.
   "kind": "dns#managedZone", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZone".
+  "labels": { # User labels.
+    "a_key": "A String",
+  },
   "description": "A String", # A mutable string of at most 1024 characters associated with this resource for the user's convenience. Has no effect on the managed zone's function.
   "nameServers": [ # Delegate your managed_zone to these virtual name servers; defined by the server (output only)
     "A String",
   ],
-  "labels": { # User labels.
-    "a_key": "A String",
+  "forwardingConfig": { # The presence for this field indicates that outbound forwarding is enabled for this zone. The value of this field contains the set of destinations to forward to.
+    "kind": "dns#managedZoneForwardingConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfig".
+    "targetNameServers": [ # List of target name servers to forward to. Cloud DNS will select the best available name server if more than one target is given.
+      {
+        "ipv4Address": "A String", # IPv4 address of a target name server.
+        "kind": "dns#managedZoneForwardingConfigNameServerTarget", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfigNameServerTarget".
+      },
+    ],
   },
   "creationTime": "A String", # The time that this resource was created on the server. This is in RFC3339 text format. Output only.
   "visibility": "A String", # The zone's visibility: public zones are exposed to the Internet, while private zones are visible only to Virtual Private Cloud resources.
@@ -364,7 +441,7 @@ Args:
   "dnsName": "A String", # The DNS name of this managed zone, for instance "example.com.".
   "dnssecConfig": { # DNSSEC configuration.
     "kind": "dns#managedZoneDnsSecConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneDnsSecConfig".
-    "defaultKeySpecs": [ # Specifies parameters that will be used for generating initial DnsKeys for this ManagedZone. Output only while state is not OFF.
+    "defaultKeySpecs": [ # Specifies parameters for generating initial DnsKeys for this ManagedZone. Can only be changed while the state is OFF.
       { # Parameters for DnsKey key generation. Used for generating initial keys for a new ManagedZone and as default when adding a new DnsKey.
         "keyType": "A String", # Specifies whether this is a key signing key (KSK) or a zone signing key (ZSK). Key signing keys have the Secure Entry Point flag set and, when active, will only be used to sign resource record sets of type DNSKEY. Zone signing keys do not have the Secure Entry Point flag set and will be used to sign all other types of resource record sets.
         "keyLength": 42, # Length of the keys in bits.
@@ -373,7 +450,15 @@ Args:
       },
     ],
     "state": "A String", # Specifies whether DNSSEC is enabled, and what mode it is in.
-    "nonExistence": "A String", # Specifies the mechanism used to provide authenticated denial-of-existence responses. Output only while state is not OFF.
+    "nonExistence": "A String", # Specifies the mechanism for authenticated denial-of-existence responses. Can only be changed while the state is OFF.
+  },
+  "peeringConfig": { # The presence of this field indicates that DNS Peering is enabled for this zone. The value of this field contains the network to peer with.
+    "kind": "dns#managedZonePeeringConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfig".
+    "targetNetwork": { # The network with which to peer.
+      "kind": "dns#managedZonePeeringConfigTargetNetwork", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfigTargetNetwork".
+      "deactivateTime": "A String", # The time at which the zone was deactivated, in RFC 3339 date-time format. An empty string indicates that the peering connection is active. The producer network can deactivate a zone. The zone is automatically deactivated if the producer network that the zone targeted is deleted. Output only.
+      "networkUrl": "A String", # The fully qualified URL of the VPC network to forward queries to. This should be formatted like https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}
+    },
   },
   "id": "A String", # Unique identifier for the resource; defined by the server (output only)
   "name": "A String", # User assigned name for this resource. Must be unique within the project. The name must be 1-63 characters long, must begin with a letter, end with a letter or digit, and only contain lowercase letters, digits or dashes.
@@ -428,12 +513,21 @@ Returns:
     "zoneContext": { # Only populated if the operation targeted a ManagedZone (output only).
       "newValue": { # A zone is a subtree of the DNS namespace under one administrative responsibility. A ManagedZone is a resource that represents a DNS zone hosted by the Cloud DNS service. # The post-operation ManagedZone resource.
         "kind": "dns#managedZone", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZone".
+        "labels": { # User labels.
+          "a_key": "A String",
+        },
         "description": "A String", # A mutable string of at most 1024 characters associated with this resource for the user's convenience. Has no effect on the managed zone's function.
         "nameServers": [ # Delegate your managed_zone to these virtual name servers; defined by the server (output only)
           "A String",
         ],
-        "labels": { # User labels.
-          "a_key": "A String",
+        "forwardingConfig": { # The presence for this field indicates that outbound forwarding is enabled for this zone. The value of this field contains the set of destinations to forward to.
+          "kind": "dns#managedZoneForwardingConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfig".
+          "targetNameServers": [ # List of target name servers to forward to. Cloud DNS will select the best available name server if more than one target is given.
+            {
+              "ipv4Address": "A String", # IPv4 address of a target name server.
+              "kind": "dns#managedZoneForwardingConfigNameServerTarget", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfigNameServerTarget".
+            },
+          ],
         },
         "creationTime": "A String", # The time that this resource was created on the server. This is in RFC3339 text format. Output only.
         "visibility": "A String", # The zone's visibility: public zones are exposed to the Internet, while private zones are visible only to Virtual Private Cloud resources.
@@ -450,7 +544,7 @@ Returns:
         "dnsName": "A String", # The DNS name of this managed zone, for instance "example.com.".
         "dnssecConfig": { # DNSSEC configuration.
           "kind": "dns#managedZoneDnsSecConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneDnsSecConfig".
-          "defaultKeySpecs": [ # Specifies parameters that will be used for generating initial DnsKeys for this ManagedZone. Output only while state is not OFF.
+          "defaultKeySpecs": [ # Specifies parameters for generating initial DnsKeys for this ManagedZone. Can only be changed while the state is OFF.
             { # Parameters for DnsKey key generation. Used for generating initial keys for a new ManagedZone and as default when adding a new DnsKey.
               "keyType": "A String", # Specifies whether this is a key signing key (KSK) or a zone signing key (ZSK). Key signing keys have the Secure Entry Point flag set and, when active, will only be used to sign resource record sets of type DNSKEY. Zone signing keys do not have the Secure Entry Point flag set and will be used to sign all other types of resource record sets.
               "keyLength": 42, # Length of the keys in bits.
@@ -459,19 +553,36 @@ Returns:
             },
           ],
           "state": "A String", # Specifies whether DNSSEC is enabled, and what mode it is in.
-          "nonExistence": "A String", # Specifies the mechanism used to provide authenticated denial-of-existence responses. Output only while state is not OFF.
+          "nonExistence": "A String", # Specifies the mechanism for authenticated denial-of-existence responses. Can only be changed while the state is OFF.
+        },
+        "peeringConfig": { # The presence of this field indicates that DNS Peering is enabled for this zone. The value of this field contains the network to peer with.
+          "kind": "dns#managedZonePeeringConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfig".
+          "targetNetwork": { # The network with which to peer.
+            "kind": "dns#managedZonePeeringConfigTargetNetwork", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfigTargetNetwork".
+            "deactivateTime": "A String", # The time at which the zone was deactivated, in RFC 3339 date-time format. An empty string indicates that the peering connection is active. The producer network can deactivate a zone. The zone is automatically deactivated if the producer network that the zone targeted is deleted. Output only.
+            "networkUrl": "A String", # The fully qualified URL of the VPC network to forward queries to. This should be formatted like https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}
+          },
         },
         "id": "A String", # Unique identifier for the resource; defined by the server (output only)
         "name": "A String", # User assigned name for this resource. Must be unique within the project. The name must be 1-63 characters long, must begin with a letter, end with a letter or digit, and only contain lowercase letters, digits or dashes.
       },
       "oldValue": { # A zone is a subtree of the DNS namespace under one administrative responsibility. A ManagedZone is a resource that represents a DNS zone hosted by the Cloud DNS service. # The pre-operation ManagedZone resource.
         "kind": "dns#managedZone", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZone".
+        "labels": { # User labels.
+          "a_key": "A String",
+        },
         "description": "A String", # A mutable string of at most 1024 characters associated with this resource for the user's convenience. Has no effect on the managed zone's function.
         "nameServers": [ # Delegate your managed_zone to these virtual name servers; defined by the server (output only)
           "A String",
         ],
-        "labels": { # User labels.
-          "a_key": "A String",
+        "forwardingConfig": { # The presence for this field indicates that outbound forwarding is enabled for this zone. The value of this field contains the set of destinations to forward to.
+          "kind": "dns#managedZoneForwardingConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfig".
+          "targetNameServers": [ # List of target name servers to forward to. Cloud DNS will select the best available name server if more than one target is given.
+            {
+              "ipv4Address": "A String", # IPv4 address of a target name server.
+              "kind": "dns#managedZoneForwardingConfigNameServerTarget", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfigNameServerTarget".
+            },
+          ],
         },
         "creationTime": "A String", # The time that this resource was created on the server. This is in RFC3339 text format. Output only.
         "visibility": "A String", # The zone's visibility: public zones are exposed to the Internet, while private zones are visible only to Virtual Private Cloud resources.
@@ -488,7 +599,7 @@ Returns:
         "dnsName": "A String", # The DNS name of this managed zone, for instance "example.com.".
         "dnssecConfig": { # DNSSEC configuration.
           "kind": "dns#managedZoneDnsSecConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneDnsSecConfig".
-          "defaultKeySpecs": [ # Specifies parameters that will be used for generating initial DnsKeys for this ManagedZone. Output only while state is not OFF.
+          "defaultKeySpecs": [ # Specifies parameters for generating initial DnsKeys for this ManagedZone. Can only be changed while the state is OFF.
             { # Parameters for DnsKey key generation. Used for generating initial keys for a new ManagedZone and as default when adding a new DnsKey.
               "keyType": "A String", # Specifies whether this is a key signing key (KSK) or a zone signing key (ZSK). Key signing keys have the Secure Entry Point flag set and, when active, will only be used to sign resource record sets of type DNSKEY. Zone signing keys do not have the Secure Entry Point flag set and will be used to sign all other types of resource record sets.
               "keyLength": 42, # Length of the keys in bits.
@@ -497,7 +608,15 @@ Returns:
             },
           ],
           "state": "A String", # Specifies whether DNSSEC is enabled, and what mode it is in.
-          "nonExistence": "A String", # Specifies the mechanism used to provide authenticated denial-of-existence responses. Output only while state is not OFF.
+          "nonExistence": "A String", # Specifies the mechanism for authenticated denial-of-existence responses. Can only be changed while the state is OFF.
+        },
+        "peeringConfig": { # The presence of this field indicates that DNS Peering is enabled for this zone. The value of this field contains the network to peer with.
+          "kind": "dns#managedZonePeeringConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfig".
+          "targetNetwork": { # The network with which to peer.
+            "kind": "dns#managedZonePeeringConfigTargetNetwork", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfigTargetNetwork".
+            "deactivateTime": "A String", # The time at which the zone was deactivated, in RFC 3339 date-time format. An empty string indicates that the peering connection is active. The producer network can deactivate a zone. The zone is automatically deactivated if the producer network that the zone targeted is deleted. Output only.
+            "networkUrl": "A String", # The fully qualified URL of the VPC network to forward queries to. This should be formatted like https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}
+          },
         },
         "id": "A String", # Unique identifier for the resource; defined by the server (output only)
         "name": "A String", # User assigned name for this resource. Must be unique within the project. The name must be 1-63 characters long, must begin with a letter, end with a letter or digit, and only contain lowercase letters, digits or dashes.
@@ -511,23 +630,32 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="update">update(project, managedZone, body, clientOperationId=None)</code>
+    <code class="details" id="update">update(project, managedZone, body=None, clientOperationId=None)</code>
   <pre>Update an existing ManagedZone.
 
 Args:
   project: string, Identifies the project addressed by this request. (required)
   managedZone: string, Identifies the managed zone addressed by this request. Can be the managed zone name or id. (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # A zone is a subtree of the DNS namespace under one administrative responsibility. A ManagedZone is a resource that represents a DNS zone hosted by the Cloud DNS service.
   "kind": "dns#managedZone", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZone".
+  "labels": { # User labels.
+    "a_key": "A String",
+  },
   "description": "A String", # A mutable string of at most 1024 characters associated with this resource for the user's convenience. Has no effect on the managed zone's function.
   "nameServers": [ # Delegate your managed_zone to these virtual name servers; defined by the server (output only)
     "A String",
   ],
-  "labels": { # User labels.
-    "a_key": "A String",
+  "forwardingConfig": { # The presence for this field indicates that outbound forwarding is enabled for this zone. The value of this field contains the set of destinations to forward to.
+    "kind": "dns#managedZoneForwardingConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfig".
+    "targetNameServers": [ # List of target name servers to forward to. Cloud DNS will select the best available name server if more than one target is given.
+      {
+        "ipv4Address": "A String", # IPv4 address of a target name server.
+        "kind": "dns#managedZoneForwardingConfigNameServerTarget", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfigNameServerTarget".
+      },
+    ],
   },
   "creationTime": "A String", # The time that this resource was created on the server. This is in RFC3339 text format. Output only.
   "visibility": "A String", # The zone's visibility: public zones are exposed to the Internet, while private zones are visible only to Virtual Private Cloud resources.
@@ -544,7 +672,7 @@ Args:
   "dnsName": "A String", # The DNS name of this managed zone, for instance "example.com.".
   "dnssecConfig": { # DNSSEC configuration.
     "kind": "dns#managedZoneDnsSecConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneDnsSecConfig".
-    "defaultKeySpecs": [ # Specifies parameters that will be used for generating initial DnsKeys for this ManagedZone. Output only while state is not OFF.
+    "defaultKeySpecs": [ # Specifies parameters for generating initial DnsKeys for this ManagedZone. Can only be changed while the state is OFF.
       { # Parameters for DnsKey key generation. Used for generating initial keys for a new ManagedZone and as default when adding a new DnsKey.
         "keyType": "A String", # Specifies whether this is a key signing key (KSK) or a zone signing key (ZSK). Key signing keys have the Secure Entry Point flag set and, when active, will only be used to sign resource record sets of type DNSKEY. Zone signing keys do not have the Secure Entry Point flag set and will be used to sign all other types of resource record sets.
         "keyLength": 42, # Length of the keys in bits.
@@ -553,7 +681,15 @@ Args:
       },
     ],
     "state": "A String", # Specifies whether DNSSEC is enabled, and what mode it is in.
-    "nonExistence": "A String", # Specifies the mechanism used to provide authenticated denial-of-existence responses. Output only while state is not OFF.
+    "nonExistence": "A String", # Specifies the mechanism for authenticated denial-of-existence responses. Can only be changed while the state is OFF.
+  },
+  "peeringConfig": { # The presence of this field indicates that DNS Peering is enabled for this zone. The value of this field contains the network to peer with.
+    "kind": "dns#managedZonePeeringConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfig".
+    "targetNetwork": { # The network with which to peer.
+      "kind": "dns#managedZonePeeringConfigTargetNetwork", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfigTargetNetwork".
+      "deactivateTime": "A String", # The time at which the zone was deactivated, in RFC 3339 date-time format. An empty string indicates that the peering connection is active. The producer network can deactivate a zone. The zone is automatically deactivated if the producer network that the zone targeted is deleted. Output only.
+      "networkUrl": "A String", # The fully qualified URL of the VPC network to forward queries to. This should be formatted like https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}
+    },
   },
   "id": "A String", # Unique identifier for the resource; defined by the server (output only)
   "name": "A String", # User assigned name for this resource. Must be unique within the project. The name must be 1-63 characters long, must begin with a letter, end with a letter or digit, and only contain lowercase letters, digits or dashes.
@@ -608,12 +744,21 @@ Returns:
     "zoneContext": { # Only populated if the operation targeted a ManagedZone (output only).
       "newValue": { # A zone is a subtree of the DNS namespace under one administrative responsibility. A ManagedZone is a resource that represents a DNS zone hosted by the Cloud DNS service. # The post-operation ManagedZone resource.
         "kind": "dns#managedZone", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZone".
+        "labels": { # User labels.
+          "a_key": "A String",
+        },
         "description": "A String", # A mutable string of at most 1024 characters associated with this resource for the user's convenience. Has no effect on the managed zone's function.
         "nameServers": [ # Delegate your managed_zone to these virtual name servers; defined by the server (output only)
           "A String",
         ],
-        "labels": { # User labels.
-          "a_key": "A String",
+        "forwardingConfig": { # The presence for this field indicates that outbound forwarding is enabled for this zone. The value of this field contains the set of destinations to forward to.
+          "kind": "dns#managedZoneForwardingConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfig".
+          "targetNameServers": [ # List of target name servers to forward to. Cloud DNS will select the best available name server if more than one target is given.
+            {
+              "ipv4Address": "A String", # IPv4 address of a target name server.
+              "kind": "dns#managedZoneForwardingConfigNameServerTarget", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfigNameServerTarget".
+            },
+          ],
         },
         "creationTime": "A String", # The time that this resource was created on the server. This is in RFC3339 text format. Output only.
         "visibility": "A String", # The zone's visibility: public zones are exposed to the Internet, while private zones are visible only to Virtual Private Cloud resources.
@@ -630,7 +775,7 @@ Returns:
         "dnsName": "A String", # The DNS name of this managed zone, for instance "example.com.".
         "dnssecConfig": { # DNSSEC configuration.
           "kind": "dns#managedZoneDnsSecConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneDnsSecConfig".
-          "defaultKeySpecs": [ # Specifies parameters that will be used for generating initial DnsKeys for this ManagedZone. Output only while state is not OFF.
+          "defaultKeySpecs": [ # Specifies parameters for generating initial DnsKeys for this ManagedZone. Can only be changed while the state is OFF.
             { # Parameters for DnsKey key generation. Used for generating initial keys for a new ManagedZone and as default when adding a new DnsKey.
               "keyType": "A String", # Specifies whether this is a key signing key (KSK) or a zone signing key (ZSK). Key signing keys have the Secure Entry Point flag set and, when active, will only be used to sign resource record sets of type DNSKEY. Zone signing keys do not have the Secure Entry Point flag set and will be used to sign all other types of resource record sets.
               "keyLength": 42, # Length of the keys in bits.
@@ -639,19 +784,36 @@ Returns:
             },
           ],
           "state": "A String", # Specifies whether DNSSEC is enabled, and what mode it is in.
-          "nonExistence": "A String", # Specifies the mechanism used to provide authenticated denial-of-existence responses. Output only while state is not OFF.
+          "nonExistence": "A String", # Specifies the mechanism for authenticated denial-of-existence responses. Can only be changed while the state is OFF.
+        },
+        "peeringConfig": { # The presence of this field indicates that DNS Peering is enabled for this zone. The value of this field contains the network to peer with.
+          "kind": "dns#managedZonePeeringConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfig".
+          "targetNetwork": { # The network with which to peer.
+            "kind": "dns#managedZonePeeringConfigTargetNetwork", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfigTargetNetwork".
+            "deactivateTime": "A String", # The time at which the zone was deactivated, in RFC 3339 date-time format. An empty string indicates that the peering connection is active. The producer network can deactivate a zone. The zone is automatically deactivated if the producer network that the zone targeted is deleted. Output only.
+            "networkUrl": "A String", # The fully qualified URL of the VPC network to forward queries to. This should be formatted like https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}
+          },
         },
         "id": "A String", # Unique identifier for the resource; defined by the server (output only)
         "name": "A String", # User assigned name for this resource. Must be unique within the project. The name must be 1-63 characters long, must begin with a letter, end with a letter or digit, and only contain lowercase letters, digits or dashes.
       },
       "oldValue": { # A zone is a subtree of the DNS namespace under one administrative responsibility. A ManagedZone is a resource that represents a DNS zone hosted by the Cloud DNS service. # The pre-operation ManagedZone resource.
         "kind": "dns#managedZone", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZone".
+        "labels": { # User labels.
+          "a_key": "A String",
+        },
         "description": "A String", # A mutable string of at most 1024 characters associated with this resource for the user's convenience. Has no effect on the managed zone's function.
         "nameServers": [ # Delegate your managed_zone to these virtual name servers; defined by the server (output only)
           "A String",
         ],
-        "labels": { # User labels.
-          "a_key": "A String",
+        "forwardingConfig": { # The presence for this field indicates that outbound forwarding is enabled for this zone. The value of this field contains the set of destinations to forward to.
+          "kind": "dns#managedZoneForwardingConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfig".
+          "targetNameServers": [ # List of target name servers to forward to. Cloud DNS will select the best available name server if more than one target is given.
+            {
+              "ipv4Address": "A String", # IPv4 address of a target name server.
+              "kind": "dns#managedZoneForwardingConfigNameServerTarget", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneForwardingConfigNameServerTarget".
+            },
+          ],
         },
         "creationTime": "A String", # The time that this resource was created on the server. This is in RFC3339 text format. Output only.
         "visibility": "A String", # The zone's visibility: public zones are exposed to the Internet, while private zones are visible only to Virtual Private Cloud resources.
@@ -668,7 +830,7 @@ Returns:
         "dnsName": "A String", # The DNS name of this managed zone, for instance "example.com.".
         "dnssecConfig": { # DNSSEC configuration.
           "kind": "dns#managedZoneDnsSecConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZoneDnsSecConfig".
-          "defaultKeySpecs": [ # Specifies parameters that will be used for generating initial DnsKeys for this ManagedZone. Output only while state is not OFF.
+          "defaultKeySpecs": [ # Specifies parameters for generating initial DnsKeys for this ManagedZone. Can only be changed while the state is OFF.
             { # Parameters for DnsKey key generation. Used for generating initial keys for a new ManagedZone and as default when adding a new DnsKey.
               "keyType": "A String", # Specifies whether this is a key signing key (KSK) or a zone signing key (ZSK). Key signing keys have the Secure Entry Point flag set and, when active, will only be used to sign resource record sets of type DNSKEY. Zone signing keys do not have the Secure Entry Point flag set and will be used to sign all other types of resource record sets.
               "keyLength": 42, # Length of the keys in bits.
@@ -677,7 +839,15 @@ Returns:
             },
           ],
           "state": "A String", # Specifies whether DNSSEC is enabled, and what mode it is in.
-          "nonExistence": "A String", # Specifies the mechanism used to provide authenticated denial-of-existence responses. Output only while state is not OFF.
+          "nonExistence": "A String", # Specifies the mechanism for authenticated denial-of-existence responses. Can only be changed while the state is OFF.
+        },
+        "peeringConfig": { # The presence of this field indicates that DNS Peering is enabled for this zone. The value of this field contains the network to peer with.
+          "kind": "dns#managedZonePeeringConfig", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfig".
+          "targetNetwork": { # The network with which to peer.
+            "kind": "dns#managedZonePeeringConfigTargetNetwork", # Identifies what kind of resource this is. Value: the fixed string "dns#managedZonePeeringConfigTargetNetwork".
+            "deactivateTime": "A String", # The time at which the zone was deactivated, in RFC 3339 date-time format. An empty string indicates that the peering connection is active. The producer network can deactivate a zone. The zone is automatically deactivated if the producer network that the zone targeted is deleted. Output only.
+            "networkUrl": "A String", # The fully qualified URL of the VPC network to forward queries to. This should be formatted like https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}
+          },
         },
         "id": "A String", # Unique identifier for the resource; defined by the server (output only)
         "name": "A String", # User assigned name for this resource. Must be unique within the project. The name must be 1-63 characters long, must begin with a letter, end with a letter or digit, and only contain lowercase letters, digits or dashes.

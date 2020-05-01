@@ -75,15 +75,15 @@ h1, h2, h3 {
 <h1><a href="analyticsreporting_v4.html">Analytics Reporting API</a> . <a href="analyticsreporting_v4.reports.html">reports</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#batchGet">batchGet(body, x__xgafv=None)</a></code></p>
+  <code><a href="#batchGet">batchGet(body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Returns the Analytics data.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="batchGet">batchGet(body, x__xgafv=None)</code>
+    <code class="details" id="batchGet">batchGet(body=None, x__xgafv=None)</code>
   <pre>Returns the Analytics data.
 
 Args:
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # The batch request containing multiple report request.
@@ -111,21 +111,40 @@ Args:
         ],
         "hideTotals": True or False, # If set to true, hides the total of all metrics for all the matching rows,
             # for every date range. The default false and will return the totals.
-        "pageSize": 42, # Page size is for paging and specifies the maximum number of returned rows.
-            # Page size should be >= 0. A query returns the default of 1,000 rows.
-            # The Analytics Core Reporting API returns a maximum of 100,000 rows per
-            # request, no matter how many you ask for. It can also return fewer rows
-            # than requested, if there aren't as many dimension segments as you expect.
-            # For instance, there are fewer than 300 possible values for `ga:country`,
-            # so when segmenting only by country, you can't get more than 300 rows,
-            # even if you set `pageSize` to a higher value.
         "filtersExpression": "A String", # Dimension or metric filters that restrict the data returned for your
             # request. To use the `filtersExpression`, supply a dimension or metric on
             # which to filter, followed by the filter expression. For example, the
             # following expression selects `ga:browser` dimension which starts with
             # Firefox; `ga:browser=~^Firefox`. For more information on dimensions
             # and metric filters, see
-            # [Filters reference](https://developers.google.com/analytics/devguides/reporting/core/v3/reference#filters).
+            # [Filters
+            # reference](https://developers.google.com/analytics/devguides/reporting/core/v3/reference#filters).
+        "dimensionFilterClauses": [ # The dimension filter clauses for filtering Dimension Values. They are
+            # logically combined with the `AND` operator. Note that filtering occurs
+            # before any dimensions are aggregated, so that the returned metrics
+            # represent the total for only the relevant dimensions.
+          { # A group of dimension filters. Set the operator value to specify how
+              # the filters are logically combined.
+            "operator": "A String", # The operator for combining multiple dimension filters. If unspecified, it
+                # is treated as an `OR`.
+            "filters": [ # The repeated set of filters. They are logically combined based on the
+                # operator specified.
+              { # Dimension filter specifies the filtering options on a dimension.
+                "dimensionName": "A String", # The dimension to filter on. A DimensionFilter must contain a dimension.
+                "caseSensitive": True or False, # Should the match be case sensitive? Default is false.
+                "expressions": [ # Strings or regular expression to match against. Only the first value of
+                    # the list is used for comparison unless the operator is `IN_LIST`.
+                    # If `IN_LIST` operator, then the entire list is used to filter the
+                    # dimensions as explained in the description of the `IN_LIST` operator.
+                  "A String",
+                ],
+                "not": True or False, # Logical `NOT` operator. If this boolean is set to true, then the matching
+                    # dimension values will be excluded in the report. The default is false.
+                "operator": "A String", # How to match the dimension to the expression. The default is REGEXP.
+              },
+            ],
+          },
+        ],
         "pivots": [ # The pivot definitions. Requests can have a maximum of 2 pivots.
           { # The Pivot describes the pivot section in the request.
               # The Pivot helps rearrange the information in the table for certain reports
@@ -152,6 +171,19 @@ Args:
                     # `INTEGER`.
               },
             ],
+            "startGroup": 42, # If k metrics were requested, then the response will contain some
+                # data-dependent multiple of k columns in the report.  E.g., if you pivoted
+                # on the dimension `ga:browser` then you'd get k columns for "Firefox", k
+                # columns for "IE", k columns for "Chrome", etc. The ordering of the groups
+                # of columns is determined by descending order of "total" for the first of
+                # the k values.  Ties are broken by lexicographic ordering of the first
+                # pivot dimension, then lexicographic ordering of the second pivot
+                # dimension, and so on.  E.g., if the totals for the first value for
+                # Firefox, IE, and Chrome were 8, 2, 8, respectively, the order of columns
+                # would be Chrome, Firefox, IE.
+                #
+                # The following let you choose which of the groups of k columns are
+                # included in the response.
             "dimensions": [ # A list of dimensions to show as pivot columns. A Pivot can have a maximum
                 # of 4 dimensions. Pivot dimensions are part of the restriction on the
                 # total number of dimensions allowed in the request.
@@ -170,12 +202,12 @@ Args:
                     # example, if one gives a list of "0, 1, 3, 4, 7", then we return the
                     # following buckets:
                     #
-                    # - bucket #1: values < 0, dimension value "<0"
+                    # - bucket #1: values &lt; 0, dimension value "&lt;0"
                     # - bucket #2: values in [0,1), dimension value "0"
                     # - bucket #3: values in [1,3), dimension value "1-2"
                     # - bucket #4: values in [3,4), dimension value "3"
                     # - bucket #5: values in [4,7), dimension value "4-6"
-                    # - bucket #6: values >= 7, dimension value "7+"
+                    # - bucket #6: values &gt;= 7, dimension value "7+"
                     #
                     # NOTE: If you are applying histogram mutation on any dimension, and using
                     # that dimension in sort, you will want to use the sort type
@@ -183,11 +215,11 @@ Args:
                     # will be sorted according to dictionary
                     # (lexicographic) order. For example the ascending dictionary order is:
                     #
-                    #    "<50", "1001+", "121-1000", "50-120"
+                    #    "&lt;50", "1001+", "121-1000", "50-120"
                     #
                     # And the ascending `HISTOGRAM_BUCKET` order is:
                     #
-                    #    "<50", "50-120", "121-1000", "1001+"
+                    #    "&lt;50", "50-120", "121-1000", "1001+"
                     #
                     # The client has to explicitly request `"orderType": "HISTOGRAM_BUCKET"`
                     # for a histogram-mutated dimension.
@@ -195,8 +227,6 @@ Args:
                 ],
               },
             ],
-            "maxGroupCount": 42, # Specifies the maximum number of groups to return.
-                # The default value is 10, also the maximum value is 1,000.
             "dimensionFilterClauses": [ # DimensionFilterClauses are logically combined with an `AND` operator: only
                 # data that is included by all these DimensionFilterClauses contributes to
                 # the values in this pivot region. Dimension filters can be used to restrict
@@ -212,7 +242,7 @@ Args:
                     # operator specified.
                   { # Dimension filter specifies the filtering options on a dimension.
                     "dimensionName": "A String", # The dimension to filter on. A DimensionFilter must contain a dimension.
-                    "operator": "A String", # How to match the dimension to the expression. The default is REGEXP.
+                    "caseSensitive": True or False, # Should the match be case sensitive? Default is false.
                     "expressions": [ # Strings or regular expression to match against. Only the first value of
                         # the list is used for comparison unless the operator is `IN_LIST`.
                         # If `IN_LIST` operator, then the entire list is used to filter the
@@ -221,66 +251,24 @@ Args:
                     ],
                     "not": True or False, # Logical `NOT` operator. If this boolean is set to true, then the matching
                         # dimension values will be excluded in the report. The default is false.
-                    "caseSensitive": True or False, # Should the match be case sensitive? Default is false.
+                    "operator": "A String", # How to match the dimension to the expression. The default is REGEXP.
                   },
                 ],
               },
             ],
-            "startGroup": 42, # If k metrics were requested, then the response will contain some
-                # data-dependent multiple of k columns in the report.  E.g., if you pivoted
-                # on the dimension `ga:browser` then you'd get k columns for "Firefox", k
-                # columns for "IE", k columns for "Chrome", etc. The ordering of the groups
-                # of columns is determined by descending order of "total" for the first of
-                # the k values.  Ties are broken by lexicographic ordering of the first
-                # pivot dimension, then lexicographic ordering of the second pivot
-                # dimension, and so on.  E.g., if the totals for the first value for
-                # Firefox, IE, and Chrome were 8, 2, 8, respectively, the order of columns
-                # would be Chrome, Firefox, IE.
-                #
-                # The following let you choose which of the groups of k columns are
-                # included in the response.
+            "maxGroupCount": 42, # Specifies the maximum number of groups to return.
+                # The default value is 10, also the maximum value is 1,000.
           },
         ],
-        "dimensionFilterClauses": [ # The dimension filter clauses for filtering Dimension Values. They are
-            # logically combined with the `AND` operator. Note that filtering occurs
-            # before any dimensions are aggregated, so that the returned metrics
-            # represent the total for only the relevant dimensions.
-          { # A group of dimension filters. Set the operator value to specify how
-              # the filters are logically combined.
-            "operator": "A String", # The operator for combining multiple dimension filters. If unspecified, it
-                # is treated as an `OR`.
-            "filters": [ # The repeated set of filters. They are logically combined based on the
-                # operator specified.
-              { # Dimension filter specifies the filtering options on a dimension.
-                "dimensionName": "A String", # The dimension to filter on. A DimensionFilter must contain a dimension.
-                "operator": "A String", # How to match the dimension to the expression. The default is REGEXP.
-                "expressions": [ # Strings or regular expression to match against. Only the first value of
-                    # the list is used for comparison unless the operator is `IN_LIST`.
-                    # If `IN_LIST` operator, then the entire list is used to filter the
-                    # dimensions as explained in the description of the `IN_LIST` operator.
-                  "A String",
-                ],
-                "not": True or False, # Logical `NOT` operator. If this boolean is set to true, then the matching
-                    # dimension values will be excluded in the report. The default is false.
-                "caseSensitive": True or False, # Should the match be case sensitive? Default is false.
-              },
-            ],
-          },
-        ],
+        "includeEmptyRows": True or False, # If set to false, the response does not include rows if all the retrieved
+            # metrics are equal to zero. The default is false which will exclude these
+            # rows.
         "viewId": "A String", # The Analytics
             # [view ID](https://support.google.com/analytics/answer/1009618)
             # from which to retrieve data. Every [ReportRequest](#ReportRequest)
             # within a `batchGet` method must contain the same `viewId`.
-        "includeEmptyRows": True or False, # If set to false, the response does not include rows if all the retrieved
-            # metrics are equal to zero. The default is false which will exclude these
-            # rows.
-        "samplingLevel": "A String", # The desired report
-            # [sample](https://support.google.com/analytics/answer/2637192) size.
-            # If the the `samplingLevel` field is unspecified the `DEFAULT` sampling
-            # level is used. Every [ReportRequest](#ReportRequest) within a
-            # `batchGet` method must contain the same `samplingLevel` definition. See
-            # [developer guide](/analytics/devguides/reporting/core/v4/basics#sampling)
-            #  for details.
+        "hideValueRanges": True or False, # If set to true, hides the minimum and maximum across all matching rows.
+            # The default is false and the value ranges are returned.
         "orderBys": [ # Sort order on output rows. To compare two rows, the elements of the
             # following are applied in order until a difference is found.  All date
             # ranges in the output get the same row order.
@@ -365,7 +353,8 @@ Args:
               # - The cohort definition date ranges need not be aligned to the calendar
               #   week and month boundaries.
               # - The `viewId` must be an
-              #   [app view ID](https://support.google.com/analytics/answer/2649553#WebVersusAppViews)
+              #   [app view
+              #   ID](https://support.google.com/analytics/answer/2649553#WebVersusAppViews)
         },
         "metrics": [ # The metrics requested.
             # Requests must specify at least one metric. Requests can have a
@@ -394,8 +383,21 @@ Args:
             # the request will return the rows after the pageToken. The pageToken should
             # be the value returned in the nextPageToken parameter in the response to
             # the GetReports request.
-        "hideValueRanges": True or False, # If set to true, hides the minimum and maximum across all matching rows.
-            # The default is false and the value ranges are returned.
+        "samplingLevel": "A String", # The desired report
+            # [sample](https://support.google.com/analytics/answer/2637192) size.
+            # If the the `samplingLevel` field is unspecified the `DEFAULT` sampling
+            # level is used. Every [ReportRequest](#ReportRequest) within a
+            # `batchGet` method must contain the same `samplingLevel` definition. See
+            # [developer guide](/analytics/devguides/reporting/core/v4/basics#sampling)
+            #  for details.
+        "pageSize": 42, # Page size is for paging and specifies the maximum number of returned rows.
+            # Page size should be &gt;= 0. A query returns the default of 1,000 rows.
+            # The Analytics Core Reporting API returns a maximum of 100,000 rows per
+            # request, no matter how many you ask for. It can also return fewer rows
+            # than requested, if there aren't as many dimension segments as you expect.
+            # For instance, there are fewer than 300 possible values for `ga:country`,
+            # so when segmenting only by country, you can't get more than 300 rows,
+            # even if you set `pageSize` to a higher value.
         "metricFilterClauses": [ # The metric filter clauses. They are logically combined with the `AND`
             # operator.  Metric filters look at only the first date range and not the
             # comparing date range. Note that filtering on metrics occurs after the
@@ -502,6 +504,8 @@ Args:
                         # be combined with special sequence operators.
                         # by one or more dimension/metric conditions. Multiple steps can be combined
                         # with special sequence operators.
+                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
+                          # the date range).
                       "segmentSequenceSteps": [ # The list of steps in the sequence.
                         { # A segment sequence definition.
                           "matchType": "A String", # Specifies if the step immediately precedes or can be any time before the
@@ -543,8 +547,6 @@ Args:
                           ],
                         },
                       ],
-                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
-                          # the date range).
                     },
                   },
                 ],
@@ -621,6 +623,8 @@ Args:
                         # be combined with special sequence operators.
                         # by one or more dimension/metric conditions. Multiple steps can be combined
                         # with special sequence operators.
+                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
+                          # the date range).
                       "segmentSequenceSteps": [ # The list of steps in the sequence.
                         { # A segment sequence definition.
                           "matchType": "A String", # Specifies if the step immediately precedes or can be any time before the
@@ -662,8 +666,6 @@ Args:
                           ],
                         },
                       ],
-                      "firstStepShouldMatchFirstHit": True or False, # If set, first step condition must match the first hit of the visitor (in
-                          # the date range).
                     },
                   },
                 ],
@@ -673,7 +675,7 @@ Args:
           },
         ],
         "dimensions": [ # The dimensions requested.
-            # Requests can have a total of 7 dimensions.
+            # Requests can have a total of 9 dimensions.
           { # [Dimensions](https://support.google.com/analytics/answer/1033861)
               # are attributes of your data. For example, the dimension `ga:city`
               # indicates the city, for example, "Paris" or "New York", from which
@@ -689,12 +691,12 @@ Args:
                 # example, if one gives a list of "0, 1, 3, 4, 7", then we return the
                 # following buckets:
                 #
-                # - bucket #1: values < 0, dimension value "<0"
+                # - bucket #1: values &lt; 0, dimension value "&lt;0"
                 # - bucket #2: values in [0,1), dimension value "0"
                 # - bucket #3: values in [1,3), dimension value "1-2"
                 # - bucket #4: values in [3,4), dimension value "3"
                 # - bucket #5: values in [4,7), dimension value "4-6"
-                # - bucket #6: values >= 7, dimension value "7+"
+                # - bucket #6: values &gt;= 7, dimension value "7+"
                 #
                 # NOTE: If you are applying histogram mutation on any dimension, and using
                 # that dimension in sort, you will want to use the sort type
@@ -702,11 +704,11 @@ Args:
                 # will be sorted according to dictionary
                 # (lexicographic) order. For example the ascending dictionary order is:
                 #
-                #    "<50", "1001+", "121-1000", "50-120"
+                #    "&lt;50", "1001+", "121-1000", "50-120"
                 #
                 # And the ascending `HISTOGRAM_BUCKET` order is:
                 #
-                #    "<50", "50-120", "121-1000", "1001+"
+                #    "&lt;50", "50-120", "121-1000", "1001+"
                 #
                 # The client has to explicitly request `"orderType": "HISTOGRAM_BUCKET"`
                 # for a histogram-mutated dimension.
@@ -717,13 +719,16 @@ Args:
       },
     ],
     "useResourceQuotas": True or False, # Enables
-        # [resource based quotas](/analytics/devguides/reporting/core/v4/limits-quotas#analytics_reporting_api_v4),
+        # [resource based
+        # quotas](/analytics/devguides/reporting/core/v4/limits-quotas#analytics_reporting_api_v4),
         # (defaults to `False`). If this field is set to `True` the
         # per view (profile) quotas are governed by the computational
         # cost of the request. Note that using cost based quotas will
         # higher enable sampling rates. (10 Million for `SMALL`,
         # 100M for `LARGE`. See the
-        # [limits and quotas documentation](/analytics/devguides/reporting/core/v4/limits-quotas#analytics_reporting_api_v4) for details.
+        # [limits and quotas
+        # documentation](/analytics/devguides/reporting/core/v4/limits-quotas#analytics_reporting_api_v4)
+        # for details.
   }
 
   x__xgafv: string, V1 error format.

@@ -78,19 +78,19 @@ h1, h2, h3 {
   <code><a href="#delete">delete(projectId, datasetId, routineId)</a></code></p>
 <p class="firstline">Deletes the routine specified by routineId from the dataset.</p>
 <p class="toc_element">
-  <code><a href="#get">get(projectId, datasetId, routineId, fieldMask=None)</a></code></p>
+  <code><a href="#get">get(projectId, datasetId, routineId, readMask=None)</a></code></p>
 <p class="firstline">Gets the specified routine resource by routine ID.</p>
 <p class="toc_element">
-  <code><a href="#insert">insert(projectId, datasetId, body)</a></code></p>
+  <code><a href="#insert">insert(projectId, datasetId, body=None)</a></code></p>
 <p class="firstline">Creates a new routine in the dataset.</p>
 <p class="toc_element">
-  <code><a href="#list">list(projectId, datasetId, pageToken=None, maxResults=None)</a></code></p>
+  <code><a href="#list">list(projectId, datasetId, filter=None, pageToken=None, maxResults=None, readMask=None)</a></code></p>
 <p class="firstline">Lists all routines in the specified dataset. Requires the READER dataset</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#update">update(projectId, datasetId, routineId, body)</a></code></p>
+  <code><a href="#update">update(projectId, datasetId, routineId, body=None)</a></code></p>
 <p class="firstline">Updates information in an existing routine. The update method replaces the</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -98,28 +98,29 @@ h1, h2, h3 {
   <pre>Deletes the routine specified by routineId from the dataset.
 
 Args:
-  projectId: string, Project ID of the routine to delete (required)
-  datasetId: string, Dataset ID of the routine to delete (required)
-  routineId: string, Routine ID of the routine to delete (required)
+  projectId: string, Required. Project ID of the routine to delete (required)
+  datasetId: string, Required. Dataset ID of the routine to delete (required)
+  routineId: string, Required. Routine ID of the routine to delete (required)
 </pre>
 </div>
 
 <div class="method">
-    <code class="details" id="get">get(projectId, datasetId, routineId, fieldMask=None)</code>
+    <code class="details" id="get">get(projectId, datasetId, routineId, readMask=None)</code>
   <pre>Gets the specified routine resource by routine ID.
 
 Args:
-  projectId: string, Project ID of the requested routine (required)
-  datasetId: string, Dataset ID of the requested routine (required)
-  routineId: string, Routine ID of the requested routine (required)
-  fieldMask: string, If set, only the Routine fields in the field mask are returned in the
+  projectId: string, Required. Project ID of the requested routine (required)
+  datasetId: string, Required. Dataset ID of the requested routine (required)
+  routineId: string, Required. Routine ID of the requested routine (required)
+  readMask: string, If set, only the Routine fields in the field mask are returned in the
 response. If unset, all Routine fields are returned.
 
 Returns:
   An object of the form:
 
     { # A user-defined function or a stored procedure.
-      "routineType": "A String", # Required.
+      "routineType": "A String", # Required. The type of routine.
+      "description": "A String", # Optional. [Experimental] The description of the routine if defined.
       "language": "A String", # Optional. Defaults to "SQL".
       "creationTime": "A String", # Output only. The time when this routine was created, in milliseconds since
           # the epoch.
@@ -138,8 +139,8 @@ Returns:
           "dataType": { # The type of a variable, e.g., a function argument. # Required unless argument_kind = ANY_TYPE.
               # Examples:
               # INT64: {type_kind="INT64"}
-              # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-              # STRUCT<x STRING, y ARRAY<DATE>>:
+              # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+              # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
               #   {type_kind="STRUCT",
               #    struct_type={fields=[
               #      {name="x", type={type_kind="STRING"}},
@@ -155,31 +156,37 @@ Returns:
                 # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
           },
           "argumentKind": "A String", # Optional. Defaults to FIXED_TYPE.
+          "name": "A String", # Optional. The name of this argument. Can be absent for function return argument.
           "mode": "A String", # Optional. Specifies whether the argument is input or output.
               # Can be set for procedures only.
-          "name": "A String", # Optional. The name of this argument. Can be absent for function return
-              # argument.
         },
       ],
       "returnType": { # The type of a variable, e.g., a function argument. # Optional if language = "SQL"; required otherwise.
+          #
           # If absent, the return type is inferred from definition_body at query time
           # in each query that references this routine. If present, then the evaluated
           # result will be cast to the specified returned type at query time.
           #
-          # For example, for the functions created with the following statements
-          #   CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);
-          #   CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));
-          #   CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));
-          # The return_type is {type_kind: "FLOAT64"} for Add and Decrement, and
-          # is absent for Increment (inferred as FLOAT64 at query time).
-          # Suppose the function Add is replaced by
-          #   CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);
-          # Then the inferred return type of Increment is automatically changed to
-          # INT64 at query time, while the return type of Decrement remains FLOAT64.
+          # For example, for the functions created with the following statements:
+          #
+          # * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);`
+          #
+          # * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));`
+          #
+          # * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));`
+          #
+          # The return_type is `{type_kind: "FLOAT64"}` for `Add` and `Decrement`, and
+          # is absent for `Increment` (inferred as FLOAT64 at query time).
+          #
+          # Suppose the function `Add` is replaced by
+          #   `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);`
+          #
+          # Then the inferred return type of `Increment` is automatically changed to
+          # INT64 at query time, while the return type of `Decrement` remains FLOAT64.
           # Examples:
           # INT64: {type_kind="INT64"}
-          # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-          # STRUCT<x STRING, y ARRAY<DATE>>:
+          # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+          # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
           #   {type_kind="STRUCT",
           #    struct_type={fields=[
           #      {name="x", type={type_kind="STRING"}},
@@ -197,33 +204,44 @@ Returns:
       "lastModifiedTime": "A String", # Output only. The time when this routine was last modified, in milliseconds
           # since the epoch.
       "definitionBody": "A String", # Required. The body of the routine.
+          #
           # For functions, this is the expression in the AS clause.
+          #
           # If language=SQL, it is the substring inside (but excluding) the
           # parentheses. For example, for the function created with the following
-          # statement
-          #   create function JoinLines(x string, y string) as (concat(x, "\n", y))
-          # definition_body = r'concat(x, "\n", y)' (\n is not replaced with
+          # statement:
+          #
+          # `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, "\n", y))`
+          #
+          # The definition_body is `concat(x, "\n", y)` (\n is not replaced with
           # linebreak).
+          #
           # If language=JAVASCRIPT, it is the evaluated string in the AS clause.
-          # For example, for the function created with the following statement
-          #   CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'
-          # definition_body = 'return "\n";\n' (both \n are replaced with
-          # linebreaks).
+          # For example, for the function created with the following statement:
+          #
+          # `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'`
+          #
+          # The definition_body is
+          #
+          # `return "\n";\n`
+          #
+          # Note that both \n are replaced with linebreaks.
     }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="insert">insert(projectId, datasetId, body)</code>
+    <code class="details" id="insert">insert(projectId, datasetId, body=None)</code>
   <pre>Creates a new routine in the dataset.
 
 Args:
-  projectId: string, Project ID of the new routine (required)
-  datasetId: string, Dataset ID of the new routine (required)
-  body: object, The request body. (required)
+  projectId: string, Required. Project ID of the new routine (required)
+  datasetId: string, Required. Dataset ID of the new routine (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # A user-defined function or a stored procedure.
-    "routineType": "A String", # Required.
+    "routineType": "A String", # Required. The type of routine.
+    "description": "A String", # Optional. [Experimental] The description of the routine if defined.
     "language": "A String", # Optional. Defaults to "SQL".
     "creationTime": "A String", # Output only. The time when this routine was created, in milliseconds since
         # the epoch.
@@ -242,8 +260,8 @@ Args:
         "dataType": { # The type of a variable, e.g., a function argument. # Required unless argument_kind = ANY_TYPE.
             # Examples:
             # INT64: {type_kind="INT64"}
-            # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-            # STRUCT<x STRING, y ARRAY<DATE>>:
+            # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+            # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
             #   {type_kind="STRUCT",
             #    struct_type={fields=[
             #      {name="x", type={type_kind="STRING"}},
@@ -259,31 +277,37 @@ Args:
               # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
         },
         "argumentKind": "A String", # Optional. Defaults to FIXED_TYPE.
+        "name": "A String", # Optional. The name of this argument. Can be absent for function return argument.
         "mode": "A String", # Optional. Specifies whether the argument is input or output.
             # Can be set for procedures only.
-        "name": "A String", # Optional. The name of this argument. Can be absent for function return
-            # argument.
       },
     ],
     "returnType": { # The type of a variable, e.g., a function argument. # Optional if language = "SQL"; required otherwise.
+        # 
         # If absent, the return type is inferred from definition_body at query time
         # in each query that references this routine. If present, then the evaluated
         # result will be cast to the specified returned type at query time.
         # 
-        # For example, for the functions created with the following statements
-        #   CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);
-        #   CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));
-        #   CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));
-        # The return_type is {type_kind: "FLOAT64"} for Add and Decrement, and
-        # is absent for Increment (inferred as FLOAT64 at query time).
-        # Suppose the function Add is replaced by
-        #   CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);
-        # Then the inferred return type of Increment is automatically changed to
-        # INT64 at query time, while the return type of Decrement remains FLOAT64.
+        # For example, for the functions created with the following statements:
+        # 
+        # * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);`
+        # 
+        # * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));`
+        # 
+        # * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));`
+        # 
+        # The return_type is `{type_kind: "FLOAT64"}` for `Add` and `Decrement`, and
+        # is absent for `Increment` (inferred as FLOAT64 at query time).
+        # 
+        # Suppose the function `Add` is replaced by
+        #   `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);`
+        # 
+        # Then the inferred return type of `Increment` is automatically changed to
+        # INT64 at query time, while the return type of `Decrement` remains FLOAT64.
         # Examples:
         # INT64: {type_kind="INT64"}
-        # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-        # STRUCT<x STRING, y ARRAY<DATE>>:
+        # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+        # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
         #   {type_kind="STRUCT",
         #    struct_type={fields=[
         #      {name="x", type={type_kind="STRING"}},
@@ -301,18 +325,28 @@ Args:
     "lastModifiedTime": "A String", # Output only. The time when this routine was last modified, in milliseconds
         # since the epoch.
     "definitionBody": "A String", # Required. The body of the routine.
+        # 
         # For functions, this is the expression in the AS clause.
+        # 
         # If language=SQL, it is the substring inside (but excluding) the
         # parentheses. For example, for the function created with the following
-        # statement
-        #   create function JoinLines(x string, y string) as (concat(x, "\n", y))
-        # definition_body = r'concat(x, "\n", y)' (\n is not replaced with
+        # statement:
+        # 
+        # `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, "\n", y))`
+        # 
+        # The definition_body is `concat(x, "\n", y)` (\n is not replaced with
         # linebreak).
+        # 
         # If language=JAVASCRIPT, it is the evaluated string in the AS clause.
-        # For example, for the function created with the following statement
-        #   CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'
-        # definition_body = 'return "\n";\n' (both \n are replaced with
-        # linebreaks).
+        # For example, for the function created with the following statement:
+        # 
+        # `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'`
+        # 
+        # The definition_body is
+        # 
+        # `return "\n";\n`
+        # 
+        # Note that both \n are replaced with linebreaks.
   }
 
 
@@ -320,7 +354,8 @@ Returns:
   An object of the form:
 
     { # A user-defined function or a stored procedure.
-      "routineType": "A String", # Required.
+      "routineType": "A String", # Required. The type of routine.
+      "description": "A String", # Optional. [Experimental] The description of the routine if defined.
       "language": "A String", # Optional. Defaults to "SQL".
       "creationTime": "A String", # Output only. The time when this routine was created, in milliseconds since
           # the epoch.
@@ -339,8 +374,8 @@ Returns:
           "dataType": { # The type of a variable, e.g., a function argument. # Required unless argument_kind = ANY_TYPE.
               # Examples:
               # INT64: {type_kind="INT64"}
-              # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-              # STRUCT<x STRING, y ARRAY<DATE>>:
+              # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+              # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
               #   {type_kind="STRUCT",
               #    struct_type={fields=[
               #      {name="x", type={type_kind="STRING"}},
@@ -356,31 +391,37 @@ Returns:
                 # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
           },
           "argumentKind": "A String", # Optional. Defaults to FIXED_TYPE.
+          "name": "A String", # Optional. The name of this argument. Can be absent for function return argument.
           "mode": "A String", # Optional. Specifies whether the argument is input or output.
               # Can be set for procedures only.
-          "name": "A String", # Optional. The name of this argument. Can be absent for function return
-              # argument.
         },
       ],
       "returnType": { # The type of a variable, e.g., a function argument. # Optional if language = "SQL"; required otherwise.
+          #
           # If absent, the return type is inferred from definition_body at query time
           # in each query that references this routine. If present, then the evaluated
           # result will be cast to the specified returned type at query time.
           #
-          # For example, for the functions created with the following statements
-          #   CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);
-          #   CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));
-          #   CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));
-          # The return_type is {type_kind: "FLOAT64"} for Add and Decrement, and
-          # is absent for Increment (inferred as FLOAT64 at query time).
-          # Suppose the function Add is replaced by
-          #   CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);
-          # Then the inferred return type of Increment is automatically changed to
-          # INT64 at query time, while the return type of Decrement remains FLOAT64.
+          # For example, for the functions created with the following statements:
+          #
+          # * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);`
+          #
+          # * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));`
+          #
+          # * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));`
+          #
+          # The return_type is `{type_kind: "FLOAT64"}` for `Add` and `Decrement`, and
+          # is absent for `Increment` (inferred as FLOAT64 at query time).
+          #
+          # Suppose the function `Add` is replaced by
+          #   `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);`
+          #
+          # Then the inferred return type of `Increment` is automatically changed to
+          # INT64 at query time, while the return type of `Decrement` remains FLOAT64.
           # Examples:
           # INT64: {type_kind="INT64"}
-          # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-          # STRUCT<x STRING, y ARRAY<DATE>>:
+          # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+          # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
           #   {type_kind="STRUCT",
           #    struct_type={fields=[
           #      {name="x", type={type_kind="STRING"}},
@@ -398,43 +439,65 @@ Returns:
       "lastModifiedTime": "A String", # Output only. The time when this routine was last modified, in milliseconds
           # since the epoch.
       "definitionBody": "A String", # Required. The body of the routine.
+          #
           # For functions, this is the expression in the AS clause.
+          #
           # If language=SQL, it is the substring inside (but excluding) the
           # parentheses. For example, for the function created with the following
-          # statement
-          #   create function JoinLines(x string, y string) as (concat(x, "\n", y))
-          # definition_body = r'concat(x, "\n", y)' (\n is not replaced with
+          # statement:
+          #
+          # `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, "\n", y))`
+          #
+          # The definition_body is `concat(x, "\n", y)` (\n is not replaced with
           # linebreak).
+          #
           # If language=JAVASCRIPT, it is the evaluated string in the AS clause.
-          # For example, for the function created with the following statement
-          #   CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'
-          # definition_body = 'return "\n";\n' (both \n are replaced with
-          # linebreaks).
+          # For example, for the function created with the following statement:
+          #
+          # `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'`
+          #
+          # The definition_body is
+          #
+          # `return "\n";\n`
+          #
+          # Note that both \n are replaced with linebreaks.
     }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(projectId, datasetId, pageToken=None, maxResults=None)</code>
+    <code class="details" id="list">list(projectId, datasetId, filter=None, pageToken=None, maxResults=None, readMask=None)</code>
   <pre>Lists all routines in the specified dataset. Requires the READER dataset
 role.
 
 Args:
-  projectId: string, Project ID of the routines to list (required)
-  datasetId: string, Dataset ID of the routines to list (required)
+  projectId: string, Required. Project ID of the routines to list (required)
+  datasetId: string, Required. Dataset ID of the routines to list (required)
+  filter: string, If set, then only the Routines matching this filter are returned.
+The current supported form is either "routine_type:&lt;RoutineType&gt;" or
+"routineType:&lt;RoutineType&gt;", where &lt;RoutineType&gt; is a RoutineType enum.
+Example: "routineType:SCALAR_FUNCTION".
   pageToken: string, Page token, returned by a previous call, to request the next page of
 results
-  maxResults: integer, The maximum number of results per page.
+  maxResults: integer, The maximum number of results to return in a single response page.
+Leverage the page tokens to iterate through the entire collection.
+  readMask: string, If set, then only the Routine fields in the field mask, as well as
+project_id, dataset_id and routine_id, are returned in the response.
+If unset, then the following Routine fields are returned:
+etag, project_id, dataset_id, routine_id, routine_type, creation_time,
+last_modified_time, and language.
 
 Returns:
   An object of the form:
 
     {
     "nextPageToken": "A String", # A token to request the next page of results.
-    "routines": [ # Routines in the requested dataset. Only the following fields are populated:
+    "routines": [ # Routines in the requested dataset. Unless read_mask is set in the request,
+        # only the following fields are populated:
         # etag, project_id, dataset_id, routine_id, routine_type, creation_time,
-        # last_modified_time, language.
+        # last_modified_time, and language.
       { # A user-defined function or a stored procedure.
-          "routineType": "A String", # Required.
+          "routineType": "A String", # Required. The type of routine.
+          "description": "A String", # Optional. [Experimental] The description of the routine if defined.
           "language": "A String", # Optional. Defaults to "SQL".
           "creationTime": "A String", # Output only. The time when this routine was created, in milliseconds since
               # the epoch.
@@ -453,8 +516,8 @@ Returns:
               "dataType": { # The type of a variable, e.g., a function argument. # Required unless argument_kind = ANY_TYPE.
                   # Examples:
                   # INT64: {type_kind="INT64"}
-                  # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-                  # STRUCT<x STRING, y ARRAY<DATE>>:
+                  # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+                  # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
                   #   {type_kind="STRUCT",
                   #    struct_type={fields=[
                   #      {name="x", type={type_kind="STRING"}},
@@ -470,31 +533,37 @@ Returns:
                     # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
               },
               "argumentKind": "A String", # Optional. Defaults to FIXED_TYPE.
+              "name": "A String", # Optional. The name of this argument. Can be absent for function return argument.
               "mode": "A String", # Optional. Specifies whether the argument is input or output.
                   # Can be set for procedures only.
-              "name": "A String", # Optional. The name of this argument. Can be absent for function return
-                  # argument.
             },
           ],
           "returnType": { # The type of a variable, e.g., a function argument. # Optional if language = "SQL"; required otherwise.
+              #
               # If absent, the return type is inferred from definition_body at query time
               # in each query that references this routine. If present, then the evaluated
               # result will be cast to the specified returned type at query time.
               #
-              # For example, for the functions created with the following statements
-              #   CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);
-              #   CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));
-              #   CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));
-              # The return_type is {type_kind: "FLOAT64"} for Add and Decrement, and
-              # is absent for Increment (inferred as FLOAT64 at query time).
-              # Suppose the function Add is replaced by
-              #   CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);
-              # Then the inferred return type of Increment is automatically changed to
-              # INT64 at query time, while the return type of Decrement remains FLOAT64.
+              # For example, for the functions created with the following statements:
+              #
+              # * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);`
+              #
+              # * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));`
+              #
+              # * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));`
+              #
+              # The return_type is `{type_kind: "FLOAT64"}` for `Add` and `Decrement`, and
+              # is absent for `Increment` (inferred as FLOAT64 at query time).
+              #
+              # Suppose the function `Add` is replaced by
+              #   `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);`
+              #
+              # Then the inferred return type of `Increment` is automatically changed to
+              # INT64 at query time, while the return type of `Decrement` remains FLOAT64.
               # Examples:
               # INT64: {type_kind="INT64"}
-              # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-              # STRUCT<x STRING, y ARRAY<DATE>>:
+              # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+              # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
               #   {type_kind="STRUCT",
               #    struct_type={fields=[
               #      {name="x", type={type_kind="STRING"}},
@@ -512,18 +581,28 @@ Returns:
           "lastModifiedTime": "A String", # Output only. The time when this routine was last modified, in milliseconds
               # since the epoch.
           "definitionBody": "A String", # Required. The body of the routine.
+              #
               # For functions, this is the expression in the AS clause.
+              #
               # If language=SQL, it is the substring inside (but excluding) the
               # parentheses. For example, for the function created with the following
-              # statement
-              #   create function JoinLines(x string, y string) as (concat(x, "\n", y))
-              # definition_body = r'concat(x, "\n", y)' (\n is not replaced with
+              # statement:
+              #
+              # `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, "\n", y))`
+              #
+              # The definition_body is `concat(x, "\n", y)` (\n is not replaced with
               # linebreak).
+              #
               # If language=JAVASCRIPT, it is the evaluated string in the AS clause.
-              # For example, for the function created with the following statement
-              #   CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'
-              # definition_body = 'return "\n";\n' (both \n are replaced with
-              # linebreaks).
+              # For example, for the function created with the following statement:
+              #
+              # `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'`
+              #
+              # The definition_body is
+              #
+              # `return "\n";\n`
+              #
+              # Note that both \n are replaced with linebreaks.
         },
     ],
   }</pre>
@@ -544,19 +623,20 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="update">update(projectId, datasetId, routineId, body)</code>
+    <code class="details" id="update">update(projectId, datasetId, routineId, body=None)</code>
   <pre>Updates information in an existing routine. The update method replaces the
 entire Routine resource.
 
 Args:
-  projectId: string, Project ID of the routine to update (required)
-  datasetId: string, Dataset ID of the routine to update (required)
-  routineId: string, Routine ID of the routine to update (required)
-  body: object, The request body. (required)
+  projectId: string, Required. Project ID of the routine to update (required)
+  datasetId: string, Required. Dataset ID of the routine to update (required)
+  routineId: string, Required. Routine ID of the routine to update (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # A user-defined function or a stored procedure.
-    "routineType": "A String", # Required.
+    "routineType": "A String", # Required. The type of routine.
+    "description": "A String", # Optional. [Experimental] The description of the routine if defined.
     "language": "A String", # Optional. Defaults to "SQL".
     "creationTime": "A String", # Output only. The time when this routine was created, in milliseconds since
         # the epoch.
@@ -575,8 +655,8 @@ Args:
         "dataType": { # The type of a variable, e.g., a function argument. # Required unless argument_kind = ANY_TYPE.
             # Examples:
             # INT64: {type_kind="INT64"}
-            # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-            # STRUCT<x STRING, y ARRAY<DATE>>:
+            # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+            # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
             #   {type_kind="STRUCT",
             #    struct_type={fields=[
             #      {name="x", type={type_kind="STRING"}},
@@ -592,31 +672,37 @@ Args:
               # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
         },
         "argumentKind": "A String", # Optional. Defaults to FIXED_TYPE.
+        "name": "A String", # Optional. The name of this argument. Can be absent for function return argument.
         "mode": "A String", # Optional. Specifies whether the argument is input or output.
             # Can be set for procedures only.
-        "name": "A String", # Optional. The name of this argument. Can be absent for function return
-            # argument.
       },
     ],
     "returnType": { # The type of a variable, e.g., a function argument. # Optional if language = "SQL"; required otherwise.
+        # 
         # If absent, the return type is inferred from definition_body at query time
         # in each query that references this routine. If present, then the evaluated
         # result will be cast to the specified returned type at query time.
         # 
-        # For example, for the functions created with the following statements
-        #   CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);
-        #   CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));
-        #   CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));
-        # The return_type is {type_kind: "FLOAT64"} for Add and Decrement, and
-        # is absent for Increment (inferred as FLOAT64 at query time).
-        # Suppose the function Add is replaced by
-        #   CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);
-        # Then the inferred return type of Increment is automatically changed to
-        # INT64 at query time, while the return type of Decrement remains FLOAT64.
+        # For example, for the functions created with the following statements:
+        # 
+        # * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);`
+        # 
+        # * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));`
+        # 
+        # * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));`
+        # 
+        # The return_type is `{type_kind: "FLOAT64"}` for `Add` and `Decrement`, and
+        # is absent for `Increment` (inferred as FLOAT64 at query time).
+        # 
+        # Suppose the function `Add` is replaced by
+        #   `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);`
+        # 
+        # Then the inferred return type of `Increment` is automatically changed to
+        # INT64 at query time, while the return type of `Decrement` remains FLOAT64.
         # Examples:
         # INT64: {type_kind="INT64"}
-        # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-        # STRUCT<x STRING, y ARRAY<DATE>>:
+        # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+        # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
         #   {type_kind="STRUCT",
         #    struct_type={fields=[
         #      {name="x", type={type_kind="STRING"}},
@@ -634,18 +720,28 @@ Args:
     "lastModifiedTime": "A String", # Output only. The time when this routine was last modified, in milliseconds
         # since the epoch.
     "definitionBody": "A String", # Required. The body of the routine.
+        # 
         # For functions, this is the expression in the AS clause.
+        # 
         # If language=SQL, it is the substring inside (but excluding) the
         # parentheses. For example, for the function created with the following
-        # statement
-        #   create function JoinLines(x string, y string) as (concat(x, "\n", y))
-        # definition_body = r'concat(x, "\n", y)' (\n is not replaced with
+        # statement:
+        # 
+        # `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, "\n", y))`
+        # 
+        # The definition_body is `concat(x, "\n", y)` (\n is not replaced with
         # linebreak).
+        # 
         # If language=JAVASCRIPT, it is the evaluated string in the AS clause.
-        # For example, for the function created with the following statement
-        #   CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'
-        # definition_body = 'return "\n";\n' (both \n are replaced with
-        # linebreaks).
+        # For example, for the function created with the following statement:
+        # 
+        # `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'`
+        # 
+        # The definition_body is
+        # 
+        # `return "\n";\n`
+        # 
+        # Note that both \n are replaced with linebreaks.
   }
 
 
@@ -653,7 +749,8 @@ Returns:
   An object of the form:
 
     { # A user-defined function or a stored procedure.
-      "routineType": "A String", # Required.
+      "routineType": "A String", # Required. The type of routine.
+      "description": "A String", # Optional. [Experimental] The description of the routine if defined.
       "language": "A String", # Optional. Defaults to "SQL".
       "creationTime": "A String", # Output only. The time when this routine was created, in milliseconds since
           # the epoch.
@@ -672,8 +769,8 @@ Returns:
           "dataType": { # The type of a variable, e.g., a function argument. # Required unless argument_kind = ANY_TYPE.
               # Examples:
               # INT64: {type_kind="INT64"}
-              # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-              # STRUCT<x STRING, y ARRAY<DATE>>:
+              # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+              # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
               #   {type_kind="STRUCT",
               #    struct_type={fields=[
               #      {name="x", type={type_kind="STRING"}},
@@ -689,31 +786,37 @@ Returns:
                 # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
           },
           "argumentKind": "A String", # Optional. Defaults to FIXED_TYPE.
+          "name": "A String", # Optional. The name of this argument. Can be absent for function return argument.
           "mode": "A String", # Optional. Specifies whether the argument is input or output.
               # Can be set for procedures only.
-          "name": "A String", # Optional. The name of this argument. Can be absent for function return
-              # argument.
         },
       ],
       "returnType": { # The type of a variable, e.g., a function argument. # Optional if language = "SQL"; required otherwise.
+          #
           # If absent, the return type is inferred from definition_body at query time
           # in each query that references this routine. If present, then the evaluated
           # result will be cast to the specified returned type at query time.
           #
-          # For example, for the functions created with the following statements
-          #   CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);
-          #   CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));
-          #   CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));
-          # The return_type is {type_kind: "FLOAT64"} for Add and Decrement, and
-          # is absent for Increment (inferred as FLOAT64 at query time).
-          # Suppose the function Add is replaced by
-          #   CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);
-          # Then the inferred return type of Increment is automatically changed to
-          # INT64 at query time, while the return type of Decrement remains FLOAT64.
+          # For example, for the functions created with the following statements:
+          #
+          # * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);`
+          #
+          # * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));`
+          #
+          # * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));`
+          #
+          # The return_type is `{type_kind: "FLOAT64"}` for `Add` and `Decrement`, and
+          # is absent for `Increment` (inferred as FLOAT64 at query time).
+          #
+          # Suppose the function `Add` is replaced by
+          #   `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);`
+          #
+          # Then the inferred return type of `Increment` is automatically changed to
+          # INT64 at query time, while the return type of `Decrement` remains FLOAT64.
           # Examples:
           # INT64: {type_kind="INT64"}
-          # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-          # STRUCT<x STRING, y ARRAY<DATE>>:
+          # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+          # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
           #   {type_kind="STRUCT",
           #    struct_type={fields=[
           #      {name="x", type={type_kind="STRING"}},
@@ -731,18 +834,28 @@ Returns:
       "lastModifiedTime": "A String", # Output only. The time when this routine was last modified, in milliseconds
           # since the epoch.
       "definitionBody": "A String", # Required. The body of the routine.
+          #
           # For functions, this is the expression in the AS clause.
+          #
           # If language=SQL, it is the substring inside (but excluding) the
           # parentheses. For example, for the function created with the following
-          # statement
-          #   create function JoinLines(x string, y string) as (concat(x, "\n", y))
-          # definition_body = r'concat(x, "\n", y)' (\n is not replaced with
+          # statement:
+          #
+          # `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, "\n", y))`
+          #
+          # The definition_body is `concat(x, "\n", y)` (\n is not replaced with
           # linebreak).
+          #
           # If language=JAVASCRIPT, it is the evaluated string in the AS clause.
-          # For example, for the function created with the following statement
-          #   CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'
-          # definition_body = 'return "\n";\n' (both \n are replaced with
-          # linebreaks).
+          # For example, for the function created with the following statement:
+          #
+          # `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS 'return "\n";\n'`
+          #
+          # The definition_body is
+          #
+          # `return "\n";\n`
+          #
+          # Note that both \n are replaced with linebreaks.
     }</pre>
 </div>
 

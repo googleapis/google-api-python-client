@@ -87,7 +87,7 @@ h1, h2, h3 {
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#patch">patch(projectId, datasetId, modelId, body)</a></code></p>
+  <code><a href="#patch">patch(projectId, datasetId, modelId, body=None)</a></code></p>
 <p class="firstline">Patch specific fields in the specified model.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -95,9 +95,9 @@ h1, h2, h3 {
   <pre>Deletes the model specified by modelId from the dataset.
 
 Args:
-  projectId: string, Project ID of the model to delete. (required)
-  datasetId: string, Dataset ID of the model to delete. (required)
-  modelId: string, Model ID of the model to delete. (required)
+  projectId: string, Required. Project ID of the model to delete. (required)
+  datasetId: string, Required. Dataset ID of the model to delete. (required)
+  modelId: string, Required. Model ID of the model to delete. (required)
 </pre>
 </div>
 
@@ -106,59 +106,81 @@ Args:
   <pre>Gets the specified model resource by model ID.
 
 Args:
-  projectId: string, Project ID of the requested model. (required)
-  datasetId: string, Dataset ID of the requested model. (required)
-  modelId: string, Model ID of the requested model. (required)
+  projectId: string, Required. Project ID of the requested model. (required)
+  datasetId: string, Required. Dataset ID of the requested model. (required)
+  modelId: string, Required. Model ID of the requested model. (required)
 
 Returns:
   An object of the form:
 
     {
-      "labelColumns": [ # Output only. Label columns that were used to train this model.
-          # The output of the model will have a "predicted_" prefix to these columns.
-        { # A field or a column.
-          "type": { # The type of a variable, e.g., a function argument. # Optional. The type of this parameter. Absent if not explicitly
-              # specified (e.g., CREATE FUNCTION statement can omit the return type;
-              # in this case the output parameter does not have this "type" field).
-              # Examples:
-              # INT64: {type_kind="INT64"}
-              # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-              # STRUCT<x STRING, y ARRAY<DATE>>:
-              #   {type_kind="STRUCT",
-              #    struct_type={fields=[
-              #      {name="x", type={type_kind="STRING"}},
-              #      {name="y", type={type_kind="ARRAY", array_element_type="DATE"}}
-              #    ]}}
-            "structType": { # The fields of this struct, in order, if type_kind = "STRUCT".
-              "fields": [
-                # Object with schema name: StandardSqlField
-              ],
-            },
-            "arrayElementType": # Object with schema name: StandardSqlDataType # The type of the array's elements, if type_kind = "ARRAY".
-            "typeKind": "A String", # Required. The top level type of this field.
-                # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
-          },
-          "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
-        },
-      ],
-      "description": "A String", # [Optional] A user-friendly description of this model.
-      "trainingRuns": [ # Output only. Information for all training runs in increasing order of
-          # start_time.
+      "labels": { # The labels associated with this model. You can use these to organize
+          # and group your models. Label keys and values can be no longer
+          # than 63 characters, can only contain lowercase letters, numeric
+          # characters, underscores and dashes. International characters are allowed.
+          # Label values are optional. Label keys must start with a letter and each
+          # label in the list must have a different key.
+        "a_key": "A String",
+      },
+      "description": "A String", # Optional. A user-friendly description of this model.
+      "trainingRuns": [ # Output only. Information for all training runs in increasing order of start_time.
         { # Information about a single training query run for the model.
           "evaluationMetrics": { # Evaluation metrics of a model. These are either computed on all training # The evaluation metrics over training/eval data that were computed at the
               # end of training.
               # data or just the eval data based on whether eval data was used during
               # training. These are not present for imported models.
-            "clusteringMetrics": { # Evaluation metrics for clustering models. # [Beta] Populated for clustering models.
+            "clusteringMetrics": { # Evaluation metrics for clustering models. # Populated for clustering models.
               "meanSquaredDistance": 3.14, # Mean of squared distances between each sample to its cluster centroid.
               "daviesBouldinIndex": 3.14, # Davies-Bouldin index.
+              "clusters": [ # [Beta] Information for all clusters.
+                { # Message containing the information about one cluster.
+                  "count": "A String", # Count of training data rows that were assigned to this cluster.
+                  "featureValues": [ # Values of highly variant features for this cluster.
+                    { # Representative value of a single feature within the cluster.
+                      "featureColumn": "A String", # The feature column name.
+                      "numericalValue": 3.14, # The numerical feature value. This is the centroid value for this
+                          # feature.
+                      "categoricalValue": { # Representative value of a categorical feature. # The categorical feature value.
+                        "categoryCounts": [ # Counts of all categories for the categorical feature. If there are
+                            # more than ten categories, we return top ten (by count) and return
+                            # one more CategoryCount with category "_OTHER_" and count as
+                            # aggregate counts of remaining categories.
+                          { # Represents the count of a single category within the cluster.
+                            "category": "A String", # The name of category.
+                            "count": "A String", # The count of training samples matching the category within the
+                                # cluster.
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                  "centroidId": "A String", # Centroid id.
+                },
+              ],
             },
-            "regressionMetrics": { # Evaluation metrics for regression models. # Populated for regression models.
+            "regressionMetrics": { # Evaluation metrics for regression and explicit feedback type matrix # Populated for regression models and explicit feedback type matrix
+                # factorization models.
+                # factorization models.
               "meanSquaredLogError": 3.14, # Mean squared log error.
               "meanAbsoluteError": 3.14, # Mean absolute error.
               "meanSquaredError": 3.14, # Mean squared error.
               "medianAbsoluteError": 3.14, # Median absolute error.
               "rSquared": 3.14, # R^2 score.
+            },
+            "rankingMetrics": { # Evaluation metrics used by weighted-ALS models specified by # [Alpha] Populated for implicit feedback type matrix factorization
+                # models.
+                # feedback_type=implicit.
+              "meanSquaredError": 3.14, # Similar to the mean squared error computed in regression and explicit
+                  # recommendation models except instead of computing the rating directly,
+                  # the output from evaluate is computed against a preference which is 1 or 0
+                  # depending on if the rating exists or not.
+              "meanAveragePrecision": 3.14, # Calculates a precision per user for all the items by ranking them and
+                  # then averages all the precisions across all the users.
+              "averageRank": 3.14, # Determines the goodness of a ranking by computing the percentile rank
+                  # from the predicted confidence and dividing it by the original rank.
+              "normalizedDiscountedCumulativeGain": 3.14, # A metric to determine the goodness of a ranking calculated from the
+                  # predicted confidence by comparing it to an ideal rank measured by the
+                  # original ratings.
             },
             "binaryClassificationMetrics": { # Evaluation metrics for binary classification/classifier models. # Populated for binary classification/classifier models.
               "negativeLabel": "A String", # Label representing the negative class.
@@ -189,12 +211,16 @@ Returns:
               "binaryConfusionMatrixList": [ # Binary confusion matrix at multiple thresholds.
                 { # Confusion matrix for binary classification models.
                   "truePositives": "A String", # Number of true samples predicted as true.
-                  "recall": 3.14, # Aggregate recall.
-                  "precision": 3.14, # Aggregate precision.
+                  "recall": 3.14, # The fraction of actual positive labels that were given a positive
+                      # prediction.
+                  "precision": 3.14, # The fraction of actual positive predictions that had positive actual
+                      # labels.
                   "falseNegatives": "A String", # Number of false samples predicted as false.
                   "trueNegatives": "A String", # Number of true samples predicted as false.
                   "falsePositives": "A String", # Number of false samples predicted as true.
+                  "f1Score": 3.14, # The equally weighted average of recall and precision.
                   "positiveClassThreshold": 3.14, # Threshold value used when computing each of the following metric.
+                  "accuracy": 3.14, # The fraction of predictions given the correct label.
                 },
               ],
             },
@@ -228,29 +254,81 @@ Returns:
                       # confusion matrix.
                   "rows": [ # One row per actual label.
                     { # A single row in the confusion matrix.
+                      "actualLabel": "A String", # The original label of this row.
                       "entries": [ # Info describing predicted label distribution.
                         { # A single entry in the confusion matrix.
-                          "predictedLabel": "A String", # The predicted label. For confidence_threshold > 0, we will
+                          "predictedLabel": "A String", # The predicted label. For confidence_threshold &gt; 0, we will
                               # also add an entry indicating the number of items under the
                               # confidence threshold.
                           "itemCount": "A String", # Number of items being predicted as this label.
                         },
                       ],
-                      "actualLabel": "A String", # The original label of this row.
                     },
                   ],
                 },
               ],
             },
           },
-          "results": [ # Output of each iteration run, results.size() <= max_iterations.
+          "dataSplitResult": { # Data split result. This contains references to the training and evaluation # Data split result of the training run. Only set when the input data is
+              # actually split.
+              # data tables that were used to train the model.
+            "trainingTable": { # Table reference of the training data after split.
+              "projectId": "A String", # [Required] The ID of the project containing this table.
+              "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+              "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+            },
+            "evaluationTable": { # Table reference of the evaluation data after split.
+              "projectId": "A String", # [Required] The ID of the project containing this table.
+              "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+              "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+            },
+          },
+          "results": [ # Output of each iteration run, results.size() &lt;= max_iterations.
             { # Information about a single iteration of the training run.
+              "arimaResult": { # (Auto-)arima fitting result. Wrap everything in ArimaResult for easier
+                  # refactoring if we want to use model-specific iteration results.
+                "arimaModelInfo": [ # This message is repeated because there are multiple arima models
+                    # fitted in auto-arima. For non-auto-arima model, its size is one.
+                  { # Arima model information.
+                    "seasonalPeriods": [ # Seasonal periods. Repeated because multiple periods are supported
+                        # for one time series.
+                      "A String",
+                    ],
+                    "hasDrift": True or False, # Whether Arima model fitted with drift or not. It is always false
+                        # when d is not 1.
+                    "arimaCoefficients": { # Arima coefficients. # Arima coefficients.
+                      "movingAverageCoefficients": [ # Moving-average coefficients, an array of double.
+                        3.14,
+                      ],
+                      "autoRegressiveCoefficients": [ # Auto-regressive coefficients, an array of double.
+                        3.14,
+                      ],
+                      "interceptCoefficient": 3.14, # Intercept coefficient, just a double not an array.
+                    },
+                    "nonSeasonalOrder": { # Arima order, can be used for both non-seasonal and seasonal parts. # Non-seasonal order.
+                      "q": "A String", # Order of the moving-average part.
+                      "p": "A String", # Order of the autoregressive part.
+                      "d": "A String", # Order of the differencing part.
+                    },
+                    "arimaFittingMetrics": { # ARIMA model fitting metrics. # Arima fitting metrics.
+                      "variance": 3.14, # Variance.
+                      "logLikelihood": 3.14, # Log-likelihood.
+                      "aic": 3.14, # AIC.
+                    },
+                    "timeSeriesId": "A String", # The id to indicate different time series.
+                  },
+                ],
+                "seasonalPeriods": [ # Seasonal periods. Repeated because multiple periods are supported for
+                    # one time series.
+                  "A String",
+                ],
+              },
               "index": 42, # Index of the iteration, 0 based.
               "evalLoss": 3.14, # Loss computed on the eval data at the end of iteration.
               "durationMs": "A String", # Time taken to run the iteration in milliseconds.
               "learnRate": 3.14, # Learn rate used for this iteration.
               "trainingLoss": 3.14, # Loss computed on the training data at the end of iteration.
-              "clusterInfos": [ # [Beta] Information about top clusters for clustering models.
+              "clusterInfos": [ # Information about top clusters for clustering models.
                 { # Information about a single cluster for clustering model.
                   "centroidId": "A String", # Centroid id.
                   "clusterSize": "A String", # Cluster size, the total number of points assigned to the cluster.
@@ -264,9 +342,23 @@ Returns:
           "trainingOptions": { # Options that were used for this training run, includes
               # user specified and default options that were used.
             "optimizationStrategy": "A String", # Optimization strategy for training linear regression models.
+            "itemColumn": "A String", # Item column specified for matrix factorization models.
+            "feedbackType": "A String", # Feedback type that specifies which algorithm to run for matrix
+                # factorization.
+            "numFactors": "A String", # Num factors specified for matrix factorization models.
             "inputLabelColumns": [ # Name of input label columns in training data.
               "A String",
             ],
+            "batchSize": "A String", # Batch size for dnn models.
+            "distanceType": "A String", # Distance type for clustering models.
+            "kmeansInitializationColumn": "A String", # The column used to provide the initial centroids for kmeans algorithm
+                # when kmeans_initialization_method is CUSTOM.
+            "l2Regularization": 3.14, # L2 regularization coefficient.
+            "dropout": 3.14, # Dropout probability for dnn models.
+            "minRelativeProgress": 3.14, # When early_stop is true, stops training when accuracy improvement is
+                # less than 'min_relative_progress'. Used only for iterative training
+                # algorithms.
+            "l1Regularization": 3.14, # L1 regularization coefficient.
             "maxIterations": "A String", # The maximum number of iterations in training. Used only for iterative
                 # training algorithms.
             "earlyStop": True or False, # Whether to stop early when the loss doesn't improve significantly
@@ -284,28 +376,33 @@ Returns:
                 # as training data, and the rest are eval data. It respects the order
                 # in Orderable data types:
                 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#data-type-properties
-            "numClusters": "A String", # [Beta] Number of clusters for clustering models.
-            "l1Regularization": 3.14, # L1 regularization coefficient.
-            "dataSplitMethod": "A String", # The data split type for training and evaluation, e.g. RANDOM.
-            "distanceType": "A String", # [Beta] Distance type for clustering models.
+            "numClusters": "A String", # Number of clusters for clustering models.
             "warmStart": True or False, # Whether to train a model from the last checkpoint.
-            "labelClassWeights": { # Weights associated with each label class, for rebalancing the
-                # training data. Only applicable for classification models.
-              "a_key": 3.14,
-            },
-            "lossType": "A String", # Type of loss function used during training run.
+            "hiddenUnits": [ # Hidden units for dnn models.
+              "A String",
+            ],
+            "maxTreeDepth": "A String", # Maximum depth of a tree for boosted tree models.
+            "userColumn": "A String", # User column specified for matrix factorization models.
+            "kmeansInitializationMethod": "A String", # The method used to initialize the centroids for kmeans algorithm.
+            "learnRateStrategy": "A String", # The strategy to determine learn rate for the current iteration.
             "dataSplitEvalFraction": 3.14, # The fraction of evaluation data over the whole input data. The rest
                 # of data will be used as training data. The format should be double.
                 # Accurate to two decimal places.
                 # Default value is 0.2.
-            "l2Regularization": 3.14, # L2 regularization coefficient.
+            "dataSplitMethod": "A String", # The data split type for training and evaluation, e.g. RANDOM.
+            "subsample": 3.14, # Subsample fraction of the training data to grow tree to prevent
+                # overfitting for boosted tree models.
+            "labelClassWeights": { # Weights associated with each label class, for rebalancing the
+                # training data. Only applicable for classification models.
+              "a_key": 3.14,
+            },
+            "learnRate": 3.14, # Learning rate in training. Used only for iterative training algorithms.
             "modelUri": "A String", # [Beta] Google Cloud Storage URI from which the model was imported. Only
                 # applicable for imported models.
-            "learnRateStrategy": "A String", # The strategy to determine learn rate for the current iteration.
-            "minRelativeProgress": 3.14, # When early_stop is true, stops training when accuracy improvement is
-                # less than 'min_relative_progress'. Used only for iterative training
-                # algorithms.
-            "learnRate": 3.14, # Learning rate in training. Used only for iterative training algorithms.
+            "walsAlpha": 3.14, # Hyperparameter for matrix factoration when implicit feedback type is
+                # specified.
+            "minSplitLoss": 3.14, # Minimum split loss for boosted tree models.
+            "lossType": "A String", # Type of loss function used during training run.
           },
         },
       ],
@@ -316,8 +413,8 @@ Returns:
               # in this case the output parameter does not have this "type" field).
               # Examples:
               # INT64: {type_kind="INT64"}
-              # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-              # STRUCT<x STRING, y ARRAY<DATE>>:
+              # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+              # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
               #   {type_kind="STRUCT",
               #    struct_type={fields=[
               #      {name="x", type={type_kind="STRING"}},
@@ -335,35 +432,56 @@ Returns:
           "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
         },
       ],
-      "labels": { # [Optional] The labels associated with this model. You can use these to
-          # organize and group your models. Label keys and values can be no longer
-          # than 63 characters, can only contain lowercase letters, numeric
-          # characters, underscores and dashes. International characters are allowed.
-          # Label values are optional. Label keys must start with a letter and each
-          # label in the list must have a different key.
-        "a_key": "A String",
-      },
-      "creationTime": "A String", # Output only. The time when this model was created, in millisecs since the
-          # epoch.
+      "labelColumns": [ # Output only. Label columns that were used to train this model.
+          # The output of the model will have a "predicted_" prefix to these columns.
+        { # A field or a column.
+          "type": { # The type of a variable, e.g., a function argument. # Optional. The type of this parameter. Absent if not explicitly
+              # specified (e.g., CREATE FUNCTION statement can omit the return type;
+              # in this case the output parameter does not have this "type" field).
+              # Examples:
+              # INT64: {type_kind="INT64"}
+              # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+              # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
+              #   {type_kind="STRUCT",
+              #    struct_type={fields=[
+              #      {name="x", type={type_kind="STRING"}},
+              #      {name="y", type={type_kind="ARRAY", array_element_type="DATE"}}
+              #    ]}}
+            "structType": { # The fields of this struct, in order, if type_kind = "STRUCT".
+              "fields": [
+                # Object with schema name: StandardSqlField
+              ],
+            },
+            "arrayElementType": # Object with schema name: StandardSqlDataType # The type of the array's elements, if type_kind = "ARRAY".
+            "typeKind": "A String", # Required. The top level type of this field.
+                # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
+          },
+          "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
+        },
+      ],
+      "creationTime": "A String", # Output only. The time when this model was created, in millisecs since the epoch.
       "modelType": "A String", # Output only. Type of the model resource.
-      "modelReference": { # Id path of a model. # Required. Unique identifier for this model.
+      "encryptionConfiguration": { # Custom encryption configuration (e.g., Cloud KMS keys). This shows the
+          # encryption configuration of the model data while stored in BigQuery
+          # storage. This field can be used with PatchModel to update encryption key
+          # for an already encrypted model.
+        "kmsKeyName": "A String", # [Optional] Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
+      },
+      "modelReference": { # Required. Unique identifier for this model.
         "projectId": "A String", # [Required] The ID of the project containing this model.
         "datasetId": "A String", # [Required] The ID of the dataset containing this model.
-        "modelId": "A String", # [Required] The ID of the model. The ID must contain only
-            # letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum
-            # length is 1,024 characters.
+        "modelId": "A String", # [Required] The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
       },
       "etag": "A String", # Output only. A hash of this resource.
       "location": "A String", # Output only. The geographic location where the model resides. This value
           # is inherited from the dataset.
-      "friendlyName": "A String", # [Optional] A descriptive name for this model.
-      "expirationTime": "A String", # [Optional] The time when this model expires, in milliseconds since the
-          # epoch. If not present, the model will persist indefinitely. Expired models
+      "friendlyName": "A String", # Optional. A descriptive name for this model.
+      "expirationTime": "A String", # Optional. The time when this model expires, in milliseconds since the epoch.
+          # If not present, the model will persist indefinitely. Expired models
           # will be deleted and their storage reclaimed.  The defaultTableExpirationMs
           # property of the encapsulating dataset can be used to set a default
           # expirationTime on newly created models.
-      "lastModifiedTime": "A String", # Output only. The time when this model was last modified, in millisecs
-          # since the epoch.
+      "lastModifiedTime": "A String", # Output only. The time when this model was last modified, in millisecs since the epoch.
     }</pre>
 </div>
 
@@ -373,65 +491,89 @@ Returns:
 role.
 
 Args:
-  projectId: string, Project ID of the models to list. (required)
-  datasetId: string, Dataset ID of the models to list. (required)
+  projectId: string, Required. Project ID of the models to list. (required)
+  datasetId: string, Required. Dataset ID of the models to list. (required)
   pageToken: string, Page token, returned by a previous call to request the next page of
 results
-  maxResults: integer, The maximum number of results per page.
+  maxResults: integer, The maximum number of results to return in a single response page.
+Leverage the page tokens to iterate through the entire collection.
 
 Returns:
   An object of the form:
 
     {
+    "nextPageToken": "A String", # A token to request the next page of results.
     "models": [ # Models in the requested dataset. Only the following fields are populated:
         # model_reference, model_type, creation_time, last_modified_time and
         # labels.
       {
-          "labelColumns": [ # Output only. Label columns that were used to train this model.
-              # The output of the model will have a "predicted_" prefix to these columns.
-            { # A field or a column.
-              "type": { # The type of a variable, e.g., a function argument. # Optional. The type of this parameter. Absent if not explicitly
-                  # specified (e.g., CREATE FUNCTION statement can omit the return type;
-                  # in this case the output parameter does not have this "type" field).
-                  # Examples:
-                  # INT64: {type_kind="INT64"}
-                  # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-                  # STRUCT<x STRING, y ARRAY<DATE>>:
-                  #   {type_kind="STRUCT",
-                  #    struct_type={fields=[
-                  #      {name="x", type={type_kind="STRING"}},
-                  #      {name="y", type={type_kind="ARRAY", array_element_type="DATE"}}
-                  #    ]}}
-                "structType": { # The fields of this struct, in order, if type_kind = "STRUCT".
-                  "fields": [
-                    # Object with schema name: StandardSqlField
-                  ],
-                },
-                "arrayElementType": # Object with schema name: StandardSqlDataType # The type of the array's elements, if type_kind = "ARRAY".
-                "typeKind": "A String", # Required. The top level type of this field.
-                    # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
-              },
-              "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
-            },
-          ],
-          "description": "A String", # [Optional] A user-friendly description of this model.
-          "trainingRuns": [ # Output only. Information for all training runs in increasing order of
-              # start_time.
+          "labels": { # The labels associated with this model. You can use these to organize
+              # and group your models. Label keys and values can be no longer
+              # than 63 characters, can only contain lowercase letters, numeric
+              # characters, underscores and dashes. International characters are allowed.
+              # Label values are optional. Label keys must start with a letter and each
+              # label in the list must have a different key.
+            "a_key": "A String",
+          },
+          "description": "A String", # Optional. A user-friendly description of this model.
+          "trainingRuns": [ # Output only. Information for all training runs in increasing order of start_time.
             { # Information about a single training query run for the model.
               "evaluationMetrics": { # Evaluation metrics of a model. These are either computed on all training # The evaluation metrics over training/eval data that were computed at the
                   # end of training.
                   # data or just the eval data based on whether eval data was used during
                   # training. These are not present for imported models.
-                "clusteringMetrics": { # Evaluation metrics for clustering models. # [Beta] Populated for clustering models.
+                "clusteringMetrics": { # Evaluation metrics for clustering models. # Populated for clustering models.
                   "meanSquaredDistance": 3.14, # Mean of squared distances between each sample to its cluster centroid.
                   "daviesBouldinIndex": 3.14, # Davies-Bouldin index.
+                  "clusters": [ # [Beta] Information for all clusters.
+                    { # Message containing the information about one cluster.
+                      "count": "A String", # Count of training data rows that were assigned to this cluster.
+                      "featureValues": [ # Values of highly variant features for this cluster.
+                        { # Representative value of a single feature within the cluster.
+                          "featureColumn": "A String", # The feature column name.
+                          "numericalValue": 3.14, # The numerical feature value. This is the centroid value for this
+                              # feature.
+                          "categoricalValue": { # Representative value of a categorical feature. # The categorical feature value.
+                            "categoryCounts": [ # Counts of all categories for the categorical feature. If there are
+                                # more than ten categories, we return top ten (by count) and return
+                                # one more CategoryCount with category "_OTHER_" and count as
+                                # aggregate counts of remaining categories.
+                              { # Represents the count of a single category within the cluster.
+                                "category": "A String", # The name of category.
+                                "count": "A String", # The count of training samples matching the category within the
+                                    # cluster.
+                              },
+                            ],
+                          },
+                        },
+                      ],
+                      "centroidId": "A String", # Centroid id.
+                    },
+                  ],
                 },
-                "regressionMetrics": { # Evaluation metrics for regression models. # Populated for regression models.
+                "regressionMetrics": { # Evaluation metrics for regression and explicit feedback type matrix # Populated for regression models and explicit feedback type matrix
+                    # factorization models.
+                    # factorization models.
                   "meanSquaredLogError": 3.14, # Mean squared log error.
                   "meanAbsoluteError": 3.14, # Mean absolute error.
                   "meanSquaredError": 3.14, # Mean squared error.
                   "medianAbsoluteError": 3.14, # Median absolute error.
                   "rSquared": 3.14, # R^2 score.
+                },
+                "rankingMetrics": { # Evaluation metrics used by weighted-ALS models specified by # [Alpha] Populated for implicit feedback type matrix factorization
+                    # models.
+                    # feedback_type=implicit.
+                  "meanSquaredError": 3.14, # Similar to the mean squared error computed in regression and explicit
+                      # recommendation models except instead of computing the rating directly,
+                      # the output from evaluate is computed against a preference which is 1 or 0
+                      # depending on if the rating exists or not.
+                  "meanAveragePrecision": 3.14, # Calculates a precision per user for all the items by ranking them and
+                      # then averages all the precisions across all the users.
+                  "averageRank": 3.14, # Determines the goodness of a ranking by computing the percentile rank
+                      # from the predicted confidence and dividing it by the original rank.
+                  "normalizedDiscountedCumulativeGain": 3.14, # A metric to determine the goodness of a ranking calculated from the
+                      # predicted confidence by comparing it to an ideal rank measured by the
+                      # original ratings.
                 },
                 "binaryClassificationMetrics": { # Evaluation metrics for binary classification/classifier models. # Populated for binary classification/classifier models.
                   "negativeLabel": "A String", # Label representing the negative class.
@@ -462,12 +604,16 @@ Returns:
                   "binaryConfusionMatrixList": [ # Binary confusion matrix at multiple thresholds.
                     { # Confusion matrix for binary classification models.
                       "truePositives": "A String", # Number of true samples predicted as true.
-                      "recall": 3.14, # Aggregate recall.
-                      "precision": 3.14, # Aggregate precision.
+                      "recall": 3.14, # The fraction of actual positive labels that were given a positive
+                          # prediction.
+                      "precision": 3.14, # The fraction of actual positive predictions that had positive actual
+                          # labels.
                       "falseNegatives": "A String", # Number of false samples predicted as false.
                       "trueNegatives": "A String", # Number of true samples predicted as false.
                       "falsePositives": "A String", # Number of false samples predicted as true.
+                      "f1Score": 3.14, # The equally weighted average of recall and precision.
                       "positiveClassThreshold": 3.14, # Threshold value used when computing each of the following metric.
+                      "accuracy": 3.14, # The fraction of predictions given the correct label.
                     },
                   ],
                 },
@@ -501,29 +647,81 @@ Returns:
                           # confusion matrix.
                       "rows": [ # One row per actual label.
                         { # A single row in the confusion matrix.
+                          "actualLabel": "A String", # The original label of this row.
                           "entries": [ # Info describing predicted label distribution.
                             { # A single entry in the confusion matrix.
-                              "predictedLabel": "A String", # The predicted label. For confidence_threshold > 0, we will
+                              "predictedLabel": "A String", # The predicted label. For confidence_threshold &gt; 0, we will
                                   # also add an entry indicating the number of items under the
                                   # confidence threshold.
                               "itemCount": "A String", # Number of items being predicted as this label.
                             },
                           ],
-                          "actualLabel": "A String", # The original label of this row.
                         },
                       ],
                     },
                   ],
                 },
               },
-              "results": [ # Output of each iteration run, results.size() <= max_iterations.
+              "dataSplitResult": { # Data split result. This contains references to the training and evaluation # Data split result of the training run. Only set when the input data is
+                  # actually split.
+                  # data tables that were used to train the model.
+                "trainingTable": { # Table reference of the training data after split.
+                  "projectId": "A String", # [Required] The ID of the project containing this table.
+                  "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+                  "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+                },
+                "evaluationTable": { # Table reference of the evaluation data after split.
+                  "projectId": "A String", # [Required] The ID of the project containing this table.
+                  "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+                  "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+                },
+              },
+              "results": [ # Output of each iteration run, results.size() &lt;= max_iterations.
                 { # Information about a single iteration of the training run.
+                  "arimaResult": { # (Auto-)arima fitting result. Wrap everything in ArimaResult for easier
+                      # refactoring if we want to use model-specific iteration results.
+                    "arimaModelInfo": [ # This message is repeated because there are multiple arima models
+                        # fitted in auto-arima. For non-auto-arima model, its size is one.
+                      { # Arima model information.
+                        "seasonalPeriods": [ # Seasonal periods. Repeated because multiple periods are supported
+                            # for one time series.
+                          "A String",
+                        ],
+                        "hasDrift": True or False, # Whether Arima model fitted with drift or not. It is always false
+                            # when d is not 1.
+                        "arimaCoefficients": { # Arima coefficients. # Arima coefficients.
+                          "movingAverageCoefficients": [ # Moving-average coefficients, an array of double.
+                            3.14,
+                          ],
+                          "autoRegressiveCoefficients": [ # Auto-regressive coefficients, an array of double.
+                            3.14,
+                          ],
+                          "interceptCoefficient": 3.14, # Intercept coefficient, just a double not an array.
+                        },
+                        "nonSeasonalOrder": { # Arima order, can be used for both non-seasonal and seasonal parts. # Non-seasonal order.
+                          "q": "A String", # Order of the moving-average part.
+                          "p": "A String", # Order of the autoregressive part.
+                          "d": "A String", # Order of the differencing part.
+                        },
+                        "arimaFittingMetrics": { # ARIMA model fitting metrics. # Arima fitting metrics.
+                          "variance": 3.14, # Variance.
+                          "logLikelihood": 3.14, # Log-likelihood.
+                          "aic": 3.14, # AIC.
+                        },
+                        "timeSeriesId": "A String", # The id to indicate different time series.
+                      },
+                    ],
+                    "seasonalPeriods": [ # Seasonal periods. Repeated because multiple periods are supported for
+                        # one time series.
+                      "A String",
+                    ],
+                  },
                   "index": 42, # Index of the iteration, 0 based.
                   "evalLoss": 3.14, # Loss computed on the eval data at the end of iteration.
                   "durationMs": "A String", # Time taken to run the iteration in milliseconds.
                   "learnRate": 3.14, # Learn rate used for this iteration.
                   "trainingLoss": 3.14, # Loss computed on the training data at the end of iteration.
-                  "clusterInfos": [ # [Beta] Information about top clusters for clustering models.
+                  "clusterInfos": [ # Information about top clusters for clustering models.
                     { # Information about a single cluster for clustering model.
                       "centroidId": "A String", # Centroid id.
                       "clusterSize": "A String", # Cluster size, the total number of points assigned to the cluster.
@@ -537,9 +735,23 @@ Returns:
               "trainingOptions": { # Options that were used for this training run, includes
                   # user specified and default options that were used.
                 "optimizationStrategy": "A String", # Optimization strategy for training linear regression models.
+                "itemColumn": "A String", # Item column specified for matrix factorization models.
+                "feedbackType": "A String", # Feedback type that specifies which algorithm to run for matrix
+                    # factorization.
+                "numFactors": "A String", # Num factors specified for matrix factorization models.
                 "inputLabelColumns": [ # Name of input label columns in training data.
                   "A String",
                 ],
+                "batchSize": "A String", # Batch size for dnn models.
+                "distanceType": "A String", # Distance type for clustering models.
+                "kmeansInitializationColumn": "A String", # The column used to provide the initial centroids for kmeans algorithm
+                    # when kmeans_initialization_method is CUSTOM.
+                "l2Regularization": 3.14, # L2 regularization coefficient.
+                "dropout": 3.14, # Dropout probability for dnn models.
+                "minRelativeProgress": 3.14, # When early_stop is true, stops training when accuracy improvement is
+                    # less than 'min_relative_progress'. Used only for iterative training
+                    # algorithms.
+                "l1Regularization": 3.14, # L1 regularization coefficient.
                 "maxIterations": "A String", # The maximum number of iterations in training. Used only for iterative
                     # training algorithms.
                 "earlyStop": True or False, # Whether to stop early when the loss doesn't improve significantly
@@ -557,28 +769,33 @@ Returns:
                     # as training data, and the rest are eval data. It respects the order
                     # in Orderable data types:
                     # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#data-type-properties
-                "numClusters": "A String", # [Beta] Number of clusters for clustering models.
-                "l1Regularization": 3.14, # L1 regularization coefficient.
-                "dataSplitMethod": "A String", # The data split type for training and evaluation, e.g. RANDOM.
-                "distanceType": "A String", # [Beta] Distance type for clustering models.
+                "numClusters": "A String", # Number of clusters for clustering models.
                 "warmStart": True or False, # Whether to train a model from the last checkpoint.
-                "labelClassWeights": { # Weights associated with each label class, for rebalancing the
-                    # training data. Only applicable for classification models.
-                  "a_key": 3.14,
-                },
-                "lossType": "A String", # Type of loss function used during training run.
+                "hiddenUnits": [ # Hidden units for dnn models.
+                  "A String",
+                ],
+                "maxTreeDepth": "A String", # Maximum depth of a tree for boosted tree models.
+                "userColumn": "A String", # User column specified for matrix factorization models.
+                "kmeansInitializationMethod": "A String", # The method used to initialize the centroids for kmeans algorithm.
+                "learnRateStrategy": "A String", # The strategy to determine learn rate for the current iteration.
                 "dataSplitEvalFraction": 3.14, # The fraction of evaluation data over the whole input data. The rest
                     # of data will be used as training data. The format should be double.
                     # Accurate to two decimal places.
                     # Default value is 0.2.
-                "l2Regularization": 3.14, # L2 regularization coefficient.
+                "dataSplitMethod": "A String", # The data split type for training and evaluation, e.g. RANDOM.
+                "subsample": 3.14, # Subsample fraction of the training data to grow tree to prevent
+                    # overfitting for boosted tree models.
+                "labelClassWeights": { # Weights associated with each label class, for rebalancing the
+                    # training data. Only applicable for classification models.
+                  "a_key": 3.14,
+                },
+                "learnRate": 3.14, # Learning rate in training. Used only for iterative training algorithms.
                 "modelUri": "A String", # [Beta] Google Cloud Storage URI from which the model was imported. Only
                     # applicable for imported models.
-                "learnRateStrategy": "A String", # The strategy to determine learn rate for the current iteration.
-                "minRelativeProgress": 3.14, # When early_stop is true, stops training when accuracy improvement is
-                    # less than 'min_relative_progress'. Used only for iterative training
-                    # algorithms.
-                "learnRate": 3.14, # Learning rate in training. Used only for iterative training algorithms.
+                "walsAlpha": 3.14, # Hyperparameter for matrix factoration when implicit feedback type is
+                    # specified.
+                "minSplitLoss": 3.14, # Minimum split loss for boosted tree models.
+                "lossType": "A String", # Type of loss function used during training run.
               },
             },
           ],
@@ -589,8 +806,8 @@ Returns:
                   # in this case the output parameter does not have this "type" field).
                   # Examples:
                   # INT64: {type_kind="INT64"}
-                  # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-                  # STRUCT<x STRING, y ARRAY<DATE>>:
+                  # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+                  # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
                   #   {type_kind="STRUCT",
                   #    struct_type={fields=[
                   #      {name="x", type={type_kind="STRING"}},
@@ -608,38 +825,58 @@ Returns:
               "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
             },
           ],
-          "labels": { # [Optional] The labels associated with this model. You can use these to
-              # organize and group your models. Label keys and values can be no longer
-              # than 63 characters, can only contain lowercase letters, numeric
-              # characters, underscores and dashes. International characters are allowed.
-              # Label values are optional. Label keys must start with a letter and each
-              # label in the list must have a different key.
-            "a_key": "A String",
-          },
-          "creationTime": "A String", # Output only. The time when this model was created, in millisecs since the
-              # epoch.
+          "labelColumns": [ # Output only. Label columns that were used to train this model.
+              # The output of the model will have a "predicted_" prefix to these columns.
+            { # A field or a column.
+              "type": { # The type of a variable, e.g., a function argument. # Optional. The type of this parameter. Absent if not explicitly
+                  # specified (e.g., CREATE FUNCTION statement can omit the return type;
+                  # in this case the output parameter does not have this "type" field).
+                  # Examples:
+                  # INT64: {type_kind="INT64"}
+                  # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+                  # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
+                  #   {type_kind="STRUCT",
+                  #    struct_type={fields=[
+                  #      {name="x", type={type_kind="STRING"}},
+                  #      {name="y", type={type_kind="ARRAY", array_element_type="DATE"}}
+                  #    ]}}
+                "structType": { # The fields of this struct, in order, if type_kind = "STRUCT".
+                  "fields": [
+                    # Object with schema name: StandardSqlField
+                  ],
+                },
+                "arrayElementType": # Object with schema name: StandardSqlDataType # The type of the array's elements, if type_kind = "ARRAY".
+                "typeKind": "A String", # Required. The top level type of this field.
+                    # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
+              },
+              "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
+            },
+          ],
+          "creationTime": "A String", # Output only. The time when this model was created, in millisecs since the epoch.
           "modelType": "A String", # Output only. Type of the model resource.
-          "modelReference": { # Id path of a model. # Required. Unique identifier for this model.
+          "encryptionConfiguration": { # Custom encryption configuration (e.g., Cloud KMS keys). This shows the
+              # encryption configuration of the model data while stored in BigQuery
+              # storage. This field can be used with PatchModel to update encryption key
+              # for an already encrypted model.
+            "kmsKeyName": "A String", # [Optional] Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
+          },
+          "modelReference": { # Required. Unique identifier for this model.
             "projectId": "A String", # [Required] The ID of the project containing this model.
             "datasetId": "A String", # [Required] The ID of the dataset containing this model.
-            "modelId": "A String", # [Required] The ID of the model. The ID must contain only
-                # letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum
-                # length is 1,024 characters.
+            "modelId": "A String", # [Required] The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
           },
           "etag": "A String", # Output only. A hash of this resource.
           "location": "A String", # Output only. The geographic location where the model resides. This value
               # is inherited from the dataset.
-          "friendlyName": "A String", # [Optional] A descriptive name for this model.
-          "expirationTime": "A String", # [Optional] The time when this model expires, in milliseconds since the
-              # epoch. If not present, the model will persist indefinitely. Expired models
+          "friendlyName": "A String", # Optional. A descriptive name for this model.
+          "expirationTime": "A String", # Optional. The time when this model expires, in milliseconds since the epoch.
+              # If not present, the model will persist indefinitely. Expired models
               # will be deleted and their storage reclaimed.  The defaultTableExpirationMs
               # property of the encapsulating dataset can be used to set a default
               # expirationTime on newly created models.
-          "lastModifiedTime": "A String", # Output only. The time when this model was last modified, in millisecs
-              # since the epoch.
+          "lastModifiedTime": "A String", # Output only. The time when this model was last modified, in millisecs since the epoch.
         },
     ],
-    "nextPageToken": "A String", # A token to request the next page of results.
   }</pre>
 </div>
 
@@ -658,62 +895,84 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="patch">patch(projectId, datasetId, modelId, body)</code>
+    <code class="details" id="patch">patch(projectId, datasetId, modelId, body=None)</code>
   <pre>Patch specific fields in the specified model.
 
 Args:
-  projectId: string, Project ID of the model to patch. (required)
-  datasetId: string, Dataset ID of the model to patch. (required)
-  modelId: string, Model ID of the model to patch. (required)
-  body: object, The request body. (required)
+  projectId: string, Required. Project ID of the model to patch. (required)
+  datasetId: string, Required. Dataset ID of the model to patch. (required)
+  modelId: string, Required. Model ID of the model to patch. (required)
+  body: object, The request body.
     The object takes the form of:
 
 {
-    "labelColumns": [ # Output only. Label columns that were used to train this model.
-        # The output of the model will have a "predicted_" prefix to these columns.
-      { # A field or a column.
-        "type": { # The type of a variable, e.g., a function argument. # Optional. The type of this parameter. Absent if not explicitly
-            # specified (e.g., CREATE FUNCTION statement can omit the return type;
-            # in this case the output parameter does not have this "type" field).
-            # Examples:
-            # INT64: {type_kind="INT64"}
-            # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-            # STRUCT<x STRING, y ARRAY<DATE>>:
-            #   {type_kind="STRUCT",
-            #    struct_type={fields=[
-            #      {name="x", type={type_kind="STRING"}},
-            #      {name="y", type={type_kind="ARRAY", array_element_type="DATE"}}
-            #    ]}}
-          "structType": { # The fields of this struct, in order, if type_kind = "STRUCT".
-            "fields": [
-              # Object with schema name: StandardSqlField
-            ],
-          },
-          "arrayElementType": # Object with schema name: StandardSqlDataType # The type of the array's elements, if type_kind = "ARRAY".
-          "typeKind": "A String", # Required. The top level type of this field.
-              # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
-        },
-        "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
-      },
-    ],
-    "description": "A String", # [Optional] A user-friendly description of this model.
-    "trainingRuns": [ # Output only. Information for all training runs in increasing order of
-        # start_time.
+    "labels": { # The labels associated with this model. You can use these to organize
+        # and group your models. Label keys and values can be no longer
+        # than 63 characters, can only contain lowercase letters, numeric
+        # characters, underscores and dashes. International characters are allowed.
+        # Label values are optional. Label keys must start with a letter and each
+        # label in the list must have a different key.
+      "a_key": "A String",
+    },
+    "description": "A String", # Optional. A user-friendly description of this model.
+    "trainingRuns": [ # Output only. Information for all training runs in increasing order of start_time.
       { # Information about a single training query run for the model.
         "evaluationMetrics": { # Evaluation metrics of a model. These are either computed on all training # The evaluation metrics over training/eval data that were computed at the
             # end of training.
             # data or just the eval data based on whether eval data was used during
             # training. These are not present for imported models.
-          "clusteringMetrics": { # Evaluation metrics for clustering models. # [Beta] Populated for clustering models.
+          "clusteringMetrics": { # Evaluation metrics for clustering models. # Populated for clustering models.
             "meanSquaredDistance": 3.14, # Mean of squared distances between each sample to its cluster centroid.
             "daviesBouldinIndex": 3.14, # Davies-Bouldin index.
+            "clusters": [ # [Beta] Information for all clusters.
+              { # Message containing the information about one cluster.
+                "count": "A String", # Count of training data rows that were assigned to this cluster.
+                "featureValues": [ # Values of highly variant features for this cluster.
+                  { # Representative value of a single feature within the cluster.
+                    "featureColumn": "A String", # The feature column name.
+                    "numericalValue": 3.14, # The numerical feature value. This is the centroid value for this
+                        # feature.
+                    "categoricalValue": { # Representative value of a categorical feature. # The categorical feature value.
+                      "categoryCounts": [ # Counts of all categories for the categorical feature. If there are
+                          # more than ten categories, we return top ten (by count) and return
+                          # one more CategoryCount with category "_OTHER_" and count as
+                          # aggregate counts of remaining categories.
+                        { # Represents the count of a single category within the cluster.
+                          "category": "A String", # The name of category.
+                          "count": "A String", # The count of training samples matching the category within the
+                              # cluster.
+                        },
+                      ],
+                    },
+                  },
+                ],
+                "centroidId": "A String", # Centroid id.
+              },
+            ],
           },
-          "regressionMetrics": { # Evaluation metrics for regression models. # Populated for regression models.
+          "regressionMetrics": { # Evaluation metrics for regression and explicit feedback type matrix # Populated for regression models and explicit feedback type matrix
+              # factorization models.
+              # factorization models.
             "meanSquaredLogError": 3.14, # Mean squared log error.
             "meanAbsoluteError": 3.14, # Mean absolute error.
             "meanSquaredError": 3.14, # Mean squared error.
             "medianAbsoluteError": 3.14, # Median absolute error.
             "rSquared": 3.14, # R^2 score.
+          },
+          "rankingMetrics": { # Evaluation metrics used by weighted-ALS models specified by # [Alpha] Populated for implicit feedback type matrix factorization
+              # models.
+              # feedback_type=implicit.
+            "meanSquaredError": 3.14, # Similar to the mean squared error computed in regression and explicit
+                # recommendation models except instead of computing the rating directly,
+                # the output from evaluate is computed against a preference which is 1 or 0
+                # depending on if the rating exists or not.
+            "meanAveragePrecision": 3.14, # Calculates a precision per user for all the items by ranking them and
+                # then averages all the precisions across all the users.
+            "averageRank": 3.14, # Determines the goodness of a ranking by computing the percentile rank
+                # from the predicted confidence and dividing it by the original rank.
+            "normalizedDiscountedCumulativeGain": 3.14, # A metric to determine the goodness of a ranking calculated from the
+                # predicted confidence by comparing it to an ideal rank measured by the
+                # original ratings.
           },
           "binaryClassificationMetrics": { # Evaluation metrics for binary classification/classifier models. # Populated for binary classification/classifier models.
             "negativeLabel": "A String", # Label representing the negative class.
@@ -744,12 +1003,16 @@ Args:
             "binaryConfusionMatrixList": [ # Binary confusion matrix at multiple thresholds.
               { # Confusion matrix for binary classification models.
                 "truePositives": "A String", # Number of true samples predicted as true.
-                "recall": 3.14, # Aggregate recall.
-                "precision": 3.14, # Aggregate precision.
+                "recall": 3.14, # The fraction of actual positive labels that were given a positive
+                    # prediction.
+                "precision": 3.14, # The fraction of actual positive predictions that had positive actual
+                    # labels.
                 "falseNegatives": "A String", # Number of false samples predicted as false.
                 "trueNegatives": "A String", # Number of true samples predicted as false.
                 "falsePositives": "A String", # Number of false samples predicted as true.
+                "f1Score": 3.14, # The equally weighted average of recall and precision.
                 "positiveClassThreshold": 3.14, # Threshold value used when computing each of the following metric.
+                "accuracy": 3.14, # The fraction of predictions given the correct label.
               },
             ],
           },
@@ -783,29 +1046,81 @@ Args:
                     # confusion matrix.
                 "rows": [ # One row per actual label.
                   { # A single row in the confusion matrix.
+                    "actualLabel": "A String", # The original label of this row.
                     "entries": [ # Info describing predicted label distribution.
                       { # A single entry in the confusion matrix.
-                        "predictedLabel": "A String", # The predicted label. For confidence_threshold > 0, we will
+                        "predictedLabel": "A String", # The predicted label. For confidence_threshold &gt; 0, we will
                             # also add an entry indicating the number of items under the
                             # confidence threshold.
                         "itemCount": "A String", # Number of items being predicted as this label.
                       },
                     ],
-                    "actualLabel": "A String", # The original label of this row.
                   },
                 ],
               },
             ],
           },
         },
-        "results": [ # Output of each iteration run, results.size() <= max_iterations.
+        "dataSplitResult": { # Data split result. This contains references to the training and evaluation # Data split result of the training run. Only set when the input data is
+            # actually split.
+            # data tables that were used to train the model.
+          "trainingTable": { # Table reference of the training data after split.
+            "projectId": "A String", # [Required] The ID of the project containing this table.
+            "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+            "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+          },
+          "evaluationTable": { # Table reference of the evaluation data after split.
+            "projectId": "A String", # [Required] The ID of the project containing this table.
+            "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+            "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+          },
+        },
+        "results": [ # Output of each iteration run, results.size() &lt;= max_iterations.
           { # Information about a single iteration of the training run.
+            "arimaResult": { # (Auto-)arima fitting result. Wrap everything in ArimaResult for easier
+                # refactoring if we want to use model-specific iteration results.
+              "arimaModelInfo": [ # This message is repeated because there are multiple arima models
+                  # fitted in auto-arima. For non-auto-arima model, its size is one.
+                { # Arima model information.
+                  "seasonalPeriods": [ # Seasonal periods. Repeated because multiple periods are supported
+                      # for one time series.
+                    "A String",
+                  ],
+                  "hasDrift": True or False, # Whether Arima model fitted with drift or not. It is always false
+                      # when d is not 1.
+                  "arimaCoefficients": { # Arima coefficients. # Arima coefficients.
+                    "movingAverageCoefficients": [ # Moving-average coefficients, an array of double.
+                      3.14,
+                    ],
+                    "autoRegressiveCoefficients": [ # Auto-regressive coefficients, an array of double.
+                      3.14,
+                    ],
+                    "interceptCoefficient": 3.14, # Intercept coefficient, just a double not an array.
+                  },
+                  "nonSeasonalOrder": { # Arima order, can be used for both non-seasonal and seasonal parts. # Non-seasonal order.
+                    "q": "A String", # Order of the moving-average part.
+                    "p": "A String", # Order of the autoregressive part.
+                    "d": "A String", # Order of the differencing part.
+                  },
+                  "arimaFittingMetrics": { # ARIMA model fitting metrics. # Arima fitting metrics.
+                    "variance": 3.14, # Variance.
+                    "logLikelihood": 3.14, # Log-likelihood.
+                    "aic": 3.14, # AIC.
+                  },
+                  "timeSeriesId": "A String", # The id to indicate different time series.
+                },
+              ],
+              "seasonalPeriods": [ # Seasonal periods. Repeated because multiple periods are supported for
+                  # one time series.
+                "A String",
+              ],
+            },
             "index": 42, # Index of the iteration, 0 based.
             "evalLoss": 3.14, # Loss computed on the eval data at the end of iteration.
             "durationMs": "A String", # Time taken to run the iteration in milliseconds.
             "learnRate": 3.14, # Learn rate used for this iteration.
             "trainingLoss": 3.14, # Loss computed on the training data at the end of iteration.
-            "clusterInfos": [ # [Beta] Information about top clusters for clustering models.
+            "clusterInfos": [ # Information about top clusters for clustering models.
               { # Information about a single cluster for clustering model.
                 "centroidId": "A String", # Centroid id.
                 "clusterSize": "A String", # Cluster size, the total number of points assigned to the cluster.
@@ -819,9 +1134,23 @@ Args:
         "trainingOptions": { # Options that were used for this training run, includes
             # user specified and default options that were used.
           "optimizationStrategy": "A String", # Optimization strategy for training linear regression models.
+          "itemColumn": "A String", # Item column specified for matrix factorization models.
+          "feedbackType": "A String", # Feedback type that specifies which algorithm to run for matrix
+              # factorization.
+          "numFactors": "A String", # Num factors specified for matrix factorization models.
           "inputLabelColumns": [ # Name of input label columns in training data.
             "A String",
           ],
+          "batchSize": "A String", # Batch size for dnn models.
+          "distanceType": "A String", # Distance type for clustering models.
+          "kmeansInitializationColumn": "A String", # The column used to provide the initial centroids for kmeans algorithm
+              # when kmeans_initialization_method is CUSTOM.
+          "l2Regularization": 3.14, # L2 regularization coefficient.
+          "dropout": 3.14, # Dropout probability for dnn models.
+          "minRelativeProgress": 3.14, # When early_stop is true, stops training when accuracy improvement is
+              # less than 'min_relative_progress'. Used only for iterative training
+              # algorithms.
+          "l1Regularization": 3.14, # L1 regularization coefficient.
           "maxIterations": "A String", # The maximum number of iterations in training. Used only for iterative
               # training algorithms.
           "earlyStop": True or False, # Whether to stop early when the loss doesn't improve significantly
@@ -839,28 +1168,33 @@ Args:
               # as training data, and the rest are eval data. It respects the order
               # in Orderable data types:
               # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#data-type-properties
-          "numClusters": "A String", # [Beta] Number of clusters for clustering models.
-          "l1Regularization": 3.14, # L1 regularization coefficient.
-          "dataSplitMethod": "A String", # The data split type for training and evaluation, e.g. RANDOM.
-          "distanceType": "A String", # [Beta] Distance type for clustering models.
+          "numClusters": "A String", # Number of clusters for clustering models.
           "warmStart": True or False, # Whether to train a model from the last checkpoint.
-          "labelClassWeights": { # Weights associated with each label class, for rebalancing the
-              # training data. Only applicable for classification models.
-            "a_key": 3.14,
-          },
-          "lossType": "A String", # Type of loss function used during training run.
+          "hiddenUnits": [ # Hidden units for dnn models.
+            "A String",
+          ],
+          "maxTreeDepth": "A String", # Maximum depth of a tree for boosted tree models.
+          "userColumn": "A String", # User column specified for matrix factorization models.
+          "kmeansInitializationMethod": "A String", # The method used to initialize the centroids for kmeans algorithm.
+          "learnRateStrategy": "A String", # The strategy to determine learn rate for the current iteration.
           "dataSplitEvalFraction": 3.14, # The fraction of evaluation data over the whole input data. The rest
               # of data will be used as training data. The format should be double.
               # Accurate to two decimal places.
               # Default value is 0.2.
-          "l2Regularization": 3.14, # L2 regularization coefficient.
+          "dataSplitMethod": "A String", # The data split type for training and evaluation, e.g. RANDOM.
+          "subsample": 3.14, # Subsample fraction of the training data to grow tree to prevent
+              # overfitting for boosted tree models.
+          "labelClassWeights": { # Weights associated with each label class, for rebalancing the
+              # training data. Only applicable for classification models.
+            "a_key": 3.14,
+          },
+          "learnRate": 3.14, # Learning rate in training. Used only for iterative training algorithms.
           "modelUri": "A String", # [Beta] Google Cloud Storage URI from which the model was imported. Only
               # applicable for imported models.
-          "learnRateStrategy": "A String", # The strategy to determine learn rate for the current iteration.
-          "minRelativeProgress": 3.14, # When early_stop is true, stops training when accuracy improvement is
-              # less than 'min_relative_progress'. Used only for iterative training
-              # algorithms.
-          "learnRate": 3.14, # Learning rate in training. Used only for iterative training algorithms.
+          "walsAlpha": 3.14, # Hyperparameter for matrix factoration when implicit feedback type is
+              # specified.
+          "minSplitLoss": 3.14, # Minimum split loss for boosted tree models.
+          "lossType": "A String", # Type of loss function used during training run.
         },
       },
     ],
@@ -871,8 +1205,8 @@ Args:
             # in this case the output parameter does not have this "type" field).
             # Examples:
             # INT64: {type_kind="INT64"}
-            # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-            # STRUCT<x STRING, y ARRAY<DATE>>:
+            # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+            # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
             #   {type_kind="STRUCT",
             #    struct_type={fields=[
             #      {name="x", type={type_kind="STRING"}},
@@ -890,35 +1224,56 @@ Args:
         "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
       },
     ],
-    "labels": { # [Optional] The labels associated with this model. You can use these to
-        # organize and group your models. Label keys and values can be no longer
-        # than 63 characters, can only contain lowercase letters, numeric
-        # characters, underscores and dashes. International characters are allowed.
-        # Label values are optional. Label keys must start with a letter and each
-        # label in the list must have a different key.
-      "a_key": "A String",
-    },
-    "creationTime": "A String", # Output only. The time when this model was created, in millisecs since the
-        # epoch.
+    "labelColumns": [ # Output only. Label columns that were used to train this model.
+        # The output of the model will have a "predicted_" prefix to these columns.
+      { # A field or a column.
+        "type": { # The type of a variable, e.g., a function argument. # Optional. The type of this parameter. Absent if not explicitly
+            # specified (e.g., CREATE FUNCTION statement can omit the return type;
+            # in this case the output parameter does not have this "type" field).
+            # Examples:
+            # INT64: {type_kind="INT64"}
+            # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+            # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
+            #   {type_kind="STRUCT",
+            #    struct_type={fields=[
+            #      {name="x", type={type_kind="STRING"}},
+            #      {name="y", type={type_kind="ARRAY", array_element_type="DATE"}}
+            #    ]}}
+          "structType": { # The fields of this struct, in order, if type_kind = "STRUCT".
+            "fields": [
+              # Object with schema name: StandardSqlField
+            ],
+          },
+          "arrayElementType": # Object with schema name: StandardSqlDataType # The type of the array's elements, if type_kind = "ARRAY".
+          "typeKind": "A String", # Required. The top level type of this field.
+              # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
+        },
+        "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
+      },
+    ],
+    "creationTime": "A String", # Output only. The time when this model was created, in millisecs since the epoch.
     "modelType": "A String", # Output only. Type of the model resource.
-    "modelReference": { # Id path of a model. # Required. Unique identifier for this model.
+    "encryptionConfiguration": { # Custom encryption configuration (e.g., Cloud KMS keys). This shows the
+        # encryption configuration of the model data while stored in BigQuery
+        # storage. This field can be used with PatchModel to update encryption key
+        # for an already encrypted model.
+      "kmsKeyName": "A String", # [Optional] Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
+    },
+    "modelReference": { # Required. Unique identifier for this model.
       "projectId": "A String", # [Required] The ID of the project containing this model.
       "datasetId": "A String", # [Required] The ID of the dataset containing this model.
-      "modelId": "A String", # [Required] The ID of the model. The ID must contain only
-          # letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum
-          # length is 1,024 characters.
+      "modelId": "A String", # [Required] The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
     },
     "etag": "A String", # Output only. A hash of this resource.
     "location": "A String", # Output only. The geographic location where the model resides. This value
         # is inherited from the dataset.
-    "friendlyName": "A String", # [Optional] A descriptive name for this model.
-    "expirationTime": "A String", # [Optional] The time when this model expires, in milliseconds since the
-        # epoch. If not present, the model will persist indefinitely. Expired models
+    "friendlyName": "A String", # Optional. A descriptive name for this model.
+    "expirationTime": "A String", # Optional. The time when this model expires, in milliseconds since the epoch.
+        # If not present, the model will persist indefinitely. Expired models
         # will be deleted and their storage reclaimed.  The defaultTableExpirationMs
         # property of the encapsulating dataset can be used to set a default
         # expirationTime on newly created models.
-    "lastModifiedTime": "A String", # Output only. The time when this model was last modified, in millisecs
-        # since the epoch.
+    "lastModifiedTime": "A String", # Output only. The time when this model was last modified, in millisecs since the epoch.
   }
 
 
@@ -926,51 +1281,73 @@ Returns:
   An object of the form:
 
     {
-      "labelColumns": [ # Output only. Label columns that were used to train this model.
-          # The output of the model will have a "predicted_" prefix to these columns.
-        { # A field or a column.
-          "type": { # The type of a variable, e.g., a function argument. # Optional. The type of this parameter. Absent if not explicitly
-              # specified (e.g., CREATE FUNCTION statement can omit the return type;
-              # in this case the output parameter does not have this "type" field).
-              # Examples:
-              # INT64: {type_kind="INT64"}
-              # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-              # STRUCT<x STRING, y ARRAY<DATE>>:
-              #   {type_kind="STRUCT",
-              #    struct_type={fields=[
-              #      {name="x", type={type_kind="STRING"}},
-              #      {name="y", type={type_kind="ARRAY", array_element_type="DATE"}}
-              #    ]}}
-            "structType": { # The fields of this struct, in order, if type_kind = "STRUCT".
-              "fields": [
-                # Object with schema name: StandardSqlField
-              ],
-            },
-            "arrayElementType": # Object with schema name: StandardSqlDataType # The type of the array's elements, if type_kind = "ARRAY".
-            "typeKind": "A String", # Required. The top level type of this field.
-                # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
-          },
-          "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
-        },
-      ],
-      "description": "A String", # [Optional] A user-friendly description of this model.
-      "trainingRuns": [ # Output only. Information for all training runs in increasing order of
-          # start_time.
+      "labels": { # The labels associated with this model. You can use these to organize
+          # and group your models. Label keys and values can be no longer
+          # than 63 characters, can only contain lowercase letters, numeric
+          # characters, underscores and dashes. International characters are allowed.
+          # Label values are optional. Label keys must start with a letter and each
+          # label in the list must have a different key.
+        "a_key": "A String",
+      },
+      "description": "A String", # Optional. A user-friendly description of this model.
+      "trainingRuns": [ # Output only. Information for all training runs in increasing order of start_time.
         { # Information about a single training query run for the model.
           "evaluationMetrics": { # Evaluation metrics of a model. These are either computed on all training # The evaluation metrics over training/eval data that were computed at the
               # end of training.
               # data or just the eval data based on whether eval data was used during
               # training. These are not present for imported models.
-            "clusteringMetrics": { # Evaluation metrics for clustering models. # [Beta] Populated for clustering models.
+            "clusteringMetrics": { # Evaluation metrics for clustering models. # Populated for clustering models.
               "meanSquaredDistance": 3.14, # Mean of squared distances between each sample to its cluster centroid.
               "daviesBouldinIndex": 3.14, # Davies-Bouldin index.
+              "clusters": [ # [Beta] Information for all clusters.
+                { # Message containing the information about one cluster.
+                  "count": "A String", # Count of training data rows that were assigned to this cluster.
+                  "featureValues": [ # Values of highly variant features for this cluster.
+                    { # Representative value of a single feature within the cluster.
+                      "featureColumn": "A String", # The feature column name.
+                      "numericalValue": 3.14, # The numerical feature value. This is the centroid value for this
+                          # feature.
+                      "categoricalValue": { # Representative value of a categorical feature. # The categorical feature value.
+                        "categoryCounts": [ # Counts of all categories for the categorical feature. If there are
+                            # more than ten categories, we return top ten (by count) and return
+                            # one more CategoryCount with category "_OTHER_" and count as
+                            # aggregate counts of remaining categories.
+                          { # Represents the count of a single category within the cluster.
+                            "category": "A String", # The name of category.
+                            "count": "A String", # The count of training samples matching the category within the
+                                # cluster.
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                  "centroidId": "A String", # Centroid id.
+                },
+              ],
             },
-            "regressionMetrics": { # Evaluation metrics for regression models. # Populated for regression models.
+            "regressionMetrics": { # Evaluation metrics for regression and explicit feedback type matrix # Populated for regression models and explicit feedback type matrix
+                # factorization models.
+                # factorization models.
               "meanSquaredLogError": 3.14, # Mean squared log error.
               "meanAbsoluteError": 3.14, # Mean absolute error.
               "meanSquaredError": 3.14, # Mean squared error.
               "medianAbsoluteError": 3.14, # Median absolute error.
               "rSquared": 3.14, # R^2 score.
+            },
+            "rankingMetrics": { # Evaluation metrics used by weighted-ALS models specified by # [Alpha] Populated for implicit feedback type matrix factorization
+                # models.
+                # feedback_type=implicit.
+              "meanSquaredError": 3.14, # Similar to the mean squared error computed in regression and explicit
+                  # recommendation models except instead of computing the rating directly,
+                  # the output from evaluate is computed against a preference which is 1 or 0
+                  # depending on if the rating exists or not.
+              "meanAveragePrecision": 3.14, # Calculates a precision per user for all the items by ranking them and
+                  # then averages all the precisions across all the users.
+              "averageRank": 3.14, # Determines the goodness of a ranking by computing the percentile rank
+                  # from the predicted confidence and dividing it by the original rank.
+              "normalizedDiscountedCumulativeGain": 3.14, # A metric to determine the goodness of a ranking calculated from the
+                  # predicted confidence by comparing it to an ideal rank measured by the
+                  # original ratings.
             },
             "binaryClassificationMetrics": { # Evaluation metrics for binary classification/classifier models. # Populated for binary classification/classifier models.
               "negativeLabel": "A String", # Label representing the negative class.
@@ -1001,12 +1378,16 @@ Returns:
               "binaryConfusionMatrixList": [ # Binary confusion matrix at multiple thresholds.
                 { # Confusion matrix for binary classification models.
                   "truePositives": "A String", # Number of true samples predicted as true.
-                  "recall": 3.14, # Aggregate recall.
-                  "precision": 3.14, # Aggregate precision.
+                  "recall": 3.14, # The fraction of actual positive labels that were given a positive
+                      # prediction.
+                  "precision": 3.14, # The fraction of actual positive predictions that had positive actual
+                      # labels.
                   "falseNegatives": "A String", # Number of false samples predicted as false.
                   "trueNegatives": "A String", # Number of true samples predicted as false.
                   "falsePositives": "A String", # Number of false samples predicted as true.
+                  "f1Score": 3.14, # The equally weighted average of recall and precision.
                   "positiveClassThreshold": 3.14, # Threshold value used when computing each of the following metric.
+                  "accuracy": 3.14, # The fraction of predictions given the correct label.
                 },
               ],
             },
@@ -1040,29 +1421,81 @@ Returns:
                       # confusion matrix.
                   "rows": [ # One row per actual label.
                     { # A single row in the confusion matrix.
+                      "actualLabel": "A String", # The original label of this row.
                       "entries": [ # Info describing predicted label distribution.
                         { # A single entry in the confusion matrix.
-                          "predictedLabel": "A String", # The predicted label. For confidence_threshold > 0, we will
+                          "predictedLabel": "A String", # The predicted label. For confidence_threshold &gt; 0, we will
                               # also add an entry indicating the number of items under the
                               # confidence threshold.
                           "itemCount": "A String", # Number of items being predicted as this label.
                         },
                       ],
-                      "actualLabel": "A String", # The original label of this row.
                     },
                   ],
                 },
               ],
             },
           },
-          "results": [ # Output of each iteration run, results.size() <= max_iterations.
+          "dataSplitResult": { # Data split result. This contains references to the training and evaluation # Data split result of the training run. Only set when the input data is
+              # actually split.
+              # data tables that were used to train the model.
+            "trainingTable": { # Table reference of the training data after split.
+              "projectId": "A String", # [Required] The ID of the project containing this table.
+              "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+              "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+            },
+            "evaluationTable": { # Table reference of the evaluation data after split.
+              "projectId": "A String", # [Required] The ID of the project containing this table.
+              "tableId": "A String", # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+              "datasetId": "A String", # [Required] The ID of the dataset containing this table.
+            },
+          },
+          "results": [ # Output of each iteration run, results.size() &lt;= max_iterations.
             { # Information about a single iteration of the training run.
+              "arimaResult": { # (Auto-)arima fitting result. Wrap everything in ArimaResult for easier
+                  # refactoring if we want to use model-specific iteration results.
+                "arimaModelInfo": [ # This message is repeated because there are multiple arima models
+                    # fitted in auto-arima. For non-auto-arima model, its size is one.
+                  { # Arima model information.
+                    "seasonalPeriods": [ # Seasonal periods. Repeated because multiple periods are supported
+                        # for one time series.
+                      "A String",
+                    ],
+                    "hasDrift": True or False, # Whether Arima model fitted with drift or not. It is always false
+                        # when d is not 1.
+                    "arimaCoefficients": { # Arima coefficients. # Arima coefficients.
+                      "movingAverageCoefficients": [ # Moving-average coefficients, an array of double.
+                        3.14,
+                      ],
+                      "autoRegressiveCoefficients": [ # Auto-regressive coefficients, an array of double.
+                        3.14,
+                      ],
+                      "interceptCoefficient": 3.14, # Intercept coefficient, just a double not an array.
+                    },
+                    "nonSeasonalOrder": { # Arima order, can be used for both non-seasonal and seasonal parts. # Non-seasonal order.
+                      "q": "A String", # Order of the moving-average part.
+                      "p": "A String", # Order of the autoregressive part.
+                      "d": "A String", # Order of the differencing part.
+                    },
+                    "arimaFittingMetrics": { # ARIMA model fitting metrics. # Arima fitting metrics.
+                      "variance": 3.14, # Variance.
+                      "logLikelihood": 3.14, # Log-likelihood.
+                      "aic": 3.14, # AIC.
+                    },
+                    "timeSeriesId": "A String", # The id to indicate different time series.
+                  },
+                ],
+                "seasonalPeriods": [ # Seasonal periods. Repeated because multiple periods are supported for
+                    # one time series.
+                  "A String",
+                ],
+              },
               "index": 42, # Index of the iteration, 0 based.
               "evalLoss": 3.14, # Loss computed on the eval data at the end of iteration.
               "durationMs": "A String", # Time taken to run the iteration in milliseconds.
               "learnRate": 3.14, # Learn rate used for this iteration.
               "trainingLoss": 3.14, # Loss computed on the training data at the end of iteration.
-              "clusterInfos": [ # [Beta] Information about top clusters for clustering models.
+              "clusterInfos": [ # Information about top clusters for clustering models.
                 { # Information about a single cluster for clustering model.
                   "centroidId": "A String", # Centroid id.
                   "clusterSize": "A String", # Cluster size, the total number of points assigned to the cluster.
@@ -1076,9 +1509,23 @@ Returns:
           "trainingOptions": { # Options that were used for this training run, includes
               # user specified and default options that were used.
             "optimizationStrategy": "A String", # Optimization strategy for training linear regression models.
+            "itemColumn": "A String", # Item column specified for matrix factorization models.
+            "feedbackType": "A String", # Feedback type that specifies which algorithm to run for matrix
+                # factorization.
+            "numFactors": "A String", # Num factors specified for matrix factorization models.
             "inputLabelColumns": [ # Name of input label columns in training data.
               "A String",
             ],
+            "batchSize": "A String", # Batch size for dnn models.
+            "distanceType": "A String", # Distance type for clustering models.
+            "kmeansInitializationColumn": "A String", # The column used to provide the initial centroids for kmeans algorithm
+                # when kmeans_initialization_method is CUSTOM.
+            "l2Regularization": 3.14, # L2 regularization coefficient.
+            "dropout": 3.14, # Dropout probability for dnn models.
+            "minRelativeProgress": 3.14, # When early_stop is true, stops training when accuracy improvement is
+                # less than 'min_relative_progress'. Used only for iterative training
+                # algorithms.
+            "l1Regularization": 3.14, # L1 regularization coefficient.
             "maxIterations": "A String", # The maximum number of iterations in training. Used only for iterative
                 # training algorithms.
             "earlyStop": True or False, # Whether to stop early when the loss doesn't improve significantly
@@ -1096,28 +1543,33 @@ Returns:
                 # as training data, and the rest are eval data. It respects the order
                 # in Orderable data types:
                 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#data-type-properties
-            "numClusters": "A String", # [Beta] Number of clusters for clustering models.
-            "l1Regularization": 3.14, # L1 regularization coefficient.
-            "dataSplitMethod": "A String", # The data split type for training and evaluation, e.g. RANDOM.
-            "distanceType": "A String", # [Beta] Distance type for clustering models.
+            "numClusters": "A String", # Number of clusters for clustering models.
             "warmStart": True or False, # Whether to train a model from the last checkpoint.
-            "labelClassWeights": { # Weights associated with each label class, for rebalancing the
-                # training data. Only applicable for classification models.
-              "a_key": 3.14,
-            },
-            "lossType": "A String", # Type of loss function used during training run.
+            "hiddenUnits": [ # Hidden units for dnn models.
+              "A String",
+            ],
+            "maxTreeDepth": "A String", # Maximum depth of a tree for boosted tree models.
+            "userColumn": "A String", # User column specified for matrix factorization models.
+            "kmeansInitializationMethod": "A String", # The method used to initialize the centroids for kmeans algorithm.
+            "learnRateStrategy": "A String", # The strategy to determine learn rate for the current iteration.
             "dataSplitEvalFraction": 3.14, # The fraction of evaluation data over the whole input data. The rest
                 # of data will be used as training data. The format should be double.
                 # Accurate to two decimal places.
                 # Default value is 0.2.
-            "l2Regularization": 3.14, # L2 regularization coefficient.
+            "dataSplitMethod": "A String", # The data split type for training and evaluation, e.g. RANDOM.
+            "subsample": 3.14, # Subsample fraction of the training data to grow tree to prevent
+                # overfitting for boosted tree models.
+            "labelClassWeights": { # Weights associated with each label class, for rebalancing the
+                # training data. Only applicable for classification models.
+              "a_key": 3.14,
+            },
+            "learnRate": 3.14, # Learning rate in training. Used only for iterative training algorithms.
             "modelUri": "A String", # [Beta] Google Cloud Storage URI from which the model was imported. Only
                 # applicable for imported models.
-            "learnRateStrategy": "A String", # The strategy to determine learn rate for the current iteration.
-            "minRelativeProgress": 3.14, # When early_stop is true, stops training when accuracy improvement is
-                # less than 'min_relative_progress'. Used only for iterative training
-                # algorithms.
-            "learnRate": 3.14, # Learning rate in training. Used only for iterative training algorithms.
+            "walsAlpha": 3.14, # Hyperparameter for matrix factoration when implicit feedback type is
+                # specified.
+            "minSplitLoss": 3.14, # Minimum split loss for boosted tree models.
+            "lossType": "A String", # Type of loss function used during training run.
           },
         },
       ],
@@ -1128,8 +1580,8 @@ Returns:
               # in this case the output parameter does not have this "type" field).
               # Examples:
               # INT64: {type_kind="INT64"}
-              # ARRAY<STRING>: {type_kind="ARRAY", array_element_type="STRING"}
-              # STRUCT<x STRING, y ARRAY<DATE>>:
+              # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+              # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
               #   {type_kind="STRUCT",
               #    struct_type={fields=[
               #      {name="x", type={type_kind="STRING"}},
@@ -1147,35 +1599,56 @@ Returns:
           "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
         },
       ],
-      "labels": { # [Optional] The labels associated with this model. You can use these to
-          # organize and group your models. Label keys and values can be no longer
-          # than 63 characters, can only contain lowercase letters, numeric
-          # characters, underscores and dashes. International characters are allowed.
-          # Label values are optional. Label keys must start with a letter and each
-          # label in the list must have a different key.
-        "a_key": "A String",
-      },
-      "creationTime": "A String", # Output only. The time when this model was created, in millisecs since the
-          # epoch.
+      "labelColumns": [ # Output only. Label columns that were used to train this model.
+          # The output of the model will have a "predicted_" prefix to these columns.
+        { # A field or a column.
+          "type": { # The type of a variable, e.g., a function argument. # Optional. The type of this parameter. Absent if not explicitly
+              # specified (e.g., CREATE FUNCTION statement can omit the return type;
+              # in this case the output parameter does not have this "type" field).
+              # Examples:
+              # INT64: {type_kind="INT64"}
+              # ARRAY&lt;STRING&gt;: {type_kind="ARRAY", array_element_type="STRING"}
+              # STRUCT&lt;x STRING, y ARRAY&lt;DATE&gt;&gt;:
+              #   {type_kind="STRUCT",
+              #    struct_type={fields=[
+              #      {name="x", type={type_kind="STRING"}},
+              #      {name="y", type={type_kind="ARRAY", array_element_type="DATE"}}
+              #    ]}}
+            "structType": { # The fields of this struct, in order, if type_kind = "STRUCT".
+              "fields": [
+                # Object with schema name: StandardSqlField
+              ],
+            },
+            "arrayElementType": # Object with schema name: StandardSqlDataType # The type of the array's elements, if type_kind = "ARRAY".
+            "typeKind": "A String", # Required. The top level type of this field.
+                # Can be any standard SQL data type (e.g., "INT64", "DATE", "ARRAY").
+          },
+          "name": "A String", # Optional. The name of this field. Can be absent for struct fields.
+        },
+      ],
+      "creationTime": "A String", # Output only. The time when this model was created, in millisecs since the epoch.
       "modelType": "A String", # Output only. Type of the model resource.
-      "modelReference": { # Id path of a model. # Required. Unique identifier for this model.
+      "encryptionConfiguration": { # Custom encryption configuration (e.g., Cloud KMS keys). This shows the
+          # encryption configuration of the model data while stored in BigQuery
+          # storage. This field can be used with PatchModel to update encryption key
+          # for an already encrypted model.
+        "kmsKeyName": "A String", # [Optional] Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
+      },
+      "modelReference": { # Required. Unique identifier for this model.
         "projectId": "A String", # [Required] The ID of the project containing this model.
         "datasetId": "A String", # [Required] The ID of the dataset containing this model.
-        "modelId": "A String", # [Required] The ID of the model. The ID must contain only
-            # letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum
-            # length is 1,024 characters.
+        "modelId": "A String", # [Required] The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
       },
       "etag": "A String", # Output only. A hash of this resource.
       "location": "A String", # Output only. The geographic location where the model resides. This value
           # is inherited from the dataset.
-      "friendlyName": "A String", # [Optional] A descriptive name for this model.
-      "expirationTime": "A String", # [Optional] The time when this model expires, in milliseconds since the
-          # epoch. If not present, the model will persist indefinitely. Expired models
+      "friendlyName": "A String", # Optional. A descriptive name for this model.
+      "expirationTime": "A String", # Optional. The time when this model expires, in milliseconds since the epoch.
+          # If not present, the model will persist indefinitely. Expired models
           # will be deleted and their storage reclaimed.  The defaultTableExpirationMs
           # property of the encapsulating dataset can be used to set a default
           # expirationTime on newly created models.
-      "lastModifiedTime": "A String", # Output only. The time when this model was last modified, in millisecs
-          # since the epoch.
+      "lastModifiedTime": "A String", # Output only. The time when this model was last modified, in millisecs since the epoch.
     }</pre>
 </div>
 
