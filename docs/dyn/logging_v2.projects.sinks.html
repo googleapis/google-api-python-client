@@ -72,10 +72,10 @@ h1, h2, h3 {
 
 </style>
 
-<h1><a href="logging_v2.html">Stackdriver Logging API</a> . <a href="logging_v2.projects.html">projects</a> . <a href="logging_v2.projects.sinks.html">sinks</a></h1>
+<h1><a href="logging_v2.html">Cloud Logging API</a> . <a href="logging_v2.projects.html">projects</a> . <a href="logging_v2.projects.sinks.html">sinks</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#create">create(parent, body, uniqueWriterIdentity=None, x__xgafv=None)</a></code></p>
+  <code><a href="#create">create(parent, body=None, uniqueWriterIdentity=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Creates a sink that exports specified log entries to a destination. The export of newly-ingested log entries begins immediately, unless the sink's writer_identity is not permitted to write to the destination. A sink can export log entries only from the resource owning the sink.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(sinkName, x__xgafv=None)</a></code></p>
@@ -90,14 +90,14 @@ h1, h2, h3 {
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#patch">patch(sinkName, body, uniqueWriterIdentity=None, updateMask=None, x__xgafv=None)</a></code></p>
+  <code><a href="#patch">patch(sinkName, body=None, uniqueWriterIdentity=None, updateMask=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Updates a sink. This method replaces the following fields in the existing sink with values from the new sink: destination, and filter.The updated sink might also have a new writer_identity; see the unique_writer_identity field.</p>
 <p class="toc_element">
-  <code><a href="#update">update(sinkName, body, uniqueWriterIdentity=None, updateMask=None, x__xgafv=None)</a></code></p>
+  <code><a href="#update">update(sinkName, body=None, uniqueWriterIdentity=None, updateMask=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Updates a sink. This method replaces the following fields in the existing sink with values from the new sink: destination, and filter.The updated sink might also have a new writer_identity; see the unique_writer_identity field.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="create">create(parent, body, uniqueWriterIdentity=None, x__xgafv=None)</code>
+    <code class="details" id="create">create(parent, body=None, uniqueWriterIdentity=None, x__xgafv=None)</code>
   <pre>Creates a sink that exports specified log entries to a destination. The export of newly-ingested log entries begins immediately, unless the sink's writer_identity is not permitted to write to the destination. A sink can export log entries only from the resource owning the sink.
 
 Args:
@@ -107,12 +107,17 @@ Args:
 "billingAccounts/[BILLING_ACCOUNT_ID]"
 "folders/[FOLDER_ID]"
 Examples: "projects/my-logging-project", "organizations/123456789". (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Describes a sink used to export log entries to one of the following destinations in any project: a Cloud Storage bucket, a BigQuery dataset, or a Cloud Pub/Sub topic. A logs filter controls which log entries are exported. The sink must be created within a project, organization, billing account, or folder.
+  "disabled": True or False, # Optional. If set to True, then this sink is disabled and it does not export any log entries.
   "updateTime": "A String", # Output only. The last update timestamp of the sink.This field may not be present for older sinks.
-  "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods.
+  "bigqueryOptions": { # Options that change functionality of a sink exporting data to BigQuery. # Optional. Options that affect sinks exporting data to BigQuery.
+    "usePartitionedTables": True or False, # Optional. Whether to use BigQuery's partition tables. By default, Logging creates dated tables based on the log entries' timestamps, e.g. syslog_20170523. With partitioned tables the date suffix is no longer present and special query syntax has to be used instead. In both cases, tables are sharded based on UTC timezone.
+    "usesTimestampColumnPartitioning": True or False, # Output only. True if new timestamp column based partitioning is in use, false if legacy ingestion-time partitioning is in use. All new sinks will have this field set true and will use timestamp column based partitioning. If use_partitioned_tables is false, this value has no meaning and will be false. Legacy sinks using partitioned tables will have this field set to false.
+  },
+  "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods. First character has to be alphanumeric.
   "destination": "A String", # Required. The export destination:
       # "storage.googleapis.com/[GCS_BUCKET]"
       # "bigquery.googleapis.com/projects/[PROJECT_ID]/datasets/[DATASET]"
@@ -120,12 +125,13 @@ Examples: "projects/my-logging-project", "organizations/123456789". (required)
       # The sink's writer_identity, set when the sink is created, must have permission to write to the destination or else the log entries are not exported. For more information, see Exporting Logs with Sinks.
   "createTime": "A String", # Output only. The creation timestamp of the sink.This field may not be present for older sinks.
   "filter": "A String", # Optional. An advanced logs filter. The only exported log entries are those that are in the resource owning the sink and that match the filter. For example:
-      # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity>=ERROR
+      # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity&gt;=ERROR
   "outputVersionFormat": "A String", # Deprecated. The log entry format to use for this sink's exported log entries. The v2 format is used by default and cannot be changed.
-  "writerIdentity": "A String", # Output only. An IAM identity&mdash;a service account or group&mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
+  "writerIdentity": "A String", # Output only. An IAM identity&amp;mdash;a service account or group&amp;mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
   "includeChildren": True or False, # Optional. This field applies only to sinks owned by organizations and folders. If the field is false, the default, only the logs owned by the sink's parent resource are available for export. If the field is true, then logs from all the projects, folders, and billing accounts contained in the sink's parent resource are also available for export. Whether a particular log entry from the children is exported depends on the sink's filter expression. For example, if this field is true, then the filter resource.type=gce_instance would export all Compute Engine VM instance log entries from all projects in the sink's parent. To only export entries from certain child projects, filter on the project part of the log name:
       # logName:("projects/test-project1/" OR "projects/test-project2/") AND
       # resource.type=gce_instance
+  "description": "A String", # Optional. A description of this sink. The maximum length of the description is 8000 characters.
 }
 
   uniqueWriterIdentity: boolean, Optional. Determines the kind of IAM identity returned as writer_identity in the new sink. If this value is omitted or set to false, and if the sink's parent is a project, then the value returned as writer_identity is the same group or service account used by Logging before the addition of writer identities to this API. The sink's destination must be in the same project as the sink itself.If this field is set to true, or if the sink is owned by a non-project resource such as an organization, then the value of writer_identity will be a unique service account used only for exports from the new sink. For more information, see writer_identity in LogSink.
@@ -138,8 +144,13 @@ Returns:
   An object of the form:
 
     { # Describes a sink used to export log entries to one of the following destinations in any project: a Cloud Storage bucket, a BigQuery dataset, or a Cloud Pub/Sub topic. A logs filter controls which log entries are exported. The sink must be created within a project, organization, billing account, or folder.
+    "disabled": True or False, # Optional. If set to True, then this sink is disabled and it does not export any log entries.
     "updateTime": "A String", # Output only. The last update timestamp of the sink.This field may not be present for older sinks.
-    "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods.
+    "bigqueryOptions": { # Options that change functionality of a sink exporting data to BigQuery. # Optional. Options that affect sinks exporting data to BigQuery.
+      "usePartitionedTables": True or False, # Optional. Whether to use BigQuery's partition tables. By default, Logging creates dated tables based on the log entries' timestamps, e.g. syslog_20170523. With partitioned tables the date suffix is no longer present and special query syntax has to be used instead. In both cases, tables are sharded based on UTC timezone.
+      "usesTimestampColumnPartitioning": True or False, # Output only. True if new timestamp column based partitioning is in use, false if legacy ingestion-time partitioning is in use. All new sinks will have this field set true and will use timestamp column based partitioning. If use_partitioned_tables is false, this value has no meaning and will be false. Legacy sinks using partitioned tables will have this field set to false.
+    },
+    "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods. First character has to be alphanumeric.
     "destination": "A String", # Required. The export destination:
         # "storage.googleapis.com/[GCS_BUCKET]"
         # "bigquery.googleapis.com/projects/[PROJECT_ID]/datasets/[DATASET]"
@@ -147,12 +158,13 @@ Returns:
         # The sink's writer_identity, set when the sink is created, must have permission to write to the destination or else the log entries are not exported. For more information, see Exporting Logs with Sinks.
     "createTime": "A String", # Output only. The creation timestamp of the sink.This field may not be present for older sinks.
     "filter": "A String", # Optional. An advanced logs filter. The only exported log entries are those that are in the resource owning the sink and that match the filter. For example:
-        # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity>=ERROR
+        # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity&gt;=ERROR
     "outputVersionFormat": "A String", # Deprecated. The log entry format to use for this sink's exported log entries. The v2 format is used by default and cannot be changed.
-    "writerIdentity": "A String", # Output only. An IAM identity&mdash;a service account or group&mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
+    "writerIdentity": "A String", # Output only. An IAM identity&amp;mdash;a service account or group&amp;mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
     "includeChildren": True or False, # Optional. This field applies only to sinks owned by organizations and folders. If the field is false, the default, only the logs owned by the sink's parent resource are available for export. If the field is true, then logs from all the projects, folders, and billing accounts contained in the sink's parent resource are also available for export. Whether a particular log entry from the children is exported depends on the sink's filter expression. For example, if this field is true, then the filter resource.type=gce_instance would export all Compute Engine VM instance log entries from all projects in the sink's parent. To only export entries from certain child projects, filter on the project part of the log name:
         # logName:("projects/test-project1/" OR "projects/test-project2/") AND
         # resource.type=gce_instance
+    "description": "A String", # Optional. A description of this sink. The maximum length of the description is 8000 characters.
   }</pre>
 </div>
 
@@ -203,8 +215,13 @@ Returns:
   An object of the form:
 
     { # Describes a sink used to export log entries to one of the following destinations in any project: a Cloud Storage bucket, a BigQuery dataset, or a Cloud Pub/Sub topic. A logs filter controls which log entries are exported. The sink must be created within a project, organization, billing account, or folder.
+    "disabled": True or False, # Optional. If set to True, then this sink is disabled and it does not export any log entries.
     "updateTime": "A String", # Output only. The last update timestamp of the sink.This field may not be present for older sinks.
-    "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods.
+    "bigqueryOptions": { # Options that change functionality of a sink exporting data to BigQuery. # Optional. Options that affect sinks exporting data to BigQuery.
+      "usePartitionedTables": True or False, # Optional. Whether to use BigQuery's partition tables. By default, Logging creates dated tables based on the log entries' timestamps, e.g. syslog_20170523. With partitioned tables the date suffix is no longer present and special query syntax has to be used instead. In both cases, tables are sharded based on UTC timezone.
+      "usesTimestampColumnPartitioning": True or False, # Output only. True if new timestamp column based partitioning is in use, false if legacy ingestion-time partitioning is in use. All new sinks will have this field set true and will use timestamp column based partitioning. If use_partitioned_tables is false, this value has no meaning and will be false. Legacy sinks using partitioned tables will have this field set to false.
+    },
+    "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods. First character has to be alphanumeric.
     "destination": "A String", # Required. The export destination:
         # "storage.googleapis.com/[GCS_BUCKET]"
         # "bigquery.googleapis.com/projects/[PROJECT_ID]/datasets/[DATASET]"
@@ -212,12 +229,13 @@ Returns:
         # The sink's writer_identity, set when the sink is created, must have permission to write to the destination or else the log entries are not exported. For more information, see Exporting Logs with Sinks.
     "createTime": "A String", # Output only. The creation timestamp of the sink.This field may not be present for older sinks.
     "filter": "A String", # Optional. An advanced logs filter. The only exported log entries are those that are in the resource owning the sink and that match the filter. For example:
-        # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity>=ERROR
+        # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity&gt;=ERROR
     "outputVersionFormat": "A String", # Deprecated. The log entry format to use for this sink's exported log entries. The v2 format is used by default and cannot be changed.
-    "writerIdentity": "A String", # Output only. An IAM identity&mdash;a service account or group&mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
+    "writerIdentity": "A String", # Output only. An IAM identity&amp;mdash;a service account or group&amp;mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
     "includeChildren": True or False, # Optional. This field applies only to sinks owned by organizations and folders. If the field is false, the default, only the logs owned by the sink's parent resource are available for export. If the field is true, then logs from all the projects, folders, and billing accounts contained in the sink's parent resource are also available for export. Whether a particular log entry from the children is exported depends on the sink's filter expression. For example, if this field is true, then the filter resource.type=gce_instance would export all Compute Engine VM instance log entries from all projects in the sink's parent. To only export entries from certain child projects, filter on the project part of the log name:
         # logName:("projects/test-project1/" OR "projects/test-project2/") AND
         # resource.type=gce_instance
+    "description": "A String", # Optional. A description of this sink. The maximum length of the description is 8000 characters.
   }</pre>
 </div>
 
@@ -246,8 +264,13 @@ Returns:
     "nextPageToken": "A String", # If there might be more results than appear in this response, then nextPageToken is included. To get the next set of results, call the same method again using the value of nextPageToken as pageToken.
     "sinks": [ # A list of sinks.
       { # Describes a sink used to export log entries to one of the following destinations in any project: a Cloud Storage bucket, a BigQuery dataset, or a Cloud Pub/Sub topic. A logs filter controls which log entries are exported. The sink must be created within a project, organization, billing account, or folder.
+        "disabled": True or False, # Optional. If set to True, then this sink is disabled and it does not export any log entries.
         "updateTime": "A String", # Output only. The last update timestamp of the sink.This field may not be present for older sinks.
-        "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods.
+        "bigqueryOptions": { # Options that change functionality of a sink exporting data to BigQuery. # Optional. Options that affect sinks exporting data to BigQuery.
+          "usePartitionedTables": True or False, # Optional. Whether to use BigQuery's partition tables. By default, Logging creates dated tables based on the log entries' timestamps, e.g. syslog_20170523. With partitioned tables the date suffix is no longer present and special query syntax has to be used instead. In both cases, tables are sharded based on UTC timezone.
+          "usesTimestampColumnPartitioning": True or False, # Output only. True if new timestamp column based partitioning is in use, false if legacy ingestion-time partitioning is in use. All new sinks will have this field set true and will use timestamp column based partitioning. If use_partitioned_tables is false, this value has no meaning and will be false. Legacy sinks using partitioned tables will have this field set to false.
+        },
+        "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods. First character has to be alphanumeric.
         "destination": "A String", # Required. The export destination:
             # "storage.googleapis.com/[GCS_BUCKET]"
             # "bigquery.googleapis.com/projects/[PROJECT_ID]/datasets/[DATASET]"
@@ -255,12 +278,13 @@ Returns:
             # The sink's writer_identity, set when the sink is created, must have permission to write to the destination or else the log entries are not exported. For more information, see Exporting Logs with Sinks.
         "createTime": "A String", # Output only. The creation timestamp of the sink.This field may not be present for older sinks.
         "filter": "A String", # Optional. An advanced logs filter. The only exported log entries are those that are in the resource owning the sink and that match the filter. For example:
-            # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity>=ERROR
+            # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity&gt;=ERROR
         "outputVersionFormat": "A String", # Deprecated. The log entry format to use for this sink's exported log entries. The v2 format is used by default and cannot be changed.
-        "writerIdentity": "A String", # Output only. An IAM identity&mdash;a service account or group&mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
+        "writerIdentity": "A String", # Output only. An IAM identity&amp;mdash;a service account or group&amp;mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
         "includeChildren": True or False, # Optional. This field applies only to sinks owned by organizations and folders. If the field is false, the default, only the logs owned by the sink's parent resource are available for export. If the field is true, then logs from all the projects, folders, and billing accounts contained in the sink's parent resource are also available for export. Whether a particular log entry from the children is exported depends on the sink's filter expression. For example, if this field is true, then the filter resource.type=gce_instance would export all Compute Engine VM instance log entries from all projects in the sink's parent. To only export entries from certain child projects, filter on the project part of the log name:
             # logName:("projects/test-project1/" OR "projects/test-project2/") AND
             # resource.type=gce_instance
+        "description": "A String", # Optional. A description of this sink. The maximum length of the description is 8000 characters.
       },
     ],
   }</pre>
@@ -281,7 +305,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="patch">patch(sinkName, body, uniqueWriterIdentity=None, updateMask=None, x__xgafv=None)</code>
+    <code class="details" id="patch">patch(sinkName, body=None, uniqueWriterIdentity=None, updateMask=None, x__xgafv=None)</code>
   <pre>Updates a sink. This method replaces the following fields in the existing sink with values from the new sink: destination, and filter.The updated sink might also have a new writer_identity; see the unique_writer_identity field.
 
 Args:
@@ -291,12 +315,17 @@ Args:
 "billingAccounts/[BILLING_ACCOUNT_ID]/sinks/[SINK_ID]"
 "folders/[FOLDER_ID]/sinks/[SINK_ID]"
 Example: "projects/my-project-id/sinks/my-sink-id". (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Describes a sink used to export log entries to one of the following destinations in any project: a Cloud Storage bucket, a BigQuery dataset, or a Cloud Pub/Sub topic. A logs filter controls which log entries are exported. The sink must be created within a project, organization, billing account, or folder.
+  "disabled": True or False, # Optional. If set to True, then this sink is disabled and it does not export any log entries.
   "updateTime": "A String", # Output only. The last update timestamp of the sink.This field may not be present for older sinks.
-  "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods.
+  "bigqueryOptions": { # Options that change functionality of a sink exporting data to BigQuery. # Optional. Options that affect sinks exporting data to BigQuery.
+    "usePartitionedTables": True or False, # Optional. Whether to use BigQuery's partition tables. By default, Logging creates dated tables based on the log entries' timestamps, e.g. syslog_20170523. With partitioned tables the date suffix is no longer present and special query syntax has to be used instead. In both cases, tables are sharded based on UTC timezone.
+    "usesTimestampColumnPartitioning": True or False, # Output only. True if new timestamp column based partitioning is in use, false if legacy ingestion-time partitioning is in use. All new sinks will have this field set true and will use timestamp column based partitioning. If use_partitioned_tables is false, this value has no meaning and will be false. Legacy sinks using partitioned tables will have this field set to false.
+  },
+  "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods. First character has to be alphanumeric.
   "destination": "A String", # Required. The export destination:
       # "storage.googleapis.com/[GCS_BUCKET]"
       # "bigquery.googleapis.com/projects/[PROJECT_ID]/datasets/[DATASET]"
@@ -304,12 +333,13 @@ Example: "projects/my-project-id/sinks/my-sink-id". (required)
       # The sink's writer_identity, set when the sink is created, must have permission to write to the destination or else the log entries are not exported. For more information, see Exporting Logs with Sinks.
   "createTime": "A String", # Output only. The creation timestamp of the sink.This field may not be present for older sinks.
   "filter": "A String", # Optional. An advanced logs filter. The only exported log entries are those that are in the resource owning the sink and that match the filter. For example:
-      # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity>=ERROR
+      # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity&gt;=ERROR
   "outputVersionFormat": "A String", # Deprecated. The log entry format to use for this sink's exported log entries. The v2 format is used by default and cannot be changed.
-  "writerIdentity": "A String", # Output only. An IAM identity&mdash;a service account or group&mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
+  "writerIdentity": "A String", # Output only. An IAM identity&amp;mdash;a service account or group&amp;mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
   "includeChildren": True or False, # Optional. This field applies only to sinks owned by organizations and folders. If the field is false, the default, only the logs owned by the sink's parent resource are available for export. If the field is true, then logs from all the projects, folders, and billing accounts contained in the sink's parent resource are also available for export. Whether a particular log entry from the children is exported depends on the sink's filter expression. For example, if this field is true, then the filter resource.type=gce_instance would export all Compute Engine VM instance log entries from all projects in the sink's parent. To only export entries from certain child projects, filter on the project part of the log name:
       # logName:("projects/test-project1/" OR "projects/test-project2/") AND
       # resource.type=gce_instance
+  "description": "A String", # Optional. A description of this sink. The maximum length of the description is 8000 characters.
 }
 
   uniqueWriterIdentity: boolean, Optional. See sinks.create for a description of this field. When updating a sink, the effect of this field on the value of writer_identity in the updated sink depends on both the old and new values of this field:
@@ -326,8 +356,13 @@ Returns:
   An object of the form:
 
     { # Describes a sink used to export log entries to one of the following destinations in any project: a Cloud Storage bucket, a BigQuery dataset, or a Cloud Pub/Sub topic. A logs filter controls which log entries are exported. The sink must be created within a project, organization, billing account, or folder.
+    "disabled": True or False, # Optional. If set to True, then this sink is disabled and it does not export any log entries.
     "updateTime": "A String", # Output only. The last update timestamp of the sink.This field may not be present for older sinks.
-    "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods.
+    "bigqueryOptions": { # Options that change functionality of a sink exporting data to BigQuery. # Optional. Options that affect sinks exporting data to BigQuery.
+      "usePartitionedTables": True or False, # Optional. Whether to use BigQuery's partition tables. By default, Logging creates dated tables based on the log entries' timestamps, e.g. syslog_20170523. With partitioned tables the date suffix is no longer present and special query syntax has to be used instead. In both cases, tables are sharded based on UTC timezone.
+      "usesTimestampColumnPartitioning": True or False, # Output only. True if new timestamp column based partitioning is in use, false if legacy ingestion-time partitioning is in use. All new sinks will have this field set true and will use timestamp column based partitioning. If use_partitioned_tables is false, this value has no meaning and will be false. Legacy sinks using partitioned tables will have this field set to false.
+    },
+    "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods. First character has to be alphanumeric.
     "destination": "A String", # Required. The export destination:
         # "storage.googleapis.com/[GCS_BUCKET]"
         # "bigquery.googleapis.com/projects/[PROJECT_ID]/datasets/[DATASET]"
@@ -335,17 +370,18 @@ Returns:
         # The sink's writer_identity, set when the sink is created, must have permission to write to the destination or else the log entries are not exported. For more information, see Exporting Logs with Sinks.
     "createTime": "A String", # Output only. The creation timestamp of the sink.This field may not be present for older sinks.
     "filter": "A String", # Optional. An advanced logs filter. The only exported log entries are those that are in the resource owning the sink and that match the filter. For example:
-        # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity>=ERROR
+        # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity&gt;=ERROR
     "outputVersionFormat": "A String", # Deprecated. The log entry format to use for this sink's exported log entries. The v2 format is used by default and cannot be changed.
-    "writerIdentity": "A String", # Output only. An IAM identity&mdash;a service account or group&mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
+    "writerIdentity": "A String", # Output only. An IAM identity&amp;mdash;a service account or group&amp;mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
     "includeChildren": True or False, # Optional. This field applies only to sinks owned by organizations and folders. If the field is false, the default, only the logs owned by the sink's parent resource are available for export. If the field is true, then logs from all the projects, folders, and billing accounts contained in the sink's parent resource are also available for export. Whether a particular log entry from the children is exported depends on the sink's filter expression. For example, if this field is true, then the filter resource.type=gce_instance would export all Compute Engine VM instance log entries from all projects in the sink's parent. To only export entries from certain child projects, filter on the project part of the log name:
         # logName:("projects/test-project1/" OR "projects/test-project2/") AND
         # resource.type=gce_instance
+    "description": "A String", # Optional. A description of this sink. The maximum length of the description is 8000 characters.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="update">update(sinkName, body, uniqueWriterIdentity=None, updateMask=None, x__xgafv=None)</code>
+    <code class="details" id="update">update(sinkName, body=None, uniqueWriterIdentity=None, updateMask=None, x__xgafv=None)</code>
   <pre>Updates a sink. This method replaces the following fields in the existing sink with values from the new sink: destination, and filter.The updated sink might also have a new writer_identity; see the unique_writer_identity field.
 
 Args:
@@ -355,12 +391,17 @@ Args:
 "billingAccounts/[BILLING_ACCOUNT_ID]/sinks/[SINK_ID]"
 "folders/[FOLDER_ID]/sinks/[SINK_ID]"
 Example: "projects/my-project-id/sinks/my-sink-id". (required)
-  body: object, The request body. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Describes a sink used to export log entries to one of the following destinations in any project: a Cloud Storage bucket, a BigQuery dataset, or a Cloud Pub/Sub topic. A logs filter controls which log entries are exported. The sink must be created within a project, organization, billing account, or folder.
+  "disabled": True or False, # Optional. If set to True, then this sink is disabled and it does not export any log entries.
   "updateTime": "A String", # Output only. The last update timestamp of the sink.This field may not be present for older sinks.
-  "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods.
+  "bigqueryOptions": { # Options that change functionality of a sink exporting data to BigQuery. # Optional. Options that affect sinks exporting data to BigQuery.
+    "usePartitionedTables": True or False, # Optional. Whether to use BigQuery's partition tables. By default, Logging creates dated tables based on the log entries' timestamps, e.g. syslog_20170523. With partitioned tables the date suffix is no longer present and special query syntax has to be used instead. In both cases, tables are sharded based on UTC timezone.
+    "usesTimestampColumnPartitioning": True or False, # Output only. True if new timestamp column based partitioning is in use, false if legacy ingestion-time partitioning is in use. All new sinks will have this field set true and will use timestamp column based partitioning. If use_partitioned_tables is false, this value has no meaning and will be false. Legacy sinks using partitioned tables will have this field set to false.
+  },
+  "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods. First character has to be alphanumeric.
   "destination": "A String", # Required. The export destination:
       # "storage.googleapis.com/[GCS_BUCKET]"
       # "bigquery.googleapis.com/projects/[PROJECT_ID]/datasets/[DATASET]"
@@ -368,12 +409,13 @@ Example: "projects/my-project-id/sinks/my-sink-id". (required)
       # The sink's writer_identity, set when the sink is created, must have permission to write to the destination or else the log entries are not exported. For more information, see Exporting Logs with Sinks.
   "createTime": "A String", # Output only. The creation timestamp of the sink.This field may not be present for older sinks.
   "filter": "A String", # Optional. An advanced logs filter. The only exported log entries are those that are in the resource owning the sink and that match the filter. For example:
-      # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity>=ERROR
+      # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity&gt;=ERROR
   "outputVersionFormat": "A String", # Deprecated. The log entry format to use for this sink's exported log entries. The v2 format is used by default and cannot be changed.
-  "writerIdentity": "A String", # Output only. An IAM identity&mdash;a service account or group&mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
+  "writerIdentity": "A String", # Output only. An IAM identity&amp;mdash;a service account or group&amp;mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
   "includeChildren": True or False, # Optional. This field applies only to sinks owned by organizations and folders. If the field is false, the default, only the logs owned by the sink's parent resource are available for export. If the field is true, then logs from all the projects, folders, and billing accounts contained in the sink's parent resource are also available for export. Whether a particular log entry from the children is exported depends on the sink's filter expression. For example, if this field is true, then the filter resource.type=gce_instance would export all Compute Engine VM instance log entries from all projects in the sink's parent. To only export entries from certain child projects, filter on the project part of the log name:
       # logName:("projects/test-project1/" OR "projects/test-project2/") AND
       # resource.type=gce_instance
+  "description": "A String", # Optional. A description of this sink. The maximum length of the description is 8000 characters.
 }
 
   uniqueWriterIdentity: boolean, Optional. See sinks.create for a description of this field. When updating a sink, the effect of this field on the value of writer_identity in the updated sink depends on both the old and new values of this field:
@@ -390,8 +432,13 @@ Returns:
   An object of the form:
 
     { # Describes a sink used to export log entries to one of the following destinations in any project: a Cloud Storage bucket, a BigQuery dataset, or a Cloud Pub/Sub topic. A logs filter controls which log entries are exported. The sink must be created within a project, organization, billing account, or folder.
+    "disabled": True or False, # Optional. If set to True, then this sink is disabled and it does not export any log entries.
     "updateTime": "A String", # Output only. The last update timestamp of the sink.This field may not be present for older sinks.
-    "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods.
+    "bigqueryOptions": { # Options that change functionality of a sink exporting data to BigQuery. # Optional. Options that affect sinks exporting data to BigQuery.
+      "usePartitionedTables": True or False, # Optional. Whether to use BigQuery's partition tables. By default, Logging creates dated tables based on the log entries' timestamps, e.g. syslog_20170523. With partitioned tables the date suffix is no longer present and special query syntax has to be used instead. In both cases, tables are sharded based on UTC timezone.
+      "usesTimestampColumnPartitioning": True or False, # Output only. True if new timestamp column based partitioning is in use, false if legacy ingestion-time partitioning is in use. All new sinks will have this field set true and will use timestamp column based partitioning. If use_partitioned_tables is false, this value has no meaning and will be false. Legacy sinks using partitioned tables will have this field set to false.
+    },
+    "name": "A String", # Required. The client-assigned sink identifier, unique within the project. Example: "my-syslog-errors-to-pubsub". Sink identifiers are limited to 100 characters and can include only the following characters: upper and lower-case alphanumeric characters, underscores, hyphens, and periods. First character has to be alphanumeric.
     "destination": "A String", # Required. The export destination:
         # "storage.googleapis.com/[GCS_BUCKET]"
         # "bigquery.googleapis.com/projects/[PROJECT_ID]/datasets/[DATASET]"
@@ -399,12 +446,13 @@ Returns:
         # The sink's writer_identity, set when the sink is created, must have permission to write to the destination or else the log entries are not exported. For more information, see Exporting Logs with Sinks.
     "createTime": "A String", # Output only. The creation timestamp of the sink.This field may not be present for older sinks.
     "filter": "A String", # Optional. An advanced logs filter. The only exported log entries are those that are in the resource owning the sink and that match the filter. For example:
-        # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity>=ERROR
+        # logName="projects/[PROJECT_ID]/logs/[LOG_ID]" AND severity&gt;=ERROR
     "outputVersionFormat": "A String", # Deprecated. The log entry format to use for this sink's exported log entries. The v2 format is used by default and cannot be changed.
-    "writerIdentity": "A String", # Output only. An IAM identity&mdash;a service account or group&mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
+    "writerIdentity": "A String", # Output only. An IAM identity&amp;mdash;a service account or group&amp;mdash;under which Logging writes the exported log entries to the sink's destination. This field is set by sinks.create and sinks.update based on the value of unique_writer_identity in those methods.Until you grant this identity write-access to the destination, log entry exports from this sink will fail. For more information, see Granting Access for a Resource. Consult the destination service's documentation to determine the appropriate IAM roles to assign to the identity.
     "includeChildren": True or False, # Optional. This field applies only to sinks owned by organizations and folders. If the field is false, the default, only the logs owned by the sink's parent resource are available for export. If the field is true, then logs from all the projects, folders, and billing accounts contained in the sink's parent resource are also available for export. Whether a particular log entry from the children is exported depends on the sink's filter expression. For example, if this field is true, then the filter resource.type=gce_instance would export all Compute Engine VM instance log entries from all projects in the sink's parent. To only export entries from certain child projects, filter on the project part of the log name:
         # logName:("projects/test-project1/" OR "projects/test-project2/") AND
         # resource.type=gce_instance
+    "description": "A String", # Optional. A description of this sink. The maximum length of the description is 8000 characters.
   }</pre>
 </div>
 

@@ -75,7 +75,7 @@ h1, h2, h3 {
 <h1><a href="cloudbuild_v1.html">Cloud Build API</a> . <a href="cloudbuild_v1.projects.html">projects</a> . <a href="cloudbuild_v1.projects.triggers.html">triggers</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#create">create(projectId, body, x__xgafv=None)</a></code></p>
+  <code><a href="#create">create(projectId, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Creates a new `BuildTrigger`.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(projectId, triggerId, x__xgafv=None)</a></code></p>
@@ -90,63 +90,67 @@ h1, h2, h3 {
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#patch">patch(projectId, triggerId, body, x__xgafv=None)</a></code></p>
+  <code><a href="#patch">patch(projectId, triggerId, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Updates a `BuildTrigger` by its project ID and trigger ID.</p>
 <p class="toc_element">
-  <code><a href="#run">run(projectId, triggerId, body, x__xgafv=None)</a></code></p>
+  <code><a href="#run">run(projectId, triggerId, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Runs a `BuildTrigger` at a particular source revision.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="create">create(projectId, body, x__xgafv=None)</code>
+    <code class="details" id="create">create(projectId, body=None, x__xgafv=None)</code>
   <pre>Creates a new `BuildTrigger`.
 
 This API is experimental.
 
 Args:
-  projectId: string, ID of the project for which to configure automatic builds. (required)
-  body: object, The request body. (required)
+  projectId: string, Required. ID of the project for which to configure automatic builds. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Configuration for an automated build in response to source repository
     # changes.
   "github": { # GitHubEventsConfig describes the configuration of a trigger that creates a # GitHubEventsConfig describes the configuration of a trigger that creates
       # a build whenever a GitHub event is received.
+      # 
+      # Mutually exclusive with `trigger_template`.
       # build whenever a GitHub event is received.
       #
       # This message is experimental.
-    "name": "A String", # Name of the repository.
+    "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
+      "invertRegex": True or False, # When true, only trigger a build if the revision regex does NOT match the
+          # git_ref regex.
+      "tag": "A String", # Regexes matching tags to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
+      "branch": "A String", # Regexes matching branches to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
+    },
+    "installationId": "A String", # The installationID that emits the GitHub event.
     "pullRequest": { # PullRequestFilter contains filter properties for matching GitHub Pull # filter to match changes in pull requests.
         # Requests.
-      "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository owner or
+      "invertRegex": True or False, # If true, branches that do NOT match the git_ref will trigger a build.
+      "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository admin or
           # collaborator.
       "branch": "A String", # Regex of branches to match.
           #
           # The syntax of the regular expressions accepted is the syntax accepted by
           # RE2 and described at https://github.com/google/re2/wiki/Syntax
     },
-    "owner": "A String", # Owner of the repository.
-    "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
-      "tag": "A String", # Regexes of tags to match.
-          #
-          # The syntax of the regular expressions accepted is the syntax accepted by
-          # RE2 and described at https://github.com/google/re2/wiki/Syntax
-      "branch": "A String", # Regexes of branches to match.
-          #
-          # The syntax of the regular expressions accepted is the syntax accepted by
-          # RE2 and described at https://github.com/google/re2/wiki/Syntax
-    },
-    "installationId": "A String", # The installationID that emmits the GitHub event.
-    "checkSuite": { # A CheckSuiteFilter is a filter that indicates that we should build on all # Output only. Indicates that a build was generated from a check suite
-        # event.
-        # check suite events.
-    },
+    "name": "A String", # Name of the repository. For example: The name for
+        # https://github.com/googlecloudplatform/cloud-builders is "cloud-builders".
+    "owner": "A String", # Owner of the repository. For example: The owner for
+        # https://github.com/googlecloudplatform/cloud-builders is
+        # "googlecloudplatform".
   },
   "description": "A String", # Human-readable description of this trigger.
   "tags": [ # Tags for annotation of a `BuildTrigger`
     "A String",
   ],
   "ignoredFiles": [ # ignored_files and included_files are file glob matches using
-      # http://godoc/pkg/path/filepath#Match extended with support for "**".
+      # https://golang.org/pkg/path/filepath/#Match extended with support for "**".
       # 
       # If ignored_files and changed files are both empty, then they are
       # not used to determine whether or not to trigger a build.
@@ -159,7 +163,9 @@ Args:
   "filename": "A String", # Path, from the source root, to a file whose contents is used for the
       # template.
   "createTime": "A String", # Output only. Time when the trigger was created.
-  "substitutions": { # Substitutions data for Build resource.
+  "substitutions": { # Substitutions for Build resource. The keys must match the following
+      # regular expression: `^_[A-Z0-9_]+$`.The keys cannot conflict with the
+      # keys in bindings.
     "a_key": "A String",
   },
   "disabled": True or False, # If true, the trigger will never result in a build.
@@ -217,11 +223,22 @@ Args:
           # revisions resolved.
         "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
             # project ID requesting the build is assumed.
+        "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+            # regex.
         "commitSha": "A String", # Explicit commit SHA to build.
-        "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-            # assumed.
-        "tagName": "A String", # Name of the tag to build.
-        "branchName": "A String", # Name of the branch to build.
+        "substitutions": { # Substitutions to use in a triggered build.
+            # Should only be used with RunBuildTrigger
+          "a_key": "A String",
+        },
+        "repoName": "A String", # Required. Name of the Cloud Source Repository.
+        "tagName": "A String", # Regex matching tags to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+        "branchName": "A String", # Regex matching branches to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
         "dir": "A String", # Directory, relative to the source root, in which to run the build.
             #
             # This must be a relative path. If a step's `dir` is specified and is an
@@ -323,11 +340,22 @@ Args:
           # Repository.
         "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
             # project ID requesting the build is assumed.
+        "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+            # regex.
         "commitSha": "A String", # Explicit commit SHA to build.
-        "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-            # assumed.
-        "tagName": "A String", # Name of the tag to build.
-        "branchName": "A String", # Name of the branch to build.
+        "substitutions": { # Substitutions to use in a triggered build.
+            # Should only be used with RunBuildTrigger
+          "a_key": "A String",
+        },
+        "repoName": "A String", # Required. Name of the Cloud Source Repository.
+        "tagName": "A String", # Regex matching tags to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+        "branchName": "A String", # Regex matching branches to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
         "dir": "A String", # Directory, relative to the source root, in which to run the build.
             #
             # This must be a relative path. If a step's `dir` is specified and is an
@@ -365,6 +393,11 @@ Args:
         "startTime": "A String", # Start of time span.
       },
     },
+    "queueTtl": "A String", # TTL in queue for this build. If provided and the build is enqueued longer
+        # than this value, the build will expire and the build status will be
+        # `EXPIRED`.
+        #
+        # The TTL starts ticking from create_time.
     "createTime": "A String", # Output only. Time at which the request to create the build was received.
     "finishTime": "A String", # Output only. Time at which execution of the build was finished.
         #
@@ -399,12 +432,23 @@ Args:
             # and the remainder will be used as arguments.
           "A String",
         ],
-        "env": [ # A list of environment variable definitions to be used when running a step.
+        "name": "A String", # Required. The name of the container image that will run this particular
+            # build step.
             #
-            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-            # being given the value "VALUE".
-          "A String",
-        ],
+            # If the image is available in the host's Docker daemon's cache, it
+            # will be run directly. If not, the host will attempt to pull the image
+            # first, using the builder service account's credentials if necessary.
+            #
+            # The Docker daemon's cache will already have the latest versions of all of
+            # the officially supported build steps
+            # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+            # The Docker daemon will also have cached many of the layers for some popular
+            # images, like "ubuntu", "debian", but they will be refreshed at the time you
+            # attempt to use them.
+            #
+            # If you built an image in a previous build step, it will be stored in the
+            # host's Docker daemon's cache and is available to use as the name for a
+            # later build step.
         "waitFor": [ # The ID(s) of the step(s) that this build step depends on.
             # This build step will not start until all the build steps in `wait_for`
             # have completed successfully. If `wait_for` is empty, this build step will
@@ -422,6 +466,21 @@ Args:
         ],
         "entrypoint": "A String", # Entrypoint to be used instead of the build step image's default entrypoint.
             # If unset, the image's default entrypoint is used.
+        "env": [ # A list of environment variable definitions to be used when running a step.
+            #
+            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+            # being given the value "VALUE".
+          "A String",
+        ],
+        "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
+            # builder image only.
+          "endTime": "A String", # End of time span.
+          "startTime": "A String", # Start of time span.
+        },
+        "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
+          "endTime": "A String", # End of time span.
+          "startTime": "A String", # Start of time span.
+        },
         "volumes": [ # List of volumes to mount into the build step.
             #
             # Each volume is created as an empty volume prior to execution of the
@@ -442,15 +501,6 @@ Args:
                 # Docker volumes. Each named volume must be used by at least two build steps.
           },
         ],
-        "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
-          "endTime": "A String", # End of time span.
-          "startTime": "A String", # Start of time span.
-        },
-        "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
-            # builder image only.
-          "endTime": "A String", # End of time span.
-          "startTime": "A String", # Start of time span.
-        },
         "id": "A String", # Unique identifier for this build step, used in `wait_for` to
             # reference this build step as a dependency.
         "dir": "A String", # Working directory to use when running this step's container.
@@ -463,23 +513,6 @@ Args:
             # If the build specifies a `RepoSource` with `dir` and a step with a `dir`,
             # which specifies an absolute path, the `RepoSource` `dir` is ignored for
             # the step's execution.
-        "name": "A String", # Required. The name of the container image that will run this particular
-            # build step.
-            #
-            # If the image is available in the host's Docker daemon's cache, it
-            # will be run directly. If not, the host will attempt to pull the image
-            # first, using the builder service account's credentials if necessary.
-            #
-            # The Docker daemon's cache will already have the latest versions of all of
-            # the officially supported build steps
-            # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
-            # The Docker daemon will also have cached many of the layers for some popular
-            # images, like "ubuntu", "debian", but they will be refreshed at the time you
-            # attempt to use them.
-            #
-            # If you built an image in a previous build step, it will be stored in the
-            # host's Docker daemon's cache and is available to use as the name for a
-            # later build step.
       },
     ],
     "timeout": "A String", # Amount of time that this build should be allowed to run, to second
@@ -494,6 +527,36 @@ Args:
     "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
       "substitutionOption": "A String", # Option to specify behavior when there is an error in the substitution
           # checks.
+      "machineType": "A String", # Compute Engine machine type on which to run the build.
+      "workerPool": "A String", # Option to specify a `WorkerPool` for the build.
+          # Format: projects/{project}/workerPools/{workerPool}
+          #
+          # This field is experimental.
+      "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+        "A String",
+      ],
+      "env": [ # A list of global environment variable definitions that will exist for all
+          # build steps in this build. If a variable is defined in both globally and in
+          # a build step, the variable will use the build step value.
+          #
+          # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+          # being given the value "VALUE".
+        "A String",
+      ],
+      "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
+          # Storage.
+      "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
+          # Key Management Service crypto key. These values must be specified in the
+          # build's `Secret`. These variables will be available to all build steps
+          # in this build.
+        "A String",
+      ],
+      "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
+          # "disk free"; some of the space will be used by the operating system and
+          # build utilities. Also note that this is the minimum disk size that will be
+          # allocated for the build -- the build may run with a larger disk than
+          # requested. At present, the maximum disk size is 1000GB; builds that request
+          # more than the maximum are rejected with an error.
       "logging": "A String", # Option to specify the logging mode, which determines where the logs are
           # stored.
       "volumes": [ # Global list of volumes to mount for ALL build steps
@@ -517,36 +580,7 @@ Args:
               # Docker volumes. Each named volume must be used by at least two build steps.
         },
       ],
-      "workerPool": "A String", # Option to specify a `WorkerPool` for the build. User specifies the pool
-          # with the format "[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]".
-          # This is an experimental field.
-      "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
-          # Storage.
-      "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-        "A String",
-      ],
-      "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
-          # Key Management Service crypto key. These values must be specified in the
-          # build's `Secret`. These variables will be available to all build steps
-          # in this build.
-        "A String",
-      ],
-      "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
-          # "disk free"; some of the space will be used by the operating system and
-          # build utilities. Also note that this is the minimum disk size that will be
-          # allocated for the build -- the build may run with a larger disk than
-          # requested. At present, the maximum disk size is 1000GB; builds that request
-          # more than the maximum are rejected with an error.
-      "env": [ # A list of global environment variable definitions that will exist for all
-          # build steps in this build. If a variable is defined in both globally and in
-          # a build step, the variable will use the build step value.
-          #
-          # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-          # being given the value "VALUE".
-        "A String",
-      ],
       "requestedVerifyOption": "A String", # Requested verifiability options.
-      "machineType": "A String", # Compute Engine machine type on which to run the build.
     },
     "logUrl": "A String", # Output only. URL to logs for this build in Google Cloud Console.
   },
@@ -565,19 +599,38 @@ Args:
       # Branch and tag names in trigger templates are interpreted as regular
       # expressions. Any branch or tag change that matches that regular expression
       # will trigger a build.
+      # 
+      # Mutually exclusive with `github`.
     "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
         # project ID requesting the build is assumed.
+    "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+        # regex.
     "commitSha": "A String", # Explicit commit SHA to build.
-    "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-        # assumed.
-    "tagName": "A String", # Name of the tag to build.
-    "branchName": "A String", # Name of the branch to build.
+    "substitutions": { # Substitutions to use in a triggered build.
+        # Should only be used with RunBuildTrigger
+      "a_key": "A String",
+    },
+    "repoName": "A String", # Required. Name of the Cloud Source Repository.
+    "tagName": "A String", # Regex matching tags to build.
+        #
+        # The syntax of the regular expressions accepted is the syntax accepted by
+        # RE2 and described at https://github.com/google/re2/wiki/Syntax
+    "branchName": "A String", # Regex matching branches to build.
+        #
+        # The syntax of the regular expressions accepted is the syntax accepted by
+        # RE2 and described at https://github.com/google/re2/wiki/Syntax
     "dir": "A String", # Directory, relative to the source root, in which to run the build.
         #
         # This must be a relative path. If a step's `dir` is specified and is an
         # absolute path, this value is ignored for that step's execution.
   },
   "id": "A String", # Output only. Unique identifier of the trigger.
+  "name": "A String", # User-assigned name of the trigger. Must be unique within the project.
+      # Trigger names must meet the following requirements:
+      # 
+      # + They must contain only alphanumeric characters and dashes.
+      # + They can be 1-64 characters long.
+      # + They must begin and end with an alphanumeric character.
 }
 
   x__xgafv: string, V1 error format.
@@ -592,42 +645,46 @@ Returns:
       # changes.
     "github": { # GitHubEventsConfig describes the configuration of a trigger that creates a # GitHubEventsConfig describes the configuration of a trigger that creates
         # a build whenever a GitHub event is received.
+        #
+        # Mutually exclusive with `trigger_template`.
         # build whenever a GitHub event is received.
         #
         # This message is experimental.
-      "name": "A String", # Name of the repository.
+      "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
+        "invertRegex": True or False, # When true, only trigger a build if the revision regex does NOT match the
+            # git_ref regex.
+        "tag": "A String", # Regexes matching tags to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+        "branch": "A String", # Regexes matching branches to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+      },
+      "installationId": "A String", # The installationID that emits the GitHub event.
       "pullRequest": { # PullRequestFilter contains filter properties for matching GitHub Pull # filter to match changes in pull requests.
           # Requests.
-        "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository owner or
+        "invertRegex": True or False, # If true, branches that do NOT match the git_ref will trigger a build.
+        "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository admin or
             # collaborator.
         "branch": "A String", # Regex of branches to match.
             #
             # The syntax of the regular expressions accepted is the syntax accepted by
             # RE2 and described at https://github.com/google/re2/wiki/Syntax
       },
-      "owner": "A String", # Owner of the repository.
-      "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
-        "tag": "A String", # Regexes of tags to match.
-            #
-            # The syntax of the regular expressions accepted is the syntax accepted by
-            # RE2 and described at https://github.com/google/re2/wiki/Syntax
-        "branch": "A String", # Regexes of branches to match.
-            #
-            # The syntax of the regular expressions accepted is the syntax accepted by
-            # RE2 and described at https://github.com/google/re2/wiki/Syntax
-      },
-      "installationId": "A String", # The installationID that emmits the GitHub event.
-      "checkSuite": { # A CheckSuiteFilter is a filter that indicates that we should build on all # Output only. Indicates that a build was generated from a check suite
-          # event.
-          # check suite events.
-      },
+      "name": "A String", # Name of the repository. For example: The name for
+          # https://github.com/googlecloudplatform/cloud-builders is "cloud-builders".
+      "owner": "A String", # Owner of the repository. For example: The owner for
+          # https://github.com/googlecloudplatform/cloud-builders is
+          # "googlecloudplatform".
     },
     "description": "A String", # Human-readable description of this trigger.
     "tags": [ # Tags for annotation of a `BuildTrigger`
       "A String",
     ],
     "ignoredFiles": [ # ignored_files and included_files are file glob matches using
-        # http://godoc/pkg/path/filepath#Match extended with support for "**".
+        # https://golang.org/pkg/path/filepath/#Match extended with support for "**".
         #
         # If ignored_files and changed files are both empty, then they are
         # not used to determine whether or not to trigger a build.
@@ -640,7 +697,9 @@ Returns:
     "filename": "A String", # Path, from the source root, to a file whose contents is used for the
         # template.
     "createTime": "A String", # Output only. Time when the trigger was created.
-    "substitutions": { # Substitutions data for Build resource.
+    "substitutions": { # Substitutions for Build resource. The keys must match the following
+        # regular expression: `^_[A-Z0-9_]+$`.The keys cannot conflict with the
+        # keys in bindings.
       "a_key": "A String",
     },
     "disabled": True or False, # If true, the trigger will never result in a build.
@@ -698,11 +757,22 @@ Returns:
             # revisions resolved.
           "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
               # project ID requesting the build is assumed.
+          "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+              # regex.
           "commitSha": "A String", # Explicit commit SHA to build.
-          "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-              # assumed.
-          "tagName": "A String", # Name of the tag to build.
-          "branchName": "A String", # Name of the branch to build.
+          "substitutions": { # Substitutions to use in a triggered build.
+              # Should only be used with RunBuildTrigger
+            "a_key": "A String",
+          },
+          "repoName": "A String", # Required. Name of the Cloud Source Repository.
+          "tagName": "A String", # Regex matching tags to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
+          "branchName": "A String", # Regex matching branches to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
           "dir": "A String", # Directory, relative to the source root, in which to run the build.
               #
               # This must be a relative path. If a step's `dir` is specified and is an
@@ -804,11 +874,22 @@ Returns:
             # Repository.
           "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
               # project ID requesting the build is assumed.
+          "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+              # regex.
           "commitSha": "A String", # Explicit commit SHA to build.
-          "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-              # assumed.
-          "tagName": "A String", # Name of the tag to build.
-          "branchName": "A String", # Name of the branch to build.
+          "substitutions": { # Substitutions to use in a triggered build.
+              # Should only be used with RunBuildTrigger
+            "a_key": "A String",
+          },
+          "repoName": "A String", # Required. Name of the Cloud Source Repository.
+          "tagName": "A String", # Regex matching tags to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
+          "branchName": "A String", # Regex matching branches to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
           "dir": "A String", # Directory, relative to the source root, in which to run the build.
               #
               # This must be a relative path. If a step's `dir` is specified and is an
@@ -846,6 +927,11 @@ Returns:
           "startTime": "A String", # Start of time span.
         },
       },
+      "queueTtl": "A String", # TTL in queue for this build. If provided and the build is enqueued longer
+          # than this value, the build will expire and the build status will be
+          # `EXPIRED`.
+          #
+          # The TTL starts ticking from create_time.
       "createTime": "A String", # Output only. Time at which the request to create the build was received.
       "finishTime": "A String", # Output only. Time at which execution of the build was finished.
           #
@@ -880,12 +966,23 @@ Returns:
               # and the remainder will be used as arguments.
             "A String",
           ],
-          "env": [ # A list of environment variable definitions to be used when running a step.
+          "name": "A String", # Required. The name of the container image that will run this particular
+              # build step.
               #
-              # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-              # being given the value "VALUE".
-            "A String",
-          ],
+              # If the image is available in the host's Docker daemon's cache, it
+              # will be run directly. If not, the host will attempt to pull the image
+              # first, using the builder service account's credentials if necessary.
+              #
+              # The Docker daemon's cache will already have the latest versions of all of
+              # the officially supported build steps
+              # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+              # The Docker daemon will also have cached many of the layers for some popular
+              # images, like "ubuntu", "debian", but they will be refreshed at the time you
+              # attempt to use them.
+              #
+              # If you built an image in a previous build step, it will be stored in the
+              # host's Docker daemon's cache and is available to use as the name for a
+              # later build step.
           "waitFor": [ # The ID(s) of the step(s) that this build step depends on.
               # This build step will not start until all the build steps in `wait_for`
               # have completed successfully. If `wait_for` is empty, this build step will
@@ -903,6 +1000,21 @@ Returns:
           ],
           "entrypoint": "A String", # Entrypoint to be used instead of the build step image's default entrypoint.
               # If unset, the image's default entrypoint is used.
+          "env": [ # A list of environment variable definitions to be used when running a step.
+              #
+              # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+              # being given the value "VALUE".
+            "A String",
+          ],
+          "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
+              # builder image only.
+            "endTime": "A String", # End of time span.
+            "startTime": "A String", # Start of time span.
+          },
+          "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
+            "endTime": "A String", # End of time span.
+            "startTime": "A String", # Start of time span.
+          },
           "volumes": [ # List of volumes to mount into the build step.
               #
               # Each volume is created as an empty volume prior to execution of the
@@ -923,15 +1035,6 @@ Returns:
                   # Docker volumes. Each named volume must be used by at least two build steps.
             },
           ],
-          "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
-            "endTime": "A String", # End of time span.
-            "startTime": "A String", # Start of time span.
-          },
-          "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
-              # builder image only.
-            "endTime": "A String", # End of time span.
-            "startTime": "A String", # Start of time span.
-          },
           "id": "A String", # Unique identifier for this build step, used in `wait_for` to
               # reference this build step as a dependency.
           "dir": "A String", # Working directory to use when running this step's container.
@@ -944,23 +1047,6 @@ Returns:
               # If the build specifies a `RepoSource` with `dir` and a step with a `dir`,
               # which specifies an absolute path, the `RepoSource` `dir` is ignored for
               # the step's execution.
-          "name": "A String", # Required. The name of the container image that will run this particular
-              # build step.
-              #
-              # If the image is available in the host's Docker daemon's cache, it
-              # will be run directly. If not, the host will attempt to pull the image
-              # first, using the builder service account's credentials if necessary.
-              #
-              # The Docker daemon's cache will already have the latest versions of all of
-              # the officially supported build steps
-              # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
-              # The Docker daemon will also have cached many of the layers for some popular
-              # images, like "ubuntu", "debian", but they will be refreshed at the time you
-              # attempt to use them.
-              #
-              # If you built an image in a previous build step, it will be stored in the
-              # host's Docker daemon's cache and is available to use as the name for a
-              # later build step.
         },
       ],
       "timeout": "A String", # Amount of time that this build should be allowed to run, to second
@@ -975,6 +1061,36 @@ Returns:
       "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
         "substitutionOption": "A String", # Option to specify behavior when there is an error in the substitution
             # checks.
+        "machineType": "A String", # Compute Engine machine type on which to run the build.
+        "workerPool": "A String", # Option to specify a `WorkerPool` for the build.
+            # Format: projects/{project}/workerPools/{workerPool}
+            #
+            # This field is experimental.
+        "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+          "A String",
+        ],
+        "env": [ # A list of global environment variable definitions that will exist for all
+            # build steps in this build. If a variable is defined in both globally and in
+            # a build step, the variable will use the build step value.
+            #
+            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+            # being given the value "VALUE".
+          "A String",
+        ],
+        "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
+            # Storage.
+        "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
+            # Key Management Service crypto key. These values must be specified in the
+            # build's `Secret`. These variables will be available to all build steps
+            # in this build.
+          "A String",
+        ],
+        "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
+            # "disk free"; some of the space will be used by the operating system and
+            # build utilities. Also note that this is the minimum disk size that will be
+            # allocated for the build -- the build may run with a larger disk than
+            # requested. At present, the maximum disk size is 1000GB; builds that request
+            # more than the maximum are rejected with an error.
         "logging": "A String", # Option to specify the logging mode, which determines where the logs are
             # stored.
         "volumes": [ # Global list of volumes to mount for ALL build steps
@@ -998,36 +1114,7 @@ Returns:
                 # Docker volumes. Each named volume must be used by at least two build steps.
           },
         ],
-        "workerPool": "A String", # Option to specify a `WorkerPool` for the build. User specifies the pool
-            # with the format "[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]".
-            # This is an experimental field.
-        "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
-            # Storage.
-        "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-          "A String",
-        ],
-        "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
-            # Key Management Service crypto key. These values must be specified in the
-            # build's `Secret`. These variables will be available to all build steps
-            # in this build.
-          "A String",
-        ],
-        "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
-            # "disk free"; some of the space will be used by the operating system and
-            # build utilities. Also note that this is the minimum disk size that will be
-            # allocated for the build -- the build may run with a larger disk than
-            # requested. At present, the maximum disk size is 1000GB; builds that request
-            # more than the maximum are rejected with an error.
-        "env": [ # A list of global environment variable definitions that will exist for all
-            # build steps in this build. If a variable is defined in both globally and in
-            # a build step, the variable will use the build step value.
-            #
-            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-            # being given the value "VALUE".
-          "A String",
-        ],
         "requestedVerifyOption": "A String", # Requested verifiability options.
-        "machineType": "A String", # Compute Engine machine type on which to run the build.
       },
       "logUrl": "A String", # Output only. URL to logs for this build in Google Cloud Console.
     },
@@ -1046,19 +1133,38 @@ Returns:
         # Branch and tag names in trigger templates are interpreted as regular
         # expressions. Any branch or tag change that matches that regular expression
         # will trigger a build.
+        #
+        # Mutually exclusive with `github`.
       "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
           # project ID requesting the build is assumed.
+      "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+          # regex.
       "commitSha": "A String", # Explicit commit SHA to build.
-      "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-          # assumed.
-      "tagName": "A String", # Name of the tag to build.
-      "branchName": "A String", # Name of the branch to build.
+      "substitutions": { # Substitutions to use in a triggered build.
+          # Should only be used with RunBuildTrigger
+        "a_key": "A String",
+      },
+      "repoName": "A String", # Required. Name of the Cloud Source Repository.
+      "tagName": "A String", # Regex matching tags to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
+      "branchName": "A String", # Regex matching branches to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
       "dir": "A String", # Directory, relative to the source root, in which to run the build.
           #
           # This must be a relative path. If a step's `dir` is specified and is an
           # absolute path, this value is ignored for that step's execution.
     },
     "id": "A String", # Output only. Unique identifier of the trigger.
+    "name": "A String", # User-assigned name of the trigger. Must be unique within the project.
+        # Trigger names must meet the following requirements:
+        #
+        # + They must contain only alphanumeric characters and dashes.
+        # + They can be 1-64 characters long.
+        # + They must begin and end with an alphanumeric character.
   }</pre>
 </div>
 
@@ -1069,8 +1175,8 @@ Returns:
 This API is experimental.
 
 Args:
-  projectId: string, ID of the project that owns the trigger. (required)
-  triggerId: string, ID of the `BuildTrigger` to delete. (required)
+  projectId: string, Required. ID of the project that owns the trigger. (required)
+  triggerId: string, Required. ID of the `BuildTrigger` to delete. (required)
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -1098,8 +1204,8 @@ Returns:
 This API is experimental.
 
 Args:
-  projectId: string, ID of the project that owns the trigger. (required)
-  triggerId: string, ID of the `BuildTrigger` to get. (required)
+  projectId: string, Required. ID of the project that owns the trigger. (required)
+  triggerId: string, Required. Identifier (`id` or `name`) of the `BuildTrigger` to get. (required)
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -1112,42 +1218,46 @@ Returns:
       # changes.
     "github": { # GitHubEventsConfig describes the configuration of a trigger that creates a # GitHubEventsConfig describes the configuration of a trigger that creates
         # a build whenever a GitHub event is received.
+        #
+        # Mutually exclusive with `trigger_template`.
         # build whenever a GitHub event is received.
         #
         # This message is experimental.
-      "name": "A String", # Name of the repository.
+      "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
+        "invertRegex": True or False, # When true, only trigger a build if the revision regex does NOT match the
+            # git_ref regex.
+        "tag": "A String", # Regexes matching tags to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+        "branch": "A String", # Regexes matching branches to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+      },
+      "installationId": "A String", # The installationID that emits the GitHub event.
       "pullRequest": { # PullRequestFilter contains filter properties for matching GitHub Pull # filter to match changes in pull requests.
           # Requests.
-        "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository owner or
+        "invertRegex": True or False, # If true, branches that do NOT match the git_ref will trigger a build.
+        "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository admin or
             # collaborator.
         "branch": "A String", # Regex of branches to match.
             #
             # The syntax of the regular expressions accepted is the syntax accepted by
             # RE2 and described at https://github.com/google/re2/wiki/Syntax
       },
-      "owner": "A String", # Owner of the repository.
-      "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
-        "tag": "A String", # Regexes of tags to match.
-            #
-            # The syntax of the regular expressions accepted is the syntax accepted by
-            # RE2 and described at https://github.com/google/re2/wiki/Syntax
-        "branch": "A String", # Regexes of branches to match.
-            #
-            # The syntax of the regular expressions accepted is the syntax accepted by
-            # RE2 and described at https://github.com/google/re2/wiki/Syntax
-      },
-      "installationId": "A String", # The installationID that emmits the GitHub event.
-      "checkSuite": { # A CheckSuiteFilter is a filter that indicates that we should build on all # Output only. Indicates that a build was generated from a check suite
-          # event.
-          # check suite events.
-      },
+      "name": "A String", # Name of the repository. For example: The name for
+          # https://github.com/googlecloudplatform/cloud-builders is "cloud-builders".
+      "owner": "A String", # Owner of the repository. For example: The owner for
+          # https://github.com/googlecloudplatform/cloud-builders is
+          # "googlecloudplatform".
     },
     "description": "A String", # Human-readable description of this trigger.
     "tags": [ # Tags for annotation of a `BuildTrigger`
       "A String",
     ],
     "ignoredFiles": [ # ignored_files and included_files are file glob matches using
-        # http://godoc/pkg/path/filepath#Match extended with support for "**".
+        # https://golang.org/pkg/path/filepath/#Match extended with support for "**".
         #
         # If ignored_files and changed files are both empty, then they are
         # not used to determine whether or not to trigger a build.
@@ -1160,7 +1270,9 @@ Returns:
     "filename": "A String", # Path, from the source root, to a file whose contents is used for the
         # template.
     "createTime": "A String", # Output only. Time when the trigger was created.
-    "substitutions": { # Substitutions data for Build resource.
+    "substitutions": { # Substitutions for Build resource. The keys must match the following
+        # regular expression: `^_[A-Z0-9_]+$`.The keys cannot conflict with the
+        # keys in bindings.
       "a_key": "A String",
     },
     "disabled": True or False, # If true, the trigger will never result in a build.
@@ -1218,11 +1330,22 @@ Returns:
             # revisions resolved.
           "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
               # project ID requesting the build is assumed.
+          "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+              # regex.
           "commitSha": "A String", # Explicit commit SHA to build.
-          "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-              # assumed.
-          "tagName": "A String", # Name of the tag to build.
-          "branchName": "A String", # Name of the branch to build.
+          "substitutions": { # Substitutions to use in a triggered build.
+              # Should only be used with RunBuildTrigger
+            "a_key": "A String",
+          },
+          "repoName": "A String", # Required. Name of the Cloud Source Repository.
+          "tagName": "A String", # Regex matching tags to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
+          "branchName": "A String", # Regex matching branches to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
           "dir": "A String", # Directory, relative to the source root, in which to run the build.
               #
               # This must be a relative path. If a step's `dir` is specified and is an
@@ -1324,11 +1447,22 @@ Returns:
             # Repository.
           "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
               # project ID requesting the build is assumed.
+          "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+              # regex.
           "commitSha": "A String", # Explicit commit SHA to build.
-          "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-              # assumed.
-          "tagName": "A String", # Name of the tag to build.
-          "branchName": "A String", # Name of the branch to build.
+          "substitutions": { # Substitutions to use in a triggered build.
+              # Should only be used with RunBuildTrigger
+            "a_key": "A String",
+          },
+          "repoName": "A String", # Required. Name of the Cloud Source Repository.
+          "tagName": "A String", # Regex matching tags to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
+          "branchName": "A String", # Regex matching branches to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
           "dir": "A String", # Directory, relative to the source root, in which to run the build.
               #
               # This must be a relative path. If a step's `dir` is specified and is an
@@ -1366,6 +1500,11 @@ Returns:
           "startTime": "A String", # Start of time span.
         },
       },
+      "queueTtl": "A String", # TTL in queue for this build. If provided and the build is enqueued longer
+          # than this value, the build will expire and the build status will be
+          # `EXPIRED`.
+          #
+          # The TTL starts ticking from create_time.
       "createTime": "A String", # Output only. Time at which the request to create the build was received.
       "finishTime": "A String", # Output only. Time at which execution of the build was finished.
           #
@@ -1400,12 +1539,23 @@ Returns:
               # and the remainder will be used as arguments.
             "A String",
           ],
-          "env": [ # A list of environment variable definitions to be used when running a step.
+          "name": "A String", # Required. The name of the container image that will run this particular
+              # build step.
               #
-              # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-              # being given the value "VALUE".
-            "A String",
-          ],
+              # If the image is available in the host's Docker daemon's cache, it
+              # will be run directly. If not, the host will attempt to pull the image
+              # first, using the builder service account's credentials if necessary.
+              #
+              # The Docker daemon's cache will already have the latest versions of all of
+              # the officially supported build steps
+              # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+              # The Docker daemon will also have cached many of the layers for some popular
+              # images, like "ubuntu", "debian", but they will be refreshed at the time you
+              # attempt to use them.
+              #
+              # If you built an image in a previous build step, it will be stored in the
+              # host's Docker daemon's cache and is available to use as the name for a
+              # later build step.
           "waitFor": [ # The ID(s) of the step(s) that this build step depends on.
               # This build step will not start until all the build steps in `wait_for`
               # have completed successfully. If `wait_for` is empty, this build step will
@@ -1423,6 +1573,21 @@ Returns:
           ],
           "entrypoint": "A String", # Entrypoint to be used instead of the build step image's default entrypoint.
               # If unset, the image's default entrypoint is used.
+          "env": [ # A list of environment variable definitions to be used when running a step.
+              #
+              # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+              # being given the value "VALUE".
+            "A String",
+          ],
+          "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
+              # builder image only.
+            "endTime": "A String", # End of time span.
+            "startTime": "A String", # Start of time span.
+          },
+          "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
+            "endTime": "A String", # End of time span.
+            "startTime": "A String", # Start of time span.
+          },
           "volumes": [ # List of volumes to mount into the build step.
               #
               # Each volume is created as an empty volume prior to execution of the
@@ -1443,15 +1608,6 @@ Returns:
                   # Docker volumes. Each named volume must be used by at least two build steps.
             },
           ],
-          "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
-            "endTime": "A String", # End of time span.
-            "startTime": "A String", # Start of time span.
-          },
-          "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
-              # builder image only.
-            "endTime": "A String", # End of time span.
-            "startTime": "A String", # Start of time span.
-          },
           "id": "A String", # Unique identifier for this build step, used in `wait_for` to
               # reference this build step as a dependency.
           "dir": "A String", # Working directory to use when running this step's container.
@@ -1464,23 +1620,6 @@ Returns:
               # If the build specifies a `RepoSource` with `dir` and a step with a `dir`,
               # which specifies an absolute path, the `RepoSource` `dir` is ignored for
               # the step's execution.
-          "name": "A String", # Required. The name of the container image that will run this particular
-              # build step.
-              #
-              # If the image is available in the host's Docker daemon's cache, it
-              # will be run directly. If not, the host will attempt to pull the image
-              # first, using the builder service account's credentials if necessary.
-              #
-              # The Docker daemon's cache will already have the latest versions of all of
-              # the officially supported build steps
-              # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
-              # The Docker daemon will also have cached many of the layers for some popular
-              # images, like "ubuntu", "debian", but they will be refreshed at the time you
-              # attempt to use them.
-              #
-              # If you built an image in a previous build step, it will be stored in the
-              # host's Docker daemon's cache and is available to use as the name for a
-              # later build step.
         },
       ],
       "timeout": "A String", # Amount of time that this build should be allowed to run, to second
@@ -1495,6 +1634,36 @@ Returns:
       "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
         "substitutionOption": "A String", # Option to specify behavior when there is an error in the substitution
             # checks.
+        "machineType": "A String", # Compute Engine machine type on which to run the build.
+        "workerPool": "A String", # Option to specify a `WorkerPool` for the build.
+            # Format: projects/{project}/workerPools/{workerPool}
+            #
+            # This field is experimental.
+        "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+          "A String",
+        ],
+        "env": [ # A list of global environment variable definitions that will exist for all
+            # build steps in this build. If a variable is defined in both globally and in
+            # a build step, the variable will use the build step value.
+            #
+            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+            # being given the value "VALUE".
+          "A String",
+        ],
+        "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
+            # Storage.
+        "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
+            # Key Management Service crypto key. These values must be specified in the
+            # build's `Secret`. These variables will be available to all build steps
+            # in this build.
+          "A String",
+        ],
+        "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
+            # "disk free"; some of the space will be used by the operating system and
+            # build utilities. Also note that this is the minimum disk size that will be
+            # allocated for the build -- the build may run with a larger disk than
+            # requested. At present, the maximum disk size is 1000GB; builds that request
+            # more than the maximum are rejected with an error.
         "logging": "A String", # Option to specify the logging mode, which determines where the logs are
             # stored.
         "volumes": [ # Global list of volumes to mount for ALL build steps
@@ -1518,36 +1687,7 @@ Returns:
                 # Docker volumes. Each named volume must be used by at least two build steps.
           },
         ],
-        "workerPool": "A String", # Option to specify a `WorkerPool` for the build. User specifies the pool
-            # with the format "[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]".
-            # This is an experimental field.
-        "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
-            # Storage.
-        "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-          "A String",
-        ],
-        "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
-            # Key Management Service crypto key. These values must be specified in the
-            # build's `Secret`. These variables will be available to all build steps
-            # in this build.
-          "A String",
-        ],
-        "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
-            # "disk free"; some of the space will be used by the operating system and
-            # build utilities. Also note that this is the minimum disk size that will be
-            # allocated for the build -- the build may run with a larger disk than
-            # requested. At present, the maximum disk size is 1000GB; builds that request
-            # more than the maximum are rejected with an error.
-        "env": [ # A list of global environment variable definitions that will exist for all
-            # build steps in this build. If a variable is defined in both globally and in
-            # a build step, the variable will use the build step value.
-            #
-            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-            # being given the value "VALUE".
-          "A String",
-        ],
         "requestedVerifyOption": "A String", # Requested verifiability options.
-        "machineType": "A String", # Compute Engine machine type on which to run the build.
       },
       "logUrl": "A String", # Output only. URL to logs for this build in Google Cloud Console.
     },
@@ -1566,19 +1706,38 @@ Returns:
         # Branch and tag names in trigger templates are interpreted as regular
         # expressions. Any branch or tag change that matches that regular expression
         # will trigger a build.
+        #
+        # Mutually exclusive with `github`.
       "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
           # project ID requesting the build is assumed.
+      "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+          # regex.
       "commitSha": "A String", # Explicit commit SHA to build.
-      "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-          # assumed.
-      "tagName": "A String", # Name of the tag to build.
-      "branchName": "A String", # Name of the branch to build.
+      "substitutions": { # Substitutions to use in a triggered build.
+          # Should only be used with RunBuildTrigger
+        "a_key": "A String",
+      },
+      "repoName": "A String", # Required. Name of the Cloud Source Repository.
+      "tagName": "A String", # Regex matching tags to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
+      "branchName": "A String", # Regex matching branches to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
       "dir": "A String", # Directory, relative to the source root, in which to run the build.
           #
           # This must be a relative path. If a step's `dir` is specified and is an
           # absolute path, this value is ignored for that step's execution.
     },
     "id": "A String", # Output only. Unique identifier of the trigger.
+    "name": "A String", # User-assigned name of the trigger. Must be unique within the project.
+        # Trigger names must meet the following requirements:
+        #
+        # + They must contain only alphanumeric characters and dashes.
+        # + They can be 1-64 characters long.
+        # + They must begin and end with an alphanumeric character.
   }</pre>
 </div>
 
@@ -1589,7 +1748,7 @@ Returns:
 This API is experimental.
 
 Args:
-  projectId: string, ID of the project for which to list BuildTriggers. (required)
+  projectId: string, Required. ID of the project for which to list BuildTriggers. (required)
   pageSize: integer, Number of results to return in the list.
   pageToken: string, Token to provide to skip to a particular spot in the list.
   x__xgafv: string, V1 error format.
@@ -1607,42 +1766,46 @@ Returns:
           # changes.
         "github": { # GitHubEventsConfig describes the configuration of a trigger that creates a # GitHubEventsConfig describes the configuration of a trigger that creates
             # a build whenever a GitHub event is received.
+            #
+            # Mutually exclusive with `trigger_template`.
             # build whenever a GitHub event is received.
             #
             # This message is experimental.
-          "name": "A String", # Name of the repository.
+          "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
+            "invertRegex": True or False, # When true, only trigger a build if the revision regex does NOT match the
+                # git_ref regex.
+            "tag": "A String", # Regexes matching tags to build.
+                #
+                # The syntax of the regular expressions accepted is the syntax accepted by
+                # RE2 and described at https://github.com/google/re2/wiki/Syntax
+            "branch": "A String", # Regexes matching branches to build.
+                #
+                # The syntax of the regular expressions accepted is the syntax accepted by
+                # RE2 and described at https://github.com/google/re2/wiki/Syntax
+          },
+          "installationId": "A String", # The installationID that emits the GitHub event.
           "pullRequest": { # PullRequestFilter contains filter properties for matching GitHub Pull # filter to match changes in pull requests.
               # Requests.
-            "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository owner or
+            "invertRegex": True or False, # If true, branches that do NOT match the git_ref will trigger a build.
+            "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository admin or
                 # collaborator.
             "branch": "A String", # Regex of branches to match.
                 #
                 # The syntax of the regular expressions accepted is the syntax accepted by
                 # RE2 and described at https://github.com/google/re2/wiki/Syntax
           },
-          "owner": "A String", # Owner of the repository.
-          "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
-            "tag": "A String", # Regexes of tags to match.
-                #
-                # The syntax of the regular expressions accepted is the syntax accepted by
-                # RE2 and described at https://github.com/google/re2/wiki/Syntax
-            "branch": "A String", # Regexes of branches to match.
-                #
-                # The syntax of the regular expressions accepted is the syntax accepted by
-                # RE2 and described at https://github.com/google/re2/wiki/Syntax
-          },
-          "installationId": "A String", # The installationID that emmits the GitHub event.
-          "checkSuite": { # A CheckSuiteFilter is a filter that indicates that we should build on all # Output only. Indicates that a build was generated from a check suite
-              # event.
-              # check suite events.
-          },
+          "name": "A String", # Name of the repository. For example: The name for
+              # https://github.com/googlecloudplatform/cloud-builders is "cloud-builders".
+          "owner": "A String", # Owner of the repository. For example: The owner for
+              # https://github.com/googlecloudplatform/cloud-builders is
+              # "googlecloudplatform".
         },
         "description": "A String", # Human-readable description of this trigger.
         "tags": [ # Tags for annotation of a `BuildTrigger`
           "A String",
         ],
         "ignoredFiles": [ # ignored_files and included_files are file glob matches using
-            # http://godoc/pkg/path/filepath#Match extended with support for "**".
+            # https://golang.org/pkg/path/filepath/#Match extended with support for "**".
             #
             # If ignored_files and changed files are both empty, then they are
             # not used to determine whether or not to trigger a build.
@@ -1655,7 +1818,9 @@ Returns:
         "filename": "A String", # Path, from the source root, to a file whose contents is used for the
             # template.
         "createTime": "A String", # Output only. Time when the trigger was created.
-        "substitutions": { # Substitutions data for Build resource.
+        "substitutions": { # Substitutions for Build resource. The keys must match the following
+            # regular expression: `^_[A-Z0-9_]+$`.The keys cannot conflict with the
+            # keys in bindings.
           "a_key": "A String",
         },
         "disabled": True or False, # If true, the trigger will never result in a build.
@@ -1713,11 +1878,22 @@ Returns:
                 # revisions resolved.
               "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
                   # project ID requesting the build is assumed.
+              "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+                  # regex.
               "commitSha": "A String", # Explicit commit SHA to build.
-              "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-                  # assumed.
-              "tagName": "A String", # Name of the tag to build.
-              "branchName": "A String", # Name of the branch to build.
+              "substitutions": { # Substitutions to use in a triggered build.
+                  # Should only be used with RunBuildTrigger
+                "a_key": "A String",
+              },
+              "repoName": "A String", # Required. Name of the Cloud Source Repository.
+              "tagName": "A String", # Regex matching tags to build.
+                  #
+                  # The syntax of the regular expressions accepted is the syntax accepted by
+                  # RE2 and described at https://github.com/google/re2/wiki/Syntax
+              "branchName": "A String", # Regex matching branches to build.
+                  #
+                  # The syntax of the regular expressions accepted is the syntax accepted by
+                  # RE2 and described at https://github.com/google/re2/wiki/Syntax
               "dir": "A String", # Directory, relative to the source root, in which to run the build.
                   #
                   # This must be a relative path. If a step's `dir` is specified and is an
@@ -1819,11 +1995,22 @@ Returns:
                 # Repository.
               "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
                   # project ID requesting the build is assumed.
+              "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+                  # regex.
               "commitSha": "A String", # Explicit commit SHA to build.
-              "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-                  # assumed.
-              "tagName": "A String", # Name of the tag to build.
-              "branchName": "A String", # Name of the branch to build.
+              "substitutions": { # Substitutions to use in a triggered build.
+                  # Should only be used with RunBuildTrigger
+                "a_key": "A String",
+              },
+              "repoName": "A String", # Required. Name of the Cloud Source Repository.
+              "tagName": "A String", # Regex matching tags to build.
+                  #
+                  # The syntax of the regular expressions accepted is the syntax accepted by
+                  # RE2 and described at https://github.com/google/re2/wiki/Syntax
+              "branchName": "A String", # Regex matching branches to build.
+                  #
+                  # The syntax of the regular expressions accepted is the syntax accepted by
+                  # RE2 and described at https://github.com/google/re2/wiki/Syntax
               "dir": "A String", # Directory, relative to the source root, in which to run the build.
                   #
                   # This must be a relative path. If a step's `dir` is specified and is an
@@ -1861,6 +2048,11 @@ Returns:
               "startTime": "A String", # Start of time span.
             },
           },
+          "queueTtl": "A String", # TTL in queue for this build. If provided and the build is enqueued longer
+              # than this value, the build will expire and the build status will be
+              # `EXPIRED`.
+              #
+              # The TTL starts ticking from create_time.
           "createTime": "A String", # Output only. Time at which the request to create the build was received.
           "finishTime": "A String", # Output only. Time at which execution of the build was finished.
               #
@@ -1895,12 +2087,23 @@ Returns:
                   # and the remainder will be used as arguments.
                 "A String",
               ],
-              "env": [ # A list of environment variable definitions to be used when running a step.
+              "name": "A String", # Required. The name of the container image that will run this particular
+                  # build step.
                   #
-                  # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-                  # being given the value "VALUE".
-                "A String",
-              ],
+                  # If the image is available in the host's Docker daemon's cache, it
+                  # will be run directly. If not, the host will attempt to pull the image
+                  # first, using the builder service account's credentials if necessary.
+                  #
+                  # The Docker daemon's cache will already have the latest versions of all of
+                  # the officially supported build steps
+                  # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+                  # The Docker daemon will also have cached many of the layers for some popular
+                  # images, like "ubuntu", "debian", but they will be refreshed at the time you
+                  # attempt to use them.
+                  #
+                  # If you built an image in a previous build step, it will be stored in the
+                  # host's Docker daemon's cache and is available to use as the name for a
+                  # later build step.
               "waitFor": [ # The ID(s) of the step(s) that this build step depends on.
                   # This build step will not start until all the build steps in `wait_for`
                   # have completed successfully. If `wait_for` is empty, this build step will
@@ -1918,6 +2121,21 @@ Returns:
               ],
               "entrypoint": "A String", # Entrypoint to be used instead of the build step image's default entrypoint.
                   # If unset, the image's default entrypoint is used.
+              "env": [ # A list of environment variable definitions to be used when running a step.
+                  #
+                  # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+                  # being given the value "VALUE".
+                "A String",
+              ],
+              "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
+                  # builder image only.
+                "endTime": "A String", # End of time span.
+                "startTime": "A String", # Start of time span.
+              },
+              "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
+                "endTime": "A String", # End of time span.
+                "startTime": "A String", # Start of time span.
+              },
               "volumes": [ # List of volumes to mount into the build step.
                   #
                   # Each volume is created as an empty volume prior to execution of the
@@ -1938,15 +2156,6 @@ Returns:
                       # Docker volumes. Each named volume must be used by at least two build steps.
                 },
               ],
-              "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
-                "endTime": "A String", # End of time span.
-                "startTime": "A String", # Start of time span.
-              },
-              "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
-                  # builder image only.
-                "endTime": "A String", # End of time span.
-                "startTime": "A String", # Start of time span.
-              },
               "id": "A String", # Unique identifier for this build step, used in `wait_for` to
                   # reference this build step as a dependency.
               "dir": "A String", # Working directory to use when running this step's container.
@@ -1959,23 +2168,6 @@ Returns:
                   # If the build specifies a `RepoSource` with `dir` and a step with a `dir`,
                   # which specifies an absolute path, the `RepoSource` `dir` is ignored for
                   # the step's execution.
-              "name": "A String", # Required. The name of the container image that will run this particular
-                  # build step.
-                  #
-                  # If the image is available in the host's Docker daemon's cache, it
-                  # will be run directly. If not, the host will attempt to pull the image
-                  # first, using the builder service account's credentials if necessary.
-                  #
-                  # The Docker daemon's cache will already have the latest versions of all of
-                  # the officially supported build steps
-                  # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
-                  # The Docker daemon will also have cached many of the layers for some popular
-                  # images, like "ubuntu", "debian", but they will be refreshed at the time you
-                  # attempt to use them.
-                  #
-                  # If you built an image in a previous build step, it will be stored in the
-                  # host's Docker daemon's cache and is available to use as the name for a
-                  # later build step.
             },
           ],
           "timeout": "A String", # Amount of time that this build should be allowed to run, to second
@@ -1990,6 +2182,36 @@ Returns:
           "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
             "substitutionOption": "A String", # Option to specify behavior when there is an error in the substitution
                 # checks.
+            "machineType": "A String", # Compute Engine machine type on which to run the build.
+            "workerPool": "A String", # Option to specify a `WorkerPool` for the build.
+                # Format: projects/{project}/workerPools/{workerPool}
+                #
+                # This field is experimental.
+            "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+              "A String",
+            ],
+            "env": [ # A list of global environment variable definitions that will exist for all
+                # build steps in this build. If a variable is defined in both globally and in
+                # a build step, the variable will use the build step value.
+                #
+                # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+                # being given the value "VALUE".
+              "A String",
+            ],
+            "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
+                # Storage.
+            "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
+                # Key Management Service crypto key. These values must be specified in the
+                # build's `Secret`. These variables will be available to all build steps
+                # in this build.
+              "A String",
+            ],
+            "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
+                # "disk free"; some of the space will be used by the operating system and
+                # build utilities. Also note that this is the minimum disk size that will be
+                # allocated for the build -- the build may run with a larger disk than
+                # requested. At present, the maximum disk size is 1000GB; builds that request
+                # more than the maximum are rejected with an error.
             "logging": "A String", # Option to specify the logging mode, which determines where the logs are
                 # stored.
             "volumes": [ # Global list of volumes to mount for ALL build steps
@@ -2013,36 +2235,7 @@ Returns:
                     # Docker volumes. Each named volume must be used by at least two build steps.
               },
             ],
-            "workerPool": "A String", # Option to specify a `WorkerPool` for the build. User specifies the pool
-                # with the format "[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]".
-                # This is an experimental field.
-            "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
-                # Storage.
-            "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-              "A String",
-            ],
-            "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
-                # Key Management Service crypto key. These values must be specified in the
-                # build's `Secret`. These variables will be available to all build steps
-                # in this build.
-              "A String",
-            ],
-            "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
-                # "disk free"; some of the space will be used by the operating system and
-                # build utilities. Also note that this is the minimum disk size that will be
-                # allocated for the build -- the build may run with a larger disk than
-                # requested. At present, the maximum disk size is 1000GB; builds that request
-                # more than the maximum are rejected with an error.
-            "env": [ # A list of global environment variable definitions that will exist for all
-                # build steps in this build. If a variable is defined in both globally and in
-                # a build step, the variable will use the build step value.
-                #
-                # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-                # being given the value "VALUE".
-              "A String",
-            ],
             "requestedVerifyOption": "A String", # Requested verifiability options.
-            "machineType": "A String", # Compute Engine machine type on which to run the build.
           },
           "logUrl": "A String", # Output only. URL to logs for this build in Google Cloud Console.
         },
@@ -2061,19 +2254,38 @@ Returns:
             # Branch and tag names in trigger templates are interpreted as regular
             # expressions. Any branch or tag change that matches that regular expression
             # will trigger a build.
+            #
+            # Mutually exclusive with `github`.
           "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
               # project ID requesting the build is assumed.
+          "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+              # regex.
           "commitSha": "A String", # Explicit commit SHA to build.
-          "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-              # assumed.
-          "tagName": "A String", # Name of the tag to build.
-          "branchName": "A String", # Name of the branch to build.
+          "substitutions": { # Substitutions to use in a triggered build.
+              # Should only be used with RunBuildTrigger
+            "a_key": "A String",
+          },
+          "repoName": "A String", # Required. Name of the Cloud Source Repository.
+          "tagName": "A String", # Regex matching tags to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
+          "branchName": "A String", # Regex matching branches to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
           "dir": "A String", # Directory, relative to the source root, in which to run the build.
               #
               # This must be a relative path. If a step's `dir` is specified and is an
               # absolute path, this value is ignored for that step's execution.
         },
         "id": "A String", # Output only. Unique identifier of the trigger.
+        "name": "A String", # User-assigned name of the trigger. Must be unique within the project.
+            # Trigger names must meet the following requirements:
+            #
+            # + They must contain only alphanumeric characters and dashes.
+            # + They can be 1-64 characters long.
+            # + They must begin and end with an alphanumeric character.
       },
     ],
   }</pre>
@@ -2094,57 +2306,61 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="patch">patch(projectId, triggerId, body, x__xgafv=None)</code>
+    <code class="details" id="patch">patch(projectId, triggerId, body=None, x__xgafv=None)</code>
   <pre>Updates a `BuildTrigger` by its project ID and trigger ID.
 
 This API is experimental.
 
 Args:
-  projectId: string, ID of the project that owns the trigger. (required)
-  triggerId: string, ID of the `BuildTrigger` to update. (required)
-  body: object, The request body. (required)
+  projectId: string, Required. ID of the project that owns the trigger. (required)
+  triggerId: string, Required. ID of the `BuildTrigger` to update. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Configuration for an automated build in response to source repository
     # changes.
   "github": { # GitHubEventsConfig describes the configuration of a trigger that creates a # GitHubEventsConfig describes the configuration of a trigger that creates
       # a build whenever a GitHub event is received.
+      # 
+      # Mutually exclusive with `trigger_template`.
       # build whenever a GitHub event is received.
       #
       # This message is experimental.
-    "name": "A String", # Name of the repository.
+    "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
+      "invertRegex": True or False, # When true, only trigger a build if the revision regex does NOT match the
+          # git_ref regex.
+      "tag": "A String", # Regexes matching tags to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
+      "branch": "A String", # Regexes matching branches to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
+    },
+    "installationId": "A String", # The installationID that emits the GitHub event.
     "pullRequest": { # PullRequestFilter contains filter properties for matching GitHub Pull # filter to match changes in pull requests.
         # Requests.
-      "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository owner or
+      "invertRegex": True or False, # If true, branches that do NOT match the git_ref will trigger a build.
+      "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository admin or
           # collaborator.
       "branch": "A String", # Regex of branches to match.
           #
           # The syntax of the regular expressions accepted is the syntax accepted by
           # RE2 and described at https://github.com/google/re2/wiki/Syntax
     },
-    "owner": "A String", # Owner of the repository.
-    "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
-      "tag": "A String", # Regexes of tags to match.
-          #
-          # The syntax of the regular expressions accepted is the syntax accepted by
-          # RE2 and described at https://github.com/google/re2/wiki/Syntax
-      "branch": "A String", # Regexes of branches to match.
-          #
-          # The syntax of the regular expressions accepted is the syntax accepted by
-          # RE2 and described at https://github.com/google/re2/wiki/Syntax
-    },
-    "installationId": "A String", # The installationID that emmits the GitHub event.
-    "checkSuite": { # A CheckSuiteFilter is a filter that indicates that we should build on all # Output only. Indicates that a build was generated from a check suite
-        # event.
-        # check suite events.
-    },
+    "name": "A String", # Name of the repository. For example: The name for
+        # https://github.com/googlecloudplatform/cloud-builders is "cloud-builders".
+    "owner": "A String", # Owner of the repository. For example: The owner for
+        # https://github.com/googlecloudplatform/cloud-builders is
+        # "googlecloudplatform".
   },
   "description": "A String", # Human-readable description of this trigger.
   "tags": [ # Tags for annotation of a `BuildTrigger`
     "A String",
   ],
   "ignoredFiles": [ # ignored_files and included_files are file glob matches using
-      # http://godoc/pkg/path/filepath#Match extended with support for "**".
+      # https://golang.org/pkg/path/filepath/#Match extended with support for "**".
       # 
       # If ignored_files and changed files are both empty, then they are
       # not used to determine whether or not to trigger a build.
@@ -2157,7 +2373,9 @@ Args:
   "filename": "A String", # Path, from the source root, to a file whose contents is used for the
       # template.
   "createTime": "A String", # Output only. Time when the trigger was created.
-  "substitutions": { # Substitutions data for Build resource.
+  "substitutions": { # Substitutions for Build resource. The keys must match the following
+      # regular expression: `^_[A-Z0-9_]+$`.The keys cannot conflict with the
+      # keys in bindings.
     "a_key": "A String",
   },
   "disabled": True or False, # If true, the trigger will never result in a build.
@@ -2215,11 +2433,22 @@ Args:
           # revisions resolved.
         "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
             # project ID requesting the build is assumed.
+        "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+            # regex.
         "commitSha": "A String", # Explicit commit SHA to build.
-        "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-            # assumed.
-        "tagName": "A String", # Name of the tag to build.
-        "branchName": "A String", # Name of the branch to build.
+        "substitutions": { # Substitutions to use in a triggered build.
+            # Should only be used with RunBuildTrigger
+          "a_key": "A String",
+        },
+        "repoName": "A String", # Required. Name of the Cloud Source Repository.
+        "tagName": "A String", # Regex matching tags to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+        "branchName": "A String", # Regex matching branches to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
         "dir": "A String", # Directory, relative to the source root, in which to run the build.
             #
             # This must be a relative path. If a step's `dir` is specified and is an
@@ -2321,11 +2550,22 @@ Args:
           # Repository.
         "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
             # project ID requesting the build is assumed.
+        "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+            # regex.
         "commitSha": "A String", # Explicit commit SHA to build.
-        "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-            # assumed.
-        "tagName": "A String", # Name of the tag to build.
-        "branchName": "A String", # Name of the branch to build.
+        "substitutions": { # Substitutions to use in a triggered build.
+            # Should only be used with RunBuildTrigger
+          "a_key": "A String",
+        },
+        "repoName": "A String", # Required. Name of the Cloud Source Repository.
+        "tagName": "A String", # Regex matching tags to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+        "branchName": "A String", # Regex matching branches to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
         "dir": "A String", # Directory, relative to the source root, in which to run the build.
             #
             # This must be a relative path. If a step's `dir` is specified and is an
@@ -2363,6 +2603,11 @@ Args:
         "startTime": "A String", # Start of time span.
       },
     },
+    "queueTtl": "A String", # TTL in queue for this build. If provided and the build is enqueued longer
+        # than this value, the build will expire and the build status will be
+        # `EXPIRED`.
+        #
+        # The TTL starts ticking from create_time.
     "createTime": "A String", # Output only. Time at which the request to create the build was received.
     "finishTime": "A String", # Output only. Time at which execution of the build was finished.
         #
@@ -2397,12 +2642,23 @@ Args:
             # and the remainder will be used as arguments.
           "A String",
         ],
-        "env": [ # A list of environment variable definitions to be used when running a step.
+        "name": "A String", # Required. The name of the container image that will run this particular
+            # build step.
             #
-            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-            # being given the value "VALUE".
-          "A String",
-        ],
+            # If the image is available in the host's Docker daemon's cache, it
+            # will be run directly. If not, the host will attempt to pull the image
+            # first, using the builder service account's credentials if necessary.
+            #
+            # The Docker daemon's cache will already have the latest versions of all of
+            # the officially supported build steps
+            # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+            # The Docker daemon will also have cached many of the layers for some popular
+            # images, like "ubuntu", "debian", but they will be refreshed at the time you
+            # attempt to use them.
+            #
+            # If you built an image in a previous build step, it will be stored in the
+            # host's Docker daemon's cache and is available to use as the name for a
+            # later build step.
         "waitFor": [ # The ID(s) of the step(s) that this build step depends on.
             # This build step will not start until all the build steps in `wait_for`
             # have completed successfully. If `wait_for` is empty, this build step will
@@ -2420,6 +2676,21 @@ Args:
         ],
         "entrypoint": "A String", # Entrypoint to be used instead of the build step image's default entrypoint.
             # If unset, the image's default entrypoint is used.
+        "env": [ # A list of environment variable definitions to be used when running a step.
+            #
+            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+            # being given the value "VALUE".
+          "A String",
+        ],
+        "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
+            # builder image only.
+          "endTime": "A String", # End of time span.
+          "startTime": "A String", # Start of time span.
+        },
+        "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
+          "endTime": "A String", # End of time span.
+          "startTime": "A String", # Start of time span.
+        },
         "volumes": [ # List of volumes to mount into the build step.
             #
             # Each volume is created as an empty volume prior to execution of the
@@ -2440,15 +2711,6 @@ Args:
                 # Docker volumes. Each named volume must be used by at least two build steps.
           },
         ],
-        "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
-          "endTime": "A String", # End of time span.
-          "startTime": "A String", # Start of time span.
-        },
-        "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
-            # builder image only.
-          "endTime": "A String", # End of time span.
-          "startTime": "A String", # Start of time span.
-        },
         "id": "A String", # Unique identifier for this build step, used in `wait_for` to
             # reference this build step as a dependency.
         "dir": "A String", # Working directory to use when running this step's container.
@@ -2461,23 +2723,6 @@ Args:
             # If the build specifies a `RepoSource` with `dir` and a step with a `dir`,
             # which specifies an absolute path, the `RepoSource` `dir` is ignored for
             # the step's execution.
-        "name": "A String", # Required. The name of the container image that will run this particular
-            # build step.
-            #
-            # If the image is available in the host's Docker daemon's cache, it
-            # will be run directly. If not, the host will attempt to pull the image
-            # first, using the builder service account's credentials if necessary.
-            #
-            # The Docker daemon's cache will already have the latest versions of all of
-            # the officially supported build steps
-            # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
-            # The Docker daemon will also have cached many of the layers for some popular
-            # images, like "ubuntu", "debian", but they will be refreshed at the time you
-            # attempt to use them.
-            #
-            # If you built an image in a previous build step, it will be stored in the
-            # host's Docker daemon's cache and is available to use as the name for a
-            # later build step.
       },
     ],
     "timeout": "A String", # Amount of time that this build should be allowed to run, to second
@@ -2492,6 +2737,36 @@ Args:
     "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
       "substitutionOption": "A String", # Option to specify behavior when there is an error in the substitution
           # checks.
+      "machineType": "A String", # Compute Engine machine type on which to run the build.
+      "workerPool": "A String", # Option to specify a `WorkerPool` for the build.
+          # Format: projects/{project}/workerPools/{workerPool}
+          #
+          # This field is experimental.
+      "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+        "A String",
+      ],
+      "env": [ # A list of global environment variable definitions that will exist for all
+          # build steps in this build. If a variable is defined in both globally and in
+          # a build step, the variable will use the build step value.
+          #
+          # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+          # being given the value "VALUE".
+        "A String",
+      ],
+      "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
+          # Storage.
+      "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
+          # Key Management Service crypto key. These values must be specified in the
+          # build's `Secret`. These variables will be available to all build steps
+          # in this build.
+        "A String",
+      ],
+      "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
+          # "disk free"; some of the space will be used by the operating system and
+          # build utilities. Also note that this is the minimum disk size that will be
+          # allocated for the build -- the build may run with a larger disk than
+          # requested. At present, the maximum disk size is 1000GB; builds that request
+          # more than the maximum are rejected with an error.
       "logging": "A String", # Option to specify the logging mode, which determines where the logs are
           # stored.
       "volumes": [ # Global list of volumes to mount for ALL build steps
@@ -2515,36 +2790,7 @@ Args:
               # Docker volumes. Each named volume must be used by at least two build steps.
         },
       ],
-      "workerPool": "A String", # Option to specify a `WorkerPool` for the build. User specifies the pool
-          # with the format "[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]".
-          # This is an experimental field.
-      "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
-          # Storage.
-      "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-        "A String",
-      ],
-      "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
-          # Key Management Service crypto key. These values must be specified in the
-          # build's `Secret`. These variables will be available to all build steps
-          # in this build.
-        "A String",
-      ],
-      "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
-          # "disk free"; some of the space will be used by the operating system and
-          # build utilities. Also note that this is the minimum disk size that will be
-          # allocated for the build -- the build may run with a larger disk than
-          # requested. At present, the maximum disk size is 1000GB; builds that request
-          # more than the maximum are rejected with an error.
-      "env": [ # A list of global environment variable definitions that will exist for all
-          # build steps in this build. If a variable is defined in both globally and in
-          # a build step, the variable will use the build step value.
-          #
-          # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-          # being given the value "VALUE".
-        "A String",
-      ],
       "requestedVerifyOption": "A String", # Requested verifiability options.
-      "machineType": "A String", # Compute Engine machine type on which to run the build.
     },
     "logUrl": "A String", # Output only. URL to logs for this build in Google Cloud Console.
   },
@@ -2563,19 +2809,38 @@ Args:
       # Branch and tag names in trigger templates are interpreted as regular
       # expressions. Any branch or tag change that matches that regular expression
       # will trigger a build.
+      # 
+      # Mutually exclusive with `github`.
     "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
         # project ID requesting the build is assumed.
+    "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+        # regex.
     "commitSha": "A String", # Explicit commit SHA to build.
-    "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-        # assumed.
-    "tagName": "A String", # Name of the tag to build.
-    "branchName": "A String", # Name of the branch to build.
+    "substitutions": { # Substitutions to use in a triggered build.
+        # Should only be used with RunBuildTrigger
+      "a_key": "A String",
+    },
+    "repoName": "A String", # Required. Name of the Cloud Source Repository.
+    "tagName": "A String", # Regex matching tags to build.
+        #
+        # The syntax of the regular expressions accepted is the syntax accepted by
+        # RE2 and described at https://github.com/google/re2/wiki/Syntax
+    "branchName": "A String", # Regex matching branches to build.
+        #
+        # The syntax of the regular expressions accepted is the syntax accepted by
+        # RE2 and described at https://github.com/google/re2/wiki/Syntax
     "dir": "A String", # Directory, relative to the source root, in which to run the build.
         #
         # This must be a relative path. If a step's `dir` is specified and is an
         # absolute path, this value is ignored for that step's execution.
   },
   "id": "A String", # Output only. Unique identifier of the trigger.
+  "name": "A String", # User-assigned name of the trigger. Must be unique within the project.
+      # Trigger names must meet the following requirements:
+      # 
+      # + They must contain only alphanumeric characters and dashes.
+      # + They can be 1-64 characters long.
+      # + They must begin and end with an alphanumeric character.
 }
 
   x__xgafv: string, V1 error format.
@@ -2590,42 +2855,46 @@ Returns:
       # changes.
     "github": { # GitHubEventsConfig describes the configuration of a trigger that creates a # GitHubEventsConfig describes the configuration of a trigger that creates
         # a build whenever a GitHub event is received.
+        #
+        # Mutually exclusive with `trigger_template`.
         # build whenever a GitHub event is received.
         #
         # This message is experimental.
-      "name": "A String", # Name of the repository.
+      "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
+        "invertRegex": True or False, # When true, only trigger a build if the revision regex does NOT match the
+            # git_ref regex.
+        "tag": "A String", # Regexes matching tags to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+        "branch": "A String", # Regexes matching branches to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+      },
+      "installationId": "A String", # The installationID that emits the GitHub event.
       "pullRequest": { # PullRequestFilter contains filter properties for matching GitHub Pull # filter to match changes in pull requests.
           # Requests.
-        "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository owner or
+        "invertRegex": True or False, # If true, branches that do NOT match the git_ref will trigger a build.
+        "commentControl": "A String", # Whether to block builds on a "/gcbrun" comment from a repository admin or
             # collaborator.
         "branch": "A String", # Regex of branches to match.
             #
             # The syntax of the regular expressions accepted is the syntax accepted by
             # RE2 and described at https://github.com/google/re2/wiki/Syntax
       },
-      "owner": "A String", # Owner of the repository.
-      "push": { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
-        "tag": "A String", # Regexes of tags to match.
-            #
-            # The syntax of the regular expressions accepted is the syntax accepted by
-            # RE2 and described at https://github.com/google/re2/wiki/Syntax
-        "branch": "A String", # Regexes of branches to match.
-            #
-            # The syntax of the regular expressions accepted is the syntax accepted by
-            # RE2 and described at https://github.com/google/re2/wiki/Syntax
-      },
-      "installationId": "A String", # The installationID that emmits the GitHub event.
-      "checkSuite": { # A CheckSuiteFilter is a filter that indicates that we should build on all # Output only. Indicates that a build was generated from a check suite
-          # event.
-          # check suite events.
-      },
+      "name": "A String", # Name of the repository. For example: The name for
+          # https://github.com/googlecloudplatform/cloud-builders is "cloud-builders".
+      "owner": "A String", # Owner of the repository. For example: The owner for
+          # https://github.com/googlecloudplatform/cloud-builders is
+          # "googlecloudplatform".
     },
     "description": "A String", # Human-readable description of this trigger.
     "tags": [ # Tags for annotation of a `BuildTrigger`
       "A String",
     ],
     "ignoredFiles": [ # ignored_files and included_files are file glob matches using
-        # http://godoc/pkg/path/filepath#Match extended with support for "**".
+        # https://golang.org/pkg/path/filepath/#Match extended with support for "**".
         #
         # If ignored_files and changed files are both empty, then they are
         # not used to determine whether or not to trigger a build.
@@ -2638,7 +2907,9 @@ Returns:
     "filename": "A String", # Path, from the source root, to a file whose contents is used for the
         # template.
     "createTime": "A String", # Output only. Time when the trigger was created.
-    "substitutions": { # Substitutions data for Build resource.
+    "substitutions": { # Substitutions for Build resource. The keys must match the following
+        # regular expression: `^_[A-Z0-9_]+$`.The keys cannot conflict with the
+        # keys in bindings.
       "a_key": "A String",
     },
     "disabled": True or False, # If true, the trigger will never result in a build.
@@ -2696,11 +2967,22 @@ Returns:
             # revisions resolved.
           "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
               # project ID requesting the build is assumed.
+          "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+              # regex.
           "commitSha": "A String", # Explicit commit SHA to build.
-          "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-              # assumed.
-          "tagName": "A String", # Name of the tag to build.
-          "branchName": "A String", # Name of the branch to build.
+          "substitutions": { # Substitutions to use in a triggered build.
+              # Should only be used with RunBuildTrigger
+            "a_key": "A String",
+          },
+          "repoName": "A String", # Required. Name of the Cloud Source Repository.
+          "tagName": "A String", # Regex matching tags to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
+          "branchName": "A String", # Regex matching branches to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
           "dir": "A String", # Directory, relative to the source root, in which to run the build.
               #
               # This must be a relative path. If a step's `dir` is specified and is an
@@ -2802,11 +3084,22 @@ Returns:
             # Repository.
           "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
               # project ID requesting the build is assumed.
+          "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+              # regex.
           "commitSha": "A String", # Explicit commit SHA to build.
-          "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-              # assumed.
-          "tagName": "A String", # Name of the tag to build.
-          "branchName": "A String", # Name of the branch to build.
+          "substitutions": { # Substitutions to use in a triggered build.
+              # Should only be used with RunBuildTrigger
+            "a_key": "A String",
+          },
+          "repoName": "A String", # Required. Name of the Cloud Source Repository.
+          "tagName": "A String", # Regex matching tags to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
+          "branchName": "A String", # Regex matching branches to build.
+              #
+              # The syntax of the regular expressions accepted is the syntax accepted by
+              # RE2 and described at https://github.com/google/re2/wiki/Syntax
           "dir": "A String", # Directory, relative to the source root, in which to run the build.
               #
               # This must be a relative path. If a step's `dir` is specified and is an
@@ -2844,6 +3137,11 @@ Returns:
           "startTime": "A String", # Start of time span.
         },
       },
+      "queueTtl": "A String", # TTL in queue for this build. If provided and the build is enqueued longer
+          # than this value, the build will expire and the build status will be
+          # `EXPIRED`.
+          #
+          # The TTL starts ticking from create_time.
       "createTime": "A String", # Output only. Time at which the request to create the build was received.
       "finishTime": "A String", # Output only. Time at which execution of the build was finished.
           #
@@ -2878,12 +3176,23 @@ Returns:
               # and the remainder will be used as arguments.
             "A String",
           ],
-          "env": [ # A list of environment variable definitions to be used when running a step.
+          "name": "A String", # Required. The name of the container image that will run this particular
+              # build step.
               #
-              # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-              # being given the value "VALUE".
-            "A String",
-          ],
+              # If the image is available in the host's Docker daemon's cache, it
+              # will be run directly. If not, the host will attempt to pull the image
+              # first, using the builder service account's credentials if necessary.
+              #
+              # The Docker daemon's cache will already have the latest versions of all of
+              # the officially supported build steps
+              # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+              # The Docker daemon will also have cached many of the layers for some popular
+              # images, like "ubuntu", "debian", but they will be refreshed at the time you
+              # attempt to use them.
+              #
+              # If you built an image in a previous build step, it will be stored in the
+              # host's Docker daemon's cache and is available to use as the name for a
+              # later build step.
           "waitFor": [ # The ID(s) of the step(s) that this build step depends on.
               # This build step will not start until all the build steps in `wait_for`
               # have completed successfully. If `wait_for` is empty, this build step will
@@ -2901,6 +3210,21 @@ Returns:
           ],
           "entrypoint": "A String", # Entrypoint to be used instead of the build step image's default entrypoint.
               # If unset, the image's default entrypoint is used.
+          "env": [ # A list of environment variable definitions to be used when running a step.
+              #
+              # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+              # being given the value "VALUE".
+            "A String",
+          ],
+          "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
+              # builder image only.
+            "endTime": "A String", # End of time span.
+            "startTime": "A String", # Start of time span.
+          },
+          "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
+            "endTime": "A String", # End of time span.
+            "startTime": "A String", # Start of time span.
+          },
           "volumes": [ # List of volumes to mount into the build step.
               #
               # Each volume is created as an empty volume prior to execution of the
@@ -2921,15 +3245,6 @@ Returns:
                   # Docker volumes. Each named volume must be used by at least two build steps.
             },
           ],
-          "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
-            "endTime": "A String", # End of time span.
-            "startTime": "A String", # Start of time span.
-          },
-          "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
-              # builder image only.
-            "endTime": "A String", # End of time span.
-            "startTime": "A String", # Start of time span.
-          },
           "id": "A String", # Unique identifier for this build step, used in `wait_for` to
               # reference this build step as a dependency.
           "dir": "A String", # Working directory to use when running this step's container.
@@ -2942,23 +3257,6 @@ Returns:
               # If the build specifies a `RepoSource` with `dir` and a step with a `dir`,
               # which specifies an absolute path, the `RepoSource` `dir` is ignored for
               # the step's execution.
-          "name": "A String", # Required. The name of the container image that will run this particular
-              # build step.
-              #
-              # If the image is available in the host's Docker daemon's cache, it
-              # will be run directly. If not, the host will attempt to pull the image
-              # first, using the builder service account's credentials if necessary.
-              #
-              # The Docker daemon's cache will already have the latest versions of all of
-              # the officially supported build steps
-              # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
-              # The Docker daemon will also have cached many of the layers for some popular
-              # images, like "ubuntu", "debian", but they will be refreshed at the time you
-              # attempt to use them.
-              #
-              # If you built an image in a previous build step, it will be stored in the
-              # host's Docker daemon's cache and is available to use as the name for a
-              # later build step.
         },
       ],
       "timeout": "A String", # Amount of time that this build should be allowed to run, to second
@@ -2973,6 +3271,36 @@ Returns:
       "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
         "substitutionOption": "A String", # Option to specify behavior when there is an error in the substitution
             # checks.
+        "machineType": "A String", # Compute Engine machine type on which to run the build.
+        "workerPool": "A String", # Option to specify a `WorkerPool` for the build.
+            # Format: projects/{project}/workerPools/{workerPool}
+            #
+            # This field is experimental.
+        "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+          "A String",
+        ],
+        "env": [ # A list of global environment variable definitions that will exist for all
+            # build steps in this build. If a variable is defined in both globally and in
+            # a build step, the variable will use the build step value.
+            #
+            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+            # being given the value "VALUE".
+          "A String",
+        ],
+        "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
+            # Storage.
+        "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
+            # Key Management Service crypto key. These values must be specified in the
+            # build's `Secret`. These variables will be available to all build steps
+            # in this build.
+          "A String",
+        ],
+        "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
+            # "disk free"; some of the space will be used by the operating system and
+            # build utilities. Also note that this is the minimum disk size that will be
+            # allocated for the build -- the build may run with a larger disk than
+            # requested. At present, the maximum disk size is 1000GB; builds that request
+            # more than the maximum are rejected with an error.
         "logging": "A String", # Option to specify the logging mode, which determines where the logs are
             # stored.
         "volumes": [ # Global list of volumes to mount for ALL build steps
@@ -2996,36 +3324,7 @@ Returns:
                 # Docker volumes. Each named volume must be used by at least two build steps.
           },
         ],
-        "workerPool": "A String", # Option to specify a `WorkerPool` for the build. User specifies the pool
-            # with the format "[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]".
-            # This is an experimental field.
-        "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
-            # Storage.
-        "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-          "A String",
-        ],
-        "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
-            # Key Management Service crypto key. These values must be specified in the
-            # build's `Secret`. These variables will be available to all build steps
-            # in this build.
-          "A String",
-        ],
-        "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
-            # "disk free"; some of the space will be used by the operating system and
-            # build utilities. Also note that this is the minimum disk size that will be
-            # allocated for the build -- the build may run with a larger disk than
-            # requested. At present, the maximum disk size is 1000GB; builds that request
-            # more than the maximum are rejected with an error.
-        "env": [ # A list of global environment variable definitions that will exist for all
-            # build steps in this build. If a variable is defined in both globally and in
-            # a build step, the variable will use the build step value.
-            #
-            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-            # being given the value "VALUE".
-          "A String",
-        ],
         "requestedVerifyOption": "A String", # Requested verifiability options.
-        "machineType": "A String", # Compute Engine machine type on which to run the build.
       },
       "logUrl": "A String", # Output only. URL to logs for this build in Google Cloud Console.
     },
@@ -3044,40 +3343,70 @@ Returns:
         # Branch and tag names in trigger templates are interpreted as regular
         # expressions. Any branch or tag change that matches that regular expression
         # will trigger a build.
+        #
+        # Mutually exclusive with `github`.
       "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
           # project ID requesting the build is assumed.
+      "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+          # regex.
       "commitSha": "A String", # Explicit commit SHA to build.
-      "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-          # assumed.
-      "tagName": "A String", # Name of the tag to build.
-      "branchName": "A String", # Name of the branch to build.
+      "substitutions": { # Substitutions to use in a triggered build.
+          # Should only be used with RunBuildTrigger
+        "a_key": "A String",
+      },
+      "repoName": "A String", # Required. Name of the Cloud Source Repository.
+      "tagName": "A String", # Regex matching tags to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
+      "branchName": "A String", # Regex matching branches to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
       "dir": "A String", # Directory, relative to the source root, in which to run the build.
           #
           # This must be a relative path. If a step's `dir` is specified and is an
           # absolute path, this value is ignored for that step's execution.
     },
     "id": "A String", # Output only. Unique identifier of the trigger.
+    "name": "A String", # User-assigned name of the trigger. Must be unique within the project.
+        # Trigger names must meet the following requirements:
+        #
+        # + They must contain only alphanumeric characters and dashes.
+        # + They can be 1-64 characters long.
+        # + They must begin and end with an alphanumeric character.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="run">run(projectId, triggerId, body, x__xgafv=None)</code>
+    <code class="details" id="run">run(projectId, triggerId, body=None, x__xgafv=None)</code>
   <pre>Runs a `BuildTrigger` at a particular source revision.
 
 Args:
-  projectId: string, ID of the project. (required)
-  triggerId: string, ID of the trigger. (required)
-  body: object, The request body. (required)
+  projectId: string, Required. ID of the project. (required)
+  triggerId: string, Required. ID of the trigger. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # Location of the source in a Google Cloud Source Repository.
   "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
       # project ID requesting the build is assumed.
+  "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+      # regex.
   "commitSha": "A String", # Explicit commit SHA to build.
-  "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-      # assumed.
-  "tagName": "A String", # Name of the tag to build.
-  "branchName": "A String", # Name of the branch to build.
+  "substitutions": { # Substitutions to use in a triggered build.
+      # Should only be used with RunBuildTrigger
+    "a_key": "A String",
+  },
+  "repoName": "A String", # Required. Name of the Cloud Source Repository.
+  "tagName": "A String", # Regex matching tags to build.
+      # 
+      # The syntax of the regular expressions accepted is the syntax accepted by
+      # RE2 and described at https://github.com/google/re2/wiki/Syntax
+  "branchName": "A String", # Regex matching branches to build.
+      # 
+      # The syntax of the regular expressions accepted is the syntax accepted by
+      # RE2 and described at https://github.com/google/re2/wiki/Syntax
   "dir": "A String", # Directory, relative to the source root, in which to run the build.
       # 
       # This must be a relative path. If a step's `dir` is specified and is an

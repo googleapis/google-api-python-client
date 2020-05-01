@@ -78,7 +78,7 @@ h1, h2, h3 {
   <code><a href="#cancel">cancel(projectId, id, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Cancels a build in progress.</p>
 <p class="toc_element">
-  <code><a href="#create">create(projectId, body, x__xgafv=None)</a></code></p>
+  <code><a href="#create">create(projectId, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Starts a build with the specified configuration.</p>
 <p class="toc_element">
   <code><a href="#get">get(projectId, id, x__xgafv=None)</a></code></p>
@@ -98,8 +98,8 @@ h1, h2, h3 {
   <pre>Cancels a build in progress.
 
 Args:
-  projectId: string, ID of the project. (required)
-  id: string, ID of the build. (required)
+  projectId: string, Required. ID of the project. (required)
+  id: string, Required. ID of the build. (required)
   body: object, The request body.
     The object takes the form of:
 
@@ -168,11 +168,22 @@ Returns:
           # revisions resolved.
         "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
             # project ID requesting the build is assumed.
+        "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+            # regex.
         "commitSha": "A String", # Explicit commit SHA to build.
-        "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-            # assumed.
-        "tagName": "A String", # Name of the tag to build.
-        "branchName": "A String", # Name of the branch to build.
+        "substitutions": { # Substitutions to use in a triggered build.
+            # Should only be used with RunBuildTrigger
+          "a_key": "A String",
+        },
+        "repoName": "A String", # Required. Name of the Cloud Source Repository.
+        "tagName": "A String", # Regex matching tags to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+        "branchName": "A String", # Regex matching branches to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
         "dir": "A String", # Directory, relative to the source root, in which to run the build.
             #
             # This must be a relative path. If a step's `dir` is specified and is an
@@ -274,11 +285,22 @@ Returns:
           # Repository.
         "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
             # project ID requesting the build is assumed.
+        "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+            # regex.
         "commitSha": "A String", # Explicit commit SHA to build.
-        "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-            # assumed.
-        "tagName": "A String", # Name of the tag to build.
-        "branchName": "A String", # Name of the branch to build.
+        "substitutions": { # Substitutions to use in a triggered build.
+            # Should only be used with RunBuildTrigger
+          "a_key": "A String",
+        },
+        "repoName": "A String", # Required. Name of the Cloud Source Repository.
+        "tagName": "A String", # Regex matching tags to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+        "branchName": "A String", # Regex matching branches to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
         "dir": "A String", # Directory, relative to the source root, in which to run the build.
             #
             # This must be a relative path. If a step's `dir` is specified and is an
@@ -316,6 +338,11 @@ Returns:
         "startTime": "A String", # Start of time span.
       },
     },
+    "queueTtl": "A String", # TTL in queue for this build. If provided and the build is enqueued longer
+        # than this value, the build will expire and the build status will be
+        # `EXPIRED`.
+        #
+        # The TTL starts ticking from create_time.
     "createTime": "A String", # Output only. Time at which the request to create the build was received.
     "finishTime": "A String", # Output only. Time at which execution of the build was finished.
         #
@@ -350,12 +377,23 @@ Returns:
             # and the remainder will be used as arguments.
           "A String",
         ],
-        "env": [ # A list of environment variable definitions to be used when running a step.
+        "name": "A String", # Required. The name of the container image that will run this particular
+            # build step.
             #
-            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-            # being given the value "VALUE".
-          "A String",
-        ],
+            # If the image is available in the host's Docker daemon's cache, it
+            # will be run directly. If not, the host will attempt to pull the image
+            # first, using the builder service account's credentials if necessary.
+            #
+            # The Docker daemon's cache will already have the latest versions of all of
+            # the officially supported build steps
+            # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+            # The Docker daemon will also have cached many of the layers for some popular
+            # images, like "ubuntu", "debian", but they will be refreshed at the time you
+            # attempt to use them.
+            #
+            # If you built an image in a previous build step, it will be stored in the
+            # host's Docker daemon's cache and is available to use as the name for a
+            # later build step.
         "waitFor": [ # The ID(s) of the step(s) that this build step depends on.
             # This build step will not start until all the build steps in `wait_for`
             # have completed successfully. If `wait_for` is empty, this build step will
@@ -373,6 +411,21 @@ Returns:
         ],
         "entrypoint": "A String", # Entrypoint to be used instead of the build step image's default entrypoint.
             # If unset, the image's default entrypoint is used.
+        "env": [ # A list of environment variable definitions to be used when running a step.
+            #
+            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+            # being given the value "VALUE".
+          "A String",
+        ],
+        "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
+            # builder image only.
+          "endTime": "A String", # End of time span.
+          "startTime": "A String", # Start of time span.
+        },
+        "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
+          "endTime": "A String", # End of time span.
+          "startTime": "A String", # Start of time span.
+        },
         "volumes": [ # List of volumes to mount into the build step.
             #
             # Each volume is created as an empty volume prior to execution of the
@@ -393,15 +446,6 @@ Returns:
                 # Docker volumes. Each named volume must be used by at least two build steps.
           },
         ],
-        "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
-          "endTime": "A String", # End of time span.
-          "startTime": "A String", # Start of time span.
-        },
-        "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
-            # builder image only.
-          "endTime": "A String", # End of time span.
-          "startTime": "A String", # Start of time span.
-        },
         "id": "A String", # Unique identifier for this build step, used in `wait_for` to
             # reference this build step as a dependency.
         "dir": "A String", # Working directory to use when running this step's container.
@@ -414,23 +458,6 @@ Returns:
             # If the build specifies a `RepoSource` with `dir` and a step with a `dir`,
             # which specifies an absolute path, the `RepoSource` `dir` is ignored for
             # the step's execution.
-        "name": "A String", # Required. The name of the container image that will run this particular
-            # build step.
-            #
-            # If the image is available in the host's Docker daemon's cache, it
-            # will be run directly. If not, the host will attempt to pull the image
-            # first, using the builder service account's credentials if necessary.
-            #
-            # The Docker daemon's cache will already have the latest versions of all of
-            # the officially supported build steps
-            # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
-            # The Docker daemon will also have cached many of the layers for some popular
-            # images, like "ubuntu", "debian", but they will be refreshed at the time you
-            # attempt to use them.
-            #
-            # If you built an image in a previous build step, it will be stored in the
-            # host's Docker daemon's cache and is available to use as the name for a
-            # later build step.
       },
     ],
     "timeout": "A String", # Amount of time that this build should be allowed to run, to second
@@ -445,6 +472,36 @@ Returns:
     "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
       "substitutionOption": "A String", # Option to specify behavior when there is an error in the substitution
           # checks.
+      "machineType": "A String", # Compute Engine machine type on which to run the build.
+      "workerPool": "A String", # Option to specify a `WorkerPool` for the build.
+          # Format: projects/{project}/workerPools/{workerPool}
+          #
+          # This field is experimental.
+      "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+        "A String",
+      ],
+      "env": [ # A list of global environment variable definitions that will exist for all
+          # build steps in this build. If a variable is defined in both globally and in
+          # a build step, the variable will use the build step value.
+          #
+          # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+          # being given the value "VALUE".
+        "A String",
+      ],
+      "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
+          # Storage.
+      "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
+          # Key Management Service crypto key. These values must be specified in the
+          # build's `Secret`. These variables will be available to all build steps
+          # in this build.
+        "A String",
+      ],
+      "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
+          # "disk free"; some of the space will be used by the operating system and
+          # build utilities. Also note that this is the minimum disk size that will be
+          # allocated for the build -- the build may run with a larger disk than
+          # requested. At present, the maximum disk size is 1000GB; builds that request
+          # more than the maximum are rejected with an error.
       "logging": "A String", # Option to specify the logging mode, which determines where the logs are
           # stored.
       "volumes": [ # Global list of volumes to mount for ALL build steps
@@ -468,43 +525,14 @@ Returns:
               # Docker volumes. Each named volume must be used by at least two build steps.
         },
       ],
-      "workerPool": "A String", # Option to specify a `WorkerPool` for the build. User specifies the pool
-          # with the format "[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]".
-          # This is an experimental field.
-      "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
-          # Storage.
-      "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-        "A String",
-      ],
-      "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
-          # Key Management Service crypto key. These values must be specified in the
-          # build's `Secret`. These variables will be available to all build steps
-          # in this build.
-        "A String",
-      ],
-      "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
-          # "disk free"; some of the space will be used by the operating system and
-          # build utilities. Also note that this is the minimum disk size that will be
-          # allocated for the build -- the build may run with a larger disk than
-          # requested. At present, the maximum disk size is 1000GB; builds that request
-          # more than the maximum are rejected with an error.
-      "env": [ # A list of global environment variable definitions that will exist for all
-          # build steps in this build. If a variable is defined in both globally and in
-          # a build step, the variable will use the build step value.
-          #
-          # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-          # being given the value "VALUE".
-        "A String",
-      ],
       "requestedVerifyOption": "A String", # Requested verifiability options.
-      "machineType": "A String", # Compute Engine machine type on which to run the build.
     },
     "logUrl": "A String", # Output only. URL to logs for this build in Google Cloud Console.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="create">create(projectId, body, x__xgafv=None)</code>
+    <code class="details" id="create">create(projectId, body=None, x__xgafv=None)</code>
   <pre>Starts a build with the specified configuration.
 
 This method returns a long-running `Operation`, which includes the build
@@ -512,8 +540,8 @@ ID. Pass the build ID to `GetBuild` to determine the build status (such as
 `SUCCESS` or `FAILURE`).
 
 Args:
-  projectId: string, ID of the project. (required)
-  body: object, The request body. (required)
+  projectId: string, Required. ID of the project. (required)
+  body: object, The request body.
     The object takes the form of:
 
 { # A build resource in the Cloud Build API.
@@ -570,11 +598,22 @@ Args:
         # revisions resolved.
       "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
           # project ID requesting the build is assumed.
+      "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+          # regex.
       "commitSha": "A String", # Explicit commit SHA to build.
-      "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-          # assumed.
-      "tagName": "A String", # Name of the tag to build.
-      "branchName": "A String", # Name of the branch to build.
+      "substitutions": { # Substitutions to use in a triggered build.
+          # Should only be used with RunBuildTrigger
+        "a_key": "A String",
+      },
+      "repoName": "A String", # Required. Name of the Cloud Source Repository.
+      "tagName": "A String", # Regex matching tags to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
+      "branchName": "A String", # Regex matching branches to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
       "dir": "A String", # Directory, relative to the source root, in which to run the build.
           #
           # This must be a relative path. If a step's `dir` is specified and is an
@@ -676,11 +715,22 @@ Args:
         # Repository.
       "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
           # project ID requesting the build is assumed.
+      "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+          # regex.
       "commitSha": "A String", # Explicit commit SHA to build.
-      "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-          # assumed.
-      "tagName": "A String", # Name of the tag to build.
-      "branchName": "A String", # Name of the branch to build.
+      "substitutions": { # Substitutions to use in a triggered build.
+          # Should only be used with RunBuildTrigger
+        "a_key": "A String",
+      },
+      "repoName": "A String", # Required. Name of the Cloud Source Repository.
+      "tagName": "A String", # Regex matching tags to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
+      "branchName": "A String", # Regex matching branches to build.
+          #
+          # The syntax of the regular expressions accepted is the syntax accepted by
+          # RE2 and described at https://github.com/google/re2/wiki/Syntax
       "dir": "A String", # Directory, relative to the source root, in which to run the build.
           #
           # This must be a relative path. If a step's `dir` is specified and is an
@@ -718,6 +768,11 @@ Args:
       "startTime": "A String", # Start of time span.
     },
   },
+  "queueTtl": "A String", # TTL in queue for this build. If provided and the build is enqueued longer
+      # than this value, the build will expire and the build status will be
+      # `EXPIRED`.
+      # 
+      # The TTL starts ticking from create_time.
   "createTime": "A String", # Output only. Time at which the request to create the build was received.
   "finishTime": "A String", # Output only. Time at which execution of the build was finished.
       # 
@@ -752,12 +807,23 @@ Args:
           # and the remainder will be used as arguments.
         "A String",
       ],
-      "env": [ # A list of environment variable definitions to be used when running a step.
+      "name": "A String", # Required. The name of the container image that will run this particular
+          # build step.
           #
-          # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-          # being given the value "VALUE".
-        "A String",
-      ],
+          # If the image is available in the host's Docker daemon's cache, it
+          # will be run directly. If not, the host will attempt to pull the image
+          # first, using the builder service account's credentials if necessary.
+          #
+          # The Docker daemon's cache will already have the latest versions of all of
+          # the officially supported build steps
+          # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+          # The Docker daemon will also have cached many of the layers for some popular
+          # images, like "ubuntu", "debian", but they will be refreshed at the time you
+          # attempt to use them.
+          #
+          # If you built an image in a previous build step, it will be stored in the
+          # host's Docker daemon's cache and is available to use as the name for a
+          # later build step.
       "waitFor": [ # The ID(s) of the step(s) that this build step depends on.
           # This build step will not start until all the build steps in `wait_for`
           # have completed successfully. If `wait_for` is empty, this build step will
@@ -775,6 +841,21 @@ Args:
       ],
       "entrypoint": "A String", # Entrypoint to be used instead of the build step image's default entrypoint.
           # If unset, the image's default entrypoint is used.
+      "env": [ # A list of environment variable definitions to be used when running a step.
+          #
+          # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+          # being given the value "VALUE".
+        "A String",
+      ],
+      "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
+          # builder image only.
+        "endTime": "A String", # End of time span.
+        "startTime": "A String", # Start of time span.
+      },
+      "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
+        "endTime": "A String", # End of time span.
+        "startTime": "A String", # Start of time span.
+      },
       "volumes": [ # List of volumes to mount into the build step.
           #
           # Each volume is created as an empty volume prior to execution of the
@@ -795,15 +876,6 @@ Args:
               # Docker volumes. Each named volume must be used by at least two build steps.
         },
       ],
-      "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
-        "endTime": "A String", # End of time span.
-        "startTime": "A String", # Start of time span.
-      },
-      "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
-          # builder image only.
-        "endTime": "A String", # End of time span.
-        "startTime": "A String", # Start of time span.
-      },
       "id": "A String", # Unique identifier for this build step, used in `wait_for` to
           # reference this build step as a dependency.
       "dir": "A String", # Working directory to use when running this step's container.
@@ -816,23 +888,6 @@ Args:
           # If the build specifies a `RepoSource` with `dir` and a step with a `dir`,
           # which specifies an absolute path, the `RepoSource` `dir` is ignored for
           # the step's execution.
-      "name": "A String", # Required. The name of the container image that will run this particular
-          # build step.
-          #
-          # If the image is available in the host's Docker daemon's cache, it
-          # will be run directly. If not, the host will attempt to pull the image
-          # first, using the builder service account's credentials if necessary.
-          #
-          # The Docker daemon's cache will already have the latest versions of all of
-          # the officially supported build steps
-          # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
-          # The Docker daemon will also have cached many of the layers for some popular
-          # images, like "ubuntu", "debian", but they will be refreshed at the time you
-          # attempt to use them.
-          #
-          # If you built an image in a previous build step, it will be stored in the
-          # host's Docker daemon's cache and is available to use as the name for a
-          # later build step.
     },
   ],
   "timeout": "A String", # Amount of time that this build should be allowed to run, to second
@@ -847,6 +902,36 @@ Args:
   "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
     "substitutionOption": "A String", # Option to specify behavior when there is an error in the substitution
         # checks.
+    "machineType": "A String", # Compute Engine machine type on which to run the build.
+    "workerPool": "A String", # Option to specify a `WorkerPool` for the build.
+        # Format: projects/{project}/workerPools/{workerPool}
+        #
+        # This field is experimental.
+    "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+      "A String",
+    ],
+    "env": [ # A list of global environment variable definitions that will exist for all
+        # build steps in this build. If a variable is defined in both globally and in
+        # a build step, the variable will use the build step value.
+        #
+        # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+        # being given the value "VALUE".
+      "A String",
+    ],
+    "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
+        # Storage.
+    "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
+        # Key Management Service crypto key. These values must be specified in the
+        # build's `Secret`. These variables will be available to all build steps
+        # in this build.
+      "A String",
+    ],
+    "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
+        # "disk free"; some of the space will be used by the operating system and
+        # build utilities. Also note that this is the minimum disk size that will be
+        # allocated for the build -- the build may run with a larger disk than
+        # requested. At present, the maximum disk size is 1000GB; builds that request
+        # more than the maximum are rejected with an error.
     "logging": "A String", # Option to specify the logging mode, which determines where the logs are
         # stored.
     "volumes": [ # Global list of volumes to mount for ALL build steps
@@ -870,36 +955,7 @@ Args:
             # Docker volumes. Each named volume must be used by at least two build steps.
       },
     ],
-    "workerPool": "A String", # Option to specify a `WorkerPool` for the build. User specifies the pool
-        # with the format "[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]".
-        # This is an experimental field.
-    "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
-        # Storage.
-    "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-      "A String",
-    ],
-    "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
-        # Key Management Service crypto key. These values must be specified in the
-        # build's `Secret`. These variables will be available to all build steps
-        # in this build.
-      "A String",
-    ],
-    "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
-        # "disk free"; some of the space will be used by the operating system and
-        # build utilities. Also note that this is the minimum disk size that will be
-        # allocated for the build -- the build may run with a larger disk than
-        # requested. At present, the maximum disk size is 1000GB; builds that request
-        # more than the maximum are rejected with an error.
-    "env": [ # A list of global environment variable definitions that will exist for all
-        # build steps in this build. If a variable is defined in both globally and in
-        # a build step, the variable will use the build step value.
-        #
-        # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-        # being given the value "VALUE".
-      "A String",
-    ],
     "requestedVerifyOption": "A String", # Requested verifiability options.
-    "machineType": "A String", # Compute Engine machine type on which to run the build.
   },
   "logUrl": "A String", # Output only. URL to logs for this build in Google Cloud Console.
 }
@@ -965,8 +1021,8 @@ The `Build` that is returned includes its status (such as `SUCCESS`,
 `FAILURE`, or `WORKING`), and timing information.
 
 Args:
-  projectId: string, ID of the project. (required)
-  id: string, ID of the build. (required)
+  projectId: string, Required. ID of the project. (required)
+  id: string, Required. ID of the build. (required)
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -1029,11 +1085,22 @@ Returns:
           # revisions resolved.
         "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
             # project ID requesting the build is assumed.
+        "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+            # regex.
         "commitSha": "A String", # Explicit commit SHA to build.
-        "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-            # assumed.
-        "tagName": "A String", # Name of the tag to build.
-        "branchName": "A String", # Name of the branch to build.
+        "substitutions": { # Substitutions to use in a triggered build.
+            # Should only be used with RunBuildTrigger
+          "a_key": "A String",
+        },
+        "repoName": "A String", # Required. Name of the Cloud Source Repository.
+        "tagName": "A String", # Regex matching tags to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+        "branchName": "A String", # Regex matching branches to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
         "dir": "A String", # Directory, relative to the source root, in which to run the build.
             #
             # This must be a relative path. If a step's `dir` is specified and is an
@@ -1135,11 +1202,22 @@ Returns:
           # Repository.
         "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
             # project ID requesting the build is assumed.
+        "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+            # regex.
         "commitSha": "A String", # Explicit commit SHA to build.
-        "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-            # assumed.
-        "tagName": "A String", # Name of the tag to build.
-        "branchName": "A String", # Name of the branch to build.
+        "substitutions": { # Substitutions to use in a triggered build.
+            # Should only be used with RunBuildTrigger
+          "a_key": "A String",
+        },
+        "repoName": "A String", # Required. Name of the Cloud Source Repository.
+        "tagName": "A String", # Regex matching tags to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
+        "branchName": "A String", # Regex matching branches to build.
+            #
+            # The syntax of the regular expressions accepted is the syntax accepted by
+            # RE2 and described at https://github.com/google/re2/wiki/Syntax
         "dir": "A String", # Directory, relative to the source root, in which to run the build.
             #
             # This must be a relative path. If a step's `dir` is specified and is an
@@ -1177,6 +1255,11 @@ Returns:
         "startTime": "A String", # Start of time span.
       },
     },
+    "queueTtl": "A String", # TTL in queue for this build. If provided and the build is enqueued longer
+        # than this value, the build will expire and the build status will be
+        # `EXPIRED`.
+        #
+        # The TTL starts ticking from create_time.
     "createTime": "A String", # Output only. Time at which the request to create the build was received.
     "finishTime": "A String", # Output only. Time at which execution of the build was finished.
         #
@@ -1211,12 +1294,23 @@ Returns:
             # and the remainder will be used as arguments.
           "A String",
         ],
-        "env": [ # A list of environment variable definitions to be used when running a step.
+        "name": "A String", # Required. The name of the container image that will run this particular
+            # build step.
             #
-            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-            # being given the value "VALUE".
-          "A String",
-        ],
+            # If the image is available in the host's Docker daemon's cache, it
+            # will be run directly. If not, the host will attempt to pull the image
+            # first, using the builder service account's credentials if necessary.
+            #
+            # The Docker daemon's cache will already have the latest versions of all of
+            # the officially supported build steps
+            # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+            # The Docker daemon will also have cached many of the layers for some popular
+            # images, like "ubuntu", "debian", but they will be refreshed at the time you
+            # attempt to use them.
+            #
+            # If you built an image in a previous build step, it will be stored in the
+            # host's Docker daemon's cache and is available to use as the name for a
+            # later build step.
         "waitFor": [ # The ID(s) of the step(s) that this build step depends on.
             # This build step will not start until all the build steps in `wait_for`
             # have completed successfully. If `wait_for` is empty, this build step will
@@ -1234,6 +1328,21 @@ Returns:
         ],
         "entrypoint": "A String", # Entrypoint to be used instead of the build step image's default entrypoint.
             # If unset, the image's default entrypoint is used.
+        "env": [ # A list of environment variable definitions to be used when running a step.
+            #
+            # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+            # being given the value "VALUE".
+          "A String",
+        ],
+        "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
+            # builder image only.
+          "endTime": "A String", # End of time span.
+          "startTime": "A String", # Start of time span.
+        },
+        "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
+          "endTime": "A String", # End of time span.
+          "startTime": "A String", # Start of time span.
+        },
         "volumes": [ # List of volumes to mount into the build step.
             #
             # Each volume is created as an empty volume prior to execution of the
@@ -1254,15 +1363,6 @@ Returns:
                 # Docker volumes. Each named volume must be used by at least two build steps.
           },
         ],
-        "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
-          "endTime": "A String", # End of time span.
-          "startTime": "A String", # Start of time span.
-        },
-        "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
-            # builder image only.
-          "endTime": "A String", # End of time span.
-          "startTime": "A String", # Start of time span.
-        },
         "id": "A String", # Unique identifier for this build step, used in `wait_for` to
             # reference this build step as a dependency.
         "dir": "A String", # Working directory to use when running this step's container.
@@ -1275,23 +1375,6 @@ Returns:
             # If the build specifies a `RepoSource` with `dir` and a step with a `dir`,
             # which specifies an absolute path, the `RepoSource` `dir` is ignored for
             # the step's execution.
-        "name": "A String", # Required. The name of the container image that will run this particular
-            # build step.
-            #
-            # If the image is available in the host's Docker daemon's cache, it
-            # will be run directly. If not, the host will attempt to pull the image
-            # first, using the builder service account's credentials if necessary.
-            #
-            # The Docker daemon's cache will already have the latest versions of all of
-            # the officially supported build steps
-            # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
-            # The Docker daemon will also have cached many of the layers for some popular
-            # images, like "ubuntu", "debian", but they will be refreshed at the time you
-            # attempt to use them.
-            #
-            # If you built an image in a previous build step, it will be stored in the
-            # host's Docker daemon's cache and is available to use as the name for a
-            # later build step.
       },
     ],
     "timeout": "A String", # Amount of time that this build should be allowed to run, to second
@@ -1306,6 +1389,36 @@ Returns:
     "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
       "substitutionOption": "A String", # Option to specify behavior when there is an error in the substitution
           # checks.
+      "machineType": "A String", # Compute Engine machine type on which to run the build.
+      "workerPool": "A String", # Option to specify a `WorkerPool` for the build.
+          # Format: projects/{project}/workerPools/{workerPool}
+          #
+          # This field is experimental.
+      "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+        "A String",
+      ],
+      "env": [ # A list of global environment variable definitions that will exist for all
+          # build steps in this build. If a variable is defined in both globally and in
+          # a build step, the variable will use the build step value.
+          #
+          # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+          # being given the value "VALUE".
+        "A String",
+      ],
+      "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
+          # Storage.
+      "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
+          # Key Management Service crypto key. These values must be specified in the
+          # build's `Secret`. These variables will be available to all build steps
+          # in this build.
+        "A String",
+      ],
+      "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
+          # "disk free"; some of the space will be used by the operating system and
+          # build utilities. Also note that this is the minimum disk size that will be
+          # allocated for the build -- the build may run with a larger disk than
+          # requested. At present, the maximum disk size is 1000GB; builds that request
+          # more than the maximum are rejected with an error.
       "logging": "A String", # Option to specify the logging mode, which determines where the logs are
           # stored.
       "volumes": [ # Global list of volumes to mount for ALL build steps
@@ -1329,36 +1442,7 @@ Returns:
               # Docker volumes. Each named volume must be used by at least two build steps.
         },
       ],
-      "workerPool": "A String", # Option to specify a `WorkerPool` for the build. User specifies the pool
-          # with the format "[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]".
-          # This is an experimental field.
-      "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
-          # Storage.
-      "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-        "A String",
-      ],
-      "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
-          # Key Management Service crypto key. These values must be specified in the
-          # build's `Secret`. These variables will be available to all build steps
-          # in this build.
-        "A String",
-      ],
-      "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
-          # "disk free"; some of the space will be used by the operating system and
-          # build utilities. Also note that this is the minimum disk size that will be
-          # allocated for the build -- the build may run with a larger disk than
-          # requested. At present, the maximum disk size is 1000GB; builds that request
-          # more than the maximum are rejected with an error.
-      "env": [ # A list of global environment variable definitions that will exist for all
-          # build steps in this build. If a variable is defined in both globally and in
-          # a build step, the variable will use the build step value.
-          #
-          # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-          # being given the value "VALUE".
-        "A String",
-      ],
       "requestedVerifyOption": "A String", # Requested verifiability options.
-      "machineType": "A String", # Compute Engine machine type on which to run the build.
     },
     "logUrl": "A String", # Output only. URL to logs for this build in Google Cloud Console.
   }</pre>
@@ -1372,7 +1456,7 @@ Previously requested builds may still be in-progress, or may have finished
 successfully or unsuccessfully.
 
 Args:
-  projectId: string, ID of the project. (required)
+  projectId: string, Required. ID of the project. (required)
   pageSize: integer, Number of results to return in the list.
   pageToken: string, Token to provide to skip to a particular spot in the list.
   x__xgafv: string, V1 error format.
@@ -1441,11 +1525,22 @@ Returns:
               # revisions resolved.
             "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
                 # project ID requesting the build is assumed.
+            "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+                # regex.
             "commitSha": "A String", # Explicit commit SHA to build.
-            "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-                # assumed.
-            "tagName": "A String", # Name of the tag to build.
-            "branchName": "A String", # Name of the branch to build.
+            "substitutions": { # Substitutions to use in a triggered build.
+                # Should only be used with RunBuildTrigger
+              "a_key": "A String",
+            },
+            "repoName": "A String", # Required. Name of the Cloud Source Repository.
+            "tagName": "A String", # Regex matching tags to build.
+                #
+                # The syntax of the regular expressions accepted is the syntax accepted by
+                # RE2 and described at https://github.com/google/re2/wiki/Syntax
+            "branchName": "A String", # Regex matching branches to build.
+                #
+                # The syntax of the regular expressions accepted is the syntax accepted by
+                # RE2 and described at https://github.com/google/re2/wiki/Syntax
             "dir": "A String", # Directory, relative to the source root, in which to run the build.
                 #
                 # This must be a relative path. If a step's `dir` is specified and is an
@@ -1547,11 +1642,22 @@ Returns:
               # Repository.
             "projectId": "A String", # ID of the project that owns the Cloud Source Repository. If omitted, the
                 # project ID requesting the build is assumed.
+            "invertRegex": True or False, # Only trigger a build if the revision regex does NOT match the revision
+                # regex.
             "commitSha": "A String", # Explicit commit SHA to build.
-            "repoName": "A String", # Name of the Cloud Source Repository. If omitted, the name "default" is
-                # assumed.
-            "tagName": "A String", # Name of the tag to build.
-            "branchName": "A String", # Name of the branch to build.
+            "substitutions": { # Substitutions to use in a triggered build.
+                # Should only be used with RunBuildTrigger
+              "a_key": "A String",
+            },
+            "repoName": "A String", # Required. Name of the Cloud Source Repository.
+            "tagName": "A String", # Regex matching tags to build.
+                #
+                # The syntax of the regular expressions accepted is the syntax accepted by
+                # RE2 and described at https://github.com/google/re2/wiki/Syntax
+            "branchName": "A String", # Regex matching branches to build.
+                #
+                # The syntax of the regular expressions accepted is the syntax accepted by
+                # RE2 and described at https://github.com/google/re2/wiki/Syntax
             "dir": "A String", # Directory, relative to the source root, in which to run the build.
                 #
                 # This must be a relative path. If a step's `dir` is specified and is an
@@ -1589,6 +1695,11 @@ Returns:
             "startTime": "A String", # Start of time span.
           },
         },
+        "queueTtl": "A String", # TTL in queue for this build. If provided and the build is enqueued longer
+            # than this value, the build will expire and the build status will be
+            # `EXPIRED`.
+            #
+            # The TTL starts ticking from create_time.
         "createTime": "A String", # Output only. Time at which the request to create the build was received.
         "finishTime": "A String", # Output only. Time at which execution of the build was finished.
             #
@@ -1623,12 +1734,23 @@ Returns:
                 # and the remainder will be used as arguments.
               "A String",
             ],
-            "env": [ # A list of environment variable definitions to be used when running a step.
+            "name": "A String", # Required. The name of the container image that will run this particular
+                # build step.
                 #
-                # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-                # being given the value "VALUE".
-              "A String",
-            ],
+                # If the image is available in the host's Docker daemon's cache, it
+                # will be run directly. If not, the host will attempt to pull the image
+                # first, using the builder service account's credentials if necessary.
+                #
+                # The Docker daemon's cache will already have the latest versions of all of
+                # the officially supported build steps
+                # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
+                # The Docker daemon will also have cached many of the layers for some popular
+                # images, like "ubuntu", "debian", but they will be refreshed at the time you
+                # attempt to use them.
+                #
+                # If you built an image in a previous build step, it will be stored in the
+                # host's Docker daemon's cache and is available to use as the name for a
+                # later build step.
             "waitFor": [ # The ID(s) of the step(s) that this build step depends on.
                 # This build step will not start until all the build steps in `wait_for`
                 # have completed successfully. If `wait_for` is empty, this build step will
@@ -1646,6 +1768,21 @@ Returns:
             ],
             "entrypoint": "A String", # Entrypoint to be used instead of the build step image's default entrypoint.
                 # If unset, the image's default entrypoint is used.
+            "env": [ # A list of environment variable definitions to be used when running a step.
+                #
+                # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+                # being given the value "VALUE".
+              "A String",
+            ],
+            "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
+                # builder image only.
+              "endTime": "A String", # End of time span.
+              "startTime": "A String", # Start of time span.
+            },
+            "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
+              "endTime": "A String", # End of time span.
+              "startTime": "A String", # Start of time span.
+            },
             "volumes": [ # List of volumes to mount into the build step.
                 #
                 # Each volume is created as an empty volume prior to execution of the
@@ -1666,15 +1803,6 @@ Returns:
                     # Docker volumes. Each named volume must be used by at least two build steps.
               },
             ],
-            "timing": { # Start and end times for a build execution phase. # Output only. Stores timing information for executing this build step.
-              "endTime": "A String", # End of time span.
-              "startTime": "A String", # Start of time span.
-            },
-            "pullTiming": { # Start and end times for a build execution phase. # Output only. Stores timing information for pulling this build step's
-                # builder image only.
-              "endTime": "A String", # End of time span.
-              "startTime": "A String", # Start of time span.
-            },
             "id": "A String", # Unique identifier for this build step, used in `wait_for` to
                 # reference this build step as a dependency.
             "dir": "A String", # Working directory to use when running this step's container.
@@ -1687,23 +1815,6 @@ Returns:
                 # If the build specifies a `RepoSource` with `dir` and a step with a `dir`,
                 # which specifies an absolute path, the `RepoSource` `dir` is ignored for
                 # the step's execution.
-            "name": "A String", # Required. The name of the container image that will run this particular
-                # build step.
-                #
-                # If the image is available in the host's Docker daemon's cache, it
-                # will be run directly. If not, the host will attempt to pull the image
-                # first, using the builder service account's credentials if necessary.
-                #
-                # The Docker daemon's cache will already have the latest versions of all of
-                # the officially supported build steps
-                # ([https://github.com/GoogleCloudPlatform/cloud-builders](https://github.com/GoogleCloudPlatform/cloud-builders)).
-                # The Docker daemon will also have cached many of the layers for some popular
-                # images, like "ubuntu", "debian", but they will be refreshed at the time you
-                # attempt to use them.
-                #
-                # If you built an image in a previous build step, it will be stored in the
-                # host's Docker daemon's cache and is available to use as the name for a
-                # later build step.
           },
         ],
         "timeout": "A String", # Amount of time that this build should be allowed to run, to second
@@ -1718,6 +1829,36 @@ Returns:
         "options": { # Optional arguments to enable specific features of builds. # Special options for this build.
           "substitutionOption": "A String", # Option to specify behavior when there is an error in the substitution
               # checks.
+          "machineType": "A String", # Compute Engine machine type on which to run the build.
+          "workerPool": "A String", # Option to specify a `WorkerPool` for the build.
+              # Format: projects/{project}/workerPools/{workerPool}
+              #
+              # This field is experimental.
+          "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
+            "A String",
+          ],
+          "env": [ # A list of global environment variable definitions that will exist for all
+              # build steps in this build. If a variable is defined in both globally and in
+              # a build step, the variable will use the build step value.
+              #
+              # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
+              # being given the value "VALUE".
+            "A String",
+          ],
+          "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
+              # Storage.
+          "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
+              # Key Management Service crypto key. These values must be specified in the
+              # build's `Secret`. These variables will be available to all build steps
+              # in this build.
+            "A String",
+          ],
+          "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
+              # "disk free"; some of the space will be used by the operating system and
+              # build utilities. Also note that this is the minimum disk size that will be
+              # allocated for the build -- the build may run with a larger disk than
+              # requested. At present, the maximum disk size is 1000GB; builds that request
+              # more than the maximum are rejected with an error.
           "logging": "A String", # Option to specify the logging mode, which determines where the logs are
               # stored.
           "volumes": [ # Global list of volumes to mount for ALL build steps
@@ -1741,36 +1882,7 @@ Returns:
                   # Docker volumes. Each named volume must be used by at least two build steps.
             },
           ],
-          "workerPool": "A String", # Option to specify a `WorkerPool` for the build. User specifies the pool
-              # with the format "[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]".
-              # This is an experimental field.
-          "logStreamingOption": "A String", # Option to define build log streaming behavior to Google Cloud
-              # Storage.
-          "sourceProvenanceHash": [ # Requested hash for SourceProvenance.
-            "A String",
-          ],
-          "secretEnv": [ # A list of global environment variables, which are encrypted using a Cloud
-              # Key Management Service crypto key. These values must be specified in the
-              # build's `Secret`. These variables will be available to all build steps
-              # in this build.
-            "A String",
-          ],
-          "diskSizeGb": "A String", # Requested disk size for the VM that runs the build. Note that this is *NOT*
-              # "disk free"; some of the space will be used by the operating system and
-              # build utilities. Also note that this is the minimum disk size that will be
-              # allocated for the build -- the build may run with a larger disk than
-              # requested. At present, the maximum disk size is 1000GB; builds that request
-              # more than the maximum are rejected with an error.
-          "env": [ # A list of global environment variable definitions that will exist for all
-              # build steps in this build. If a variable is defined in both globally and in
-              # a build step, the variable will use the build step value.
-              #
-              # The elements are of the form "KEY=VALUE" for the environment variable "KEY"
-              # being given the value "VALUE".
-            "A String",
-          ],
           "requestedVerifyOption": "A String", # Requested verifiability options.
-          "machineType": "A String", # Compute Engine machine type on which to run the build.
         },
         "logUrl": "A String", # Output only. URL to logs for this build in Google Cloud Console.
       },
@@ -1823,8 +1935,8 @@ object, which may or may not be available depending on the bucket's
 lifecycle management settings.
 
 Args:
-  projectId: string, ID of the project. (required)
-  id: string, Build ID of the original build. (required)
+  projectId: string, Required. ID of the project. (required)
+  id: string, Required. Build ID of the original build. (required)
   body: object, The request body.
     The object takes the form of:
 
