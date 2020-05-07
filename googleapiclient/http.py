@@ -1249,7 +1249,7 @@ class BatchHttpRequest(object):
 
         # NB: we intentionally leave whitespace between base/id and '+', so RFC2822
         # line folding works properly on Python 3; see
-        # https://github.com/google/google-api-python-client/issues/164
+        # https://github.com/googleapis/google-api-python-client/issues/164
         return "<%s + %s>" % (self._base_id, quote(id_))
 
     def _header_to_id(self, header):

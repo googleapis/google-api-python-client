@@ -62,7 +62,7 @@ setup(
     long_description_content_type='text/markdown',
     author="Google LLC",
     author_email="googleapis-packages@google.com",
-    url="http://github.com/google/google-api-python-client/",
+    url="https://github.com/googleapis/google-api-python-client/",
     install_requires=install_requires,
     python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*",
     packages=packages,
