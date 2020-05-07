@@ -204,8 +204,9 @@ def build(
     cache_discovery: Boolean, whether or not to cache the discovery doc.
     cache: googleapiclient.discovery_cache.base.CacheBase, an optional
       cache object for the discovery documents.
-    client_options: Dictionary or google.api_core.client_options, Client options to set user
-      options on the client. API endpoint should be set through client_options.
+    client_options: Mapping object or google.api_core.client_options, Client
+      options to set user options on the client. API endpoint should be set
+      through client_options.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -334,8 +335,9 @@ def build_from_document(
     credentials: oauth2client.Credentials or
       google.auth.credentials.Credentials, credentials to be used for
       authentication.
-    client_options: Dictionary or google.api_core.client_options, Client options to set user
-      options on the client. API endpoint should be set through client_options.
+    client_options: Mapping object or google.api_core.client_options, Client
+      options to set user options on the client. API endpoint should be set
+      through client_options.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -361,7 +363,7 @@ def build_from_document(
     # If an API Endpoint is provided on client options, use that as the base URL
     base = urljoin(service['rootUrl'], service["servicePath"])
     if client_options:
-        if type(client_options) == dict:
+        if isinstance(client_options, six.moves.collections_abc.Mapping):
             client_options = google.api_core.client_options.from_dict(
                 client_options
             )
