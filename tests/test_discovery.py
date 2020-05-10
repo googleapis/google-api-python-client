@@ -648,6 +648,14 @@ class DiscoveryFromHttp(unittest.TestCase):
 
 
 class DiscoveryFromAppEngineCache(unittest.TestCase):
+
+    def setUp(self):
+        self.old_environ = os.environ.copy()
+        os.environ["APPENGINE_RUNTIME"] = "python27"
+
+    def tearDown(self):
+        os.environ = self.old_environ
+
     def test_appengine_memcache(self):
         # Hack module import
         self.orig_import = __import__
