@@ -521,7 +521,8 @@ class DiscoveryFromDocument(unittest.TestCase):
         options = google.api_core.client_options.ClientOptions(
             api_endpoint=api_endpoint
         )
-        plus = build_from_document(discovery,
+        plus = build_from_document(
+            discovery,
             client_options=options,
             credentials=self.MOCK_CREDENTIALS
         )
