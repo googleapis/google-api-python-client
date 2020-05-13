@@ -535,7 +535,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         plus = build_from_document(
             discovery, 
             client_options={"api_endpoint": api_endpoint},
-            credentials=self.MOCK_CREDENTIAL
+            credentials=self.MOCK_CREDENTIALS
         )
 
         self.assertEqual(plus._baseUrl, api_endpoint)
