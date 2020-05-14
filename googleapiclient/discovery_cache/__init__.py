@@ -18,7 +18,7 @@ from __future__ import absolute_import
 
 import logging
 import datetime
-
+import os
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,16 +32,18 @@ def autodetect():
     googleapiclient.discovery_cache.base.Cache, a cache object which
     is auto detected, or None if no cache object is available.
   """
-    try:
-        from google.appengine.api import memcache
-        from . import appengine_memcache
-
-        return appengine_memcache.cache
-    except Exception:
+    if 'APPENGINE_RUNTIME' in os.environ:
         try:
-            from . import file_cache
+            from google.appengine.api import memcache
+            from . import appengine_memcache
 
-            return file_cache.cache
-        except Exception as e:
-            LOGGER.warning(e, exc_info=True)
-            return None
+            return appengine_memcache.cache
+        except Exception:
+            pass
+    try:
+        from . import file_cache
+
+        return file_cache.cache
+    except Exception as e:
+        LOGGER.warning(e, exc_info=True)
+        return None
