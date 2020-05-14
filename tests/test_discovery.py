@@ -521,7 +521,11 @@ class DiscoveryFromDocument(unittest.TestCase):
         options = google.api_core.client_options.ClientOptions(
             api_endpoint=api_endpoint
         )
-        plus = build_from_document(discovery, client_options=options)
+        plus = build_from_document(
+            discovery,
+            client_options=options,
+            credentials=self.MOCK_CREDENTIALS
+        )
 
         self.assertEqual(plus._baseUrl, api_endpoint)
 
@@ -529,7 +533,9 @@ class DiscoveryFromDocument(unittest.TestCase):
         discovery = open(datafile("plus.json")).read()
         api_endpoint = "https://foo.googleapis.com/"
         plus = build_from_document(
-            discovery, client_options={"api_endpoint": api_endpoint}
+            discovery, 
+            client_options={"api_endpoint": api_endpoint},
+            credentials=self.MOCK_CREDENTIALS
         )
 
         self.assertEqual(plus._baseUrl, api_endpoint)
