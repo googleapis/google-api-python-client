@@ -534,6 +534,19 @@ class DiscoveryFromDocument(unittest.TestCase):
 
         self.assertEqual(plus._baseUrl, api_endpoint)
 
+    def test_api_endpoint_override_from_client_options_mapping_object(self):
+        from collections import defaultdict
+
+        discovery = open(datafile("plus.json")).read()
+        api_endpoint = "https://foo.googleapis.com/"
+        mapping_object = defaultdict(str)
+        mapping_object['api_endpoint'] = api_endpoint
+        plus = build_from_document(
+            discovery, client_options=mapping_object
+        )
+
+        self.assertEqual(plus._baseUrl, api_endpoint)
+
 
 class DiscoveryFromHttp(unittest.TestCase):
     def setUp(self):
