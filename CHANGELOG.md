@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.8.3](https://www.github.com/googleapis/google-api-python-client/compare/v1.8.2...v1.8.3) (2020-05-01)
+
+
+### Bug Fixes
+
+* downgrade repetitive logging calls to debug ([#885](https://www.github.com/googleapis/google-api-python-client/issues/885)) ([3bf2781](https://www.github.com/googleapis/google-api-python-client/commit/3bf2781e29cb828409f3a8a21939323286524569)), closes [#781](https://www.github.com/googleapis/google-api-python-client/issues/781)
+
 ### [1.8.2](https://www.github.com/googleapis/google-api-python-client/compare/v1.8.1...v1.8.2) (2020-04-21)
 
 
