@@ -1170,7 +1170,7 @@ class BatchHttpRequest(object):
         if batch_uri == _LEGACY_BATCH_URI:
             LOGGER.warn(
                 "You have constructed a BatchHttpRequest using the legacy batch "
-                "endpoint %s. This endpoint will be turned down on March 25, 2019. "
+                "endpoint %s. This endpoint will be turned down on August 12, 2020. "
                 "Please provide the API-specific endpoint or use "
                 "service.new_batch_http_request(). For more details see "
                 "https://developers.googleblog.com/2018/03/discontinuing-support-for-json-rpc-and.html"
