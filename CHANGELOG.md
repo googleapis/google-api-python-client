@@ -1,5 +1,13 @@
 # Changelog
 
+### [1.8.4](https://www.github.com/googleapis/google-api-python-client/compare/v1.8.3...v1.8.4) (2020-05-20)
+
+
+### Bug Fixes
+
+* don't try to import GAE API in other environments ([#903](https://www.github.com/googleapis/google-api-python-client/issues/903)) ([09e6447](https://www.github.com/googleapis/google-api-python-client/commit/09e644719166aecb21a01b6d5ee9898843e7cd58))
+* the turn down date for global batch uri ([#901](https://www.github.com/googleapis/google-api-python-client/issues/901)) ([6ddadd7](https://www.github.com/googleapis/google-api-python-client/commit/6ddadd7753134c671628ad3f4598595b0abb1457))
+
 ### [1.8.3](https://www.github.com/googleapis/google-api-python-client/compare/v1.8.2...v1.8.3) (2020-05-01)
 
 
