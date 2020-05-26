@@ -1,4 +1,4 @@
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2020 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,6 +47,13 @@ import re
 import httplib2
 import uritemplate
 import google.api_core.client_options
+from google.auth.transport import mtls
+from google.auth.exceptions import MutualTLSChannelError
+
+try:
+    import google_auth_httplib2
+except ImportError:  # pragma: NO COVER
+    google_auth_httplib2 = None
 
 # Local imports
 from googleapiclient import _auth
@@ -132,7 +139,7 @@ def fix_method_name(name):
 
   Returns:
     The name with '_' appended if the name is a reserved word and '$' and '-'
-    replaced with '_'. 
+    replaced with '_'.
   """
     name = name.replace("$", "_").replace("-", "_")
     if keyword.iskeyword(name) or name in RESERVED_WORDS:
@@ -178,6 +185,8 @@ def build(
     cache_discovery=True,
     cache=None,
     client_options=None,
+    adc_cert_path=None,
+    adc_key_path=None,
 ):
     """Construct a Resource for interacting with an API.
 
@@ -206,9 +215,21 @@ def build(
       cache object for the discovery documents.
     client_options: Dictionary or google.api_core.client_options, Client options to set user
       options on the client. API endpoint should be set through client_options.
+      client_cert_source is not supported, client cert should be provided using
+      client_encrypted_cert_source instead.
+    adc_cert_path: str, client certificate file path to save the application
+      default client certificate for mTLS. This field is required if you want to
+      use the default client certificate.
+    adc_key_path: str, client encrypted private key file path to save the
+      application default client encrypted private key for mTLS. This field is
+      required if you want to use the default client certificate.
 
   Returns:
     A Resource object with methods for interacting with the service.
+
+  Raises:
+    google.auth.exceptions.MutualTLSChannelError: if there are any problems
+      setting up mutual TLS channel.
   """
     params = {"api": serviceName, "apiVersion": version}
 
@@ -232,7 +253,9 @@ def build(
                 model=model,
                 requestBuilder=requestBuilder,
                 credentials=credentials,
-                client_options=client_options
+                client_options=client_options,
+                adc_cert_path=adc_cert_path,
+                adc_key_path=adc_key_path,
             )
         except HttpError as e:
             if e.resp.status == http_client.NOT_FOUND:
@@ -309,7 +332,9 @@ def build_from_document(
     model=None,
     requestBuilder=HttpRequest,
     credentials=None,
-    client_options=None
+    client_options=None,
+    adc_cert_path=None,
+    adc_key_path=None,
 ):
     """Create a Resource for interacting with an API.
 
@@ -336,9 +361,21 @@ def build_from_document(
       authentication.
     client_options: Dictionary or google.api_core.client_options, Client options to set user
       options on the client. API endpoint should be set through client_options.
+      client_cert_source is not supported, client cert should be provided using
+      client_encrypted_cert_source instead.
+    adc_cert_path: str, client certificate file path to save the application
+      default client certificate for mTLS. This field is required if you want to
+      use the default client certificate.
+    adc_key_path: str, client encrypted private key file path to save the
+      application default client encrypted private key for mTLS. This field is
+      required if you want to use the default client certificate.
 
   Returns:
     A Resource object with methods for interacting with the service.
+
+  Raises:
+    google.auth.exceptions.MutualTLSChannelError: if there are any problems
+      setting up mutual TLS channel.
   """
 
     if http is not None and credentials is not None:
@@ -349,7 +386,7 @@ def build_from_document(
     elif isinstance(service, six.binary_type):
         service = json.loads(service.decode("utf-8"))
 
-    if "rootUrl" not in service and (isinstance(http, (HttpMock, HttpMockSequence))):
+    if "rootUrl" not in service and isinstance(http, (HttpMock, HttpMockSequence)):
         logger.error(
             "You are using HttpMock or HttpMockSequence without"
             + "having the service discovery doc in cache. Try calling "
@@ -359,12 +396,10 @@ def build_from_document(
         raise InvalidJsonError()
 
     # If an API Endpoint is provided on client options, use that as the base URL
-    base = urljoin(service['rootUrl'], service["servicePath"])
+    base = urljoin(service["rootUrl"], service["servicePath"])
     if client_options:
         if type(client_options) == dict:
-            client_options = google.api_core.client_options.from_dict(
-                client_options
-            )
+            client_options = google.api_core.client_options.from_dict(client_options)
         if client_options.api_endpoint:
             base = client_options.api_endpoint
 
@@ -399,6 +434,52 @@ def build_from_document(
         # authentication.
         else:
             http = build_http()
+
+        # Obtain client cert and create mTLS http channel if cert exists.
+        client_cert_to_use = None
+        if client_options and client_options.client_cert_source:
+            raise MutualTLSChannelError(
+                "ClientOptions.client_cert_source is not supported, please use ClientOptions.client_encrypted_cert_source."
+            )
+        if client_options and client_options.client_encrypted_cert_source:
+            client_cert_to_use = client_options.client_encrypted_cert_source
+        elif adc_cert_path and adc_key_path and mtls.has_default_client_cert_source():
+            client_cert_to_use = mtls.default_client_encrypted_cert_source(
+                adc_cert_path, adc_key_path
+            )
+        if client_cert_to_use:
+            cert_path, key_path, passphrase = client_cert_to_use()
+
+            # The http object we built could be google_auth_httplib2.AuthorizedHttp
+            # or httplib2.Http. In the first case we need to extract the wrapped
+            # httplib2.Http object from google_auth_httplib2.AuthorizedHttp.
+            http_channel = (
+                http.http
+                if google_auth_httplib2
+                and isinstance(http, google_auth_httplib2.AuthorizedHttp)
+                else http
+            )
+            http_channel.add_certificate(key_path, cert_path, "", passphrase)
+
+        # If user doesn't provide api endpoint via client options, decide which
+        # api endpoint to use.
+        if "mtlsRootUrl" in service and (
+            not client_options or not client_options.api_endpoint
+        ):
+            mtls_endpoint = urljoin(service["mtlsRootUrl"], service["servicePath"])
+            use_mtls_env = os.getenv("GOOGLE_API_USE_MTLS", "Never")
+
+            if not use_mtls_env in ("Never", "Auto", "Always"):
+                raise MutualTLSChannelError(
+                    "Unsupported GOOGLE_API_USE_MTLS value. Accepted values: Never, Auto, Always"
+                )
+
+            # Switch to mTLS endpoint, if environment variable is "Always", or
+            # environment varibable is "Auto" and client cert exists.
+            if use_mtls_env == "Always" or (
+                use_mtls_env == "Auto" and client_cert_to_use
+            ):
+                base = mtls_endpoint
 
     if model is None:
         features = service.get("features", [])

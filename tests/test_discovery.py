@@ -224,7 +224,11 @@ class Utilities(unittest.TestCase):
         final_max_size,
         final_media_path_url,
     ):
-        fake_root_desc = {"rootUrl": "http://root/", "servicePath": "fake/"}
+        fake_root_desc = {
+            "rootUrl": "http://root/",
+            "servicePath": "fake/",
+            "mtlsRootUrl": "http://root/",
+        }
         fake_path_url = "fake-path/"
 
         accept, max_size, media_path_url = _fix_up_media_upload(

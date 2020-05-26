@@ -16,7 +16,6 @@
 import nox
 
 test_dependencies = [
-    "google-auth",
     "google-auth-httplib2",
     "mox",
     "pyopenssl",
@@ -54,6 +53,14 @@ def lint(session):
 )
 @nox.session(python=["2.7", "3.5", "3.6", "3.7"])
 def unit(session, oauth2client):
+    session.install(
+        "-e",
+        "git+https://github.com/googleapis/google-auth-library-python.git@e8bb68013083961a6421e5f5faf0c7b82a8bf4f1#egg=google-auth",
+    )
+    session.install(
+        "-e",
+        "git+https://github.com/googleapis/python-api-core.git@671ad14c30812be4e87ea8771d95fab840982da9#egg=google-api-core",
+    )
     session.install(*test_dependencies)
     session.install(oauth2client)
     if session.python < "3.0":
