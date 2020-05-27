@@ -42,6 +42,7 @@ def lint(session):
     )
 
 
+@nox.session(python=["2.7", "3.5", "3.6", "3.7"])
 @nox.parametrize(
     "oauth2client",
     [
@@ -51,7 +52,6 @@ def lint(session):
         "oauth2client>=4,<=5dev",
     ],
 )
-@nox.session(python=["2.7", "3.5", "3.6", "3.7"])
 def unit(session, oauth2client):
     session.install(
         "-e",
