@@ -105,7 +105,7 @@ The new metric must be provided in the request. (required)
     The object takes the form of:
 
 { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
-  &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
+  &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
   &quot;bucketOptions&quot;: { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
     &quot;exponentialBuckets&quot;: { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
       &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
@@ -113,9 +113,9 @@ The new metric must be provided in the request. (required)
       &quot;scale&quot;: 3.14, # Must be greater than 0.
     },
     &quot;linearBuckets&quot;: { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
+      &quot;width&quot;: 3.14, # Must be greater than 0.
       &quot;offset&quot;: 3.14, # Lower bound of the first bucket.
       &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
-      &quot;width&quot;: 3.14, # Must be greater than 0.
     },
     &quot;explicitBuckets&quot;: { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
       &quot;bounds&quot;: [ # The values must be monotonically increasing.
@@ -123,27 +123,17 @@ The new metric must be provided in the request. (required)
       ],
     },
   },
+  &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
   &quot;name&quot;: &quot;A String&quot;, # Required. The client-assigned metric identifier. Examples: &quot;error_count&quot;, &quot;nginx/requests&quot;.Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*&#x27;,()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: &quot;projects/my-project/metrics/nginx%2Frequests&quot;.
   &quot;labelExtractors&quot;: { # Optional. A map from a label key string to an extractor expression which is used to extract data from a log entry field and assign as the label value. Each label key specified in the LabelDescriptor must have an associated extractor expression in this map. The syntax of the extractor expression is the same as for the value_extractor field.The extracted value is converted to the type defined in the label descriptor. If the either the extraction or the type conversion fails, the label will have a default value. The default value for a string label is an empty string, for an integer label its 0, and for a boolean label its false.Note that there are upper bounds on the maximum number of labels and the number of active time series that are allowed in a project.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
-  &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
   &quot;metricDescriptor&quot;: { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type&#x27;s existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of &quot;1&quot;. Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
-    &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-      &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
-      &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
-      &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
-    },
-    &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-        # &quot;custom.googleapis.com/invoice/paid/amount&quot;
-        # &quot;external.googleapis.com/prometheus/up&quot;
-        # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
-    &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
     &quot;metricKind&quot;: &quot;A String&quot;, # Whether the metric records instantaneous values, changes to a value, etc. Some combinations of metric_kind and value_type might not be supported.
-    &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
     &quot;displayName&quot;: &quot;A String&quot;, # A concise name for the metric, which can be displayed in user interfaces. Use sentence case without an ending period, for example &quot;Request count&quot;. This field is optional but it is recommended to be set for any metrics associated with user-visible concepts, such as Quota.
+    &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
     &quot;unit&quot;: &quot;A String&quot;, # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
         # bit bit
         # By byte
@@ -190,9 +180,9 @@ The new metric must be provided in the request. (required)
         # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means &quot;3 percent&quot;).
     &quot;labels&quot;: [ # The set of labels that can be used to describe a specific instance of this metric type. For example, the appengine.googleapis.com/http/server/response_latencies metric type has a label for the HTTP response code, response_code, so you can look at latencies for successful responses or just for responses that failed.
       { # A description of a label.
-        &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
         &quot;key&quot;: &quot;A String&quot;, # The label key.
         &quot;description&quot;: &quot;A String&quot;, # A human-readable description for the label.
+        &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
       },
     ],
     &quot;launchStage&quot;: &quot;A String&quot;, # Optional. The launch stage of the metric definition.
@@ -200,11 +190,21 @@ The new metric must be provided in the request. (required)
       &quot;A String&quot;,
     ],
     &quot;name&quot;: &quot;A String&quot;, # The resource name of the metric descriptor.
+    &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+        # &quot;custom.googleapis.com/invoice/paid/amount&quot;
+        # &quot;external.googleapis.com/prometheus/up&quot;
+        # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
+    &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
+      &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
+      &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
+      &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
+    },
+    &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
   },
+  &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
   &quot;filter&quot;: &quot;A String&quot;, # Required. An advanced logs filter (https://cloud.google.com/logging/docs/view/advanced_filters) which is used to match log entries. Example:
       # &quot;resource.type=gae_app AND severity&gt;=ERROR&quot;
       # The maximum length of the filter is 20000 characters.
-  &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
 }
 
   x__xgafv: string, V1 error format.
@@ -216,7 +216,7 @@ Returns:
   An object of the form:
 
     { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
-    &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
+    &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
     &quot;bucketOptions&quot;: { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
       &quot;exponentialBuckets&quot;: { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
         &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
@@ -224,9 +224,9 @@ Returns:
         &quot;scale&quot;: 3.14, # Must be greater than 0.
       },
       &quot;linearBuckets&quot;: { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
+        &quot;width&quot;: 3.14, # Must be greater than 0.
         &quot;offset&quot;: 3.14, # Lower bound of the first bucket.
         &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
-        &quot;width&quot;: 3.14, # Must be greater than 0.
       },
       &quot;explicitBuckets&quot;: { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
         &quot;bounds&quot;: [ # The values must be monotonically increasing.
@@ -234,27 +234,17 @@ Returns:
         ],
       },
     },
+    &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
     &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
     &quot;name&quot;: &quot;A String&quot;, # Required. The client-assigned metric identifier. Examples: &quot;error_count&quot;, &quot;nginx/requests&quot;.Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*&#x27;,()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: &quot;projects/my-project/metrics/nginx%2Frequests&quot;.
     &quot;labelExtractors&quot;: { # Optional. A map from a label key string to an extractor expression which is used to extract data from a log entry field and assign as the label value. Each label key specified in the LabelDescriptor must have an associated extractor expression in this map. The syntax of the extractor expression is the same as for the value_extractor field.The extracted value is converted to the type defined in the label descriptor. If the either the extraction or the type conversion fails, the label will have a default value. The default value for a string label is an empty string, for an integer label its 0, and for a boolean label its false.Note that there are upper bounds on the maximum number of labels and the number of active time series that are allowed in a project.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
-    &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
     &quot;metricDescriptor&quot;: { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type&#x27;s existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of &quot;1&quot;. Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
-      &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-        &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
-        &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
-        &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
-      },
-      &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-          # &quot;custom.googleapis.com/invoice/paid/amount&quot;
-          # &quot;external.googleapis.com/prometheus/up&quot;
-          # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
-      &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
       &quot;metricKind&quot;: &quot;A String&quot;, # Whether the metric records instantaneous values, changes to a value, etc. Some combinations of metric_kind and value_type might not be supported.
-      &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
       &quot;displayName&quot;: &quot;A String&quot;, # A concise name for the metric, which can be displayed in user interfaces. Use sentence case without an ending period, for example &quot;Request count&quot;. This field is optional but it is recommended to be set for any metrics associated with user-visible concepts, such as Quota.
+      &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
       &quot;unit&quot;: &quot;A String&quot;, # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
           # bit bit
           # By byte
@@ -301,9 +291,9 @@ Returns:
           # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means &quot;3 percent&quot;).
       &quot;labels&quot;: [ # The set of labels that can be used to describe a specific instance of this metric type. For example, the appengine.googleapis.com/http/server/response_latencies metric type has a label for the HTTP response code, response_code, so you can look at latencies for successful responses or just for responses that failed.
         { # A description of a label.
-          &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
           &quot;key&quot;: &quot;A String&quot;, # The label key.
           &quot;description&quot;: &quot;A String&quot;, # A human-readable description for the label.
+          &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
         },
       ],
       &quot;launchStage&quot;: &quot;A String&quot;, # Optional. The launch stage of the metric definition.
@@ -311,11 +301,21 @@ Returns:
         &quot;A String&quot;,
       ],
       &quot;name&quot;: &quot;A String&quot;, # The resource name of the metric descriptor.
+      &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+          # &quot;custom.googleapis.com/invoice/paid/amount&quot;
+          # &quot;external.googleapis.com/prometheus/up&quot;
+          # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
+      &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
+        &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
+        &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
+        &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
+      },
+      &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
     },
+    &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
     &quot;filter&quot;: &quot;A String&quot;, # Required. An advanced logs filter (https://cloud.google.com/logging/docs/view/advanced_filters) which is used to match log entries. Example:
         # &quot;resource.type=gae_app AND severity&gt;=ERROR&quot;
         # The maximum length of the filter is 20000 characters.
-    &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
   }</pre>
 </div>
 
@@ -360,7 +360,7 @@ Returns:
   An object of the form:
 
     { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
-    &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
+    &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
     &quot;bucketOptions&quot;: { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
       &quot;exponentialBuckets&quot;: { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
         &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
@@ -368,9 +368,9 @@ Returns:
         &quot;scale&quot;: 3.14, # Must be greater than 0.
       },
       &quot;linearBuckets&quot;: { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
+        &quot;width&quot;: 3.14, # Must be greater than 0.
         &quot;offset&quot;: 3.14, # Lower bound of the first bucket.
         &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
-        &quot;width&quot;: 3.14, # Must be greater than 0.
       },
       &quot;explicitBuckets&quot;: { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
         &quot;bounds&quot;: [ # The values must be monotonically increasing.
@@ -378,27 +378,17 @@ Returns:
         ],
       },
     },
+    &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
     &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
     &quot;name&quot;: &quot;A String&quot;, # Required. The client-assigned metric identifier. Examples: &quot;error_count&quot;, &quot;nginx/requests&quot;.Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*&#x27;,()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: &quot;projects/my-project/metrics/nginx%2Frequests&quot;.
     &quot;labelExtractors&quot;: { # Optional. A map from a label key string to an extractor expression which is used to extract data from a log entry field and assign as the label value. Each label key specified in the LabelDescriptor must have an associated extractor expression in this map. The syntax of the extractor expression is the same as for the value_extractor field.The extracted value is converted to the type defined in the label descriptor. If the either the extraction or the type conversion fails, the label will have a default value. The default value for a string label is an empty string, for an integer label its 0, and for a boolean label its false.Note that there are upper bounds on the maximum number of labels and the number of active time series that are allowed in a project.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
-    &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
     &quot;metricDescriptor&quot;: { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type&#x27;s existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of &quot;1&quot;. Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
-      &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-        &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
-        &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
-        &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
-      },
-      &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-          # &quot;custom.googleapis.com/invoice/paid/amount&quot;
-          # &quot;external.googleapis.com/prometheus/up&quot;
-          # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
-      &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
       &quot;metricKind&quot;: &quot;A String&quot;, # Whether the metric records instantaneous values, changes to a value, etc. Some combinations of metric_kind and value_type might not be supported.
-      &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
       &quot;displayName&quot;: &quot;A String&quot;, # A concise name for the metric, which can be displayed in user interfaces. Use sentence case without an ending period, for example &quot;Request count&quot;. This field is optional but it is recommended to be set for any metrics associated with user-visible concepts, such as Quota.
+      &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
       &quot;unit&quot;: &quot;A String&quot;, # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
           # bit bit
           # By byte
@@ -445,9 +435,9 @@ Returns:
           # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means &quot;3 percent&quot;).
       &quot;labels&quot;: [ # The set of labels that can be used to describe a specific instance of this metric type. For example, the appengine.googleapis.com/http/server/response_latencies metric type has a label for the HTTP response code, response_code, so you can look at latencies for successful responses or just for responses that failed.
         { # A description of a label.
-          &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
           &quot;key&quot;: &quot;A String&quot;, # The label key.
           &quot;description&quot;: &quot;A String&quot;, # A human-readable description for the label.
+          &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
         },
       ],
       &quot;launchStage&quot;: &quot;A String&quot;, # Optional. The launch stage of the metric definition.
@@ -455,11 +445,21 @@ Returns:
         &quot;A String&quot;,
       ],
       &quot;name&quot;: &quot;A String&quot;, # The resource name of the metric descriptor.
+      &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+          # &quot;custom.googleapis.com/invoice/paid/amount&quot;
+          # &quot;external.googleapis.com/prometheus/up&quot;
+          # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
+      &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
+        &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
+        &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
+        &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
+      },
+      &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
     },
+    &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
     &quot;filter&quot;: &quot;A String&quot;, # Required. An advanced logs filter (https://cloud.google.com/logging/docs/view/advanced_filters) which is used to match log entries. Example:
         # &quot;resource.type=gae_app AND severity&gt;=ERROR&quot;
         # The maximum length of the filter is 20000 characters.
-    &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
   }</pre>
 </div>
 
@@ -484,7 +484,7 @@ Returns:
     { # Result returned from ListLogMetrics.
     &quot;metrics&quot;: [ # A list of logs-based metrics.
       { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
-        &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
+        &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
         &quot;bucketOptions&quot;: { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
           &quot;exponentialBuckets&quot;: { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
             &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
@@ -492,9 +492,9 @@ Returns:
             &quot;scale&quot;: 3.14, # Must be greater than 0.
           },
           &quot;linearBuckets&quot;: { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
+            &quot;width&quot;: 3.14, # Must be greater than 0.
             &quot;offset&quot;: 3.14, # Lower bound of the first bucket.
             &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
-            &quot;width&quot;: 3.14, # Must be greater than 0.
           },
           &quot;explicitBuckets&quot;: { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
             &quot;bounds&quot;: [ # The values must be monotonically increasing.
@@ -502,27 +502,17 @@ Returns:
             ],
           },
         },
+        &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
         &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
         &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
         &quot;name&quot;: &quot;A String&quot;, # Required. The client-assigned metric identifier. Examples: &quot;error_count&quot;, &quot;nginx/requests&quot;.Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*&#x27;,()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: &quot;projects/my-project/metrics/nginx%2Frequests&quot;.
         &quot;labelExtractors&quot;: { # Optional. A map from a label key string to an extractor expression which is used to extract data from a log entry field and assign as the label value. Each label key specified in the LabelDescriptor must have an associated extractor expression in this map. The syntax of the extractor expression is the same as for the value_extractor field.The extracted value is converted to the type defined in the label descriptor. If the either the extraction or the type conversion fails, the label will have a default value. The default value for a string label is an empty string, for an integer label its 0, and for a boolean label its false.Note that there are upper bounds on the maximum number of labels and the number of active time series that are allowed in a project.
           &quot;a_key&quot;: &quot;A String&quot;,
         },
-        &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
         &quot;metricDescriptor&quot;: { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type&#x27;s existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of &quot;1&quot;. Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
-          &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-            &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
-            &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
-            &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
-          },
-          &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-              # &quot;custom.googleapis.com/invoice/paid/amount&quot;
-              # &quot;external.googleapis.com/prometheus/up&quot;
-              # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
-          &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
           &quot;metricKind&quot;: &quot;A String&quot;, # Whether the metric records instantaneous values, changes to a value, etc. Some combinations of metric_kind and value_type might not be supported.
-          &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
           &quot;displayName&quot;: &quot;A String&quot;, # A concise name for the metric, which can be displayed in user interfaces. Use sentence case without an ending period, for example &quot;Request count&quot;. This field is optional but it is recommended to be set for any metrics associated with user-visible concepts, such as Quota.
+          &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
           &quot;unit&quot;: &quot;A String&quot;, # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
               # bit bit
               # By byte
@@ -569,9 +559,9 @@ Returns:
               # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means &quot;3 percent&quot;).
           &quot;labels&quot;: [ # The set of labels that can be used to describe a specific instance of this metric type. For example, the appengine.googleapis.com/http/server/response_latencies metric type has a label for the HTTP response code, response_code, so you can look at latencies for successful responses or just for responses that failed.
             { # A description of a label.
-              &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
               &quot;key&quot;: &quot;A String&quot;, # The label key.
               &quot;description&quot;: &quot;A String&quot;, # A human-readable description for the label.
+              &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
             },
           ],
           &quot;launchStage&quot;: &quot;A String&quot;, # Optional. The launch stage of the metric definition.
@@ -579,11 +569,21 @@ Returns:
             &quot;A String&quot;,
           ],
           &quot;name&quot;: &quot;A String&quot;, # The resource name of the metric descriptor.
+          &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+              # &quot;custom.googleapis.com/invoice/paid/amount&quot;
+              # &quot;external.googleapis.com/prometheus/up&quot;
+              # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
+          &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
+            &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
+            &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
+            &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
+          },
+          &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
         },
+        &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
         &quot;filter&quot;: &quot;A String&quot;, # Required. An advanced logs filter (https://cloud.google.com/logging/docs/view/advanced_filters) which is used to match log entries. Example:
             # &quot;resource.type=gae_app AND severity&gt;=ERROR&quot;
             # The maximum length of the filter is 20000 characters.
-        &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
       },
     ],
     &quot;nextPageToken&quot;: &quot;A String&quot;, # If there might be more results than appear in this response, then nextPageToken is included. To get the next set of results, call this method again using the value of nextPageToken as pageToken.
@@ -616,7 +616,7 @@ The updated metric must be provided in the request and it&#x27;s name field must
     The object takes the form of:
 
 { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
-  &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
+  &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
   &quot;bucketOptions&quot;: { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
     &quot;exponentialBuckets&quot;: { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
       &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
@@ -624,9 +624,9 @@ The updated metric must be provided in the request and it&#x27;s name field must
       &quot;scale&quot;: 3.14, # Must be greater than 0.
     },
     &quot;linearBuckets&quot;: { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
+      &quot;width&quot;: 3.14, # Must be greater than 0.
       &quot;offset&quot;: 3.14, # Lower bound of the first bucket.
       &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
-      &quot;width&quot;: 3.14, # Must be greater than 0.
     },
     &quot;explicitBuckets&quot;: { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
       &quot;bounds&quot;: [ # The values must be monotonically increasing.
@@ -634,27 +634,17 @@ The updated metric must be provided in the request and it&#x27;s name field must
       ],
     },
   },
+  &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
   &quot;name&quot;: &quot;A String&quot;, # Required. The client-assigned metric identifier. Examples: &quot;error_count&quot;, &quot;nginx/requests&quot;.Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*&#x27;,()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: &quot;projects/my-project/metrics/nginx%2Frequests&quot;.
   &quot;labelExtractors&quot;: { # Optional. A map from a label key string to an extractor expression which is used to extract data from a log entry field and assign as the label value. Each label key specified in the LabelDescriptor must have an associated extractor expression in this map. The syntax of the extractor expression is the same as for the value_extractor field.The extracted value is converted to the type defined in the label descriptor. If the either the extraction or the type conversion fails, the label will have a default value. The default value for a string label is an empty string, for an integer label its 0, and for a boolean label its false.Note that there are upper bounds on the maximum number of labels and the number of active time series that are allowed in a project.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
-  &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
   &quot;metricDescriptor&quot;: { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type&#x27;s existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of &quot;1&quot;. Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
-    &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-      &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
-      &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
-      &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
-    },
-    &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-        # &quot;custom.googleapis.com/invoice/paid/amount&quot;
-        # &quot;external.googleapis.com/prometheus/up&quot;
-        # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
-    &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
     &quot;metricKind&quot;: &quot;A String&quot;, # Whether the metric records instantaneous values, changes to a value, etc. Some combinations of metric_kind and value_type might not be supported.
-    &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
     &quot;displayName&quot;: &quot;A String&quot;, # A concise name for the metric, which can be displayed in user interfaces. Use sentence case without an ending period, for example &quot;Request count&quot;. This field is optional but it is recommended to be set for any metrics associated with user-visible concepts, such as Quota.
+    &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
     &quot;unit&quot;: &quot;A String&quot;, # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
         # bit bit
         # By byte
@@ -701,9 +691,9 @@ The updated metric must be provided in the request and it&#x27;s name field must
         # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means &quot;3 percent&quot;).
     &quot;labels&quot;: [ # The set of labels that can be used to describe a specific instance of this metric type. For example, the appengine.googleapis.com/http/server/response_latencies metric type has a label for the HTTP response code, response_code, so you can look at latencies for successful responses or just for responses that failed.
       { # A description of a label.
-        &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
         &quot;key&quot;: &quot;A String&quot;, # The label key.
         &quot;description&quot;: &quot;A String&quot;, # A human-readable description for the label.
+        &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
       },
     ],
     &quot;launchStage&quot;: &quot;A String&quot;, # Optional. The launch stage of the metric definition.
@@ -711,11 +701,21 @@ The updated metric must be provided in the request and it&#x27;s name field must
       &quot;A String&quot;,
     ],
     &quot;name&quot;: &quot;A String&quot;, # The resource name of the metric descriptor.
+    &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+        # &quot;custom.googleapis.com/invoice/paid/amount&quot;
+        # &quot;external.googleapis.com/prometheus/up&quot;
+        # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
+    &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
+      &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
+      &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
+      &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
+    },
+    &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
   },
+  &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
   &quot;filter&quot;: &quot;A String&quot;, # Required. An advanced logs filter (https://cloud.google.com/logging/docs/view/advanced_filters) which is used to match log entries. Example:
       # &quot;resource.type=gae_app AND severity&gt;=ERROR&quot;
       # The maximum length of the filter is 20000 characters.
-  &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
 }
 
   x__xgafv: string, V1 error format.
@@ -727,7 +727,7 @@ Returns:
   An object of the form:
 
     { # Describes a logs-based metric. The value of the metric is the number of log entries that match a logs filter in a given time interval.Logs-based metric can also be used to extract values from logs and create a a distribution of the values. The distribution records the statistics of the extracted values along with an optional histogram of the values as specified by the bucket options.
-    &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
+    &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
     &quot;bucketOptions&quot;: { # BucketOptions describes the bucket boundaries used to create a histogram for the distribution. The buckets can be in a linear sequence, an exponential sequence, or each bucket can be specified explicitly. BucketOptions does not include the number of values in each bucket.A bucket has an inclusive lower bound and exclusive upper bound for the values that are counted for that bucket. The upper bound of a bucket must be strictly greater than the lower bound. The sequence of N buckets for a distribution consists of an underflow bucket (number 0), zero or more finite buckets (number 1 through N - 2) and an overflow bucket (number N - 1). The buckets are contiguous: the lower bound of bucket i (i &gt; 0) is the same as the upper bound of bucket i - 1. The buckets span the whole range of finite values: lower bound of the underflow bucket is -infinity and the upper bound of the overflow bucket is +infinity. The finite buckets are so-called because both bounds are finite. # Optional. The bucket_options are required when the logs-based metric is using a DISTRIBUTION value type and it describes the bucket boundaries used to create a histogram of the extracted values.
       &quot;exponentialBuckets&quot;: { # Specifies an exponential sequence of buckets that have a width that is proportional to the value of the lower bound. Each bucket represents a constant relative uncertainty on a specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): scale * (growth_factor ^ i).  Lower bound (1 &lt;= i &lt; N): scale * (growth_factor ^ (i - 1)). # The exponential buckets.
         &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
@@ -735,9 +735,9 @@ Returns:
         &quot;scale&quot;: 3.14, # Must be greater than 0.
       },
       &quot;linearBuckets&quot;: { # Specifies a linear sequence of buckets that all have the same width (except overflow and underflow). Each bucket represents a constant absolute uncertainty on the specific value in the bucket.There are num_finite_buckets + 2 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): offset + (width * i).  Lower bound (1 &lt;= i &lt; N): offset + (width * (i - 1)). # The linear bucket.
+        &quot;width&quot;: 3.14, # Must be greater than 0.
         &quot;offset&quot;: 3.14, # Lower bound of the first bucket.
         &quot;numFiniteBuckets&quot;: 42, # Must be greater than 0.
-        &quot;width&quot;: 3.14, # Must be greater than 0.
       },
       &quot;explicitBuckets&quot;: { # Specifies a set of buckets with arbitrary widths.There are size(bounds) + 1 (= N) buckets. Bucket i has the following boundaries:Upper bound (0 &lt;= i &lt; N-1): boundsi  Lower bound (1 &lt;= i &lt; N); boundsi - 1The bounds field must contain at least one element. If bounds has only one element, then there are no finite buckets, and that single element is the common boundary of the overflow and underflow buckets. # The explicit buckets.
         &quot;bounds&quot;: [ # The values must be monotonically increasing.
@@ -745,27 +745,17 @@ Returns:
         ],
       },
     },
+    &quot;valueExtractor&quot;: &quot;A String&quot;, # Optional. A value_extractor is required when using a distribution logs-based metric to extract the values to record from a log entry. Two functions are supported for value extraction: EXTRACT(field) or REGEXP_EXTRACT(field, regex). The argument are:  1. field: The name of the log entry field from which the value is to be  extracted.  2. regex: A regular expression using the Google RE2 syntax  (https://github.com/google/re2/wiki/Syntax) with a single capture  group to extract data from the specified log entry field. The value  of the field is converted to a string before applying the regex.  It is an error to specify a regex that does not include exactly one  capture group.The result of the extraction must be convertible to a double type, as the distribution always records double values. If either the extraction or the conversion to double fails, then those values are not recorded in the distribution.Example: REGEXP_EXTRACT(jsonPayload.request, &quot;.*quantity=(\d+).*&quot;)
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation timestamp of the metric.This field may not be present for older metrics.
     &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The last update timestamp of the metric.This field may not be present for older metrics.
     &quot;name&quot;: &quot;A String&quot;, # Required. The client-assigned metric identifier. Examples: &quot;error_count&quot;, &quot;nginx/requests&quot;.Metric identifiers are limited to 100 characters and can include only the following characters: A-Z, a-z, 0-9, and the special characters _-.,+!*&#x27;,()%/. The forward-slash character (/) denotes a hierarchy of name pieces, and it cannot be the first character of the name.The metric identifier in this field must not be URL-encoded (https://en.wikipedia.org/wiki/Percent-encoding). However, when the metric identifier appears as the [METRIC_ID] part of a metric_name API parameter, then the metric identifier must be URL-encoded. Example: &quot;projects/my-project/metrics/nginx%2Frequests&quot;.
     &quot;labelExtractors&quot;: { # Optional. A map from a label key string to an extractor expression which is used to extract data from a log entry field and assign as the label value. Each label key specified in the LabelDescriptor must have an associated extractor expression in this map. The syntax of the extractor expression is the same as for the value_extractor field.The extracted value is converted to the type defined in the label descriptor. If the either the extraction or the type conversion fails, the label will have a default value. The default value for a string label is an empty string, for an integer label its 0, and for a boolean label its false.Note that there are upper bounds on the maximum number of labels and the number of active time series that are allowed in a project.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
-    &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
     &quot;metricDescriptor&quot;: { # Defines a metric type and its schema. Once a metric descriptor is created, deleting or altering it stops data collection and makes the metric type&#x27;s existing data unusable. # Optional. The metric descriptor associated with the logs-based metric. If unspecified, it uses a default metric descriptor with a DELTA metric kind, INT64 value type, with no labels and a unit of &quot;1&quot;. Such a metric counts the number of log entries matching the filter expression.The name, type, and description fields in the metric_descriptor are output only, and is constructed using the name and description field in the LogMetric.To create a logs-based metric that records a distribution of log values, a DELTA metric kind with a DISTRIBUTION value type must be used along with a value_extractor expression in the LogMetric.Each label in the metric descriptor must have a matching label name as the key and an extractor expression as the value in the label_extractors map.The metric_kind and value_type fields in the metric_descriptor cannot be updated once initially configured. New labels can be added in the metric_descriptor, but existing labels cannot be modified except for their description.
-      &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
-        &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
-        &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
-        &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
-      },
-      &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
-          # &quot;custom.googleapis.com/invoice/paid/amount&quot;
-          # &quot;external.googleapis.com/prometheus/up&quot;
-          # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
-      &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
       &quot;metricKind&quot;: &quot;A String&quot;, # Whether the metric records instantaneous values, changes to a value, etc. Some combinations of metric_kind and value_type might not be supported.
-      &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
       &quot;displayName&quot;: &quot;A String&quot;, # A concise name for the metric, which can be displayed in user interfaces. Use sentence case without an ending period, for example &quot;Request count&quot;. This field is optional but it is recommended to be set for any metrics associated with user-visible concepts, such as Quota.
+      &quot;description&quot;: &quot;A String&quot;, # A detailed description of the metric, which can be used in documentation.
       &quot;unit&quot;: &quot;A String&quot;, # The units in which the metric value is reported. It is only applicable if the value_type is INT64, DOUBLE, or DISTRIBUTION. The unit defines the representation of the stored metric values.Different systems may scale the values to be more easily displayed (so a value of 0.02KBy might be displayed as 20By, and a value of 3523KBy might be displayed as 3.5MBy). However, if the unit is KBy, then the value of the metric is always in thousands of bytes, no matter how it may be displayed..If you want a custom metric to record the exact number of CPU-seconds used by a job, you can create an INT64 CUMULATIVE metric whose unit is s{CPU} (or equivalently 1s{CPU} or just s). If the job uses 12,005 CPU-seconds, then the value is written as 12005.Alternatively, if you want a custom metric to record data in a more granular way, you can create a DOUBLE CUMULATIVE metric whose unit is ks{CPU}, and then write the value 12.005 (which is 12005/1000), or use Kis{CPU} and write 11.723 (which is 12005/1024).The supported units are a subset of The Unified Code for Units of Measure (http://unitsofmeasure.org/ucum.html) standard:Basic units (UNIT)
           # bit bit
           # By byte
@@ -812,9 +802,9 @@ Returns:
           # 10^2.% indicates a metric contains a ratio, typically in the range  0..1, that will be multiplied by 100 and displayed as a percentage  (so a metric value 0.03 means &quot;3 percent&quot;).
       &quot;labels&quot;: [ # The set of labels that can be used to describe a specific instance of this metric type. For example, the appengine.googleapis.com/http/server/response_latencies metric type has a label for the HTTP response code, response_code, so you can look at latencies for successful responses or just for responses that failed.
         { # A description of a label.
-          &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
           &quot;key&quot;: &quot;A String&quot;, # The label key.
           &quot;description&quot;: &quot;A String&quot;, # A human-readable description for the label.
+          &quot;valueType&quot;: &quot;A String&quot;, # The type of data that can be assigned to the label.
         },
       ],
       &quot;launchStage&quot;: &quot;A String&quot;, # Optional. The launch stage of the metric definition.
@@ -822,11 +812,21 @@ Returns:
         &quot;A String&quot;,
       ],
       &quot;name&quot;: &quot;A String&quot;, # The resource name of the metric descriptor.
+      &quot;type&quot;: &quot;A String&quot;, # The metric type, including its DNS name prefix. The type is not URL-encoded. All user-defined metric types have the DNS name custom.googleapis.com or external.googleapis.com. Metric types should use a natural hierarchical grouping. For example:
+          # &quot;custom.googleapis.com/invoice/paid/amount&quot;
+          # &quot;external.googleapis.com/prometheus/up&quot;
+          # &quot;appengine.googleapis.com/http/server/response_latencies&quot;
+      &quot;metadata&quot;: { # Additional annotations that can be used to guide the usage of a metric. # Optional. Metadata which can be used to guide usage of the metric.
+        &quot;samplePeriod&quot;: &quot;A String&quot;, # The sampling period of metric data points. For metrics which are written periodically, consecutive data points are stored at this time interval, excluding data loss due to errors. Metrics with a higher granularity have a smaller sampling period.
+        &quot;ingestDelay&quot;: &quot;A String&quot;, # The delay of data points caused by ingestion. Data points older than this age are guaranteed to be ingested and available to be read, excluding data loss due to errors.
+        &quot;launchStage&quot;: &quot;A String&quot;, # Deprecated. Must use the MetricDescriptor.launch_stage instead.
+      },
+      &quot;valueType&quot;: &quot;A String&quot;, # Whether the measurement is an integer, a floating-point number, etc. Some combinations of metric_kind and value_type might not be supported.
     },
+    &quot;version&quot;: &quot;A String&quot;, # Deprecated. The API version that created or updated this metric. The v2 format is used by default and cannot be changed.
     &quot;filter&quot;: &quot;A String&quot;, # Required. An advanced logs filter (https://cloud.google.com/logging/docs/view/advanced_filters) which is used to match log entries. Example:
         # &quot;resource.type=gae_app AND severity&gt;=ERROR&quot;
         # The maximum length of the filter is 20000 characters.
-    &quot;description&quot;: &quot;A String&quot;, # Optional. A description of this metric, which is used in documentation. The maximum length of the description is 8000 characters.
   }</pre>
 </div>
 
