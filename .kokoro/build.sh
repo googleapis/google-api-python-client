@@ -33,7 +33,7 @@ export PROJECT_ID=$(cat "${KOKORO_GFILE_DIR}/project-id.json")
 python3.6 -m pip uninstall --yes --quiet nox-automation
 
 # Install nox
-python3.6 -m pip install --upgrade --quiet nox
+python3.6 -m pip install --quiet nox==2019.11.9
 python3.6 -m nox --version
 
 python3.6 -m nox
