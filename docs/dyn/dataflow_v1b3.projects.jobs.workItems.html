@@ -92,23 +92,23 @@ Args:
     The object takes the form of:
 
 { # Request to lease WorkItems.
-    &quot;currentWorkerTime&quot;: &quot;A String&quot;, # The current timestamp at the worker.
-    &quot;workItemTypes&quot;: [ # Filter for WorkItem type.
-      &quot;A String&quot;,
-    ],
-    &quot;location&quot;: &quot;A String&quot;, # The [regional endpoint]
-        # (https://cloud.google.com/dataflow/docs/concepts/regional-endpoints) that
-        # contains the WorkItem&#x27;s job.
-    &quot;unifiedWorkerRequest&quot;: { # Untranslated bag-of-bytes WorkRequest from UnifiedWorker.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-    },
+    &quot;workerId&quot;: &quot;A String&quot;, # Identifies the worker leasing work -- typically the ID of the
+        # virtual machine running the worker.
     &quot;workerCapabilities&quot;: [ # Worker capabilities. WorkItems might be limited to workers with specific
         # capabilities.
       &quot;A String&quot;,
     ],
-    &quot;workerId&quot;: &quot;A String&quot;, # Identifies the worker leasing work -- typically the ID of the
-        # virtual machine running the worker.
     &quot;requestedLeaseDuration&quot;: &quot;A String&quot;, # The initial lease period.
+    &quot;currentWorkerTime&quot;: &quot;A String&quot;, # The current timestamp at the worker.
+    &quot;location&quot;: &quot;A String&quot;, # The [regional endpoint]
+        # (https://cloud.google.com/dataflow/docs/concepts/regional-endpoints) that
+        # contains the WorkItem&#x27;s job.
+    &quot;workItemTypes&quot;: [ # Filter for WorkItem type.
+      &quot;A String&quot;,
+    ],
+    &quot;unifiedWorkerRequest&quot;: { # Untranslated bag-of-bytes WorkRequest from UnifiedWorker.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    },
   }
 
   x__xgafv: string, V1 error format.
@@ -120,12 +120,44 @@ Returns:
   An object of the form:
 
     { # Response to a request to lease WorkItems.
-    &quot;unifiedWorkerResponse&quot;: { # Untranslated bag-of-bytes WorkResponse for UnifiedWorker.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-    },
     &quot;workItems&quot;: [ # A list of the leased WorkItems.
       { # WorkItem represents basic information about a WorkItem to be executed
           # in the cloud.
+        &quot;shellTask&quot;: { # A task which consists of a shell command for the worker to execute. # Additional information for ShellTask WorkItems.
+          &quot;exitCode&quot;: 42, # Exit code for the task.
+          &quot;command&quot;: &quot;A String&quot;, # The shell command to run.
+        },
+        &quot;streamingComputationTask&quot;: { # A task which describes what action should be performed for the specified # Additional information for StreamingComputationTask WorkItems.
+            # streaming computation ranges.
+          &quot;computationRanges&quot;: [ # Contains ranges of a streaming computation this task should apply to.
+            { # Describes full or partial data disk assignment information of the computation
+                # ranges.
+              &quot;rangeAssignments&quot;: [ # Data disk assignments for ranges from this computation.
+                { # Data disk assignment information for a specific key-range of a sharded
+                    # computation.
+                    # Currently we only support UTF-8 character splits to simplify encoding into
+                    # JSON.
+                  &quot;dataDisk&quot;: &quot;A String&quot;, # The name of the data disk where data for this range is stored.
+                      # This name is local to the Google Cloud Platform project and uniquely
+                      # identifies the disk within that project, for example
+                      # &quot;myproject-1014-104817-4c2-harness-0-disk-1&quot;.
+                  &quot;start&quot;: &quot;A String&quot;, # The start (inclusive) of the key range.
+                  &quot;end&quot;: &quot;A String&quot;, # The end (exclusive) of the key range.
+                },
+              ],
+              &quot;computationId&quot;: &quot;A String&quot;, # The ID of the computation.
+            },
+          ],
+          &quot;dataDisks&quot;: [ # Describes the set of data disks this task should apply to.
+            { # Describes mounted data disk.
+              &quot;dataDisk&quot;: &quot;A String&quot;, # The name of the data disk.
+                  # This name is local to the Google Cloud Platform project and uniquely
+                  # identifies the disk within that project, for example
+                  # &quot;myproject-1014-104817-4c2-harness-0-disk-1&quot;.
+            },
+          ],
+          &quot;taskType&quot;: &quot;A String&quot;, # A type of streaming computation task.
+        },
         &quot;jobId&quot;: &quot;A String&quot;, # Identifies the workflow job this WorkItem belongs to.
         &quot;id&quot;: &quot;A String&quot;, # Identifies this WorkItem.
         &quot;configuration&quot;: &quot;A String&quot;, # Work item-specific configuration as an opaque blob.
@@ -135,102 +167,25 @@ Returns:
             #
             # Each instruction must appear in the list before any instructions which
             # depends on its output.
-          &quot;systemName&quot;: &quot;A String&quot;, # System-defined name of this MapTask.
-              # Unique across the workflow.
-          &quot;stageName&quot;: &quot;A String&quot;, # System-defined name of the stage containing this MapTask.
-              # Unique across the workflow.
           &quot;instructions&quot;: [ # The instructions in the MapTask.
             { # Describes a particular operation comprising a MapTask.
-              &quot;parDo&quot;: { # An instruction that does a ParDo operation. # Additional information for ParDo instructions.
-                  # Takes one main input and zero or more side inputs, and produces
-                  # zero or more outputs.
-                  # Runs user code.
-                &quot;multiOutputInfos&quot;: [ # Information about each of the outputs, if user_fn is a  MultiDoFn.
-                  { # Information about an output of a multi-output DoFn.
-                    &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will emit to this output by; this
-                        # should correspond to the tag of some SideInputInfo.
+              &quot;outputs&quot;: [ # Describes the outputs of the instruction.
+                { # An output of an instruction.
+                  &quot;systemName&quot;: &quot;A String&quot;, # System-defined name of this output.
+                      # Unique across the workflow.
+                  &quot;onlyCountKeyBytes&quot;: True or False, # For system-generated byte and mean byte metrics, certain instructions
+                      # should only report the key size.
+                  &quot;onlyCountValueBytes&quot;: True or False, # For system-generated byte and mean byte metrics, certain instructions
+                      # should only report the value size.
+                  &quot;codec&quot;: { # The codec to use to encode data being written via this output.
+                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                   },
-                ],
-                &quot;userFn&quot;: { # The user function to invoke.
-                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                  &quot;name&quot;: &quot;A String&quot;, # The user-provided name of this output.
+                  &quot;originalName&quot;: &quot;A String&quot;, # System-defined name for this output in the original workflow graph.
+                      # Outputs that do not contribute to an original instruction do not set this.
                 },
-                &quot;input&quot;: { # An input of an instruction, as a reference to an output of a # The input.
-                    # producer instruction.
-                  &quot;producerInstructionIndex&quot;: 42, # The index (origin zero) of the parallel instruction that produces
-                      # the output to be consumed by this input.  This index is relative
-                      # to the list of instructions in this input&#x27;s instruction&#x27;s
-                      # containing MapTask.
-                  &quot;outputNum&quot;: 42, # The output index (origin zero) within the producer.
-                },
-                &quot;numOutputs&quot;: 42, # The number of outputs.
-                &quot;sideInputs&quot;: [ # Zero or more side inputs.
-                  { # Information about a side input of a DoFn or an input of a SeqDoFn.
-                    &quot;sources&quot;: [ # The source(s) to read element(s) from to get the value of this side input.
-                        # If more than one source, then the elements are taken from the
-                        # sources, in the specified order if order matters.
-                        # At least one source is required.
-                      { # A source that records can be read and decoded from.
-                        &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
-                            # avoiding a SourceGetMetadataOperation roundtrip
-                            # (see SourceOperationRequest).
-                            #
-                            # This field is meaningful only in the Source objects populated
-                            # by the user (e.g. when filling in a DerivedSource).
-                            # Source objects supplied by the framework to the user don&#x27;t have
-                            # this field populated.
-                            # and tuning the pipeline, etc.
-                          &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                              # the (encoded) keys in lexicographically sorted order.
-                          &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                              # (this is a streaming source).
-                          &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
-                              # read from this source.  This estimate is in terms of external storage
-                              # size, before any decompression or other processing done by the reader.
-                        },
-                        &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
-                            # as differences against another source, in order to save backend-side
-                            # memory and allow bigger jobs. For details, see SourceSplitRequest.
-                            # To support this use case, the full set of parameters of the source
-                            # is logically obtained by taking the latest explicitly specified value
-                            # of each parameter in the order:
-                            # base_specs (later items win), spec (overrides anything in base_specs).
-                          {
-                            &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                          },
-                        ],
-                        &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                        },
-                        &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
-                            # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
-                            # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
-                            #
-                            # E.g. a file splitter may set this to true when splitting a single file
-                            # into a set of byte ranges of appropriate size, and set this
-                            # to false when splitting a filepattern into individual files.
-                            # However, for efficiency, a file splitter may decide to produce
-                            # file subranges directly from the filepattern to avoid a splitting
-                            # round-trip.
-                            #
-                            # See SourceSplitRequest for an overview of the splitting process.
-                            #
-                            # This field is meaningful only in the Source objects populated
-                            # by the user (e.g. when filling in a DerivedSource).
-                            # Source objects supplied by the framework to the user don&#x27;t have
-                            # this field populated.
-                        &quot;spec&quot;: { # The source to read from, plus its parameters.
-                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                        },
-                      },
-                    ],
-                    &quot;kind&quot;: { # How to interpret the source element(s) as a side input value.
-                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                    },
-                    &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will access this side input by;
-                        # this should correspond to the tag of some MultiOutputInfo.
-                  },
-                ],
-              },
+              ],
+              &quot;name&quot;: &quot;A String&quot;, # User-provided name of this operation.
               &quot;read&quot;: { # An instruction that reads records. # Additional information for Read instructions.
                   # Takes no inputs, produces one output.
                 &quot;source&quot;: { # A source that records can be read and decoded from. # The source to read from.
@@ -243,13 +198,13 @@ Returns:
                       # Source objects supplied by the framework to the user don&#x27;t have
                       # this field populated.
                       # and tuning the pipeline, etc.
-                    &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                        # the (encoded) keys in lexicographically sorted order.
-                    &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                        # (this is a streaming source).
                     &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                         # read from this source.  This estimate is in terms of external storage
                         # size, before any decompression or other processing done by the reader.
+                    &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                        # (this is a streaming source).
+                    &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                        # the (encoded) keys in lexicographically sorted order.
                   },
                   &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                       # as differences against another source, in order to save backend-side
@@ -262,9 +217,6 @@ Returns:
                       &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                     },
                   ],
-                  &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                  },
                   &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                       # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                       # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -282,9 +234,102 @@ Returns:
                       # by the user (e.g. when filling in a DerivedSource).
                       # Source objects supplied by the framework to the user don&#x27;t have
                       # this field populated.
+                  &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                  },
                   &quot;spec&quot;: { # The source to read from, plus its parameters.
                     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                   },
+                },
+              },
+              &quot;parDo&quot;: { # An instruction that does a ParDo operation. # Additional information for ParDo instructions.
+                  # Takes one main input and zero or more side inputs, and produces
+                  # zero or more outputs.
+                  # Runs user code.
+                &quot;numOutputs&quot;: 42, # The number of outputs.
+                &quot;sideInputs&quot;: [ # Zero or more side inputs.
+                  { # Information about a side input of a DoFn or an input of a SeqDoFn.
+                    &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will access this side input by;
+                        # this should correspond to the tag of some MultiOutputInfo.
+                    &quot;kind&quot;: { # How to interpret the source element(s) as a side input value.
+                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                    },
+                    &quot;sources&quot;: [ # The source(s) to read element(s) from to get the value of this side input.
+                        # If more than one source, then the elements are taken from the
+                        # sources, in the specified order if order matters.
+                        # At least one source is required.
+                      { # A source that records can be read and decoded from.
+                        &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
+                            # avoiding a SourceGetMetadataOperation roundtrip
+                            # (see SourceOperationRequest).
+                            #
+                            # This field is meaningful only in the Source objects populated
+                            # by the user (e.g. when filling in a DerivedSource).
+                            # Source objects supplied by the framework to the user don&#x27;t have
+                            # this field populated.
+                            # and tuning the pipeline, etc.
+                          &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
+                              # read from this source.  This estimate is in terms of external storage
+                              # size, before any decompression or other processing done by the reader.
+                          &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                              # (this is a streaming source).
+                          &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                              # the (encoded) keys in lexicographically sorted order.
+                        },
+                        &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
+                            # as differences against another source, in order to save backend-side
+                            # memory and allow bigger jobs. For details, see SourceSplitRequest.
+                            # To support this use case, the full set of parameters of the source
+                            # is logically obtained by taking the latest explicitly specified value
+                            # of each parameter in the order:
+                            # base_specs (later items win), spec (overrides anything in base_specs).
+                          {
+                            &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                          },
+                        ],
+                        &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
+                            # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
+                            # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
+                            #
+                            # E.g. a file splitter may set this to true when splitting a single file
+                            # into a set of byte ranges of appropriate size, and set this
+                            # to false when splitting a filepattern into individual files.
+                            # However, for efficiency, a file splitter may decide to produce
+                            # file subranges directly from the filepattern to avoid a splitting
+                            # round-trip.
+                            #
+                            # See SourceSplitRequest for an overview of the splitting process.
+                            #
+                            # This field is meaningful only in the Source objects populated
+                            # by the user (e.g. when filling in a DerivedSource).
+                            # Source objects supplied by the framework to the user don&#x27;t have
+                            # this field populated.
+                        &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                        },
+                        &quot;spec&quot;: { # The source to read from, plus its parameters.
+                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                        },
+                      },
+                    ],
+                  },
+                ],
+                &quot;multiOutputInfos&quot;: [ # Information about each of the outputs, if user_fn is a  MultiDoFn.
+                  { # Information about an output of a multi-output DoFn.
+                    &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will emit to this output by; this
+                        # should correspond to the tag of some SideInputInfo.
+                  },
+                ],
+                &quot;userFn&quot;: { # The user function to invoke.
+                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                },
+                &quot;input&quot;: { # An input of an instruction, as a reference to an output of a # The input.
+                    # producer instruction.
+                  &quot;producerInstructionIndex&quot;: 42, # The index (origin zero) of the parallel instruction that produces
+                      # the output to be consumed by this input.  This index is relative
+                      # to the list of instructions in this input&#x27;s instruction&#x27;s
+                      # containing MapTask.
+                  &quot;outputNum&quot;: 42, # The output index (origin zero) within the producer.
                 },
               },
               &quot;originalName&quot;: &quot;A String&quot;, # System-defined name for the operation in the original workflow graph.
@@ -303,10 +348,10 @@ Returns:
               &quot;write&quot;: { # An instruction that writes records. # Additional information for Write instructions.
                   # Takes one input, produces no outputs.
                 &quot;sink&quot;: { # A sink that records can be encoded and written to. # The sink to write to.
-                  &quot;spec&quot;: { # The sink to write to, plus its parameters.
+                  &quot;codec&quot;: { # The codec to use to encode data written to the sink.
                     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                   },
-                  &quot;codec&quot;: { # The codec to use to encode data written to the sink.
+                  &quot;spec&quot;: { # The sink to write to, plus its parameters.
                     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                   },
                 },
@@ -323,16 +368,21 @@ Returns:
                   # Unique across the workflow.
               &quot;partialGroupByKey&quot;: { # An instruction that does a partial group-by-key. # Additional information for PartialGroupByKey instructions.
                   # One input and one output.
-                &quot;valueCombiningFn&quot;: { # The value combining function to invoke.
+                &quot;inputElementCodec&quot;: { # The codec to use for interpreting an element in the input PTable.
                   &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                 },
-                &quot;inputElementCodec&quot;: { # The codec to use for interpreting an element in the input PTable.
+                &quot;valueCombiningFn&quot;: { # The value combining function to invoke.
                   &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                 },
                 &quot;originalCombineValuesInputStoreName&quot;: &quot;A String&quot;, # If this instruction includes a combining function this is the name of the
                     # intermediate store between the GBK and the CombineValues.
                 &quot;sideInputs&quot;: [ # Zero or more side inputs.
                   { # Information about a side input of a DoFn or an input of a SeqDoFn.
+                    &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will access this side input by;
+                        # this should correspond to the tag of some MultiOutputInfo.
+                    &quot;kind&quot;: { # How to interpret the source element(s) as a side input value.
+                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                    },
                     &quot;sources&quot;: [ # The source(s) to read element(s) from to get the value of this side input.
                         # If more than one source, then the elements are taken from the
                         # sources, in the specified order if order matters.
@@ -347,13 +397,13 @@ Returns:
                             # Source objects supplied by the framework to the user don&#x27;t have
                             # this field populated.
                             # and tuning the pipeline, etc.
-                          &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                              # the (encoded) keys in lexicographically sorted order.
-                          &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                              # (this is a streaming source).
                           &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                               # read from this source.  This estimate is in terms of external storage
                               # size, before any decompression or other processing done by the reader.
+                          &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                              # (this is a streaming source).
+                          &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                              # the (encoded) keys in lexicographically sorted order.
                         },
                         &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                             # as differences against another source, in order to save backend-side
@@ -366,9 +416,6 @@ Returns:
                             &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                           },
                         ],
-                        &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                        },
                         &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                             # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                             # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -386,16 +433,14 @@ Returns:
                             # by the user (e.g. when filling in a DerivedSource).
                             # Source objects supplied by the framework to the user don&#x27;t have
                             # this field populated.
+                        &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                        },
                         &quot;spec&quot;: { # The source to read from, plus its parameters.
                           &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                         },
                       },
                     ],
-                    &quot;kind&quot;: { # How to interpret the source element(s) as a side input value.
-                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                    },
-                    &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will access this side input by;
-                        # this should correspond to the tag of some MultiOutputInfo.
                   },
                 ],
                 &quot;originalCombineValuesStepName&quot;: &quot;A String&quot;, # If this instruction includes a combining function, this is the name of the
@@ -409,31 +454,40 @@ Returns:
                   &quot;outputNum&quot;: 42, # The output index (origin zero) within the producer.
                 },
               },
-              &quot;outputs&quot;: [ # Describes the outputs of the instruction.
-                { # An output of an instruction.
-                  &quot;originalName&quot;: &quot;A String&quot;, # System-defined name for this output in the original workflow graph.
-                      # Outputs that do not contribute to an original instruction do not set this.
-                  &quot;systemName&quot;: &quot;A String&quot;, # System-defined name of this output.
-                      # Unique across the workflow.
-                  &quot;onlyCountKeyBytes&quot;: True or False, # For system-generated byte and mean byte metrics, certain instructions
-                      # should only report the key size.
-                  &quot;onlyCountValueBytes&quot;: True or False, # For system-generated byte and mean byte metrics, certain instructions
-                      # should only report the value size.
-                  &quot;codec&quot;: { # The codec to use to encode data being written via this output.
-                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                  },
-                  &quot;name&quot;: &quot;A String&quot;, # The user-provided name of this output.
-                },
-              ],
-              &quot;name&quot;: &quot;A String&quot;, # User-provided name of this operation.
             },
           ],
           &quot;counterPrefix&quot;: &quot;A String&quot;, # Counter prefix that can be used to prefix counters. Not currently used in
               # Dataflow.
+          &quot;stageName&quot;: &quot;A String&quot;, # System-defined name of the stage containing this MapTask.
+              # Unique across the workflow.
+          &quot;systemName&quot;: &quot;A String&quot;, # System-defined name of this MapTask.
+              # Unique across the workflow.
         },
         &quot;seqMapTask&quot;: { # Describes a particular function to invoke. # Additional information for SeqMapTask WorkItems.
+          &quot;userFn&quot;: { # The user function to invoke.
+            &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+          },
+          &quot;name&quot;: &quot;A String&quot;, # The user-provided name of the SeqDo operation.
+          &quot;outputInfos&quot;: [ # Information about each of the outputs.
+            { # Information about an output of a SeqMapTask.
+              &quot;sink&quot;: { # A sink that records can be encoded and written to. # The sink to write the output value to.
+                &quot;codec&quot;: { # The codec to use to encode data written to the sink.
+                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                },
+                &quot;spec&quot;: { # The sink to write to, plus its parameters.
+                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                },
+              },
+              &quot;tag&quot;: &quot;A String&quot;, # The id of the TupleTag the user code will tag the output value by.
+            },
+          ],
           &quot;inputs&quot;: [ # Information about each of the inputs.
             { # Information about a side input of a DoFn or an input of a SeqDoFn.
+              &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will access this side input by;
+                  # this should correspond to the tag of some MultiOutputInfo.
+              &quot;kind&quot;: { # How to interpret the source element(s) as a side input value.
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+              },
               &quot;sources&quot;: [ # The source(s) to read element(s) from to get the value of this side input.
                   # If more than one source, then the elements are taken from the
                   # sources, in the specified order if order matters.
@@ -448,13 +502,13 @@ Returns:
                       # Source objects supplied by the framework to the user don&#x27;t have
                       # this field populated.
                       # and tuning the pipeline, etc.
-                    &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                        # the (encoded) keys in lexicographically sorted order.
-                    &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                        # (this is a streaming source).
                     &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                         # read from this source.  This estimate is in terms of external storage
                         # size, before any decompression or other processing done by the reader.
+                    &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                        # (this is a streaming source).
+                    &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                        # the (encoded) keys in lexicographically sorted order.
                   },
                   &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                       # as differences against another source, in order to save backend-side
@@ -467,9 +521,6 @@ Returns:
                       &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                     },
                   ],
-                  &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                  },
                   &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                       # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                       # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -487,39 +538,20 @@ Returns:
                       # by the user (e.g. when filling in a DerivedSource).
                       # Source objects supplied by the framework to the user don&#x27;t have
                       # this field populated.
+                  &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                  },
                   &quot;spec&quot;: { # The source to read from, plus its parameters.
                     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                   },
                 },
               ],
-              &quot;kind&quot;: { # How to interpret the source element(s) as a side input value.
-                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-              },
-              &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will access this side input by;
-                  # this should correspond to the tag of some MultiOutputInfo.
             },
           ],
-          &quot;stageName&quot;: &quot;A String&quot;, # System-defined name of the stage containing the SeqDo operation.
-              # Unique across the workflow.
           &quot;systemName&quot;: &quot;A String&quot;, # System-defined name of the SeqDo operation.
               # Unique across the workflow.
-          &quot;userFn&quot;: { # The user function to invoke.
-            &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-          },
-          &quot;name&quot;: &quot;A String&quot;, # The user-provided name of the SeqDo operation.
-          &quot;outputInfos&quot;: [ # Information about each of the outputs.
-            { # Information about an output of a SeqMapTask.
-              &quot;sink&quot;: { # A sink that records can be encoded and written to. # The sink to write the output value to.
-                &quot;spec&quot;: { # The sink to write to, plus its parameters.
-                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                },
-                &quot;codec&quot;: { # The codec to use to encode data written to the sink.
-                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                },
-              },
-              &quot;tag&quot;: &quot;A String&quot;, # The id of the TupleTag the user code will tag the output value by.
-            },
-          ],
+          &quot;stageName&quot;: &quot;A String&quot;, # System-defined name of the stage containing the SeqDo operation.
+              # Unique across the workflow.
         },
         &quot;packages&quot;: [ # Any required packages that need to be fetched in order to execute
             # this WorkItem.
@@ -532,13 +564,13 @@ Returns:
               # might use this to install jars containing the user&#x27;s code and all of the
               # various dependencies (libraries, data files, etc.) required in order
               # for that code to run.
+            &quot;name&quot;: &quot;A String&quot;, # The name of the package.
             &quot;location&quot;: &quot;A String&quot;, # The resource to read the package from. The supported resource type is:
                 #
                 # Google Cloud Storage:
                 #
                 #   storage.googleapis.com/{bucket}
                 #   bucket.storage.googleapis.com/
-            &quot;name&quot;: &quot;A String&quot;, # The name of the package.
           },
         ],
         &quot;projectId&quot;: &quot;A String&quot;, # Identifies the cloud project this WorkItem belongs to.
@@ -561,13 +593,13 @@ Returns:
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
                   # and tuning the pipeline, etc.
-                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                    # the (encoded) keys in lexicographically sorted order.
-                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                    # (this is a streaming source).
                 &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                     # read from this source.  This estimate is in terms of external storage
                     # size, before any decompression or other processing done by the reader.
+                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                    # (this is a streaming source).
+                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                    # the (encoded) keys in lexicographically sorted order.
               },
               &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                   # as differences against another source, in order to save backend-side
@@ -580,9 +612,6 @@ Returns:
                   &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                 },
               ],
-              &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-              },
               &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                   # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                   # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -600,6 +629,9 @@ Returns:
                   # by the user (e.g. when filling in a DerivedSource).
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
+              &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+              },
               &quot;spec&quot;: { # The source to read from, plus its parameters.
                 &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
               },
@@ -619,6 +651,12 @@ Returns:
               # SOURCE_SPLIT_OUTCOME_USE_CURRENT, and doesn&#x27;t initiate a SourceSplitRequest.
               # This applies both to the initial source being split and to bundles
               # produced from it.
+            &quot;options&quot;: { # Hints for splitting a Source into bundles (parts for parallel # Hints for tuning the splitting process.
+                # processing) using SourceSplitRequest.
+              &quot;desiredShardSizeBytes&quot;: &quot;A String&quot;, # DEPRECATED in favor of desired_bundle_size_bytes.
+              &quot;desiredBundleSizeBytes&quot;: &quot;A String&quot;, # The source should be split into a set of bundles where the estimated size
+                  # of each is approximately this many bytes.
+            },
             &quot;source&quot;: { # A source that records can be read and decoded from. # Specification of the source to be split.
               &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
                   # avoiding a SourceGetMetadataOperation roundtrip
@@ -629,13 +667,13 @@ Returns:
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
                   # and tuning the pipeline, etc.
-                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                    # the (encoded) keys in lexicographically sorted order.
-                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                    # (this is a streaming source).
                 &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                     # read from this source.  This estimate is in terms of external storage
                     # size, before any decompression or other processing done by the reader.
+                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                    # (this is a streaming source).
+                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                    # the (encoded) keys in lexicographically sorted order.
               },
               &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                   # as differences against another source, in order to save backend-side
@@ -648,9 +686,6 @@ Returns:
                   &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                 },
               ],
-              &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-              },
               &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                   # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                   # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -668,27 +703,122 @@ Returns:
                   # by the user (e.g. when filling in a DerivedSource).
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
+              &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+              },
               &quot;spec&quot;: { # The source to read from, plus its parameters.
                 &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
               },
             },
-            &quot;options&quot;: { # Hints for splitting a Source into bundles (parts for parallel # Hints for tuning the splitting process.
-                # processing) using SourceSplitRequest.
-              &quot;desiredShardSizeBytes&quot;: &quot;A String&quot;, # DEPRECATED in favor of desired_bundle_size_bytes.
-              &quot;desiredBundleSizeBytes&quot;: &quot;A String&quot;, # The source should be split into a set of bundles where the estimated size
-                  # of each is approximately this many bytes.
-            },
           },
           &quot;name&quot;: &quot;A String&quot;, # User-provided name of the Read instruction for this source.
         },
+        &quot;reportStatusInterval&quot;: &quot;A String&quot;, # Recommended reporting interval.
         &quot;streamingSetupTask&quot;: { # A task which initializes part of a streaming Dataflow job. # Additional information for StreamingSetupTask WorkItems.
-          &quot;workerHarnessPort&quot;: 42, # The TCP port used by the worker to communicate with the Dataflow
-              # worker harness.
-          &quot;drain&quot;: True or False, # The user has requested drain.
-          &quot;receiveWorkPort&quot;: 42, # The TCP port on which the worker should listen for messages from
-              # other streaming computation workers.
+          &quot;snapshotConfig&quot;: { # Streaming appliance snapshot configuration. # Configures streaming appliance snapshot.
+            &quot;snapshotId&quot;: &quot;A String&quot;, # If set, indicates the snapshot id for the snapshot being performed.
+            &quot;importStateEndpoint&quot;: &quot;A String&quot;, # Indicates which endpoint is used to import appliance state.
+          },
           &quot;streamingComputationTopology&quot;: { # Global topology of the streaming Dataflow job, including all # The global topology of the streaming Dataflow job.
               # computations and their sharded locations.
+            &quot;userStageToComputationNameMap&quot;: { # Maps user stage names to stable computation names.
+              &quot;a_key&quot;: &quot;A String&quot;,
+            },
+            &quot;computations&quot;: [ # The computations associated with a streaming Dataflow job.
+              { # All configuration data for a particular Computation.
+                &quot;systemStageName&quot;: &quot;A String&quot;, # The system stage name.
+                &quot;computationId&quot;: &quot;A String&quot;, # The ID of the computation.
+                &quot;inputs&quot;: [ # The inputs to the computation.
+                  { # Describes a stream of data, either as input to be processed or as
+                      # output of a streaming Dataflow job.
+                    &quot;customSourceLocation&quot;: { # Identifies the location of a custom souce. # The stream is a custom source.
+                      &quot;stateful&quot;: True or False, # Whether this source is stateful.
+                    },
+                    &quot;sideInputLocation&quot;: { # Identifies the location of a streaming side input. # The stream is a streaming side input.
+                      &quot;stateFamily&quot;: &quot;A String&quot;, # Identifies the state family where this side input is stored.
+                      &quot;tag&quot;: &quot;A String&quot;, # Identifies the particular side input within the streaming Dataflow job.
+                    },
+                    &quot;pubsubLocation&quot;: { # Identifies a pubsub location to use for transferring data into or # The stream is a pubsub stream.
+                        # out of a streaming Dataflow job.
+                      &quot;dropLateData&quot;: True or False, # Indicates whether the pipeline allows late-arriving data.
+                      &quot;trackingSubscription&quot;: &quot;A String&quot;, # If set, specifies the pubsub subscription that will be used for tracking
+                          # custom time timestamps for watermark estimation.
+                      &quot;withAttributes&quot;: True or False, # If true, then the client has requested to get pubsub attributes.
+                      &quot;idLabel&quot;: &quot;A String&quot;, # If set, contains a pubsub label from which to extract record ids.
+                          # If left empty, record deduplication will be strictly best effort.
+                      &quot;topic&quot;: &quot;A String&quot;, # A pubsub topic, in the form of
+                          # &quot;pubsub.googleapis.com/topics/&lt;project-id&gt;/&lt;topic-name&gt;&quot;
+                      &quot;timestampLabel&quot;: &quot;A String&quot;, # If set, contains a pubsub label from which to extract record timestamps.
+                          # If left empty, record timestamps will be generated upon arrival.
+                      &quot;subscription&quot;: &quot;A String&quot;, # A pubsub subscription, in the form of
+                          # &quot;pubsub.googleapis.com/subscriptions/&lt;project-id&gt;/&lt;subscription-name&gt;&quot;
+                    },
+                    &quot;streamingStageLocation&quot;: { # Identifies the location of a streaming computation stage, for # The stream is part of another computation within the current
+                        # streaming Dataflow job.
+                        # stage-to-stage communication.
+                      &quot;streamId&quot;: &quot;A String&quot;, # Identifies the particular stream within the streaming Dataflow
+                          # job.
+                    },
+                  },
+                ],
+                &quot;keyRanges&quot;: [ # The key ranges processed by the computation.
+                  { # Location information for a specific key-range of a sharded computation.
+                      # Currently we only support UTF-8 character splits to simplify encoding into
+                      # JSON.
+                    &quot;deprecatedPersistentDirectory&quot;: &quot;A String&quot;, # DEPRECATED. The location of the persistent state for this range, as a
+                        # persistent directory in the worker local filesystem.
+                    &quot;deliveryEndpoint&quot;: &quot;A String&quot;, # The physical location of this range assignment to be used for
+                        # streaming computation cross-worker message delivery.
+                    &quot;dataDisk&quot;: &quot;A String&quot;, # The name of the data disk where data for this range is stored.
+                        # This name is local to the Google Cloud Platform project and uniquely
+                        # identifies the disk within that project, for example
+                        # &quot;myproject-1014-104817-4c2-harness-0-disk-1&quot;.
+                    &quot;start&quot;: &quot;A String&quot;, # The start (inclusive) of the key range.
+                    &quot;end&quot;: &quot;A String&quot;, # The end (exclusive) of the key range.
+                  },
+                ],
+                &quot;outputs&quot;: [ # The outputs from the computation.
+                  { # Describes a stream of data, either as input to be processed or as
+                      # output of a streaming Dataflow job.
+                    &quot;customSourceLocation&quot;: { # Identifies the location of a custom souce. # The stream is a custom source.
+                      &quot;stateful&quot;: True or False, # Whether this source is stateful.
+                    },
+                    &quot;sideInputLocation&quot;: { # Identifies the location of a streaming side input. # The stream is a streaming side input.
+                      &quot;stateFamily&quot;: &quot;A String&quot;, # Identifies the state family where this side input is stored.
+                      &quot;tag&quot;: &quot;A String&quot;, # Identifies the particular side input within the streaming Dataflow job.
+                    },
+                    &quot;pubsubLocation&quot;: { # Identifies a pubsub location to use for transferring data into or # The stream is a pubsub stream.
+                        # out of a streaming Dataflow job.
+                      &quot;dropLateData&quot;: True or False, # Indicates whether the pipeline allows late-arriving data.
+                      &quot;trackingSubscription&quot;: &quot;A String&quot;, # If set, specifies the pubsub subscription that will be used for tracking
+                          # custom time timestamps for watermark estimation.
+                      &quot;withAttributes&quot;: True or False, # If true, then the client has requested to get pubsub attributes.
+                      &quot;idLabel&quot;: &quot;A String&quot;, # If set, contains a pubsub label from which to extract record ids.
+                          # If left empty, record deduplication will be strictly best effort.
+                      &quot;topic&quot;: &quot;A String&quot;, # A pubsub topic, in the form of
+                          # &quot;pubsub.googleapis.com/topics/&lt;project-id&gt;/&lt;topic-name&gt;&quot;
+                      &quot;timestampLabel&quot;: &quot;A String&quot;, # If set, contains a pubsub label from which to extract record timestamps.
+                          # If left empty, record timestamps will be generated upon arrival.
+                      &quot;subscription&quot;: &quot;A String&quot;, # A pubsub subscription, in the form of
+                          # &quot;pubsub.googleapis.com/subscriptions/&lt;project-id&gt;/&lt;subscription-name&gt;&quot;
+                    },
+                    &quot;streamingStageLocation&quot;: { # Identifies the location of a streaming computation stage, for # The stream is part of another computation within the current
+                        # streaming Dataflow job.
+                        # stage-to-stage communication.
+                      &quot;streamId&quot;: &quot;A String&quot;, # Identifies the particular stream within the streaming Dataflow
+                          # job.
+                    },
+                  },
+                ],
+                &quot;stateFamilies&quot;: [ # The state family values.
+                  { # State family configuration.
+                    &quot;stateFamily&quot;: &quot;A String&quot;, # The state family value.
+                    &quot;isRead&quot;: True or False, # If true, this family corresponds to a read operation.
+                  },
+                ],
+              },
+            ],
+            &quot;persistentStateVersion&quot;: 42, # Version number for persistent state.
             &quot;dataDiskAssignments&quot;: [ # The disks assigned to a streaming Dataflow job.
               { # Data disk assignment for a given VM instance.
                 &quot;vmInstance&quot;: &quot;A String&quot;, # VM instance name the data disks mounted to, for example
@@ -701,118 +831,16 @@ Returns:
                 ],
               },
             ],
-            &quot;persistentStateVersion&quot;: 42, # Version number for persistent state.
             &quot;forwardingKeyBits&quot;: 42, # The size (in bits) of keys that will be assigned to source messages.
-            &quot;userStageToComputationNameMap&quot;: { # Maps user stage names to stable computation names.
-              &quot;a_key&quot;: &quot;A String&quot;,
-            },
-            &quot;computations&quot;: [ # The computations associated with a streaming Dataflow job.
-              { # All configuration data for a particular Computation.
-                &quot;stateFamilies&quot;: [ # The state family values.
-                  { # State family configuration.
-                    &quot;stateFamily&quot;: &quot;A String&quot;, # The state family value.
-                    &quot;isRead&quot;: True or False, # If true, this family corresponds to a read operation.
-                  },
-                ],
-                &quot;outputs&quot;: [ # The outputs from the computation.
-                  { # Describes a stream of data, either as input to be processed or as
-                      # output of a streaming Dataflow job.
-                    &quot;customSourceLocation&quot;: { # Identifies the location of a custom souce. # The stream is a custom source.
-                      &quot;stateful&quot;: True or False, # Whether this source is stateful.
-                    },
-                    &quot;streamingStageLocation&quot;: { # Identifies the location of a streaming computation stage, for # The stream is part of another computation within the current
-                        # streaming Dataflow job.
-                        # stage-to-stage communication.
-                      &quot;streamId&quot;: &quot;A String&quot;, # Identifies the particular stream within the streaming Dataflow
-                          # job.
-                    },
-                    &quot;pubsubLocation&quot;: { # Identifies a pubsub location to use for transferring data into or # The stream is a pubsub stream.
-                        # out of a streaming Dataflow job.
-                      &quot;subscription&quot;: &quot;A String&quot;, # A pubsub subscription, in the form of
-                          # &quot;pubsub.googleapis.com/subscriptions/&lt;project-id&gt;/&lt;subscription-name&gt;&quot;
-                      &quot;dropLateData&quot;: True or False, # Indicates whether the pipeline allows late-arriving data.
-                      &quot;trackingSubscription&quot;: &quot;A String&quot;, # If set, specifies the pubsub subscription that will be used for tracking
-                          # custom time timestamps for watermark estimation.
-                      &quot;withAttributes&quot;: True or False, # If true, then the client has requested to get pubsub attributes.
-                      &quot;idLabel&quot;: &quot;A String&quot;, # If set, contains a pubsub label from which to extract record ids.
-                          # If left empty, record deduplication will be strictly best effort.
-                      &quot;timestampLabel&quot;: &quot;A String&quot;, # If set, contains a pubsub label from which to extract record timestamps.
-                          # If left empty, record timestamps will be generated upon arrival.
-                      &quot;topic&quot;: &quot;A String&quot;, # A pubsub topic, in the form of
-                          # &quot;pubsub.googleapis.com/topics/&lt;project-id&gt;/&lt;topic-name&gt;&quot;
-                    },
-                    &quot;sideInputLocation&quot;: { # Identifies the location of a streaming side input. # The stream is a streaming side input.
-                      &quot;stateFamily&quot;: &quot;A String&quot;, # Identifies the state family where this side input is stored.
-                      &quot;tag&quot;: &quot;A String&quot;, # Identifies the particular side input within the streaming Dataflow job.
-                    },
-                  },
-                ],
-                &quot;systemStageName&quot;: &quot;A String&quot;, # The system stage name.
-                &quot;computationId&quot;: &quot;A String&quot;, # The ID of the computation.
-                &quot;inputs&quot;: [ # The inputs to the computation.
-                  { # Describes a stream of data, either as input to be processed or as
-                      # output of a streaming Dataflow job.
-                    &quot;customSourceLocation&quot;: { # Identifies the location of a custom souce. # The stream is a custom source.
-                      &quot;stateful&quot;: True or False, # Whether this source is stateful.
-                    },
-                    &quot;streamingStageLocation&quot;: { # Identifies the location of a streaming computation stage, for # The stream is part of another computation within the current
-                        # streaming Dataflow job.
-                        # stage-to-stage communication.
-                      &quot;streamId&quot;: &quot;A String&quot;, # Identifies the particular stream within the streaming Dataflow
-                          # job.
-                    },
-                    &quot;pubsubLocation&quot;: { # Identifies a pubsub location to use for transferring data into or # The stream is a pubsub stream.
-                        # out of a streaming Dataflow job.
-                      &quot;subscription&quot;: &quot;A String&quot;, # A pubsub subscription, in the form of
-                          # &quot;pubsub.googleapis.com/subscriptions/&lt;project-id&gt;/&lt;subscription-name&gt;&quot;
-                      &quot;dropLateData&quot;: True or False, # Indicates whether the pipeline allows late-arriving data.
-                      &quot;trackingSubscription&quot;: &quot;A String&quot;, # If set, specifies the pubsub subscription that will be used for tracking
-                          # custom time timestamps for watermark estimation.
-                      &quot;withAttributes&quot;: True or False, # If true, then the client has requested to get pubsub attributes.
-                      &quot;idLabel&quot;: &quot;A String&quot;, # If set, contains a pubsub label from which to extract record ids.
-                          # If left empty, record deduplication will be strictly best effort.
-                      &quot;timestampLabel&quot;: &quot;A String&quot;, # If set, contains a pubsub label from which to extract record timestamps.
-                          # If left empty, record timestamps will be generated upon arrival.
-                      &quot;topic&quot;: &quot;A String&quot;, # A pubsub topic, in the form of
-                          # &quot;pubsub.googleapis.com/topics/&lt;project-id&gt;/&lt;topic-name&gt;&quot;
-                    },
-                    &quot;sideInputLocation&quot;: { # Identifies the location of a streaming side input. # The stream is a streaming side input.
-                      &quot;stateFamily&quot;: &quot;A String&quot;, # Identifies the state family where this side input is stored.
-                      &quot;tag&quot;: &quot;A String&quot;, # Identifies the particular side input within the streaming Dataflow job.
-                    },
-                  },
-                ],
-                &quot;keyRanges&quot;: [ # The key ranges processed by the computation.
-                  { # Location information for a specific key-range of a sharded computation.
-                      # Currently we only support UTF-8 character splits to simplify encoding into
-                      # JSON.
-                    &quot;deprecatedPersistentDirectory&quot;: &quot;A String&quot;, # DEPRECATED. The location of the persistent state for this range, as a
-                        # persistent directory in the worker local filesystem.
-                    &quot;deliveryEndpoint&quot;: &quot;A String&quot;, # The physical location of this range assignment to be used for
-                        # streaming computation cross-worker message delivery.
-                    &quot;start&quot;: &quot;A String&quot;, # The start (inclusive) of the key range.
-                    &quot;dataDisk&quot;: &quot;A String&quot;, # The name of the data disk where data for this range is stored.
-                        # This name is local to the Google Cloud Platform project and uniquely
-                        # identifies the disk within that project, for example
-                        # &quot;myproject-1014-104817-4c2-harness-0-disk-1&quot;.
-                    &quot;end&quot;: &quot;A String&quot;, # The end (exclusive) of the key range.
-                  },
-                ],
-              },
-            ],
           },
-          &quot;snapshotConfig&quot;: { # Streaming appliance snapshot configuration. # Configures streaming appliance snapshot.
-            &quot;importStateEndpoint&quot;: &quot;A String&quot;, # Indicates which endpoint is used to import appliance state.
-            &quot;snapshotId&quot;: &quot;A String&quot;, # If set, indicates the snapshot id for the snapshot being performed.
-          },
+          &quot;drain&quot;: True or False, # The user has requested drain.
+          &quot;workerHarnessPort&quot;: 42, # The TCP port used by the worker to communicate with the Dataflow
+              # worker harness.
+          &quot;receiveWorkPort&quot;: 42, # The TCP port on which the worker should listen for messages from
+              # other streaming computation workers.
         },
-        &quot;reportStatusInterval&quot;: &quot;A String&quot;, # Recommended reporting interval.
+        &quot;leaseExpireTime&quot;: &quot;A String&quot;, # Time when the lease on this Work will expire.
         &quot;streamingConfigTask&quot;: { # A task that carries configuration information for streaming computations. # Additional information for StreamingConfigTask WorkItems.
-          &quot;maxWorkItemCommitBytes&quot;: &quot;A String&quot;, # Maximum size for work item commit supported windmill storage layer.
-          &quot;windmillServicePort&quot;: &quot;A String&quot;, # If present, the worker must use this port to communicate with Windmill
-              # Service dispatchers. Only applicable when windmill_service_endpoint is
-              # specified.
-          &quot;getDataStreamChunkSizeBytes&quot;: &quot;A String&quot;, # Chunk size for get data streams from the harness to windmill.
           &quot;commitStreamChunkSizeBytes&quot;: &quot;A String&quot;, # Chunk size for commit streams from the harness to windmill.
           &quot;windmillServiceEndpoint&quot;: &quot;A String&quot;, # If present, the worker must use this endpoint to communicate with Windmill
               # Service dispatchers, otherwise the worker must continue to use whatever
@@ -822,98 +850,28 @@ Returns:
           },
           &quot;streamingComputationConfigs&quot;: [ # Set of computation configuration information.
             { # Configuration information for a single streaming computation.
+              &quot;computationId&quot;: &quot;A String&quot;, # Unique identifier for this computation.
+              &quot;stageName&quot;: &quot;A String&quot;, # Stage name of this computation.
+              &quot;systemName&quot;: &quot;A String&quot;, # System defined name for this computation.
               &quot;instructions&quot;: [ # Instructions that comprise the computation.
                 { # Describes a particular operation comprising a MapTask.
-                  &quot;parDo&quot;: { # An instruction that does a ParDo operation. # Additional information for ParDo instructions.
-                      # Takes one main input and zero or more side inputs, and produces
-                      # zero or more outputs.
-                      # Runs user code.
-                    &quot;multiOutputInfos&quot;: [ # Information about each of the outputs, if user_fn is a  MultiDoFn.
-                      { # Information about an output of a multi-output DoFn.
-                        &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will emit to this output by; this
-                            # should correspond to the tag of some SideInputInfo.
+                  &quot;outputs&quot;: [ # Describes the outputs of the instruction.
+                    { # An output of an instruction.
+                      &quot;systemName&quot;: &quot;A String&quot;, # System-defined name of this output.
+                          # Unique across the workflow.
+                      &quot;onlyCountKeyBytes&quot;: True or False, # For system-generated byte and mean byte metrics, certain instructions
+                          # should only report the key size.
+                      &quot;onlyCountValueBytes&quot;: True or False, # For system-generated byte and mean byte metrics, certain instructions
+                          # should only report the value size.
+                      &quot;codec&quot;: { # The codec to use to encode data being written via this output.
+                        &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                       },
-                    ],
-                    &quot;userFn&quot;: { # The user function to invoke.
-                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                      &quot;name&quot;: &quot;A String&quot;, # The user-provided name of this output.
+                      &quot;originalName&quot;: &quot;A String&quot;, # System-defined name for this output in the original workflow graph.
+                          # Outputs that do not contribute to an original instruction do not set this.
                     },
-                    &quot;input&quot;: { # An input of an instruction, as a reference to an output of a # The input.
-                        # producer instruction.
-                      &quot;producerInstructionIndex&quot;: 42, # The index (origin zero) of the parallel instruction that produces
-                          # the output to be consumed by this input.  This index is relative
-                          # to the list of instructions in this input&#x27;s instruction&#x27;s
-                          # containing MapTask.
-                      &quot;outputNum&quot;: 42, # The output index (origin zero) within the producer.
-                    },
-                    &quot;numOutputs&quot;: 42, # The number of outputs.
-                    &quot;sideInputs&quot;: [ # Zero or more side inputs.
-                      { # Information about a side input of a DoFn or an input of a SeqDoFn.
-                        &quot;sources&quot;: [ # The source(s) to read element(s) from to get the value of this side input.
-                            # If more than one source, then the elements are taken from the
-                            # sources, in the specified order if order matters.
-                            # At least one source is required.
-                          { # A source that records can be read and decoded from.
-                            &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
-                                # avoiding a SourceGetMetadataOperation roundtrip
-                                # (see SourceOperationRequest).
-                                #
-                                # This field is meaningful only in the Source objects populated
-                                # by the user (e.g. when filling in a DerivedSource).
-                                # Source objects supplied by the framework to the user don&#x27;t have
-                                # this field populated.
-                                # and tuning the pipeline, etc.
-                              &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                                  # the (encoded) keys in lexicographically sorted order.
-                              &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                                  # (this is a streaming source).
-                              &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
-                                  # read from this source.  This estimate is in terms of external storage
-                                  # size, before any decompression or other processing done by the reader.
-                            },
-                            &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
-                                # as differences against another source, in order to save backend-side
-                                # memory and allow bigger jobs. For details, see SourceSplitRequest.
-                                # To support this use case, the full set of parameters of the source
-                                # is logically obtained by taking the latest explicitly specified value
-                                # of each parameter in the order:
-                                # base_specs (later items win), spec (overrides anything in base_specs).
-                              {
-                                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                              },
-                            ],
-                            &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                              &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                            },
-                            &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
-                                # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
-                                # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
-                                #
-                                # E.g. a file splitter may set this to true when splitting a single file
-                                # into a set of byte ranges of appropriate size, and set this
-                                # to false when splitting a filepattern into individual files.
-                                # However, for efficiency, a file splitter may decide to produce
-                                # file subranges directly from the filepattern to avoid a splitting
-                                # round-trip.
-                                #
-                                # See SourceSplitRequest for an overview of the splitting process.
-                                #
-                                # This field is meaningful only in the Source objects populated
-                                # by the user (e.g. when filling in a DerivedSource).
-                                # Source objects supplied by the framework to the user don&#x27;t have
-                                # this field populated.
-                            &quot;spec&quot;: { # The source to read from, plus its parameters.
-                              &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                            },
-                          },
-                        ],
-                        &quot;kind&quot;: { # How to interpret the source element(s) as a side input value.
-                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                        },
-                        &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will access this side input by;
-                            # this should correspond to the tag of some MultiOutputInfo.
-                      },
-                    ],
-                  },
+                  ],
+                  &quot;name&quot;: &quot;A String&quot;, # User-provided name of this operation.
                   &quot;read&quot;: { # An instruction that reads records. # Additional information for Read instructions.
                       # Takes no inputs, produces one output.
                     &quot;source&quot;: { # A source that records can be read and decoded from. # The source to read from.
@@ -926,13 +884,13 @@ Returns:
                           # Source objects supplied by the framework to the user don&#x27;t have
                           # this field populated.
                           # and tuning the pipeline, etc.
-                        &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                            # the (encoded) keys in lexicographically sorted order.
-                        &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                            # (this is a streaming source).
                         &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                             # read from this source.  This estimate is in terms of external storage
                             # size, before any decompression or other processing done by the reader.
+                        &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                            # (this is a streaming source).
+                        &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                            # the (encoded) keys in lexicographically sorted order.
                       },
                       &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                           # as differences against another source, in order to save backend-side
@@ -945,9 +903,6 @@ Returns:
                           &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                         },
                       ],
-                      &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                        &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                      },
                       &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                           # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                           # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -965,9 +920,102 @@ Returns:
                           # by the user (e.g. when filling in a DerivedSource).
                           # Source objects supplied by the framework to the user don&#x27;t have
                           # this field populated.
+                      &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                        &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                      },
                       &quot;spec&quot;: { # The source to read from, plus its parameters.
                         &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                       },
+                    },
+                  },
+                  &quot;parDo&quot;: { # An instruction that does a ParDo operation. # Additional information for ParDo instructions.
+                      # Takes one main input and zero or more side inputs, and produces
+                      # zero or more outputs.
+                      # Runs user code.
+                    &quot;numOutputs&quot;: 42, # The number of outputs.
+                    &quot;sideInputs&quot;: [ # Zero or more side inputs.
+                      { # Information about a side input of a DoFn or an input of a SeqDoFn.
+                        &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will access this side input by;
+                            # this should correspond to the tag of some MultiOutputInfo.
+                        &quot;kind&quot;: { # How to interpret the source element(s) as a side input value.
+                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                        },
+                        &quot;sources&quot;: [ # The source(s) to read element(s) from to get the value of this side input.
+                            # If more than one source, then the elements are taken from the
+                            # sources, in the specified order if order matters.
+                            # At least one source is required.
+                          { # A source that records can be read and decoded from.
+                            &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
+                                # avoiding a SourceGetMetadataOperation roundtrip
+                                # (see SourceOperationRequest).
+                                #
+                                # This field is meaningful only in the Source objects populated
+                                # by the user (e.g. when filling in a DerivedSource).
+                                # Source objects supplied by the framework to the user don&#x27;t have
+                                # this field populated.
+                                # and tuning the pipeline, etc.
+                              &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
+                                  # read from this source.  This estimate is in terms of external storage
+                                  # size, before any decompression or other processing done by the reader.
+                              &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                                  # (this is a streaming source).
+                              &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                                  # the (encoded) keys in lexicographically sorted order.
+                            },
+                            &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
+                                # as differences against another source, in order to save backend-side
+                                # memory and allow bigger jobs. For details, see SourceSplitRequest.
+                                # To support this use case, the full set of parameters of the source
+                                # is logically obtained by taking the latest explicitly specified value
+                                # of each parameter in the order:
+                                # base_specs (later items win), spec (overrides anything in base_specs).
+                              {
+                                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                              },
+                            ],
+                            &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
+                                # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
+                                # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
+                                #
+                                # E.g. a file splitter may set this to true when splitting a single file
+                                # into a set of byte ranges of appropriate size, and set this
+                                # to false when splitting a filepattern into individual files.
+                                # However, for efficiency, a file splitter may decide to produce
+                                # file subranges directly from the filepattern to avoid a splitting
+                                # round-trip.
+                                #
+                                # See SourceSplitRequest for an overview of the splitting process.
+                                #
+                                # This field is meaningful only in the Source objects populated
+                                # by the user (e.g. when filling in a DerivedSource).
+                                # Source objects supplied by the framework to the user don&#x27;t have
+                                # this field populated.
+                            &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                              &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                            },
+                            &quot;spec&quot;: { # The source to read from, plus its parameters.
+                              &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                    &quot;multiOutputInfos&quot;: [ # Information about each of the outputs, if user_fn is a  MultiDoFn.
+                      { # Information about an output of a multi-output DoFn.
+                        &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will emit to this output by; this
+                            # should correspond to the tag of some SideInputInfo.
+                      },
+                    ],
+                    &quot;userFn&quot;: { # The user function to invoke.
+                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                    },
+                    &quot;input&quot;: { # An input of an instruction, as a reference to an output of a # The input.
+                        # producer instruction.
+                      &quot;producerInstructionIndex&quot;: 42, # The index (origin zero) of the parallel instruction that produces
+                          # the output to be consumed by this input.  This index is relative
+                          # to the list of instructions in this input&#x27;s instruction&#x27;s
+                          # containing MapTask.
+                      &quot;outputNum&quot;: 42, # The output index (origin zero) within the producer.
                     },
                   },
                   &quot;originalName&quot;: &quot;A String&quot;, # System-defined name for the operation in the original workflow graph.
@@ -986,10 +1034,10 @@ Returns:
                   &quot;write&quot;: { # An instruction that writes records. # Additional information for Write instructions.
                       # Takes one input, produces no outputs.
                     &quot;sink&quot;: { # A sink that records can be encoded and written to. # The sink to write to.
-                      &quot;spec&quot;: { # The sink to write to, plus its parameters.
+                      &quot;codec&quot;: { # The codec to use to encode data written to the sink.
                         &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                       },
-                      &quot;codec&quot;: { # The codec to use to encode data written to the sink.
+                      &quot;spec&quot;: { # The sink to write to, plus its parameters.
                         &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                       },
                     },
@@ -1006,16 +1054,21 @@ Returns:
                       # Unique across the workflow.
                   &quot;partialGroupByKey&quot;: { # An instruction that does a partial group-by-key. # Additional information for PartialGroupByKey instructions.
                       # One input and one output.
-                    &quot;valueCombiningFn&quot;: { # The value combining function to invoke.
+                    &quot;inputElementCodec&quot;: { # The codec to use for interpreting an element in the input PTable.
                       &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                     },
-                    &quot;inputElementCodec&quot;: { # The codec to use for interpreting an element in the input PTable.
+                    &quot;valueCombiningFn&quot;: { # The value combining function to invoke.
                       &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                     },
                     &quot;originalCombineValuesInputStoreName&quot;: &quot;A String&quot;, # If this instruction includes a combining function this is the name of the
                         # intermediate store between the GBK and the CombineValues.
                     &quot;sideInputs&quot;: [ # Zero or more side inputs.
                       { # Information about a side input of a DoFn or an input of a SeqDoFn.
+                        &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will access this side input by;
+                            # this should correspond to the tag of some MultiOutputInfo.
+                        &quot;kind&quot;: { # How to interpret the source element(s) as a side input value.
+                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                        },
                         &quot;sources&quot;: [ # The source(s) to read element(s) from to get the value of this side input.
                             # If more than one source, then the elements are taken from the
                             # sources, in the specified order if order matters.
@@ -1030,13 +1083,13 @@ Returns:
                                 # Source objects supplied by the framework to the user don&#x27;t have
                                 # this field populated.
                                 # and tuning the pipeline, etc.
-                              &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                                  # the (encoded) keys in lexicographically sorted order.
-                              &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                                  # (this is a streaming source).
                               &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                                   # read from this source.  This estimate is in terms of external storage
                                   # size, before any decompression or other processing done by the reader.
+                              &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                                  # (this is a streaming source).
+                              &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                                  # the (encoded) keys in lexicographically sorted order.
                             },
                             &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                                 # as differences against another source, in order to save backend-side
@@ -1049,9 +1102,6 @@ Returns:
                                 &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                               },
                             ],
-                            &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                              &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                            },
                             &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                                 # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                                 # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -1069,16 +1119,14 @@ Returns:
                                 # by the user (e.g. when filling in a DerivedSource).
                                 # Source objects supplied by the framework to the user don&#x27;t have
                                 # this field populated.
+                            &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                              &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                            },
                             &quot;spec&quot;: { # The source to read from, plus its parameters.
                               &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                             },
                           },
                         ],
-                        &quot;kind&quot;: { # How to interpret the source element(s) as a side input value.
-                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                        },
-                        &quot;tag&quot;: &quot;A String&quot;, # The id of the tag the user code will access this side input by;
-                            # this should correspond to the tag of some MultiOutputInfo.
                       },
                     ],
                     &quot;originalCombineValuesStepName&quot;: &quot;A String&quot;, # If this instruction includes a combining function, this is the name of the
@@ -1092,74 +1140,26 @@ Returns:
                       &quot;outputNum&quot;: 42, # The output index (origin zero) within the producer.
                     },
                   },
-                  &quot;outputs&quot;: [ # Describes the outputs of the instruction.
-                    { # An output of an instruction.
-                      &quot;originalName&quot;: &quot;A String&quot;, # System-defined name for this output in the original workflow graph.
-                          # Outputs that do not contribute to an original instruction do not set this.
-                      &quot;systemName&quot;: &quot;A String&quot;, # System-defined name of this output.
-                          # Unique across the workflow.
-                      &quot;onlyCountKeyBytes&quot;: True or False, # For system-generated byte and mean byte metrics, certain instructions
-                          # should only report the key size.
-                      &quot;onlyCountValueBytes&quot;: True or False, # For system-generated byte and mean byte metrics, certain instructions
-                          # should only report the value size.
-                      &quot;codec&quot;: { # The codec to use to encode data being written via this output.
-                        &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                      },
-                      &quot;name&quot;: &quot;A String&quot;, # The user-provided name of this output.
-                    },
-                  ],
-                  &quot;name&quot;: &quot;A String&quot;, # User-provided name of this operation.
                 },
               ],
               &quot;transformUserNameToStateFamily&quot;: { # Map from user name of stateful transforms in this stage to their state
                   # family.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;computationId&quot;: &quot;A String&quot;, # Unique identifier for this computation.
-              &quot;systemName&quot;: &quot;A String&quot;, # System defined name for this computation.
-              &quot;stageName&quot;: &quot;A String&quot;, # Stage name of this computation.
             },
           ],
+          &quot;maxWorkItemCommitBytes&quot;: &quot;A String&quot;, # Maximum size for work item commit supported windmill storage layer.
+          &quot;windmillServicePort&quot;: &quot;A String&quot;, # If present, the worker must use this port to communicate with Windmill
+              # Service dispatchers. Only applicable when windmill_service_endpoint is
+              # specified.
+          &quot;getDataStreamChunkSizeBytes&quot;: &quot;A String&quot;, # Chunk size for get data streams from the harness to windmill.
         },
-        &quot;leaseExpireTime&quot;: &quot;A String&quot;, # Time when the lease on this Work will expire.
         &quot;initialReportIndex&quot;: &quot;A String&quot;, # The initial index to use when reporting the status of the WorkItem.
-        &quot;streamingComputationTask&quot;: { # A task which describes what action should be performed for the specified # Additional information for StreamingComputationTask WorkItems.
-            # streaming computation ranges.
-          &quot;computationRanges&quot;: [ # Contains ranges of a streaming computation this task should apply to.
-            { # Describes full or partial data disk assignment information of the computation
-                # ranges.
-              &quot;rangeAssignments&quot;: [ # Data disk assignments for ranges from this computation.
-                { # Data disk assignment information for a specific key-range of a sharded
-                    # computation.
-                    # Currently we only support UTF-8 character splits to simplify encoding into
-                    # JSON.
-                  &quot;start&quot;: &quot;A String&quot;, # The start (inclusive) of the key range.
-                  &quot;dataDisk&quot;: &quot;A String&quot;, # The name of the data disk where data for this range is stored.
-                      # This name is local to the Google Cloud Platform project and uniquely
-                      # identifies the disk within that project, for example
-                      # &quot;myproject-1014-104817-4c2-harness-0-disk-1&quot;.
-                  &quot;end&quot;: &quot;A String&quot;, # The end (exclusive) of the key range.
-                },
-              ],
-              &quot;computationId&quot;: &quot;A String&quot;, # The ID of the computation.
-            },
-          ],
-          &quot;dataDisks&quot;: [ # Describes the set of data disks this task should apply to.
-            { # Describes mounted data disk.
-              &quot;dataDisk&quot;: &quot;A String&quot;, # The name of the data disk.
-                  # This name is local to the Google Cloud Platform project and uniquely
-                  # identifies the disk within that project, for example
-                  # &quot;myproject-1014-104817-4c2-harness-0-disk-1&quot;.
-            },
-          ],
-          &quot;taskType&quot;: &quot;A String&quot;, # A type of streaming computation task.
-        },
-        &quot;shellTask&quot;: { # A task which consists of a shell command for the worker to execute. # Additional information for ShellTask WorkItems.
-          &quot;exitCode&quot;: 42, # Exit code for the task.
-          &quot;command&quot;: &quot;A String&quot;, # The shell command to run.
-        },
       },
     ],
+    &quot;unifiedWorkerResponse&quot;: { # Untranslated bag-of-bytes WorkResponse for UnifiedWorker.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    },
   }</pre>
 </div>
 
@@ -1174,14 +1174,11 @@ Args:
     The object takes the form of:
 
 { # Request to report the status of WorkItems.
-    &quot;unifiedWorkerRequest&quot;: { # Untranslated bag-of-bytes WorkProgressUpdateRequest from UnifiedWorker.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-    },
+    &quot;currentWorkerTime&quot;: &quot;A String&quot;, # The current timestamp at the worker.
     &quot;workerId&quot;: &quot;A String&quot;, # The ID of the worker reporting the WorkItem status.  If this
         # does not match the ID of the worker which the Dataflow service
         # believes currently has the lease on the WorkItem, the report
         # will be dropped (with an error response).
-    &quot;currentWorkerTime&quot;: &quot;A String&quot;, # The current timestamp at the worker.
     &quot;location&quot;: &quot;A String&quot;, # The [regional endpoint]
         # (https://cloud.google.com/dataflow/docs/concepts/regional-endpoints) that
         # contains the WorkItem&#x27;s job.
@@ -1189,13 +1186,10 @@ Args:
         # WorkItemServiceState messages in the ReportWorkItemStatusResponse
         # corresponds to the order of WorkItemStatus messages here.
       { # Conveys a worker&#x27;s progress through the work described by a WorkItem.
-        &quot;completed&quot;: True or False, # True if the WorkItem was completed (successfully or unsuccessfully).
         &quot;reportedProgress&quot;: { # A progress measurement of a WorkItem by a worker. # The worker&#x27;s progress through this WorkItem.
           &quot;position&quot;: { # Position defines a position within a collection of data.  The value # A Position within the work to represent a progress.
               # can be either the end position, a key (used with ordered
               # collections), a byte offset, or a record index.
-            &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
-                # position of an unbounded range.
             &quot;key&quot;: &quot;A String&quot;, # Position is a string key, ordered lexicographically.
             &quot;recordIndex&quot;: &quot;A String&quot;, # Position is a record index.
             &quot;shufflePosition&quot;: &quot;A String&quot;, # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED
@@ -1207,6 +1201,8 @@ Args:
               &quot;index&quot;: 42, # Index of the inner source.
             },
             &quot;byteOffset&quot;: &quot;A String&quot;, # Position is a byte offset.
+            &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
+                # position of an unbounded range.
           },
           &quot;fractionConsumed&quot;: 3.14, # Completion as fraction of the input consumed, from 0.0 (beginning, nothing
               # consumed), to 1.0 (end of the input, entire input consumed).
@@ -1217,13 +1213,13 @@ Args:
               # should equal the total amount of parallelism in this work item.  If
               # specified, must be finite.
               # reported by the worker.
-            &quot;value&quot;: 3.14, # Specifies the level of parallelism in case it is finite.
             &quot;isInfinite&quot;: True or False, # Specifies whether the parallelism is infinite. If true, &quot;value&quot; is
                 # ignored.
                 # Infinite parallelism means the service will assume that the work item
                 # can always be split into more non-empty work items by dynamic splitting.
                 # This is a work-around for lack of support for infinity by the current
                 # JSON-based Java RPC stack.
+            &quot;value&quot;: 3.14, # Specifies the level of parallelism in case it is finite.
           },
           &quot;remainingParallelism&quot;: { # Represents the level of parallelism in a WorkItem&#x27;s input, # Total amount of parallelism in the input of this task that remains,
               # (i.e. can be delegated to this task and any new tasks via dynamic
@@ -1251,16 +1247,75 @@ Args:
               #   input, this value should be 1, because apart from the current task, no
               #   additional remainder can be split off.
               # reported by the worker.
-            &quot;value&quot;: 3.14, # Specifies the level of parallelism in case it is finite.
             &quot;isInfinite&quot;: True or False, # Specifies whether the parallelism is infinite. If true, &quot;value&quot; is
                 # ignored.
                 # Infinite parallelism means the service will assume that the work item
                 # can always be split into more non-empty work items by dynamic splitting.
                 # This is a work-around for lack of support for infinity by the current
                 # JSON-based Java RPC stack.
+            &quot;value&quot;: 3.14, # Specifies the level of parallelism in case it is finite.
           },
         },
         &quot;sourceFork&quot;: { # DEPRECATED in favor of DynamicSourceSplit. # DEPRECATED in favor of dynamic_source_split.
+          &quot;residualSource&quot;: { # Specification of one of the bundles produced as a result of splitting # DEPRECATED
+              # a Source (e.g. when executing a SourceSplitRequest, or when
+              # splitting an active task using WorkItemStatus.dynamic_source_split),
+              # relative to the source being split.
+            &quot;source&quot;: { # A source that records can be read and decoded from. # Specification of the source.
+              &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
+                  # avoiding a SourceGetMetadataOperation roundtrip
+                  # (see SourceOperationRequest).
+                  #
+                  # This field is meaningful only in the Source objects populated
+                  # by the user (e.g. when filling in a DerivedSource).
+                  # Source objects supplied by the framework to the user don&#x27;t have
+                  # this field populated.
+                  # and tuning the pipeline, etc.
+                &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
+                    # read from this source.  This estimate is in terms of external storage
+                    # size, before any decompression or other processing done by the reader.
+                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                    # (this is a streaming source).
+                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                    # the (encoded) keys in lexicographically sorted order.
+              },
+              &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
+                  # as differences against another source, in order to save backend-side
+                  # memory and allow bigger jobs. For details, see SourceSplitRequest.
+                  # To support this use case, the full set of parameters of the source
+                  # is logically obtained by taking the latest explicitly specified value
+                  # of each parameter in the order:
+                  # base_specs (later items win), spec (overrides anything in base_specs).
+                {
+                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                },
+              ],
+              &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
+                  # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
+                  # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
+                  #
+                  # E.g. a file splitter may set this to true when splitting a single file
+                  # into a set of byte ranges of appropriate size, and set this
+                  # to false when splitting a filepattern into individual files.
+                  # However, for efficiency, a file splitter may decide to produce
+                  # file subranges directly from the filepattern to avoid a splitting
+                  # round-trip.
+                  #
+                  # See SourceSplitRequest for an overview of the splitting process.
+                  #
+                  # This field is meaningful only in the Source objects populated
+                  # by the user (e.g. when filling in a DerivedSource).
+                  # Source objects supplied by the framework to the user don&#x27;t have
+                  # this field populated.
+              &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+              },
+              &quot;spec&quot;: { # The source to read from, plus its parameters.
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+              },
+            },
+            &quot;derivationMode&quot;: &quot;A String&quot;, # What source to base the produced source on (if any).
+          },
           &quot;primary&quot;: { # DEPRECATED in favor of DerivedSource. # DEPRECATED
             &quot;derivationMode&quot;: &quot;A String&quot;, # DEPRECATED
             &quot;source&quot;: { # A source that records can be read and decoded from. # DEPRECATED
@@ -1273,13 +1328,13 @@ Args:
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
                   # and tuning the pipeline, etc.
-                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                    # the (encoded) keys in lexicographically sorted order.
-                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                    # (this is a streaming source).
                 &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                     # read from this source.  This estimate is in terms of external storage
                     # size, before any decompression or other processing done by the reader.
+                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                    # (this is a streaming source).
+                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                    # the (encoded) keys in lexicographically sorted order.
               },
               &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                   # as differences against another source, in order to save backend-side
@@ -1292,9 +1347,6 @@ Args:
                   &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                 },
               ],
-              &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-              },
               &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                   # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                   # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -1312,6 +1364,9 @@ Args:
                   # by the user (e.g. when filling in a DerivedSource).
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
+              &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+              },
               &quot;spec&quot;: { # The source to read from, plus its parameters.
                 &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
               },
@@ -1321,7 +1376,6 @@ Args:
               # a Source (e.g. when executing a SourceSplitRequest, or when
               # splitting an active task using WorkItemStatus.dynamic_source_split),
               # relative to the source being split.
-            &quot;derivationMode&quot;: &quot;A String&quot;, # What source to base the produced source on (if any).
             &quot;source&quot;: { # A source that records can be read and decoded from. # Specification of the source.
               &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
                   # avoiding a SourceGetMetadataOperation roundtrip
@@ -1332,13 +1386,13 @@ Args:
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
                   # and tuning the pipeline, etc.
-                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                    # the (encoded) keys in lexicographically sorted order.
-                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                    # (this is a streaming source).
                 &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                     # read from this source.  This estimate is in terms of external storage
                     # size, before any decompression or other processing done by the reader.
+                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                    # (this is a streaming source).
+                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                    # the (encoded) keys in lexicographically sorted order.
               },
               &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                   # as differences against another source, in order to save backend-side
@@ -1351,9 +1405,6 @@ Args:
                   &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                 },
               ],
-              &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-              },
               &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                   # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                   # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -1371,10 +1422,14 @@ Args:
                   # by the user (e.g. when filling in a DerivedSource).
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
+              &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+              },
               &quot;spec&quot;: { # The source to read from, plus its parameters.
                 &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
               },
             },
+            &quot;derivationMode&quot;: &quot;A String&quot;, # What source to base the produced source on (if any).
           },
           &quot;residual&quot;: { # DEPRECATED in favor of DerivedSource. # DEPRECATED
             &quot;derivationMode&quot;: &quot;A String&quot;, # DEPRECATED
@@ -1388,13 +1443,13 @@ Args:
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
                   # and tuning the pipeline, etc.
-                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                    # the (encoded) keys in lexicographically sorted order.
-                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                    # (this is a streaming source).
                 &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                     # read from this source.  This estimate is in terms of external storage
                     # size, before any decompression or other processing done by the reader.
+                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                    # (this is a streaming source).
+                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                    # the (encoded) keys in lexicographically sorted order.
               },
               &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                   # as differences against another source, in order to save backend-side
@@ -1407,9 +1462,6 @@ Args:
                   &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                 },
               ],
-              &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-              },
               &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                   # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                   # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -1427,65 +1479,9 @@ Args:
                   # by the user (e.g. when filling in a DerivedSource).
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
-              &quot;spec&quot;: { # The source to read from, plus its parameters.
-                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-              },
-            },
-          },
-          &quot;residualSource&quot;: { # Specification of one of the bundles produced as a result of splitting # DEPRECATED
-              # a Source (e.g. when executing a SourceSplitRequest, or when
-              # splitting an active task using WorkItemStatus.dynamic_source_split),
-              # relative to the source being split.
-            &quot;derivationMode&quot;: &quot;A String&quot;, # What source to base the produced source on (if any).
-            &quot;source&quot;: { # A source that records can be read and decoded from. # Specification of the source.
-              &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
-                  # avoiding a SourceGetMetadataOperation roundtrip
-                  # (see SourceOperationRequest).
-                  #
-                  # This field is meaningful only in the Source objects populated
-                  # by the user (e.g. when filling in a DerivedSource).
-                  # Source objects supplied by the framework to the user don&#x27;t have
-                  # this field populated.
-                  # and tuning the pipeline, etc.
-                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                    # the (encoded) keys in lexicographically sorted order.
-                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                    # (this is a streaming source).
-                &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
-                    # read from this source.  This estimate is in terms of external storage
-                    # size, before any decompression or other processing done by the reader.
-              },
-              &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
-                  # as differences against another source, in order to save backend-side
-                  # memory and allow bigger jobs. For details, see SourceSplitRequest.
-                  # To support this use case, the full set of parameters of the source
-                  # is logically obtained by taking the latest explicitly specified value
-                  # of each parameter in the order:
-                  # base_specs (later items win), spec (overrides anything in base_specs).
-                {
-                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                },
-              ],
               &quot;codec&quot;: { # The codec to use to decode data read from the source.
                 &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
               },
-              &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
-                  # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
-                  # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
-                  #
-                  # E.g. a file splitter may set this to true when splitting a single file
-                  # into a set of byte ranges of appropriate size, and set this
-                  # to false when splitting a filepattern into individual files.
-                  # However, for efficiency, a file splitter may decide to produce
-                  # file subranges directly from the filepattern to avoid a splitting
-                  # round-trip.
-                  #
-                  # See SourceSplitRequest for an overview of the splitting process.
-                  #
-                  # This field is meaningful only in the Source objects populated
-                  # by the user (e.g. when filling in a DerivedSource).
-                  # Source objects supplied by the framework to the user don&#x27;t have
-                  # this field populated.
               &quot;spec&quot;: { # The source to read from, plus its parameters.
                 &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
               },
@@ -1495,23 +1491,26 @@ Args:
         &quot;totalThrottlerWaitTimeSeconds&quot;: 3.14, # Total time the worker spent being throttled by external systems.
         &quot;counterUpdates&quot;: [ # Worker output counters for this WorkItem.
           { # An update to a Counter sent from a worker.
+            &quot;floatingPointMean&quot;: { # A representation of a floating point mean metric contribution. # Floating point mean aggregation value for Mean.
+              &quot;count&quot;: { # A representation of an int64, n, that is immune to precision loss when # The number of values being aggregated.
+                  # encoded in JSON.
+                &quot;lowBits&quot;: 42, # The low order bits: n &amp; 0xffffffff.
+                &quot;highBits&quot;: 42, # The high order bits, including the sign: n &gt;&gt; 32.
+              },
+              &quot;sum&quot;: 3.14, # The sum of all values being aggregated.
+            },
             &quot;boolean&quot;: True or False, # Boolean value for And, Or.
             &quot;nameAndKind&quot;: { # Basic metadata about a counter. # Counter name and aggregation type.
               &quot;name&quot;: &quot;A String&quot;, # Name of the counter.
               &quot;kind&quot;: &quot;A String&quot;, # Counter aggregation kind.
             },
             &quot;distribution&quot;: { # A metric value representing a distribution. # Distribution data
-              &quot;count&quot;: { # A representation of an int64, n, that is immune to precision loss when # The count of the number of elements present in the distribution.
-                  # encoded in JSON.
-                &quot;lowBits&quot;: 42, # The low order bits: n &amp; 0xffffffff.
-                &quot;highBits&quot;: 42, # The high order bits, including the sign: n &gt;&gt; 32.
-              },
+              &quot;sumOfSquares&quot;: 3.14, # Use a double since the sum of squares is likely to overflow int64.
               &quot;min&quot;: { # A representation of an int64, n, that is immune to precision loss when # The minimum value present in the distribution.
                   # encoded in JSON.
                 &quot;lowBits&quot;: 42, # The low order bits: n &amp; 0xffffffff.
                 &quot;highBits&quot;: 42, # The high order bits, including the sign: n &gt;&gt; 32.
               },
-              &quot;sumOfSquares&quot;: 3.14, # Use a double since the sum of squares is likely to overflow int64.
               &quot;sum&quot;: { # A representation of an int64, n, that is immune to precision loss when # Use an int64 since we&#x27;d prefer the added precision. If overflow is a common
                   # problem we can detect it and use an additional int64 or a double.
                   # encoded in JSON.
@@ -1536,6 +1535,11 @@ Args:
                     #   pow(10,(i-first_bucket_offset)/3) * (1,2,5)[(i-first_bucket_offset)%3]
               },
               &quot;max&quot;: { # A representation of an int64, n, that is immune to precision loss when # The maximum value present in the distribution.
+                  # encoded in JSON.
+                &quot;lowBits&quot;: 42, # The low order bits: n &amp; 0xffffffff.
+                &quot;highBits&quot;: 42, # The high order bits, including the sign: n &gt;&gt; 32.
+              },
+              &quot;count&quot;: { # A representation of an int64, n, that is immune to precision loss when # The count of the number of elements present in the distribution.
                   # encoded in JSON.
                 &quot;lowBits&quot;: 42, # The low order bits: n &amp; 0xffffffff.
                 &quot;highBits&quot;: 42, # The high order bits, including the sign: n &gt;&gt; 32.
@@ -1580,11 +1584,13 @@ Args:
                 # counter.
               &quot;name&quot;: { # Identifies a counter within a per-job namespace. Counters whose structured # Structured name of the counter.
                   # names are the same get merged into a single value for the job.
-                &quot;executionStepName&quot;: &quot;A String&quot;, # Name of the stage. An execution step contains multiple component steps.
+                &quot;workerId&quot;: &quot;A String&quot;, # ID of a particular worker.
+                &quot;originNamespace&quot;: &quot;A String&quot;, # A string containing a more specific namespace of the counter&#x27;s origin.
+                &quot;origin&quot;: &quot;A String&quot;, # One of the standard Origins defined above.
                 &quot;name&quot;: &quot;A String&quot;, # Counter name. Not necessarily globally-unique, but unique within the
                     # context of the other fields.
                     # Required.
-                &quot;origin&quot;: &quot;A String&quot;, # One of the standard Origins defined above.
+                &quot;executionStepName&quot;: &quot;A String&quot;, # Name of the stage. An execution step contains multiple component steps.
                 &quot;originalRequestingStepName&quot;: &quot;A String&quot;, # The step name requesting an operation, such as GBK.
                     # I.e. the ParDo causing a read/write from shuffle to occur, or a
                     # read from side inputs.
@@ -1598,16 +1604,15 @@ Args:
                 &quot;portion&quot;: &quot;A String&quot;, # Portion of this counter, either key or value.
                 &quot;originalStepName&quot;: &quot;A String&quot;, # System generated name of the original step in the user&#x27;s graph, before
                     # optimization.
-                &quot;workerId&quot;: &quot;A String&quot;, # ID of a particular worker.
-                &quot;originNamespace&quot;: &quot;A String&quot;, # A string containing a more specific namespace of the counter&#x27;s origin.
               },
               &quot;metadata&quot;: { # CounterMetadata includes all static non-name non-value counter attributes. # Metadata associated with a counter
-                &quot;otherUnits&quot;: &quot;A String&quot;, # A string referring to the unit type.
-                &quot;kind&quot;: &quot;A String&quot;, # Counter aggregation kind.
-                &quot;description&quot;: &quot;A String&quot;, # Human-readable description of the counter semantics.
                 &quot;standardUnits&quot;: &quot;A String&quot;, # System defined Units, see above enum.
+                &quot;otherUnits&quot;: &quot;A String&quot;, # A string referring to the unit type.
+                &quot;description&quot;: &quot;A String&quot;, # Human-readable description of the counter semantics.
+                &quot;kind&quot;: &quot;A String&quot;, # Counter aggregation kind.
               },
             },
+            &quot;floatingPoint&quot;: 3.14, # Floating point value for Sum, Max, Min.
             &quot;integerMean&quot;: { # A representation of an integer mean metric contribution. # Integer mean aggregation value for Mean.
               &quot;sum&quot;: { # A representation of an int64, n, that is immune to precision loss when # The sum of all values being aggregated.
                   # encoded in JSON.
@@ -1620,45 +1625,14 @@ Args:
                 &quot;highBits&quot;: 42, # The high order bits, including the sign: n &gt;&gt; 32.
               },
             },
-            &quot;floatingPoint&quot;: 3.14, # Floating point value for Sum, Max, Min.
-            &quot;internal&quot;: &quot;&quot;, # Value for internally-defined counters used by the Dataflow service.
             &quot;cumulative&quot;: True or False, # True if this counter is reported as the total cumulative aggregate
                 # value accumulated since the worker started working on this WorkItem.
                 # By default this is false, indicating that this counter is reported
                 # as a delta.
-            &quot;floatingPointMean&quot;: { # A representation of a floating point mean metric contribution. # Floating point mean aggregation value for Mean.
-              &quot;sum&quot;: 3.14, # The sum of all values being aggregated.
-              &quot;count&quot;: { # A representation of an int64, n, that is immune to precision loss when # The number of values being aggregated.
-                  # encoded in JSON.
-                &quot;lowBits&quot;: 42, # The low order bits: n &amp; 0xffffffff.
-                &quot;highBits&quot;: 42, # The high order bits, including the sign: n &gt;&gt; 32.
-              },
-            },
+            &quot;internal&quot;: &quot;&quot;, # Value for internally-defined counters used by the Dataflow service.
           },
         ],
         &quot;workItemId&quot;: &quot;A String&quot;, # Identifies the WorkItem.
-        &quot;errors&quot;: [ # Specifies errors which occurred during processing.  If errors are
-            # provided, and completed = true, then the WorkItem is considered
-            # to have failed.
-          { # The `Status` type defines a logical error model that is suitable for
-              # different programming environments, including REST APIs and RPC APIs. It is
-              # used by [gRPC](https://github.com/grpc). Each `Status` message contains
-              # three pieces of data: error code, error message, and error details.
-              #
-              # You can find out more about this error model and how to work with it in the
-              # [API Design Guide](https://cloud.google.com/apis/design/errors).
-            &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-                # user-facing error message should be localized and sent in the
-                # google.rpc.Status.details field, or localized by the client.
-            &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
-                # message types for APIs to use.
-              {
-                &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-              },
-            ],
-            &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-          },
-        ],
         &quot;metricUpdates&quot;: [ # DEPRECATED in favor of counter_updates.
           { # Describes the state of a metric.
             &quot;set&quot;: &quot;&quot;, # Worker-computed aggregate value for the &quot;Set&quot; aggregation kind.  The only
@@ -1695,6 +1669,9 @@ Args:
                 # metrics API.
             &quot;name&quot;: { # Identifies a metric, by describing the source which generated the # Name of the metric.
                 # metric.
+              &quot;name&quot;: &quot;A String&quot;, # Worker-defined metric name.
+              &quot;origin&quot;: &quot;A String&quot;, # Origin (namespace) of metric name. May be blank for user-define metrics;
+                  # will be &quot;dataflow&quot; for metrics defined by the Dataflow service or SDK.
               &quot;context&quot;: { # Zero or more labeled fields which identify the part of the job this
                   # metric is associated with, such as the name of a step or collection.
                   #
@@ -1703,11 +1680,30 @@ Args:
                   # in the SDK will have context[&#x27;pcollection&#x27;] = &lt;pcollection-name&gt;.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;origin&quot;: &quot;A String&quot;, # Origin (namespace) of metric name. May be blank for user-define metrics;
-                  # will be &quot;dataflow&quot; for metrics defined by the Dataflow service or SDK.
-              &quot;name&quot;: &quot;A String&quot;, # Worker-defined metric name.
             },
             &quot;distribution&quot;: &quot;&quot;, # A struct value describing properties of a distribution of numeric values.
+          },
+        ],
+        &quot;errors&quot;: [ # Specifies errors which occurred during processing.  If errors are
+            # provided, and completed = true, then the WorkItem is considered
+            # to have failed.
+          { # The `Status` type defines a logical error model that is suitable for
+              # different programming environments, including REST APIs and RPC APIs. It is
+              # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+              # three pieces of data: error code, error message, and error details.
+              #
+              # You can find out more about this error model and how to work with it in the
+              # [API Design Guide](https://cloud.google.com/apis/design/errors).
+            &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+            &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+                # user-facing error message should be localized and sent in the
+                # google.rpc.Status.details field, or localized by the client.
+            &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
+                # message types for APIs to use.
+              {
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+              },
+            ],
           },
         ],
         &quot;dynamicSourceSplit&quot;: { # When a task splits using WorkItemStatus.dynamic_source_split, this # See documentation of stop_position.
@@ -1718,7 +1714,6 @@ Args:
               # a Source (e.g. when executing a SourceSplitRequest, or when
               # splitting an active task using WorkItemStatus.dynamic_source_split),
               # relative to the source being split.
-            &quot;derivationMode&quot;: &quot;A String&quot;, # What source to base the produced source on (if any).
             &quot;source&quot;: { # A source that records can be read and decoded from. # Specification of the source.
               &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
                   # avoiding a SourceGetMetadataOperation roundtrip
@@ -1729,13 +1724,13 @@ Args:
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
                   # and tuning the pipeline, etc.
-                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                    # the (encoded) keys in lexicographically sorted order.
-                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                    # (this is a streaming source).
                 &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                     # read from this source.  This estimate is in terms of external storage
                     # size, before any decompression or other processing done by the reader.
+                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                    # (this is a streaming source).
+                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                    # the (encoded) keys in lexicographically sorted order.
               },
               &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                   # as differences against another source, in order to save backend-side
@@ -1748,9 +1743,6 @@ Args:
                   &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                 },
               ],
-              &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-              },
               &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                   # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                   # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -1768,10 +1760,14 @@ Args:
                   # by the user (e.g. when filling in a DerivedSource).
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
+              &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+              },
               &quot;spec&quot;: { # The source to read from, plus its parameters.
                 &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
               },
             },
+            &quot;derivationMode&quot;: &quot;A String&quot;, # What source to base the produced source on (if any).
           },
           &quot;primary&quot;: { # Specification of one of the bundles produced as a result of splitting # Primary part (continued to be processed by worker).
               # Specified relative to the previously-current source.
@@ -1779,7 +1775,6 @@ Args:
               # a Source (e.g. when executing a SourceSplitRequest, or when
               # splitting an active task using WorkItemStatus.dynamic_source_split),
               # relative to the source being split.
-            &quot;derivationMode&quot;: &quot;A String&quot;, # What source to base the produced source on (if any).
             &quot;source&quot;: { # A source that records can be read and decoded from. # Specification of the source.
               &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
                   # avoiding a SourceGetMetadataOperation roundtrip
@@ -1790,13 +1785,13 @@ Args:
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
                   # and tuning the pipeline, etc.
-                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                    # the (encoded) keys in lexicographically sorted order.
-                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                    # (this is a streaming source).
                 &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                     # read from this source.  This estimate is in terms of external storage
                     # size, before any decompression or other processing done by the reader.
+                &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                    # (this is a streaming source).
+                &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                    # the (encoded) keys in lexicographically sorted order.
               },
               &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                   # as differences against another source, in order to save backend-side
@@ -1809,9 +1804,6 @@ Args:
                   &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                 },
               ],
-              &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-              },
               &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                   # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                   # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -1829,22 +1821,33 @@ Args:
                   # by the user (e.g. when filling in a DerivedSource).
                   # Source objects supplied by the framework to the user don&#x27;t have
                   # this field populated.
+              &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+              },
               &quot;spec&quot;: { # The source to read from, plus its parameters.
                 &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
               },
             },
+            &quot;derivationMode&quot;: &quot;A String&quot;, # What source to base the produced source on (if any).
           },
         },
         &quot;sourceOperationResponse&quot;: { # The result of a SourceOperationRequest, specified in # If the work item represented a SourceOperationRequest, and the work
             # is completed, contains the result of the operation.
             # ReportWorkItemStatusRequest.source_operation when the work item
             # is completed.
+          &quot;getMetadata&quot;: { # The result of a SourceGetMetadataOperation. # A response to a request to get metadata about a source.
+            &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # The computed metadata.
+                # and tuning the pipeline, etc.
+              &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
+                  # read from this source.  This estimate is in terms of external storage
+                  # size, before any decompression or other processing done by the reader.
+              &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                  # (this is a streaming source).
+              &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                  # the (encoded) keys in lexicographically sorted order.
+            },
+          },
           &quot;split&quot;: { # The response to a SourceSplitRequest. # A response to a request to split a source.
-            &quot;outcome&quot;: &quot;A String&quot;, # Indicates whether splitting happened and produced a list of bundles.
-                # If this is USE_CURRENT_SOURCE_AS_IS, the current source should
-                # be processed &quot;as is&quot; without splitting. &quot;bundles&quot; is ignored in this case.
-                # If this is SPLITTING_HAPPENED, then &quot;bundles&quot; contains a list of
-                # bundles into which the source was split.
             &quot;bundles&quot;: [ # If outcome is SPLITTING_HAPPENED, then this is a list of bundles
                 # into which the source was split. Otherwise this field is ignored.
                 # This list can be empty, which means the source represents an empty input.
@@ -1852,7 +1855,6 @@ Args:
                   # a Source (e.g. when executing a SourceSplitRequest, or when
                   # splitting an active task using WorkItemStatus.dynamic_source_split),
                   # relative to the source being split.
-                &quot;derivationMode&quot;: &quot;A String&quot;, # What source to base the produced source on (if any).
                 &quot;source&quot;: { # A source that records can be read and decoded from. # Specification of the source.
                   &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # Optionally, metadata for this source can be supplied right away,
                       # avoiding a SourceGetMetadataOperation roundtrip
@@ -1863,13 +1865,13 @@ Args:
                       # Source objects supplied by the framework to the user don&#x27;t have
                       # this field populated.
                       # and tuning the pipeline, etc.
-                    &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                        # the (encoded) keys in lexicographically sorted order.
-                    &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                        # (this is a streaming source).
                     &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                         # read from this source.  This estimate is in terms of external storage
                         # size, before any decompression or other processing done by the reader.
+                    &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                        # (this is a streaming source).
+                    &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                        # the (encoded) keys in lexicographically sorted order.
                   },
                   &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                       # as differences against another source, in order to save backend-side
@@ -1882,9 +1884,6 @@ Args:
                       &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                     },
                   ],
-                  &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                  },
                   &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                       # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                       # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -1902,10 +1901,14 @@ Args:
                       # by the user (e.g. when filling in a DerivedSource).
                       # Source objects supplied by the framework to the user don&#x27;t have
                       # this field populated.
+                  &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                  },
                   &quot;spec&quot;: { # The source to read from, plus its parameters.
                     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                   },
                 },
+                &quot;derivationMode&quot;: &quot;A String&quot;, # What source to base the produced source on (if any).
               },
             ],
             &quot;shards&quot;: [ # DEPRECATED in favor of bundles.
@@ -1921,13 +1924,13 @@ Args:
                       # Source objects supplied by the framework to the user don&#x27;t have
                       # this field populated.
                       # and tuning the pipeline, etc.
-                    &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                        # the (encoded) keys in lexicographically sorted order.
-                    &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                        # (this is a streaming source).
                     &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
                         # read from this source.  This estimate is in terms of external storage
                         # size, before any decompression or other processing done by the reader.
+                    &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
+                        # (this is a streaming source).
+                    &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
+                        # the (encoded) keys in lexicographically sorted order.
                   },
                   &quot;baseSpecs&quot;: [ # While splitting, sources may specify the produced bundles
                       # as differences against another source, in order to save backend-side
@@ -1940,9 +1943,6 @@ Args:
                       &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                     },
                   ],
-                  &quot;codec&quot;: { # The codec to use to decode data read from the source.
-                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
-                  },
                   &quot;doesNotNeedSplitting&quot;: True or False, # Setting this value to true hints to the framework that the source
                       # doesn&#x27;t need splitting, and using SourceSplitRequest on it would
                       # yield SOURCE_SPLIT_OUTCOME_USE_CURRENT.
@@ -1960,34 +1960,26 @@ Args:
                       # by the user (e.g. when filling in a DerivedSource).
                       # Source objects supplied by the framework to the user don&#x27;t have
                       # this field populated.
+                  &quot;codec&quot;: { # The codec to use to decode data read from the source.
+                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                  },
                   &quot;spec&quot;: { # The source to read from, plus its parameters.
                     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                   },
                 },
               },
             ],
-          },
-          &quot;getMetadata&quot;: { # The result of a SourceGetMetadataOperation. # A response to a request to get metadata about a source.
-            &quot;metadata&quot;: { # Metadata about a Source useful for automatically optimizing # The computed metadata.
-                # and tuning the pipeline, etc.
-              &quot;producesSortedKeys&quot;: True or False, # Whether this source is known to produce key/value pairs with
-                  # the (encoded) keys in lexicographically sorted order.
-              &quot;infinite&quot;: True or False, # Specifies that the size of this source is known to be infinite
-                  # (this is a streaming source).
-              &quot;estimatedSizeBytes&quot;: &quot;A String&quot;, # An estimate of the total size (in bytes) of the data that would be
-                  # read from this source.  This estimate is in terms of external storage
-                  # size, before any decompression or other processing done by the reader.
-            },
+            &quot;outcome&quot;: &quot;A String&quot;, # Indicates whether splitting happened and produced a list of bundles.
+                # If this is USE_CURRENT_SOURCE_AS_IS, the current source should
+                # be processed &quot;as is&quot; without splitting. &quot;bundles&quot; is ignored in this case.
+                # If this is SPLITTING_HAPPENED, then &quot;bundles&quot; contains a list of
+                # bundles into which the source was split.
           },
         },
         &quot;progress&quot;: { # Obsolete in favor of ApproximateReportedProgress and ApproximateSplitRequest. # DEPRECATED in favor of reported_progress.
-          &quot;percentComplete&quot;: 3.14, # Obsolete.
-          &quot;remainingTime&quot;: &quot;A String&quot;, # Obsolete.
           &quot;position&quot;: { # Position defines a position within a collection of data.  The value # Obsolete.
               # can be either the end position, a key (used with ordered
               # collections), a byte offset, or a record index.
-            &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
-                # position of an unbounded range.
             &quot;key&quot;: &quot;A String&quot;, # Position is a string key, ordered lexicographically.
             &quot;recordIndex&quot;: &quot;A String&quot;, # Position is a record index.
             &quot;shufflePosition&quot;: &quot;A String&quot;, # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED
@@ -1999,7 +1991,11 @@ Args:
               &quot;index&quot;: 42, # Index of the inner source.
             },
             &quot;byteOffset&quot;: &quot;A String&quot;, # Position is a byte offset.
+            &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
+                # position of an unbounded range.
           },
+          &quot;percentComplete&quot;: 3.14, # Obsolete.
+          &quot;remainingTime&quot;: &quot;A String&quot;, # Obsolete.
         },
         &quot;requestedLeaseDuration&quot;: &quot;A String&quot;, # Amount of time the worker requests for its lease.
         &quot;reportIndex&quot;: &quot;A String&quot;, # The report index.  When a WorkItem is leased, the lease will
@@ -2046,8 +2042,6 @@ Args:
             # P&#x27; and R&#x27; must be together equivalent to P, etc.
             # can be either the end position, a key (used with ordered
             # collections), a byte offset, or a record index.
-          &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
-              # position of an unbounded range.
           &quot;key&quot;: &quot;A String&quot;, # Position is a string key, ordered lexicographically.
           &quot;recordIndex&quot;: &quot;A String&quot;, # Position is a record index.
           &quot;shufflePosition&quot;: &quot;A String&quot;, # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED
@@ -2059,9 +2053,15 @@ Args:
             &quot;index&quot;: 42, # Index of the inner source.
           },
           &quot;byteOffset&quot;: &quot;A String&quot;, # Position is a byte offset.
+          &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
+              # position of an unbounded range.
         },
+        &quot;completed&quot;: True or False, # True if the WorkItem was completed (successfully or unsuccessfully).
       },
     ],
+    &quot;unifiedWorkerRequest&quot;: { # Untranslated bag-of-bytes WorkProgressUpdateRequest from UnifiedWorker.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    },
   }
 
   x__xgafv: string, V1 error format.
@@ -2073,65 +2073,12 @@ Returns:
   An object of the form:
 
     { # Response from a request to report the status of WorkItems.
-    &quot;unifiedWorkerResponse&quot;: { # Untranslated bag-of-bytes WorkProgressUpdateResponse for UnifiedWorker.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-    },
     &quot;workItemServiceStates&quot;: [ # A set of messages indicating the service-side state for each
         # WorkItem whose status was reported, in the same order as the
         # WorkItemStatus messages in the ReportWorkItemStatusRequest which
         # resulting in this response.
       { # The Dataflow service&#x27;s idea of the current state of a WorkItem
           # being processed by a worker.
-        &quot;hotKeyDetection&quot;: { # Proto describing a hot key detected on a given WorkItem. # A hot key is a symptom of poor data distribution in which there are enough
-            # elements mapped to a single key to impact pipeline performance. When
-            # present, this field includes metadata associated with any hot key.
-          &quot;hotKeyAge&quot;: &quot;A String&quot;, # The age of the hot key measured from when it was first detected.
-          &quot;userStepName&quot;: &quot;A String&quot;, # User-provided name of the step that contains this hot key.
-          &quot;systemName&quot;: &quot;A String&quot;, # System-defined name of the step containing this hot key.
-              # Unique across the workflow.
-        },
-        &quot;splitRequest&quot;: { # A suggestion by the service to the worker to dynamically split the WorkItem. # The progress point in the WorkItem where the Dataflow service
-            # suggests that the worker truncate the task.
-          &quot;fractionConsumed&quot;: 3.14, # A fraction at which to split the work item, from 0.0 (beginning of the
-              # input) to 1.0 (end of the input).
-          &quot;position&quot;: { # Position defines a position within a collection of data.  The value # A Position at which to split the work item.
-              # can be either the end position, a key (used with ordered
-              # collections), a byte offset, or a record index.
-            &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
-                # position of an unbounded range.
-            &quot;key&quot;: &quot;A String&quot;, # Position is a string key, ordered lexicographically.
-            &quot;recordIndex&quot;: &quot;A String&quot;, # Position is a record index.
-            &quot;shufflePosition&quot;: &quot;A String&quot;, # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED
-                # sharding).
-            &quot;concatPosition&quot;: { # A position that encapsulates an inner position and an index for the inner # CloudPosition is a concat position.
-                # position. A ConcatPosition can be used by a reader of a source that
-                # encapsulates a set of other sources.
-              &quot;position&quot;: # Object with schema name: Position # Position within the inner source.
-              &quot;index&quot;: 42, # Index of the inner source.
-            },
-            &quot;byteOffset&quot;: &quot;A String&quot;, # Position is a byte offset.
-          },
-          &quot;fractionOfRemainder&quot;: 3.14, # The fraction of the remainder of work to split the work item at, from 0.0
-              # (split at the current position) to 1.0 (end of the input).
-        },
-        &quot;suggestedStopPosition&quot;: { # Position defines a position within a collection of data.  The value # Obsolete, always empty.
-            # can be either the end position, a key (used with ordered
-            # collections), a byte offset, or a record index.
-          &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
-              # position of an unbounded range.
-          &quot;key&quot;: &quot;A String&quot;, # Position is a string key, ordered lexicographically.
-          &quot;recordIndex&quot;: &quot;A String&quot;, # Position is a record index.
-          &quot;shufflePosition&quot;: &quot;A String&quot;, # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED
-              # sharding).
-          &quot;concatPosition&quot;: { # A position that encapsulates an inner position and an index for the inner # CloudPosition is a concat position.
-              # position. A ConcatPosition can be used by a reader of a source that
-              # encapsulates a set of other sources.
-            &quot;position&quot;: # Object with schema name: Position # Position within the inner source.
-            &quot;index&quot;: 42, # Index of the inner source.
-          },
-          &quot;byteOffset&quot;: &quot;A String&quot;, # Position is a byte offset.
-        },
-        &quot;reportStatusInterval&quot;: &quot;A String&quot;, # New recommended reporting interval.
         &quot;harnessData&quot;: { # Other data returned by the service, specific to the particular
             # worker harness.
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
@@ -2154,13 +2101,9 @@ Returns:
             # Note: If the report call fails for whatever reason, the worker should
             # reuse this index for subsequent report attempts.
         &quot;suggestedStopPoint&quot;: { # Obsolete in favor of ApproximateReportedProgress and ApproximateSplitRequest. # DEPRECATED in favor of split_request.
-          &quot;percentComplete&quot;: 3.14, # Obsolete.
-          &quot;remainingTime&quot;: &quot;A String&quot;, # Obsolete.
           &quot;position&quot;: { # Position defines a position within a collection of data.  The value # Obsolete.
               # can be either the end position, a key (used with ordered
               # collections), a byte offset, or a record index.
-            &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
-                # position of an unbounded range.
             &quot;key&quot;: &quot;A String&quot;, # Position is a string key, ordered lexicographically.
             &quot;recordIndex&quot;: &quot;A String&quot;, # Position is a record index.
             &quot;shufflePosition&quot;: &quot;A String&quot;, # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED
@@ -2172,10 +2115,67 @@ Returns:
               &quot;index&quot;: 42, # Index of the inner source.
             },
             &quot;byteOffset&quot;: &quot;A String&quot;, # Position is a byte offset.
+            &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
+                # position of an unbounded range.
           },
+          &quot;percentComplete&quot;: 3.14, # Obsolete.
+          &quot;remainingTime&quot;: &quot;A String&quot;, # Obsolete.
+        },
+        &quot;hotKeyDetection&quot;: { # Proto describing a hot key detected on a given WorkItem. # A hot key is a symptom of poor data distribution in which there are enough
+            # elements mapped to a single key to impact pipeline performance. When
+            # present, this field includes metadata associated with any hot key.
+          &quot;systemName&quot;: &quot;A String&quot;, # System-defined name of the step containing this hot key.
+              # Unique across the workflow.
+          &quot;userStepName&quot;: &quot;A String&quot;, # User-provided name of the step that contains this hot key.
+          &quot;hotKeyAge&quot;: &quot;A String&quot;, # The age of the hot key measured from when it was first detected.
+        },
+        &quot;splitRequest&quot;: { # A suggestion by the service to the worker to dynamically split the WorkItem. # The progress point in the WorkItem where the Dataflow service
+            # suggests that the worker truncate the task.
+          &quot;fractionConsumed&quot;: 3.14, # A fraction at which to split the work item, from 0.0 (beginning of the
+              # input) to 1.0 (end of the input).
+          &quot;fractionOfRemainder&quot;: 3.14, # The fraction of the remainder of work to split the work item at, from 0.0
+              # (split at the current position) to 1.0 (end of the input).
+          &quot;position&quot;: { # Position defines a position within a collection of data.  The value # A Position at which to split the work item.
+              # can be either the end position, a key (used with ordered
+              # collections), a byte offset, or a record index.
+            &quot;key&quot;: &quot;A String&quot;, # Position is a string key, ordered lexicographically.
+            &quot;recordIndex&quot;: &quot;A String&quot;, # Position is a record index.
+            &quot;shufflePosition&quot;: &quot;A String&quot;, # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED
+                # sharding).
+            &quot;concatPosition&quot;: { # A position that encapsulates an inner position and an index for the inner # CloudPosition is a concat position.
+                # position. A ConcatPosition can be used by a reader of a source that
+                # encapsulates a set of other sources.
+              &quot;position&quot;: # Object with schema name: Position # Position within the inner source.
+              &quot;index&quot;: 42, # Index of the inner source.
+            },
+            &quot;byteOffset&quot;: &quot;A String&quot;, # Position is a byte offset.
+            &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
+                # position of an unbounded range.
+          },
+        },
+        &quot;reportStatusInterval&quot;: &quot;A String&quot;, # New recommended reporting interval.
+        &quot;suggestedStopPosition&quot;: { # Position defines a position within a collection of data.  The value # Obsolete, always empty.
+            # can be either the end position, a key (used with ordered
+            # collections), a byte offset, or a record index.
+          &quot;key&quot;: &quot;A String&quot;, # Position is a string key, ordered lexicographically.
+          &quot;recordIndex&quot;: &quot;A String&quot;, # Position is a record index.
+          &quot;shufflePosition&quot;: &quot;A String&quot;, # CloudPosition is a base64 encoded BatchShufflePosition (with FIXED
+              # sharding).
+          &quot;concatPosition&quot;: { # A position that encapsulates an inner position and an index for the inner # CloudPosition is a concat position.
+              # position. A ConcatPosition can be used by a reader of a source that
+              # encapsulates a set of other sources.
+            &quot;position&quot;: # Object with schema name: Position # Position within the inner source.
+            &quot;index&quot;: 42, # Index of the inner source.
+          },
+          &quot;byteOffset&quot;: &quot;A String&quot;, # Position is a byte offset.
+          &quot;end&quot;: True or False, # Position is past all other positions. Also useful for the end
+              # position of an unbounded range.
         },
       },
     ],
+    &quot;unifiedWorkerResponse&quot;: { # Untranslated bag-of-bytes WorkProgressUpdateResponse for UnifiedWorker.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    },
   }</pre>
 </div>
 
