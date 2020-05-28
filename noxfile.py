@@ -19,6 +19,7 @@ test_dependencies = [
     "google-auth",
     "google-auth-httplib2",
     "mox",
+    "parameterized",
     "pyopenssl",
     "pytest",
     "pytest-cov",

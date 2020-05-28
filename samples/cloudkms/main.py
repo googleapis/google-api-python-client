@@ -15,9 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Simple command-line example for Translate.
+"""Mutual TLS example for Cloud KMS.
 
-Command-line application that translates some text.
+This application returns the list of key rings in global location. First fill in
+the project and adc_cert_key_folder value, then set the GOOGLE_API_USE_CLIENT_CERTIFICATE
+environment variable to one of the following values based on your need:
+(1) "Never": This means we always use regular api endpoint. Since this is the
+default value, there is no need to explicitly set it.
+(2) "Always": This means we always use the mutual TLS api endpoint.
+(3) "Auto": This means we auto switch to mutual TLS api endpoint, if the ADC
+client cert and key are detected.
 """
 from __future__ import print_function
 import google.api_core.client_options
@@ -25,11 +32,14 @@ import google.oauth2.credentials
 
 from googleapiclient.discovery import build
 
-# project="study-auth-265119"
-project = "sijun-mtls-demo"
-path = "/usr/local/google/home/sijunliu/wks/google-api-python-client/samples/kms/"
-adc_cert_path = path + "cert.pem"
-adc_key_path = path + "key.pem"
+project = "FILL IN YOUR PROJECT ID"
+
+# The following are the file paths to save ADC client cert and key. If you don't
+# want to use mutual TLS, simply ignore adc_cert_key_folder, and set adc_cert_path
+# and adc_key_path to None.
+adc_cert_key_folder = "FILL IN THE PATH WHERE YOU WANT TO SAVE ADC CERT AND KEY"
+adc_cert_path = adc_cert_key_folder + "cert.pem"
+adc_key_path = adc_cert_key_folder + "key.pem"
 
 
 def main():
@@ -39,9 +49,7 @@ def main():
         project=project, location="global"
     )
 
-    # Build a service object for interacting with the API. Visit
-    # the Google APIs Console <http://code.google.com/apis/console>
-    # to get an API key for your own application.
+    # Build a service object for interacting with the API.
     service = build(
         "cloudkms",
         "v1",
@@ -49,7 +57,9 @@ def main():
         adc_cert_path=adc_cert_path,
         adc_key_path=adc_key_path,
     )
-    print(service.projects().locations().keyRings().list(parent=parent).execute())
+
+    # Return the list of key rings in global location.
+    return service.projects().locations().keyRings().list(parent=parent).execute()
 
 
 if __name__ == "__main__":
