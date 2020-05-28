@@ -39,9 +39,12 @@ import re
 import sys
 import unittest2 as unittest
 
+from parameterized import parameterized
 import mock
 
 import google.auth.credentials
+from google.auth.transport import mtls
+from google.auth.exceptions import MutualTLSChannelError
 import google_auth_httplib2
 from googleapiclient.discovery import _fix_up_media_upload
 from googleapiclient.discovery import _fix_up_method_description
@@ -526,9 +529,7 @@ class DiscoveryFromDocument(unittest.TestCase):
             api_endpoint=api_endpoint
         )
         plus = build_from_document(
-            discovery,
-            client_options=options,
-            credentials=self.MOCK_CREDENTIALS
+            discovery, client_options=options, credentials=self.MOCK_CREDENTIALS
         )
 
         self.assertEqual(plus._baseUrl, api_endpoint)
@@ -537,12 +538,98 @@ class DiscoveryFromDocument(unittest.TestCase):
         discovery = open(datafile("plus.json")).read()
         api_endpoint = "https://foo.googleapis.com/"
         plus = build_from_document(
-            discovery, 
+            discovery,
             client_options={"api_endpoint": api_endpoint},
-            credentials=self.MOCK_CREDENTIALS
+            credentials=self.MOCK_CREDENTIALS,
         )
 
         self.assertEqual(plus._baseUrl, api_endpoint)
+
+
+class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
+    MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
+    ADC_CERT_PATH = "adc_cert_path"
+    ADC_KEY_PATH = "adc_key_path"
+    ADC_PASSPHRASE = "adc_passphrase"
+    REGULAR_ENDPOINT = "https://www.googleapis.com/plus/v1/"
+    MTLS_ENDPOINT = "https://www.mtls.googleapis.com/plus/v1/"
+    os.environ["GOOGLE_API_USE_MTLS"] = "Never"
+
+    def check_http_client_cert(self, resource, has_client_cert=False):
+        if isinstance(resource._http, google_auth_httplib2.AuthorizedHttp):
+            certs = list(resource._http.http.certificates.iter(""))
+        else:
+            certs = list(resource._http.certificates.iter(""))
+        if has_client_cert:
+            self.assertEqual(len(certs), 1)
+            self.assertEqual(
+                certs[0], (self.ADC_KEY_PATH, self.ADC_CERT_PATH, self.ADC_PASSPHRASE)
+            )
+        else:
+            self.assertEqual(len(certs), 0)
+
+    def client_encrypted_cert_source(self):
+        return self.ADC_CERT_PATH, self.ADC_KEY_PATH, self.ADC_PASSPHRASE
+
+    def test_mtls_not_trigger_if_http_provided(self):
+        discovery = open(datafile("plus.json")).read()
+        plus = build_from_document(discovery, http=httplib2.Http())
+        self.assertTrue(plus is not None)
+        self.assertEqual(plus._baseUrl, self.REGULAR_ENDPOINT)
+        self.check_http_client_cert(plus, has_client_cert=False)
+
+    def test_exception_with_client_cert_source(self):
+        discovery = open(datafile("plus.json")).read()
+        with self.assertRaises(MutualTLSChannelError):
+            build_from_document(
+                discovery,
+                credentials=self.MOCK_CREDENTIALS,
+                client_options={"client_cert_source": mock.Mock()},
+            )
+
+    @parameterized.expand(["Never", "Auto", "Always"])
+    def test_mtls_with_provided_client_cert(self, google_api_use_mtls):
+        discovery = open(datafile("plus.json")).read()
+        os.environ["GOOGLE_API_USE_MTLS"] = google_api_use_mtls
+        plus = build_from_document(
+            discovery,
+            credentials=self.MOCK_CREDENTIALS,
+            client_options={
+                "client_encrypted_cert_source": self.client_encrypted_cert_source
+            },
+        )
+        self.assertTrue(plus is not None)
+        self.check_http_client_cert(plus, has_client_cert=True)
+        if google_api_use_mtls != "Never":
+            self.assertEqual(plus._baseUrl, self.MTLS_ENDPOINT)
+        else:
+            self.assertEqual(plus._baseUrl, self.REGULAR_ENDPOINT)
+
+    @parameterized.expand(["Never", "Auto", "Always"])
+    def test_mtls_with_default_client_cert(self, google_api_use_mtls):
+        discovery = open(datafile("plus.json")).read()
+        os.environ["GOOGLE_API_USE_MTLS"] = google_api_use_mtls
+
+        with mock.patch(
+            "google.auth.transport.mtls.has_default_client_cert_source",
+            return_value=True,
+        ):
+            with mock.patch(
+                "google.auth.transport.mtls.default_client_encrypted_cert_source",
+                return_value=self.client_encrypted_cert_source,
+            ):
+                plus = build_from_document(
+                    discovery,
+                    credentials=self.MOCK_CREDENTIALS,
+                    adc_cert_path=self.ADC_CERT_PATH,
+                    adc_key_path=self.ADC_KEY_PATH,
+                )
+                self.assertTrue(plus is not None)
+                self.check_http_client_cert(plus, has_client_cert=True)
+                if google_api_use_mtls != "Never":
+                    self.assertEqual(plus._baseUrl, self.MTLS_ENDPOINT)
+                else:
+                    self.assertEqual(plus._baseUrl, self.REGULAR_ENDPOINT)
 
 
 class DiscoveryFromHttp(unittest.TestCase):
@@ -652,7 +739,6 @@ class DiscoveryFromHttp(unittest.TestCase):
 
 
 class DiscoveryFromAppEngineCache(unittest.TestCase):
-
     def setUp(self):
         self.old_environ = os.environ.copy()
         os.environ["APPENGINE_RUNTIME"] = "python27"
