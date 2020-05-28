@@ -56,7 +56,7 @@ def lint(session):
 def unit(session, oauth2client):
     session.install(
         "-e",
-        "git+https://github.com/googleapis/python-api-core.git@671ad14c30812be4e87ea8771d95fab840982da9#egg=google-api-core",
+        "git+https://github.com/googleapis/python-api-core.git@master#egg=google-api-core",
     )
     session.install(*test_dependencies)
     session.install(oauth2client)
