@@ -18,7 +18,7 @@
 """Mutual TLS example for Cloud KMS.
 
 This application returns the list of key rings in global location. First fill in
-the project and adc_cert_key_folder value, then set the GOOGLE_API_USE_CLIENT_CERTIFICATE
+the project and adc_cert_key_folder value, then set the GOOGLE_API_USE_MTLS
 environment variable to one of the following values based on your need:
 (1) "Never": This means we always use regular api endpoint. Since this is the
 default value, there is no need to explicitly set it.
