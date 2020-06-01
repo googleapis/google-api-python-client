@@ -23,7 +23,7 @@ from __future__ import absolute_import
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
-import unittest2 as unittest
+import unittest
 
 from googleapiclient.model import BaseModel
 from googleapiclient.model import makepatch

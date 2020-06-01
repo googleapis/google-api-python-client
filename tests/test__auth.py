@@ -18,7 +18,7 @@ import google.auth.credentials
 import google_auth_httplib2
 import httplib2
 import oauth2client.client
-import unittest2 as unittest
+import unittest
 
 from googleapiclient import _auth
 

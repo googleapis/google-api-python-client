@@ -22,7 +22,7 @@ from __future__ import absolute_import
 
 __author__ = "mmcdonald@google.com (Matt McDonald)"
 
-import unittest2 as unittest
+import unittest
 import httplib2
 import googleapiclient.model
 

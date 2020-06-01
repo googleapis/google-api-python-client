@@ -28,7 +28,7 @@ import json
 import os
 import pkg_resources
 import platform
-import unittest2 as unittest
+import unittest
 import httplib2
 import googleapiclient.model
 

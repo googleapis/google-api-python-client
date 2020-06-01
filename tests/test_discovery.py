@@ -37,7 +37,7 @@ import os
 import pickle
 import re
 import sys
-import unittest2 as unittest
+import unittest
 
 import mock
 
