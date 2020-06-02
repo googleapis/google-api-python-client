@@ -41,7 +41,7 @@ install_requires = [
     "httplib2>=0.9.2,<1dev",
     "google-auth>=1.16.0",
     "google-auth-httplib2>=0.0.3",
-    "google-api-core>=1.13.0,<2dev",
+    "google-api-core>=1.17.0,<2dev",
     "six>=1.6.1,<2dev",
     "uritemplate>=3.0.0,<4dev",
 ]
