@@ -441,7 +441,11 @@ def build_from_document(
             raise MutualTLSChannelError(
                 "ClientOptions.client_cert_source is not supported, please use ClientOptions.client_encrypted_cert_source."
             )
-        if client_options and client_options.client_encrypted_cert_source:
+        if (
+            client_options
+            and hasattr(client_options, "client_encrypted_cert_source")
+            and client_options.client_encrypted_cert_source
+        ):
             client_cert_to_use = client_options.client_encrypted_cert_source
         elif adc_cert_path and adc_key_path and mtls.has_default_client_cert_source():
             client_cert_to_use = mtls.default_client_encrypted_cert_source(
