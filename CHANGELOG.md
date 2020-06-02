@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.0](https://www.github.com/googleapis/google-api-python-client/compare/v1.8.4...v1.9.0) (2020-06-02)
+
+
+### Features
+
+* add mtls feature ([#917](https://www.github.com/googleapis/google-api-python-client/issues/917)) ([981eadf](https://www.github.com/googleapis/google-api-python-client/commit/981eadf7cfdb576981d92fcda498c76422821426))
+* add templates for python samples projects ([#506](https://www.github.com/googleapis/google-api-python-client/issues/506)) ([#924](https://www.github.com/googleapis/google-api-python-client/issues/924)) ([c482712](https://www.github.com/googleapis/google-api-python-client/commit/c482712935d1c1331e33bd7f9968bd3b2be223bb))
+
 ### [1.8.4](https://www.github.com/googleapis/google-api-python-client/compare/v1.8.3...v1.8.4) (2020-05-20)
 
 
