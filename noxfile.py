@@ -55,10 +55,6 @@ def lint(session):
     ],
 )
 def unit(session, oauth2client):
-    session.install(
-        "-e",
-        "git+https://github.com/googleapis/python-api-core.git@master#egg=google-api-core",
-    )
     session.install(*test_dependencies)
     session.install(oauth2client)
     if session.python < "3.0":
