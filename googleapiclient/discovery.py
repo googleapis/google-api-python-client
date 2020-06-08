@@ -238,7 +238,7 @@ def build(
     else:
         discovery_http = http
 
-    for discovery_url in (discoveryServiceUrl, V2_DISCOVERY_URI):
+    for discovery_url in (V2_DISCOVERY_URI, discoveryServiceUrl):
         requested_url = uritemplate.expand(discovery_url, params)
 
         try:
