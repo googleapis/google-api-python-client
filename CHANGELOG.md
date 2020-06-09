@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.9.2](https://www.github.com/googleapis/google-api-python-client/compare/v1.9.1...v1.9.2) (2020-06-04)
+
+
+### Bug Fixes
+
+* bump api-core version ([#936](https://www.github.com/googleapis/google-api-python-client/issues/936)) ([ee53b3b](https://www.github.com/googleapis/google-api-python-client/commit/ee53b3b32a050874ba4cfb491fb384f94682c824))
+
 ### [1.9.1](https://www.github.com/googleapis/google-api-python-client/compare/v1.9.0...v1.9.1) (2020-06-02)
 
 
