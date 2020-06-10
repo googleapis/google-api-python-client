@@ -471,17 +471,17 @@ def build_from_document(
             not client_options or not client_options.api_endpoint
         ):
             mtls_endpoint = urljoin(service["mtlsRootUrl"], service["servicePath"])
-            use_mtls_env = os.getenv("GOOGLE_API_USE_MTLS", "Never")
+            use_mtls_env = os.getenv("GOOGLE_API_USE_MTLS", "never")
 
-            if not use_mtls_env in ("Never", "Auto", "Always"):
+            if not use_mtls_env in ("never", "auto", "always"):
                 raise MutualTLSChannelError(
-                    "Unsupported GOOGLE_API_USE_MTLS value. Accepted values: Never, Auto, Always"
+                    "Unsupported GOOGLE_API_USE_MTLS value. Accepted values: never, auto, always"
                 )
 
-            # Switch to mTLS endpoint, if environment variable is "Always", or
-            # environment varibable is "Auto" and client cert exists.
-            if use_mtls_env == "Always" or (
-                use_mtls_env == "Auto" and client_cert_to_use
+            # Switch to mTLS endpoint, if environment variable is "always", or
+            # environment varibable is "auto" and client cert exists.
+            if use_mtls_env == "always" or (
+                use_mtls_env == "auto" and client_cert_to_use
             ):
                 base = mtls_endpoint
 
