@@ -590,9 +590,9 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
 
     @parameterized.expand(
         [
-            ("Never", REGULAR_ENDPOINT),
-            ("Auto", MTLS_ENDPOINT),
-            ("Always", MTLS_ENDPOINT),
+            ("never", REGULAR_ENDPOINT),
+            ("auto", MTLS_ENDPOINT),
+            ("always", MTLS_ENDPOINT),
         ]
     )
     def test_mtls_with_provided_client_cert(self, use_mtls_env, base_url):
@@ -610,7 +610,7 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
             self.check_http_client_cert(plus, has_client_cert=True)
             self.assertEqual(plus._baseUrl, base_url)
 
-    @parameterized.expand(["Never", "Auto", "Always"])
+    @parameterized.expand(["never", "auto", "always"])
     def test_endpoint_not_switch(self, use_mtls_env):
         # Test endpoint is not switched if user provided api endpoint
         discovery = open(datafile("plus.json")).read()
@@ -630,9 +630,9 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
 
     @parameterized.expand(
         [
-            ("Never", REGULAR_ENDPOINT),
-            ("Auto", MTLS_ENDPOINT),
-            ("Always", MTLS_ENDPOINT),
+            ("never", REGULAR_ENDPOINT),
+            ("auto", MTLS_ENDPOINT),
+            ("always", MTLS_ENDPOINT),
         ]
     )
     @mock.patch(
@@ -667,9 +667,9 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
 
     @parameterized.expand(
         [
-            ("Never", REGULAR_ENDPOINT),
-            ("Auto", REGULAR_ENDPOINT),
-            ("Always", MTLS_ENDPOINT),
+            ("never", REGULAR_ENDPOINT),
+            ("auto", REGULAR_ENDPOINT),
+            ("always", MTLS_ENDPOINT),
         ]
     )
     @mock.patch(
