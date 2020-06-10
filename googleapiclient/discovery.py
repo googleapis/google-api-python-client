@@ -204,8 +204,8 @@ def build(
     cache_discovery: Boolean, whether or not to cache the discovery doc.
     cache: googleapiclient.discovery_cache.base.CacheBase, an optional
       cache object for the discovery documents.
-    client_options: Mapping object or google.api_core.client_options, Client
-      options to set user options on the client. API endpoint should be set
+    client_options: Mapping object or google.api_core.client_options, сlient
+      options to set user options on the client. The API endpoint should be set
       through client_options.
 
   Returns:
