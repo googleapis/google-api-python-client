@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.9.3](https://www.github.com/googleapis/google-api-python-client/compare/v1.9.2...v1.9.3) (2020-06-10)
+
+
+### Bug Fixes
+
+* update GOOGLE_API_USE_MTLS values ([#940](https://www.github.com/googleapis/google-api-python-client/issues/940)) ([19908ed](https://www.github.com/googleapis/google-api-python-client/commit/19908edcd8a3df1db41e34100acc1f15c3c99397))
+
 ### [1.9.2](https://www.github.com/googleapis/google-api-python-client/compare/v1.9.1...v1.9.2) (2020-06-04)
 
 
