@@ -38,6 +38,7 @@ import pickle
 import re
 import sys
 import unittest2 as unittest
+from collections import defaultdict
 
 from parameterized import parameterized
 import mock
@@ -530,6 +531,18 @@ class DiscoveryFromDocument(unittest.TestCase):
         )
         plus = build_from_document(
             discovery, client_options=options, credentials=self.MOCK_CREDENTIALS
+        )
+
+        self.assertEqual(plus._baseUrl, api_endpoint)
+
+    def test_api_endpoint_override_from_client_options_mapping_object(self):
+
+        discovery = open(datafile("plus.json")).read()
+        api_endpoint = "https://foo.googleapis.com/"
+        mapping_object = defaultdict(str)
+        mapping_object['api_endpoint'] = api_endpoint
+        plus = build_from_document(
+            discovery, client_options=mapping_object
         )
 
         self.assertEqual(plus._baseUrl, api_endpoint)
