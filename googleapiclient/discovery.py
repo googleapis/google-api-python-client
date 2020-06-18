@@ -213,10 +213,10 @@ def build(
     cache_discovery: Boolean, whether or not to cache the discovery doc.
     cache: googleapiclient.discovery_cache.base.CacheBase, an optional
       cache object for the discovery documents.
-    client_options: Dictionary or google.api_core.client_options, Client options to set user
-      options on the client. API endpoint should be set through client_options.
-      client_cert_source is not supported, client cert should be provided using
-      client_encrypted_cert_source instead.
+    client_options: Mapping object or google.api_core.client_options, client
+      options to set user options on the client. The API endpoint should be set
+      through client_options. client_cert_source is not supported, client cert
+      should be provided using client_encrypted_cert_source instead.
     adc_cert_path: str, client certificate file path to save the application
       default client certificate for mTLS. This field is required if you want to
       use the default client certificate.
@@ -359,10 +359,10 @@ def build_from_document(
     credentials: oauth2client.Credentials or
       google.auth.credentials.Credentials, credentials to be used for
       authentication.
-    client_options: Dictionary or google.api_core.client_options, Client options to set user
-      options on the client. API endpoint should be set through client_options.
-      client_cert_source is not supported, client cert should be provided using
-      client_encrypted_cert_source instead.
+    client_options: Mapping object or google.api_core.client_options, client
+      options to set user options on the client. The API endpoint should be set
+      through client_options. client_cert_source is not supported, client cert
+      should be provided using client_encrypted_cert_source instead.
     adc_cert_path: str, client certificate file path to save the application
       default client certificate for mTLS. This field is required if you want to
       use the default client certificate.
@@ -398,7 +398,7 @@ def build_from_document(
     # If an API Endpoint is provided on client options, use that as the base URL
     base = urljoin(service["rootUrl"], service["servicePath"])
     if client_options:
-        if type(client_options) == dict:
+        if isinstance(client_options, six.moves.collections_abc.Mapping):
             client_options = google.api_core.client_options.from_dict(client_options)
         if client_options.api_endpoint:
             base = client_options.api_endpoint
