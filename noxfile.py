@@ -44,7 +44,7 @@ def lint(session):
     )
 
 
-@nox.session(python=["2.7", "3.5", "3.6", "3.7", "3.8"])
+@nox.session(python=["3.6", "3.7", "3.8", "3.9"])
 @nox.parametrize(
     "oauth2client",
     [
@@ -54,13 +54,11 @@ def lint(session):
         "oauth2client>=4,<=5dev",
     ],
 )
+@nox.session(python=["3.6", "3.7", "3.8", "3.9"])
 def unit(session, oauth2client):
     session.install(*test_dependencies)
     session.install(oauth2client)
-    if session.python < "3.0":
-        session.install("django<2.0.0")
-    else:
-        session.install("django>=2.0.0")
+    session.install("django>=2.0.0")
 
     session.install('.')
 
