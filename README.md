@@ -66,4 +66,6 @@ For development you will also need the following libraries:
 
 ## Contributing
 
-Please see the [contributing page](http://google.github.io/google-api-python-client/contributing.html) for more information. In particular, we love pull requests - but please make sure to sign the contributor license agreement.
+Please see our [Contribution Guide](CONTRIBUTING.rst). 
+In particular, we love pull requests - but please make sure to sign 
+the contributor license agreement.
