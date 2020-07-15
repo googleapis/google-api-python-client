@@ -1118,6 +1118,10 @@ class HttpRequest(object):
             resumable=d["resumable"],
         )
 
+    @staticmethod
+    def null_postproc(resp, contents):
+        return resp, contents
+
 
 class BatchHttpRequest(object):
     """Batches multiple HttpRequest objects into a single HTTP request.
@@ -1168,7 +1172,7 @@ class BatchHttpRequest(object):
             batch_uri = _LEGACY_BATCH_URI
 
         if batch_uri == _LEGACY_BATCH_URI:
-            LOGGER.warn(
+            LOGGER.warning(
                 "You have constructed a BatchHttpRequest using the legacy batch "
                 "endpoint %s. This endpoint will be turned down on August 12, 2020. "
                 "Please provide the API-specific endpoint or use "
@@ -1416,7 +1420,7 @@ class BatchHttpRequest(object):
       http: httplib2.Http, an http object to be used to make the request with.
       order: list, list of request ids in the order they were added to the
         batch.
-      request: list, list of request objects to send.
+      requests: list, list of request objects to send.
 
     Raises:
       httplib2.HttpLib2Error if a transport error has occurred.
@@ -1690,9 +1694,8 @@ class HttpMock(object):
         if headers is None:
             headers = {"status": "200"}
         if filename:
-            f = open(filename, "rb")
-            self.data = f.read()
-            f.close()
+            with open(filename, "rb") as f:
+                self.data = f.read()
         else:
             self.data = None
         self.response_headers = headers
@@ -1749,6 +1752,7 @@ class HttpMockSequence(object):
     """
         self._iterable = iterable
         self.follow_redirects = True
+        self.request_sequence = list()
 
     def request(
         self,
@@ -1759,6 +1763,8 @@ class HttpMockSequence(object):
         redirections=1,
         connection_type=None,
     ):
+        # Remember the request so after the fact this mock can be examined
+        self.request_sequence.append((uri, method, body, headers))
         resp, content = self._iterable.pop(0)
         content = six.ensure_binary(content)
 

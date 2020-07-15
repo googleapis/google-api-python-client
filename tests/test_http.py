@@ -1097,6 +1097,11 @@ class TestHttpRequest(unittest.TestCase):
             request.execute()
         request._sleep.assert_not_called()
 
+    def test_null_postproc(self):
+        resp, content = HttpRequest.null_postproc("foo", "bar")
+        self.assertEqual(resp, "foo")
+        self.assertEqual(content, "bar")
+
 
 class TestBatch(unittest.TestCase):
     def setUp(self):
