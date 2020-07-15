@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.10.0](https://www.github.com/googleapis/google-api-python-client/compare/v1.9.3...v1.10.0) (2020-07-15)
+
+
+### Features
+
+* allow to use 'six.moves.collections_abc.Mapping' in 'client_options.from_dict()' ([#943](https://www.github.com/googleapis/google-api-python-client/issues/943)) ([21af37b](https://www.github.com/googleapis/google-api-python-client/commit/21af37b11ea2d6a89b3df484e1b2fa1d12849510))
+* Build universal wheels ([#948](https://www.github.com/googleapis/google-api-python-client/issues/948)) ([3e28a1e](https://www.github.com/googleapis/google-api-python-client/commit/3e28a1e0d47f829182cd92f37475ab91fa5e4afc))
+* discovery supports retries ([#967](https://www.github.com/googleapis/google-api-python-client/issues/967)) ([f3348f9](https://www.github.com/googleapis/google-api-python-client/commit/f3348f98bf91a88a28bf61b12b95e391cc3be1ff)), closes [#848](https://www.github.com/googleapis/google-api-python-client/issues/848)
+
+
+### Documentation
+
+* consolidating and updating the Contribution Guide ([#964](https://www.github.com/googleapis/google-api-python-client/issues/964)) ([63f97f3](https://www.github.com/googleapis/google-api-python-client/commit/63f97f37daee37a725eb05df3097b20d5d4eaaf0)), closes [#963](https://www.github.com/googleapis/google-api-python-client/issues/963)
+
 ### [1.9.3](https://www.github.com/googleapis/google-api-python-client/compare/v1.9.2...v1.9.3) (2020-06-10)
 
 
