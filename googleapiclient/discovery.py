@@ -187,6 +187,7 @@ def build(
     client_options=None,
     adc_cert_path=None,
     adc_key_path=None,
+    num_retries=1,
 ):
     """Construct a Resource for interacting with an API.
 
@@ -223,6 +224,8 @@ def build(
     adc_key_path: str, client encrypted private key file path to save the
       application default client encrypted private key for mTLS. This field is
       required if you want to use the default client certificate.
+    num_retries: Integer, number of times to retry discovery with
+      randomized exponential backoff in case of intermittent/connection issues.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -243,7 +246,8 @@ def build(
 
         try:
             content = _retrieve_discovery_doc(
-                requested_url, discovery_http, cache_discovery, cache, developerKey
+                requested_url, discovery_http, cache_discovery, cache,
+                developerKey, num_retries=num_retries
             )
             return build_from_document(
                 content,
@@ -266,7 +270,8 @@ def build(
     raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName, version))
 
 
-def _retrieve_discovery_doc(url, http, cache_discovery, cache=None, developerKey=None):
+def _retrieve_discovery_doc(url, http, cache_discovery,
+    cache=None, developerKey=None, num_retries=1):
     """Retrieves the discovery_doc from cache or the internet.
 
   Args:
@@ -276,13 +281,16 @@ def _retrieve_discovery_doc(url, http, cache_discovery, cache=None, developerKey
     cache_discovery: Boolean, whether or not to cache the discovery doc.
     cache: googleapiclient.discovery_cache.base.Cache, an optional cache
       object for the discovery documents.
+    developerKey: string, Key for controlling API usage, generated
+      from the API Console.
+    num_retries: Integer, number of times to retry discovery with
+      randomized exponential backoff in case of intermittent/connection issues.
 
   Returns:
     A unicode string representation of the discovery document.
   """
     if cache_discovery:
         from . import discovery_cache
-        from .discovery_cache import base
 
         if cache is None:
             cache = discovery_cache.autodetect()
@@ -302,10 +310,10 @@ def _retrieve_discovery_doc(url, http, cache_discovery, cache=None, developerKey
         actual_url = _add_query_parameter(url, "key", developerKey)
     logger.debug("URL being requested: GET %s", actual_url)
 
-    resp, content = http.request(actual_url)
-
-    if resp.status >= 400:
-        raise HttpError(resp, content, uri=actual_url)
+    # Execute this request with retries build into HttpRequest
+    # Note that it will already raise an error if we don't get a 2xx response
+    req = HttpRequest(http, HttpRequest.null_postproc, actual_url)
+    resp, content = req.execute(num_retries=num_retries)
 
     try:
         content = content.decode("utf-8")
