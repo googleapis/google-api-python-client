@@ -11,22 +11,32 @@ Thanks for stopping by to let us know something could be better!
 Please run down the following list and make sure you've tried the usual "quick fixes":
 
   - Search the issues already opened: https://github.com/googleapis/google-api-python-client/issues
-  - If you have a question, post on Stackoverflow under the `google-api` tag.
-  - If you are reporting an issue or requesting a feature for a G Suite API, please use their [public issue tracker](https://gsuite-developers.googleblog.com/2017/03/a-new-issue-tracker-for-g-suite.html)
+  - Search StackOverflow: https://stackoverflow.com/questions/tagged/google-cloud-platform+python
 
 If you are still having issues, please be sure to include as much information as possible:
 
 #### Environment details
 
-  - OS:
-  - Python version:
-  - pip version:
-  - `google-api-python-client` version:
+  - OS type and version:
+  - Python version: `python --version`
+  - pip version: `pip --version`
+  - `google-api-python-client` version: `pip show google-api-python-client`
 
 #### Steps to reproduce
 
   1. ?
   2. ?
+
+#### Code example
+
+```python
+# example
+```
+
+#### Stack trace
+```
+# example
+```
 
 Making sure to follow these steps will guarantee the quickest resolution possible.
 

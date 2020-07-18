@@ -48,7 +48,7 @@ virtualenv <your-env>
 
 ## Supported Python Versions
 
-Python 3.4, 3.5, 3.6 and 3.7 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions
+Python 3.5, 3.6 and 3.7, and 3.8 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions
 
 ## Deprecated Python Versions
 
@@ -66,4 +66,6 @@ For development you will also need the following libraries:
 
 ## Contributing
 
-Please see the [contributing page](http://google.github.io/google-api-python-client/contributing.html) for more information. In particular, we love pull requests - but please make sure to sign the contributor license agreement.
+Please see our [Contribution Guide](CONTRIBUTING.rst). 
+In particular, we love pull requests - but please make sure to sign 
+the contributor license agreement.

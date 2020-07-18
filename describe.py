@@ -38,6 +38,8 @@ from googleapiclient.discovery import build
 from googleapiclient.discovery import build_from_document
 from googleapiclient.discovery import UnknownApiNameOrVersion
 from googleapiclient.http import build_http
+from googleapiclient.errors import HttpError
+
 import uritemplate
 
 CSS = """<style>
@@ -247,6 +249,12 @@ def method(name, doc):
   """
 
     params = method_params(doc)
+    if sys.version_info.major >= 3:
+        import html
+        doc = html.escape(doc)
+    else:
+        import cgi
+        doc = cgi.escape(doc)
     return string.Template(METHOD_TEMPLATE).substitute(
         name=name, params=params, doc=doc
     )
@@ -348,7 +356,10 @@ def document_collection_recursive(resource, path, root_discovery, discovery):
     html = document_collection(resource, path, root_discovery, discovery)
 
     f = open(os.path.join(FLAGS.dest, path + "html"), "w")
-    f.write(html.encode("utf-8"))
+    if sys.version_info.major < 3:
+        html = html.encode("utf-8")
+
+    f.write(html)
     f.close()
 
     for name in dir(resource):
@@ -379,6 +390,9 @@ def document_api(name, version):
         service = build(name, version)
     except UnknownApiNameOrVersion as e:
         print("Warning: {} {} found but could not be built.".format(name, version))
+        return
+    except HttpError as e:
+        print("Warning: {} {} returned {}.".format(name, version, e))
         return
 
     http = build_http()
@@ -450,7 +464,10 @@ if __name__ == "__main__":
                 markdown.append("\n")
 
             with open("docs/dyn/index.md", "w") as f:
-                f.write("\n".join(markdown).encode("utf-8"))
+                markdown = "\n".join(markdown)
+                if sys.version_info.major < 3:
+                    markdown = markdown.encode("utf-8")
+                f.write(markdown)
 
         else:
             sys.exit("Failed to load the discovery document.")

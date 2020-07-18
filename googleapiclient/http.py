@@ -709,7 +709,7 @@ class MediaIoBaseDownload(object):
 
     Raises:
       googleapiclient.errors.HttpError if the response was not a 2xx.
-      httplib2.HttpLib2Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occurred.
     """
         headers = self._headers.copy()
         headers["range"] = "bytes=%d-%d" % (
@@ -860,7 +860,7 @@ class HttpRequest(object):
 
     Raises:
       googleapiclient.errors.HttpError if the response was not a 2xx.
-      httplib2.HttpLib2Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occurred.
     """
         if http is None:
             http = self.http
@@ -956,7 +956,7 @@ class HttpRequest(object):
 
     Raises:
       googleapiclient.errors.HttpError if the response was not a 2xx.
-      httplib2.HttpLib2Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occurred.
     """
         if http is None:
             http = self.http
@@ -1118,6 +1118,10 @@ class HttpRequest(object):
             resumable=d["resumable"],
         )
 
+    @staticmethod
+    def null_postproc(resp, contents):
+        return resp, contents
+
 
 class BatchHttpRequest(object):
     """Batches multiple HttpRequest objects into a single HTTP request.
@@ -1168,9 +1172,9 @@ class BatchHttpRequest(object):
             batch_uri = _LEGACY_BATCH_URI
 
         if batch_uri == _LEGACY_BATCH_URI:
-            LOGGER.warn(
+            LOGGER.warning(
                 "You have constructed a BatchHttpRequest using the legacy batch "
-                "endpoint %s. This endpoint will be turned down on March 25, 2019. "
+                "endpoint %s. This endpoint will be turned down on August 12, 2020. "
                 "Please provide the API-specific endpoint or use "
                 "service.new_batch_http_request(). For more details see "
                 "https://developers.googleblog.com/2018/03/discontinuing-support-for-json-rpc-and.html"
@@ -1249,7 +1253,7 @@ class BatchHttpRequest(object):
 
         # NB: we intentionally leave whitespace between base/id and '+', so RFC2822
         # line folding works properly on Python 3; see
-        # https://github.com/google/google-api-python-client/issues/164
+        # https://github.com/googleapis/google-api-python-client/issues/164
         return "<%s + %s>" % (self._base_id, quote(id_))
 
     def _header_to_id(self, header):
@@ -1416,10 +1420,10 @@ class BatchHttpRequest(object):
       http: httplib2.Http, an http object to be used to make the request with.
       order: list, list of request ids in the order they were added to the
         batch.
-      request: list, list of request objects to send.
+      requests: list, list of request objects to send.
 
     Raises:
-      httplib2.HttpLib2Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occurred.
       googleapiclient.errors.BatchError if the response is the wrong format.
     """
         message = MIMEMultipart("mixed")
@@ -1495,7 +1499,7 @@ class BatchHttpRequest(object):
       None
 
     Raises:
-      httplib2.HttpLib2Error if a transport error has occured.
+      httplib2.HttpLib2Error if a transport error has occurred.
       googleapiclient.errors.BatchError if the response is the wrong format.
     """
         # If we have no requests return
@@ -1690,9 +1694,8 @@ class HttpMock(object):
         if headers is None:
             headers = {"status": "200"}
         if filename:
-            f = open(filename, "rb")
-            self.data = f.read()
-            f.close()
+            with open(filename, "rb") as f:
+                self.data = f.read()
         else:
             self.data = None
         self.response_headers = headers
@@ -1749,6 +1752,7 @@ class HttpMockSequence(object):
     """
         self._iterable = iterable
         self.follow_redirects = True
+        self.request_sequence = list()
 
     def request(
         self,
@@ -1759,17 +1763,21 @@ class HttpMockSequence(object):
         redirections=1,
         connection_type=None,
     ):
+        # Remember the request so after the fact this mock can be examined
+        self.request_sequence.append((uri, method, body, headers))
         resp, content = self._iterable.pop(0)
-        if content == "echo_request_headers":
+        content = six.ensure_binary(content)
+
+        if content == b"echo_request_headers":
             content = headers
-        elif content == "echo_request_headers_as_json":
+        elif content == b"echo_request_headers_as_json":
             content = json.dumps(headers)
-        elif content == "echo_request_body":
+        elif content == b"echo_request_body":
             if hasattr(body, "read"):
                 content = body.read()
             else:
                 content = body
-        elif content == "echo_request_uri":
+        elif content == b"echo_request_uri":
             content = uri
         if isinstance(content, six.text_type):
             content = content.encode("utf-8")

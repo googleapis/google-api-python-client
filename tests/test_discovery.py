@@ -38,10 +38,14 @@ import pickle
 import re
 import sys
 import unittest2 as unittest
+from collections import defaultdict
 
+from parameterized import parameterized
 import mock
 
 import google.auth.credentials
+from google.auth.transport import mtls
+from google.auth.exceptions import MutualTLSChannelError
 import google_auth_httplib2
 from googleapiclient.discovery import _fix_up_media_upload
 from googleapiclient.discovery import _fix_up_method_description
@@ -56,6 +60,8 @@ from googleapiclient.discovery import MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE
 from googleapiclient.discovery import ResourceMethodParameters
 from googleapiclient.discovery import STACK_QUERY_PARAMETERS
 from googleapiclient.discovery import STACK_QUERY_PARAMETER_DEFAULT_VALUE
+from googleapiclient.discovery import V1_DISCOVERY_URI
+from googleapiclient.discovery import V2_DISCOVERY_URI
 from googleapiclient.discovery_cache import DISCOVERY_DOC_MAX_AGE
 from googleapiclient.discovery_cache.base import Cache
 from googleapiclient.errors import HttpError
@@ -104,8 +110,33 @@ def assertUrisEqual(testcase, expected, actual):
         testcase.assertEqual(expected_query[name], actual_query[name])
 
 
+def assert_discovery_uri(testcase, actual, service_name, version, discovery):
+    """Assert that discovery URI used was the one that was expected
+    for a given service and version."""
+    params = {"api": service_name, "apiVersion": version}
+    expanded_requested_uri = uritemplate.expand(discovery, params)
+    assertUrisEqual(testcase, expanded_requested_uri, actual)
+
+
+def validate_discovery_requests(testcase, http_mock, service_name,
+                                version, discovery):
+    """Validates that there have > 0 calls to Http Discovery
+     and that LAST discovery URI used was the one that was expected
+    for a given service and version."""
+    testcase.assertTrue(len(http_mock.request_sequence) > 0)
+    if len(http_mock.request_sequence) > 0:
+        actual_uri = http_mock.request_sequence[-1][0]
+        assert_discovery_uri(testcase,
+                             actual_uri, service_name, version, discovery)
+
+
 def datafile(filename):
     return os.path.join(DATA_DIR, filename)
+
+
+def read_datafile(filename, mode='r'):
+    with open(datafile(filename), mode=mode) as f:
+        return f.read()
 
 
 class SetupHttplib2(unittest.TestCase):
@@ -116,8 +147,7 @@ class SetupHttplib2(unittest.TestCase):
 
 class Utilities(unittest.TestCase):
     def setUp(self):
-        with open(datafile("zoo.json"), "r") as fh:
-            self.zoo_root_desc = json.loads(fh.read())
+        self.zoo_root_desc = json.loads(read_datafile("zoo.json", "r"))
         self.zoo_get_method_desc = self.zoo_root_desc["methods"]["query"]
         self.zoo_animals_resource = self.zoo_root_desc["resources"]["animals"]
         self.zoo_insert_method_desc = self.zoo_animals_resource["methods"]["insert"]
@@ -224,7 +254,11 @@ class Utilities(unittest.TestCase):
         final_max_size,
         final_media_path_url,
     ):
-        fake_root_desc = {"rootUrl": "http://root/", "servicePath": "fake/"}
+        fake_root_desc = {
+            "rootUrl": "http://root/",
+            "servicePath": "fake/",
+            "mtlsRootUrl": "http://root/",
+        }
         fake_path_url = "fake-path/"
 
         accept, max_size, media_path_url = _fix_up_media_upload(
@@ -422,8 +456,8 @@ class DiscoveryErrors(unittest.TestCase):
     def test_unknown_api_name_or_version(self):
         http = HttpMockSequence(
             [
-                ({"status": "404"}, open(datafile("zoo.json"), "rb").read()),
-                ({"status": "404"}, open(datafile("zoo.json"), "rb").read()),
+                ({"status": "404"}, read_datafile("zoo.json", "rb")),
+                ({"status": "404"}, read_datafile("zoo.json", "rb")),
             ]
         )
         with self.assertRaises(UnknownApiNameOrVersion):
@@ -439,28 +473,28 @@ class DiscoveryFromDocument(unittest.TestCase):
     MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
 
     def test_can_build_from_local_document(self):
-        discovery = open(datafile("plus.json")).read()
+        discovery = read_datafile("plus.json")
         plus = build_from_document(
             discovery,
             base="https://www.googleapis.com/",
             credentials=self.MOCK_CREDENTIALS,
         )
-        self.assertTrue(plus is not None)
+        self.assertIsNotNone(plus)
         self.assertTrue(hasattr(plus, "activities"))
 
     def test_can_build_from_local_deserialized_document(self):
-        discovery = open(datafile("plus.json")).read()
+        discovery = read_datafile("plus.json")
         discovery = json.loads(discovery)
         plus = build_from_document(
             discovery,
             base="https://www.googleapis.com/",
             credentials=self.MOCK_CREDENTIALS,
         )
-        self.assertTrue(plus is not None)
+        self.assertIsNotNone(plus)
         self.assertTrue(hasattr(plus, "activities"))
 
     def test_building_with_base_remembers_base(self):
-        discovery = open(datafile("plus.json")).read()
+        discovery = read_datafile("plus.json")
 
         base = "https://www.example.com/"
         plus = build_from_document(
@@ -469,7 +503,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         self.assertEqual("https://www.googleapis.com/plus/v1/", plus._baseUrl)
 
     def test_building_with_optional_http_with_authorization(self):
-        discovery = open(datafile("plus.json")).read()
+        discovery = read_datafile("plus.json")
         plus = build_from_document(
             discovery,
             base="https://www.googleapis.com/",
@@ -483,7 +517,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         self.assertGreater(plus._http.http.timeout, 0)
 
     def test_building_with_optional_http_with_no_authorization(self):
-        discovery = open(datafile("plus.json")).read()
+        discovery = read_datafile("plus.json")
         # Cleanup auth field, so we would use plain http client
         discovery = json.loads(discovery)
         discovery["auth"] = {}
@@ -499,14 +533,14 @@ class DiscoveryFromDocument(unittest.TestCase):
 
     def test_building_with_explicit_http(self):
         http = HttpMock()
-        discovery = open(datafile("plus.json")).read()
+        discovery = read_datafile("plus.json")
         plus = build_from_document(
             discovery, base="https://www.googleapis.com/", http=http
         )
         self.assertEqual(plus._http, http)
 
     def test_building_with_developer_key_skips_adc(self):
-        discovery = open(datafile("plus.json")).read()
+        discovery = read_datafile("plus.json")
         plus = build_from_document(
             discovery, base="https://www.googleapis.com/", developerKey="123"
         )
@@ -516,23 +550,186 @@ class DiscoveryFromDocument(unittest.TestCase):
         self.assertNotIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
 
     def test_api_endpoint_override_from_client_options(self):
-        discovery = open(datafile("plus.json")).read()
+        discovery = read_datafile("plus.json")
         api_endpoint = "https://foo.googleapis.com/"
         options = google.api_core.client_options.ClientOptions(
             api_endpoint=api_endpoint
         )
-        plus = build_from_document(discovery, client_options=options)
+        plus = build_from_document(
+            discovery, client_options=options, credentials=self.MOCK_CREDENTIALS
+        )
+
+        self.assertEqual(plus._baseUrl, api_endpoint)
+
+    def test_api_endpoint_override_from_client_options_mapping_object(self):
+
+        discovery = read_datafile("plus.json")
+        api_endpoint = "https://foo.googleapis.com/"
+        mapping_object = defaultdict(str)
+        mapping_object['api_endpoint'] = api_endpoint
+        plus = build_from_document(
+            discovery, client_options=mapping_object
+        )
 
         self.assertEqual(plus._baseUrl, api_endpoint)
 
     def test_api_endpoint_override_from_client_options_dict(self):
-        discovery = open(datafile("plus.json")).read()
+        discovery = read_datafile("plus.json")
         api_endpoint = "https://foo.googleapis.com/"
         plus = build_from_document(
-            discovery, client_options={"api_endpoint": api_endpoint}
+            discovery,
+            client_options={"api_endpoint": api_endpoint},
+            credentials=self.MOCK_CREDENTIALS,
         )
 
         self.assertEqual(plus._baseUrl, api_endpoint)
+
+
+REGULAR_ENDPOINT = "https://www.googleapis.com/plus/v1/"
+MTLS_ENDPOINT = "https://www.mtls.googleapis.com/plus/v1/"
+
+
+class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
+    MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
+    ADC_CERT_PATH = "adc_cert_path"
+    ADC_KEY_PATH = "adc_key_path"
+    ADC_PASSPHRASE = "adc_passphrase"
+
+    def check_http_client_cert(self, resource, has_client_cert=False):
+        if isinstance(resource._http, google_auth_httplib2.AuthorizedHttp):
+            certs = list(resource._http.http.certificates.iter(""))
+        else:
+            certs = list(resource._http.certificates.iter(""))
+        if has_client_cert:
+            self.assertEqual(len(certs), 1)
+            self.assertEqual(
+                certs[0], (self.ADC_KEY_PATH, self.ADC_CERT_PATH, self.ADC_PASSPHRASE)
+            )
+        else:
+            self.assertEqual(len(certs), 0)
+
+    def client_encrypted_cert_source(self):
+        return self.ADC_CERT_PATH, self.ADC_KEY_PATH, self.ADC_PASSPHRASE
+
+    def test_mtls_not_trigger_if_http_provided(self):
+        discovery = read_datafile("plus.json")
+        plus = build_from_document(discovery, http=httplib2.Http())
+        self.assertIsNotNone(plus)
+        self.assertEqual(plus._baseUrl, REGULAR_ENDPOINT)
+        self.check_http_client_cert(plus, has_client_cert=False)
+
+    def test_exception_with_client_cert_source(self):
+        discovery = read_datafile("plus.json")
+        with self.assertRaises(MutualTLSChannelError):
+            build_from_document(
+                discovery,
+                credentials=self.MOCK_CREDENTIALS,
+                client_options={"client_cert_source": mock.Mock()},
+            )
+
+    @parameterized.expand(
+        [
+            ("never", REGULAR_ENDPOINT),
+            ("auto", MTLS_ENDPOINT),
+            ("always", MTLS_ENDPOINT),
+        ]
+    )
+    def test_mtls_with_provided_client_cert(self, use_mtls_env, base_url):
+        discovery = read_datafile("plus.json")
+
+        with mock.patch.dict("os.environ", {"GOOGLE_API_USE_MTLS": use_mtls_env}):
+            plus = build_from_document(
+                discovery,
+                credentials=self.MOCK_CREDENTIALS,
+                client_options={
+                    "client_encrypted_cert_source": self.client_encrypted_cert_source
+                },
+            )
+            self.assertIsNotNone(plus)
+            self.check_http_client_cert(plus, has_client_cert=True)
+            self.assertEqual(plus._baseUrl, base_url)
+
+    @parameterized.expand(["never", "auto", "always"])
+    def test_endpoint_not_switch(self, use_mtls_env):
+        # Test endpoint is not switched if user provided api endpoint
+        discovery = read_datafile("plus.json")
+
+        with mock.patch.dict("os.environ", {"GOOGLE_API_USE_MTLS": use_mtls_env}):
+            plus = build_from_document(
+                discovery,
+                credentials=self.MOCK_CREDENTIALS,
+                client_options={
+                    "api_endpoint": "https://foo.googleapis.com",
+                    "client_encrypted_cert_source": self.client_encrypted_cert_source,
+                },
+            )
+            self.assertIsNotNone(plus)
+            self.check_http_client_cert(plus, has_client_cert=True)
+            self.assertEqual(plus._baseUrl, "https://foo.googleapis.com")
+
+    @parameterized.expand(
+        [
+            ("never", REGULAR_ENDPOINT),
+            ("auto", MTLS_ENDPOINT),
+            ("always", MTLS_ENDPOINT),
+        ]
+    )
+    @mock.patch(
+        "google.auth.transport.mtls.has_default_client_cert_source", autospec=True
+    )
+    @mock.patch(
+        "google.auth.transport.mtls.default_client_encrypted_cert_source", autospec=True
+    )
+    def test_mtls_with_default_client_cert(
+        self,
+        use_mtls_env,
+        base_url,
+        default_client_encrypted_cert_source,
+        has_default_client_cert_source,
+    ):
+        has_default_client_cert_source.return_value = True
+        default_client_encrypted_cert_source.return_value = (
+            self.client_encrypted_cert_source
+        )
+        discovery = read_datafile("plus.json")
+
+        with mock.patch.dict("os.environ", {"GOOGLE_API_USE_MTLS": use_mtls_env}):
+            plus = build_from_document(
+                discovery,
+                credentials=self.MOCK_CREDENTIALS,
+                adc_cert_path=self.ADC_CERT_PATH,
+                adc_key_path=self.ADC_KEY_PATH,
+            )
+            self.assertIsNotNone(plus)
+            self.check_http_client_cert(plus, has_client_cert=True)
+            self.assertEqual(plus._baseUrl, base_url)
+
+    @parameterized.expand(
+        [
+            ("never", REGULAR_ENDPOINT),
+            ("auto", REGULAR_ENDPOINT),
+            ("always", MTLS_ENDPOINT),
+        ]
+    )
+    @mock.patch(
+        "google.auth.transport.mtls.has_default_client_cert_source", autospec=True
+    )
+    def test_mtls_with_no_client_cert(
+        self, use_mtls_env, base_url, has_default_client_cert_source
+    ):
+        has_default_client_cert_source.return_value = False
+        discovery = read_datafile("plus.json")
+
+        with mock.patch.dict("os.environ", {"GOOGLE_API_USE_MTLS": use_mtls_env}):
+            plus = build_from_document(
+                discovery,
+                credentials=self.MOCK_CREDENTIALS,
+                adc_cert_path=self.ADC_CERT_PATH,
+                adc_key_path=self.ADC_KEY_PATH,
+            )
+            self.assertIsNotNone(plus)
+            self.check_http_client_cert(plus, has_client_cert=False)
+            self.assertEqual(plus._baseUrl, base_url)
 
 
 class DiscoveryFromHttp(unittest.TestCase):
@@ -548,7 +745,7 @@ class DiscoveryFromHttp(unittest.TestCase):
         os.environ["REMOTE_ADDR"] = "10.0.0.1"
         try:
             http = HttpMockSequence(
-                [({"status": "400"}, open(datafile("zoo.json"), "rb").read())]
+                [({"status": "400"}, read_datafile("zoo.json", "rb"))]
             )
             zoo = build(
                 "zoo",
@@ -566,7 +763,7 @@ class DiscoveryFromHttp(unittest.TestCase):
         # out of the raised exception.
         try:
             http = HttpMockSequence(
-                [({"status": "400"}, open(datafile("zoo.json"), "rb").read())]
+                [({"status": "400"}, read_datafile("zoo.json", "rb"))]
             )
             zoo = build(
                 "zoo",
@@ -584,7 +781,7 @@ class DiscoveryFromHttp(unittest.TestCase):
         # out of the raised exception.
         try:
             http = HttpMockSequence(
-                [({"status": "400"}, open(datafile("zoo.json"), "rb").read())]
+                [({"status": "400"}, read_datafile("zoo.json", "rb"))]
             )
             zoo = build(
                 "zoo",
@@ -601,7 +798,7 @@ class DiscoveryFromHttp(unittest.TestCase):
         http = HttpMockSequence(
             [
                 ({"status": "404"}, "Not found"),
-                ({"status": "200"}, open(datafile("zoo.json"), "rb").read()),
+                ({"status": "200"}, read_datafile("zoo.json", "rb")),
             ]
         )
         zoo = build("zoo", "v1", http=http, cache_discovery=False)
@@ -611,7 +808,7 @@ class DiscoveryFromHttp(unittest.TestCase):
         http = HttpMockSequence(
             [
                 ({"status": "404"}, "Not found"),
-                ({"status": "200"}, open(datafile("zoo.json"), "rb").read()),
+                ({"status": "200"}, read_datafile("zoo.json", "rb")),
             ]
         )
         api_endpoint = "https://foo.googleapis.com/"
@@ -627,7 +824,7 @@ class DiscoveryFromHttp(unittest.TestCase):
         http = HttpMockSequence(
             [
                 ({"status": "404"}, "Not found"),
-                ({"status": "200"}, open(datafile("zoo.json"), "rb").read()),
+                ({"status": "200"}, read_datafile("zoo.json", "rb")),
             ]
         )
         api_endpoint = "https://foo.googleapis.com/"
@@ -641,7 +838,78 @@ class DiscoveryFromHttp(unittest.TestCase):
         self.assertEqual(zoo._baseUrl, api_endpoint)
 
 
+class DiscoveryRetryFromHttp(unittest.TestCase):
+    def test_repeated_500_retries_and_fails(self):
+        http = HttpMockSequence(
+            [
+                ({"status": "500"}, read_datafile("500.json", "rb")),
+                ({"status": "503"}, read_datafile("503.json", "rb")),
+            ]
+        )
+        with self.assertRaises(HttpError):
+            with mock.patch("time.sleep") as mocked_sleep:
+                build("zoo", "v1", http=http, cache_discovery=False)
+
+        mocked_sleep.assert_called_once()
+        # We also want to verify that we stayed with v1 discovery
+        validate_discovery_requests(self, http, "zoo", "v1", V1_DISCOVERY_URI)
+
+    def test_v2_repeated_500_retries_and_fails(self):
+        http = HttpMockSequence(
+            [
+                ({"status": "404"}, "Not found"),  # last v1 discovery call
+                ({"status": "500"}, read_datafile("500.json", "rb")),
+                ({"status": "503"}, read_datafile("503.json", "rb")),
+            ]
+        )
+        with self.assertRaises(HttpError):
+            with mock.patch("time.sleep") as mocked_sleep:
+                build("zoo", "v1", http=http, cache_discovery=False)
+
+        mocked_sleep.assert_called_once()
+        # We also want to verify that we switched to v2 discovery
+        validate_discovery_requests(self, http, "zoo", "v1", V2_DISCOVERY_URI)
+
+    def test_single_500_retries_and_succeeds(self):
+        http = HttpMockSequence(
+            [
+                ({"status": "500"}, read_datafile("500.json", "rb")),
+                ({"status": "200"}, read_datafile("zoo.json", "rb")),
+            ]
+        )
+        with mock.patch("time.sleep") as mocked_sleep:
+            zoo = build("zoo", "v1", http=http, cache_discovery=False)
+
+        self.assertTrue(hasattr(zoo, "animals"))
+        mocked_sleep.assert_called_once()
+        # We also want to verify that we stayed with v1 discovery
+        validate_discovery_requests(self, http, "zoo", "v1", V1_DISCOVERY_URI)
+
+    def test_single_500_then_404_retries_and_succeeds(self):
+        http = HttpMockSequence(
+            [
+                ({"status": "500"}, read_datafile("500.json", "rb")),
+                ({"status": "404"}, "Not found"),  # last v1 discovery call
+                ({"status": "200"}, read_datafile("zoo.json", "rb")),
+            ]
+        )
+        with mock.patch("time.sleep") as mocked_sleep:
+            zoo = build("zoo", "v1", http=http, cache_discovery=False)
+
+        self.assertTrue(hasattr(zoo, "animals"))
+        mocked_sleep.assert_called_once()
+        # We also want to verify that we switched to v2 discovery
+        validate_discovery_requests(self, http, "zoo", "v1", V2_DISCOVERY_URI)
+
+
 class DiscoveryFromAppEngineCache(unittest.TestCase):
+    def setUp(self):
+        self.old_environ = os.environ.copy()
+        os.environ["APPENGINE_RUNTIME"] = "python27"
+
+    def tearDown(self):
+        os.environ = self.old_environ
+
     def test_appengine_memcache(self):
         # Hack module import
         self.orig_import = __import__
@@ -671,8 +939,7 @@ class DiscoveryFromAppEngineCache(unittest.TestCase):
             )
 
             # memcache.set is called once
-            with open(datafile("plus.json")) as f:
-                content = f.read()
+            content = read_datafile("plus.json")
             self.mocked_api.memcache.set.assert_called_once_with(
                 url, content, time=DISCOVERY_DOC_MAX_AGE, namespace=namespace
             )
@@ -729,8 +996,7 @@ class DiscoveryFromFileCache(unittest.TestCase):
             cache.get.assert_called_once_with(url)
 
             # cache.set is called once
-            with open(datafile("plus.json")) as f:
-                content = f.read()
+            content = read_datafile("plus.json")
             cache.set.assert_called_once_with(url, content)
 
             # Make sure there is a cache entry for the plus v1 discovery doc.
@@ -891,7 +1157,7 @@ class Discovery(unittest.TestCase):
     def test_tunnel_patch(self):
         http = HttpMockSequence(
             [
-                ({"status": "200"}, open(datafile("zoo.json"), "rb").read()),
+                ({"status": "200"}, read_datafile("zoo.json", "rb")),
                 ({"status": "200"}, "echo_request_headers_as_json"),
             ]
         )
@@ -911,13 +1177,13 @@ class Discovery(unittest.TestCase):
         credentials = mock.Mock(spec=GoogleCredentials)
         credentials.create_scoped_required.return_value = False
 
-        discovery = open(datafile("plus.json")).read()
+        discovery = read_datafile("plus.json")
         service = build_from_document(discovery, credentials=credentials)
         self.assertEqual(service._http, credentials.authorize.return_value)
 
     def test_google_auth_credentials(self):
         credentials = mock.Mock(spec=google.auth.credentials.Credentials)
-        discovery = open(datafile("plus.json")).read()
+        discovery = read_datafile("plus.json")
         service = build_from_document(discovery, credentials=credentials)
 
         self.assertIsInstance(service._http, google_auth_httplib2.AuthorizedHttp)
@@ -925,7 +1191,7 @@ class Discovery(unittest.TestCase):
 
     def test_no_scopes_no_credentials(self):
         # Zoo doesn't have scopes
-        discovery = open(datafile("zoo.json")).read()
+        discovery = read_datafile("zoo.json")
         service = build_from_document(discovery)
         # Should be an ordinary httplib2.Http instance and not AuthorizedHttp.
         self.assertIsInstance(service._http, httplib2.Http)
@@ -1055,8 +1321,7 @@ class Discovery(unittest.TestCase):
 
         request = zoo.animals().insert(media_body=datafile("small.png"), body={})
         self.assertTrue(request.headers["content-type"].startswith("multipart/related"))
-        with open(datafile("small.png"), "rb") as f:
-            contents = f.read()
+        contents = read_datafile("small.png", "rb")
         boundary = re.match(b"--=+([^=]+)", request.body).group(1)
         self.assertEqual(
             request.body.rstrip(b"\n"),  # Python 2.6 does not add a trailing \n
@@ -1102,7 +1367,7 @@ class Discovery(unittest.TestCase):
 
         self.assertEqual("image/png", request.resumable.mimetype())
 
-        self.assertNotEquals(request.body, None)
+        self.assertNotEqual(request.body, None)
         self.assertEqual(request.resumable_uri, None)
 
         http = HttpMockSequence(
@@ -1566,8 +1831,7 @@ class Discovery(unittest.TestCase):
         # instances upon un-pickling
 
     def _dummy_zoo_request(self):
-        with open(os.path.join(DATA_DIR, "zoo.json"), "rU") as fh:
-            zoo_contents = fh.read()
+        zoo_contents = read_datafile("zoo.json")
 
         zoo_uri = uritemplate.expand(DISCOVERY_URI, {"api": "zoo", "apiVersion": "v1"})
         if "REMOTE_ADDR" in os.environ:

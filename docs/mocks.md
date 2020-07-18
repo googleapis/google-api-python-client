@@ -1,8 +1,8 @@
 # Mocks
 
-The use of [Mock objects](http://en.wikipedia.org/wiki/Mock_object) is a standard testing methodology for Python and other object-oriented languages. This library defines Mock classes that simulate responses to API calls. You can use them to test how your code handles basic interactions with Google APIs.
+The use of [Mock objects](https://en.wikipedia.org/wiki/Mock_object) is a standard testing methodology for Python and other object-oriented languages. This library defines Mock classes that simulate responses to API calls. You can use them to test how your code handles basic interactions with Google APIs.
 
-> **Note:** Many of the [Python Client Library test scripts](https://github.com/google/google-api-python-client/tree/master/tests) use these classes.
+> **Note:** Many of the [Python Client Library test scripts](https://github.com/googleapis/google-api-python-client/tree/master/tests) use these classes.
 
 ## HttpMock
 
