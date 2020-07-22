@@ -84,7 +84,7 @@ h1, h2, h3 {
   <code><a href="#get">get(name, accessLevelFormat=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Get an Access Level by resource</p>
 <p class="toc_element">
-  <code><a href="#list">list(parent, pageToken=None, pageSize=None, accessLevelFormat=None, x__xgafv=None)</a></code></p>
+  <code><a href="#list">list(parent, pageToken=None, accessLevelFormat=None, pageSize=None, x__xgafv=None)</a></code></p>
 <p class="firstline">List all Access Levels for an access</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -115,6 +115,10 @@ Format: `accessPolicies/{policy_id}` (required)
 { # An `AccessLevel` is a label that can be applied to requests to Google Cloud
     # services, along with a list of requirements necessary for the label to be
     # applied.
+  &quot;name&quot;: &quot;A String&quot;, # Required. Resource name for the Access Level. The `short_name` component
+      # must begin with a letter and only include alphanumeric and &#x27;_&#x27;. Format:
+      # `accessPolicies/{policy_id}/accessLevels/{short_name}`. The maximum length
+      # of the `short_name` component is 50 characters.
   &quot;custom&quot;: { # `CustomLevel` is an `AccessLevel` using the Cloud Common Expression Language # A `CustomLevel` written in the Common Expression Language.
       # to represent the necessary conditions for the level to apply to a request.
       # See CEL spec at: https://github.com/google/cel-spec
@@ -149,22 +153,18 @@ Format: `accessPolicies/{policy_id}` (required)
         # The exact variables and functions that may be referenced within an expression
         # are determined by the service that evaluates it. See the service
         # documentation for additional information.
+      &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
+          # its purpose. This can be used e.g. in UIs which allow to enter the
+          # expression.
       &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
           # describes the expression, e.g. when hovered over it in a UI.
       &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
           # syntax.
-      &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
-          # its purpose. This can be used e.g. in UIs which allow to enter the
-          # expression.
       &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
           # reporting, e.g. a file name and a position in the file.
     },
   },
   &quot;title&quot;: &quot;A String&quot;, # Human readable title. Must be unique within the Policy.
-  &quot;name&quot;: &quot;A String&quot;, # Required. Resource name for the Access Level. The `short_name` component
-      # must begin with a letter and only include alphanumeric and &#x27;_&#x27;. Format:
-      # `accessPolicies/{policy_id}/accessLevels/{short_name}`. The maximum length
-      # of the `short_name` component is 50 characters.
   &quot;basic&quot;: { # `BasicLevel` is an `AccessLevel` using a set of recommended features. # A `BasicLevel` composed of `Conditions`.
     &quot;conditions&quot;: [ # Required. A list of requirements for the `AccessLevel` to be granted.
       { # A condition necessary for an `AccessLevel` to be granted. The Condition is an
@@ -172,8 +172,25 @@ Format: `accessPolicies/{policy_id}` (required)
           # of the listed subnetworks AND 2) the originating device complies with the
           # listed device policy AND 3) all listed access levels are granted AND 4) the
           # request was sent at a time allowed by the DateTimeRestriction.
-        &quot;regions&quot;: [ # The request must originate from one of the provided countries/regions.
-            # Must be valid ISO 3166-1 alpha-2 codes.
+        &quot;negate&quot;: True or False, # Whether to negate the Condition. If true, the Condition becomes a NAND over
+            # its non-empty fields, each field must be false for the Condition overall to
+            # be satisfied. Defaults to false.
+        &quot;members&quot;: [ # The request must be made by one of the provided user or service
+            # accounts. Groups are not supported.
+            # Syntax:
+            # `user:{emailid}`
+            # `serviceAccount:{emailid}`
+            # If not specified, a request may come from any user.
+          &quot;A String&quot;,
+        ],
+        &quot;ipSubnetworks&quot;: [ # CIDR block IP subnetwork specification. May be IPv4 or IPv6. Note that for
+            # a CIDR IP address block, the specified IP address portion must be properly
+            # truncated (i.e. all the host bits must be zero) or the input is considered
+            # malformed. For example, &quot;192.0.2.0/24&quot; is accepted but &quot;192.0.2.1/24&quot; is
+            # not. Similarly, for IPv6, &quot;2001:db8::/32&quot; is accepted whereas
+            # &quot;2001:db8::1/32&quot; is not. The originating IP of a request must be in one of
+            # the listed subnets in order for this Condition to be true. If empty, all IP
+            # addresses are allowed.
           &quot;A String&quot;,
         ],
         &quot;requiredAccessLevels&quot;: [ # A list of other access levels defined in the same `Policy`, referenced by
@@ -181,6 +198,10 @@ Format: `accessPolicies/{policy_id}` (required)
             # error. All access levels listed must be granted for the Condition
             # to be true. Example:
             # &quot;`accessPolicies/MY_POLICY/accessLevels/LEVEL_NAME&quot;`
+          &quot;A String&quot;,
+        ],
+        &quot;regions&quot;: [ # The request must originate from one of the provided countries/regions.
+            # Must be valid ISO 3166-1 alpha-2 codes.
           &quot;A String&quot;,
         ],
         &quot;devicePolicy&quot;: { # `DevicePolicy` specifies device specific restrictions necessary to acquire a # Device specific restrictions, all restrictions must hold for the
@@ -193,51 +214,30 @@ Format: `accessPolicies/{policy_id}` (required)
             # DESKTOP_LINUX, encryption_status: ENCRYPTED}, then the DevicePolicy will be
             # true for requests originating from encrypted Linux desktops and encrypted
             # Windows desktops.
+          &quot;requireAdminApproval&quot;: True or False, # Whether the device needs to be approved by the customer admin.
+          &quot;requireScreenlock&quot;: True or False, # Whether or not screenlock is required for the DevicePolicy to be true.
+              # Defaults to `false`.
           &quot;allowedDeviceManagementLevels&quot;: [ # Allowed device management levels, an empty list allows all management
               # levels.
             &quot;A String&quot;,
           ],
+          &quot;requireCorpOwned&quot;: True or False, # Whether the device needs to be corp owned.
           &quot;osConstraints&quot;: [ # Allowed OS versions, an empty list allows all types and all versions.
             { # A restriction on the OS type and version of devices making requests.
-              &quot;minimumVersion&quot;: &quot;A String&quot;, # The minimum allowed OS version. If not set, any version of this OS
-                  # satisfies the constraint. Format: `&quot;major.minor.patch&quot;`.
-                  # Examples: `&quot;10.5.301&quot;`, `&quot;9.2.1&quot;`.
-              &quot;osType&quot;: &quot;A String&quot;, # Required. The allowed OS type.
               &quot;requireVerifiedChromeOs&quot;: True or False, # Only allows requests from devices with a verified Chrome OS.
                   # Verifications includes requirements that the device is enterprise-managed,
                   # conformant to domain policies, and the caller has permission to call
                   # the API targeted by the request.
+              &quot;minimumVersion&quot;: &quot;A String&quot;, # The minimum allowed OS version. If not set, any version of this OS
+                  # satisfies the constraint. Format: `&quot;major.minor.patch&quot;`.
+                  # Examples: `&quot;10.5.301&quot;`, `&quot;9.2.1&quot;`.
+              &quot;osType&quot;: &quot;A String&quot;, # Required. The allowed OS type.
             },
           ],
-          &quot;requireCorpOwned&quot;: True or False, # Whether the device needs to be corp owned.
-          &quot;requireAdminApproval&quot;: True or False, # Whether the device needs to be approved by the customer admin.
-          &quot;requireScreenlock&quot;: True or False, # Whether or not screenlock is required for the DevicePolicy to be true.
-              # Defaults to `false`.
           &quot;allowedEncryptionStatuses&quot;: [ # Allowed encryptions statuses, an empty list allows all statuses.
             &quot;A String&quot;,
           ],
         },
-        &quot;members&quot;: [ # The request must be made by one of the provided user or service
-            # accounts. Groups are not supported.
-            # Syntax:
-            # `user:{emailid}`
-            # `serviceAccount:{emailid}`
-            # If not specified, a request may come from any user.
-          &quot;A String&quot;,
-        ],
-        &quot;negate&quot;: True or False, # Whether to negate the Condition. If true, the Condition becomes a NAND over
-            # its non-empty fields, each field must be false for the Condition overall to
-            # be satisfied. Defaults to false.
-        &quot;ipSubnetworks&quot;: [ # CIDR block IP subnetwork specification. May be IPv4 or IPv6. Note that for
-            # a CIDR IP address block, the specified IP address portion must be properly
-            # truncated (i.e. all the host bits must be zero) or the input is considered
-            # malformed. For example, &quot;192.0.2.0/24&quot; is accepted but &quot;192.0.2.1/24&quot; is
-            # not. Similarly, for IPv6, &quot;2001:db8::/32&quot; is accepted whereas
-            # &quot;2001:db8::1/32&quot; is not. The originating IP of a request must be in one of
-            # the listed subnets in order for this Condition to be true. If empty, all IP
-            # addresses are allowed.
-          &quot;A String&quot;,
-        ],
       },
     ],
     &quot;combiningFunction&quot;: &quot;A String&quot;, # How the `conditions` list should be combined to determine if a request is
@@ -259,6 +259,12 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
+    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
+        # contains progress information and common metadata such as create time.
+        # Some services might not provide such metadata.  Any method that returns a
+        # long-running operation should document the metadata type, if any.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    },
     &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
         # If `true`, the operation is completed, and either `error` or `response` is
         # available.
@@ -282,22 +288,16 @@ Returns:
         #
         # You can find out more about this error model and how to work with it in the
         # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
       &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
           # message types for APIs to use.
         {
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
         },
       ],
-    },
-    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
-        # contains progress information and common metadata such as create time.
-        # Some services might not provide such metadata.  Any method that returns a
-        # long-running operation should document the metadata type, if any.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
     },
   }</pre>
 </div>
@@ -324,6 +324,12 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
+    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
+        # contains progress information and common metadata such as create time.
+        # Some services might not provide such metadata.  Any method that returns a
+        # long-running operation should document the metadata type, if any.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    },
     &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
         # If `true`, the operation is completed, and either `error` or `response` is
         # available.
@@ -347,22 +353,16 @@ Returns:
         #
         # You can find out more about this error model and how to work with it in the
         # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
       &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
           # message types for APIs to use.
         {
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
         },
       ],
-    },
-    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
-        # contains progress information and common metadata such as create time.
-        # Some services might not provide such metadata.  Any method that returns a
-        # long-running operation should document the metadata type, if any.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
     },
   }</pre>
 </div>
@@ -395,6 +395,10 @@ Returns:
     { # An `AccessLevel` is a label that can be applied to requests to Google Cloud
       # services, along with a list of requirements necessary for the label to be
       # applied.
+    &quot;name&quot;: &quot;A String&quot;, # Required. Resource name for the Access Level. The `short_name` component
+        # must begin with a letter and only include alphanumeric and &#x27;_&#x27;. Format:
+        # `accessPolicies/{policy_id}/accessLevels/{short_name}`. The maximum length
+        # of the `short_name` component is 50 characters.
     &quot;custom&quot;: { # `CustomLevel` is an `AccessLevel` using the Cloud Common Expression Language # A `CustomLevel` written in the Common Expression Language.
         # to represent the necessary conditions for the level to apply to a request.
         # See CEL spec at: https://github.com/google/cel-spec
@@ -429,22 +433,18 @@ Returns:
           # The exact variables and functions that may be referenced within an expression
           # are determined by the service that evaluates it. See the service
           # documentation for additional information.
+        &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
+            # its purpose. This can be used e.g. in UIs which allow to enter the
+            # expression.
         &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
             # describes the expression, e.g. when hovered over it in a UI.
         &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
             # syntax.
-        &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
-            # its purpose. This can be used e.g. in UIs which allow to enter the
-            # expression.
         &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
             # reporting, e.g. a file name and a position in the file.
       },
     },
     &quot;title&quot;: &quot;A String&quot;, # Human readable title. Must be unique within the Policy.
-    &quot;name&quot;: &quot;A String&quot;, # Required. Resource name for the Access Level. The `short_name` component
-        # must begin with a letter and only include alphanumeric and &#x27;_&#x27;. Format:
-        # `accessPolicies/{policy_id}/accessLevels/{short_name}`. The maximum length
-        # of the `short_name` component is 50 characters.
     &quot;basic&quot;: { # `BasicLevel` is an `AccessLevel` using a set of recommended features. # A `BasicLevel` composed of `Conditions`.
       &quot;conditions&quot;: [ # Required. A list of requirements for the `AccessLevel` to be granted.
         { # A condition necessary for an `AccessLevel` to be granted. The Condition is an
@@ -452,8 +452,25 @@ Returns:
             # of the listed subnetworks AND 2) the originating device complies with the
             # listed device policy AND 3) all listed access levels are granted AND 4) the
             # request was sent at a time allowed by the DateTimeRestriction.
-          &quot;regions&quot;: [ # The request must originate from one of the provided countries/regions.
-              # Must be valid ISO 3166-1 alpha-2 codes.
+          &quot;negate&quot;: True or False, # Whether to negate the Condition. If true, the Condition becomes a NAND over
+              # its non-empty fields, each field must be false for the Condition overall to
+              # be satisfied. Defaults to false.
+          &quot;members&quot;: [ # The request must be made by one of the provided user or service
+              # accounts. Groups are not supported.
+              # Syntax:
+              # `user:{emailid}`
+              # `serviceAccount:{emailid}`
+              # If not specified, a request may come from any user.
+            &quot;A String&quot;,
+          ],
+          &quot;ipSubnetworks&quot;: [ # CIDR block IP subnetwork specification. May be IPv4 or IPv6. Note that for
+              # a CIDR IP address block, the specified IP address portion must be properly
+              # truncated (i.e. all the host bits must be zero) or the input is considered
+              # malformed. For example, &quot;192.0.2.0/24&quot; is accepted but &quot;192.0.2.1/24&quot; is
+              # not. Similarly, for IPv6, &quot;2001:db8::/32&quot; is accepted whereas
+              # &quot;2001:db8::1/32&quot; is not. The originating IP of a request must be in one of
+              # the listed subnets in order for this Condition to be true. If empty, all IP
+              # addresses are allowed.
             &quot;A String&quot;,
           ],
           &quot;requiredAccessLevels&quot;: [ # A list of other access levels defined in the same `Policy`, referenced by
@@ -461,6 +478,10 @@ Returns:
               # error. All access levels listed must be granted for the Condition
               # to be true. Example:
               # &quot;`accessPolicies/MY_POLICY/accessLevels/LEVEL_NAME&quot;`
+            &quot;A String&quot;,
+          ],
+          &quot;regions&quot;: [ # The request must originate from one of the provided countries/regions.
+              # Must be valid ISO 3166-1 alpha-2 codes.
             &quot;A String&quot;,
           ],
           &quot;devicePolicy&quot;: { # `DevicePolicy` specifies device specific restrictions necessary to acquire a # Device specific restrictions, all restrictions must hold for the
@@ -473,51 +494,30 @@ Returns:
               # DESKTOP_LINUX, encryption_status: ENCRYPTED}, then the DevicePolicy will be
               # true for requests originating from encrypted Linux desktops and encrypted
               # Windows desktops.
+            &quot;requireAdminApproval&quot;: True or False, # Whether the device needs to be approved by the customer admin.
+            &quot;requireScreenlock&quot;: True or False, # Whether or not screenlock is required for the DevicePolicy to be true.
+                # Defaults to `false`.
             &quot;allowedDeviceManagementLevels&quot;: [ # Allowed device management levels, an empty list allows all management
                 # levels.
               &quot;A String&quot;,
             ],
+            &quot;requireCorpOwned&quot;: True or False, # Whether the device needs to be corp owned.
             &quot;osConstraints&quot;: [ # Allowed OS versions, an empty list allows all types and all versions.
               { # A restriction on the OS type and version of devices making requests.
-                &quot;minimumVersion&quot;: &quot;A String&quot;, # The minimum allowed OS version. If not set, any version of this OS
-                    # satisfies the constraint. Format: `&quot;major.minor.patch&quot;`.
-                    # Examples: `&quot;10.5.301&quot;`, `&quot;9.2.1&quot;`.
-                &quot;osType&quot;: &quot;A String&quot;, # Required. The allowed OS type.
                 &quot;requireVerifiedChromeOs&quot;: True or False, # Only allows requests from devices with a verified Chrome OS.
                     # Verifications includes requirements that the device is enterprise-managed,
                     # conformant to domain policies, and the caller has permission to call
                     # the API targeted by the request.
+                &quot;minimumVersion&quot;: &quot;A String&quot;, # The minimum allowed OS version. If not set, any version of this OS
+                    # satisfies the constraint. Format: `&quot;major.minor.patch&quot;`.
+                    # Examples: `&quot;10.5.301&quot;`, `&quot;9.2.1&quot;`.
+                &quot;osType&quot;: &quot;A String&quot;, # Required. The allowed OS type.
               },
             ],
-            &quot;requireCorpOwned&quot;: True or False, # Whether the device needs to be corp owned.
-            &quot;requireAdminApproval&quot;: True or False, # Whether the device needs to be approved by the customer admin.
-            &quot;requireScreenlock&quot;: True or False, # Whether or not screenlock is required for the DevicePolicy to be true.
-                # Defaults to `false`.
             &quot;allowedEncryptionStatuses&quot;: [ # Allowed encryptions statuses, an empty list allows all statuses.
               &quot;A String&quot;,
             ],
           },
-          &quot;members&quot;: [ # The request must be made by one of the provided user or service
-              # accounts. Groups are not supported.
-              # Syntax:
-              # `user:{emailid}`
-              # `serviceAccount:{emailid}`
-              # If not specified, a request may come from any user.
-            &quot;A String&quot;,
-          ],
-          &quot;negate&quot;: True or False, # Whether to negate the Condition. If true, the Condition becomes a NAND over
-              # its non-empty fields, each field must be false for the Condition overall to
-              # be satisfied. Defaults to false.
-          &quot;ipSubnetworks&quot;: [ # CIDR block IP subnetwork specification. May be IPv4 or IPv6. Note that for
-              # a CIDR IP address block, the specified IP address portion must be properly
-              # truncated (i.e. all the host bits must be zero) or the input is considered
-              # malformed. For example, &quot;192.0.2.0/24&quot; is accepted but &quot;192.0.2.1/24&quot; is
-              # not. Similarly, for IPv6, &quot;2001:db8::/32&quot; is accepted whereas
-              # &quot;2001:db8::1/32&quot; is not. The originating IP of a request must be in one of
-              # the listed subnets in order for this Condition to be true. If empty, all IP
-              # addresses are allowed.
-            &quot;A String&quot;,
-          ],
         },
       ],
       &quot;combiningFunction&quot;: &quot;A String&quot;, # How the `conditions` list should be combined to determine if a request is
@@ -531,7 +531,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(parent, pageToken=None, pageSize=None, accessLevelFormat=None, x__xgafv=None)</code>
+    <code class="details" id="list">list(parent, pageToken=None, accessLevelFormat=None, pageSize=None, x__xgafv=None)</code>
   <pre>List all Access Levels for an access
 policy.
 
@@ -542,11 +542,11 @@ Format:
 `accessPolicies/{policy_id}` (required)
   pageToken: string, Next page token for the next batch of Access Level instances.
 Defaults to the first page of results.
-  pageSize: integer, Number of Access Levels to include in
-the list. Default 100.
   accessLevelFormat: string, Whether to return `BasicLevels` in the Cloud Common Expression language, as
 `CustomLevels`, rather than as `BasicLevels`. Defaults to returning
 `AccessLevels` in the format they were defined.
+  pageSize: integer, Number of Access Levels to include in
+the list. Default 100.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -562,6 +562,10 @@ Returns:
       { # An `AccessLevel` is a label that can be applied to requests to Google Cloud
           # services, along with a list of requirements necessary for the label to be
           # applied.
+        &quot;name&quot;: &quot;A String&quot;, # Required. Resource name for the Access Level. The `short_name` component
+            # must begin with a letter and only include alphanumeric and &#x27;_&#x27;. Format:
+            # `accessPolicies/{policy_id}/accessLevels/{short_name}`. The maximum length
+            # of the `short_name` component is 50 characters.
         &quot;custom&quot;: { # `CustomLevel` is an `AccessLevel` using the Cloud Common Expression Language # A `CustomLevel` written in the Common Expression Language.
             # to represent the necessary conditions for the level to apply to a request.
             # See CEL spec at: https://github.com/google/cel-spec
@@ -596,22 +600,18 @@ Returns:
               # The exact variables and functions that may be referenced within an expression
               # are determined by the service that evaluates it. See the service
               # documentation for additional information.
+            &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
+                # its purpose. This can be used e.g. in UIs which allow to enter the
+                # expression.
             &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
                 # describes the expression, e.g. when hovered over it in a UI.
             &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
                 # syntax.
-            &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
-                # its purpose. This can be used e.g. in UIs which allow to enter the
-                # expression.
             &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
                 # reporting, e.g. a file name and a position in the file.
           },
         },
         &quot;title&quot;: &quot;A String&quot;, # Human readable title. Must be unique within the Policy.
-        &quot;name&quot;: &quot;A String&quot;, # Required. Resource name for the Access Level. The `short_name` component
-            # must begin with a letter and only include alphanumeric and &#x27;_&#x27;. Format:
-            # `accessPolicies/{policy_id}/accessLevels/{short_name}`. The maximum length
-            # of the `short_name` component is 50 characters.
         &quot;basic&quot;: { # `BasicLevel` is an `AccessLevel` using a set of recommended features. # A `BasicLevel` composed of `Conditions`.
           &quot;conditions&quot;: [ # Required. A list of requirements for the `AccessLevel` to be granted.
             { # A condition necessary for an `AccessLevel` to be granted. The Condition is an
@@ -619,8 +619,25 @@ Returns:
                 # of the listed subnetworks AND 2) the originating device complies with the
                 # listed device policy AND 3) all listed access levels are granted AND 4) the
                 # request was sent at a time allowed by the DateTimeRestriction.
-              &quot;regions&quot;: [ # The request must originate from one of the provided countries/regions.
-                  # Must be valid ISO 3166-1 alpha-2 codes.
+              &quot;negate&quot;: True or False, # Whether to negate the Condition. If true, the Condition becomes a NAND over
+                  # its non-empty fields, each field must be false for the Condition overall to
+                  # be satisfied. Defaults to false.
+              &quot;members&quot;: [ # The request must be made by one of the provided user or service
+                  # accounts. Groups are not supported.
+                  # Syntax:
+                  # `user:{emailid}`
+                  # `serviceAccount:{emailid}`
+                  # If not specified, a request may come from any user.
+                &quot;A String&quot;,
+              ],
+              &quot;ipSubnetworks&quot;: [ # CIDR block IP subnetwork specification. May be IPv4 or IPv6. Note that for
+                  # a CIDR IP address block, the specified IP address portion must be properly
+                  # truncated (i.e. all the host bits must be zero) or the input is considered
+                  # malformed. For example, &quot;192.0.2.0/24&quot; is accepted but &quot;192.0.2.1/24&quot; is
+                  # not. Similarly, for IPv6, &quot;2001:db8::/32&quot; is accepted whereas
+                  # &quot;2001:db8::1/32&quot; is not. The originating IP of a request must be in one of
+                  # the listed subnets in order for this Condition to be true. If empty, all IP
+                  # addresses are allowed.
                 &quot;A String&quot;,
               ],
               &quot;requiredAccessLevels&quot;: [ # A list of other access levels defined in the same `Policy`, referenced by
@@ -628,6 +645,10 @@ Returns:
                   # error. All access levels listed must be granted for the Condition
                   # to be true. Example:
                   # &quot;`accessPolicies/MY_POLICY/accessLevels/LEVEL_NAME&quot;`
+                &quot;A String&quot;,
+              ],
+              &quot;regions&quot;: [ # The request must originate from one of the provided countries/regions.
+                  # Must be valid ISO 3166-1 alpha-2 codes.
                 &quot;A String&quot;,
               ],
               &quot;devicePolicy&quot;: { # `DevicePolicy` specifies device specific restrictions necessary to acquire a # Device specific restrictions, all restrictions must hold for the
@@ -640,51 +661,30 @@ Returns:
                   # DESKTOP_LINUX, encryption_status: ENCRYPTED}, then the DevicePolicy will be
                   # true for requests originating from encrypted Linux desktops and encrypted
                   # Windows desktops.
+                &quot;requireAdminApproval&quot;: True or False, # Whether the device needs to be approved by the customer admin.
+                &quot;requireScreenlock&quot;: True or False, # Whether or not screenlock is required for the DevicePolicy to be true.
+                    # Defaults to `false`.
                 &quot;allowedDeviceManagementLevels&quot;: [ # Allowed device management levels, an empty list allows all management
                     # levels.
                   &quot;A String&quot;,
                 ],
+                &quot;requireCorpOwned&quot;: True or False, # Whether the device needs to be corp owned.
                 &quot;osConstraints&quot;: [ # Allowed OS versions, an empty list allows all types and all versions.
                   { # A restriction on the OS type and version of devices making requests.
-                    &quot;minimumVersion&quot;: &quot;A String&quot;, # The minimum allowed OS version. If not set, any version of this OS
-                        # satisfies the constraint. Format: `&quot;major.minor.patch&quot;`.
-                        # Examples: `&quot;10.5.301&quot;`, `&quot;9.2.1&quot;`.
-                    &quot;osType&quot;: &quot;A String&quot;, # Required. The allowed OS type.
                     &quot;requireVerifiedChromeOs&quot;: True or False, # Only allows requests from devices with a verified Chrome OS.
                         # Verifications includes requirements that the device is enterprise-managed,
                         # conformant to domain policies, and the caller has permission to call
                         # the API targeted by the request.
+                    &quot;minimumVersion&quot;: &quot;A String&quot;, # The minimum allowed OS version. If not set, any version of this OS
+                        # satisfies the constraint. Format: `&quot;major.minor.patch&quot;`.
+                        # Examples: `&quot;10.5.301&quot;`, `&quot;9.2.1&quot;`.
+                    &quot;osType&quot;: &quot;A String&quot;, # Required. The allowed OS type.
                   },
                 ],
-                &quot;requireCorpOwned&quot;: True or False, # Whether the device needs to be corp owned.
-                &quot;requireAdminApproval&quot;: True or False, # Whether the device needs to be approved by the customer admin.
-                &quot;requireScreenlock&quot;: True or False, # Whether or not screenlock is required for the DevicePolicy to be true.
-                    # Defaults to `false`.
                 &quot;allowedEncryptionStatuses&quot;: [ # Allowed encryptions statuses, an empty list allows all statuses.
                   &quot;A String&quot;,
                 ],
               },
-              &quot;members&quot;: [ # The request must be made by one of the provided user or service
-                  # accounts. Groups are not supported.
-                  # Syntax:
-                  # `user:{emailid}`
-                  # `serviceAccount:{emailid}`
-                  # If not specified, a request may come from any user.
-                &quot;A String&quot;,
-              ],
-              &quot;negate&quot;: True or False, # Whether to negate the Condition. If true, the Condition becomes a NAND over
-                  # its non-empty fields, each field must be false for the Condition overall to
-                  # be satisfied. Defaults to false.
-              &quot;ipSubnetworks&quot;: [ # CIDR block IP subnetwork specification. May be IPv4 or IPv6. Note that for
-                  # a CIDR IP address block, the specified IP address portion must be properly
-                  # truncated (i.e. all the host bits must be zero) or the input is considered
-                  # malformed. For example, &quot;192.0.2.0/24&quot; is accepted but &quot;192.0.2.1/24&quot; is
-                  # not. Similarly, for IPv6, &quot;2001:db8::/32&quot; is accepted whereas
-                  # &quot;2001:db8::1/32&quot; is not. The originating IP of a request must be in one of
-                  # the listed subnets in order for this Condition to be true. If empty, all IP
-                  # addresses are allowed.
-                &quot;A String&quot;,
-              ],
             },
           ],
           &quot;combiningFunction&quot;: &quot;A String&quot;, # How the `conditions` list should be combined to determine if a request is
@@ -732,6 +732,10 @@ of the `short_name` component is 50 characters. (required)
 { # An `AccessLevel` is a label that can be applied to requests to Google Cloud
     # services, along with a list of requirements necessary for the label to be
     # applied.
+  &quot;name&quot;: &quot;A String&quot;, # Required. Resource name for the Access Level. The `short_name` component
+      # must begin with a letter and only include alphanumeric and &#x27;_&#x27;. Format:
+      # `accessPolicies/{policy_id}/accessLevels/{short_name}`. The maximum length
+      # of the `short_name` component is 50 characters.
   &quot;custom&quot;: { # `CustomLevel` is an `AccessLevel` using the Cloud Common Expression Language # A `CustomLevel` written in the Common Expression Language.
       # to represent the necessary conditions for the level to apply to a request.
       # See CEL spec at: https://github.com/google/cel-spec
@@ -766,22 +770,18 @@ of the `short_name` component is 50 characters. (required)
         # The exact variables and functions that may be referenced within an expression
         # are determined by the service that evaluates it. See the service
         # documentation for additional information.
+      &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
+          # its purpose. This can be used e.g. in UIs which allow to enter the
+          # expression.
       &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
           # describes the expression, e.g. when hovered over it in a UI.
       &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
           # syntax.
-      &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
-          # its purpose. This can be used e.g. in UIs which allow to enter the
-          # expression.
       &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
           # reporting, e.g. a file name and a position in the file.
     },
   },
   &quot;title&quot;: &quot;A String&quot;, # Human readable title. Must be unique within the Policy.
-  &quot;name&quot;: &quot;A String&quot;, # Required. Resource name for the Access Level. The `short_name` component
-      # must begin with a letter and only include alphanumeric and &#x27;_&#x27;. Format:
-      # `accessPolicies/{policy_id}/accessLevels/{short_name}`. The maximum length
-      # of the `short_name` component is 50 characters.
   &quot;basic&quot;: { # `BasicLevel` is an `AccessLevel` using a set of recommended features. # A `BasicLevel` composed of `Conditions`.
     &quot;conditions&quot;: [ # Required. A list of requirements for the `AccessLevel` to be granted.
       { # A condition necessary for an `AccessLevel` to be granted. The Condition is an
@@ -789,8 +789,25 @@ of the `short_name` component is 50 characters. (required)
           # of the listed subnetworks AND 2) the originating device complies with the
           # listed device policy AND 3) all listed access levels are granted AND 4) the
           # request was sent at a time allowed by the DateTimeRestriction.
-        &quot;regions&quot;: [ # The request must originate from one of the provided countries/regions.
-            # Must be valid ISO 3166-1 alpha-2 codes.
+        &quot;negate&quot;: True or False, # Whether to negate the Condition. If true, the Condition becomes a NAND over
+            # its non-empty fields, each field must be false for the Condition overall to
+            # be satisfied. Defaults to false.
+        &quot;members&quot;: [ # The request must be made by one of the provided user or service
+            # accounts. Groups are not supported.
+            # Syntax:
+            # `user:{emailid}`
+            # `serviceAccount:{emailid}`
+            # If not specified, a request may come from any user.
+          &quot;A String&quot;,
+        ],
+        &quot;ipSubnetworks&quot;: [ # CIDR block IP subnetwork specification. May be IPv4 or IPv6. Note that for
+            # a CIDR IP address block, the specified IP address portion must be properly
+            # truncated (i.e. all the host bits must be zero) or the input is considered
+            # malformed. For example, &quot;192.0.2.0/24&quot; is accepted but &quot;192.0.2.1/24&quot; is
+            # not. Similarly, for IPv6, &quot;2001:db8::/32&quot; is accepted whereas
+            # &quot;2001:db8::1/32&quot; is not. The originating IP of a request must be in one of
+            # the listed subnets in order for this Condition to be true. If empty, all IP
+            # addresses are allowed.
           &quot;A String&quot;,
         ],
         &quot;requiredAccessLevels&quot;: [ # A list of other access levels defined in the same `Policy`, referenced by
@@ -798,6 +815,10 @@ of the `short_name` component is 50 characters. (required)
             # error. All access levels listed must be granted for the Condition
             # to be true. Example:
             # &quot;`accessPolicies/MY_POLICY/accessLevels/LEVEL_NAME&quot;`
+          &quot;A String&quot;,
+        ],
+        &quot;regions&quot;: [ # The request must originate from one of the provided countries/regions.
+            # Must be valid ISO 3166-1 alpha-2 codes.
           &quot;A String&quot;,
         ],
         &quot;devicePolicy&quot;: { # `DevicePolicy` specifies device specific restrictions necessary to acquire a # Device specific restrictions, all restrictions must hold for the
@@ -810,51 +831,30 @@ of the `short_name` component is 50 characters. (required)
             # DESKTOP_LINUX, encryption_status: ENCRYPTED}, then the DevicePolicy will be
             # true for requests originating from encrypted Linux desktops and encrypted
             # Windows desktops.
+          &quot;requireAdminApproval&quot;: True or False, # Whether the device needs to be approved by the customer admin.
+          &quot;requireScreenlock&quot;: True or False, # Whether or not screenlock is required for the DevicePolicy to be true.
+              # Defaults to `false`.
           &quot;allowedDeviceManagementLevels&quot;: [ # Allowed device management levels, an empty list allows all management
               # levels.
             &quot;A String&quot;,
           ],
+          &quot;requireCorpOwned&quot;: True or False, # Whether the device needs to be corp owned.
           &quot;osConstraints&quot;: [ # Allowed OS versions, an empty list allows all types and all versions.
             { # A restriction on the OS type and version of devices making requests.
-              &quot;minimumVersion&quot;: &quot;A String&quot;, # The minimum allowed OS version. If not set, any version of this OS
-                  # satisfies the constraint. Format: `&quot;major.minor.patch&quot;`.
-                  # Examples: `&quot;10.5.301&quot;`, `&quot;9.2.1&quot;`.
-              &quot;osType&quot;: &quot;A String&quot;, # Required. The allowed OS type.
               &quot;requireVerifiedChromeOs&quot;: True or False, # Only allows requests from devices with a verified Chrome OS.
                   # Verifications includes requirements that the device is enterprise-managed,
                   # conformant to domain policies, and the caller has permission to call
                   # the API targeted by the request.
+              &quot;minimumVersion&quot;: &quot;A String&quot;, # The minimum allowed OS version. If not set, any version of this OS
+                  # satisfies the constraint. Format: `&quot;major.minor.patch&quot;`.
+                  # Examples: `&quot;10.5.301&quot;`, `&quot;9.2.1&quot;`.
+              &quot;osType&quot;: &quot;A String&quot;, # Required. The allowed OS type.
             },
           ],
-          &quot;requireCorpOwned&quot;: True or False, # Whether the device needs to be corp owned.
-          &quot;requireAdminApproval&quot;: True or False, # Whether the device needs to be approved by the customer admin.
-          &quot;requireScreenlock&quot;: True or False, # Whether or not screenlock is required for the DevicePolicy to be true.
-              # Defaults to `false`.
           &quot;allowedEncryptionStatuses&quot;: [ # Allowed encryptions statuses, an empty list allows all statuses.
             &quot;A String&quot;,
           ],
         },
-        &quot;members&quot;: [ # The request must be made by one of the provided user or service
-            # accounts. Groups are not supported.
-            # Syntax:
-            # `user:{emailid}`
-            # `serviceAccount:{emailid}`
-            # If not specified, a request may come from any user.
-          &quot;A String&quot;,
-        ],
-        &quot;negate&quot;: True or False, # Whether to negate the Condition. If true, the Condition becomes a NAND over
-            # its non-empty fields, each field must be false for the Condition overall to
-            # be satisfied. Defaults to false.
-        &quot;ipSubnetworks&quot;: [ # CIDR block IP subnetwork specification. May be IPv4 or IPv6. Note that for
-            # a CIDR IP address block, the specified IP address portion must be properly
-            # truncated (i.e. all the host bits must be zero) or the input is considered
-            # malformed. For example, &quot;192.0.2.0/24&quot; is accepted but &quot;192.0.2.1/24&quot; is
-            # not. Similarly, for IPv6, &quot;2001:db8::/32&quot; is accepted whereas
-            # &quot;2001:db8::1/32&quot; is not. The originating IP of a request must be in one of
-            # the listed subnets in order for this Condition to be true. If empty, all IP
-            # addresses are allowed.
-          &quot;A String&quot;,
-        ],
       },
     ],
     &quot;combiningFunction&quot;: &quot;A String&quot;, # How the `conditions` list should be combined to determine if a request is
@@ -877,6 +877,12 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
+    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
+        # contains progress information and common metadata such as create time.
+        # Some services might not provide such metadata.  Any method that returns a
+        # long-running operation should document the metadata type, if any.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    },
     &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
         # If `true`, the operation is completed, and either `error` or `response` is
         # available.
@@ -900,22 +906,16 @@ Returns:
         #
         # You can find out more about this error model and how to work with it in the
         # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
       &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
           # message types for APIs to use.
         {
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
         },
       ],
-    },
-    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
-        # contains progress information and common metadata such as create time.
-        # Some services might not provide such metadata.  Any method that returns a
-        # long-running operation should document the metadata type, if any.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
     },
   }</pre>
 </div>
@@ -957,6 +957,10 @@ Format: `accessPolicies/{policy_id}` (required)
       { # An `AccessLevel` is a label that can be applied to requests to Google Cloud
           # services, along with a list of requirements necessary for the label to be
           # applied.
+        &quot;name&quot;: &quot;A String&quot;, # Required. Resource name for the Access Level. The `short_name` component
+            # must begin with a letter and only include alphanumeric and &#x27;_&#x27;. Format:
+            # `accessPolicies/{policy_id}/accessLevels/{short_name}`. The maximum length
+            # of the `short_name` component is 50 characters.
         &quot;custom&quot;: { # `CustomLevel` is an `AccessLevel` using the Cloud Common Expression Language # A `CustomLevel` written in the Common Expression Language.
             # to represent the necessary conditions for the level to apply to a request.
             # See CEL spec at: https://github.com/google/cel-spec
@@ -991,22 +995,18 @@ Format: `accessPolicies/{policy_id}` (required)
               # The exact variables and functions that may be referenced within an expression
               # are determined by the service that evaluates it. See the service
               # documentation for additional information.
+            &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
+                # its purpose. This can be used e.g. in UIs which allow to enter the
+                # expression.
             &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
                 # describes the expression, e.g. when hovered over it in a UI.
             &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
                 # syntax.
-            &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
-                # its purpose. This can be used e.g. in UIs which allow to enter the
-                # expression.
             &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
                 # reporting, e.g. a file name and a position in the file.
           },
         },
         &quot;title&quot;: &quot;A String&quot;, # Human readable title. Must be unique within the Policy.
-        &quot;name&quot;: &quot;A String&quot;, # Required. Resource name for the Access Level. The `short_name` component
-            # must begin with a letter and only include alphanumeric and &#x27;_&#x27;. Format:
-            # `accessPolicies/{policy_id}/accessLevels/{short_name}`. The maximum length
-            # of the `short_name` component is 50 characters.
         &quot;basic&quot;: { # `BasicLevel` is an `AccessLevel` using a set of recommended features. # A `BasicLevel` composed of `Conditions`.
           &quot;conditions&quot;: [ # Required. A list of requirements for the `AccessLevel` to be granted.
             { # A condition necessary for an `AccessLevel` to be granted. The Condition is an
@@ -1014,8 +1014,25 @@ Format: `accessPolicies/{policy_id}` (required)
                 # of the listed subnetworks AND 2) the originating device complies with the
                 # listed device policy AND 3) all listed access levels are granted AND 4) the
                 # request was sent at a time allowed by the DateTimeRestriction.
-              &quot;regions&quot;: [ # The request must originate from one of the provided countries/regions.
-                  # Must be valid ISO 3166-1 alpha-2 codes.
+              &quot;negate&quot;: True or False, # Whether to negate the Condition. If true, the Condition becomes a NAND over
+                  # its non-empty fields, each field must be false for the Condition overall to
+                  # be satisfied. Defaults to false.
+              &quot;members&quot;: [ # The request must be made by one of the provided user or service
+                  # accounts. Groups are not supported.
+                  # Syntax:
+                  # `user:{emailid}`
+                  # `serviceAccount:{emailid}`
+                  # If not specified, a request may come from any user.
+                &quot;A String&quot;,
+              ],
+              &quot;ipSubnetworks&quot;: [ # CIDR block IP subnetwork specification. May be IPv4 or IPv6. Note that for
+                  # a CIDR IP address block, the specified IP address portion must be properly
+                  # truncated (i.e. all the host bits must be zero) or the input is considered
+                  # malformed. For example, &quot;192.0.2.0/24&quot; is accepted but &quot;192.0.2.1/24&quot; is
+                  # not. Similarly, for IPv6, &quot;2001:db8::/32&quot; is accepted whereas
+                  # &quot;2001:db8::1/32&quot; is not. The originating IP of a request must be in one of
+                  # the listed subnets in order for this Condition to be true. If empty, all IP
+                  # addresses are allowed.
                 &quot;A String&quot;,
               ],
               &quot;requiredAccessLevels&quot;: [ # A list of other access levels defined in the same `Policy`, referenced by
@@ -1023,6 +1040,10 @@ Format: `accessPolicies/{policy_id}` (required)
                   # error. All access levels listed must be granted for the Condition
                   # to be true. Example:
                   # &quot;`accessPolicies/MY_POLICY/accessLevels/LEVEL_NAME&quot;`
+                &quot;A String&quot;,
+              ],
+              &quot;regions&quot;: [ # The request must originate from one of the provided countries/regions.
+                  # Must be valid ISO 3166-1 alpha-2 codes.
                 &quot;A String&quot;,
               ],
               &quot;devicePolicy&quot;: { # `DevicePolicy` specifies device specific restrictions necessary to acquire a # Device specific restrictions, all restrictions must hold for the
@@ -1035,51 +1056,30 @@ Format: `accessPolicies/{policy_id}` (required)
                   # DESKTOP_LINUX, encryption_status: ENCRYPTED}, then the DevicePolicy will be
                   # true for requests originating from encrypted Linux desktops and encrypted
                   # Windows desktops.
+                &quot;requireAdminApproval&quot;: True or False, # Whether the device needs to be approved by the customer admin.
+                &quot;requireScreenlock&quot;: True or False, # Whether or not screenlock is required for the DevicePolicy to be true.
+                    # Defaults to `false`.
                 &quot;allowedDeviceManagementLevels&quot;: [ # Allowed device management levels, an empty list allows all management
                     # levels.
                   &quot;A String&quot;,
                 ],
+                &quot;requireCorpOwned&quot;: True or False, # Whether the device needs to be corp owned.
                 &quot;osConstraints&quot;: [ # Allowed OS versions, an empty list allows all types and all versions.
                   { # A restriction on the OS type and version of devices making requests.
-                    &quot;minimumVersion&quot;: &quot;A String&quot;, # The minimum allowed OS version. If not set, any version of this OS
-                        # satisfies the constraint. Format: `&quot;major.minor.patch&quot;`.
-                        # Examples: `&quot;10.5.301&quot;`, `&quot;9.2.1&quot;`.
-                    &quot;osType&quot;: &quot;A String&quot;, # Required. The allowed OS type.
                     &quot;requireVerifiedChromeOs&quot;: True or False, # Only allows requests from devices with a verified Chrome OS.
                         # Verifications includes requirements that the device is enterprise-managed,
                         # conformant to domain policies, and the caller has permission to call
                         # the API targeted by the request.
+                    &quot;minimumVersion&quot;: &quot;A String&quot;, # The minimum allowed OS version. If not set, any version of this OS
+                        # satisfies the constraint. Format: `&quot;major.minor.patch&quot;`.
+                        # Examples: `&quot;10.5.301&quot;`, `&quot;9.2.1&quot;`.
+                    &quot;osType&quot;: &quot;A String&quot;, # Required. The allowed OS type.
                   },
                 ],
-                &quot;requireCorpOwned&quot;: True or False, # Whether the device needs to be corp owned.
-                &quot;requireAdminApproval&quot;: True or False, # Whether the device needs to be approved by the customer admin.
-                &quot;requireScreenlock&quot;: True or False, # Whether or not screenlock is required for the DevicePolicy to be true.
-                    # Defaults to `false`.
                 &quot;allowedEncryptionStatuses&quot;: [ # Allowed encryptions statuses, an empty list allows all statuses.
                   &quot;A String&quot;,
                 ],
               },
-              &quot;members&quot;: [ # The request must be made by one of the provided user or service
-                  # accounts. Groups are not supported.
-                  # Syntax:
-                  # `user:{emailid}`
-                  # `serviceAccount:{emailid}`
-                  # If not specified, a request may come from any user.
-                &quot;A String&quot;,
-              ],
-              &quot;negate&quot;: True or False, # Whether to negate the Condition. If true, the Condition becomes a NAND over
-                  # its non-empty fields, each field must be false for the Condition overall to
-                  # be satisfied. Defaults to false.
-              &quot;ipSubnetworks&quot;: [ # CIDR block IP subnetwork specification. May be IPv4 or IPv6. Note that for
-                  # a CIDR IP address block, the specified IP address portion must be properly
-                  # truncated (i.e. all the host bits must be zero) or the input is considered
-                  # malformed. For example, &quot;192.0.2.0/24&quot; is accepted but &quot;192.0.2.1/24&quot; is
-                  # not. Similarly, for IPv6, &quot;2001:db8::/32&quot; is accepted whereas
-                  # &quot;2001:db8::1/32&quot; is not. The originating IP of a request must be in one of
-                  # the listed subnets in order for this Condition to be true. If empty, all IP
-                  # addresses are allowed.
-                &quot;A String&quot;,
-              ],
             },
           ],
           &quot;combiningFunction&quot;: &quot;A String&quot;, # How the `conditions` list should be combined to determine if a request is
@@ -1103,6 +1103,12 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
+    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
+        # contains progress information and common metadata such as create time.
+        # Some services might not provide such metadata.  Any method that returns a
+        # long-running operation should document the metadata type, if any.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    },
     &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
         # If `true`, the operation is completed, and either `error` or `response` is
         # available.
@@ -1126,22 +1132,16 @@ Returns:
         #
         # You can find out more about this error model and how to work with it in the
         # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
       &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
           # message types for APIs to use.
         {
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
         },
       ],
-    },
-    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
-        # contains progress information and common metadata such as create time.
-        # Some services might not provide such metadata.  Any method that returns a
-        # long-running operation should document the metadata type, if any.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
     },
   }</pre>
 </div>

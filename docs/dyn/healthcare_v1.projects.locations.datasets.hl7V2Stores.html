@@ -84,7 +84,7 @@ h1, h2, h3 {
 <p class="firstline">Creates a new HL7v2 store within the parent dataset.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(name, x__xgafv=None)</a></code></p>
-<p class="firstline">Deletes the specified HL7v2 store and removes all messages that are</p>
+<p class="firstline">Deletes the specified HL7v2 store and removes all messages that it</p>
 <p class="toc_element">
   <code><a href="#get">get(name, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets the specified HL7v2 store.</p>
@@ -92,7 +92,7 @@ h1, h2, h3 {
   <code><a href="#getIamPolicy">getIamPolicy(resource, options_requestedPolicyVersion=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets the access control policy for a resource.</p>
 <p class="toc_element">
-  <code><a href="#list">list(parent, filter=None, pageToken=None, pageSize=None, x__xgafv=None)</a></code></p>
+  <code><a href="#list">list(parent, pageSize=None, pageToken=None, filter=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists the HL7v2 stores in the given dataset.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -117,19 +117,41 @@ Args:
     The object takes the form of:
 
 { # Represents an HL7v2 store.
-  &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the HL7v2 store, of the form
-      # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
   &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to
       # determine whether to publish a message (both Ingest &amp; Create) on
       # the corresponding notification destination. Only the message name is sent
       # as part of the notification. Supplied by the client.
     { # Specifies where and whether to send notifications upon changes to a
         # data store.
+      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+          # notifications of changes are published on. Supplied by the client.
+          #
+          # The notification is a `PubsubMessage` with the following fields:
+          #
+          # *  `PubsubMessage.Data` contains the resource name.
+          # *  `PubsubMessage.MessageId` is the ID of this notification. It&#x27;s
+          #    guaranteed to be unique within the topic.
+          # *  `PubsubMessage.PublishTime` is the time when the message was
+          #    published.
+          #
+          # Note that notifications are only sent if the topic is non-empty. [Topic
+          # names](https://cloud.google.com/pubsub/docs/overview#names) must be
+          # scoped to a project.
+          #
+          # The Cloud Healthcare API service account,
+          # service-PROJECT_NUMBER@gcp-sa-healthcare.iam.gserviceaccount.com,
+          # must have
+          # publisher permissions on the given Pub/Sub topic. Not having adequate
+          # permissions causes the calls that send notifications to fail.
+          #
+          # If a notification cannot be published to Cloud Pub/Sub, errors are
+          # logged to Cloud Logging. For more information, see
+          # [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging)).
       &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is
           # empty, all messages are matched. Syntax:
           # https://cloud.google.com/appengine/docs/standard/python/search/query_strings
           #
-          # Fields/functions available for filtering are:
+          # The following fields and functions are available for filtering:
           #
           # *  `message_type`, from the MSH-9.1 field. For example,
           # `NOT message_type = &quot;ADT&quot;`.
@@ -149,38 +171,8 @@ Args:
           # map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be
           # used to assert the existence of a label. For example,
           # `labels.&quot;priority&quot;:*`.
-      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-          # notifications of changes are published on. Supplied by the client. The
-          # notification is a `PubsubMessage` with the following fields:
-          #
-          # *  `PubsubMessage.Data` contains the resource name.
-          # *  `PubsubMessage.MessageId` is the ID of this notification. It is
-          # guaranteed to be unique within the topic.
-          # *  `PubsubMessage.PublishTime` is the time at which the message was
-          # published.
-          #
-          # Note that notifications are only sent if the topic is non-empty. [Topic
-          # names](https://cloud.google.com/pubsub/docs/overview#names) must be
-          # scoped to a project. Cloud Healthcare API service account must have
-          # publisher permissions on the given Pub/Sub topic. Not having adequate
-          # permissions causes the calls that send notifications to fail.
-          #
-          # If a notification cannot be published to Cloud Pub/Sub, errors will be
-          # logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-
-          # tos/logging)).
     },
   ],
-  &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether duplicate messages should be rejected. A duplicate
-      # message is a message with the same raw bytes as a message that has already
-      # been ingested/created in this HL7v2 store.
-      # The default value is false, meaning that the store accepts the duplicate
-      # messages and it also returns the same ACK message in the
-      # IngestMessageResponse as has been returned previously. Note that only
-      # one resource is created in the store.
-      # When this field is set to true,
-      # CreateMessage/IngestMessage
-      # requests with a duplicate message will be rejected by the store, and
-      # IngestMessageErrorDetail returns a NACK message upon rejection.
   &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores.
       # 
       # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -202,6 +194,19 @@ Args:
     &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is
         # used as segment terminator.
   },
+  &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate
+      # message is a message with the same raw bytes as a message that has already
+      # been ingested/created in this HL7v2 store.
+      # The default value is false, meaning that the store accepts the duplicate
+      # messages and it also returns the same ACK message in the
+      # IngestMessageResponse as has been returned previously. Note that only
+      # one resource is created in the store.
+      # When this field is set to true,
+      # CreateMessage/IngestMessage
+      # requests with a duplicate message will be rejected by the store, and
+      # IngestMessageErrorDetail returns a NACK message upon rejection.
+  &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form
+      # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
 }
 
   hl7V2StoreId: string, The ID of the HL7v2 store that is being created.
@@ -215,19 +220,41 @@ Returns:
   An object of the form:
 
     { # Represents an HL7v2 store.
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the HL7v2 store, of the form
-        # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
     &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to
         # determine whether to publish a message (both Ingest &amp; Create) on
         # the corresponding notification destination. Only the message name is sent
         # as part of the notification. Supplied by the client.
       { # Specifies where and whether to send notifications upon changes to a
           # data store.
+        &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+            # notifications of changes are published on. Supplied by the client.
+            #
+            # The notification is a `PubsubMessage` with the following fields:
+            #
+            # *  `PubsubMessage.Data` contains the resource name.
+            # *  `PubsubMessage.MessageId` is the ID of this notification. It&#x27;s
+            #    guaranteed to be unique within the topic.
+            # *  `PubsubMessage.PublishTime` is the time when the message was
+            #    published.
+            #
+            # Note that notifications are only sent if the topic is non-empty. [Topic
+            # names](https://cloud.google.com/pubsub/docs/overview#names) must be
+            # scoped to a project.
+            #
+            # The Cloud Healthcare API service account,
+            # service-PROJECT_NUMBER@gcp-sa-healthcare.iam.gserviceaccount.com,
+            # must have
+            # publisher permissions on the given Pub/Sub topic. Not having adequate
+            # permissions causes the calls that send notifications to fail.
+            #
+            # If a notification cannot be published to Cloud Pub/Sub, errors are
+            # logged to Cloud Logging. For more information, see
+            # [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging)).
         &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is
             # empty, all messages are matched. Syntax:
             # https://cloud.google.com/appengine/docs/standard/python/search/query_strings
             #
-            # Fields/functions available for filtering are:
+            # The following fields and functions are available for filtering:
             #
             # *  `message_type`, from the MSH-9.1 field. For example,
             # `NOT message_type = &quot;ADT&quot;`.
@@ -247,38 +274,8 @@ Returns:
             # map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be
             # used to assert the existence of a label. For example,
             # `labels.&quot;priority&quot;:*`.
-        &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-            # notifications of changes are published on. Supplied by the client. The
-            # notification is a `PubsubMessage` with the following fields:
-            #
-            # *  `PubsubMessage.Data` contains the resource name.
-            # *  `PubsubMessage.MessageId` is the ID of this notification. It is
-            # guaranteed to be unique within the topic.
-            # *  `PubsubMessage.PublishTime` is the time at which the message was
-            # published.
-            #
-            # Note that notifications are only sent if the topic is non-empty. [Topic
-            # names](https://cloud.google.com/pubsub/docs/overview#names) must be
-            # scoped to a project. Cloud Healthcare API service account must have
-            # publisher permissions on the given Pub/Sub topic. Not having adequate
-            # permissions causes the calls that send notifications to fail.
-            #
-            # If a notification cannot be published to Cloud Pub/Sub, errors will be
-            # logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-
-            # tos/logging)).
       },
     ],
-    &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether duplicate messages should be rejected. A duplicate
-        # message is a message with the same raw bytes as a message that has already
-        # been ingested/created in this HL7v2 store.
-        # The default value is false, meaning that the store accepts the duplicate
-        # messages and it also returns the same ACK message in the
-        # IngestMessageResponse as has been returned previously. Note that only
-        # one resource is created in the store.
-        # When this field is set to true,
-        # CreateMessage/IngestMessage
-        # requests with a duplicate message will be rejected by the store, and
-        # IngestMessageErrorDetail returns a NACK message upon rejection.
     &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores.
         #
         # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -300,13 +297,26 @@ Returns:
       &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is
           # used as segment terminator.
     },
+    &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate
+        # message is a message with the same raw bytes as a message that has already
+        # been ingested/created in this HL7v2 store.
+        # The default value is false, meaning that the store accepts the duplicate
+        # messages and it also returns the same ACK message in the
+        # IngestMessageResponse as has been returned previously. Note that only
+        # one resource is created in the store.
+        # When this field is set to true,
+        # CreateMessage/IngestMessage
+        # requests with a duplicate message will be rejected by the store, and
+        # IngestMessageErrorDetail returns a NACK message upon rejection.
+    &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form
+        # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
   }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="delete">delete(name, x__xgafv=None)</code>
-  <pre>Deletes the specified HL7v2 store and removes all messages that are
-contained within it.
+  <pre>Deletes the specified HL7v2 store and removes all messages that it
+contains.
 
 Args:
   name: string, The resource name of the HL7v2 store to delete. (required)
@@ -345,19 +355,41 @@ Returns:
   An object of the form:
 
     { # Represents an HL7v2 store.
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the HL7v2 store, of the form
-        # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
     &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to
         # determine whether to publish a message (both Ingest &amp; Create) on
         # the corresponding notification destination. Only the message name is sent
         # as part of the notification. Supplied by the client.
       { # Specifies where and whether to send notifications upon changes to a
           # data store.
+        &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+            # notifications of changes are published on. Supplied by the client.
+            #
+            # The notification is a `PubsubMessage` with the following fields:
+            #
+            # *  `PubsubMessage.Data` contains the resource name.
+            # *  `PubsubMessage.MessageId` is the ID of this notification. It&#x27;s
+            #    guaranteed to be unique within the topic.
+            # *  `PubsubMessage.PublishTime` is the time when the message was
+            #    published.
+            #
+            # Note that notifications are only sent if the topic is non-empty. [Topic
+            # names](https://cloud.google.com/pubsub/docs/overview#names) must be
+            # scoped to a project.
+            #
+            # The Cloud Healthcare API service account,
+            # service-PROJECT_NUMBER@gcp-sa-healthcare.iam.gserviceaccount.com,
+            # must have
+            # publisher permissions on the given Pub/Sub topic. Not having adequate
+            # permissions causes the calls that send notifications to fail.
+            #
+            # If a notification cannot be published to Cloud Pub/Sub, errors are
+            # logged to Cloud Logging. For more information, see
+            # [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging)).
         &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is
             # empty, all messages are matched. Syntax:
             # https://cloud.google.com/appengine/docs/standard/python/search/query_strings
             #
-            # Fields/functions available for filtering are:
+            # The following fields and functions are available for filtering:
             #
             # *  `message_type`, from the MSH-9.1 field. For example,
             # `NOT message_type = &quot;ADT&quot;`.
@@ -377,38 +409,8 @@ Returns:
             # map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be
             # used to assert the existence of a label. For example,
             # `labels.&quot;priority&quot;:*`.
-        &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-            # notifications of changes are published on. Supplied by the client. The
-            # notification is a `PubsubMessage` with the following fields:
-            #
-            # *  `PubsubMessage.Data` contains the resource name.
-            # *  `PubsubMessage.MessageId` is the ID of this notification. It is
-            # guaranteed to be unique within the topic.
-            # *  `PubsubMessage.PublishTime` is the time at which the message was
-            # published.
-            #
-            # Note that notifications are only sent if the topic is non-empty. [Topic
-            # names](https://cloud.google.com/pubsub/docs/overview#names) must be
-            # scoped to a project. Cloud Healthcare API service account must have
-            # publisher permissions on the given Pub/Sub topic. Not having adequate
-            # permissions causes the calls that send notifications to fail.
-            #
-            # If a notification cannot be published to Cloud Pub/Sub, errors will be
-            # logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-
-            # tos/logging)).
       },
     ],
-    &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether duplicate messages should be rejected. A duplicate
-        # message is a message with the same raw bytes as a message that has already
-        # been ingested/created in this HL7v2 store.
-        # The default value is false, meaning that the store accepts the duplicate
-        # messages and it also returns the same ACK message in the
-        # IngestMessageResponse as has been returned previously. Note that only
-        # one resource is created in the store.
-        # When this field is set to true,
-        # CreateMessage/IngestMessage
-        # requests with a duplicate message will be rejected by the store, and
-        # IngestMessageErrorDetail returns a NACK message upon rejection.
     &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores.
         #
         # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -430,6 +432,19 @@ Returns:
       &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is
           # used as segment terminator.
     },
+    &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate
+        # message is a message with the same raw bytes as a message that has already
+        # been ingested/created in this HL7v2 store.
+        # The default value is false, meaning that the store accepts the duplicate
+        # messages and it also returns the same ACK message in the
+        # IngestMessageResponse as has been returned previously. Note that only
+        # one resource is created in the store.
+        # When this field is set to true,
+        # CreateMessage/IngestMessage
+        # requests with a duplicate message will be rejected by the store, and
+        # IngestMessageErrorDetail returns a NACK message upon rejection.
+    &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form
+        # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
   }</pre>
 </div>
 
@@ -529,30 +544,6 @@ Returns:
       #
       # For a description of IAM and its features, see the
       # [IAM documentation](https://cloud.google.com/iam/docs/).
-    &quot;version&quot;: 42, # Specifies the format of the policy.
-        #
-        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
-        # are rejected.
-        #
-        # Any operation that affects conditional role bindings must specify version
-        # `3`. This requirement applies to the following operations:
-        #
-        # * Getting a policy that includes a conditional role binding
-        # * Adding a conditional role binding to a policy
-        # * Changing a conditional role binding in a policy
-        # * Removing any role binding, with or without a condition, from a policy
-        #   that includes conditions
-        #
-        # **Important:** If you use IAM Conditions, you must include the `etag` field
-        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-        # you to overwrite a version `3` policy with a version `1` policy, and all of
-        # the conditions in the version `3` policy are lost.
-        #
-        # If a policy does not include any conditions, operations on that policy may
-        # specify any valid version or leave the field unset.
-        #
-        # To learn which resources support conditions in their IAM policies, see the
-        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
     &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
       { # Specifies the audit configuration for a service.
           # The configuration determines which permission types are logged, and what
@@ -569,7 +560,7 @@ Returns:
           #     {
           #       &quot;audit_configs&quot;: [
           #         {
-          #           &quot;service&quot;: &quot;allServices&quot;
+          #           &quot;service&quot;: &quot;allServices&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
           #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
@@ -578,18 +569,18 @@ Returns:
           #               ]
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
+          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
           #             }
           #           ]
           #         },
           #         {
-          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
+          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_READ&quot;
           #             },
           #             {
           #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
@@ -621,7 +612,7 @@ Returns:
               #           ]
               #         },
               #         {
-              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
               #         }
               #       ]
               #     }
@@ -638,10 +629,24 @@ Returns:
         ],
       },
     ],
+    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # **Important:** If you use IAM Conditions, you must include the `etag` field
+        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+        # you to overwrite a version `3` policy with a version `1` policy, and all of
+        # the conditions in the version `3` policy are lost.
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
         # `condition` that determines how and when the `bindings` are applied. Each
         # of the `bindings` must contain at least one member.
       { # Associates `members` with a `role`.
+        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
+            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
         &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) # The condition that is associated with this binding.
             #
             # If the condition evaluates to `true`, then this binding applies to the
@@ -684,13 +689,13 @@ Returns:
             # The exact variables and functions that may be referenced within an expression
             # are determined by the service that evaluates it. See the service
             # documentation for additional information.
-          &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
-              # describes the expression, e.g. when hovered over it in a UI.
-          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-              # syntax.
           &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
               # its purpose. This can be used e.g. in UIs which allow to enter the
               # expression.
+          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+              # syntax.
+          &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
+              # describes the expression, e.g. when hovered over it in a UI.
           &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
               # reporting, e.g. a file name and a position in the file.
         },
@@ -739,37 +744,47 @@ Returns:
             #
           &quot;A String&quot;,
         ],
-        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
-            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
       },
     ],
-    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
+    &quot;version&quot;: 42, # Specifies the format of the policy.
+        #
+        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
+        # are rejected.
+        #
+        # Any operation that affects conditional role bindings must specify version
+        # `3`. This requirement applies to the following operations:
+        #
+        # * Getting a policy that includes a conditional role binding
+        # * Adding a conditional role binding to a policy
+        # * Changing a conditional role binding in a policy
+        # * Removing any role binding, with or without a condition, from a policy
+        #   that includes conditions
         #
         # **Important:** If you use IAM Conditions, you must include the `etag` field
         # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
         # you to overwrite a version `3` policy with a version `1` policy, and all of
         # the conditions in the version `3` policy are lost.
+        #
+        # If a policy does not include any conditions, operations on that policy may
+        # specify any valid version or leave the field unset.
+        #
+        # To learn which resources support conditions in their IAM policies, see the
+        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(parent, filter=None, pageToken=None, pageSize=None, x__xgafv=None)</code>
+    <code class="details" id="list">list(parent, pageSize=None, pageToken=None, filter=None, x__xgafv=None)</code>
   <pre>Lists the HL7v2 stores in the given dataset.
 
 Args:
   parent: string, Name of the dataset. (required)
+  pageSize: integer, Limit on the number of HL7v2 stores to return in a single response.
+If zero the default page size of 100 is used.
+  pageToken: string, The next_page_token value returned from the previous List request, if any.
   filter: string, Restricts stores returned to those matching a filter. Syntax:
 https://cloud.google.com/appengine/docs/standard/python/search/query_strings
 Only filtering on labels is supported. For example, `labels.key=value`.
-  pageToken: string, The next_page_token value returned from the previous List request, if any.
-  pageSize: integer, Limit on the number of HL7v2 stores to return in a single response.
-If zero the default page size of 100 is used.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -782,19 +797,41 @@ Returns:
     &quot;hl7V2Stores&quot;: [ # The returned HL7v2 stores. Won&#x27;t be more HL7v2 stores than the value of
         # page_size in the request.
       { # Represents an HL7v2 store.
-        &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the HL7v2 store, of the form
-            # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
         &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to
             # determine whether to publish a message (both Ingest &amp; Create) on
             # the corresponding notification destination. Only the message name is sent
             # as part of the notification. Supplied by the client.
           { # Specifies where and whether to send notifications upon changes to a
               # data store.
+            &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+                # notifications of changes are published on. Supplied by the client.
+                #
+                # The notification is a `PubsubMessage` with the following fields:
+                #
+                # *  `PubsubMessage.Data` contains the resource name.
+                # *  `PubsubMessage.MessageId` is the ID of this notification. It&#x27;s
+                #    guaranteed to be unique within the topic.
+                # *  `PubsubMessage.PublishTime` is the time when the message was
+                #    published.
+                #
+                # Note that notifications are only sent if the topic is non-empty. [Topic
+                # names](https://cloud.google.com/pubsub/docs/overview#names) must be
+                # scoped to a project.
+                #
+                # The Cloud Healthcare API service account,
+                # service-PROJECT_NUMBER@gcp-sa-healthcare.iam.gserviceaccount.com,
+                # must have
+                # publisher permissions on the given Pub/Sub topic. Not having adequate
+                # permissions causes the calls that send notifications to fail.
+                #
+                # If a notification cannot be published to Cloud Pub/Sub, errors are
+                # logged to Cloud Logging. For more information, see
+                # [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging)).
             &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is
                 # empty, all messages are matched. Syntax:
                 # https://cloud.google.com/appengine/docs/standard/python/search/query_strings
                 #
-                # Fields/functions available for filtering are:
+                # The following fields and functions are available for filtering:
                 #
                 # *  `message_type`, from the MSH-9.1 field. For example,
                 # `NOT message_type = &quot;ADT&quot;`.
@@ -814,38 +851,8 @@ Returns:
                 # map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be
                 # used to assert the existence of a label. For example,
                 # `labels.&quot;priority&quot;:*`.
-            &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-                # notifications of changes are published on. Supplied by the client. The
-                # notification is a `PubsubMessage` with the following fields:
-                #
-                # *  `PubsubMessage.Data` contains the resource name.
-                # *  `PubsubMessage.MessageId` is the ID of this notification. It is
-                # guaranteed to be unique within the topic.
-                # *  `PubsubMessage.PublishTime` is the time at which the message was
-                # published.
-                #
-                # Note that notifications are only sent if the topic is non-empty. [Topic
-                # names](https://cloud.google.com/pubsub/docs/overview#names) must be
-                # scoped to a project. Cloud Healthcare API service account must have
-                # publisher permissions on the given Pub/Sub topic. Not having adequate
-                # permissions causes the calls that send notifications to fail.
-                #
-                # If a notification cannot be published to Cloud Pub/Sub, errors will be
-                # logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-
-                # tos/logging)).
           },
         ],
-        &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether duplicate messages should be rejected. A duplicate
-            # message is a message with the same raw bytes as a message that has already
-            # been ingested/created in this HL7v2 store.
-            # The default value is false, meaning that the store accepts the duplicate
-            # messages and it also returns the same ACK message in the
-            # IngestMessageResponse as has been returned previously. Note that only
-            # one resource is created in the store.
-            # When this field is set to true,
-            # CreateMessage/IngestMessage
-            # requests with a duplicate message will be rejected by the store, and
-            # IngestMessageErrorDetail returns a NACK message upon rejection.
         &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores.
             #
             # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -867,6 +874,19 @@ Returns:
           &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is
               # used as segment terminator.
         },
+        &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate
+            # message is a message with the same raw bytes as a message that has already
+            # been ingested/created in this HL7v2 store.
+            # The default value is false, meaning that the store accepts the duplicate
+            # messages and it also returns the same ACK message in the
+            # IngestMessageResponse as has been returned previously. Note that only
+            # one resource is created in the store.
+            # When this field is set to true,
+            # CreateMessage/IngestMessage
+            # requests with a duplicate message will be rejected by the store, and
+            # IngestMessageErrorDetail returns a NACK message upon rejection.
+        &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form
+            # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
       },
     ],
     &quot;nextPageToken&quot;: &quot;A String&quot;, # Token to retrieve the next page of results or empty if there are no more
@@ -893,25 +913,47 @@ Returns:
   <pre>Updates the HL7v2 store.
 
 Args:
-  name: string, Output only. Resource name of the HL7v2 store, of the form
+  name: string, Resource name of the HL7v2 store, of the form
 `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`. (required)
   body: object, The request body.
     The object takes the form of:
 
 { # Represents an HL7v2 store.
-  &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the HL7v2 store, of the form
-      # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
   &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to
       # determine whether to publish a message (both Ingest &amp; Create) on
       # the corresponding notification destination. Only the message name is sent
       # as part of the notification. Supplied by the client.
     { # Specifies where and whether to send notifications upon changes to a
         # data store.
+      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+          # notifications of changes are published on. Supplied by the client.
+          #
+          # The notification is a `PubsubMessage` with the following fields:
+          #
+          # *  `PubsubMessage.Data` contains the resource name.
+          # *  `PubsubMessage.MessageId` is the ID of this notification. It&#x27;s
+          #    guaranteed to be unique within the topic.
+          # *  `PubsubMessage.PublishTime` is the time when the message was
+          #    published.
+          #
+          # Note that notifications are only sent if the topic is non-empty. [Topic
+          # names](https://cloud.google.com/pubsub/docs/overview#names) must be
+          # scoped to a project.
+          #
+          # The Cloud Healthcare API service account,
+          # service-PROJECT_NUMBER@gcp-sa-healthcare.iam.gserviceaccount.com,
+          # must have
+          # publisher permissions on the given Pub/Sub topic. Not having adequate
+          # permissions causes the calls that send notifications to fail.
+          #
+          # If a notification cannot be published to Cloud Pub/Sub, errors are
+          # logged to Cloud Logging. For more information, see
+          # [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging)).
       &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is
           # empty, all messages are matched. Syntax:
           # https://cloud.google.com/appengine/docs/standard/python/search/query_strings
           #
-          # Fields/functions available for filtering are:
+          # The following fields and functions are available for filtering:
           #
           # *  `message_type`, from the MSH-9.1 field. For example,
           # `NOT message_type = &quot;ADT&quot;`.
@@ -931,38 +973,8 @@ Args:
           # map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be
           # used to assert the existence of a label. For example,
           # `labels.&quot;priority&quot;:*`.
-      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-          # notifications of changes are published on. Supplied by the client. The
-          # notification is a `PubsubMessage` with the following fields:
-          #
-          # *  `PubsubMessage.Data` contains the resource name.
-          # *  `PubsubMessage.MessageId` is the ID of this notification. It is
-          # guaranteed to be unique within the topic.
-          # *  `PubsubMessage.PublishTime` is the time at which the message was
-          # published.
-          #
-          # Note that notifications are only sent if the topic is non-empty. [Topic
-          # names](https://cloud.google.com/pubsub/docs/overview#names) must be
-          # scoped to a project. Cloud Healthcare API service account must have
-          # publisher permissions on the given Pub/Sub topic. Not having adequate
-          # permissions causes the calls that send notifications to fail.
-          #
-          # If a notification cannot be published to Cloud Pub/Sub, errors will be
-          # logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-
-          # tos/logging)).
     },
   ],
-  &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether duplicate messages should be rejected. A duplicate
-      # message is a message with the same raw bytes as a message that has already
-      # been ingested/created in this HL7v2 store.
-      # The default value is false, meaning that the store accepts the duplicate
-      # messages and it also returns the same ACK message in the
-      # IngestMessageResponse as has been returned previously. Note that only
-      # one resource is created in the store.
-      # When this field is set to true,
-      # CreateMessage/IngestMessage
-      # requests with a duplicate message will be rejected by the store, and
-      # IngestMessageErrorDetail returns a NACK message upon rejection.
   &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores.
       # 
       # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -984,6 +996,19 @@ Args:
     &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is
         # used as segment terminator.
   },
+  &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate
+      # message is a message with the same raw bytes as a message that has already
+      # been ingested/created in this HL7v2 store.
+      # The default value is false, meaning that the store accepts the duplicate
+      # messages and it also returns the same ACK message in the
+      # IngestMessageResponse as has been returned previously. Note that only
+      # one resource is created in the store.
+      # When this field is set to true,
+      # CreateMessage/IngestMessage
+      # requests with a duplicate message will be rejected by the store, and
+      # IngestMessageErrorDetail returns a NACK message upon rejection.
+  &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form
+      # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
 }
 
   updateMask: string, The update mask applies to the resource. For the `FieldMask` definition,
@@ -998,19 +1023,41 @@ Returns:
   An object of the form:
 
     { # Represents an HL7v2 store.
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the HL7v2 store, of the form
-        # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
     &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to
         # determine whether to publish a message (both Ingest &amp; Create) on
         # the corresponding notification destination. Only the message name is sent
         # as part of the notification. Supplied by the client.
       { # Specifies where and whether to send notifications upon changes to a
           # data store.
+        &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+            # notifications of changes are published on. Supplied by the client.
+            #
+            # The notification is a `PubsubMessage` with the following fields:
+            #
+            # *  `PubsubMessage.Data` contains the resource name.
+            # *  `PubsubMessage.MessageId` is the ID of this notification. It&#x27;s
+            #    guaranteed to be unique within the topic.
+            # *  `PubsubMessage.PublishTime` is the time when the message was
+            #    published.
+            #
+            # Note that notifications are only sent if the topic is non-empty. [Topic
+            # names](https://cloud.google.com/pubsub/docs/overview#names) must be
+            # scoped to a project.
+            #
+            # The Cloud Healthcare API service account,
+            # service-PROJECT_NUMBER@gcp-sa-healthcare.iam.gserviceaccount.com,
+            # must have
+            # publisher permissions on the given Pub/Sub topic. Not having adequate
+            # permissions causes the calls that send notifications to fail.
+            #
+            # If a notification cannot be published to Cloud Pub/Sub, errors are
+            # logged to Cloud Logging. For more information, see
+            # [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging)).
         &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is
             # empty, all messages are matched. Syntax:
             # https://cloud.google.com/appengine/docs/standard/python/search/query_strings
             #
-            # Fields/functions available for filtering are:
+            # The following fields and functions are available for filtering:
             #
             # *  `message_type`, from the MSH-9.1 field. For example,
             # `NOT message_type = &quot;ADT&quot;`.
@@ -1030,38 +1077,8 @@ Returns:
             # map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be
             # used to assert the existence of a label. For example,
             # `labels.&quot;priority&quot;:*`.
-        &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-            # notifications of changes are published on. Supplied by the client. The
-            # notification is a `PubsubMessage` with the following fields:
-            #
-            # *  `PubsubMessage.Data` contains the resource name.
-            # *  `PubsubMessage.MessageId` is the ID of this notification. It is
-            # guaranteed to be unique within the topic.
-            # *  `PubsubMessage.PublishTime` is the time at which the message was
-            # published.
-            #
-            # Note that notifications are only sent if the topic is non-empty. [Topic
-            # names](https://cloud.google.com/pubsub/docs/overview#names) must be
-            # scoped to a project. Cloud Healthcare API service account must have
-            # publisher permissions on the given Pub/Sub topic. Not having adequate
-            # permissions causes the calls that send notifications to fail.
-            #
-            # If a notification cannot be published to Cloud Pub/Sub, errors will be
-            # logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-
-            # tos/logging)).
       },
     ],
-    &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether duplicate messages should be rejected. A duplicate
-        # message is a message with the same raw bytes as a message that has already
-        # been ingested/created in this HL7v2 store.
-        # The default value is false, meaning that the store accepts the duplicate
-        # messages and it also returns the same ACK message in the
-        # IngestMessageResponse as has been returned previously. Note that only
-        # one resource is created in the store.
-        # When this field is set to true,
-        # CreateMessage/IngestMessage
-        # requests with a duplicate message will be rejected by the store, and
-        # IngestMessageErrorDetail returns a NACK message upon rejection.
     &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores.
         #
         # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -1083,6 +1100,19 @@ Returns:
       &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is
           # used as segment terminator.
     },
+    &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate
+        # message is a message with the same raw bytes as a message that has already
+        # been ingested/created in this HL7v2 store.
+        # The default value is false, meaning that the store accepts the duplicate
+        # messages and it also returns the same ACK message in the
+        # IngestMessageResponse as has been returned previously. Note that only
+        # one resource is created in the store.
+        # When this field is set to true,
+        # CreateMessage/IngestMessage
+        # requests with a duplicate message will be rejected by the store, and
+        # IngestMessageErrorDetail returns a NACK message upon rejection.
+    &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form
+        # `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
   }</pre>
 </div>
 
@@ -1170,30 +1200,6 @@ See the operation documentation for the appropriate value for this field. (requi
         #
         # For a description of IAM and its features, see the
         # [IAM documentation](https://cloud.google.com/iam/docs/).
-      &quot;version&quot;: 42, # Specifies the format of the policy.
-          #
-          # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
-          # are rejected.
-          #
-          # Any operation that affects conditional role bindings must specify version
-          # `3`. This requirement applies to the following operations:
-          #
-          # * Getting a policy that includes a conditional role binding
-          # * Adding a conditional role binding to a policy
-          # * Changing a conditional role binding in a policy
-          # * Removing any role binding, with or without a condition, from a policy
-          #   that includes conditions
-          #
-          # **Important:** If you use IAM Conditions, you must include the `etag` field
-          # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-          # you to overwrite a version `3` policy with a version `1` policy, and all of
-          # the conditions in the version `3` policy are lost.
-          #
-          # If a policy does not include any conditions, operations on that policy may
-          # specify any valid version or leave the field unset.
-          #
-          # To learn which resources support conditions in their IAM policies, see the
-          # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
       &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
         { # Specifies the audit configuration for a service.
             # The configuration determines which permission types are logged, and what
@@ -1210,7 +1216,7 @@ See the operation documentation for the appropriate value for this field. (requi
             #     {
             #       &quot;audit_configs&quot;: [
             #         {
-            #           &quot;service&quot;: &quot;allServices&quot;
+            #           &quot;service&quot;: &quot;allServices&quot;,
             #           &quot;audit_log_configs&quot;: [
             #             {
             #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
@@ -1219,18 +1225,18 @@ See the operation documentation for the appropriate value for this field. (requi
             #               ]
             #             },
             #             {
-            #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+            #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
             #             },
             #             {
-            #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
+            #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
             #             }
             #           ]
             #         },
             #         {
-            #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
+            #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
             #           &quot;audit_log_configs&quot;: [
             #             {
-            #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+            #               &quot;log_type&quot;: &quot;DATA_READ&quot;
             #             },
             #             {
             #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
@@ -1262,7 +1268,7 @@ See the operation documentation for the appropriate value for this field. (requi
                 #           ]
                 #         },
                 #         {
-                #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+                #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
                 #         }
                 #       ]
                 #     }
@@ -1279,10 +1285,24 @@ See the operation documentation for the appropriate value for this field. (requi
           ],
         },
       ],
+      &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+          # prevent simultaneous updates of a policy from overwriting each other.
+          # It is strongly suggested that systems make use of the `etag` in the
+          # read-modify-write cycle to perform policy updates in order to avoid race
+          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+          # systems are expected to put that etag in the request to `setIamPolicy` to
+          # ensure that their change will be applied to the same version of the policy.
+          #
+          # **Important:** If you use IAM Conditions, you must include the `etag` field
+          # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+          # you to overwrite a version `3` policy with a version `1` policy, and all of
+          # the conditions in the version `3` policy are lost.
       &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
           # `condition` that determines how and when the `bindings` are applied. Each
           # of the `bindings` must contain at least one member.
         { # Associates `members` with a `role`.
+          &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
+              # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
           &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) # The condition that is associated with this binding.
               #
               # If the condition evaluates to `true`, then this binding applies to the
@@ -1325,13 +1345,13 @@ See the operation documentation for the appropriate value for this field. (requi
               # The exact variables and functions that may be referenced within an expression
               # are determined by the service that evaluates it. See the service
               # documentation for additional information.
-            &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
-                # describes the expression, e.g. when hovered over it in a UI.
-            &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-                # syntax.
             &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
                 # its purpose. This can be used e.g. in UIs which allow to enter the
                 # expression.
+            &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+                # syntax.
+            &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
+                # describes the expression, e.g. when hovered over it in a UI.
             &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
                 # reporting, e.g. a file name and a position in the file.
           },
@@ -1380,22 +1400,32 @@ See the operation documentation for the appropriate value for this field. (requi
               #
             &quot;A String&quot;,
           ],
-          &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
-              # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
         },
       ],
-      &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-          # prevent simultaneous updates of a policy from overwriting each other.
-          # It is strongly suggested that systems make use of the `etag` in the
-          # read-modify-write cycle to perform policy updates in order to avoid race
-          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-          # systems are expected to put that etag in the request to `setIamPolicy` to
-          # ensure that their change will be applied to the same version of the policy.
+      &quot;version&quot;: 42, # Specifies the format of the policy.
+          #
+          # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
+          # are rejected.
+          #
+          # Any operation that affects conditional role bindings must specify version
+          # `3`. This requirement applies to the following operations:
+          #
+          # * Getting a policy that includes a conditional role binding
+          # * Adding a conditional role binding to a policy
+          # * Changing a conditional role binding in a policy
+          # * Removing any role binding, with or without a condition, from a policy
+          #   that includes conditions
           #
           # **Important:** If you use IAM Conditions, you must include the `etag` field
           # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
           # you to overwrite a version `3` policy with a version `1` policy, and all of
           # the conditions in the version `3` policy are lost.
+          #
+          # If a policy does not include any conditions, operations on that policy may
+          # specify any valid version or leave the field unset.
+          #
+          # To learn which resources support conditions in their IAM policies, see the
+          # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
     },
     &quot;updateMask&quot;: &quot;A String&quot;, # OPTIONAL: A FieldMask specifying which fields of the policy to modify. Only
         # the fields in the mask will be modified. If no mask is provided, the
@@ -1479,30 +1509,6 @@ Returns:
       #
       # For a description of IAM and its features, see the
       # [IAM documentation](https://cloud.google.com/iam/docs/).
-    &quot;version&quot;: 42, # Specifies the format of the policy.
-        #
-        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
-        # are rejected.
-        #
-        # Any operation that affects conditional role bindings must specify version
-        # `3`. This requirement applies to the following operations:
-        #
-        # * Getting a policy that includes a conditional role binding
-        # * Adding a conditional role binding to a policy
-        # * Changing a conditional role binding in a policy
-        # * Removing any role binding, with or without a condition, from a policy
-        #   that includes conditions
-        #
-        # **Important:** If you use IAM Conditions, you must include the `etag` field
-        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-        # you to overwrite a version `3` policy with a version `1` policy, and all of
-        # the conditions in the version `3` policy are lost.
-        #
-        # If a policy does not include any conditions, operations on that policy may
-        # specify any valid version or leave the field unset.
-        #
-        # To learn which resources support conditions in their IAM policies, see the
-        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
     &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
       { # Specifies the audit configuration for a service.
           # The configuration determines which permission types are logged, and what
@@ -1519,7 +1525,7 @@ Returns:
           #     {
           #       &quot;audit_configs&quot;: [
           #         {
-          #           &quot;service&quot;: &quot;allServices&quot;
+          #           &quot;service&quot;: &quot;allServices&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
           #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
@@ -1528,18 +1534,18 @@ Returns:
           #               ]
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
+          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
           #             }
           #           ]
           #         },
           #         {
-          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
+          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_READ&quot;
           #             },
           #             {
           #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
@@ -1571,7 +1577,7 @@ Returns:
               #           ]
               #         },
               #         {
-              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
               #         }
               #       ]
               #     }
@@ -1588,10 +1594,24 @@ Returns:
         ],
       },
     ],
+    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # **Important:** If you use IAM Conditions, you must include the `etag` field
+        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+        # you to overwrite a version `3` policy with a version `1` policy, and all of
+        # the conditions in the version `3` policy are lost.
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
         # `condition` that determines how and when the `bindings` are applied. Each
         # of the `bindings` must contain at least one member.
       { # Associates `members` with a `role`.
+        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
+            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
         &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) # The condition that is associated with this binding.
             #
             # If the condition evaluates to `true`, then this binding applies to the
@@ -1634,13 +1654,13 @@ Returns:
             # The exact variables and functions that may be referenced within an expression
             # are determined by the service that evaluates it. See the service
             # documentation for additional information.
-          &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
-              # describes the expression, e.g. when hovered over it in a UI.
-          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-              # syntax.
           &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
               # its purpose. This can be used e.g. in UIs which allow to enter the
               # expression.
+          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+              # syntax.
+          &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
+              # describes the expression, e.g. when hovered over it in a UI.
           &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
               # reporting, e.g. a file name and a position in the file.
         },
@@ -1689,22 +1709,32 @@ Returns:
             #
           &quot;A String&quot;,
         ],
-        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
-            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
       },
     ],
-    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
+    &quot;version&quot;: 42, # Specifies the format of the policy.
+        #
+        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
+        # are rejected.
+        #
+        # Any operation that affects conditional role bindings must specify version
+        # `3`. This requirement applies to the following operations:
+        #
+        # * Getting a policy that includes a conditional role binding
+        # * Adding a conditional role binding to a policy
+        # * Changing a conditional role binding in a policy
+        # * Removing any role binding, with or without a condition, from a policy
+        #   that includes conditions
         #
         # **Important:** If you use IAM Conditions, you must include the `etag` field
         # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
         # you to overwrite a version `3` policy with a version `1` policy, and all of
         # the conditions in the version `3` policy are lost.
+        #
+        # If a policy does not include any conditions, operations on that policy may
+        # specify any valid version or leave the field unset.
+        #
+        # To learn which resources support conditions in their IAM policies, see the
+        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
   }</pre>
 </div>
 

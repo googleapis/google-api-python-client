@@ -99,9 +99,9 @@ h1, h2, h3 {
 <p class="firstline">Gets the access control policy for a resource.</p>
 <p class="toc_element">
   <code><a href="#import_">import_(name, body=None, x__xgafv=None)</a></code></p>
-<p class="firstline">Import resources to the FHIR store by loading data from the specified</p>
+<p class="firstline">Imports resources to the FHIR store by loading data from the specified</p>
 <p class="toc_element">
-  <code><a href="#list">list(parent, pageToken=None, pageSize=None, filter=None, x__xgafv=None)</a></code></p>
+  <code><a href="#list">list(parent, pageToken=None, filter=None, pageSize=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists the FHIR stores in the given dataset.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -126,6 +126,13 @@ Args:
     The object takes the form of:
 
 { # Represents a FHIR store.
+    &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+        # not be changed after the creation of FHIR store.
+        # If set to false, which is the default behavior, all write operations
+        # cause historical versions to be recorded automatically. The historical
+        # versions can be fetched through the history APIs, but cannot be updated.
+        # If set to true, no historical versions are kept. The server sends
+        # errors for attempts to read the historical versions.
     &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
         # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
         # This determines if the client can use an Update operation to create a new
@@ -135,99 +142,6 @@ Args:
         # care if client-specified resource IDs contain sensitive data such as
         # patient identifiers, those IDs are part of the FHIR resource path
         # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
-    &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
-        # export for every resource mutation in this FHIR store. Each store is
-        # allowed to have up to 10 streaming configs.
-        # After a new config is added, the next resource mutation is streamed to
-        # the new location in addition to the existing ones.
-        # When a location is removed from the list, the server stops
-        # streaming to that location. Before adding a new config, you must add the
-        # required
-        # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
-        # role to your project&#x27;s **Cloud Healthcare Service Agent**
-        # [service account](https://cloud.google.com/iam/docs/service-accounts).
-        # Some lag (typically on the order of dozens of seconds) is expected before
-        # the results show up in the streaming destination.
-      { # This structure contains configuration for streaming FHIR export.
-        &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
-            # location and corresponding schema config.
-            #
-            # The output is organized in one table per resource type. The server
-            # reuses the existing tables (if any) that are named after the resource
-            # types, e.g. &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing table
-            # for a given resource type, the server attempts to create one.
-            #
-            # When a table schema doesn&#x27;t align with the schema config, either
-            # because of existing incompatible schema or out of band incompatible
-            # modification, the server does not stream in new data.
-            #
-            # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
-            # any resource mutation that generates more than 1 MB of BigQuery data
-            # will not be streamed.
-            #
-            # One resolution in this case is to delete the incompatible
-            # table and let the server recreate one, though the newly created table
-            # only contains data after the table recreation.
-            #
-            # Results are appended to the corresponding BigQuery tables. Different
-            # versions of the same resource are distinguishable by the meta.versionId
-            # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
-            # results in the new version is recorded in the meta.tag.
-            #
-            # The tables contain all historical resource versions since streaming was
-            # enabled. For query convenience, the server also creates one view per
-            # table of the same name containing only the current resource version.
-            #
-            # The streamed data in the BigQuery dataset is not guaranteed to be
-            # completely unique. The combination of the id and meta.versionId columns
-            # should ideally identify a single unique row. But in rare cases,
-            # duplicates may exist. At query time, users may use the SQL select
-            # statement to keep only one of the duplicate rows given an id and
-            # meta.versionId pair. Alternatively, the server created view mentioned
-            # above also filters out duplicates.
-            #
-            # If a resource mutation cannot be streamed to BigQuery, errors will be
-            # logged to Cloud Logging (see
-            # [Viewing logs](/healthcare/docs/how-tos/logging)).
-          &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
-              # `bq://projectId.bqDatasetId`
-          &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
-              # generates the schema.
-            &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
-            &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
-                # schema. For example, `concept` in the CodeSystem resource is a recursive
-                # structure; when the depth is 2, the CodeSystem table will have a column
-                # called `concept.concept` but not `concept.concept.concept`. If not
-                # specified or set to 0, the server will use the default value 2. The
-                # maximum depth allowed is 5.
-          },
-          &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables will be deleted from the dataset before
-              # the new exported tables are written. If the flag is not set and the
-              # destination dataset contains tables, the export call returns an error.
-        },
-        &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-            # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-            # all FHIR resource types.
-            # The server treats an empty list as an intent to stream all the
-            # supported resource types in this FHIR store.
-          &quot;A String&quot;,
-        ],
-      },
-    ],
-    &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
-        # 
-        # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
-        # of maximum 128 bytes, and must conform to the
-        # following PCRE regular expression:
-        # \p{Ll}\p{Lo}{0,62}
-        # 
-        # Label values are optional, must be between 1 and 63 characters long, have
-        # a UTF-8 encoding of maximum 128 bytes, and must conform to the
-        # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
-        # 
-        # No more than 64 labels can be associated with a given store.
-      &quot;a_key&quot;: &quot;A String&quot;,
-    },
     &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
         # this destination. The Cloud Pub/Sub message attributes contain a map
         # with a string describing the action that has triggered the notification.
@@ -250,8 +164,6 @@ Args:
           # logs](/healthcare/docs/how-tos/logging)). If the number of
           # errors exceeds a certain rate, some aren&#x27;t submitted.
     },
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-        # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
     &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
         # field is immutable after store creation. Requests are rejected if they
         # contain FHIR resources of a different version.
@@ -264,13 +176,102 @@ Args:
         # checks. Consequently, operations that rely on references, such as
         # GetPatientEverything, do not return all the results if broken references
         # exist.
-    &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-        # not be changed after the creation of FHIR store.
-        # If set to false, which is the default behavior, all write operations
-        # cause historical versions to be recorded automatically. The historical
-        # versions can be fetched through the history APIs, but cannot be updated.
-        # If set to true, no historical versions are kept. The server sends
-        # errors for attempts to read the historical versions.
+    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+        # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
+    &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
+        # export for every resource mutation in this FHIR store. Each store is
+        # allowed to have up to 10 streaming configs.
+        # After a new config is added, the next resource mutation is streamed to
+        # the new location in addition to the existing ones.
+        # When a location is removed from the list, the server stops
+        # streaming to that location. Before adding a new config, you must add the
+        # required
+        # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
+        # role to your project&#x27;s **Cloud Healthcare Service Agent**
+        # [service account](https://cloud.google.com/iam/docs/service-accounts).
+        # Some lag (typically on the order of dozens of seconds) is expected before
+        # the results show up in the streaming destination.
+      { # Contains configuration for streaming FHIR export.
+        &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+            # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+            # all FHIR resource types.
+            # The server treats an empty list as an intent to stream all the
+            # supported resource types in this FHIR store.
+          &quot;A String&quot;,
+        ],
+        &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
+            # location and corresponding schema config.
+            #
+            # The output is organized in one table per resource type. The server
+            # reuses the existing tables (if any) that are named after the resource
+            # types. For example, &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing
+            # table for a given resource type, the server attempts to create one.
+            #
+            # When a table schema doesn&#x27;t align with the schema config, either
+            # because of existing incompatible schema or out of band incompatible
+            # modification, the server does not stream in new data.
+            #
+            # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
+            # any resource mutation that generates more than 1 MB of BigQuery data
+            # is not streamed.
+            #
+            # One resolution in this case is to delete the incompatible
+            # table and let the server recreate one, though the newly created table
+            # only contains data after the table recreation.
+            #
+            # Results are appended to the corresponding BigQuery tables. Different
+            # versions of the same resource are distinguishable by the meta.versionId
+            # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
+            # results in the new version is recorded in the meta.tag.
+            #
+            # The tables contain all historical resource versions since streaming was
+            # enabled. For query convenience, the server also creates one view per
+            # table of the same name containing only the current resource version.
+            #
+            # The streamed data in the BigQuery dataset is not guaranteed to be
+            # completely unique. The combination of the id and meta.versionId columns
+            # should ideally identify a single unique row. But in rare cases,
+            # duplicates may exist. At query time, users may use the SQL select
+            # statement to keep only one of the duplicate rows given an id and
+            # meta.versionId pair. Alternatively, the server created view mentioned
+            # above also filters out duplicates.
+            #
+            # If a resource mutation cannot be streamed to BigQuery, errors are
+            # logged to Cloud Logging. For more information, see
+            # [Viewing error logs in Cloud
+            # Logging](/healthcare/docs/how-tos/logging)).
+          &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
+              # generates the schema.
+            &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
+                # schema. For example, `concept` in the CodeSystem resource is a recursive
+                # structure; when the depth is 2, the CodeSystem table will have a column
+                # called `concept.concept` but not `concept.concept.concept`. If not
+                # specified or set to 0, the server will use the default value 2. The
+                # maximum depth allowed is 5.
+            &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
+          },
+          &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+              # the new exported tables are written. If the flag is not set and the
+              # destination dataset contains tables, the export call returns an error.
+          &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
+              # `bq://projectId.bqDatasetId`
+        },
+      },
+    ],
+    &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
+        # 
+        # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
+        # of maximum 128 bytes, and must conform to the
+        # following PCRE regular expression:
+        # \p{Ll}\p{Lo}{0,62}
+        # 
+        # Label values are optional, must be between 1 and 63 characters long, have
+        # a UTF-8 encoding of maximum 128 bytes, and must conform to the
+        # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
+        # 
+        # No more than 64 labels can be associated with a given store.
+      &quot;a_key&quot;: &quot;A String&quot;,
+    },
   }
 
   fhirStoreId: string, The ID of the FHIR store that is being created.
@@ -284,6 +285,13 @@ Returns:
   An object of the form:
 
     { # Represents a FHIR store.
+      &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+          # not be changed after the creation of FHIR store.
+          # If set to false, which is the default behavior, all write operations
+          # cause historical versions to be recorded automatically. The historical
+          # versions can be fetched through the history APIs, but cannot be updated.
+          # If set to true, no historical versions are kept. The server sends
+          # errors for attempts to read the historical versions.
       &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
           # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
           # This determines if the client can use an Update operation to create a new
@@ -293,99 +301,6 @@ Returns:
           # care if client-specified resource IDs contain sensitive data such as
           # patient identifiers, those IDs are part of the FHIR resource path
           # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
-      &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
-          # export for every resource mutation in this FHIR store. Each store is
-          # allowed to have up to 10 streaming configs.
-          # After a new config is added, the next resource mutation is streamed to
-          # the new location in addition to the existing ones.
-          # When a location is removed from the list, the server stops
-          # streaming to that location. Before adding a new config, you must add the
-          # required
-          # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
-          # role to your project&#x27;s **Cloud Healthcare Service Agent**
-          # [service account](https://cloud.google.com/iam/docs/service-accounts).
-          # Some lag (typically on the order of dozens of seconds) is expected before
-          # the results show up in the streaming destination.
-        { # This structure contains configuration for streaming FHIR export.
-          &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
-              # location and corresponding schema config.
-              #
-              # The output is organized in one table per resource type. The server
-              # reuses the existing tables (if any) that are named after the resource
-              # types, e.g. &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing table
-              # for a given resource type, the server attempts to create one.
-              #
-              # When a table schema doesn&#x27;t align with the schema config, either
-              # because of existing incompatible schema or out of band incompatible
-              # modification, the server does not stream in new data.
-              #
-              # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
-              # any resource mutation that generates more than 1 MB of BigQuery data
-              # will not be streamed.
-              #
-              # One resolution in this case is to delete the incompatible
-              # table and let the server recreate one, though the newly created table
-              # only contains data after the table recreation.
-              #
-              # Results are appended to the corresponding BigQuery tables. Different
-              # versions of the same resource are distinguishable by the meta.versionId
-              # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
-              # results in the new version is recorded in the meta.tag.
-              #
-              # The tables contain all historical resource versions since streaming was
-              # enabled. For query convenience, the server also creates one view per
-              # table of the same name containing only the current resource version.
-              #
-              # The streamed data in the BigQuery dataset is not guaranteed to be
-              # completely unique. The combination of the id and meta.versionId columns
-              # should ideally identify a single unique row. But in rare cases,
-              # duplicates may exist. At query time, users may use the SQL select
-              # statement to keep only one of the duplicate rows given an id and
-              # meta.versionId pair. Alternatively, the server created view mentioned
-              # above also filters out duplicates.
-              #
-              # If a resource mutation cannot be streamed to BigQuery, errors will be
-              # logged to Cloud Logging (see
-              # [Viewing logs](/healthcare/docs/how-tos/logging)).
-            &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
-                # `bq://projectId.bqDatasetId`
-            &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
-                # generates the schema.
-              &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
-              &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
-                  # schema. For example, `concept` in the CodeSystem resource is a recursive
-                  # structure; when the depth is 2, the CodeSystem table will have a column
-                  # called `concept.concept` but not `concept.concept.concept`. If not
-                  # specified or set to 0, the server will use the default value 2. The
-                  # maximum depth allowed is 5.
-            },
-            &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables will be deleted from the dataset before
-                # the new exported tables are written. If the flag is not set and the
-                # destination dataset contains tables, the export call returns an error.
-          },
-          &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-              # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-              # all FHIR resource types.
-              # The server treats an empty list as an intent to stream all the
-              # supported resource types in this FHIR store.
-            &quot;A String&quot;,
-          ],
-        },
-      ],
-      &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
-          #
-          # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
-          # of maximum 128 bytes, and must conform to the
-          # following PCRE regular expression:
-          # \p{Ll}\p{Lo}{0,62}
-          #
-          # Label values are optional, must be between 1 and 63 characters long, have
-          # a UTF-8 encoding of maximum 128 bytes, and must conform to the
-          # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
-          #
-          # No more than 64 labels can be associated with a given store.
-        &quot;a_key&quot;: &quot;A String&quot;,
-      },
       &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
           # this destination. The Cloud Pub/Sub message attributes contain a map
           # with a string describing the action that has triggered the notification.
@@ -408,8 +323,6 @@ Returns:
             # logs](/healthcare/docs/how-tos/logging)). If the number of
             # errors exceeds a certain rate, some aren&#x27;t submitted.
       },
-      &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-          # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
       &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
           # field is immutable after store creation. Requests are rejected if they
           # contain FHIR resources of a different version.
@@ -422,13 +335,102 @@ Returns:
           # checks. Consequently, operations that rely on references, such as
           # GetPatientEverything, do not return all the results if broken references
           # exist.
-      &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-          # not be changed after the creation of FHIR store.
-          # If set to false, which is the default behavior, all write operations
-          # cause historical versions to be recorded automatically. The historical
-          # versions can be fetched through the history APIs, but cannot be updated.
-          # If set to true, no historical versions are kept. The server sends
-          # errors for attempts to read the historical versions.
+      &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+          # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
+      &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
+          # export for every resource mutation in this FHIR store. Each store is
+          # allowed to have up to 10 streaming configs.
+          # After a new config is added, the next resource mutation is streamed to
+          # the new location in addition to the existing ones.
+          # When a location is removed from the list, the server stops
+          # streaming to that location. Before adding a new config, you must add the
+          # required
+          # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
+          # role to your project&#x27;s **Cloud Healthcare Service Agent**
+          # [service account](https://cloud.google.com/iam/docs/service-accounts).
+          # Some lag (typically on the order of dozens of seconds) is expected before
+          # the results show up in the streaming destination.
+        { # Contains configuration for streaming FHIR export.
+          &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+              # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+              # all FHIR resource types.
+              # The server treats an empty list as an intent to stream all the
+              # supported resource types in this FHIR store.
+            &quot;A String&quot;,
+          ],
+          &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
+              # location and corresponding schema config.
+              #
+              # The output is organized in one table per resource type. The server
+              # reuses the existing tables (if any) that are named after the resource
+              # types. For example, &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing
+              # table for a given resource type, the server attempts to create one.
+              #
+              # When a table schema doesn&#x27;t align with the schema config, either
+              # because of existing incompatible schema or out of band incompatible
+              # modification, the server does not stream in new data.
+              #
+              # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
+              # any resource mutation that generates more than 1 MB of BigQuery data
+              # is not streamed.
+              #
+              # One resolution in this case is to delete the incompatible
+              # table and let the server recreate one, though the newly created table
+              # only contains data after the table recreation.
+              #
+              # Results are appended to the corresponding BigQuery tables. Different
+              # versions of the same resource are distinguishable by the meta.versionId
+              # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
+              # results in the new version is recorded in the meta.tag.
+              #
+              # The tables contain all historical resource versions since streaming was
+              # enabled. For query convenience, the server also creates one view per
+              # table of the same name containing only the current resource version.
+              #
+              # The streamed data in the BigQuery dataset is not guaranteed to be
+              # completely unique. The combination of the id and meta.versionId columns
+              # should ideally identify a single unique row. But in rare cases,
+              # duplicates may exist. At query time, users may use the SQL select
+              # statement to keep only one of the duplicate rows given an id and
+              # meta.versionId pair. Alternatively, the server created view mentioned
+              # above also filters out duplicates.
+              #
+              # If a resource mutation cannot be streamed to BigQuery, errors are
+              # logged to Cloud Logging. For more information, see
+              # [Viewing error logs in Cloud
+              # Logging](/healthcare/docs/how-tos/logging)).
+            &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
+                # generates the schema.
+              &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
+                  # schema. For example, `concept` in the CodeSystem resource is a recursive
+                  # structure; when the depth is 2, the CodeSystem table will have a column
+                  # called `concept.concept` but not `concept.concept.concept`. If not
+                  # specified or set to 0, the server will use the default value 2. The
+                  # maximum depth allowed is 5.
+              &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
+            },
+            &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+                # the new exported tables are written. If the flag is not set and the
+                # destination dataset contains tables, the export call returns an error.
+            &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
+                # `bq://projectId.bqDatasetId`
+          },
+        },
+      ],
+      &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
+          #
+          # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
+          # of maximum 128 bytes, and must conform to the
+          # following PCRE regular expression:
+          # \p{Ll}\p{Lo}{0,62}
+          #
+          # Label values are optional, must be between 1 and 63 characters long, have
+          # a UTF-8 encoding of maximum 128 bytes, and must conform to the
+          # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
+          #
+          # No more than 64 labels can be associated with a given store.
+        &quot;a_key&quot;: &quot;A String&quot;,
+      },
     }</pre>
 </div>
 
@@ -451,16 +453,6 @@ Args:
     The object takes the form of:
 
 { # Creates a new FHIR store with sensitive information de-identified.
-    &quot;destinationStore&quot;: &quot;A String&quot;, # The name of the FHIR store to create and write the redacted data to.
-        # For example,
-        # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
-        # 
-        #  * The destination dataset must exist.
-        #  * The source dataset and destination dataset must both reside in the same
-        #    project. De-identifying data across multiple projects is not supported.
-        #  * The destination FHIR store must exist.
-        #  * The caller must have the healthcare.fhirResources.update permission to
-        #    write to the destination FHIR store.
     &quot;resourceFilter&quot;: { # Filter configuration. # A filter specifying the resources to include in the output. If not
         # specified, all resources are included in the output.
       &quot;resources&quot;: { # A list of FHIR resources. # List of resources to include in the output. If this list is empty or
@@ -474,74 +466,6 @@ Args:
         # Each submessage customizes the handling of an
         # https://tools.ietf.org/html/rfc6838 media type or subtype. Configs are
         # applied in a nested manner at runtime.
-      &quot;text&quot;: { # Configures de-identification of text wherever it is found in the
-          # source_dataset.
-        &quot;transformations&quot;: [ # The transformations to apply to the detected data.
-          { # A transformation to apply to text that is identified as a specific
-              # info_type.
-            &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is # Config for date shift.
-                # consistent for a given patient and crypto key combination.
-              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this
-                  # key and the patient ID. A default key is generated for each
-                  # Deidentify operation and is used wherever crypto_key is not specified.
-            },
-            &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
-              &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
-            },
-            &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. # Config for text redaction.
-                # For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot;
-            },
-            &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the
-                # transformation applies to any info_type.
-              &quot;A String&quot;,
-            ],
-            &quot;replaceWithInfoTypeConfig&quot;: { # When using the # Config for replace with InfoType.
-                # INSPECT_AND_TRANSFORM
-                # action, each match is replaced with the name of the info_type. For example,
-                # &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The
-                # TRANSFORM
-                # action is equivalent to redacting.
-            },
-            &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. # Config for crypto hash.
-                # Uses SHA-256.
-                # Outputs a base64-encoded representation of the hashed output
-                # (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`).
-              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this
-                  # key. A default key is generated for each Deidentify operation and is used
-                  # wherever crypto_key is not specified.
-            },
-          },
-        ],
-      },
-      &quot;dicom&quot;: { # Specifies the parameters needed for de-identification of DICOM stores. # Configures de-id of application/DICOM content.
-        &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
-        &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID,
-            # SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched.
-            # The Cloud Healthcare API regenerates these UIDs by default based on the
-            # DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly
-            # to an individual out of context, given access to the original images, or
-            # to a database of the original images containing the UIDs, it would be
-            # possible to recover the individual&#x27;s identity.&quot;
-            # http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
-        &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
-          &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta
-              # Elements, or Directory Structuring Elements, as defined at:
-              # http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,.
-              # They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;,
-              # &quot;00100010&quot;.
-            &quot;A String&quot;,
-          ],
-        },
-        &quot;removeList&quot;: { # List of tags to be filtered. # List of tags to remove. Keep all other tags.
-          &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta
-              # Elements, or Directory Structuring Elements, as defined at:
-              # http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,.
-              # They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;,
-              # &quot;00100010&quot;.
-            &quot;A String&quot;,
-          ],
-        },
-      },
       &quot;fhir&quot;: { # Specifies how to handle de-identification of a FHIR store. # Configures de-id of application/FHIR content.
         &quot;fieldMetadataList&quot;: [ # Specifies FHIR paths to match and how to transform them. Any field that
             # is not matched by a FieldMetadata is passed through to the output
@@ -558,6 +482,8 @@ Args:
                 # Supported types are: AdministrativeGenderCode, Code, Date, DateTime,
                 # Decimal, HumanName, Id, LanguageCode, Markdown, Oid, String, Uri, Uuid,
                 # Xhtml.
+                # Base64Binary is also supported, but may only be kept as-is or have all
+                # the content removed.
               &quot;A String&quot;,
             ],
           },
@@ -567,7 +493,85 @@ Args:
           # source_dataset.
         &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
       },
+      &quot;text&quot;: { # Configures de-identification of text wherever it is found in the
+          # source_dataset.
+        &quot;transformations&quot;: [ # The transformations to apply to the detected data.
+          { # A transformation to apply to text that is identified as a specific
+              # info_type.
+            &quot;replaceWithInfoTypeConfig&quot;: { # When using the # Config for replace with InfoType.
+                # INSPECT_AND_TRANSFORM
+                # action, each match is replaced with the name of the info_type. For example,
+                # &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The
+                # TRANSFORM
+                # action is equivalent to redacting.
+            },
+            &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is # Config for date shift.
+                # consistent for a given patient and crypto key combination.
+              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this
+                  # key and the patient ID. A default key is generated for each
+                  # Deidentify operation and is used wherever crypto_key is not specified.
+            },
+            &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. # Config for crypto hash.
+                # Uses SHA-256.
+                # Outputs a base64-encoded representation of the hashed output
+                # (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`).
+              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this
+                  # key. A default key is generated for each Deidentify operation and is used
+                  # wherever crypto_key is not specified.
+            },
+            &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. # Config for text redaction.
+                # For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot;
+            },
+            &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
+              &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
+            },
+            &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the
+                # transformation applies to any info_type.
+              &quot;A String&quot;,
+            ],
+          },
+        ],
+      },
+      &quot;dicom&quot;: { # Specifies the parameters needed for de-identification of DICOM stores. # Configures de-id of application/DICOM content.
+        &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
+          &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta
+              # Elements, or Directory Structuring Elements, as defined at:
+              # http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,.
+              # They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;,
+              # &quot;00100010&quot;.
+            &quot;A String&quot;,
+          ],
+        },
+        &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID,
+            # SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched.
+            # The Cloud Healthcare API regenerates these UIDs by default based on the
+            # DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly
+            # to an individual out of context, given access to the original images, or
+            # to a database of the original images containing the UIDs, it would be
+            # possible to recover the individual&#x27;s identity.&quot;
+            # http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
+        &quot;removeList&quot;: { # List of tags to be filtered. # List of tags to remove. Keep all other tags.
+          &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta
+              # Elements, or Directory Structuring Elements, as defined at:
+              # http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,.
+              # They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;,
+              # &quot;00100010&quot;.
+            &quot;A String&quot;,
+          ],
+        },
+        &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
+      },
     },
+    &quot;destinationStore&quot;: &quot;A String&quot;, # The name of the FHIR store to create and write the redacted data to.
+        # For example,
+        # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
+        # 
+        #  * The destination dataset must exist.
+        #  * The source dataset and destination dataset must both reside in the same
+        #    project. De-identifying data across multiple projects is not supported.
+        #  * The destination FHIR store must exist.
+        #  * The caller must have the healthcare.fhirResources.update permission to
+        #    write to the destination FHIR store.
   }
 
   x__xgafv: string, V1 error format.
@@ -580,15 +584,27 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
-    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
-        # contains progress information and common metadata such as create time.
-        # Some services might not provide such metadata.  Any method that returns a
-        # long-running operation should document the metadata type, if any.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
+        #
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
+      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
     },
-    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
-        # If `true`, the operation is completed, and either `error` or `response` is
-        # available.
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
     &quot;response&quot;: { # The normal response of the operation in case of success.  If the original
         # method returns no data on success, such as `Delete`, the response is
         # `google.protobuf.Empty`.  If the original method is standard
@@ -599,26 +615,14 @@ Returns:
         # `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
-        # originally returns it. If you use the default HTTP mapping, the
-        # `name` should be a resource name ending with `operations/{unique_id}`.
-    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
-        # different programming environments, including REST APIs and RPC APIs. It is
-        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
-        # three pieces of data: error code, error message, and error details.
-        #
-        # You can find out more about this error model and how to work with it in the
-        # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
-          # message types for APIs to use.
-        {
-          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-        },
-      ],
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
+    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
+    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
+        # contains progress information and common metadata such as create time.
+        # Some services might not provide such metadata.  Any method that returns a
+        # long-running operation should document the metadata type, if any.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
   }</pre>
 </div>
@@ -668,8 +672,7 @@ The metadata field type for this
 operation is OperationMetadata.
 
 Args:
-  name: string, The name of the FHIR store to export resource from. The name should be in
-the format of
+  name: string, The name of the FHIR store to export resource from, in the format of
 `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`. (required)
   body: object, The request body.
     The object takes the form of:
@@ -680,22 +683,22 @@ the format of
         # The BigQuery location requires two IAM roles:
         # `roles/bigquery.dataEditor` and `roles/bigquery.jobUser`.
         # 
-        # The output will be one BigQuery table per resource type.
-      &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
-          # `bq://projectId.bqDatasetId`
+        # The output is one BigQuery table per resource type.
       &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
           # generates the schema.
-        &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
         &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
             # schema. For example, `concept` in the CodeSystem resource is a recursive
             # structure; when the depth is 2, the CodeSystem table will have a column
             # called `concept.concept` but not `concept.concept.concept`. If not
             # specified or set to 0, the server will use the default value 2. The
             # maximum depth allowed is 5.
+        &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
       },
-      &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables will be deleted from the dataset before
+      &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
           # the new exported tables are written. If the flag is not set and the
           # destination dataset contains tables, the export call returns an error.
+      &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
+          # `bq://projectId.bqDatasetId`
     },
     &quot;gcsDestination&quot;: { # The configuration for exporting to Cloud Storage. # The Cloud Storage output destination.
         # 
@@ -703,12 +706,12 @@ the format of
         # IAM role.
         # 
         # The exported outputs are
-        # organized by FHIR resource types. The server will create one object per
+        # organized by FHIR resource types. The server creates one object per
         # resource type. Each object contains newline delimited JSON, and each line
         # is a FHIR resource.
-      &quot;uriPrefix&quot;: &quot;A String&quot;, # URI for a Cloud Storage directory where result files should be written (in
-          # the format `gs://{bucket-id}/{path/to/destination/dir}`). If there is no
-          # trailing slash, the service will append one when composing the object path.
+      &quot;uriPrefix&quot;: &quot;A String&quot;, # URI for a Cloud Storage directory where result files should be written, in
+          # the format of `gs://{bucket-id}/{path/to/destination/dir}`. If there is no
+          # trailing slash, the service appends one when composing the object path.
           # The user is responsible for creating the Cloud Storage bucket referenced in
           # `uri_prefix`.
     },
@@ -724,15 +727,27 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
-    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
-        # contains progress information and common metadata such as create time.
-        # Some services might not provide such metadata.  Any method that returns a
-        # long-running operation should document the metadata type, if any.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
+        #
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
+      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
     },
-    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
-        # If `true`, the operation is completed, and either `error` or `response` is
-        # available.
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
     &quot;response&quot;: { # The normal response of the operation in case of success.  If the original
         # method returns no data on success, such as `Delete`, the response is
         # `google.protobuf.Empty`.  If the original method is standard
@@ -743,26 +758,14 @@ Returns:
         # `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
-        # originally returns it. If you use the default HTTP mapping, the
-        # `name` should be a resource name ending with `operations/{unique_id}`.
-    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
-        # different programming environments, including REST APIs and RPC APIs. It is
-        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
-        # three pieces of data: error code, error message, and error details.
-        #
-        # You can find out more about this error model and how to work with it in the
-        # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
-          # message types for APIs to use.
-        {
-          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-        },
-      ],
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
+    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
+    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
+        # contains progress information and common metadata such as create time.
+        # Some services might not provide such metadata.  Any method that returns a
+        # long-running operation should document the metadata type, if any.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
   }</pre>
 </div>
@@ -782,6 +785,13 @@ Returns:
   An object of the form:
 
     { # Represents a FHIR store.
+      &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+          # not be changed after the creation of FHIR store.
+          # If set to false, which is the default behavior, all write operations
+          # cause historical versions to be recorded automatically. The historical
+          # versions can be fetched through the history APIs, but cannot be updated.
+          # If set to true, no historical versions are kept. The server sends
+          # errors for attempts to read the historical versions.
       &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
           # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
           # This determines if the client can use an Update operation to create a new
@@ -791,99 +801,6 @@ Returns:
           # care if client-specified resource IDs contain sensitive data such as
           # patient identifiers, those IDs are part of the FHIR resource path
           # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
-      &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
-          # export for every resource mutation in this FHIR store. Each store is
-          # allowed to have up to 10 streaming configs.
-          # After a new config is added, the next resource mutation is streamed to
-          # the new location in addition to the existing ones.
-          # When a location is removed from the list, the server stops
-          # streaming to that location. Before adding a new config, you must add the
-          # required
-          # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
-          # role to your project&#x27;s **Cloud Healthcare Service Agent**
-          # [service account](https://cloud.google.com/iam/docs/service-accounts).
-          # Some lag (typically on the order of dozens of seconds) is expected before
-          # the results show up in the streaming destination.
-        { # This structure contains configuration for streaming FHIR export.
-          &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
-              # location and corresponding schema config.
-              #
-              # The output is organized in one table per resource type. The server
-              # reuses the existing tables (if any) that are named after the resource
-              # types, e.g. &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing table
-              # for a given resource type, the server attempts to create one.
-              #
-              # When a table schema doesn&#x27;t align with the schema config, either
-              # because of existing incompatible schema or out of band incompatible
-              # modification, the server does not stream in new data.
-              #
-              # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
-              # any resource mutation that generates more than 1 MB of BigQuery data
-              # will not be streamed.
-              #
-              # One resolution in this case is to delete the incompatible
-              # table and let the server recreate one, though the newly created table
-              # only contains data after the table recreation.
-              #
-              # Results are appended to the corresponding BigQuery tables. Different
-              # versions of the same resource are distinguishable by the meta.versionId
-              # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
-              # results in the new version is recorded in the meta.tag.
-              #
-              # The tables contain all historical resource versions since streaming was
-              # enabled. For query convenience, the server also creates one view per
-              # table of the same name containing only the current resource version.
-              #
-              # The streamed data in the BigQuery dataset is not guaranteed to be
-              # completely unique. The combination of the id and meta.versionId columns
-              # should ideally identify a single unique row. But in rare cases,
-              # duplicates may exist. At query time, users may use the SQL select
-              # statement to keep only one of the duplicate rows given an id and
-              # meta.versionId pair. Alternatively, the server created view mentioned
-              # above also filters out duplicates.
-              #
-              # If a resource mutation cannot be streamed to BigQuery, errors will be
-              # logged to Cloud Logging (see
-              # [Viewing logs](/healthcare/docs/how-tos/logging)).
-            &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
-                # `bq://projectId.bqDatasetId`
-            &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
-                # generates the schema.
-              &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
-              &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
-                  # schema. For example, `concept` in the CodeSystem resource is a recursive
-                  # structure; when the depth is 2, the CodeSystem table will have a column
-                  # called `concept.concept` but not `concept.concept.concept`. If not
-                  # specified or set to 0, the server will use the default value 2. The
-                  # maximum depth allowed is 5.
-            },
-            &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables will be deleted from the dataset before
-                # the new exported tables are written. If the flag is not set and the
-                # destination dataset contains tables, the export call returns an error.
-          },
-          &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-              # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-              # all FHIR resource types.
-              # The server treats an empty list as an intent to stream all the
-              # supported resource types in this FHIR store.
-            &quot;A String&quot;,
-          ],
-        },
-      ],
-      &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
-          #
-          # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
-          # of maximum 128 bytes, and must conform to the
-          # following PCRE regular expression:
-          # \p{Ll}\p{Lo}{0,62}
-          #
-          # Label values are optional, must be between 1 and 63 characters long, have
-          # a UTF-8 encoding of maximum 128 bytes, and must conform to the
-          # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
-          #
-          # No more than 64 labels can be associated with a given store.
-        &quot;a_key&quot;: &quot;A String&quot;,
-      },
       &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
           # this destination. The Cloud Pub/Sub message attributes contain a map
           # with a string describing the action that has triggered the notification.
@@ -906,8 +823,6 @@ Returns:
             # logs](/healthcare/docs/how-tos/logging)). If the number of
             # errors exceeds a certain rate, some aren&#x27;t submitted.
       },
-      &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-          # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
       &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
           # field is immutable after store creation. Requests are rejected if they
           # contain FHIR resources of a different version.
@@ -920,13 +835,102 @@ Returns:
           # checks. Consequently, operations that rely on references, such as
           # GetPatientEverything, do not return all the results if broken references
           # exist.
-      &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-          # not be changed after the creation of FHIR store.
-          # If set to false, which is the default behavior, all write operations
-          # cause historical versions to be recorded automatically. The historical
-          # versions can be fetched through the history APIs, but cannot be updated.
-          # If set to true, no historical versions are kept. The server sends
-          # errors for attempts to read the historical versions.
+      &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+          # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
+      &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
+          # export for every resource mutation in this FHIR store. Each store is
+          # allowed to have up to 10 streaming configs.
+          # After a new config is added, the next resource mutation is streamed to
+          # the new location in addition to the existing ones.
+          # When a location is removed from the list, the server stops
+          # streaming to that location. Before adding a new config, you must add the
+          # required
+          # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
+          # role to your project&#x27;s **Cloud Healthcare Service Agent**
+          # [service account](https://cloud.google.com/iam/docs/service-accounts).
+          # Some lag (typically on the order of dozens of seconds) is expected before
+          # the results show up in the streaming destination.
+        { # Contains configuration for streaming FHIR export.
+          &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+              # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+              # all FHIR resource types.
+              # The server treats an empty list as an intent to stream all the
+              # supported resource types in this FHIR store.
+            &quot;A String&quot;,
+          ],
+          &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
+              # location and corresponding schema config.
+              #
+              # The output is organized in one table per resource type. The server
+              # reuses the existing tables (if any) that are named after the resource
+              # types. For example, &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing
+              # table for a given resource type, the server attempts to create one.
+              #
+              # When a table schema doesn&#x27;t align with the schema config, either
+              # because of existing incompatible schema or out of band incompatible
+              # modification, the server does not stream in new data.
+              #
+              # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
+              # any resource mutation that generates more than 1 MB of BigQuery data
+              # is not streamed.
+              #
+              # One resolution in this case is to delete the incompatible
+              # table and let the server recreate one, though the newly created table
+              # only contains data after the table recreation.
+              #
+              # Results are appended to the corresponding BigQuery tables. Different
+              # versions of the same resource are distinguishable by the meta.versionId
+              # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
+              # results in the new version is recorded in the meta.tag.
+              #
+              # The tables contain all historical resource versions since streaming was
+              # enabled. For query convenience, the server also creates one view per
+              # table of the same name containing only the current resource version.
+              #
+              # The streamed data in the BigQuery dataset is not guaranteed to be
+              # completely unique. The combination of the id and meta.versionId columns
+              # should ideally identify a single unique row. But in rare cases,
+              # duplicates may exist. At query time, users may use the SQL select
+              # statement to keep only one of the duplicate rows given an id and
+              # meta.versionId pair. Alternatively, the server created view mentioned
+              # above also filters out duplicates.
+              #
+              # If a resource mutation cannot be streamed to BigQuery, errors are
+              # logged to Cloud Logging. For more information, see
+              # [Viewing error logs in Cloud
+              # Logging](/healthcare/docs/how-tos/logging)).
+            &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
+                # generates the schema.
+              &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
+                  # schema. For example, `concept` in the CodeSystem resource is a recursive
+                  # structure; when the depth is 2, the CodeSystem table will have a column
+                  # called `concept.concept` but not `concept.concept.concept`. If not
+                  # specified or set to 0, the server will use the default value 2. The
+                  # maximum depth allowed is 5.
+              &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
+            },
+            &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+                # the new exported tables are written. If the flag is not set and the
+                # destination dataset contains tables, the export call returns an error.
+            &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
+                # `bq://projectId.bqDatasetId`
+          },
+        },
+      ],
+      &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
+          #
+          # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
+          # of maximum 128 bytes, and must conform to the
+          # following PCRE regular expression:
+          # \p{Ll}\p{Lo}{0,62}
+          #
+          # Label values are optional, must be between 1 and 63 characters long, have
+          # a UTF-8 encoding of maximum 128 bytes, and must conform to the
+          # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
+          #
+          # No more than 64 labels can be associated with a given store.
+        &quot;a_key&quot;: &quot;A String&quot;,
+      },
     }</pre>
 </div>
 
@@ -1026,30 +1030,6 @@ Returns:
       #
       # For a description of IAM and its features, see the
       # [IAM documentation](https://cloud.google.com/iam/docs/).
-    &quot;version&quot;: 42, # Specifies the format of the policy.
-        #
-        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
-        # are rejected.
-        #
-        # Any operation that affects conditional role bindings must specify version
-        # `3`. This requirement applies to the following operations:
-        #
-        # * Getting a policy that includes a conditional role binding
-        # * Adding a conditional role binding to a policy
-        # * Changing a conditional role binding in a policy
-        # * Removing any role binding, with or without a condition, from a policy
-        #   that includes conditions
-        #
-        # **Important:** If you use IAM Conditions, you must include the `etag` field
-        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-        # you to overwrite a version `3` policy with a version `1` policy, and all of
-        # the conditions in the version `3` policy are lost.
-        #
-        # If a policy does not include any conditions, operations on that policy may
-        # specify any valid version or leave the field unset.
-        #
-        # To learn which resources support conditions in their IAM policies, see the
-        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
     &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
       { # Specifies the audit configuration for a service.
           # The configuration determines which permission types are logged, and what
@@ -1066,7 +1046,7 @@ Returns:
           #     {
           #       &quot;audit_configs&quot;: [
           #         {
-          #           &quot;service&quot;: &quot;allServices&quot;
+          #           &quot;service&quot;: &quot;allServices&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
           #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
@@ -1075,18 +1055,18 @@ Returns:
           #               ]
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
+          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
           #             }
           #           ]
           #         },
           #         {
-          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
+          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_READ&quot;
           #             },
           #             {
           #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
@@ -1118,7 +1098,7 @@ Returns:
               #           ]
               #         },
               #         {
-              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
               #         }
               #       ]
               #     }
@@ -1135,10 +1115,24 @@ Returns:
         ],
       },
     ],
+    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # **Important:** If you use IAM Conditions, you must include the `etag` field
+        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+        # you to overwrite a version `3` policy with a version `1` policy, and all of
+        # the conditions in the version `3` policy are lost.
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
         # `condition` that determines how and when the `bindings` are applied. Each
         # of the `bindings` must contain at least one member.
       { # Associates `members` with a `role`.
+        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
+            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
         &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) # The condition that is associated with this binding.
             #
             # If the condition evaluates to `true`, then this binding applies to the
@@ -1181,13 +1175,13 @@ Returns:
             # The exact variables and functions that may be referenced within an expression
             # are determined by the service that evaluates it. See the service
             # documentation for additional information.
-          &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
-              # describes the expression, e.g. when hovered over it in a UI.
-          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-              # syntax.
           &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
               # its purpose. This can be used e.g. in UIs which allow to enter the
               # expression.
+          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+              # syntax.
+          &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
+              # describes the expression, e.g. when hovered over it in a UI.
           &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
               # reporting, e.g. a file name and a position in the file.
         },
@@ -1236,28 +1230,38 @@ Returns:
             #
           &quot;A String&quot;,
         ],
-        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
-            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
       },
     ],
-    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
+    &quot;version&quot;: 42, # Specifies the format of the policy.
+        #
+        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
+        # are rejected.
+        #
+        # Any operation that affects conditional role bindings must specify version
+        # `3`. This requirement applies to the following operations:
+        #
+        # * Getting a policy that includes a conditional role binding
+        # * Adding a conditional role binding to a policy
+        # * Changing a conditional role binding in a policy
+        # * Removing any role binding, with or without a condition, from a policy
+        #   that includes conditions
         #
         # **Important:** If you use IAM Conditions, you must include the `etag` field
         # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
         # you to overwrite a version `3` policy with a version `1` policy, and all of
         # the conditions in the version `3` policy are lost.
+        #
+        # If a policy does not include any conditions, operations on that policy may
+        # specify any valid version or leave the field unset.
+        #
+        # To learn which resources support conditions in their IAM policies, see the
+        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
   }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="import_">import_(name, body=None, x__xgafv=None)</code>
-  <pre>Import resources to the FHIR store by loading data from the specified
+  <pre>Imports resources to the FHIR store by loading data from the specified
 sources. This method is optimized to load large quantities of data using
 import semantics that ignore some FHIR store configuration options and are
 not suitable for all use cases. It is primarily intended to load data into
@@ -1265,8 +1269,8 @@ an empty FHIR store that is not being used by other clients. In cases
 where this method is not appropriate, consider using ExecuteBundle to
 load data.
 
-Every resource in the input must contain a client-supplied ID, and will be
-stored using that ID regardless of the
+Every resource in the input must contain a client-supplied ID. Each
+resource is stored using the supplied ID regardless of the
 enable_update_create setting on the FHIR
 store.
 
@@ -1287,15 +1291,15 @@ version of the resource is overwritten without creating a new historical
 version, regardless of the
 disable_resource_versioning
 setting on the FHIR store. If transient failures occur during the import,
-it is possible that successfully imported resources will be overwritten
+it&#x27;s possible that successfully imported resources will be overwritten
 more than once.
 
 The import operation is idempotent unless the input data contains multiple
 valid resources with the same ID but different contents. In that case,
-after the import completes, the store will contain exactly one resource
+after the import completes, the store contains exactly one resource
 with that ID but there is no ordering guarantee on which version of the
 contents it will have. The operation result counters do not count
-duplicate IDs as an error and will count one success for each resource in
+duplicate IDs as an error and count one success for each resource in
 the input, which might result in a success count larger than the number
 of resources in the FHIR store. This often occurs when importing data
 organized in bundles produced by Patient-everything
@@ -1332,13 +1336,14 @@ The metadata field type for this
 operation is OperationMetadata.
 
 Args:
-  name: string, The name of the FHIR store to import FHIR resources to. The name should be
-in the format of
+  name: string, The name of the FHIR store to import FHIR resources to, in the format of
 `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`. (required)
   body: object, The request body.
     The object takes the form of:
 
 { # Request to import resources.
+    &quot;contentStructure&quot;: &quot;A String&quot;, # The content structure in the source location. If not specified, the server
+        # treats the input source files as BUNDLE.
     &quot;gcsSource&quot;: { # Specifies the configuration for importing data from Cloud Storage. # Cloud Storage source data location and import configuration.
         # 
         # The Cloud Storage location requires the `roles/storage.objectViewer`
@@ -1365,8 +1370,6 @@ in the format of
           # Files matching the wildcard are expected to contain content only, no
           # metadata.
     },
-    &quot;contentStructure&quot;: &quot;A String&quot;, # The content structure in the source location. If not specified, the server
-        # treats the input source files as BUNDLE.
   }
 
   x__xgafv: string, V1 error format.
@@ -1379,15 +1382,27 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
-    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
-        # contains progress information and common metadata such as create time.
-        # Some services might not provide such metadata.  Any method that returns a
-        # long-running operation should document the metadata type, if any.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
+        #
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
+      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
     },
-    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
-        # If `true`, the operation is completed, and either `error` or `response` is
-        # available.
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
     &quot;response&quot;: { # The normal response of the operation in case of success.  If the original
         # method returns no data on success, such as `Delete`, the response is
         # `google.protobuf.Empty`.  If the original method is standard
@@ -1398,42 +1413,30 @@ Returns:
         # `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
-        # originally returns it. If you use the default HTTP mapping, the
-        # `name` should be a resource name ending with `operations/{unique_id}`.
-    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
-        # different programming environments, including REST APIs and RPC APIs. It is
-        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
-        # three pieces of data: error code, error message, and error details.
-        #
-        # You can find out more about this error model and how to work with it in the
-        # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
-          # message types for APIs to use.
-        {
-          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-        },
-      ],
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
+    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
+    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
+        # contains progress information and common metadata such as create time.
+        # Some services might not provide such metadata.  Any method that returns a
+        # long-running operation should document the metadata type, if any.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(parent, pageToken=None, pageSize=None, filter=None, x__xgafv=None)</code>
+    <code class="details" id="list">list(parent, pageToken=None, filter=None, pageSize=None, x__xgafv=None)</code>
   <pre>Lists the FHIR stores in the given dataset.
 
 Args:
   parent: string, Name of the dataset. (required)
   pageToken: string, The next_page_token value returned from the previous List request, if any.
-  pageSize: integer, Limit on the number of FHIR stores to return in a single response.  If zero
-the default page size of 100 is used.
   filter: string, Restricts stores returned to those matching a filter. Syntax:
 https://cloud.google.com/appengine/docs/standard/python/search/query_strings
 Only filtering on labels is supported, for example `labels.key=value`.
+  pageSize: integer, Limit on the number of FHIR stores to return in a single response.  If zero
+the default page size of 100 is used.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -1448,6 +1451,13 @@ Returns:
     &quot;fhirStores&quot;: [ # The returned FHIR stores. Won&#x27;t be more FHIR stores than the value of
         # page_size in the request.
       { # Represents a FHIR store.
+          &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+              # not be changed after the creation of FHIR store.
+              # If set to false, which is the default behavior, all write operations
+              # cause historical versions to be recorded automatically. The historical
+              # versions can be fetched through the history APIs, but cannot be updated.
+              # If set to true, no historical versions are kept. The server sends
+              # errors for attempts to read the historical versions.
           &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
               # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
               # This determines if the client can use an Update operation to create a new
@@ -1457,99 +1467,6 @@ Returns:
               # care if client-specified resource IDs contain sensitive data such as
               # patient identifiers, those IDs are part of the FHIR resource path
               # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
-          &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
-              # export for every resource mutation in this FHIR store. Each store is
-              # allowed to have up to 10 streaming configs.
-              # After a new config is added, the next resource mutation is streamed to
-              # the new location in addition to the existing ones.
-              # When a location is removed from the list, the server stops
-              # streaming to that location. Before adding a new config, you must add the
-              # required
-              # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
-              # role to your project&#x27;s **Cloud Healthcare Service Agent**
-              # [service account](https://cloud.google.com/iam/docs/service-accounts).
-              # Some lag (typically on the order of dozens of seconds) is expected before
-              # the results show up in the streaming destination.
-            { # This structure contains configuration for streaming FHIR export.
-              &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
-                  # location and corresponding schema config.
-                  #
-                  # The output is organized in one table per resource type. The server
-                  # reuses the existing tables (if any) that are named after the resource
-                  # types, e.g. &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing table
-                  # for a given resource type, the server attempts to create one.
-                  #
-                  # When a table schema doesn&#x27;t align with the schema config, either
-                  # because of existing incompatible schema or out of band incompatible
-                  # modification, the server does not stream in new data.
-                  #
-                  # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
-                  # any resource mutation that generates more than 1 MB of BigQuery data
-                  # will not be streamed.
-                  #
-                  # One resolution in this case is to delete the incompatible
-                  # table and let the server recreate one, though the newly created table
-                  # only contains data after the table recreation.
-                  #
-                  # Results are appended to the corresponding BigQuery tables. Different
-                  # versions of the same resource are distinguishable by the meta.versionId
-                  # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
-                  # results in the new version is recorded in the meta.tag.
-                  #
-                  # The tables contain all historical resource versions since streaming was
-                  # enabled. For query convenience, the server also creates one view per
-                  # table of the same name containing only the current resource version.
-                  #
-                  # The streamed data in the BigQuery dataset is not guaranteed to be
-                  # completely unique. The combination of the id and meta.versionId columns
-                  # should ideally identify a single unique row. But in rare cases,
-                  # duplicates may exist. At query time, users may use the SQL select
-                  # statement to keep only one of the duplicate rows given an id and
-                  # meta.versionId pair. Alternatively, the server created view mentioned
-                  # above also filters out duplicates.
-                  #
-                  # If a resource mutation cannot be streamed to BigQuery, errors will be
-                  # logged to Cloud Logging (see
-                  # [Viewing logs](/healthcare/docs/how-tos/logging)).
-                &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
-                    # `bq://projectId.bqDatasetId`
-                &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
-                    # generates the schema.
-                  &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
-                  &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
-                      # schema. For example, `concept` in the CodeSystem resource is a recursive
-                      # structure; when the depth is 2, the CodeSystem table will have a column
-                      # called `concept.concept` but not `concept.concept.concept`. If not
-                      # specified or set to 0, the server will use the default value 2. The
-                      # maximum depth allowed is 5.
-                },
-                &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables will be deleted from the dataset before
-                    # the new exported tables are written. If the flag is not set and the
-                    # destination dataset contains tables, the export call returns an error.
-              },
-              &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-                  # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-                  # all FHIR resource types.
-                  # The server treats an empty list as an intent to stream all the
-                  # supported resource types in this FHIR store.
-                &quot;A String&quot;,
-              ],
-            },
-          ],
-          &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
-              #
-              # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
-              # of maximum 128 bytes, and must conform to the
-              # following PCRE regular expression:
-              # \p{Ll}\p{Lo}{0,62}
-              #
-              # Label values are optional, must be between 1 and 63 characters long, have
-              # a UTF-8 encoding of maximum 128 bytes, and must conform to the
-              # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
-              #
-              # No more than 64 labels can be associated with a given store.
-            &quot;a_key&quot;: &quot;A String&quot;,
-          },
           &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
               # this destination. The Cloud Pub/Sub message attributes contain a map
               # with a string describing the action that has triggered the notification.
@@ -1572,8 +1489,6 @@ Returns:
                 # logs](/healthcare/docs/how-tos/logging)). If the number of
                 # errors exceeds a certain rate, some aren&#x27;t submitted.
           },
-          &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-              # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
           &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
               # field is immutable after store creation. Requests are rejected if they
               # contain FHIR resources of a different version.
@@ -1586,13 +1501,102 @@ Returns:
               # checks. Consequently, operations that rely on references, such as
               # GetPatientEverything, do not return all the results if broken references
               # exist.
-          &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-              # not be changed after the creation of FHIR store.
-              # If set to false, which is the default behavior, all write operations
-              # cause historical versions to be recorded automatically. The historical
-              # versions can be fetched through the history APIs, but cannot be updated.
-              # If set to true, no historical versions are kept. The server sends
-              # errors for attempts to read the historical versions.
+          &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+              # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
+          &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
+              # export for every resource mutation in this FHIR store. Each store is
+              # allowed to have up to 10 streaming configs.
+              # After a new config is added, the next resource mutation is streamed to
+              # the new location in addition to the existing ones.
+              # When a location is removed from the list, the server stops
+              # streaming to that location. Before adding a new config, you must add the
+              # required
+              # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
+              # role to your project&#x27;s **Cloud Healthcare Service Agent**
+              # [service account](https://cloud.google.com/iam/docs/service-accounts).
+              # Some lag (typically on the order of dozens of seconds) is expected before
+              # the results show up in the streaming destination.
+            { # Contains configuration for streaming FHIR export.
+              &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+                  # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+                  # all FHIR resource types.
+                  # The server treats an empty list as an intent to stream all the
+                  # supported resource types in this FHIR store.
+                &quot;A String&quot;,
+              ],
+              &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
+                  # location and corresponding schema config.
+                  #
+                  # The output is organized in one table per resource type. The server
+                  # reuses the existing tables (if any) that are named after the resource
+                  # types. For example, &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing
+                  # table for a given resource type, the server attempts to create one.
+                  #
+                  # When a table schema doesn&#x27;t align with the schema config, either
+                  # because of existing incompatible schema or out of band incompatible
+                  # modification, the server does not stream in new data.
+                  #
+                  # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
+                  # any resource mutation that generates more than 1 MB of BigQuery data
+                  # is not streamed.
+                  #
+                  # One resolution in this case is to delete the incompatible
+                  # table and let the server recreate one, though the newly created table
+                  # only contains data after the table recreation.
+                  #
+                  # Results are appended to the corresponding BigQuery tables. Different
+                  # versions of the same resource are distinguishable by the meta.versionId
+                  # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
+                  # results in the new version is recorded in the meta.tag.
+                  #
+                  # The tables contain all historical resource versions since streaming was
+                  # enabled. For query convenience, the server also creates one view per
+                  # table of the same name containing only the current resource version.
+                  #
+                  # The streamed data in the BigQuery dataset is not guaranteed to be
+                  # completely unique. The combination of the id and meta.versionId columns
+                  # should ideally identify a single unique row. But in rare cases,
+                  # duplicates may exist. At query time, users may use the SQL select
+                  # statement to keep only one of the duplicate rows given an id and
+                  # meta.versionId pair. Alternatively, the server created view mentioned
+                  # above also filters out duplicates.
+                  #
+                  # If a resource mutation cannot be streamed to BigQuery, errors are
+                  # logged to Cloud Logging. For more information, see
+                  # [Viewing error logs in Cloud
+                  # Logging](/healthcare/docs/how-tos/logging)).
+                &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
+                    # generates the schema.
+                  &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
+                      # schema. For example, `concept` in the CodeSystem resource is a recursive
+                      # structure; when the depth is 2, the CodeSystem table will have a column
+                      # called `concept.concept` but not `concept.concept.concept`. If not
+                      # specified or set to 0, the server will use the default value 2. The
+                      # maximum depth allowed is 5.
+                  &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
+                },
+                &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+                    # the new exported tables are written. If the flag is not set and the
+                    # destination dataset contains tables, the export call returns an error.
+                &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
+                    # `bq://projectId.bqDatasetId`
+              },
+            },
+          ],
+          &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
+              #
+              # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
+              # of maximum 128 bytes, and must conform to the
+              # following PCRE regular expression:
+              # \p{Ll}\p{Lo}{0,62}
+              #
+              # Label values are optional, must be between 1 and 63 characters long, have
+              # a UTF-8 encoding of maximum 128 bytes, and must conform to the
+              # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
+              #
+              # No more than 64 labels can be associated with a given store.
+            &quot;a_key&quot;: &quot;A String&quot;,
+          },
         },
     ],
   }</pre>
@@ -1623,6 +1627,13 @@ Args:
     The object takes the form of:
 
 { # Represents a FHIR store.
+    &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+        # not be changed after the creation of FHIR store.
+        # If set to false, which is the default behavior, all write operations
+        # cause historical versions to be recorded automatically. The historical
+        # versions can be fetched through the history APIs, but cannot be updated.
+        # If set to true, no historical versions are kept. The server sends
+        # errors for attempts to read the historical versions.
     &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
         # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
         # This determines if the client can use an Update operation to create a new
@@ -1632,99 +1643,6 @@ Args:
         # care if client-specified resource IDs contain sensitive data such as
         # patient identifiers, those IDs are part of the FHIR resource path
         # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
-    &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
-        # export for every resource mutation in this FHIR store. Each store is
-        # allowed to have up to 10 streaming configs.
-        # After a new config is added, the next resource mutation is streamed to
-        # the new location in addition to the existing ones.
-        # When a location is removed from the list, the server stops
-        # streaming to that location. Before adding a new config, you must add the
-        # required
-        # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
-        # role to your project&#x27;s **Cloud Healthcare Service Agent**
-        # [service account](https://cloud.google.com/iam/docs/service-accounts).
-        # Some lag (typically on the order of dozens of seconds) is expected before
-        # the results show up in the streaming destination.
-      { # This structure contains configuration for streaming FHIR export.
-        &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
-            # location and corresponding schema config.
-            #
-            # The output is organized in one table per resource type. The server
-            # reuses the existing tables (if any) that are named after the resource
-            # types, e.g. &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing table
-            # for a given resource type, the server attempts to create one.
-            #
-            # When a table schema doesn&#x27;t align with the schema config, either
-            # because of existing incompatible schema or out of band incompatible
-            # modification, the server does not stream in new data.
-            #
-            # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
-            # any resource mutation that generates more than 1 MB of BigQuery data
-            # will not be streamed.
-            #
-            # One resolution in this case is to delete the incompatible
-            # table and let the server recreate one, though the newly created table
-            # only contains data after the table recreation.
-            #
-            # Results are appended to the corresponding BigQuery tables. Different
-            # versions of the same resource are distinguishable by the meta.versionId
-            # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
-            # results in the new version is recorded in the meta.tag.
-            #
-            # The tables contain all historical resource versions since streaming was
-            # enabled. For query convenience, the server also creates one view per
-            # table of the same name containing only the current resource version.
-            #
-            # The streamed data in the BigQuery dataset is not guaranteed to be
-            # completely unique. The combination of the id and meta.versionId columns
-            # should ideally identify a single unique row. But in rare cases,
-            # duplicates may exist. At query time, users may use the SQL select
-            # statement to keep only one of the duplicate rows given an id and
-            # meta.versionId pair. Alternatively, the server created view mentioned
-            # above also filters out duplicates.
-            #
-            # If a resource mutation cannot be streamed to BigQuery, errors will be
-            # logged to Cloud Logging (see
-            # [Viewing logs](/healthcare/docs/how-tos/logging)).
-          &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
-              # `bq://projectId.bqDatasetId`
-          &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
-              # generates the schema.
-            &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
-            &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
-                # schema. For example, `concept` in the CodeSystem resource is a recursive
-                # structure; when the depth is 2, the CodeSystem table will have a column
-                # called `concept.concept` but not `concept.concept.concept`. If not
-                # specified or set to 0, the server will use the default value 2. The
-                # maximum depth allowed is 5.
-          },
-          &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables will be deleted from the dataset before
-              # the new exported tables are written. If the flag is not set and the
-              # destination dataset contains tables, the export call returns an error.
-        },
-        &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-            # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-            # all FHIR resource types.
-            # The server treats an empty list as an intent to stream all the
-            # supported resource types in this FHIR store.
-          &quot;A String&quot;,
-        ],
-      },
-    ],
-    &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
-        # 
-        # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
-        # of maximum 128 bytes, and must conform to the
-        # following PCRE regular expression:
-        # \p{Ll}\p{Lo}{0,62}
-        # 
-        # Label values are optional, must be between 1 and 63 characters long, have
-        # a UTF-8 encoding of maximum 128 bytes, and must conform to the
-        # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
-        # 
-        # No more than 64 labels can be associated with a given store.
-      &quot;a_key&quot;: &quot;A String&quot;,
-    },
     &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
         # this destination. The Cloud Pub/Sub message attributes contain a map
         # with a string describing the action that has triggered the notification.
@@ -1747,8 +1665,6 @@ Args:
           # logs](/healthcare/docs/how-tos/logging)). If the number of
           # errors exceeds a certain rate, some aren&#x27;t submitted.
     },
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-        # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
     &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
         # field is immutable after store creation. Requests are rejected if they
         # contain FHIR resources of a different version.
@@ -1761,13 +1677,102 @@ Args:
         # checks. Consequently, operations that rely on references, such as
         # GetPatientEverything, do not return all the results if broken references
         # exist.
-    &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-        # not be changed after the creation of FHIR store.
-        # If set to false, which is the default behavior, all write operations
-        # cause historical versions to be recorded automatically. The historical
-        # versions can be fetched through the history APIs, but cannot be updated.
-        # If set to true, no historical versions are kept. The server sends
-        # errors for attempts to read the historical versions.
+    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+        # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
+    &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
+        # export for every resource mutation in this FHIR store. Each store is
+        # allowed to have up to 10 streaming configs.
+        # After a new config is added, the next resource mutation is streamed to
+        # the new location in addition to the existing ones.
+        # When a location is removed from the list, the server stops
+        # streaming to that location. Before adding a new config, you must add the
+        # required
+        # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
+        # role to your project&#x27;s **Cloud Healthcare Service Agent**
+        # [service account](https://cloud.google.com/iam/docs/service-accounts).
+        # Some lag (typically on the order of dozens of seconds) is expected before
+        # the results show up in the streaming destination.
+      { # Contains configuration for streaming FHIR export.
+        &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+            # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+            # all FHIR resource types.
+            # The server treats an empty list as an intent to stream all the
+            # supported resource types in this FHIR store.
+          &quot;A String&quot;,
+        ],
+        &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
+            # location and corresponding schema config.
+            #
+            # The output is organized in one table per resource type. The server
+            # reuses the existing tables (if any) that are named after the resource
+            # types. For example, &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing
+            # table for a given resource type, the server attempts to create one.
+            #
+            # When a table schema doesn&#x27;t align with the schema config, either
+            # because of existing incompatible schema or out of band incompatible
+            # modification, the server does not stream in new data.
+            #
+            # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
+            # any resource mutation that generates more than 1 MB of BigQuery data
+            # is not streamed.
+            #
+            # One resolution in this case is to delete the incompatible
+            # table and let the server recreate one, though the newly created table
+            # only contains data after the table recreation.
+            #
+            # Results are appended to the corresponding BigQuery tables. Different
+            # versions of the same resource are distinguishable by the meta.versionId
+            # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
+            # results in the new version is recorded in the meta.tag.
+            #
+            # The tables contain all historical resource versions since streaming was
+            # enabled. For query convenience, the server also creates one view per
+            # table of the same name containing only the current resource version.
+            #
+            # The streamed data in the BigQuery dataset is not guaranteed to be
+            # completely unique. The combination of the id and meta.versionId columns
+            # should ideally identify a single unique row. But in rare cases,
+            # duplicates may exist. At query time, users may use the SQL select
+            # statement to keep only one of the duplicate rows given an id and
+            # meta.versionId pair. Alternatively, the server created view mentioned
+            # above also filters out duplicates.
+            #
+            # If a resource mutation cannot be streamed to BigQuery, errors are
+            # logged to Cloud Logging. For more information, see
+            # [Viewing error logs in Cloud
+            # Logging](/healthcare/docs/how-tos/logging)).
+          &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
+              # generates the schema.
+            &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
+                # schema. For example, `concept` in the CodeSystem resource is a recursive
+                # structure; when the depth is 2, the CodeSystem table will have a column
+                # called `concept.concept` but not `concept.concept.concept`. If not
+                # specified or set to 0, the server will use the default value 2. The
+                # maximum depth allowed is 5.
+            &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
+          },
+          &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+              # the new exported tables are written. If the flag is not set and the
+              # destination dataset contains tables, the export call returns an error.
+          &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
+              # `bq://projectId.bqDatasetId`
+        },
+      },
+    ],
+    &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
+        # 
+        # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
+        # of maximum 128 bytes, and must conform to the
+        # following PCRE regular expression:
+        # \p{Ll}\p{Lo}{0,62}
+        # 
+        # Label values are optional, must be between 1 and 63 characters long, have
+        # a UTF-8 encoding of maximum 128 bytes, and must conform to the
+        # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
+        # 
+        # No more than 64 labels can be associated with a given store.
+      &quot;a_key&quot;: &quot;A String&quot;,
+    },
   }
 
   updateMask: string, The update mask applies to the resource. For the `FieldMask` definition,
@@ -1782,6 +1787,13 @@ Returns:
   An object of the form:
 
     { # Represents a FHIR store.
+      &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+          # not be changed after the creation of FHIR store.
+          # If set to false, which is the default behavior, all write operations
+          # cause historical versions to be recorded automatically. The historical
+          # versions can be fetched through the history APIs, but cannot be updated.
+          # If set to true, no historical versions are kept. The server sends
+          # errors for attempts to read the historical versions.
       &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
           # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
           # This determines if the client can use an Update operation to create a new
@@ -1791,99 +1803,6 @@ Returns:
           # care if client-specified resource IDs contain sensitive data such as
           # patient identifiers, those IDs are part of the FHIR resource path
           # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
-      &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
-          # export for every resource mutation in this FHIR store. Each store is
-          # allowed to have up to 10 streaming configs.
-          # After a new config is added, the next resource mutation is streamed to
-          # the new location in addition to the existing ones.
-          # When a location is removed from the list, the server stops
-          # streaming to that location. Before adding a new config, you must add the
-          # required
-          # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
-          # role to your project&#x27;s **Cloud Healthcare Service Agent**
-          # [service account](https://cloud.google.com/iam/docs/service-accounts).
-          # Some lag (typically on the order of dozens of seconds) is expected before
-          # the results show up in the streaming destination.
-        { # This structure contains configuration for streaming FHIR export.
-          &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
-              # location and corresponding schema config.
-              #
-              # The output is organized in one table per resource type. The server
-              # reuses the existing tables (if any) that are named after the resource
-              # types, e.g. &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing table
-              # for a given resource type, the server attempts to create one.
-              #
-              # When a table schema doesn&#x27;t align with the schema config, either
-              # because of existing incompatible schema or out of band incompatible
-              # modification, the server does not stream in new data.
-              #
-              # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
-              # any resource mutation that generates more than 1 MB of BigQuery data
-              # will not be streamed.
-              #
-              # One resolution in this case is to delete the incompatible
-              # table and let the server recreate one, though the newly created table
-              # only contains data after the table recreation.
-              #
-              # Results are appended to the corresponding BigQuery tables. Different
-              # versions of the same resource are distinguishable by the meta.versionId
-              # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
-              # results in the new version is recorded in the meta.tag.
-              #
-              # The tables contain all historical resource versions since streaming was
-              # enabled. For query convenience, the server also creates one view per
-              # table of the same name containing only the current resource version.
-              #
-              # The streamed data in the BigQuery dataset is not guaranteed to be
-              # completely unique. The combination of the id and meta.versionId columns
-              # should ideally identify a single unique row. But in rare cases,
-              # duplicates may exist. At query time, users may use the SQL select
-              # statement to keep only one of the duplicate rows given an id and
-              # meta.versionId pair. Alternatively, the server created view mentioned
-              # above also filters out duplicates.
-              #
-              # If a resource mutation cannot be streamed to BigQuery, errors will be
-              # logged to Cloud Logging (see
-              # [Viewing logs](/healthcare/docs/how-tos/logging)).
-            &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
-                # `bq://projectId.bqDatasetId`
-            &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
-                # generates the schema.
-              &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
-              &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
-                  # schema. For example, `concept` in the CodeSystem resource is a recursive
-                  # structure; when the depth is 2, the CodeSystem table will have a column
-                  # called `concept.concept` but not `concept.concept.concept`. If not
-                  # specified or set to 0, the server will use the default value 2. The
-                  # maximum depth allowed is 5.
-            },
-            &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables will be deleted from the dataset before
-                # the new exported tables are written. If the flag is not set and the
-                # destination dataset contains tables, the export call returns an error.
-          },
-          &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-              # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-              # all FHIR resource types.
-              # The server treats an empty list as an intent to stream all the
-              # supported resource types in this FHIR store.
-            &quot;A String&quot;,
-          ],
-        },
-      ],
-      &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
-          #
-          # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
-          # of maximum 128 bytes, and must conform to the
-          # following PCRE regular expression:
-          # \p{Ll}\p{Lo}{0,62}
-          #
-          # Label values are optional, must be between 1 and 63 characters long, have
-          # a UTF-8 encoding of maximum 128 bytes, and must conform to the
-          # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
-          #
-          # No more than 64 labels can be associated with a given store.
-        &quot;a_key&quot;: &quot;A String&quot;,
-      },
       &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
           # this destination. The Cloud Pub/Sub message attributes contain a map
           # with a string describing the action that has triggered the notification.
@@ -1906,8 +1825,6 @@ Returns:
             # logs](/healthcare/docs/how-tos/logging)). If the number of
             # errors exceeds a certain rate, some aren&#x27;t submitted.
       },
-      &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-          # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
       &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
           # field is immutable after store creation. Requests are rejected if they
           # contain FHIR resources of a different version.
@@ -1920,13 +1837,102 @@ Returns:
           # checks. Consequently, operations that rely on references, such as
           # GetPatientEverything, do not return all the results if broken references
           # exist.
-      &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-          # not be changed after the creation of FHIR store.
-          # If set to false, which is the default behavior, all write operations
-          # cause historical versions to be recorded automatically. The historical
-          # versions can be fetched through the history APIs, but cannot be updated.
-          # If set to true, no historical versions are kept. The server sends
-          # errors for attempts to read the historical versions.
+      &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+          # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
+      &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
+          # export for every resource mutation in this FHIR store. Each store is
+          # allowed to have up to 10 streaming configs.
+          # After a new config is added, the next resource mutation is streamed to
+          # the new location in addition to the existing ones.
+          # When a location is removed from the list, the server stops
+          # streaming to that location. Before adding a new config, you must add the
+          # required
+          # [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor)
+          # role to your project&#x27;s **Cloud Healthcare Service Agent**
+          # [service account](https://cloud.google.com/iam/docs/service-accounts).
+          # Some lag (typically on the order of dozens of seconds) is expected before
+          # the results show up in the streaming destination.
+        { # Contains configuration for streaming FHIR export.
+          &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+              # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+              # all FHIR resource types.
+              # The server treats an empty list as an intent to stream all the
+              # supported resource types in this FHIR store.
+            &quot;A String&quot;,
+          ],
+          &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
+              # location and corresponding schema config.
+              #
+              # The output is organized in one table per resource type. The server
+              # reuses the existing tables (if any) that are named after the resource
+              # types. For example, &quot;Patient&quot;, &quot;Observation&quot;. When there is no existing
+              # table for a given resource type, the server attempts to create one.
+              #
+              # When a table schema doesn&#x27;t align with the schema config, either
+              # because of existing incompatible schema or out of band incompatible
+              # modification, the server does not stream in new data.
+              #
+              # BigQuery imposes a 1 MB limit on streaming insert row size, therefore
+              # any resource mutation that generates more than 1 MB of BigQuery data
+              # is not streamed.
+              #
+              # One resolution in this case is to delete the incompatible
+              # table and let the server recreate one, though the newly created table
+              # only contains data after the table recreation.
+              #
+              # Results are appended to the corresponding BigQuery tables. Different
+              # versions of the same resource are distinguishable by the meta.versionId
+              # and meta.lastUpdated columns. The operation (CREATE/UPDATE/DELETE) that
+              # results in the new version is recorded in the meta.tag.
+              #
+              # The tables contain all historical resource versions since streaming was
+              # enabled. For query convenience, the server also creates one view per
+              # table of the same name containing only the current resource version.
+              #
+              # The streamed data in the BigQuery dataset is not guaranteed to be
+              # completely unique. The combination of the id and meta.versionId columns
+              # should ideally identify a single unique row. But in rare cases,
+              # duplicates may exist. At query time, users may use the SQL select
+              # statement to keep only one of the duplicate rows given an id and
+              # meta.versionId pair. Alternatively, the server created view mentioned
+              # above also filters out duplicates.
+              #
+              # If a resource mutation cannot be streamed to BigQuery, errors are
+              # logged to Cloud Logging. For more information, see
+              # [Viewing error logs in Cloud
+              # Logging](/healthcare/docs/how-tos/logging)).
+            &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
+                # generates the schema.
+              &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
+                  # schema. For example, `concept` in the CodeSystem resource is a recursive
+                  # structure; when the depth is 2, the CodeSystem table will have a column
+                  # called `concept.concept` but not `concept.concept.concept`. If not
+                  # specified or set to 0, the server will use the default value 2. The
+                  # maximum depth allowed is 5.
+              &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
+            },
+            &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+                # the new exported tables are written. If the flag is not set and the
+                # destination dataset contains tables, the export call returns an error.
+            &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
+                # `bq://projectId.bqDatasetId`
+          },
+        },
+      ],
+      &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
+          #
+          # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
+          # of maximum 128 bytes, and must conform to the
+          # following PCRE regular expression:
+          # \p{Ll}\p{Lo}{0,62}
+          #
+          # Label values are optional, must be between 1 and 63 characters long, have
+          # a UTF-8 encoding of maximum 128 bytes, and must conform to the
+          # following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63}
+          #
+          # No more than 64 labels can be associated with a given store.
+        &quot;a_key&quot;: &quot;A String&quot;,
+      },
     }</pre>
 </div>
 
@@ -2014,30 +2020,6 @@ See the operation documentation for the appropriate value for this field. (requi
         #
         # For a description of IAM and its features, see the
         # [IAM documentation](https://cloud.google.com/iam/docs/).
-      &quot;version&quot;: 42, # Specifies the format of the policy.
-          #
-          # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
-          # are rejected.
-          #
-          # Any operation that affects conditional role bindings must specify version
-          # `3`. This requirement applies to the following operations:
-          #
-          # * Getting a policy that includes a conditional role binding
-          # * Adding a conditional role binding to a policy
-          # * Changing a conditional role binding in a policy
-          # * Removing any role binding, with or without a condition, from a policy
-          #   that includes conditions
-          #
-          # **Important:** If you use IAM Conditions, you must include the `etag` field
-          # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-          # you to overwrite a version `3` policy with a version `1` policy, and all of
-          # the conditions in the version `3` policy are lost.
-          #
-          # If a policy does not include any conditions, operations on that policy may
-          # specify any valid version or leave the field unset.
-          #
-          # To learn which resources support conditions in their IAM policies, see the
-          # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
       &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
         { # Specifies the audit configuration for a service.
             # The configuration determines which permission types are logged, and what
@@ -2054,7 +2036,7 @@ See the operation documentation for the appropriate value for this field. (requi
             #     {
             #       &quot;audit_configs&quot;: [
             #         {
-            #           &quot;service&quot;: &quot;allServices&quot;
+            #           &quot;service&quot;: &quot;allServices&quot;,
             #           &quot;audit_log_configs&quot;: [
             #             {
             #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
@@ -2063,18 +2045,18 @@ See the operation documentation for the appropriate value for this field. (requi
             #               ]
             #             },
             #             {
-            #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+            #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
             #             },
             #             {
-            #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
+            #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
             #             }
             #           ]
             #         },
             #         {
-            #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
+            #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
             #           &quot;audit_log_configs&quot;: [
             #             {
-            #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+            #               &quot;log_type&quot;: &quot;DATA_READ&quot;
             #             },
             #             {
             #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
@@ -2106,7 +2088,7 @@ See the operation documentation for the appropriate value for this field. (requi
                 #           ]
                 #         },
                 #         {
-                #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+                #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
                 #         }
                 #       ]
                 #     }
@@ -2123,10 +2105,24 @@ See the operation documentation for the appropriate value for this field. (requi
           ],
         },
       ],
+      &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+          # prevent simultaneous updates of a policy from overwriting each other.
+          # It is strongly suggested that systems make use of the `etag` in the
+          # read-modify-write cycle to perform policy updates in order to avoid race
+          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+          # systems are expected to put that etag in the request to `setIamPolicy` to
+          # ensure that their change will be applied to the same version of the policy.
+          #
+          # **Important:** If you use IAM Conditions, you must include the `etag` field
+          # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+          # you to overwrite a version `3` policy with a version `1` policy, and all of
+          # the conditions in the version `3` policy are lost.
       &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
           # `condition` that determines how and when the `bindings` are applied. Each
           # of the `bindings` must contain at least one member.
         { # Associates `members` with a `role`.
+          &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
+              # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
           &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) # The condition that is associated with this binding.
               #
               # If the condition evaluates to `true`, then this binding applies to the
@@ -2169,13 +2165,13 @@ See the operation documentation for the appropriate value for this field. (requi
               # The exact variables and functions that may be referenced within an expression
               # are determined by the service that evaluates it. See the service
               # documentation for additional information.
-            &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
-                # describes the expression, e.g. when hovered over it in a UI.
-            &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-                # syntax.
             &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
                 # its purpose. This can be used e.g. in UIs which allow to enter the
                 # expression.
+            &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+                # syntax.
+            &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
+                # describes the expression, e.g. when hovered over it in a UI.
             &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
                 # reporting, e.g. a file name and a position in the file.
           },
@@ -2224,22 +2220,32 @@ See the operation documentation for the appropriate value for this field. (requi
               #
             &quot;A String&quot;,
           ],
-          &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
-              # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
         },
       ],
-      &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-          # prevent simultaneous updates of a policy from overwriting each other.
-          # It is strongly suggested that systems make use of the `etag` in the
-          # read-modify-write cycle to perform policy updates in order to avoid race
-          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-          # systems are expected to put that etag in the request to `setIamPolicy` to
-          # ensure that their change will be applied to the same version of the policy.
+      &quot;version&quot;: 42, # Specifies the format of the policy.
+          #
+          # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
+          # are rejected.
+          #
+          # Any operation that affects conditional role bindings must specify version
+          # `3`. This requirement applies to the following operations:
+          #
+          # * Getting a policy that includes a conditional role binding
+          # * Adding a conditional role binding to a policy
+          # * Changing a conditional role binding in a policy
+          # * Removing any role binding, with or without a condition, from a policy
+          #   that includes conditions
           #
           # **Important:** If you use IAM Conditions, you must include the `etag` field
           # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
           # you to overwrite a version `3` policy with a version `1` policy, and all of
           # the conditions in the version `3` policy are lost.
+          #
+          # If a policy does not include any conditions, operations on that policy may
+          # specify any valid version or leave the field unset.
+          #
+          # To learn which resources support conditions in their IAM policies, see the
+          # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
     },
     &quot;updateMask&quot;: &quot;A String&quot;, # OPTIONAL: A FieldMask specifying which fields of the policy to modify. Only
         # the fields in the mask will be modified. If no mask is provided, the
@@ -2323,30 +2329,6 @@ Returns:
       #
       # For a description of IAM and its features, see the
       # [IAM documentation](https://cloud.google.com/iam/docs/).
-    &quot;version&quot;: 42, # Specifies the format of the policy.
-        #
-        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
-        # are rejected.
-        #
-        # Any operation that affects conditional role bindings must specify version
-        # `3`. This requirement applies to the following operations:
-        #
-        # * Getting a policy that includes a conditional role binding
-        # * Adding a conditional role binding to a policy
-        # * Changing a conditional role binding in a policy
-        # * Removing any role binding, with or without a condition, from a policy
-        #   that includes conditions
-        #
-        # **Important:** If you use IAM Conditions, you must include the `etag` field
-        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-        # you to overwrite a version `3` policy with a version `1` policy, and all of
-        # the conditions in the version `3` policy are lost.
-        #
-        # If a policy does not include any conditions, operations on that policy may
-        # specify any valid version or leave the field unset.
-        #
-        # To learn which resources support conditions in their IAM policies, see the
-        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
     &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
       { # Specifies the audit configuration for a service.
           # The configuration determines which permission types are logged, and what
@@ -2363,7 +2345,7 @@ Returns:
           #     {
           #       &quot;audit_configs&quot;: [
           #         {
-          #           &quot;service&quot;: &quot;allServices&quot;
+          #           &quot;service&quot;: &quot;allServices&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
           #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
@@ -2372,18 +2354,18 @@ Returns:
           #               ]
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
+          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
           #             }
           #           ]
           #         },
           #         {
-          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
+          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_READ&quot;
           #             },
           #             {
           #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
@@ -2415,7 +2397,7 @@ Returns:
               #           ]
               #         },
               #         {
-              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
               #         }
               #       ]
               #     }
@@ -2432,10 +2414,24 @@ Returns:
         ],
       },
     ],
+    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # **Important:** If you use IAM Conditions, you must include the `etag` field
+        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+        # you to overwrite a version `3` policy with a version `1` policy, and all of
+        # the conditions in the version `3` policy are lost.
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
         # `condition` that determines how and when the `bindings` are applied. Each
         # of the `bindings` must contain at least one member.
       { # Associates `members` with a `role`.
+        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
+            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
         &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) # The condition that is associated with this binding.
             #
             # If the condition evaluates to `true`, then this binding applies to the
@@ -2478,13 +2474,13 @@ Returns:
             # The exact variables and functions that may be referenced within an expression
             # are determined by the service that evaluates it. See the service
             # documentation for additional information.
-          &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
-              # describes the expression, e.g. when hovered over it in a UI.
-          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-              # syntax.
           &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
               # its purpose. This can be used e.g. in UIs which allow to enter the
               # expression.
+          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+              # syntax.
+          &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
+              # describes the expression, e.g. when hovered over it in a UI.
           &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
               # reporting, e.g. a file name and a position in the file.
         },
@@ -2533,22 +2529,32 @@ Returns:
             #
           &quot;A String&quot;,
         ],
-        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
-            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
       },
     ],
-    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
+    &quot;version&quot;: 42, # Specifies the format of the policy.
+        #
+        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
+        # are rejected.
+        #
+        # Any operation that affects conditional role bindings must specify version
+        # `3`. This requirement applies to the following operations:
+        #
+        # * Getting a policy that includes a conditional role binding
+        # * Adding a conditional role binding to a policy
+        # * Changing a conditional role binding in a policy
+        # * Removing any role binding, with or without a condition, from a policy
+        #   that includes conditions
         #
         # **Important:** If you use IAM Conditions, you must include the `etag` field
         # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
         # you to overwrite a version `3` policy with a version `1` policy, and all of
         # the conditions in the version `3` policy are lost.
+        #
+        # If a policy does not include any conditions, operations on that policy may
+        # specify any valid version or leave the field unset.
+        #
+        # To learn which resources support conditions in their IAM policies, see the
+        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
   }</pre>
 </div>
 
