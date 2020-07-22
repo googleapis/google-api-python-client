@@ -130,7 +130,7 @@ h1, h2, h3 {
 <p class="firstline">Retrieves the list of instances contained within the specified zone.</p>
 <p class="toc_element">
   <code><a href="#listReferrers">listReferrers(project, zone, instance, filter=None, maxResults=None, orderBy=None, pageToken=None)</a></code></p>
-<p class="firstline">Retrieves the list of referrers to instances contained within the specified zone. For more information, read Viewing Referrers to VM Instances.</p>
+<p class="firstline">Retrieves a list of resources that refer to the VM instance specified in the request. For example, if the VM instance is part of a managed instance group, the referrers list includes the managed instance group. For more information, read Viewing Referrers to VM Instances.</p>
 <p class="toc_element">
   <code><a href="#listReferrers_next">listReferrers_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
@@ -172,7 +172,7 @@ h1, h2, h3 {
 <p class="firstline">Changes the minimum CPU platform that this instance should use. This method can only be called on a stopped instance. For more information, read Specifying a Minimum CPU Platform.</p>
 <p class="toc_element">
   <code><a href="#setScheduling">setScheduling(project, zone, instance, body=None, requestId=None)</a></code></p>
-<p class="firstline">Sets an instance's scheduling options.</p>
+<p class="firstline">Sets an instance's scheduling options. You can only call this method on a stopped instance, that is, a VM instance that is in a `TERMINATED` state. See Instance Life Cycle for more information on the possible instance states.</p>
 <p class="toc_element">
   <code><a href="#setServiceAccount">setServiceAccount(project, zone, instance, body=None, requestId=None)</a></code></p>
 <p class="firstline">Sets the service account on the instance. For more information, read Changing the service account and access scopes for an instance.</p>
@@ -437,6 +437,9 @@ Returns:
               #
               # An instance is a virtual machine that is hosted on Google Cloud Platform. For more information, read Virtual Machine Instances. (== resource_for {$api_version}.instances ==)
             &quot;canIpForward&quot;: True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
+            &quot;confidentialInstanceConfig&quot;: { # A set of Confidential Instance options.
+              &quot;enableConfidentialCompute&quot;: True or False, # Defines whether the instance should have confidential compute enabled.
+            },
             &quot;cpuPlatform&quot;: &quot;A String&quot;, # [Output Only] The CPU platform used by this instance.
             &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
             &quot;deletionProtection&quot;: True or False, # Whether the resource should be protected against deletion.
@@ -501,6 +504,7 @@ Returns:
                   &quot;labels&quot;: { # Labels to apply to this disk. These can be later modified by the disks.setLabels method. This field is only applicable for persistent disks.
                     &quot;a_key&quot;: &quot;A String&quot;,
                   },
+                  &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
                   &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
                   &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
                     &quot;A String&quot;,
@@ -693,7 +697,7 @@ Returns:
             &quot;resourcePolicies&quot;: [ # Resource policies applied to this instance.
               &quot;A String&quot;,
             ],
-            &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 11 # Sets the scheduling options for this instance.
+            &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 12 # Sets the scheduling options for this instance.
               &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
                   #
                   # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
@@ -708,7 +712,7 @@ Returns:
                 },
               ],
               &quot;onHostMaintenance&quot;: &quot;A String&quot;, # Defines the maintenance behavior for this instance. For standard instances, the default behavior is MIGRATE. For preemptible instances, the default and only possible behavior is TERMINATE. For more information, see Setting Instance Scheduling Options.
-              &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation, it cannot be set or changed after the instance has been created.
+              &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation or while the instance is stopped and therefore, in a `TERMINATED` state. See Instance Life Cycle for more information on the possible instance states.
             },
             &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for this resource.
             &quot;serviceAccounts&quot;: [ # A list of service accounts, with their specified scopes, authorized for this instance. Only one service account per VM instance is supported.
@@ -751,7 +755,7 @@ Returns:
               &quot;sha256&quot;: &quot;A String&quot;, # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
             },
             &quot;startRestricted&quot;: True or False, # [Output Only] Whether a VM has been restricted for start because Compute Engine has detected suspicious activity.
-            &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, STOPPED, SUSPENDING, SUSPENDED, and TERMINATED.
+            &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, SUSPENDING, SUSPENDED, REPAIRING, and TERMINATED.
             &quot;statusMessage&quot;: &quot;A String&quot;, # [Output Only] An optional, human-readable explanation of the status.
             &quot;tags&quot;: { # A set of instance tags. # Tags to apply to this instance. Tags are used to identify valid sources or targets for network firewalls and are specified by the client during instance creation. The tags can be later modified by the setTags method. Each tag within the list must comply with RFC1035. Multiple tags can be specified via the &#x27;tags.items&#x27; field.
               &quot;fingerprint&quot;: &quot;A String&quot;, # Specifies a fingerprint for this request, which is essentially a hash of the tags&#x27; contents and used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update tags. You must always provide an up-to-date fingerprint hash in order to update or change tags.
@@ -878,6 +882,7 @@ Args:
     &quot;labels&quot;: { # Labels to apply to this disk. These can be later modified by the disks.setLabels method. This field is only applicable for persistent disks.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
+    &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
     &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
     &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
       &quot;A String&quot;,
@@ -1293,6 +1298,9 @@ Returns:
       #
       # An instance is a virtual machine that is hosted on Google Cloud Platform. For more information, read Virtual Machine Instances. (== resource_for {$api_version}.instances ==)
     &quot;canIpForward&quot;: True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
+    &quot;confidentialInstanceConfig&quot;: { # A set of Confidential Instance options.
+      &quot;enableConfidentialCompute&quot;: True or False, # Defines whether the instance should have confidential compute enabled.
+    },
     &quot;cpuPlatform&quot;: &quot;A String&quot;, # [Output Only] The CPU platform used by this instance.
     &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
     &quot;deletionProtection&quot;: True or False, # Whether the resource should be protected against deletion.
@@ -1357,6 +1365,7 @@ Returns:
           &quot;labels&quot;: { # Labels to apply to this disk. These can be later modified by the disks.setLabels method. This field is only applicable for persistent disks.
             &quot;a_key&quot;: &quot;A String&quot;,
           },
+          &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
           &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
           &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
             &quot;A String&quot;,
@@ -1549,7 +1558,7 @@ Returns:
     &quot;resourcePolicies&quot;: [ # Resource policies applied to this instance.
       &quot;A String&quot;,
     ],
-    &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 11 # Sets the scheduling options for this instance.
+    &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 12 # Sets the scheduling options for this instance.
       &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
           #
           # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
@@ -1564,7 +1573,7 @@ Returns:
         },
       ],
       &quot;onHostMaintenance&quot;: &quot;A String&quot;, # Defines the maintenance behavior for this instance. For standard instances, the default behavior is MIGRATE. For preemptible instances, the default and only possible behavior is TERMINATE. For more information, see Setting Instance Scheduling Options.
-      &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation, it cannot be set or changed after the instance has been created.
+      &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation or while the instance is stopped and therefore, in a `TERMINATED` state. See Instance Life Cycle for more information on the possible instance states.
     },
     &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for this resource.
     &quot;serviceAccounts&quot;: [ # A list of service accounts, with their specified scopes, authorized for this instance. Only one service account per VM instance is supported.
@@ -1607,7 +1616,7 @@ Returns:
       &quot;sha256&quot;: &quot;A String&quot;, # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
     },
     &quot;startRestricted&quot;: True or False, # [Output Only] Whether a VM has been restricted for start because Compute Engine has detected suspicious activity.
-    &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, STOPPED, SUSPENDING, SUSPENDED, and TERMINATED.
+    &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, SUSPENDING, SUSPENDED, REPAIRING, and TERMINATED.
     &quot;statusMessage&quot;: &quot;A String&quot;, # [Output Only] An optional, human-readable explanation of the status.
     &quot;tags&quot;: { # A set of instance tags. # Tags to apply to this instance. Tags are used to identify valid sources or targets for network firewalls and are specified by the client during instance creation. The tags can be later modified by the setTags method. Each tag within the list must comply with RFC1035. Multiple tags can be specified via the &#x27;tags.items&#x27; field.
       &quot;fingerprint&quot;: &quot;A String&quot;, # Specifies a fingerprint for this request, which is essentially a hash of the tags&#x27; contents and used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update tags. You must always provide an up-to-date fingerprint hash in order to update or change tags.
@@ -1666,10 +1675,10 @@ Returns:
         ],
         &quot;direction&quot;: &quot;A String&quot;, # Direction of traffic to which this firewall applies, either `INGRESS` or `EGRESS`. The default is `INGRESS`. For `INGRESS` traffic, you cannot specify the destinationRanges field, and for `EGRESS` traffic, you cannot specify the sourceRanges or sourceTags fields.
         &quot;disabled&quot;: True or False, # Denotes whether the firewall rule is disabled. When set to true, the firewall rule is not enforced and the network behaves as if it did not exist. If this is unspecified, the firewall rule will be enabled.
-        &quot;enableLogging&quot;: True or False, # Deprecated in favor of enable in LogConfig. This field denotes whether to enable logging for a particular firewall rule. If logging is enabled, logs will be exported to Stackdriver.
+        &quot;enableLogging&quot;: True or False, # Deprecated in favor of enable in LogConfig. This field denotes whether to enable logging for a particular firewall rule. If logging is enabled, logs will be exported t Cloud Logging.
         &quot;id&quot;: &quot;A String&quot;, # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
         &quot;kind&quot;: &quot;compute#firewall&quot;, # [Output Only] Type of the resource. Always compute#firewall for firewall rules.
-        &quot;logConfig&quot;: { # The available logging options for a firewall rule. # This field denotes the logging options for a particular firewall rule. If logging is enabled, logs will be exported to Stackdriver.
+        &quot;logConfig&quot;: { # The available logging options for a firewall rule. # This field denotes the logging options for a particular firewall rule. If logging is enabled, logs will be exported to Cloud Logging.
           &quot;enable&quot;: True or False, # This field denotes whether to enable logging for a particular firewall rule.
           &quot;metadata&quot;: &quot;A String&quot;, # This field can only be specified for a particular firewall rule if logging is enabled for that rule. This field denotes whether to include or exclude metadata for firewall logs.
         },
@@ -1849,13 +1858,13 @@ Returns:
           #
           # Example Policy with multiple AuditConfigs:
           #
-          # { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot; &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot;, } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot; &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] }
+          # { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] }
           #
           # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging, and aliya@example.com from DATA_WRITE logging.
         &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
           { # Provides the configuration for logging a type of permissions. Example:
               #
-              # { &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, } ] }
+              # { &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; } ] }
               #
               # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting jose@example.com from DATA_READ logging.
             &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of permission. Follows the same format of [Binding.members][].
@@ -2113,6 +2122,9 @@ Args:
     # 
     # An instance is a virtual machine that is hosted on Google Cloud Platform. For more information, read Virtual Machine Instances. (== resource_for {$api_version}.instances ==)
   &quot;canIpForward&quot;: True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
+  &quot;confidentialInstanceConfig&quot;: { # A set of Confidential Instance options.
+    &quot;enableConfidentialCompute&quot;: True or False, # Defines whether the instance should have confidential compute enabled.
+  },
   &quot;cpuPlatform&quot;: &quot;A String&quot;, # [Output Only] The CPU platform used by this instance.
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
   &quot;deletionProtection&quot;: True or False, # Whether the resource should be protected against deletion.
@@ -2177,6 +2189,7 @@ Args:
         &quot;labels&quot;: { # Labels to apply to this disk. These can be later modified by the disks.setLabels method. This field is only applicable for persistent disks.
           &quot;a_key&quot;: &quot;A String&quot;,
         },
+        &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
         &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
         &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
           &quot;A String&quot;,
@@ -2369,7 +2382,7 @@ Args:
   &quot;resourcePolicies&quot;: [ # Resource policies applied to this instance.
     &quot;A String&quot;,
   ],
-  &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 11 # Sets the scheduling options for this instance.
+  &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 12 # Sets the scheduling options for this instance.
     &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
         #
         # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
@@ -2384,7 +2397,7 @@ Args:
       },
     ],
     &quot;onHostMaintenance&quot;: &quot;A String&quot;, # Defines the maintenance behavior for this instance. For standard instances, the default behavior is MIGRATE. For preemptible instances, the default and only possible behavior is TERMINATE. For more information, see Setting Instance Scheduling Options.
-    &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation, it cannot be set or changed after the instance has been created.
+    &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation or while the instance is stopped and therefore, in a `TERMINATED` state. See Instance Life Cycle for more information on the possible instance states.
   },
   &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for this resource.
   &quot;serviceAccounts&quot;: [ # A list of service accounts, with their specified scopes, authorized for this instance. Only one service account per VM instance is supported.
@@ -2427,7 +2440,7 @@ Args:
     &quot;sha256&quot;: &quot;A String&quot;, # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
   },
   &quot;startRestricted&quot;: True or False, # [Output Only] Whether a VM has been restricted for start because Compute Engine has detected suspicious activity.
-  &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, STOPPED, SUSPENDING, SUSPENDED, and TERMINATED.
+  &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, SUSPENDING, SUSPENDED, REPAIRING, and TERMINATED.
   &quot;statusMessage&quot;: &quot;A String&quot;, # [Output Only] An optional, human-readable explanation of the status.
   &quot;tags&quot;: { # A set of instance tags. # Tags to apply to this instance. Tags are used to identify valid sources or targets for network firewalls and are specified by the client during instance creation. The tags can be later modified by the setTags method. Each tag within the list must comply with RFC1035. Multiple tags can be specified via the &#x27;tags.items&#x27; field.
     &quot;fingerprint&quot;: &quot;A String&quot;, # Specifies a fingerprint for this request, which is essentially a hash of the tags&#x27; contents and used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update tags. You must always provide an up-to-date fingerprint hash in order to update or change tags.
@@ -2553,6 +2566,9 @@ Returns:
           #
           # An instance is a virtual machine that is hosted on Google Cloud Platform. For more information, read Virtual Machine Instances. (== resource_for {$api_version}.instances ==)
         &quot;canIpForward&quot;: True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
+        &quot;confidentialInstanceConfig&quot;: { # A set of Confidential Instance options.
+          &quot;enableConfidentialCompute&quot;: True or False, # Defines whether the instance should have confidential compute enabled.
+        },
         &quot;cpuPlatform&quot;: &quot;A String&quot;, # [Output Only] The CPU platform used by this instance.
         &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
         &quot;deletionProtection&quot;: True or False, # Whether the resource should be protected against deletion.
@@ -2617,6 +2633,7 @@ Returns:
               &quot;labels&quot;: { # Labels to apply to this disk. These can be later modified by the disks.setLabels method. This field is only applicable for persistent disks.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
+              &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
               &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
               &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
                 &quot;A String&quot;,
@@ -2809,7 +2826,7 @@ Returns:
         &quot;resourcePolicies&quot;: [ # Resource policies applied to this instance.
           &quot;A String&quot;,
         ],
-        &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 11 # Sets the scheduling options for this instance.
+        &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 12 # Sets the scheduling options for this instance.
           &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
               #
               # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
@@ -2824,7 +2841,7 @@ Returns:
             },
           ],
           &quot;onHostMaintenance&quot;: &quot;A String&quot;, # Defines the maintenance behavior for this instance. For standard instances, the default behavior is MIGRATE. For preemptible instances, the default and only possible behavior is TERMINATE. For more information, see Setting Instance Scheduling Options.
-          &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation, it cannot be set or changed after the instance has been created.
+          &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation or while the instance is stopped and therefore, in a `TERMINATED` state. See Instance Life Cycle for more information on the possible instance states.
         },
         &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for this resource.
         &quot;serviceAccounts&quot;: [ # A list of service accounts, with their specified scopes, authorized for this instance. Only one service account per VM instance is supported.
@@ -2867,7 +2884,7 @@ Returns:
           &quot;sha256&quot;: &quot;A String&quot;, # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
         },
         &quot;startRestricted&quot;: True or False, # [Output Only] Whether a VM has been restricted for start because Compute Engine has detected suspicious activity.
-        &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, STOPPED, SUSPENDING, SUSPENDED, and TERMINATED.
+        &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, SUSPENDING, SUSPENDED, REPAIRING, and TERMINATED.
         &quot;statusMessage&quot;: &quot;A String&quot;, # [Output Only] An optional, human-readable explanation of the status.
         &quot;tags&quot;: { # A set of instance tags. # Tags to apply to this instance. Tags are used to identify valid sources or targets for network firewalls and are specified by the client during instance creation. The tags can be later modified by the setTags method. Each tag within the list must comply with RFC1035. Multiple tags can be specified via the &#x27;tags.items&#x27; field.
           &quot;fingerprint&quot;: &quot;A String&quot;, # Specifies a fingerprint for this request, which is essentially a hash of the tags&#x27; contents and used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update tags. You must always provide an up-to-date fingerprint hash in order to update or change tags.
@@ -2899,7 +2916,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="listReferrers">listReferrers(project, zone, instance, filter=None, maxResults=None, orderBy=None, pageToken=None)</code>
-  <pre>Retrieves the list of referrers to instances contained within the specified zone. For more information, read Viewing Referrers to VM Instances.
+  <pre>Retrieves a list of resources that refer to the VM instance specified in the request. For example, if the VM instance is part of a managed instance group, the referrers list includes the managed instance group. For more information, read Viewing Referrers to VM Instances.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -3514,13 +3531,13 @@ Args:
             #
             # Example Policy with multiple AuditConfigs:
             #
-            # { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot; &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot;, } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot; &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] }
+            # { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] }
             #
             # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging, and aliya@example.com from DATA_WRITE logging.
           &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
             { # Provides the configuration for logging a type of permissions. Example:
                 #
-                # { &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, } ] }
+                # { &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; } ] }
                 #
                 # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting jose@example.com from DATA_READ logging.
               &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of permission. Follows the same format of [Binding.members][].
@@ -3701,13 +3718,13 @@ Returns:
           #
           # Example Policy with multiple AuditConfigs:
           #
-          # { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot; &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot;, } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot; &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] }
+          # { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] }
           #
           # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging, and aliya@example.com from DATA_WRITE logging.
         &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
           { # Provides the configuration for logging a type of permissions. Example:
               #
-              # { &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, } ] }
+              # { &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; } ] }
               #
               # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting jose@example.com from DATA_READ logging.
             &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of permission. Follows the same format of [Binding.members][].
@@ -4299,7 +4316,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="setScheduling">setScheduling(project, zone, instance, body=None, requestId=None)</code>
-  <pre>Sets an instance&#x27;s scheduling options.
+  <pre>Sets an instance&#x27;s scheduling options. You can only call this method on a stopped instance, that is, a VM instance that is in a `TERMINATED` state. See Instance Life Cycle for more information on the possible instance states.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -4308,7 +4325,7 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # Sets the scheduling options for an Instance. NextID: 11
+{ # Sets the scheduling options for an Instance. NextID: 12
   &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
       # 
       # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
@@ -4323,7 +4340,7 @@ Args:
     },
   ],
   &quot;onHostMaintenance&quot;: &quot;A String&quot;, # Defines the maintenance behavior for this instance. For standard instances, the default behavior is MIGRATE. For preemptible instances, the default and only possible behavior is TERMINATE. For more information, see Setting Instance Scheduling Options.
-  &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation, it cannot be set or changed after the instance has been created.
+  &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation or while the instance is stopped and therefore, in a `TERMINATED` state. See Instance Life Cycle for more information on the possible instance states.
 }
 
   requestId: string, An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.
@@ -5190,6 +5207,9 @@ Args:
     # 
     # An instance is a virtual machine that is hosted on Google Cloud Platform. For more information, read Virtual Machine Instances. (== resource_for {$api_version}.instances ==)
   &quot;canIpForward&quot;: True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
+  &quot;confidentialInstanceConfig&quot;: { # A set of Confidential Instance options.
+    &quot;enableConfidentialCompute&quot;: True or False, # Defines whether the instance should have confidential compute enabled.
+  },
   &quot;cpuPlatform&quot;: &quot;A String&quot;, # [Output Only] The CPU platform used by this instance.
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
   &quot;deletionProtection&quot;: True or False, # Whether the resource should be protected against deletion.
@@ -5254,6 +5274,7 @@ Args:
         &quot;labels&quot;: { # Labels to apply to this disk. These can be later modified by the disks.setLabels method. This field is only applicable for persistent disks.
           &quot;a_key&quot;: &quot;A String&quot;,
         },
+        &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
         &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
         &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
           &quot;A String&quot;,
@@ -5446,7 +5467,7 @@ Args:
   &quot;resourcePolicies&quot;: [ # Resource policies applied to this instance.
     &quot;A String&quot;,
   ],
-  &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 11 # Sets the scheduling options for this instance.
+  &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 12 # Sets the scheduling options for this instance.
     &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
         #
         # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
@@ -5461,7 +5482,7 @@ Args:
       },
     ],
     &quot;onHostMaintenance&quot;: &quot;A String&quot;, # Defines the maintenance behavior for this instance. For standard instances, the default behavior is MIGRATE. For preemptible instances, the default and only possible behavior is TERMINATE. For more information, see Setting Instance Scheduling Options.
-    &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation, it cannot be set or changed after the instance has been created.
+    &quot;preemptible&quot;: True or False, # Defines whether the instance is preemptible. This can only be set during instance creation or while the instance is stopped and therefore, in a `TERMINATED` state. See Instance Life Cycle for more information on the possible instance states.
   },
   &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for this resource.
   &quot;serviceAccounts&quot;: [ # A list of service accounts, with their specified scopes, authorized for this instance. Only one service account per VM instance is supported.
@@ -5504,7 +5525,7 @@ Args:
     &quot;sha256&quot;: &quot;A String&quot;, # [Output only] The RFC 4648 base64 encoded SHA-256 hash of the customer-supplied encryption key that protects this resource.
   },
   &quot;startRestricted&quot;: True or False, # [Output Only] Whether a VM has been restricted for start because Compute Engine has detected suspicious activity.
-  &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, STOPPED, SUSPENDING, SUSPENDED, and TERMINATED.
+  &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the instance. One of the following values: PROVISIONING, STAGING, RUNNING, STOPPING, SUSPENDING, SUSPENDED, REPAIRING, and TERMINATED.
   &quot;statusMessage&quot;: &quot;A String&quot;, # [Output Only] An optional, human-readable explanation of the status.
   &quot;tags&quot;: { # A set of instance tags. # Tags to apply to this instance. Tags are used to identify valid sources or targets for network firewalls and are specified by the client during instance creation. The tags can be later modified by the setTags method. Each tag within the list must comply with RFC1035. Multiple tags can be specified via the &#x27;tags.items&#x27; field.
     &quot;fingerprint&quot;: &quot;A String&quot;, # Specifies a fingerprint for this request, which is essentially a hash of the tags&#x27; contents and used for optimistic locking. The fingerprint is initially generated by Compute Engine and changes after every request to modify or update tags. You must always provide an up-to-date fingerprint hash in order to update or change tags.

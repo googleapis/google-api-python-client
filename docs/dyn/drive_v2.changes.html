@@ -97,7 +97,7 @@ h1, h2, h3 {
 Args:
   changeId: string, The ID of the change. (required)
   driveId: string, The shared drive from which the change is returned.
-  supportsAllDrives: boolean, Deprecated - Whether the requesting application supports both My Drives and shared drives. This parameter will only be effective until June 1, 2020. Afterwards all applications are assumed to support shared drives.
+  supportsAllDrives: boolean, Whether the requesting application supports both My Drives and shared drives.
   supportsTeamDrives: boolean, Deprecated use supportsAllDrives instead.
   teamDriveId: string, Deprecated use driveId instead.
 
@@ -157,6 +157,7 @@ Returns:
       &quot;canReadRevisions&quot;: True or False, # Deprecated: use capabilities/canReadRevisions.
       &quot;capabilities&quot;: { # Capabilities the current user has on this file. Each capability corresponds to a fine-grained action that a user may take.
         &quot;canAddChildren&quot;: True or False, # Whether the current user can add children to this folder. This is always false when the item is not a folder.
+        &quot;canAddFolderFromAnotherDrive&quot;: True or False, # Whether the current user can add a folder from another drive (different shared drive or My Drive) to this folder. This is false when the item is not a folder. Only populated for items in shared drives.
         &quot;canAddMyDriveParent&quot;: True or False, # Whether the current user can add a parent for the item without removing an existing parent in the same request. Not populated for shared drive files.
         &quot;canChangeCopyRequiresWriterPermission&quot;: True or False, # Whether the current user can change the copyRequiresWriterPermission restriction of this file.
         &quot;canChangeRestrictedDownload&quot;: True or False, # Deprecated
@@ -168,6 +169,7 @@ Returns:
         &quot;canEdit&quot;: True or False, # Whether the current user can edit this file. Other factors may limit the type of changes a user can make to a file. For example, see canChangeCopyRequiresWriterPermission or canModifyContent.
         &quot;canListChildren&quot;: True or False, # Whether the current user can list the children of this folder. This is always false when the item is not a folder.
         &quot;canModifyContent&quot;: True or False, # Whether the current user can modify the content of this file.
+        &quot;canModifyContentRestriction&quot;: True or False, # Whether the current user can modify restrictions on content of this file.
         &quot;canMoveChildrenOutOfDrive&quot;: True or False, # Whether the current user can move children of this folder outside of the shared drive. This is false when the item is not a folder. Only populated for items in shared drives.
         &quot;canMoveChildrenOutOfTeamDrive&quot;: True or False, # Deprecated - use canMoveChildrenOutOfDrive instead.
         &quot;canMoveChildrenWithinDrive&quot;: True or False, # Whether the current user can move children of this folder within the shared drive. This is false when the item is not a folder. Only populated for items in shared drives.
@@ -189,6 +191,24 @@ Returns:
         &quot;canTrashChildren&quot;: True or False, # Whether the current user can trash children of this folder. This is false when the item is not a folder. Only populated for items in shared drives.
         &quot;canUntrash&quot;: True or False, # Whether the current user can restore this file from trash.
       },
+      &quot;contentRestrictions&quot;: [ # Restrictions for accessing the content of the file. Only populated if such a restriction exists.
+        { # A restriction for accessing the content of the file.
+          &quot;readOnly&quot;: True or False, # Whether the content of the file is read-only.
+          &quot;reason&quot;: &quot;A String&quot;, # Reason for why the content of the file is restricted. This is only mutable on requests that also set readOnly=true.
+          &quot;restrictingUser&quot;: { # Information about a Drive user. # The user who set the content restriction. Only populated if readOnly is true.
+            &quot;displayName&quot;: &quot;A String&quot;, # A plain text displayable name for this user.
+            &quot;emailAddress&quot;: &quot;A String&quot;, # The email address of the user.
+            &quot;isAuthenticatedUser&quot;: True or False, # Whether this user is the same as the authenticated user for whom the request was made.
+            &quot;kind&quot;: &quot;drive#user&quot;, # This is always drive#user.
+            &quot;permissionId&quot;: &quot;A String&quot;, # The user&#x27;s ID as visible in the permissions collection.
+            &quot;picture&quot;: { # The user&#x27;s profile picture.
+              &quot;url&quot;: &quot;A String&quot;, # A URL that points to a profile picture of this user.
+            },
+          },
+          &quot;restrictionDate&quot;: &quot;A String&quot;, # The time at which the content restriction was set (formatted RFC 3339 timestamp). Only populated if readOnly is true.
+          &quot;type&quot;: &quot;A String&quot;, # The type of the content restriction. Currently the only possible value is globalContentRestriction.
+        },
+      ],
       &quot;copyRequiresWriterPermission&quot;: True or False, # Whether the options to copy, print, or download this file, should be disabled for readers and commenters.
       &quot;copyable&quot;: True or False, # Deprecated: use capabilities/canCopy.
       &quot;createdDate&quot;: &quot;A String&quot;, # Create time for this file (formatted RFC 3339 timestamp).
@@ -249,7 +269,7 @@ Returns:
         &quot;modified&quot;: True or False, # Whether the file has been modified by this user.
         &quot;restricted&quot;: True or False, # Deprecated - use copyRequiresWriterPermission instead.
         &quot;starred&quot;: True or False, # Whether this file is starred by the user.
-        &quot;trashed&quot;: True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+        &quot;trashed&quot;: True or False, # Whether the file has been trashed, either explicitly or from a trashed parent folder. Only the owner may trash a file. The trashed item is excluded from all files.list responses returned for any user who does not own the file. However, all users with access to the file can see the trashed item metadata in an API response. All users with access can copy, download, export, and share the file.
         &quot;viewed&quot;: True or False, # Whether this file has been viewed by this user.
       },
       &quot;lastModifyingUser&quot;: { # Information about a Drive user. # The last user to modify this file.
@@ -552,7 +572,7 @@ Returns:
 
 Args:
   driveId: string, The ID of the shared drive for which the starting pageToken for listing future changes from that shared drive is returned.
-  supportsAllDrives: boolean, Deprecated - Whether the requesting application supports both My Drives and shared drives. This parameter will only be effective until June 1, 2020. Afterwards all applications are assumed to support shared drives.
+  supportsAllDrives: boolean, Whether the requesting application supports both My Drives and shared drives.
   supportsTeamDrives: boolean, Deprecated use supportsAllDrives instead.
   teamDriveId: string, Deprecated use driveId instead.
 
@@ -573,14 +593,14 @@ Args:
   driveId: string, The shared drive from which changes are returned. If specified the change IDs will be reflective of the shared drive; use the combined drive ID and change ID as an identifier.
   includeCorpusRemovals: boolean, Whether changes should include the file resource if the file is still accessible by the user at the time of the request, even when a file was removed from the list of changes and there will be no further change entries for this file.
   includeDeleted: boolean, Whether to include changes indicating that items have been removed from the list of changes, for example by deletion or loss of access.
-  includeItemsFromAllDrives: boolean, Deprecated - Whether both My Drive and shared drive items should be included in results. This parameter will only be effective until June 1, 2020. Afterwards shared drive items are included in the results.
+  includeItemsFromAllDrives: boolean, Whether both My Drive and shared drive items should be included in results.
   includeSubscribed: boolean, Whether to include changes outside the My Drive hierarchy in the result. When set to false, changes to files such as those in the Application Data folder or shared files which have not been added to My Drive are omitted from the result.
   includeTeamDriveItems: boolean, Deprecated use includeItemsFromAllDrives instead.
   maxResults: integer, Maximum number of changes to return.
   pageToken: string, The token for continuing a previous list request on the next page. This should be set to the value of &#x27;nextPageToken&#x27; from the previous response or to the response from the getStartPageToken method.
   spaces: string, A comma-separated list of spaces to query. Supported values are &#x27;drive&#x27;, &#x27;appDataFolder&#x27; and &#x27;photos&#x27;.
   startChangeId: string, Deprecated - use pageToken instead.
-  supportsAllDrives: boolean, Deprecated - Whether the requesting application supports both My Drives and shared drives. This parameter will only be effective until June 1, 2020. Afterwards all applications are assumed to support shared drives.
+  supportsAllDrives: boolean, Whether the requesting application supports both My Drives and shared drives.
   supportsTeamDrives: boolean, Deprecated use supportsAllDrives instead.
   teamDriveId: string, Deprecated use driveId instead.
 
@@ -643,6 +663,7 @@ Returns:
           &quot;canReadRevisions&quot;: True or False, # Deprecated: use capabilities/canReadRevisions.
           &quot;capabilities&quot;: { # Capabilities the current user has on this file. Each capability corresponds to a fine-grained action that a user may take.
             &quot;canAddChildren&quot;: True or False, # Whether the current user can add children to this folder. This is always false when the item is not a folder.
+            &quot;canAddFolderFromAnotherDrive&quot;: True or False, # Whether the current user can add a folder from another drive (different shared drive or My Drive) to this folder. This is false when the item is not a folder. Only populated for items in shared drives.
             &quot;canAddMyDriveParent&quot;: True or False, # Whether the current user can add a parent for the item without removing an existing parent in the same request. Not populated for shared drive files.
             &quot;canChangeCopyRequiresWriterPermission&quot;: True or False, # Whether the current user can change the copyRequiresWriterPermission restriction of this file.
             &quot;canChangeRestrictedDownload&quot;: True or False, # Deprecated
@@ -654,6 +675,7 @@ Returns:
             &quot;canEdit&quot;: True or False, # Whether the current user can edit this file. Other factors may limit the type of changes a user can make to a file. For example, see canChangeCopyRequiresWriterPermission or canModifyContent.
             &quot;canListChildren&quot;: True or False, # Whether the current user can list the children of this folder. This is always false when the item is not a folder.
             &quot;canModifyContent&quot;: True or False, # Whether the current user can modify the content of this file.
+            &quot;canModifyContentRestriction&quot;: True or False, # Whether the current user can modify restrictions on content of this file.
             &quot;canMoveChildrenOutOfDrive&quot;: True or False, # Whether the current user can move children of this folder outside of the shared drive. This is false when the item is not a folder. Only populated for items in shared drives.
             &quot;canMoveChildrenOutOfTeamDrive&quot;: True or False, # Deprecated - use canMoveChildrenOutOfDrive instead.
             &quot;canMoveChildrenWithinDrive&quot;: True or False, # Whether the current user can move children of this folder within the shared drive. This is false when the item is not a folder. Only populated for items in shared drives.
@@ -675,6 +697,24 @@ Returns:
             &quot;canTrashChildren&quot;: True or False, # Whether the current user can trash children of this folder. This is false when the item is not a folder. Only populated for items in shared drives.
             &quot;canUntrash&quot;: True or False, # Whether the current user can restore this file from trash.
           },
+          &quot;contentRestrictions&quot;: [ # Restrictions for accessing the content of the file. Only populated if such a restriction exists.
+            { # A restriction for accessing the content of the file.
+              &quot;readOnly&quot;: True or False, # Whether the content of the file is read-only.
+              &quot;reason&quot;: &quot;A String&quot;, # Reason for why the content of the file is restricted. This is only mutable on requests that also set readOnly=true.
+              &quot;restrictingUser&quot;: { # Information about a Drive user. # The user who set the content restriction. Only populated if readOnly is true.
+                &quot;displayName&quot;: &quot;A String&quot;, # A plain text displayable name for this user.
+                &quot;emailAddress&quot;: &quot;A String&quot;, # The email address of the user.
+                &quot;isAuthenticatedUser&quot;: True or False, # Whether this user is the same as the authenticated user for whom the request was made.
+                &quot;kind&quot;: &quot;drive#user&quot;, # This is always drive#user.
+                &quot;permissionId&quot;: &quot;A String&quot;, # The user&#x27;s ID as visible in the permissions collection.
+                &quot;picture&quot;: { # The user&#x27;s profile picture.
+                  &quot;url&quot;: &quot;A String&quot;, # A URL that points to a profile picture of this user.
+                },
+              },
+              &quot;restrictionDate&quot;: &quot;A String&quot;, # The time at which the content restriction was set (formatted RFC 3339 timestamp). Only populated if readOnly is true.
+              &quot;type&quot;: &quot;A String&quot;, # The type of the content restriction. Currently the only possible value is globalContentRestriction.
+            },
+          ],
           &quot;copyRequiresWriterPermission&quot;: True or False, # Whether the options to copy, print, or download this file, should be disabled for readers and commenters.
           &quot;copyable&quot;: True or False, # Deprecated: use capabilities/canCopy.
           &quot;createdDate&quot;: &quot;A String&quot;, # Create time for this file (formatted RFC 3339 timestamp).
@@ -735,7 +775,7 @@ Returns:
             &quot;modified&quot;: True or False, # Whether the file has been modified by this user.
             &quot;restricted&quot;: True or False, # Deprecated - use copyRequiresWriterPermission instead.
             &quot;starred&quot;: True or False, # Whether this file is starred by the user.
-            &quot;trashed&quot;: True or False, # Whether this file has been trashed. This label applies to all users accessing the file; however, only owners are allowed to see and untrash files.
+            &quot;trashed&quot;: True or False, # Whether the file has been trashed, either explicitly or from a trashed parent folder. Only the owner may trash a file. The trashed item is excluded from all files.list responses returned for any user who does not own the file. However, all users with access to the file can see the trashed item metadata in an API response. All users with access can copy, download, export, and share the file.
             &quot;viewed&quot;: True or False, # Whether this file has been viewed by this user.
           },
           &quot;lastModifyingUser&quot;: { # Information about a Drive user. # The last user to modify this file.
@@ -1080,14 +1120,14 @@ Args:
   driveId: string, The shared drive from which changes are returned. If specified the change IDs will be reflective of the shared drive; use the combined drive ID and change ID as an identifier.
   includeCorpusRemovals: boolean, Whether changes should include the file resource if the file is still accessible by the user at the time of the request, even when a file was removed from the list of changes and there will be no further change entries for this file.
   includeDeleted: boolean, Whether to include changes indicating that items have been removed from the list of changes, for example by deletion or loss of access.
-  includeItemsFromAllDrives: boolean, Deprecated - Whether both My Drive and shared drive items should be included in results. This parameter will only be effective until June 1, 2020. Afterwards shared drive items are included in the results.
+  includeItemsFromAllDrives: boolean, Whether both My Drive and shared drive items should be included in results.
   includeSubscribed: boolean, Whether to include changes outside the My Drive hierarchy in the result. When set to false, changes to files such as those in the Application Data folder or shared files which have not been added to My Drive are omitted from the result.
   includeTeamDriveItems: boolean, Deprecated use includeItemsFromAllDrives instead.
   maxResults: integer, Maximum number of changes to return.
   pageToken: string, The token for continuing a previous list request on the next page. This should be set to the value of &#x27;nextPageToken&#x27; from the previous response or to the response from the getStartPageToken method.
   spaces: string, A comma-separated list of spaces to query. Supported values are &#x27;drive&#x27;, &#x27;appDataFolder&#x27; and &#x27;photos&#x27;.
   startChangeId: string, Deprecated - use pageToken instead.
-  supportsAllDrives: boolean, Deprecated - Whether the requesting application supports both My Drives and shared drives. This parameter will only be effective until June 1, 2020. Afterwards all applications are assumed to support shared drives.
+  supportsAllDrives: boolean, Whether the requesting application supports both My Drives and shared drives.
   supportsTeamDrives: boolean, Deprecated use supportsAllDrives instead.
   teamDriveId: string, Deprecated use driveId instead.
 

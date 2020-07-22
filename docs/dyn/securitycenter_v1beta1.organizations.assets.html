@@ -81,7 +81,7 @@ h1, h2, h3 {
   <code><a href="#group_next">group_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#list">list(parent, compareDuration=None, filter=None, pageToken=None, fieldMask=None, pageSize=None, readTime=None, orderBy=None, x__xgafv=None)</a></code></p>
+  <code><a href="#list">list(parent, pageToken=None, pageSize=None, filter=None, fieldMask=None, compareDuration=None, readTime=None, orderBy=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists an organization's assets.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -90,7 +90,7 @@ h1, h2, h3 {
   <code><a href="#runDiscovery">runDiscovery(parent, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Runs asset discovery. The discovery is tracked with a long-running</p>
 <p class="toc_element">
-  <code><a href="#updateSecurityMarks">updateSecurityMarks(name, body=None, updateMask=None, startTime=None, x__xgafv=None)</a></code></p>
+  <code><a href="#updateSecurityMarks">updateSecurityMarks(name, body=None, startTime=None, updateMask=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Updates security marks.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -105,10 +105,23 @@ Args:
     The object takes the form of:
 
 { # Request message for grouping by assets.
-    &quot;readTime&quot;: &quot;A String&quot;, # Time used as a reference point when filtering assets. The filter is limited
-        # to assets existing at the supplied time and their values are those at that
-        # specific time. Absence of this field will default to the API&#x27;s version of
-        # NOW.
+    &quot;groupBy&quot;: &quot;A String&quot;, # Required. Expression that defines what assets fields to use for grouping. The string
+        # value should follow SQL syntax: comma separated list of fields. For
+        # example:
+        # &quot;security_center_properties.resource_project,security_center_properties.project&quot;.
+        # 
+        # The following fields are supported when compare_duration is not set:
+        # 
+        # * security_center_properties.resource_project
+        # * security_center_properties.resource_type
+        # * security_center_properties.resource_parent
+        # 
+        # The following fields are supported when compare_duration is set:
+        # 
+        # * security_center_properties.resource_type
+    &quot;pageToken&quot;: &quot;A String&quot;, # The value returned by the last `GroupAssetsResponse`; indicates
+        # that this is a continuation of a prior `GroupAssets` call, and that the
+        # system should return the next page of data.
     &quot;compareDuration&quot;: &quot;A String&quot;, # When compare_duration is set, the Asset&#x27;s &quot;state&quot; property is updated to
         # indicate whether the asset was added, removed, or remained present during
         # the compare_duration period of time that precedes the read_time. This is
@@ -130,20 +143,6 @@ Args:
         #              compare_duration and reference_time.
         # 
         # This field is ignored if `state` is not a field in `group_by`.
-    &quot;groupBy&quot;: &quot;A String&quot;, # Required. Expression that defines what assets fields to use for grouping. The string
-        # value should follow SQL syntax: comma separated list of fields. For
-        # example:
-        # &quot;security_center_properties.resource_project,security_center_properties.project&quot;.
-        # 
-        # The following fields are supported when compare_duration is not set:
-        # 
-        # * security_center_properties.resource_project
-        # * security_center_properties.resource_type
-        # * security_center_properties.resource_parent
-        # 
-        # The following fields are supported when compare_duration is set:
-        # 
-        # * security_center_properties.resource_type
     &quot;filter&quot;: &quot;A String&quot;, # Expression that defines the filter to apply across assets.
         # The expression is a list of zero or more restrictions combined via logical
         # operators `AND` and `OR`.
@@ -171,9 +170,10 @@ Args:
         # * boolean literals `true` and `false` without quotes.
         # 
         # For example, `resource_properties.size = 100` is a valid filter string.
-    &quot;pageToken&quot;: &quot;A String&quot;, # The value returned by the last `GroupAssetsResponse`; indicates
-        # that this is a continuation of a prior `GroupAssets` call, and that the
-        # system should return the next page of data.
+    &quot;readTime&quot;: &quot;A String&quot;, # Time used as a reference point when filtering assets. The filter is limited
+        # to assets existing at the supplied time and their values are those at that
+        # specific time. Absence of this field will default to the API&#x27;s version of
+        # NOW.
     &quot;pageSize&quot;: 42, # The maximum number of results to return in a single response. Default is
         # 10, minimum is 1, maximum is 1000.
   }
@@ -187,6 +187,9 @@ Returns:
   An object of the form:
 
     { # Response message for grouping by assets.
+    &quot;readTime&quot;: &quot;A String&quot;, # Time used for executing the groupBy request.
+    &quot;nextPageToken&quot;: &quot;A String&quot;, # Token to retrieve the next page of results, or empty if there are no more
+        # results.
     &quot;groupByResults&quot;: [ # Group results. There exists an element for each existing unique
         # combination of property/values. The element contains a count for the number
         # of times those specific property/values appear.
@@ -197,9 +200,6 @@ Returns:
         },
       },
     ],
-    &quot;nextPageToken&quot;: &quot;A String&quot;, # Token to retrieve the next page of results, or empty if there are no more
-        # results.
-    &quot;readTime&quot;: &quot;A String&quot;, # Time used for executing the groupBy request.
   }</pre>
 </div>
 
@@ -218,35 +218,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(parent, compareDuration=None, filter=None, pageToken=None, fieldMask=None, pageSize=None, readTime=None, orderBy=None, x__xgafv=None)</code>
+    <code class="details" id="list">list(parent, pageToken=None, pageSize=None, filter=None, fieldMask=None, compareDuration=None, readTime=None, orderBy=None, x__xgafv=None)</code>
   <pre>Lists an organization&#x27;s assets.
 
 Args:
   parent: string, Required. Name of the organization assets should belong to. Its format is
 &quot;organizations/[organization_id]&quot;. (required)
-  compareDuration: string, When compare_duration is set, the ListAssetResult&#x27;s &quot;state&quot; attribute is
-updated to indicate whether the asset was added, removed, or remained
-present during the compare_duration period of time that precedes the
-read_time. This is the time between (read_time -
-compare_duration) and read_time.
-
-The state value is derived based on the presence of the asset at the two
-points in time. Intermediate state changes between the two times don&#x27;t
-affect the result. For example, the results aren&#x27;t affected if the asset is
-removed and re-created again.
-
-Possible &quot;state&quot; values when compare_duration is specified:
-
-* &quot;ADDED&quot;: indicates that the asset was not present before
-             compare_duration, but present at read_time.
-* &quot;REMOVED&quot;: indicates that the asset was present at the start of
-             compare_duration, but not present at read_time.
-* &quot;ACTIVE&quot;: indicates that the asset was present at both the
-             start and the end of the time period defined by
-             compare_duration and read_time.
-
-If compare_duration is not specified, then the only possible state is
-&quot;UNUSED&quot;, which indicates that the asset is present at read_time.
+  pageToken: string, The value returned by the last `ListAssetsResponse`; indicates
+that this is a continuation of a prior `ListAssets` call, and
+that the system should return the next page of data.
+  pageSize: integer, The maximum number of results to return in a single response. Default is
+10, minimum is 1, maximum is 1000.
   filter: string, Expression that defines the filter to apply across assets.
 The expression is a list of zero or more restrictions combined via logical
 operators `AND` and `OR`.
@@ -274,14 +256,32 @@ The supported value types are:
 * boolean literals `true` and `false` without quotes.
 
 For example, `resource_properties.size = 100` is a valid filter string.
-  pageToken: string, The value returned by the last `ListAssetsResponse`; indicates
-that this is a continuation of a prior `ListAssets` call, and
-that the system should return the next page of data.
   fieldMask: string, Optional. A field mask to specify the ListAssetsResult fields to be listed in the
 response.
 An empty field mask will list all fields.
-  pageSize: integer, The maximum number of results to return in a single response. Default is
-10, minimum is 1, maximum is 1000.
+  compareDuration: string, When compare_duration is set, the ListAssetResult&#x27;s &quot;state&quot; attribute is
+updated to indicate whether the asset was added, removed, or remained
+present during the compare_duration period of time that precedes the
+read_time. This is the time between (read_time -
+compare_duration) and read_time.
+
+The state value is derived based on the presence of the asset at the two
+points in time. Intermediate state changes between the two times don&#x27;t
+affect the result. For example, the results aren&#x27;t affected if the asset is
+removed and re-created again.
+
+Possible &quot;state&quot; values when compare_duration is specified:
+
+* &quot;ADDED&quot;: indicates that the asset was not present before
+             compare_duration, but present at read_time.
+* &quot;REMOVED&quot;: indicates that the asset was present at the start of
+             compare_duration, but not present at read_time.
+* &quot;ACTIVE&quot;: indicates that the asset was present at both the
+             start and the end of the time period defined by
+             compare_duration and read_time.
+
+If compare_duration is not specified, then the only possible state is
+&quot;UNUSED&quot;, which indicates that the asset is present at read_time.
   readTime: string, Time used as a reference point when filtering assets. The filter is limited
 to assets existing at the supplied time and their values are those at that
 specific time. Absence of this field will default to the API&#x27;s version of
@@ -314,62 +314,62 @@ Returns:
             # Google Cloud resource.
           &quot;updateTime&quot;: &quot;A String&quot;, # The time at which the asset was last updated, added, or deleted in Security
               # Command Center.
-          &quot;name&quot;: &quot;A String&quot;, # The relative resource name of this asset. See:
-              # https://cloud.google.com/apis/design/resource_names#relative_resource_name
-              # Example:
-              # &quot;organizations/{organization_id}/assets/{asset_id}&quot;.
           &quot;resourceProperties&quot;: { # Resource managed properties. These properties are managed and defined by
               # the Google Cloud resource and cannot be modified by the user.
             &quot;a_key&quot;: &quot;&quot;,
           },
+          &quot;securityMarks&quot;: { # User specified security marks that are attached to the parent Security # User specified security marks. These marks are entirely managed by the user
+              # and come from the SecurityMarks resource that belongs to the asset.
+                # Command Center resource. Security marks are scoped within a Security Command
+                # Center organization -- they can be modified and viewed by all users who have
+                # proper permissions on the organization.
+              &quot;marks&quot;: { # Mutable user specified security marks belonging to the parent resource.
+                  # Constraints are as follows:
+                  #
+                  #   * Keys and values are treated as case insensitive
+                  #   * Keys must be between 1 - 256 characters (inclusive)
+                  #   * Keys must be letters, numbers, underscores, or dashes
+                  #   * Values have leading and trailing whitespace trimmed, remaining
+                  #     characters must be between 1 - 4096 characters (inclusive)
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;name&quot;: &quot;A String&quot;, # The relative resource name of the SecurityMarks. See:
+                  # https://cloud.google.com/apis/design/resource_names#relative_resource_name
+                  # Examples:
+                  # &quot;organizations/{organization_id}/assets/{asset_id}/securityMarks&quot;
+                  # &quot;organizations/{organization_id}/sources/{source_id}/findings/{finding_id}/securityMarks&quot;.
+            },
           &quot;securityCenterProperties&quot;: { # Security Command Center managed properties. These properties are managed by # Security Command Center managed properties. These properties are managed by
               # Security Command Center and cannot be modified by the user.
               # Security Command Center and cannot be modified by the user.
-            &quot;resourceParent&quot;: &quot;A String&quot;, # The full resource name of the immediate parent of the resource. See:
-                # https://cloud.google.com/apis/design/resource_names#full_resource_name
             &quot;resourceName&quot;: &quot;A String&quot;, # Immutable. The full resource name of the Google Cloud resource this asset
                 # represents. This field is immutable after create time. See:
                 # https://cloud.google.com/apis/design/resource_names#full_resource_name
-            &quot;resourceType&quot;: &quot;A String&quot;, # The type of the Google Cloud resource. Examples include: APPLICATION,
-                # PROJECT, and ORGANIZATION. This is a case insensitive field defined by
-                # Security Command Center and/or the producer of the resource and is
-                # immutable after create time.
             &quot;resourceProject&quot;: &quot;A String&quot;, # The full resource name of the project the resource belongs to. See:
                 # https://cloud.google.com/apis/design/resource_names#full_resource_name
             &quot;resourceOwners&quot;: [ # Owners of the Google Cloud resource.
               &quot;A String&quot;,
             ],
+            &quot;resourceType&quot;: &quot;A String&quot;, # The type of the Google Cloud resource. Examples include: APPLICATION,
+                # PROJECT, and ORGANIZATION. This is a case insensitive field defined by
+                # Security Command Center and/or the producer of the resource and is
+                # immutable after create time.
+            &quot;resourceParent&quot;: &quot;A String&quot;, # The full resource name of the immediate parent of the resource. See:
+                # https://cloud.google.com/apis/design/resource_names#full_resource_name
           },
+          &quot;name&quot;: &quot;A String&quot;, # The relative resource name of this asset. See:
+              # https://cloud.google.com/apis/design/resource_names#relative_resource_name
+              # Example:
+              # &quot;organizations/{organization_id}/assets/{asset_id}&quot;.
           &quot;createTime&quot;: &quot;A String&quot;, # The time at which the asset was created in Security Command Center.
-          &quot;securityMarks&quot;: { # User specified security marks that are attached to the parent Security # User specified security marks. These marks are entirely managed by the user
-              # and come from the SecurityMarks resource that belongs to the asset.
-              # Command Center resource. Security marks are scoped within a Security Command
-              # Center organization -- they can be modified and viewed by all users who have
-              # proper permissions on the organization.
-            &quot;marks&quot;: { # Mutable user specified security marks belonging to the parent resource.
-                # Constraints are as follows:
-                #
-                #   * Keys and values are treated as case insensitive
-                #   * Keys must be between 1 - 256 characters (inclusive)
-                #   * Keys must be letters, numbers, underscores, or dashes
-                #   * Values have leading and trailing whitespace trimmed, remaining
-                #     characters must be between 1 - 4096 characters (inclusive)
-              &quot;a_key&quot;: &quot;A String&quot;,
-            },
-            &quot;name&quot;: &quot;A String&quot;, # The relative resource name of the SecurityMarks. See:
-                # https://cloud.google.com/apis/design/resource_names#relative_resource_name
-                # Examples:
-                # &quot;organizations/{organization_id}/assets/{asset_id}/securityMarks&quot;
-                # &quot;organizations/{organization_id}/sources/{source_id}/findings/{finding_id}/securityMarks&quot;.
-          },
         },
         &quot;state&quot;: &quot;A String&quot;, # State of the asset.
       },
     ],
+    &quot;totalSize&quot;: 42, # The total number of assets matching the query.
+    &quot;readTime&quot;: &quot;A String&quot;, # Time used for executing the list request.
     &quot;nextPageToken&quot;: &quot;A String&quot;, # Token to retrieve the next page of results, or empty if there are no more
         # results.
-    &quot;readTime&quot;: &quot;A String&quot;, # Time used for executing the list request.
-    &quot;totalSize&quot;: 42, # The total number of assets matching the query.
   }</pre>
 </div>
 
@@ -425,9 +425,15 @@ Returns:
         # `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
-        # originally returns it. If you use the default HTTP mapping, the
-        # `name` should be a resource name ending with `operations/{unique_id}`.
+    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
+        # contains progress information and common metadata such as create time.
+        # Some services might not provide such metadata.  Any method that returns a
+        # long-running operation should document the metadata type, if any.
+      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+    },
+    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
     &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
         # different programming environments, including REST APIs and RPC APIs. It is
         # used by [gRPC](https://github.com/grpc). Each `Status` message contains
@@ -446,20 +452,14 @@ Returns:
         },
       ],
     },
-    &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
-        # contains progress information and common metadata such as create time.
-        # Some services might not provide such metadata.  Any method that returns a
-        # long-running operation should document the metadata type, if any.
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-    },
-    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
-        # If `true`, the operation is completed, and either `error` or `response` is
-        # available.
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="updateSecurityMarks">updateSecurityMarks(name, body=None, updateMask=None, startTime=None, x__xgafv=None)</code>
+    <code class="details" id="updateSecurityMarks">updateSecurityMarks(name, body=None, startTime=None, updateMask=None, x__xgafv=None)</code>
   <pre>Updates security marks.
 
 Args:
@@ -472,43 +472,12 @@ Examples:
     The object takes the form of:
 
 { # User specified security marks that are attached to the parent Security
-    # Command Center resource. Security marks are scoped within a Security Command
-    # Center organization -- they can be modified and viewed by all users who have
-    # proper permissions on the organization.
-  &quot;marks&quot;: { # Mutable user specified security marks belonging to the parent resource.
-      # Constraints are as follows:
-      # 
-      #   * Keys and values are treated as case insensitive
-      #   * Keys must be between 1 - 256 characters (inclusive)
-      #   * Keys must be letters, numbers, underscores, or dashes
-      #   * Values have leading and trailing whitespace trimmed, remaining
-      #     characters must be between 1 - 4096 characters (inclusive)
-    &quot;a_key&quot;: &quot;A String&quot;,
-  },
-  &quot;name&quot;: &quot;A String&quot;, # The relative resource name of the SecurityMarks. See:
-      # https://cloud.google.com/apis/design/resource_names#relative_resource_name
-      # Examples:
-      # &quot;organizations/{organization_id}/assets/{asset_id}/securityMarks&quot;
-      # &quot;organizations/{organization_id}/sources/{source_id}/findings/{finding_id}/securityMarks&quot;.
-}
-
-  updateMask: string, The FieldMask to use when updating the security marks resource.
-  startTime: string, The time at which the updated SecurityMarks take effect.
-  x__xgafv: string, V1 error format.
-    Allowed values
-      1 - v1 error format
-      2 - v2 error format
-
-Returns:
-  An object of the form:
-
-    { # User specified security marks that are attached to the parent Security
       # Command Center resource. Security marks are scoped within a Security Command
       # Center organization -- they can be modified and viewed by all users who have
       # proper permissions on the organization.
     &quot;marks&quot;: { # Mutable user specified security marks belonging to the parent resource.
         # Constraints are as follows:
-        #
+        # 
         #   * Keys and values are treated as case insensitive
         #   * Keys must be between 1 - 256 characters (inclusive)
         #   * Keys must be letters, numbers, underscores, or dashes
@@ -521,7 +490,38 @@ Returns:
         # Examples:
         # &quot;organizations/{organization_id}/assets/{asset_id}/securityMarks&quot;
         # &quot;organizations/{organization_id}/sources/{source_id}/findings/{finding_id}/securityMarks&quot;.
-  }</pre>
+  }
+
+  startTime: string, The time at which the updated SecurityMarks take effect.
+  updateMask: string, The FieldMask to use when updating the security marks resource.
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # User specified security marks that are attached to the parent Security
+        # Command Center resource. Security marks are scoped within a Security Command
+        # Center organization -- they can be modified and viewed by all users who have
+        # proper permissions on the organization.
+      &quot;marks&quot;: { # Mutable user specified security marks belonging to the parent resource.
+          # Constraints are as follows:
+          #
+          #   * Keys and values are treated as case insensitive
+          #   * Keys must be between 1 - 256 characters (inclusive)
+          #   * Keys must be letters, numbers, underscores, or dashes
+          #   * Values have leading and trailing whitespace trimmed, remaining
+          #     characters must be between 1 - 4096 characters (inclusive)
+        &quot;a_key&quot;: &quot;A String&quot;,
+      },
+      &quot;name&quot;: &quot;A String&quot;, # The relative resource name of the SecurityMarks. See:
+          # https://cloud.google.com/apis/design/resource_names#relative_resource_name
+          # Examples:
+          # &quot;organizations/{organization_id}/assets/{asset_id}/securityMarks&quot;
+          # &quot;organizations/{organization_id}/sources/{source_id}/findings/{finding_id}/securityMarks&quot;.
+    }</pre>
 </div>
 
 </body></html>
