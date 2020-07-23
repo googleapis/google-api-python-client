@@ -101,7 +101,7 @@ h1, h2, h3 {
   <code><a href="#import_">import_(name, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Imports data into the DICOM store by copying it from the specified source.</p>
 <p class="toc_element">
-  <code><a href="#list">list(parent, filter=None, pageToken=None, pageSize=None, x__xgafv=None)</a></code></p>
+  <code><a href="#list">list(parent, pageToken=None, filter=None, pageSize=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists the DICOM stores in the given dataset.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -152,6 +152,8 @@ Args:
       # No more than 64 labels can be associated with a given store.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
+  &quot;name&quot;: &quot;A String&quot;, # Resource name of the DICOM store, of the form
+      # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
   &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # Notification destination for new DICOM instances.
       # Supplied by the client.
     &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
@@ -172,8 +174,6 @@ Args:
         # logs](/healthcare/docs/how-tos/logging)). If the number of
         # errors exceeds a certain rate, some aren&#x27;t submitted.
   },
-  &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the DICOM store, of the form
-      # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
 }
 
   dicomStoreId: string, The ID of the DICOM store that is being created.
@@ -201,6 +201,8 @@ Returns:
         # No more than 64 labels can be associated with a given store.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
+    &quot;name&quot;: &quot;A String&quot;, # Resource name of the DICOM store, of the form
+        # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
     &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # Notification destination for new DICOM instances.
         # Supplied by the client.
       &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
@@ -221,8 +223,6 @@ Returns:
           # logs](/healthcare/docs/how-tos/logging)). If the number of
           # errors exceeds a certain rate, some aren&#x27;t submitted.
     },
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the DICOM store, of the form
-        # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
   }</pre>
 </div>
 
@@ -251,91 +251,11 @@ Args:
     The object takes the form of:
 
 { # Creates a new DICOM store with sensitive information de-identified.
-    &quot;destinationStore&quot;: &quot;A String&quot;, # The name of the DICOM store to create and write the redacted data to.
-        # For example,
-        # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
-        # 
-        #  * The destination dataset must exist.
-        #  * The source dataset and destination dataset must both reside in the same
-        #    project. De-identifying data across multiple projects is not supported.
-        #  * The destination DICOM store must not exist.
-        #  * The caller must have the necessary permissions to create the destination
-        #    DICOM store.
-    &quot;filterConfig&quot;: { # Specifies the filter configuration for DICOM resources. # Filter configuration.
-      &quot;resourcePathsGcsUri&quot;: &quot;A String&quot;, # The Cloud Storage location of the filter configuration file.
-          # The `gcs_uri` must be in the format `gs://bucket/path/to/object`.
-          # The filter configuration file must contain a list of resource paths
-          # separated by newline characters (\n or \r\n). Each resource path
-          # must be in the format
-          # &quot;/studies/{studyUID}[/series/{seriesUID}[/instances/{instanceUID}]]&quot;
-          #
-          # The Cloud Healthcare API service account must have the
-          # `roles/storage.objectViewer` Cloud IAM role for this Cloud Storage
-          # location.
-    },
     &quot;config&quot;: { # Configures de-id options specific to different types of content. # De-identify configuration.
         # Each submessage customizes the handling of an
         # https://tools.ietf.org/html/rfc6838 media type or subtype. Configs are
         # applied in a nested manner at runtime.
-      &quot;text&quot;: { # Configures de-identification of text wherever it is found in the
-          # source_dataset.
-        &quot;transformations&quot;: [ # The transformations to apply to the detected data.
-          { # A transformation to apply to text that is identified as a specific
-              # info_type.
-            &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is # Config for date shift.
-                # consistent for a given patient and crypto key combination.
-              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this
-                  # key and the patient ID. A default key is generated for each
-                  # Deidentify operation and is used wherever crypto_key is not specified.
-            },
-            &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
-              &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
-            },
-            &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. # Config for text redaction.
-                # For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot;
-            },
-            &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, this
-                # transformation becomes the default transformation, and is used for any
-                # info_type that is not specified in another transformation.
-              &quot;A String&quot;,
-            ],
-            &quot;replaceWithInfoTypeConfig&quot;: { # When using the # Config for replace with InfoType.
-                # INSPECT_AND_TRANSFORM
-                # action, each match is replaced with the name of the info_type. For example,
-                # &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The
-                # TRANSFORM
-                # action is equivalent to redacting.
-            },
-            &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. # Config for crypto hash.
-                # Uses SHA-256.
-                # Outputs a base64-encoded representation of the hashed output.
-                # For example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`.
-              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this
-                  # key. A default key is generated for each Deidentify operation and is used
-                  # wherever crypto_key is not specified.
-            },
-          },
-        ],
-      },
       &quot;dicom&quot;: { # Specifies the parameters needed for de-identification of DICOM stores. # Configures de-id of application/DICOM content.
-        &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
-        &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID,
-            # SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched.
-            # The Cloud Healthcare API regenerates these UIDs by default based on the
-            # DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly
-            # to an individual out of context, given access to the original images, or
-            # to a database of the original images containing the UIDs, it would be
-            # possible to recover the individual&#x27;s identity.&quot;
-            # http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
-        &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
-          &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta
-              # Elements, or Directory Structuring Elements, as defined at:
-              # http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,.
-              # They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example, &quot;PatientID&quot;,
-              # &quot;00100010&quot;.
-            &quot;A String&quot;,
-          ],
-        },
         &quot;removeList&quot;: { # List of tags to be filtered. # List of tags to remove. Keep all other tags.
           &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta
               # Elements, or Directory Structuring Elements, as defined at:
@@ -345,6 +265,28 @@ Args:
             &quot;A String&quot;,
           ],
         },
+        &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
+          &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta
+              # Elements, or Directory Structuring Elements, as defined at:
+              # http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,.
+              # They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example, &quot;PatientID&quot;,
+              # &quot;00100010&quot;.
+            &quot;A String&quot;,
+          ],
+        },
+        &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
+        &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID,
+            # SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched.
+            # The Cloud Healthcare API regenerates these UIDs by default based on the
+            # DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly
+            # to an individual out of context, given access to the original images, or
+            # to a database of the original images containing the UIDs, it would be
+            # possible to recover the individual&#x27;s identity.&quot;
+            # http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
+      },
+      &quot;image&quot;: { # Specifies how to handle de-identification of image pixels. # Configures de-identification of image pixels wherever they are found in the
+          # source_dataset.
+        &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
       },
       &quot;fhir&quot;: { # Specifies how to handle de-identification of a FHIR store. # Configures de-id of application/FHIR content.
         &quot;fieldMetadataList&quot;: [ # Specifies FHIR paths to match and how to transform them. Any field that
@@ -375,10 +317,86 @@ Args:
           },
         ],
       },
-      &quot;image&quot;: { # Specifies how to handle de-identification of image pixels. # Configures de-identification of image pixels wherever they are found in the
-          # source_dataset.
-        &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
+      &quot;annotation&quot;: { # Specifies how to store annotations during de-identification operation. # Configures how annotations, meaning that the location and infoType
+          # of sensitive information findings, are created during de-identification.
+          # If unspecified, no annotations are created.
+        &quot;storeQuote&quot;: True or False, # If set to true, the sensitive texts are included in
+            # SensitiveTextAnnotation
+            # of Annotation.
+        &quot;annotationStoreName&quot;: &quot;A String&quot;, # The name of the annotation store, in the form
+            # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/annotationStores/{annotation_store_id}`).
+            #
+            #  * The destination annotation store must be in the same project as the
+            #    source data. De-identifying data across multiple projects is not
+            #    supported.
+            #  * The destination annotation store must exist when using
+            #    DeidentifyDicomStore or
+            #    DeidentifyFhirStore.
+            #    DeidentifyDataset
+            #    automatically creates the destination annotation store.
       },
+      &quot;text&quot;: { # Configures de-identification of text wherever it is found in the
+          # source_dataset.
+        &quot;transformations&quot;: [ # The transformations to apply to the detected data.
+          { # A transformation to apply to text that is identified as a specific
+              # info_type.
+            &quot;replaceWithInfoTypeConfig&quot;: { # When using the # Config for replace with InfoType.
+                # INSPECT_AND_TRANSFORM
+                # action, each match is replaced with the name of the info_type. For example,
+                # &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The
+                # TRANSFORM
+                # action is equivalent to redacting.
+            },
+            &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
+              &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
+            },
+            &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. # Config for text redaction.
+                # For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot;
+            },
+            &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, this
+                # transformation becomes the default transformation, and is used for any
+                # info_type that is not specified in another transformation.
+              &quot;A String&quot;,
+            ],
+            &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is # Config for date shift.
+                # consistent for a given patient and crypto key combination.
+              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this
+                  # key and the patient ID. A default key is generated for each
+                  # Deidentify operation and is used wherever crypto_key is not specified.
+            },
+            &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. # Config for crypto hash.
+                # Uses SHA-256.
+                # Outputs a base64-encoded representation of the hashed output.
+                # For example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`.
+              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this
+                  # key. A default key is generated for each Deidentify operation and is used
+                  # wherever crypto_key is not specified.
+            },
+          },
+        ],
+      },
+    },
+    &quot;destinationStore&quot;: &quot;A String&quot;, # The name of the DICOM store to create and write the redacted data to.
+        # For example,
+        # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
+        # 
+        #  * The destination dataset must exist.
+        #  * The source dataset and destination dataset must both reside in the same
+        #    project. De-identifying data across multiple projects is not supported.
+        #  * The destination DICOM store must not exist.
+        #  * The caller must have the necessary permissions to create the destination
+        #    DICOM store.
+    &quot;filterConfig&quot;: { # Specifies the filter configuration for DICOM resources. # Filter configuration.
+      &quot;resourcePathsGcsUri&quot;: &quot;A String&quot;, # The Cloud Storage location of the filter configuration file.
+          # The `gcs_uri` must be in the format `gs://bucket/path/to/object`.
+          # The filter configuration file must contain a list of resource paths
+          # separated by newline characters (\n or \r\n). Each resource path
+          # must be in the format
+          # &quot;/studies/{studyUID}[/series/{seriesUID}[/instances/{instanceUID}]]&quot;
+          #
+          # The Cloud Healthcare API service account must have the
+          # `roles/storage.objectViewer` Cloud IAM role for this Cloud Storage
+          # location.
     },
   }
 
@@ -392,15 +410,36 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
+    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
+    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
+        #
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
+      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+    },
     &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
         # contains progress information and common metadata such as create time.
         # Some services might not provide such metadata.  Any method that returns a
         # long-running operation should document the metadata type, if any.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
-    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
-        # If `true`, the operation is completed, and either `error` or `response` is
-        # available.
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
     &quot;response&quot;: { # The normal response of the operation in case of success.  If the original
         # method returns no data on success, such as `Delete`, the response is
         # `google.protobuf.Empty`.  If the original method is standard
@@ -410,27 +449,6 @@ Returns:
         # is `TakeSnapshot()`, the inferred response type is
         # `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-    },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
-        # originally returns it. If you use the default HTTP mapping, the
-        # `name` should be a resource name ending with `operations/{unique_id}`.
-    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
-        # different programming environments, including REST APIs and RPC APIs. It is
-        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
-        # three pieces of data: error code, error message, and error details.
-        #
-        # You can find out more about this error model and how to work with it in the
-        # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
-          # message types for APIs to use.
-        {
-          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-        },
-      ],
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
     },
   }</pre>
 </div>
@@ -559,15 +577,36 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
+    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
+    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
+        #
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
+      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+    },
     &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
         # contains progress information and common metadata such as create time.
         # Some services might not provide such metadata.  Any method that returns a
         # long-running operation should document the metadata type, if any.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
-    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
-        # If `true`, the operation is completed, and either `error` or `response` is
-        # available.
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
     &quot;response&quot;: { # The normal response of the operation in case of success.  If the original
         # method returns no data on success, such as `Delete`, the response is
         # `google.protobuf.Empty`.  If the original method is standard
@@ -577,27 +616,6 @@ Returns:
         # is `TakeSnapshot()`, the inferred response type is
         # `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-    },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
-        # originally returns it. If you use the default HTTP mapping, the
-        # `name` should be a resource name ending with `operations/{unique_id}`.
-    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
-        # different programming environments, including REST APIs and RPC APIs. It is
-        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
-        # three pieces of data: error code, error message, and error details.
-        #
-        # You can find out more about this error model and how to work with it in the
-        # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
-          # message types for APIs to use.
-        {
-          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-        },
-      ],
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
     },
   }</pre>
 </div>
@@ -631,6 +649,8 @@ Returns:
         # No more than 64 labels can be associated with a given store.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
+    &quot;name&quot;: &quot;A String&quot;, # Resource name of the DICOM store, of the form
+        # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
     &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # Notification destination for new DICOM instances.
         # Supplied by the client.
       &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
@@ -651,8 +671,6 @@ Returns:
           # logs](/healthcare/docs/how-tos/logging)). If the number of
           # errors exceeds a certain rate, some aren&#x27;t submitted.
     },
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the DICOM store, of the form
-        # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
   }</pre>
 </div>
 
@@ -752,127 +770,6 @@ Returns:
       #
       # For a description of IAM and its features, see the
       # [IAM documentation](https://cloud.google.com/iam/docs/).
-    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
-        #
-        # **Important:** If you use IAM Conditions, you must include the `etag` field
-        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-        # you to overwrite a version `3` policy with a version `1` policy, and all of
-        # the conditions in the version `3` policy are lost.
-    &quot;version&quot;: 42, # Specifies the format of the policy.
-        #
-        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
-        # are rejected.
-        #
-        # Any operation that affects conditional role bindings must specify version
-        # `3`. This requirement applies to the following operations:
-        #
-        # * Getting a policy that includes a conditional role binding
-        # * Adding a conditional role binding to a policy
-        # * Changing a conditional role binding in a policy
-        # * Removing any role binding, with or without a condition, from a policy
-        #   that includes conditions
-        #
-        # **Important:** If you use IAM Conditions, you must include the `etag` field
-        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-        # you to overwrite a version `3` policy with a version `1` policy, and all of
-        # the conditions in the version `3` policy are lost.
-        #
-        # If a policy does not include any conditions, operations on that policy may
-        # specify any valid version or leave the field unset.
-        #
-        # To learn which resources support conditions in their IAM policies, see the
-        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
-    &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
-      { # Specifies the audit configuration for a service.
-          # The configuration determines which permission types are logged, and what
-          # identities, if any, are exempted from logging.
-          # An AuditConfig must have one or more AuditLogConfigs.
-          #
-          # If there are AuditConfigs for both `allServices` and a specific service,
-          # the union of the two AuditConfigs is used for that service: the log_types
-          # specified in each AuditConfig are enabled, and the exempted_members in each
-          # AuditLogConfig are exempted.
-          #
-          # Example Policy with multiple AuditConfigs:
-          #
-          #     {
-          #       &quot;audit_configs&quot;: [
-          #         {
-          #           &quot;service&quot;: &quot;allServices&quot;
-          #           &quot;audit_log_configs&quot;: [
-          #             {
-          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
-          #               &quot;exempted_members&quot;: [
-          #                 &quot;user:jose@example.com&quot;
-          #               ]
-          #             },
-          #             {
-          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
-          #             },
-          #             {
-          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
-          #             }
-          #           ]
-          #         },
-          #         {
-          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
-          #           &quot;audit_log_configs&quot;: [
-          #             {
-          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
-          #             },
-          #             {
-          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
-          #               &quot;exempted_members&quot;: [
-          #                 &quot;user:aliya@example.com&quot;
-          #               ]
-          #             }
-          #           ]
-          #         }
-          #       ]
-          #     }
-          #
-          # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
-          # logging. It also exempts jose@example.com from DATA_READ logging, and
-          # aliya@example.com from DATA_WRITE logging.
-        &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
-          { # Provides the configuration for logging a type of permissions.
-              # Example:
-              #
-              #     {
-              #       &quot;audit_log_configs&quot;: [
-              #         {
-              #           &quot;log_type&quot;: &quot;DATA_READ&quot;,
-              #           &quot;exempted_members&quot;: [
-              #             &quot;user:jose@example.com&quot;
-              #           ]
-              #         },
-              #         {
-              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
-              #         }
-              #       ]
-              #     }
-              #
-              # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting
-              # jose@example.com from DATA_READ logging.
-            &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of
-                # permission.
-                # Follows the same format of Binding.members.
-              &quot;A String&quot;,
-            ],
-            &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
-          },
-        ],
-        &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
-            # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
-            # `allServices` is a special value that covers all services.
-      },
-    ],
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
         # `condition` that determines how and when the `bindings` are applied. Each
         # of the `bindings` must contain at least one member.
@@ -919,15 +816,15 @@ Returns:
             # The exact variables and functions that may be referenced within an expression
             # are determined by the service that evaluates it. See the service
             # documentation for additional information.
-          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-              # syntax.
           &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
               # its purpose. This can be used e.g. in UIs which allow to enter the
               # expression.
-          &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
-              # reporting, e.g. a file name and a position in the file.
           &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
               # describes the expression, e.g. when hovered over it in a UI.
+          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+              # syntax.
+          &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
+              # reporting, e.g. a file name and a position in the file.
         },
         &quot;members&quot;: [ # Specifies the identities requesting access for a Cloud Platform resource.
             # `members` can have the following values:
@@ -978,6 +875,127 @@ Returns:
             # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
       },
     ],
+    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # **Important:** If you use IAM Conditions, you must include the `etag` field
+        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+        # you to overwrite a version `3` policy with a version `1` policy, and all of
+        # the conditions in the version `3` policy are lost.
+    &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
+      { # Specifies the audit configuration for a service.
+          # The configuration determines which permission types are logged, and what
+          # identities, if any, are exempted from logging.
+          # An AuditConfig must have one or more AuditLogConfigs.
+          #
+          # If there are AuditConfigs for both `allServices` and a specific service,
+          # the union of the two AuditConfigs is used for that service: the log_types
+          # specified in each AuditConfig are enabled, and the exempted_members in each
+          # AuditLogConfig are exempted.
+          #
+          # Example Policy with multiple AuditConfigs:
+          #
+          #     {
+          #       &quot;audit_configs&quot;: [
+          #         {
+          #           &quot;service&quot;: &quot;allServices&quot;,
+          #           &quot;audit_log_configs&quot;: [
+          #             {
+          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+          #               &quot;exempted_members&quot;: [
+          #                 &quot;user:jose@example.com&quot;
+          #               ]
+          #             },
+          #             {
+          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
+          #             },
+          #             {
+          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
+          #             }
+          #           ]
+          #         },
+          #         {
+          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
+          #           &quot;audit_log_configs&quot;: [
+          #             {
+          #               &quot;log_type&quot;: &quot;DATA_READ&quot;
+          #             },
+          #             {
+          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+          #               &quot;exempted_members&quot;: [
+          #                 &quot;user:aliya@example.com&quot;
+          #               ]
+          #             }
+          #           ]
+          #         }
+          #       ]
+          #     }
+          #
+          # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
+          # logging. It also exempts jose@example.com from DATA_READ logging, and
+          # aliya@example.com from DATA_WRITE logging.
+        &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
+          { # Provides the configuration for logging a type of permissions.
+              # Example:
+              #
+              #     {
+              #       &quot;audit_log_configs&quot;: [
+              #         {
+              #           &quot;log_type&quot;: &quot;DATA_READ&quot;,
+              #           &quot;exempted_members&quot;: [
+              #             &quot;user:jose@example.com&quot;
+              #           ]
+              #         },
+              #         {
+              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
+              #         }
+              #       ]
+              #     }
+              #
+              # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting
+              # jose@example.com from DATA_READ logging.
+            &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
+            &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of
+                # permission.
+                # Follows the same format of Binding.members.
+              &quot;A String&quot;,
+            ],
+          },
+        ],
+        &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
+            # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
+            # `allServices` is a special value that covers all services.
+      },
+    ],
+    &quot;version&quot;: 42, # Specifies the format of the policy.
+        #
+        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
+        # are rejected.
+        #
+        # Any operation that affects conditional role bindings must specify version
+        # `3`. This requirement applies to the following operations:
+        #
+        # * Getting a policy that includes a conditional role binding
+        # * Adding a conditional role binding to a policy
+        # * Changing a conditional role binding in a policy
+        # * Removing any role binding, with or without a condition, from a policy
+        #   that includes conditions
+        #
+        # **Important:** If you use IAM Conditions, you must include the `etag` field
+        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+        # you to overwrite a version `3` policy with a version `1` policy, and all of
+        # the conditions in the version `3` policy are lost.
+        #
+        # If a policy does not include any conditions, operations on that policy may
+        # specify any valid version or leave the field unset.
+        #
+        # To learn which resources support conditions in their IAM policies, see the
+        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
   }</pre>
 </div>
 
@@ -1035,15 +1053,36 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
+    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
+    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
+        #
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
+      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+    },
     &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
         # contains progress information and common metadata such as create time.
         # Some services might not provide such metadata.  Any method that returns a
         # long-running operation should document the metadata type, if any.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
-    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
-        # If `true`, the operation is completed, and either `error` or `response` is
-        # available.
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
     &quot;response&quot;: { # The normal response of the operation in case of success.  If the original
         # method returns no data on success, such as `Delete`, the response is
         # `google.protobuf.Empty`.  If the original method is standard
@@ -1054,40 +1093,19 @@ Returns:
         # `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
-        # originally returns it. If you use the default HTTP mapping, the
-        # `name` should be a resource name ending with `operations/{unique_id}`.
-    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
-        # different programming environments, including REST APIs and RPC APIs. It is
-        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
-        # three pieces of data: error code, error message, and error details.
-        #
-        # You can find out more about this error model and how to work with it in the
-        # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
-          # message types for APIs to use.
-        {
-          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-        },
-      ],
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
-    },
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(parent, filter=None, pageToken=None, pageSize=None, x__xgafv=None)</code>
+    <code class="details" id="list">list(parent, pageToken=None, filter=None, pageSize=None, x__xgafv=None)</code>
   <pre>Lists the DICOM stores in the given dataset.
 
 Args:
   parent: string, Name of the dataset. (required)
+  pageToken: string, The next_page_token value returned from the previous List request, if any.
   filter: string, Restricts stores returned to those matching a filter. Syntax:
 https://cloud.google.com/appengine/docs/standard/python/search/query_strings
 Only filtering on labels is supported. For example, `labels.key=value`.
-  pageToken: string, The next_page_token value returned from the previous List request, if any.
   pageSize: integer, Limit on the number of DICOM stores to return in a single response.
 If zero the default page size of 100 is used.
   x__xgafv: string, V1 error format.
@@ -1099,6 +1117,8 @@ Returns:
   An object of the form:
 
     { # Lists the DICOM stores in the given dataset.
+    &quot;nextPageToken&quot;: &quot;A String&quot;, # Token to retrieve the next page of results or empty if there are no more
+        # results in the list.
     &quot;dicomStores&quot;: [ # The returned DICOM stores. Won&#x27;t be more DICOM stores than the value of
         # page_size in the request.
       { # Represents a DICOM store.
@@ -1116,6 +1136,8 @@ Returns:
             # No more than 64 labels can be associated with a given store.
           &quot;a_key&quot;: &quot;A String&quot;,
         },
+        &quot;name&quot;: &quot;A String&quot;, # Resource name of the DICOM store, of the form
+            # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
         &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # Notification destination for new DICOM instances.
             # Supplied by the client.
           &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
@@ -1136,12 +1158,8 @@ Returns:
               # logs](/healthcare/docs/how-tos/logging)). If the number of
               # errors exceeds a certain rate, some aren&#x27;t submitted.
         },
-        &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the DICOM store, of the form
-            # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
       },
     ],
-    &quot;nextPageToken&quot;: &quot;A String&quot;, # Token to retrieve the next page of results or empty if there are no more
-        # results in the list.
   }</pre>
 </div>
 
@@ -1164,7 +1182,7 @@ Returns:
   <pre>Updates the specified DICOM store.
 
 Args:
-  name: string, Output only. Resource name of the DICOM store, of the form
+  name: string, Resource name of the DICOM store, of the form
 `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`. (required)
   body: object, The request body.
     The object takes the form of:
@@ -1184,6 +1202,8 @@ Args:
       # No more than 64 labels can be associated with a given store.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
+  &quot;name&quot;: &quot;A String&quot;, # Resource name of the DICOM store, of the form
+      # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
   &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # Notification destination for new DICOM instances.
       # Supplied by the client.
     &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
@@ -1204,8 +1224,6 @@ Args:
         # logs](/healthcare/docs/how-tos/logging)). If the number of
         # errors exceeds a certain rate, some aren&#x27;t submitted.
   },
-  &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the DICOM store, of the form
-      # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
 }
 
   updateMask: string, The update mask applies to the resource. For the `FieldMask` definition,
@@ -1234,6 +1252,8 @@ Returns:
         # No more than 64 labels can be associated with a given store.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
+    &quot;name&quot;: &quot;A String&quot;, # Resource name of the DICOM store, of the form
+        # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
     &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # Notification destination for new DICOM instances.
         # Supplied by the client.
       &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
@@ -1254,8 +1274,6 @@ Returns:
           # logs](/healthcare/docs/how-tos/logging)). If the number of
           # errors exceeds a certain rate, some aren&#x27;t submitted.
     },
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the DICOM store, of the form
-        # `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/dicomStores/{dicom_store_id}`.
   }</pre>
 </div>
 
@@ -1279,53 +1297,53 @@ Returns:
   An object of the form:
 
     { # Message that represents an arbitrary HTTP body. It should only be used for
-      # payload formats that can&#x27;t be represented as JSON, such as raw binary or
-      # an HTML page.
-      #
-      #
-      # This message can be used both in streaming and non-streaming API methods in
-      # the request as well as the response.
-      #
-      # It can be used as a top-level request field, which is convenient if one
-      # wants to extract parameters from either the URL or HTTP template into the
-      # request fields and also want access to the raw HTTP body.
-      #
-      # Example:
-      #
-      #     message GetResourceRequest {
-      #       // A unique request id.
-      #       string request_id = 1;
-      #
-      #       // The raw HTTP body is bound to this field.
-      #       google.api.HttpBody http_body = 2;
-      #     }
-      #
-      #     service ResourceService {
-      #       rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);
-      #       rpc UpdateResource(google.api.HttpBody) returns
-      #       (google.protobuf.Empty);
-      #     }
-      #
-      # Example with streaming methods:
-      #
-      #     service CaldavService {
-      #       rpc GetCalendar(stream google.api.HttpBody)
-      #         returns (stream google.api.HttpBody);
-      #       rpc UpdateCalendar(stream google.api.HttpBody)
-      #         returns (stream google.api.HttpBody);
-      #     }
-      #
-      # Use of this type only changes how the request and response bodies are
-      # handled, all other features will continue to work unchanged.
-    &quot;data&quot;: &quot;A String&quot;, # The HTTP request/response body as raw binary.
-    &quot;contentType&quot;: &quot;A String&quot;, # The HTTP Content-Type header value specifying the content type of the body.
-    &quot;extensions&quot;: [ # Application specific response metadata. Must be set in the first response
-        # for streaming APIs.
-      {
-        &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-      },
-    ],
-  }</pre>
+        # payload formats that can&#x27;t be represented as JSON, such as raw binary or
+        # an HTML page.
+        #
+        #
+        # This message can be used both in streaming and non-streaming API methods in
+        # the request as well as the response.
+        #
+        # It can be used as a top-level request field, which is convenient if one
+        # wants to extract parameters from either the URL or HTTP template into the
+        # request fields and also want access to the raw HTTP body.
+        #
+        # Example:
+        #
+        #     message GetResourceRequest {
+        #       // A unique request id.
+        #       string request_id = 1;
+        #
+        #       // The raw HTTP body is bound to this field.
+        #       google.api.HttpBody http_body = 2;
+        #     }
+        #
+        #     service ResourceService {
+        #       rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);
+        #       rpc UpdateResource(google.api.HttpBody) returns
+        #       (google.protobuf.Empty);
+        #     }
+        #
+        # Example with streaming methods:
+        #
+        #     service CaldavService {
+        #       rpc GetCalendar(stream google.api.HttpBody)
+        #         returns (stream google.api.HttpBody);
+        #       rpc UpdateCalendar(stream google.api.HttpBody)
+        #         returns (stream google.api.HttpBody);
+        #     }
+        #
+        # Use of this type only changes how the request and response bodies are
+        # handled, all other features will continue to work unchanged.
+      &quot;contentType&quot;: &quot;A String&quot;, # The HTTP Content-Type header value specifying the content type of the body.
+      &quot;data&quot;: &quot;A String&quot;, # The HTTP request/response body as raw binary.
+      &quot;extensions&quot;: [ # Application specific response metadata. Must be set in the first response
+          # for streaming APIs.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+    }</pre>
 </div>
 
 <div class="method">
@@ -1347,53 +1365,53 @@ Returns:
   An object of the form:
 
     { # Message that represents an arbitrary HTTP body. It should only be used for
-      # payload formats that can&#x27;t be represented as JSON, such as raw binary or
-      # an HTML page.
-      #
-      #
-      # This message can be used both in streaming and non-streaming API methods in
-      # the request as well as the response.
-      #
-      # It can be used as a top-level request field, which is convenient if one
-      # wants to extract parameters from either the URL or HTTP template into the
-      # request fields and also want access to the raw HTTP body.
-      #
-      # Example:
-      #
-      #     message GetResourceRequest {
-      #       // A unique request id.
-      #       string request_id = 1;
-      #
-      #       // The raw HTTP body is bound to this field.
-      #       google.api.HttpBody http_body = 2;
-      #     }
-      #
-      #     service ResourceService {
-      #       rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);
-      #       rpc UpdateResource(google.api.HttpBody) returns
-      #       (google.protobuf.Empty);
-      #     }
-      #
-      # Example with streaming methods:
-      #
-      #     service CaldavService {
-      #       rpc GetCalendar(stream google.api.HttpBody)
-      #         returns (stream google.api.HttpBody);
-      #       rpc UpdateCalendar(stream google.api.HttpBody)
-      #         returns (stream google.api.HttpBody);
-      #     }
-      #
-      # Use of this type only changes how the request and response bodies are
-      # handled, all other features will continue to work unchanged.
-    &quot;data&quot;: &quot;A String&quot;, # The HTTP request/response body as raw binary.
-    &quot;contentType&quot;: &quot;A String&quot;, # The HTTP Content-Type header value specifying the content type of the body.
-    &quot;extensions&quot;: [ # Application specific response metadata. Must be set in the first response
-        # for streaming APIs.
-      {
-        &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-      },
-    ],
-  }</pre>
+        # payload formats that can&#x27;t be represented as JSON, such as raw binary or
+        # an HTML page.
+        #
+        #
+        # This message can be used both in streaming and non-streaming API methods in
+        # the request as well as the response.
+        #
+        # It can be used as a top-level request field, which is convenient if one
+        # wants to extract parameters from either the URL or HTTP template into the
+        # request fields and also want access to the raw HTTP body.
+        #
+        # Example:
+        #
+        #     message GetResourceRequest {
+        #       // A unique request id.
+        #       string request_id = 1;
+        #
+        #       // The raw HTTP body is bound to this field.
+        #       google.api.HttpBody http_body = 2;
+        #     }
+        #
+        #     service ResourceService {
+        #       rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);
+        #       rpc UpdateResource(google.api.HttpBody) returns
+        #       (google.protobuf.Empty);
+        #     }
+        #
+        # Example with streaming methods:
+        #
+        #     service CaldavService {
+        #       rpc GetCalendar(stream google.api.HttpBody)
+        #         returns (stream google.api.HttpBody);
+        #       rpc UpdateCalendar(stream google.api.HttpBody)
+        #         returns (stream google.api.HttpBody);
+        #     }
+        #
+        # Use of this type only changes how the request and response bodies are
+        # handled, all other features will continue to work unchanged.
+      &quot;contentType&quot;: &quot;A String&quot;, # The HTTP Content-Type header value specifying the content type of the body.
+      &quot;data&quot;: &quot;A String&quot;, # The HTTP request/response body as raw binary.
+      &quot;extensions&quot;: [ # Application specific response metadata. Must be set in the first response
+          # for streaming APIs.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+    }</pre>
 </div>
 
 <div class="method">
@@ -1414,53 +1432,53 @@ Returns:
   An object of the form:
 
     { # Message that represents an arbitrary HTTP body. It should only be used for
-      # payload formats that can&#x27;t be represented as JSON, such as raw binary or
-      # an HTML page.
-      #
-      #
-      # This message can be used both in streaming and non-streaming API methods in
-      # the request as well as the response.
-      #
-      # It can be used as a top-level request field, which is convenient if one
-      # wants to extract parameters from either the URL or HTTP template into the
-      # request fields and also want access to the raw HTTP body.
-      #
-      # Example:
-      #
-      #     message GetResourceRequest {
-      #       // A unique request id.
-      #       string request_id = 1;
-      #
-      #       // The raw HTTP body is bound to this field.
-      #       google.api.HttpBody http_body = 2;
-      #     }
-      #
-      #     service ResourceService {
-      #       rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);
-      #       rpc UpdateResource(google.api.HttpBody) returns
-      #       (google.protobuf.Empty);
-      #     }
-      #
-      # Example with streaming methods:
-      #
-      #     service CaldavService {
-      #       rpc GetCalendar(stream google.api.HttpBody)
-      #         returns (stream google.api.HttpBody);
-      #       rpc UpdateCalendar(stream google.api.HttpBody)
-      #         returns (stream google.api.HttpBody);
-      #     }
-      #
-      # Use of this type only changes how the request and response bodies are
-      # handled, all other features will continue to work unchanged.
-    &quot;data&quot;: &quot;A String&quot;, # The HTTP request/response body as raw binary.
-    &quot;contentType&quot;: &quot;A String&quot;, # The HTTP Content-Type header value specifying the content type of the body.
-    &quot;extensions&quot;: [ # Application specific response metadata. Must be set in the first response
-        # for streaming APIs.
-      {
-        &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-      },
-    ],
-  }</pre>
+        # payload formats that can&#x27;t be represented as JSON, such as raw binary or
+        # an HTML page.
+        #
+        #
+        # This message can be used both in streaming and non-streaming API methods in
+        # the request as well as the response.
+        #
+        # It can be used as a top-level request field, which is convenient if one
+        # wants to extract parameters from either the URL or HTTP template into the
+        # request fields and also want access to the raw HTTP body.
+        #
+        # Example:
+        #
+        #     message GetResourceRequest {
+        #       // A unique request id.
+        #       string request_id = 1;
+        #
+        #       // The raw HTTP body is bound to this field.
+        #       google.api.HttpBody http_body = 2;
+        #     }
+        #
+        #     service ResourceService {
+        #       rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);
+        #       rpc UpdateResource(google.api.HttpBody) returns
+        #       (google.protobuf.Empty);
+        #     }
+        #
+        # Example with streaming methods:
+        #
+        #     service CaldavService {
+        #       rpc GetCalendar(stream google.api.HttpBody)
+        #         returns (stream google.api.HttpBody);
+        #       rpc UpdateCalendar(stream google.api.HttpBody)
+        #         returns (stream google.api.HttpBody);
+        #     }
+        #
+        # Use of this type only changes how the request and response bodies are
+        # handled, all other features will continue to work unchanged.
+      &quot;contentType&quot;: &quot;A String&quot;, # The HTTP Content-Type header value specifying the content type of the body.
+      &quot;data&quot;: &quot;A String&quot;, # The HTTP request/response body as raw binary.
+      &quot;extensions&quot;: [ # Application specific response metadata. Must be set in the first response
+          # for streaming APIs.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+    }</pre>
 </div>
 
 <div class="method">
@@ -1552,127 +1570,6 @@ See the operation documentation for the appropriate value for this field. (requi
         #
         # For a description of IAM and its features, see the
         # [IAM documentation](https://cloud.google.com/iam/docs/).
-      &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-          # prevent simultaneous updates of a policy from overwriting each other.
-          # It is strongly suggested that systems make use of the `etag` in the
-          # read-modify-write cycle to perform policy updates in order to avoid race
-          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-          # systems are expected to put that etag in the request to `setIamPolicy` to
-          # ensure that their change will be applied to the same version of the policy.
-          #
-          # **Important:** If you use IAM Conditions, you must include the `etag` field
-          # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-          # you to overwrite a version `3` policy with a version `1` policy, and all of
-          # the conditions in the version `3` policy are lost.
-      &quot;version&quot;: 42, # Specifies the format of the policy.
-          #
-          # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
-          # are rejected.
-          #
-          # Any operation that affects conditional role bindings must specify version
-          # `3`. This requirement applies to the following operations:
-          #
-          # * Getting a policy that includes a conditional role binding
-          # * Adding a conditional role binding to a policy
-          # * Changing a conditional role binding in a policy
-          # * Removing any role binding, with or without a condition, from a policy
-          #   that includes conditions
-          #
-          # **Important:** If you use IAM Conditions, you must include the `etag` field
-          # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-          # you to overwrite a version `3` policy with a version `1` policy, and all of
-          # the conditions in the version `3` policy are lost.
-          #
-          # If a policy does not include any conditions, operations on that policy may
-          # specify any valid version or leave the field unset.
-          #
-          # To learn which resources support conditions in their IAM policies, see the
-          # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
-      &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
-        { # Specifies the audit configuration for a service.
-            # The configuration determines which permission types are logged, and what
-            # identities, if any, are exempted from logging.
-            # An AuditConfig must have one or more AuditLogConfigs.
-            #
-            # If there are AuditConfigs for both `allServices` and a specific service,
-            # the union of the two AuditConfigs is used for that service: the log_types
-            # specified in each AuditConfig are enabled, and the exempted_members in each
-            # AuditLogConfig are exempted.
-            #
-            # Example Policy with multiple AuditConfigs:
-            #
-            #     {
-            #       &quot;audit_configs&quot;: [
-            #         {
-            #           &quot;service&quot;: &quot;allServices&quot;
-            #           &quot;audit_log_configs&quot;: [
-            #             {
-            #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
-            #               &quot;exempted_members&quot;: [
-            #                 &quot;user:jose@example.com&quot;
-            #               ]
-            #             },
-            #             {
-            #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
-            #             },
-            #             {
-            #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
-            #             }
-            #           ]
-            #         },
-            #         {
-            #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
-            #           &quot;audit_log_configs&quot;: [
-            #             {
-            #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
-            #             },
-            #             {
-            #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
-            #               &quot;exempted_members&quot;: [
-            #                 &quot;user:aliya@example.com&quot;
-            #               ]
-            #             }
-            #           ]
-            #         }
-            #       ]
-            #     }
-            #
-            # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
-            # logging. It also exempts jose@example.com from DATA_READ logging, and
-            # aliya@example.com from DATA_WRITE logging.
-          &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
-            { # Provides the configuration for logging a type of permissions.
-                # Example:
-                #
-                #     {
-                #       &quot;audit_log_configs&quot;: [
-                #         {
-                #           &quot;log_type&quot;: &quot;DATA_READ&quot;,
-                #           &quot;exempted_members&quot;: [
-                #             &quot;user:jose@example.com&quot;
-                #           ]
-                #         },
-                #         {
-                #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
-                #         }
-                #       ]
-                #     }
-                #
-                # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting
-                # jose@example.com from DATA_READ logging.
-              &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of
-                  # permission.
-                  # Follows the same format of Binding.members.
-                &quot;A String&quot;,
-              ],
-              &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
-            },
-          ],
-          &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
-              # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
-              # `allServices` is a special value that covers all services.
-        },
-      ],
       &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
           # `condition` that determines how and when the `bindings` are applied. Each
           # of the `bindings` must contain at least one member.
@@ -1719,15 +1616,15 @@ See the operation documentation for the appropriate value for this field. (requi
               # The exact variables and functions that may be referenced within an expression
               # are determined by the service that evaluates it. See the service
               # documentation for additional information.
-            &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-                # syntax.
             &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
                 # its purpose. This can be used e.g. in UIs which allow to enter the
                 # expression.
-            &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
-                # reporting, e.g. a file name and a position in the file.
             &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
                 # describes the expression, e.g. when hovered over it in a UI.
+            &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+                # syntax.
+            &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
+                # reporting, e.g. a file name and a position in the file.
           },
           &quot;members&quot;: [ # Specifies the identities requesting access for a Cloud Platform resource.
               # `members` can have the following values:
@@ -1778,6 +1675,127 @@ See the operation documentation for the appropriate value for this field. (requi
               # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
         },
       ],
+      &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+          # prevent simultaneous updates of a policy from overwriting each other.
+          # It is strongly suggested that systems make use of the `etag` in the
+          # read-modify-write cycle to perform policy updates in order to avoid race
+          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+          # systems are expected to put that etag in the request to `setIamPolicy` to
+          # ensure that their change will be applied to the same version of the policy.
+          #
+          # **Important:** If you use IAM Conditions, you must include the `etag` field
+          # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+          # you to overwrite a version `3` policy with a version `1` policy, and all of
+          # the conditions in the version `3` policy are lost.
+      &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
+        { # Specifies the audit configuration for a service.
+            # The configuration determines which permission types are logged, and what
+            # identities, if any, are exempted from logging.
+            # An AuditConfig must have one or more AuditLogConfigs.
+            #
+            # If there are AuditConfigs for both `allServices` and a specific service,
+            # the union of the two AuditConfigs is used for that service: the log_types
+            # specified in each AuditConfig are enabled, and the exempted_members in each
+            # AuditLogConfig are exempted.
+            #
+            # Example Policy with multiple AuditConfigs:
+            #
+            #     {
+            #       &quot;audit_configs&quot;: [
+            #         {
+            #           &quot;service&quot;: &quot;allServices&quot;,
+            #           &quot;audit_log_configs&quot;: [
+            #             {
+            #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+            #               &quot;exempted_members&quot;: [
+            #                 &quot;user:jose@example.com&quot;
+            #               ]
+            #             },
+            #             {
+            #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
+            #             },
+            #             {
+            #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
+            #             }
+            #           ]
+            #         },
+            #         {
+            #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
+            #           &quot;audit_log_configs&quot;: [
+            #             {
+            #               &quot;log_type&quot;: &quot;DATA_READ&quot;
+            #             },
+            #             {
+            #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+            #               &quot;exempted_members&quot;: [
+            #                 &quot;user:aliya@example.com&quot;
+            #               ]
+            #             }
+            #           ]
+            #         }
+            #       ]
+            #     }
+            #
+            # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
+            # logging. It also exempts jose@example.com from DATA_READ logging, and
+            # aliya@example.com from DATA_WRITE logging.
+          &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
+            { # Provides the configuration for logging a type of permissions.
+                # Example:
+                #
+                #     {
+                #       &quot;audit_log_configs&quot;: [
+                #         {
+                #           &quot;log_type&quot;: &quot;DATA_READ&quot;,
+                #           &quot;exempted_members&quot;: [
+                #             &quot;user:jose@example.com&quot;
+                #           ]
+                #         },
+                #         {
+                #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
+                #         }
+                #       ]
+                #     }
+                #
+                # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting
+                # jose@example.com from DATA_READ logging.
+              &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
+              &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of
+                  # permission.
+                  # Follows the same format of Binding.members.
+                &quot;A String&quot;,
+              ],
+            },
+          ],
+          &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
+              # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
+              # `allServices` is a special value that covers all services.
+        },
+      ],
+      &quot;version&quot;: 42, # Specifies the format of the policy.
+          #
+          # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
+          # are rejected.
+          #
+          # Any operation that affects conditional role bindings must specify version
+          # `3`. This requirement applies to the following operations:
+          #
+          # * Getting a policy that includes a conditional role binding
+          # * Adding a conditional role binding to a policy
+          # * Changing a conditional role binding in a policy
+          # * Removing any role binding, with or without a condition, from a policy
+          #   that includes conditions
+          #
+          # **Important:** If you use IAM Conditions, you must include the `etag` field
+          # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+          # you to overwrite a version `3` policy with a version `1` policy, and all of
+          # the conditions in the version `3` policy are lost.
+          #
+          # If a policy does not include any conditions, operations on that policy may
+          # specify any valid version or leave the field unset.
+          #
+          # To learn which resources support conditions in their IAM policies, see the
+          # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
     },
   }
 
@@ -1856,127 +1874,6 @@ Returns:
       #
       # For a description of IAM and its features, see the
       # [IAM documentation](https://cloud.google.com/iam/docs/).
-    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
-        #
-        # **Important:** If you use IAM Conditions, you must include the `etag` field
-        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-        # you to overwrite a version `3` policy with a version `1` policy, and all of
-        # the conditions in the version `3` policy are lost.
-    &quot;version&quot;: 42, # Specifies the format of the policy.
-        #
-        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
-        # are rejected.
-        #
-        # Any operation that affects conditional role bindings must specify version
-        # `3`. This requirement applies to the following operations:
-        #
-        # * Getting a policy that includes a conditional role binding
-        # * Adding a conditional role binding to a policy
-        # * Changing a conditional role binding in a policy
-        # * Removing any role binding, with or without a condition, from a policy
-        #   that includes conditions
-        #
-        # **Important:** If you use IAM Conditions, you must include the `etag` field
-        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-        # you to overwrite a version `3` policy with a version `1` policy, and all of
-        # the conditions in the version `3` policy are lost.
-        #
-        # If a policy does not include any conditions, operations on that policy may
-        # specify any valid version or leave the field unset.
-        #
-        # To learn which resources support conditions in their IAM policies, see the
-        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
-    &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
-      { # Specifies the audit configuration for a service.
-          # The configuration determines which permission types are logged, and what
-          # identities, if any, are exempted from logging.
-          # An AuditConfig must have one or more AuditLogConfigs.
-          #
-          # If there are AuditConfigs for both `allServices` and a specific service,
-          # the union of the two AuditConfigs is used for that service: the log_types
-          # specified in each AuditConfig are enabled, and the exempted_members in each
-          # AuditLogConfig are exempted.
-          #
-          # Example Policy with multiple AuditConfigs:
-          #
-          #     {
-          #       &quot;audit_configs&quot;: [
-          #         {
-          #           &quot;service&quot;: &quot;allServices&quot;
-          #           &quot;audit_log_configs&quot;: [
-          #             {
-          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
-          #               &quot;exempted_members&quot;: [
-          #                 &quot;user:jose@example.com&quot;
-          #               ]
-          #             },
-          #             {
-          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
-          #             },
-          #             {
-          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
-          #             }
-          #           ]
-          #         },
-          #         {
-          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
-          #           &quot;audit_log_configs&quot;: [
-          #             {
-          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
-          #             },
-          #             {
-          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
-          #               &quot;exempted_members&quot;: [
-          #                 &quot;user:aliya@example.com&quot;
-          #               ]
-          #             }
-          #           ]
-          #         }
-          #       ]
-          #     }
-          #
-          # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
-          # logging. It also exempts jose@example.com from DATA_READ logging, and
-          # aliya@example.com from DATA_WRITE logging.
-        &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
-          { # Provides the configuration for logging a type of permissions.
-              # Example:
-              #
-              #     {
-              #       &quot;audit_log_configs&quot;: [
-              #         {
-              #           &quot;log_type&quot;: &quot;DATA_READ&quot;,
-              #           &quot;exempted_members&quot;: [
-              #             &quot;user:jose@example.com&quot;
-              #           ]
-              #         },
-              #         {
-              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
-              #         }
-              #       ]
-              #     }
-              #
-              # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting
-              # jose@example.com from DATA_READ logging.
-            &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of
-                # permission.
-                # Follows the same format of Binding.members.
-              &quot;A String&quot;,
-            ],
-            &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
-          },
-        ],
-        &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
-            # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
-            # `allServices` is a special value that covers all services.
-      },
-    ],
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
         # `condition` that determines how and when the `bindings` are applied. Each
         # of the `bindings` must contain at least one member.
@@ -2023,15 +1920,15 @@ Returns:
             # The exact variables and functions that may be referenced within an expression
             # are determined by the service that evaluates it. See the service
             # documentation for additional information.
-          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-              # syntax.
           &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
               # its purpose. This can be used e.g. in UIs which allow to enter the
               # expression.
-          &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
-              # reporting, e.g. a file name and a position in the file.
           &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
               # describes the expression, e.g. when hovered over it in a UI.
+          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+              # syntax.
+          &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
+              # reporting, e.g. a file name and a position in the file.
         },
         &quot;members&quot;: [ # Specifies the identities requesting access for a Cloud Platform resource.
             # `members` can have the following values:
@@ -2082,6 +1979,127 @@ Returns:
             # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
       },
     ],
+    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # **Important:** If you use IAM Conditions, you must include the `etag` field
+        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+        # you to overwrite a version `3` policy with a version `1` policy, and all of
+        # the conditions in the version `3` policy are lost.
+    &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
+      { # Specifies the audit configuration for a service.
+          # The configuration determines which permission types are logged, and what
+          # identities, if any, are exempted from logging.
+          # An AuditConfig must have one or more AuditLogConfigs.
+          #
+          # If there are AuditConfigs for both `allServices` and a specific service,
+          # the union of the two AuditConfigs is used for that service: the log_types
+          # specified in each AuditConfig are enabled, and the exempted_members in each
+          # AuditLogConfig are exempted.
+          #
+          # Example Policy with multiple AuditConfigs:
+          #
+          #     {
+          #       &quot;audit_configs&quot;: [
+          #         {
+          #           &quot;service&quot;: &quot;allServices&quot;,
+          #           &quot;audit_log_configs&quot;: [
+          #             {
+          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+          #               &quot;exempted_members&quot;: [
+          #                 &quot;user:jose@example.com&quot;
+          #               ]
+          #             },
+          #             {
+          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
+          #             },
+          #             {
+          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
+          #             }
+          #           ]
+          #         },
+          #         {
+          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
+          #           &quot;audit_log_configs&quot;: [
+          #             {
+          #               &quot;log_type&quot;: &quot;DATA_READ&quot;
+          #             },
+          #             {
+          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+          #               &quot;exempted_members&quot;: [
+          #                 &quot;user:aliya@example.com&quot;
+          #               ]
+          #             }
+          #           ]
+          #         }
+          #       ]
+          #     }
+          #
+          # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
+          # logging. It also exempts jose@example.com from DATA_READ logging, and
+          # aliya@example.com from DATA_WRITE logging.
+        &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
+          { # Provides the configuration for logging a type of permissions.
+              # Example:
+              #
+              #     {
+              #       &quot;audit_log_configs&quot;: [
+              #         {
+              #           &quot;log_type&quot;: &quot;DATA_READ&quot;,
+              #           &quot;exempted_members&quot;: [
+              #             &quot;user:jose@example.com&quot;
+              #           ]
+              #         },
+              #         {
+              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
+              #         }
+              #       ]
+              #     }
+              #
+              # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting
+              # jose@example.com from DATA_READ logging.
+            &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
+            &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of
+                # permission.
+                # Follows the same format of Binding.members.
+              &quot;A String&quot;,
+            ],
+          },
+        ],
+        &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
+            # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
+            # `allServices` is a special value that covers all services.
+      },
+    ],
+    &quot;version&quot;: 42, # Specifies the format of the policy.
+        #
+        # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
+        # are rejected.
+        #
+        # Any operation that affects conditional role bindings must specify version
+        # `3`. This requirement applies to the following operations:
+        #
+        # * Getting a policy that includes a conditional role binding
+        # * Adding a conditional role binding to a policy
+        # * Changing a conditional role binding in a policy
+        # * Removing any role binding, with or without a condition, from a policy
+        #   that includes conditions
+        #
+        # **Important:** If you use IAM Conditions, you must include the `etag` field
+        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+        # you to overwrite a version `3` policy with a version `1` policy, and all of
+        # the conditions in the version `3` policy are lost.
+        #
+        # If a policy does not include any conditions, operations on that policy may
+        # specify any valid version or leave the field unset.
+        #
+        # To learn which resources support conditions in their IAM policies, see the
+        # [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
   }</pre>
 </div>
 
@@ -2101,53 +2119,53 @@ Args:
     The object takes the form of:
 
 { # Message that represents an arbitrary HTTP body. It should only be used for
-    # payload formats that can&#x27;t be represented as JSON, such as raw binary or
-    # an HTML page.
-    # 
-    # 
-    # This message can be used both in streaming and non-streaming API methods in
-    # the request as well as the response.
-    # 
-    # It can be used as a top-level request field, which is convenient if one
-    # wants to extract parameters from either the URL or HTTP template into the
-    # request fields and also want access to the raw HTTP body.
-    # 
-    # Example:
-    # 
-    #     message GetResourceRequest {
-    #       // A unique request id.
-    #       string request_id = 1;
-    # 
-    #       // The raw HTTP body is bound to this field.
-    #       google.api.HttpBody http_body = 2;
-    #     }
-    # 
-    #     service ResourceService {
-    #       rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);
-    #       rpc UpdateResource(google.api.HttpBody) returns
-    #       (google.protobuf.Empty);
-    #     }
-    # 
-    # Example with streaming methods:
-    # 
-    #     service CaldavService {
-    #       rpc GetCalendar(stream google.api.HttpBody)
-    #         returns (stream google.api.HttpBody);
-    #       rpc UpdateCalendar(stream google.api.HttpBody)
-    #         returns (stream google.api.HttpBody);
-    #     }
-    # 
-    # Use of this type only changes how the request and response bodies are
-    # handled, all other features will continue to work unchanged.
-  &quot;data&quot;: &quot;A String&quot;, # The HTTP request/response body as raw binary.
-  &quot;contentType&quot;: &quot;A String&quot;, # The HTTP Content-Type header value specifying the content type of the body.
-  &quot;extensions&quot;: [ # Application specific response metadata. Must be set in the first response
-      # for streaming APIs.
-    {
-      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-    },
-  ],
-}
+      # payload formats that can&#x27;t be represented as JSON, such as raw binary or
+      # an HTML page.
+      # 
+      # 
+      # This message can be used both in streaming and non-streaming API methods in
+      # the request as well as the response.
+      # 
+      # It can be used as a top-level request field, which is convenient if one
+      # wants to extract parameters from either the URL or HTTP template into the
+      # request fields and also want access to the raw HTTP body.
+      # 
+      # Example:
+      # 
+      #     message GetResourceRequest {
+      #       // A unique request id.
+      #       string request_id = 1;
+      # 
+      #       // The raw HTTP body is bound to this field.
+      #       google.api.HttpBody http_body = 2;
+      #     }
+      # 
+      #     service ResourceService {
+      #       rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);
+      #       rpc UpdateResource(google.api.HttpBody) returns
+      #       (google.protobuf.Empty);
+      #     }
+      # 
+      # Example with streaming methods:
+      # 
+      #     service CaldavService {
+      #       rpc GetCalendar(stream google.api.HttpBody)
+      #         returns (stream google.api.HttpBody);
+      #       rpc UpdateCalendar(stream google.api.HttpBody)
+      #         returns (stream google.api.HttpBody);
+      #     }
+      # 
+      # Use of this type only changes how the request and response bodies are
+      # handled, all other features will continue to work unchanged.
+    &quot;contentType&quot;: &quot;A String&quot;, # The HTTP Content-Type header value specifying the content type of the body.
+    &quot;data&quot;: &quot;A String&quot;, # The HTTP request/response body as raw binary.
+    &quot;extensions&quot;: [ # Application specific response metadata. Must be set in the first response
+        # for streaming APIs.
+      {
+        &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+      },
+    ],
+  }
 
   x__xgafv: string, V1 error format.
     Allowed values
@@ -2158,53 +2176,53 @@ Returns:
   An object of the form:
 
     { # Message that represents an arbitrary HTTP body. It should only be used for
-      # payload formats that can&#x27;t be represented as JSON, such as raw binary or
-      # an HTML page.
-      #
-      #
-      # This message can be used both in streaming and non-streaming API methods in
-      # the request as well as the response.
-      #
-      # It can be used as a top-level request field, which is convenient if one
-      # wants to extract parameters from either the URL or HTTP template into the
-      # request fields and also want access to the raw HTTP body.
-      #
-      # Example:
-      #
-      #     message GetResourceRequest {
-      #       // A unique request id.
-      #       string request_id = 1;
-      #
-      #       // The raw HTTP body is bound to this field.
-      #       google.api.HttpBody http_body = 2;
-      #     }
-      #
-      #     service ResourceService {
-      #       rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);
-      #       rpc UpdateResource(google.api.HttpBody) returns
-      #       (google.protobuf.Empty);
-      #     }
-      #
-      # Example with streaming methods:
-      #
-      #     service CaldavService {
-      #       rpc GetCalendar(stream google.api.HttpBody)
-      #         returns (stream google.api.HttpBody);
-      #       rpc UpdateCalendar(stream google.api.HttpBody)
-      #         returns (stream google.api.HttpBody);
-      #     }
-      #
-      # Use of this type only changes how the request and response bodies are
-      # handled, all other features will continue to work unchanged.
-    &quot;data&quot;: &quot;A String&quot;, # The HTTP request/response body as raw binary.
-    &quot;contentType&quot;: &quot;A String&quot;, # The HTTP Content-Type header value specifying the content type of the body.
-    &quot;extensions&quot;: [ # Application specific response metadata. Must be set in the first response
-        # for streaming APIs.
-      {
-        &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-      },
-    ],
-  }</pre>
+        # payload formats that can&#x27;t be represented as JSON, such as raw binary or
+        # an HTML page.
+        #
+        #
+        # This message can be used both in streaming and non-streaming API methods in
+        # the request as well as the response.
+        #
+        # It can be used as a top-level request field, which is convenient if one
+        # wants to extract parameters from either the URL or HTTP template into the
+        # request fields and also want access to the raw HTTP body.
+        #
+        # Example:
+        #
+        #     message GetResourceRequest {
+        #       // A unique request id.
+        #       string request_id = 1;
+        #
+        #       // The raw HTTP body is bound to this field.
+        #       google.api.HttpBody http_body = 2;
+        #     }
+        #
+        #     service ResourceService {
+        #       rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);
+        #       rpc UpdateResource(google.api.HttpBody) returns
+        #       (google.protobuf.Empty);
+        #     }
+        #
+        # Example with streaming methods:
+        #
+        #     service CaldavService {
+        #       rpc GetCalendar(stream google.api.HttpBody)
+        #         returns (stream google.api.HttpBody);
+        #       rpc UpdateCalendar(stream google.api.HttpBody)
+        #         returns (stream google.api.HttpBody);
+        #     }
+        #
+        # Use of this type only changes how the request and response bodies are
+        # handled, all other features will continue to work unchanged.
+      &quot;contentType&quot;: &quot;A String&quot;, # The HTTP Content-Type header value specifying the content type of the body.
+      &quot;data&quot;: &quot;A String&quot;, # The HTTP request/response body as raw binary.
+      &quot;extensions&quot;: [ # Application specific response metadata. Must be set in the first response
+          # for streaming APIs.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+    }</pre>
 </div>
 
 <div class="method">

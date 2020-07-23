@@ -379,12 +379,13 @@ def document_collection_recursive(resource, path, root_discovery, discovery):
             )
 
 
-def document_api(name, version):
+def document_api(name, version, uri):
     """Document the given API.
 
   Args:
     name: string, Name of the API.
     version: string, Version of the API.
+    uri: string, URI of the API's discovery document
   """
     try:
         service = build(name, version)
@@ -397,7 +398,7 @@ def document_api(name, version):
 
     http = build_http()
     response, content = http.request(
-        uritemplate.expand(
+        uri or uritemplate.expand(
             FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
         )
     )
@@ -443,7 +444,7 @@ if __name__ == "__main__":
         if resp.status == 200:
             directory = json.loads(content)["items"]
             for api in directory:
-                document_api(api["name"], api["version"])
+                document_api(api["name"], api["version"], api["discoveryRestUrl"])
                 api_directory[api["name"]].append(api["version"])
 
             # sort by api name and version number
