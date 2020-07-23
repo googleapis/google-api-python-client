@@ -126,6 +126,35 @@ Args:
     The object takes the form of:
 
 { # Represents a FHIR store.
+  &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
+      # this destination. The Cloud Pub/Sub message attributes contain a map
+      # with a string describing the action that has triggered the notification.
+      # For example, &quot;action&quot;:&quot;CreateResource&quot;.
+    &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+        # notifications of changes are published on. Supplied by the client.
+        # PubsubMessage.Data contains the resource name.
+        # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
+        # unique within the topic.
+        # PubsubMessage.PublishTime is the time at which the message was published.
+        # Notifications are only sent if the topic is
+        # non-empty. [Topic
+        # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
+        # to a project. Cloud Healthcare API service account must have publisher
+        # permissions on the given Cloud Pub/Sub topic. Not having adequate
+        # permissions causes the calls that send notifications to fail.
+        #
+        # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
+        # Cloud Logging (see [Viewing
+        # logs](/healthcare/docs/how-tos/logging)). If the number of
+        # errors exceeds a certain rate, some aren&#x27;t submitted.
+  },
+  &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+      # not be changed after the creation of FHIR store.
+      # If set to false, which is the default behavior, all write operations
+      # cause historical versions to be recorded automatically. The historical
+      # versions can be fetched through the history APIs, but cannot be updated.
+      # If set to true, no historical versions are kept. The server sends
+      # errors for attempts to read the historical versions.
   &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
       # export for every resource mutation in this FHIR store. Each store is
       # allowed to have up to 10 streaming configs.
@@ -140,6 +169,13 @@ Args:
       # Some lag (typically on the order of dozens of seconds) is expected before
       # the results show up in the streaming destination.
     { # Contains configuration for streaming FHIR export.
+      &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+          # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+          # all FHIR resource types.
+          # The server treats an empty list as an intent to stream all the
+          # supported resource types in this FHIR store.
+        &quot;A String&quot;,
+      ],
       &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
           # location and corresponding schema config.
           #
@@ -183,29 +219,42 @@ Args:
           # Logging](/healthcare/docs/how-tos/logging)).
         &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
             # `bq://projectId.bqDatasetId`
+        &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+            # the new exported tables are written. If the flag is not set and the
+            # destination dataset contains tables, the export call returns an error.
         &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
             # generates the schema.
-          &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
           &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
               # schema. For example, `concept` in the CodeSystem resource is a recursive
               # structure; when the depth is 2, the CodeSystem table will have a column
               # called `concept.concept` but not `concept.concept.concept`. If not
               # specified or set to 0, the server will use the default value 2. The
               # maximum depth allowed is 5.
+          &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
         },
-        &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
-            # the new exported tables are written. If the flag is not set and the
-            # destination dataset contains tables, the export call returns an error.
       },
-      &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-          # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-          # all FHIR resource types.
-          # The server treats an empty list as an intent to stream all the
-          # supported resource types in this FHIR store.
-        &quot;A String&quot;,
-      ],
     },
   ],
+  &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
+      # immutable after FHIR store creation.
+      # The default value is false, meaning that the API enforces referential
+      # integrity and fails the requests that result in inconsistent state in
+      # the FHIR store.
+      # When this field is set to true, the API skips referential integrity
+      # checks. Consequently, operations that rely on references, such as
+      # GetPatientEverything, do not return all the results if broken references
+      # exist.
+  &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
+      # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
+      # This determines if the client can use an Update operation to create a new
+      # resource with a client-specified ID. If false, all IDs are server-assigned
+      # through the Create operation and attempts to update a non-existent resource
+      # return errors. Please treat the audit logs with appropriate levels of
+      # care if client-specified resource IDs contain sensitive data such as
+      # patient identifiers, those IDs are part of the FHIR resource path
+      # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
+  &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+      # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
   &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
       # 
       # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -220,58 +269,9 @@ Args:
       # No more than 64 labels can be associated with a given store.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
-  &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
-      # this destination. The Cloud Pub/Sub message attributes contain a map
-      # with a string describing the action that has triggered the notification.
-      # For example, &quot;action&quot;:&quot;CreateResource&quot;.
-    &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-        # notifications of changes are published on. Supplied by the client.
-        # PubsubMessage.Data contains the resource name.
-        # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
-        # unique within the topic.
-        # PubsubMessage.PublishTime is the time at which the message was published.
-        # Notifications are only sent if the topic is
-        # non-empty. [Topic
-        # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
-        # to a project. Cloud Healthcare API service account must have publisher
-        # permissions on the given Cloud Pub/Sub topic. Not having adequate
-        # permissions causes the calls that send notifications to fail.
-        #
-        # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
-        # Cloud Logging (see [Viewing
-        # logs](/healthcare/docs/how-tos/logging)). If the number of
-        # errors exceeds a certain rate, some aren&#x27;t submitted.
-  },
-  &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-      # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
-  &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
-      # immutable after FHIR store creation.
-      # The default value is false, meaning that the API enforces referential
-      # integrity and fails the requests that result in inconsistent state in
-      # the FHIR store.
-      # When this field is set to true, the API skips referential integrity
-      # checks. Consequently, operations that rely on references, such as
-      # GetPatientEverything, do not return all the results if broken references
-      # exist.
   &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
       # field is immutable after store creation. Requests are rejected if they
       # contain FHIR resources of a different version.
-  &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-      # not be changed after the creation of FHIR store.
-      # If set to false, which is the default behavior, all write operations
-      # cause historical versions to be recorded automatically. The historical
-      # versions can be fetched through the history APIs, but cannot be updated.
-      # If set to true, no historical versions are kept. The server sends
-      # errors for attempts to read the historical versions.
-  &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
-      # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
-      # This determines if the client can use an Update operation to create a new
-      # resource with a client-specified ID. If false, all IDs are server-assigned
-      # through the Create operation and attempts to update a non-existent resource
-      # return errors. Please treat the audit logs with appropriate levels of
-      # care if client-specified resource IDs contain sensitive data such as
-      # patient identifiers, those IDs are part of the FHIR resource path
-      # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
 }
 
   fhirStoreId: string, The ID of the FHIR store that is being created.
@@ -285,6 +285,35 @@ Returns:
   An object of the form:
 
     { # Represents a FHIR store.
+    &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
+        # this destination. The Cloud Pub/Sub message attributes contain a map
+        # with a string describing the action that has triggered the notification.
+        # For example, &quot;action&quot;:&quot;CreateResource&quot;.
+      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+          # notifications of changes are published on. Supplied by the client.
+          # PubsubMessage.Data contains the resource name.
+          # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
+          # unique within the topic.
+          # PubsubMessage.PublishTime is the time at which the message was published.
+          # Notifications are only sent if the topic is
+          # non-empty. [Topic
+          # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
+          # to a project. Cloud Healthcare API service account must have publisher
+          # permissions on the given Cloud Pub/Sub topic. Not having adequate
+          # permissions causes the calls that send notifications to fail.
+          #
+          # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
+          # Cloud Logging (see [Viewing
+          # logs](/healthcare/docs/how-tos/logging)). If the number of
+          # errors exceeds a certain rate, some aren&#x27;t submitted.
+    },
+    &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+        # not be changed after the creation of FHIR store.
+        # If set to false, which is the default behavior, all write operations
+        # cause historical versions to be recorded automatically. The historical
+        # versions can be fetched through the history APIs, but cannot be updated.
+        # If set to true, no historical versions are kept. The server sends
+        # errors for attempts to read the historical versions.
     &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
         # export for every resource mutation in this FHIR store. Each store is
         # allowed to have up to 10 streaming configs.
@@ -299,6 +328,13 @@ Returns:
         # Some lag (typically on the order of dozens of seconds) is expected before
         # the results show up in the streaming destination.
       { # Contains configuration for streaming FHIR export.
+        &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+            # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+            # all FHIR resource types.
+            # The server treats an empty list as an intent to stream all the
+            # supported resource types in this FHIR store.
+          &quot;A String&quot;,
+        ],
         &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
             # location and corresponding schema config.
             #
@@ -342,29 +378,42 @@ Returns:
             # Logging](/healthcare/docs/how-tos/logging)).
           &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
               # `bq://projectId.bqDatasetId`
+          &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+              # the new exported tables are written. If the flag is not set and the
+              # destination dataset contains tables, the export call returns an error.
           &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
               # generates the schema.
-            &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
             &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
                 # schema. For example, `concept` in the CodeSystem resource is a recursive
                 # structure; when the depth is 2, the CodeSystem table will have a column
                 # called `concept.concept` but not `concept.concept.concept`. If not
                 # specified or set to 0, the server will use the default value 2. The
                 # maximum depth allowed is 5.
+            &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
           },
-          &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
-              # the new exported tables are written. If the flag is not set and the
-              # destination dataset contains tables, the export call returns an error.
         },
-        &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-            # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-            # all FHIR resource types.
-            # The server treats an empty list as an intent to stream all the
-            # supported resource types in this FHIR store.
-          &quot;A String&quot;,
-        ],
       },
     ],
+    &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
+        # immutable after FHIR store creation.
+        # The default value is false, meaning that the API enforces referential
+        # integrity and fails the requests that result in inconsistent state in
+        # the FHIR store.
+        # When this field is set to true, the API skips referential integrity
+        # checks. Consequently, operations that rely on references, such as
+        # GetPatientEverything, do not return all the results if broken references
+        # exist.
+    &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
+        # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
+        # This determines if the client can use an Update operation to create a new
+        # resource with a client-specified ID. If false, all IDs are server-assigned
+        # through the Create operation and attempts to update a non-existent resource
+        # return errors. Please treat the audit logs with appropriate levels of
+        # care if client-specified resource IDs contain sensitive data such as
+        # patient identifiers, those IDs are part of the FHIR resource path
+        # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
+    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+        # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
     &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
         #
         # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -379,58 +428,9 @@ Returns:
         # No more than 64 labels can be associated with a given store.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
-    &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
-        # this destination. The Cloud Pub/Sub message attributes contain a map
-        # with a string describing the action that has triggered the notification.
-        # For example, &quot;action&quot;:&quot;CreateResource&quot;.
-      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-          # notifications of changes are published on. Supplied by the client.
-          # PubsubMessage.Data contains the resource name.
-          # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
-          # unique within the topic.
-          # PubsubMessage.PublishTime is the time at which the message was published.
-          # Notifications are only sent if the topic is
-          # non-empty. [Topic
-          # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
-          # to a project. Cloud Healthcare API service account must have publisher
-          # permissions on the given Cloud Pub/Sub topic. Not having adequate
-          # permissions causes the calls that send notifications to fail.
-          #
-          # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
-          # Cloud Logging (see [Viewing
-          # logs](/healthcare/docs/how-tos/logging)). If the number of
-          # errors exceeds a certain rate, some aren&#x27;t submitted.
-    },
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-        # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
-    &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
-        # immutable after FHIR store creation.
-        # The default value is false, meaning that the API enforces referential
-        # integrity and fails the requests that result in inconsistent state in
-        # the FHIR store.
-        # When this field is set to true, the API skips referential integrity
-        # checks. Consequently, operations that rely on references, such as
-        # GetPatientEverything, do not return all the results if broken references
-        # exist.
     &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
         # field is immutable after store creation. Requests are rejected if they
         # contain FHIR resources of a different version.
-    &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-        # not be changed after the creation of FHIR store.
-        # If set to false, which is the default behavior, all write operations
-        # cause historical versions to be recorded automatically. The historical
-        # versions can be fetched through the history APIs, but cannot be updated.
-        # If set to true, no historical versions are kept. The server sends
-        # errors for attempts to read the historical versions.
-    &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
-        # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
-        # This determines if the client can use an Update operation to create a new
-        # resource with a client-specified ID. If false, all IDs are server-assigned
-        # through the Create operation and attempts to update a non-existent resource
-        # return errors. Please treat the audit logs with appropriate levels of
-        # care if client-specified resource IDs contain sensitive data such as
-        # patient identifiers, those IDs are part of the FHIR resource path
-        # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
   }</pre>
 </div>
 
@@ -476,73 +476,9 @@ Args:
         # Each submessage customizes the handling of an
         # https://tools.ietf.org/html/rfc6838 media type or subtype. Configs are
         # applied in a nested manner at runtime.
-      &quot;text&quot;: { # Configures de-identification of text wherever it is found in the
+      &quot;image&quot;: { # Specifies how to handle de-identification of image pixels. # Configures de-identification of image pixels wherever they are found in the
           # source_dataset.
-        &quot;transformations&quot;: [ # The transformations to apply to the detected data.
-          { # A transformation to apply to text that is identified as a specific
-              # info_type.
-            &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is # Config for date shift.
-                # consistent for a given patient and crypto key combination.
-              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this
-                  # key and the patient ID. A default key is generated for each
-                  # Deidentify operation and is used wherever crypto_key is not specified.
-            },
-            &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
-              &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
-            },
-            &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. # Config for text redaction.
-                # For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot;
-            },
-            &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the
-                # transformation applies to any info_type.
-              &quot;A String&quot;,
-            ],
-            &quot;replaceWithInfoTypeConfig&quot;: { # When using the # Config for replace with InfoType.
-                # INSPECT_AND_TRANSFORM
-                # action, each match is replaced with the name of the info_type. For example,
-                # &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The
-                # TRANSFORM
-                # action is equivalent to redacting.
-            },
-            &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. # Config for crypto hash.
-                # Uses SHA-256.
-                # Outputs a base64-encoded representation of the hashed output
-                # (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`).
-              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this
-                  # key. A default key is generated for each Deidentify operation and is used
-                  # wherever crypto_key is not specified.
-            },
-          },
-        ],
-      },
-      &quot;dicom&quot;: { # Specifies the parameters needed for de-identification of DICOM stores. # Configures de-id of application/DICOM content.
-        &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
-        &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID,
-            # SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched.
-            # The Cloud Healthcare API regenerates these UIDs by default based on the
-            # DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly
-            # to an individual out of context, given access to the original images, or
-            # to a database of the original images containing the UIDs, it would be
-            # possible to recover the individual&#x27;s identity.&quot;
-            # http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
-        &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
-          &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta
-              # Elements, or Directory Structuring Elements, as defined at:
-              # http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,.
-              # They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;,
-              # &quot;00100010&quot;.
-            &quot;A String&quot;,
-          ],
-        },
-        &quot;removeList&quot;: { # List of tags to be filtered. # List of tags to remove. Keep all other tags.
-          &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta
-              # Elements, or Directory Structuring Elements, as defined at:
-              # http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,.
-              # They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;,
-              # &quot;00100010&quot;.
-            &quot;A String&quot;,
-          ],
-        },
+        &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
       },
       &quot;fhir&quot;: { # Specifies how to handle de-identification of a FHIR store. # Configures de-id of application/FHIR content.
         &quot;fieldMetadataList&quot;: [ # Specifies FHIR paths to match and how to transform them. Any field that
@@ -567,9 +503,73 @@ Args:
           },
         ],
       },
-      &quot;image&quot;: { # Specifies how to handle de-identification of image pixels. # Configures de-identification of image pixels wherever they are found in the
+      &quot;text&quot;: { # Configures de-identification of text wherever it is found in the
           # source_dataset.
-        &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
+        &quot;transformations&quot;: [ # The transformations to apply to the detected data.
+          { # A transformation to apply to text that is identified as a specific
+              # info_type.
+            &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is # Config for date shift.
+                # consistent for a given patient and crypto key combination.
+              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this
+                  # key and the patient ID. A default key is generated for each
+                  # Deidentify operation and is used wherever crypto_key is not specified.
+            },
+            &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
+              &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
+            },
+            &quot;replaceWithInfoTypeConfig&quot;: { # When using the # Config for replace with InfoType.
+                # INSPECT_AND_TRANSFORM
+                # action, each match is replaced with the name of the info_type. For example,
+                # &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The
+                # TRANSFORM
+                # action is equivalent to redacting.
+            },
+            &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. # Config for text redaction.
+                # For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot;
+            },
+            &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the
+                # transformation applies to any info_type.
+              &quot;A String&quot;,
+            ],
+            &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. # Config for crypto hash.
+                # Uses SHA-256.
+                # Outputs a base64-encoded representation of the hashed output
+                # (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`).
+              &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this
+                  # key. A default key is generated for each Deidentify operation and is used
+                  # wherever crypto_key is not specified.
+            },
+          },
+        ],
+      },
+      &quot;dicom&quot;: { # Specifies the parameters needed for de-identification of DICOM stores. # Configures de-id of application/DICOM content.
+        &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
+        &quot;removeList&quot;: { # List of tags to be filtered. # List of tags to remove. Keep all other tags.
+          &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta
+              # Elements, or Directory Structuring Elements, as defined at:
+              # http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,.
+              # They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;,
+              # &quot;00100010&quot;.
+            &quot;A String&quot;,
+          ],
+        },
+        &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
+          &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta
+              # Elements, or Directory Structuring Elements, as defined at:
+              # http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,.
+              # They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;,
+              # &quot;00100010&quot;.
+            &quot;A String&quot;,
+          ],
+        },
+        &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID,
+            # SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched.
+            # The Cloud Healthcare API regenerates these UIDs by default based on the
+            # DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly
+            # to an individual out of context, given access to the original images, or
+            # to a database of the original images containing the UIDs, it would be
+            # possible to recover the individual&#x27;s identity.&quot;
+            # http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
       },
     },
   }
@@ -584,9 +584,27 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
-    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
-        # If `true`, the operation is completed, and either `error` or `response` is
-        # available.
+    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
+        #
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
+      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
+    },
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
     &quot;response&quot;: { # The normal response of the operation in case of success.  If the original
         # method returns no data on success, such as `Delete`, the response is
         # `google.protobuf.Empty`.  If the original method is standard
@@ -597,27 +615,9 @@ Returns:
         # `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
-        # originally returns it. If you use the default HTTP mapping, the
-        # `name` should be a resource name ending with `operations/{unique_id}`.
-    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
-        # different programming environments, including REST APIs and RPC APIs. It is
-        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
-        # three pieces of data: error code, error message, and error details.
-        #
-        # You can find out more about this error model and how to work with it in the
-        # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
-      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
-          # message types for APIs to use.
-        {
-          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-        },
-      ],
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-    },
+    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
     &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
         # contains progress information and common metadata such as create time.
         # Some services might not provide such metadata.  Any method that returns a
@@ -678,28 +678,6 @@ Args:
     The object takes the form of:
 
 { # Request to export resources.
-    &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The BigQuery output destination.
-        # 
-        # The BigQuery location requires two IAM roles:
-        # `roles/bigquery.dataEditor` and `roles/bigquery.jobUser`.
-        # 
-        # The output is one BigQuery table per resource type.
-      &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
-          # `bq://projectId.bqDatasetId`
-      &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
-          # generates the schema.
-        &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
-        &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
-            # schema. For example, `concept` in the CodeSystem resource is a recursive
-            # structure; when the depth is 2, the CodeSystem table will have a column
-            # called `concept.concept` but not `concept.concept.concept`. If not
-            # specified or set to 0, the server will use the default value 2. The
-            # maximum depth allowed is 5.
-      },
-      &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
-          # the new exported tables are written. If the flag is not set and the
-          # destination dataset contains tables, the export call returns an error.
-    },
     &quot;gcsDestination&quot;: { # The configuration for exporting to Cloud Storage. # The Cloud Storage output destination.
         # 
         # The Cloud Storage location requires the `roles/storage.objectAdmin` Cloud
@@ -715,6 +693,28 @@ Args:
           # The user is responsible for creating the Cloud Storage bucket referenced in
           # `uri_prefix`.
     },
+    &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The BigQuery output destination.
+        # 
+        # The BigQuery location requires two IAM roles:
+        # `roles/bigquery.dataEditor` and `roles/bigquery.jobUser`.
+        # 
+        # The output is one BigQuery table per resource type.
+      &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
+          # `bq://projectId.bqDatasetId`
+      &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+          # the new exported tables are written. If the flag is not set and the
+          # destination dataset contains tables, the export call returns an error.
+      &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
+          # generates the schema.
+        &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
+            # schema. For example, `concept` in the CodeSystem resource is a recursive
+            # structure; when the depth is 2, the CodeSystem table will have a column
+            # called `concept.concept` but not `concept.concept.concept`. If not
+            # specified or set to 0, the server will use the default value 2. The
+            # maximum depth allowed is 5.
+        &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
+      },
+    },
   }
 
   x__xgafv: string, V1 error format.
@@ -727,9 +727,27 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
-    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
-        # If `true`, the operation is completed, and either `error` or `response` is
-        # available.
+    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
+        #
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
+      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
+    },
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
     &quot;response&quot;: { # The normal response of the operation in case of success.  If the original
         # method returns no data on success, such as `Delete`, the response is
         # `google.protobuf.Empty`.  If the original method is standard
@@ -740,27 +758,9 @@ Returns:
         # `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
-        # originally returns it. If you use the default HTTP mapping, the
-        # `name` should be a resource name ending with `operations/{unique_id}`.
-    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
-        # different programming environments, including REST APIs and RPC APIs. It is
-        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
-        # three pieces of data: error code, error message, and error details.
-        #
-        # You can find out more about this error model and how to work with it in the
-        # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
-      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
-          # message types for APIs to use.
-        {
-          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-        },
-      ],
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-    },
+    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
     &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
         # contains progress information and common metadata such as create time.
         # Some services might not provide such metadata.  Any method that returns a
@@ -785,6 +785,35 @@ Returns:
   An object of the form:
 
     { # Represents a FHIR store.
+    &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
+        # this destination. The Cloud Pub/Sub message attributes contain a map
+        # with a string describing the action that has triggered the notification.
+        # For example, &quot;action&quot;:&quot;CreateResource&quot;.
+      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+          # notifications of changes are published on. Supplied by the client.
+          # PubsubMessage.Data contains the resource name.
+          # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
+          # unique within the topic.
+          # PubsubMessage.PublishTime is the time at which the message was published.
+          # Notifications are only sent if the topic is
+          # non-empty. [Topic
+          # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
+          # to a project. Cloud Healthcare API service account must have publisher
+          # permissions on the given Cloud Pub/Sub topic. Not having adequate
+          # permissions causes the calls that send notifications to fail.
+          #
+          # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
+          # Cloud Logging (see [Viewing
+          # logs](/healthcare/docs/how-tos/logging)). If the number of
+          # errors exceeds a certain rate, some aren&#x27;t submitted.
+    },
+    &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+        # not be changed after the creation of FHIR store.
+        # If set to false, which is the default behavior, all write operations
+        # cause historical versions to be recorded automatically. The historical
+        # versions can be fetched through the history APIs, but cannot be updated.
+        # If set to true, no historical versions are kept. The server sends
+        # errors for attempts to read the historical versions.
     &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
         # export for every resource mutation in this FHIR store. Each store is
         # allowed to have up to 10 streaming configs.
@@ -799,6 +828,13 @@ Returns:
         # Some lag (typically on the order of dozens of seconds) is expected before
         # the results show up in the streaming destination.
       { # Contains configuration for streaming FHIR export.
+        &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+            # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+            # all FHIR resource types.
+            # The server treats an empty list as an intent to stream all the
+            # supported resource types in this FHIR store.
+          &quot;A String&quot;,
+        ],
         &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
             # location and corresponding schema config.
             #
@@ -842,29 +878,42 @@ Returns:
             # Logging](/healthcare/docs/how-tos/logging)).
           &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
               # `bq://projectId.bqDatasetId`
+          &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+              # the new exported tables are written. If the flag is not set and the
+              # destination dataset contains tables, the export call returns an error.
           &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
               # generates the schema.
-            &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
             &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
                 # schema. For example, `concept` in the CodeSystem resource is a recursive
                 # structure; when the depth is 2, the CodeSystem table will have a column
                 # called `concept.concept` but not `concept.concept.concept`. If not
                 # specified or set to 0, the server will use the default value 2. The
                 # maximum depth allowed is 5.
+            &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
           },
-          &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
-              # the new exported tables are written. If the flag is not set and the
-              # destination dataset contains tables, the export call returns an error.
         },
-        &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-            # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-            # all FHIR resource types.
-            # The server treats an empty list as an intent to stream all the
-            # supported resource types in this FHIR store.
-          &quot;A String&quot;,
-        ],
       },
     ],
+    &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
+        # immutable after FHIR store creation.
+        # The default value is false, meaning that the API enforces referential
+        # integrity and fails the requests that result in inconsistent state in
+        # the FHIR store.
+        # When this field is set to true, the API skips referential integrity
+        # checks. Consequently, operations that rely on references, such as
+        # GetPatientEverything, do not return all the results if broken references
+        # exist.
+    &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
+        # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
+        # This determines if the client can use an Update operation to create a new
+        # resource with a client-specified ID. If false, all IDs are server-assigned
+        # through the Create operation and attempts to update a non-existent resource
+        # return errors. Please treat the audit logs with appropriate levels of
+        # care if client-specified resource IDs contain sensitive data such as
+        # patient identifiers, those IDs are part of the FHIR resource path
+        # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
+    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+        # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
     &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
         #
         # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -879,58 +928,9 @@ Returns:
         # No more than 64 labels can be associated with a given store.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
-    &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
-        # this destination. The Cloud Pub/Sub message attributes contain a map
-        # with a string describing the action that has triggered the notification.
-        # For example, &quot;action&quot;:&quot;CreateResource&quot;.
-      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-          # notifications of changes are published on. Supplied by the client.
-          # PubsubMessage.Data contains the resource name.
-          # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
-          # unique within the topic.
-          # PubsubMessage.PublishTime is the time at which the message was published.
-          # Notifications are only sent if the topic is
-          # non-empty. [Topic
-          # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
-          # to a project. Cloud Healthcare API service account must have publisher
-          # permissions on the given Cloud Pub/Sub topic. Not having adequate
-          # permissions causes the calls that send notifications to fail.
-          #
-          # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
-          # Cloud Logging (see [Viewing
-          # logs](/healthcare/docs/how-tos/logging)). If the number of
-          # errors exceeds a certain rate, some aren&#x27;t submitted.
-    },
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-        # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
-    &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
-        # immutable after FHIR store creation.
-        # The default value is false, meaning that the API enforces referential
-        # integrity and fails the requests that result in inconsistent state in
-        # the FHIR store.
-        # When this field is set to true, the API skips referential integrity
-        # checks. Consequently, operations that rely on references, such as
-        # GetPatientEverything, do not return all the results if broken references
-        # exist.
     &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
         # field is immutable after store creation. Requests are rejected if they
         # contain FHIR resources of a different version.
-    &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-        # not be changed after the creation of FHIR store.
-        # If set to false, which is the default behavior, all write operations
-        # cause historical versions to be recorded automatically. The historical
-        # versions can be fetched through the history APIs, but cannot be updated.
-        # If set to true, no historical versions are kept. The server sends
-        # errors for attempts to read the historical versions.
-    &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
-        # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
-        # This determines if the client can use an Update operation to create a new
-        # resource with a client-specified ID. If false, all IDs are server-assigned
-        # through the Create operation and attempts to update a non-existent resource
-        # return errors. Please treat the audit logs with appropriate levels of
-        # care if client-specified resource IDs contain sensitive data such as
-        # patient identifiers, those IDs are part of the FHIR resource path
-        # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
   }</pre>
 </div>
 
@@ -1030,12 +1030,22 @@ Returns:
       #
       # For a description of IAM and its features, see the
       # [IAM documentation](https://cloud.google.com/iam/docs/).
+    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # **Important:** If you use IAM Conditions, you must include the `etag` field
+        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+        # you to overwrite a version `3` policy with a version `1` policy, and all of
+        # the conditions in the version `3` policy are lost.
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
         # `condition` that determines how and when the `bindings` are applied. Each
         # of the `bindings` must contain at least one member.
       { # Associates `members` with a `role`.
-        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
-            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
         &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) # The condition that is associated with this binding.
             #
             # If the condition evaluates to `true`, then this binding applies to the
@@ -1078,16 +1088,18 @@ Returns:
             # The exact variables and functions that may be referenced within an expression
             # are determined by the service that evaluates it. See the service
             # documentation for additional information.
+          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+              # syntax.
+          &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
+              # reporting, e.g. a file name and a position in the file.
           &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
               # its purpose. This can be used e.g. in UIs which allow to enter the
               # expression.
-          &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
-              # reporting, e.g. a file name and a position in the file.
           &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
               # describes the expression, e.g. when hovered over it in a UI.
-          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-              # syntax.
         },
+        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
+            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
         &quot;members&quot;: [ # Specifies the identities requesting access for a Cloud Platform resource.
             # `members` can have the following values:
             #
@@ -1135,18 +1147,6 @@ Returns:
         ],
       },
     ],
-    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
-        #
-        # **Important:** If you use IAM Conditions, you must include the `etag` field
-        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-        # you to overwrite a version `3` policy with a version `1` policy, and all of
-        # the conditions in the version `3` policy are lost.
     &quot;version&quot;: 42, # Specifies the format of the policy.
         #
         # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
@@ -1187,7 +1187,7 @@ Returns:
           #     {
           #       &quot;audit_configs&quot;: [
           #         {
-          #           &quot;service&quot;: &quot;allServices&quot;
+          #           &quot;service&quot;: &quot;allServices&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
           #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
@@ -1196,18 +1196,18 @@ Returns:
           #               ]
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
+          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
           #             }
           #           ]
           #         },
           #         {
-          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
+          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_READ&quot;
           #             },
           #             {
           #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
@@ -1223,6 +1223,9 @@ Returns:
           # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
           # logging. It also exempts jose@example.com from DATA_READ logging, and
           # aliya@example.com from DATA_WRITE logging.
+        &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
+            # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
+            # `allServices` is a special value that covers all services.
         &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
           { # Provides the configuration for logging a type of permissions.
               # Example:
@@ -1236,24 +1239,21 @@ Returns:
               #           ]
               #         },
               #         {
-              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
               #         }
               #       ]
               #     }
               #
               # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting
               # jose@example.com from DATA_READ logging.
+            &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
             &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of
                 # permission.
                 # Follows the same format of Binding.members.
               &quot;A String&quot;,
             ],
-            &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
           },
         ],
-        &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
-            # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
-            # `allServices` is a special value that covers all services.
       },
     ],
   }</pre>
@@ -1342,6 +1342,8 @@ Args:
     The object takes the form of:
 
 { # Request to import resources.
+    &quot;contentStructure&quot;: &quot;A String&quot;, # The content structure in the source location. If not specified, the server
+        # treats the input source files as BUNDLE.
     &quot;gcsSource&quot;: { # Specifies the configuration for importing data from Cloud Storage. # Cloud Storage source data location and import configuration.
         # 
         # The Cloud Storage location requires the `roles/storage.objectViewer`
@@ -1368,8 +1370,6 @@ Args:
           # Files matching the wildcard are expected to contain content only, no
           # metadata.
     },
-    &quot;contentStructure&quot;: &quot;A String&quot;, # The content structure in the source location. If not specified, the server
-        # treats the input source files as BUNDLE.
   }
 
   x__xgafv: string, V1 error format.
@@ -1382,9 +1382,27 @@ Returns:
 
     { # This resource represents a long-running operation that is the result of a
       # network API call.
-    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
-        # If `true`, the operation is completed, and either `error` or `response` is
-        # available.
+    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
+        # different programming environments, including REST APIs and RPC APIs. It is
+        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
+        # three pieces of data: error code, error message, and error details.
+        #
+        # You can find out more about this error model and how to work with it in the
+        # [API Design Guide](https://cloud.google.com/apis/design/errors).
+      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
+          # message types for APIs to use.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
+          # user-facing error message should be localized and sent in the
+          # google.rpc.Status.details field, or localized by the client.
+    },
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
+        # originally returns it. If you use the default HTTP mapping, the
+        # `name` should be a resource name ending with `operations/{unique_id}`.
     &quot;response&quot;: { # The normal response of the operation in case of success.  If the original
         # method returns no data on success, such as `Delete`, the response is
         # `google.protobuf.Empty`.  If the original method is standard
@@ -1395,27 +1413,9 @@ Returns:
         # `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that
-        # originally returns it. If you use the default HTTP mapping, the
-        # `name` should be a resource name ending with `operations/{unique_id}`.
-    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for # The error result of the operation in case of failure or cancellation.
-        # different programming environments, including REST APIs and RPC APIs. It is
-        # used by [gRPC](https://github.com/grpc). Each `Status` message contains
-        # three pieces of data: error code, error message, and error details.
-        #
-        # You can find out more about this error model and how to work with it in the
-        # [API Design Guide](https://cloud.google.com/apis/design/errors).
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any
-          # user-facing error message should be localized and sent in the
-          # google.rpc.Status.details field, or localized by the client.
-      &quot;details&quot;: [ # A list of messages that carry the error details.  There is a common set of
-          # message types for APIs to use.
-        {
-          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
-        },
-      ],
-      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
-    },
+    &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress.
+        # If `true`, the operation is completed, and either `error` or `response` is
+        # available.
     &quot;metadata&quot;: { # Service-specific metadata associated with the operation.  It typically
         # contains progress information and common metadata such as create time.
         # Some services might not provide such metadata.  Any method that returns a
@@ -1446,11 +1446,38 @@ Returns:
   An object of the form:
 
     { # Lists the FHIR stores in the given dataset.
-    &quot;nextPageToken&quot;: &quot;A String&quot;, # Token to retrieve the next page of results or empty if there are no more
-        # results in the list.
     &quot;fhirStores&quot;: [ # The returned FHIR stores. Won&#x27;t be more FHIR stores than the value of
         # page_size in the request.
       { # Represents a FHIR store.
+        &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
+            # this destination. The Cloud Pub/Sub message attributes contain a map
+            # with a string describing the action that has triggered the notification.
+            # For example, &quot;action&quot;:&quot;CreateResource&quot;.
+          &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+              # notifications of changes are published on. Supplied by the client.
+              # PubsubMessage.Data contains the resource name.
+              # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
+              # unique within the topic.
+              # PubsubMessage.PublishTime is the time at which the message was published.
+              # Notifications are only sent if the topic is
+              # non-empty. [Topic
+              # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
+              # to a project. Cloud Healthcare API service account must have publisher
+              # permissions on the given Cloud Pub/Sub topic. Not having adequate
+              # permissions causes the calls that send notifications to fail.
+              #
+              # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
+              # Cloud Logging (see [Viewing
+              # logs](/healthcare/docs/how-tos/logging)). If the number of
+              # errors exceeds a certain rate, some aren&#x27;t submitted.
+        },
+        &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+            # not be changed after the creation of FHIR store.
+            # If set to false, which is the default behavior, all write operations
+            # cause historical versions to be recorded automatically. The historical
+            # versions can be fetched through the history APIs, but cannot be updated.
+            # If set to true, no historical versions are kept. The server sends
+            # errors for attempts to read the historical versions.
         &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
             # export for every resource mutation in this FHIR store. Each store is
             # allowed to have up to 10 streaming configs.
@@ -1465,6 +1492,13 @@ Returns:
             # Some lag (typically on the order of dozens of seconds) is expected before
             # the results show up in the streaming destination.
           { # Contains configuration for streaming FHIR export.
+            &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+                # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+                # all FHIR resource types.
+                # The server treats an empty list as an intent to stream all the
+                # supported resource types in this FHIR store.
+              &quot;A String&quot;,
+            ],
             &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
                 # location and corresponding schema config.
                 #
@@ -1508,29 +1542,42 @@ Returns:
                 # Logging](/healthcare/docs/how-tos/logging)).
               &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
                   # `bq://projectId.bqDatasetId`
+              &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+                  # the new exported tables are written. If the flag is not set and the
+                  # destination dataset contains tables, the export call returns an error.
               &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
                   # generates the schema.
-                &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
                 &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
                     # schema. For example, `concept` in the CodeSystem resource is a recursive
                     # structure; when the depth is 2, the CodeSystem table will have a column
                     # called `concept.concept` but not `concept.concept.concept`. If not
                     # specified or set to 0, the server will use the default value 2. The
                     # maximum depth allowed is 5.
+                &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
               },
-              &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
-                  # the new exported tables are written. If the flag is not set and the
-                  # destination dataset contains tables, the export call returns an error.
             },
-            &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-                # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-                # all FHIR resource types.
-                # The server treats an empty list as an intent to stream all the
-                # supported resource types in this FHIR store.
-              &quot;A String&quot;,
-            ],
           },
         ],
+        &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
+            # immutable after FHIR store creation.
+            # The default value is false, meaning that the API enforces referential
+            # integrity and fails the requests that result in inconsistent state in
+            # the FHIR store.
+            # When this field is set to true, the API skips referential integrity
+            # checks. Consequently, operations that rely on references, such as
+            # GetPatientEverything, do not return all the results if broken references
+            # exist.
+        &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
+            # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
+            # This determines if the client can use an Update operation to create a new
+            # resource with a client-specified ID. If false, all IDs are server-assigned
+            # through the Create operation and attempts to update a non-existent resource
+            # return errors. Please treat the audit logs with appropriate levels of
+            # care if client-specified resource IDs contain sensitive data such as
+            # patient identifiers, those IDs are part of the FHIR resource path
+            # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
+        &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+            # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
         &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
             #
             # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -1545,60 +1592,13 @@ Returns:
             # No more than 64 labels can be associated with a given store.
           &quot;a_key&quot;: &quot;A String&quot;,
         },
-        &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
-            # this destination. The Cloud Pub/Sub message attributes contain a map
-            # with a string describing the action that has triggered the notification.
-            # For example, &quot;action&quot;:&quot;CreateResource&quot;.
-          &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-              # notifications of changes are published on. Supplied by the client.
-              # PubsubMessage.Data contains the resource name.
-              # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
-              # unique within the topic.
-              # PubsubMessage.PublishTime is the time at which the message was published.
-              # Notifications are only sent if the topic is
-              # non-empty. [Topic
-              # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
-              # to a project. Cloud Healthcare API service account must have publisher
-              # permissions on the given Cloud Pub/Sub topic. Not having adequate
-              # permissions causes the calls that send notifications to fail.
-              #
-              # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
-              # Cloud Logging (see [Viewing
-              # logs](/healthcare/docs/how-tos/logging)). If the number of
-              # errors exceeds a certain rate, some aren&#x27;t submitted.
-        },
-        &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-            # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
-        &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
-            # immutable after FHIR store creation.
-            # The default value is false, meaning that the API enforces referential
-            # integrity and fails the requests that result in inconsistent state in
-            # the FHIR store.
-            # When this field is set to true, the API skips referential integrity
-            # checks. Consequently, operations that rely on references, such as
-            # GetPatientEverything, do not return all the results if broken references
-            # exist.
         &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
             # field is immutable after store creation. Requests are rejected if they
             # contain FHIR resources of a different version.
-        &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-            # not be changed after the creation of FHIR store.
-            # If set to false, which is the default behavior, all write operations
-            # cause historical versions to be recorded automatically. The historical
-            # versions can be fetched through the history APIs, but cannot be updated.
-            # If set to true, no historical versions are kept. The server sends
-            # errors for attempts to read the historical versions.
-        &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
-            # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
-            # This determines if the client can use an Update operation to create a new
-            # resource with a client-specified ID. If false, all IDs are server-assigned
-            # through the Create operation and attempts to update a non-existent resource
-            # return errors. Please treat the audit logs with appropriate levels of
-            # care if client-specified resource IDs contain sensitive data such as
-            # patient identifiers, those IDs are part of the FHIR resource path
-            # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
       },
     ],
+    &quot;nextPageToken&quot;: &quot;A String&quot;, # Token to retrieve the next page of results or empty if there are no more
+        # results in the list.
   }</pre>
 </div>
 
@@ -1627,6 +1627,35 @@ Args:
     The object takes the form of:
 
 { # Represents a FHIR store.
+  &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
+      # this destination. The Cloud Pub/Sub message attributes contain a map
+      # with a string describing the action that has triggered the notification.
+      # For example, &quot;action&quot;:&quot;CreateResource&quot;.
+    &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+        # notifications of changes are published on. Supplied by the client.
+        # PubsubMessage.Data contains the resource name.
+        # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
+        # unique within the topic.
+        # PubsubMessage.PublishTime is the time at which the message was published.
+        # Notifications are only sent if the topic is
+        # non-empty. [Topic
+        # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
+        # to a project. Cloud Healthcare API service account must have publisher
+        # permissions on the given Cloud Pub/Sub topic. Not having adequate
+        # permissions causes the calls that send notifications to fail.
+        #
+        # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
+        # Cloud Logging (see [Viewing
+        # logs](/healthcare/docs/how-tos/logging)). If the number of
+        # errors exceeds a certain rate, some aren&#x27;t submitted.
+  },
+  &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+      # not be changed after the creation of FHIR store.
+      # If set to false, which is the default behavior, all write operations
+      # cause historical versions to be recorded automatically. The historical
+      # versions can be fetched through the history APIs, but cannot be updated.
+      # If set to true, no historical versions are kept. The server sends
+      # errors for attempts to read the historical versions.
   &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
       # export for every resource mutation in this FHIR store. Each store is
       # allowed to have up to 10 streaming configs.
@@ -1641,6 +1670,13 @@ Args:
       # Some lag (typically on the order of dozens of seconds) is expected before
       # the results show up in the streaming destination.
     { # Contains configuration for streaming FHIR export.
+      &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+          # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+          # all FHIR resource types.
+          # The server treats an empty list as an intent to stream all the
+          # supported resource types in this FHIR store.
+        &quot;A String&quot;,
+      ],
       &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
           # location and corresponding schema config.
           #
@@ -1684,29 +1720,42 @@ Args:
           # Logging](/healthcare/docs/how-tos/logging)).
         &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
             # `bq://projectId.bqDatasetId`
+        &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+            # the new exported tables are written. If the flag is not set and the
+            # destination dataset contains tables, the export call returns an error.
         &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
             # generates the schema.
-          &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
           &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
               # schema. For example, `concept` in the CodeSystem resource is a recursive
               # structure; when the depth is 2, the CodeSystem table will have a column
               # called `concept.concept` but not `concept.concept.concept`. If not
               # specified or set to 0, the server will use the default value 2. The
               # maximum depth allowed is 5.
+          &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
         },
-        &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
-            # the new exported tables are written. If the flag is not set and the
-            # destination dataset contains tables, the export call returns an error.
       },
-      &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-          # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-          # all FHIR resource types.
-          # The server treats an empty list as an intent to stream all the
-          # supported resource types in this FHIR store.
-        &quot;A String&quot;,
-      ],
     },
   ],
+  &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
+      # immutable after FHIR store creation.
+      # The default value is false, meaning that the API enforces referential
+      # integrity and fails the requests that result in inconsistent state in
+      # the FHIR store.
+      # When this field is set to true, the API skips referential integrity
+      # checks. Consequently, operations that rely on references, such as
+      # GetPatientEverything, do not return all the results if broken references
+      # exist.
+  &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
+      # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
+      # This determines if the client can use an Update operation to create a new
+      # resource with a client-specified ID. If false, all IDs are server-assigned
+      # through the Create operation and attempts to update a non-existent resource
+      # return errors. Please treat the audit logs with appropriate levels of
+      # care if client-specified resource IDs contain sensitive data such as
+      # patient identifiers, those IDs are part of the FHIR resource path
+      # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
+  &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+      # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
   &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
       # 
       # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -1721,58 +1770,9 @@ Args:
       # No more than 64 labels can be associated with a given store.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
-  &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
-      # this destination. The Cloud Pub/Sub message attributes contain a map
-      # with a string describing the action that has triggered the notification.
-      # For example, &quot;action&quot;:&quot;CreateResource&quot;.
-    &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-        # notifications of changes are published on. Supplied by the client.
-        # PubsubMessage.Data contains the resource name.
-        # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
-        # unique within the topic.
-        # PubsubMessage.PublishTime is the time at which the message was published.
-        # Notifications are only sent if the topic is
-        # non-empty. [Topic
-        # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
-        # to a project. Cloud Healthcare API service account must have publisher
-        # permissions on the given Cloud Pub/Sub topic. Not having adequate
-        # permissions causes the calls that send notifications to fail.
-        #
-        # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
-        # Cloud Logging (see [Viewing
-        # logs](/healthcare/docs/how-tos/logging)). If the number of
-        # errors exceeds a certain rate, some aren&#x27;t submitted.
-  },
-  &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-      # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
-  &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
-      # immutable after FHIR store creation.
-      # The default value is false, meaning that the API enforces referential
-      # integrity and fails the requests that result in inconsistent state in
-      # the FHIR store.
-      # When this field is set to true, the API skips referential integrity
-      # checks. Consequently, operations that rely on references, such as
-      # GetPatientEverything, do not return all the results if broken references
-      # exist.
   &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
       # field is immutable after store creation. Requests are rejected if they
       # contain FHIR resources of a different version.
-  &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-      # not be changed after the creation of FHIR store.
-      # If set to false, which is the default behavior, all write operations
-      # cause historical versions to be recorded automatically. The historical
-      # versions can be fetched through the history APIs, but cannot be updated.
-      # If set to true, no historical versions are kept. The server sends
-      # errors for attempts to read the historical versions.
-  &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
-      # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
-      # This determines if the client can use an Update operation to create a new
-      # resource with a client-specified ID. If false, all IDs are server-assigned
-      # through the Create operation and attempts to update a non-existent resource
-      # return errors. Please treat the audit logs with appropriate levels of
-      # care if client-specified resource IDs contain sensitive data such as
-      # patient identifiers, those IDs are part of the FHIR resource path
-      # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
 }
 
   updateMask: string, The update mask applies to the resource. For the `FieldMask` definition,
@@ -1787,6 +1787,35 @@ Returns:
   An object of the form:
 
     { # Represents a FHIR store.
+    &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
+        # this destination. The Cloud Pub/Sub message attributes contain a map
+        # with a string describing the action that has triggered the notification.
+        # For example, &quot;action&quot;:&quot;CreateResource&quot;.
+      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
+          # notifications of changes are published on. Supplied by the client.
+          # PubsubMessage.Data contains the resource name.
+          # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
+          # unique within the topic.
+          # PubsubMessage.PublishTime is the time at which the message was published.
+          # Notifications are only sent if the topic is
+          # non-empty. [Topic
+          # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
+          # to a project. Cloud Healthcare API service account must have publisher
+          # permissions on the given Cloud Pub/Sub topic. Not having adequate
+          # permissions causes the calls that send notifications to fail.
+          #
+          # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
+          # Cloud Logging (see [Viewing
+          # logs](/healthcare/docs/how-tos/logging)). If the number of
+          # errors exceeds a certain rate, some aren&#x27;t submitted.
+    },
+    &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
+        # not be changed after the creation of FHIR store.
+        # If set to false, which is the default behavior, all write operations
+        # cause historical versions to be recorded automatically. The historical
+        # versions can be fetched through the history APIs, but cannot be updated.
+        # If set to true, no historical versions are kept. The server sends
+        # errors for attempts to read the historical versions.
     &quot;streamConfigs&quot;: [ # A list of streaming configs that configure the destinations of streaming
         # export for every resource mutation in this FHIR store. Each store is
         # allowed to have up to 10 streaming configs.
@@ -1801,6 +1830,13 @@ Returns:
         # Some lag (typically on the order of dozens of seconds) is expected before
         # the results show up in the streaming destination.
       { # Contains configuration for streaming FHIR export.
+        &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
+            # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
+            # all FHIR resource types.
+            # The server treats an empty list as an intent to stream all the
+            # supported resource types in this FHIR store.
+          &quot;A String&quot;,
+        ],
         &quot;bigqueryDestination&quot;: { # The configuration for exporting to BigQuery. # The destination BigQuery structure that contains both the dataset
             # location and corresponding schema config.
             #
@@ -1844,29 +1880,42 @@ Returns:
             # Logging](/healthcare/docs/how-tos/logging)).
           &quot;datasetUri&quot;: &quot;A String&quot;, # BigQuery URI to a dataset, up to 2000 characters long, in the format
               # `bq://projectId.bqDatasetId`
+          &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
+              # the new exported tables are written. If the flag is not set and the
+              # destination dataset contains tables, the export call returns an error.
           &quot;schemaConfig&quot;: { # Configuration for the FHIR BigQuery schema. Determines how the server # The configuration for the exported BigQuery schema.
               # generates the schema.
-            &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
             &quot;recursiveStructureDepth&quot;: &quot;A String&quot;, # The depth for all recursive structures in the output analytics
                 # schema. For example, `concept` in the CodeSystem resource is a recursive
                 # structure; when the depth is 2, the CodeSystem table will have a column
                 # called `concept.concept` but not `concept.concept.concept`. If not
                 # specified or set to 0, the server will use the default value 2. The
                 # maximum depth allowed is 5.
+            &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type.
           },
-          &quot;force&quot;: True or False, # If this flag is `TRUE`, all tables are deleted from the dataset before
-              # the new exported tables are written. If the flag is not set and the
-              # destination dataset contains tables, the export call returns an error.
         },
-        &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;).
-            # See https://www.hl7.org/fhir/valueset-resource-types.html for a list of
-            # all FHIR resource types.
-            # The server treats an empty list as an intent to stream all the
-            # supported resource types in this FHIR store.
-          &quot;A String&quot;,
-        ],
       },
     ],
+    &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
+        # immutable after FHIR store creation.
+        # The default value is false, meaning that the API enforces referential
+        # integrity and fails the requests that result in inconsistent state in
+        # the FHIR store.
+        # When this field is set to true, the API skips referential integrity
+        # checks. Consequently, operations that rely on references, such as
+        # GetPatientEverything, do not return all the results if broken references
+        # exist.
+    &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
+        # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
+        # This determines if the client can use an Update operation to create a new
+        # resource with a client-specified ID. If false, all IDs are server-assigned
+        # through the Create operation and attempts to update a non-existent resource
+        # return errors. Please treat the audit logs with appropriate levels of
+        # care if client-specified resource IDs contain sensitive data such as
+        # patient identifiers, those IDs are part of the FHIR resource path
+        # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
+    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
+        # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
     &quot;labels&quot;: { # User-supplied key-value pairs used to organize FHIR stores.
         #
         # Label keys must be between 1 and 63 characters long, have a UTF-8 encoding
@@ -1881,58 +1930,9 @@ Returns:
         # No more than 64 labels can be associated with a given store.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
-    &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # If non-empty, publish all resource modifications of this FHIR store to
-        # this destination. The Cloud Pub/Sub message attributes contain a map
-        # with a string describing the action that has triggered the notification.
-        # For example, &quot;action&quot;:&quot;CreateResource&quot;.
-      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that
-          # notifications of changes are published on. Supplied by the client.
-          # PubsubMessage.Data contains the resource name.
-          # PubsubMessage.MessageId is the ID of this message. It is guaranteed to be
-          # unique within the topic.
-          # PubsubMessage.PublishTime is the time at which the message was published.
-          # Notifications are only sent if the topic is
-          # non-empty. [Topic
-          # names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped
-          # to a project. Cloud Healthcare API service account must have publisher
-          # permissions on the given Cloud Pub/Sub topic. Not having adequate
-          # permissions causes the calls that send notifications to fail.
-          #
-          # If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to
-          # Cloud Logging (see [Viewing
-          # logs](/healthcare/docs/how-tos/logging)). If the number of
-          # errors exceeds a certain rate, some aren&#x27;t submitted.
-    },
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Resource name of the FHIR store, of the form
-        # `projects/{project_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
-    &quot;disableReferentialIntegrity&quot;: True or False, # Whether to disable referential integrity in this FHIR store. This field is
-        # immutable after FHIR store creation.
-        # The default value is false, meaning that the API enforces referential
-        # integrity and fails the requests that result in inconsistent state in
-        # the FHIR store.
-        # When this field is set to true, the API skips referential integrity
-        # checks. Consequently, operations that rely on references, such as
-        # GetPatientEverything, do not return all the results if broken references
-        # exist.
     &quot;version&quot;: &quot;A String&quot;, # The FHIR specification version that this FHIR store supports natively. This
         # field is immutable after store creation. Requests are rejected if they
         # contain FHIR resources of a different version.
-    &quot;disableResourceVersioning&quot;: True or False, # Whether to disable resource versioning for this FHIR store. This field can
-        # not be changed after the creation of FHIR store.
-        # If set to false, which is the default behavior, all write operations
-        # cause historical versions to be recorded automatically. The historical
-        # versions can be fetched through the history APIs, but cannot be updated.
-        # If set to true, no historical versions are kept. The server sends
-        # errors for attempts to read the historical versions.
-    &quot;enableUpdateCreate&quot;: True or False, # Whether this FHIR store has the [updateCreate
-        # capability](https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.updateCreate).
-        # This determines if the client can use an Update operation to create a new
-        # resource with a client-specified ID. If false, all IDs are server-assigned
-        # through the Create operation and attempts to update a non-existent resource
-        # return errors. Please treat the audit logs with appropriate levels of
-        # care if client-specified resource IDs contain sensitive data such as
-        # patient identifiers, those IDs are part of the FHIR resource path
-        # recorded in Cloud audit logs and Cloud Pub/Sub notifications.
   }</pre>
 </div>
 
@@ -2020,12 +2020,22 @@ See the operation documentation for the appropriate value for this field. (requi
         #
         # For a description of IAM and its features, see the
         # [IAM documentation](https://cloud.google.com/iam/docs/).
+      &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+          # prevent simultaneous updates of a policy from overwriting each other.
+          # It is strongly suggested that systems make use of the `etag` in the
+          # read-modify-write cycle to perform policy updates in order to avoid race
+          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+          # systems are expected to put that etag in the request to `setIamPolicy` to
+          # ensure that their change will be applied to the same version of the policy.
+          #
+          # **Important:** If you use IAM Conditions, you must include the `etag` field
+          # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+          # you to overwrite a version `3` policy with a version `1` policy, and all of
+          # the conditions in the version `3` policy are lost.
       &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
           # `condition` that determines how and when the `bindings` are applied. Each
           # of the `bindings` must contain at least one member.
         { # Associates `members` with a `role`.
-          &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
-              # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
           &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) # The condition that is associated with this binding.
               #
               # If the condition evaluates to `true`, then this binding applies to the
@@ -2068,16 +2078,18 @@ See the operation documentation for the appropriate value for this field. (requi
               # The exact variables and functions that may be referenced within an expression
               # are determined by the service that evaluates it. See the service
               # documentation for additional information.
+            &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+                # syntax.
+            &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
+                # reporting, e.g. a file name and a position in the file.
             &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
                 # its purpose. This can be used e.g. in UIs which allow to enter the
                 # expression.
-            &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
-                # reporting, e.g. a file name and a position in the file.
             &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
                 # describes the expression, e.g. when hovered over it in a UI.
-            &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-                # syntax.
           },
+          &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
+              # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
           &quot;members&quot;: [ # Specifies the identities requesting access for a Cloud Platform resource.
               # `members` can have the following values:
               #
@@ -2125,18 +2137,6 @@ See the operation documentation for the appropriate value for this field. (requi
           ],
         },
       ],
-      &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-          # prevent simultaneous updates of a policy from overwriting each other.
-          # It is strongly suggested that systems make use of the `etag` in the
-          # read-modify-write cycle to perform policy updates in order to avoid race
-          # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-          # systems are expected to put that etag in the request to `setIamPolicy` to
-          # ensure that their change will be applied to the same version of the policy.
-          #
-          # **Important:** If you use IAM Conditions, you must include the `etag` field
-          # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-          # you to overwrite a version `3` policy with a version `1` policy, and all of
-          # the conditions in the version `3` policy are lost.
       &quot;version&quot;: 42, # Specifies the format of the policy.
           #
           # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
@@ -2177,7 +2177,7 @@ See the operation documentation for the appropriate value for this field. (requi
             #     {
             #       &quot;audit_configs&quot;: [
             #         {
-            #           &quot;service&quot;: &quot;allServices&quot;
+            #           &quot;service&quot;: &quot;allServices&quot;,
             #           &quot;audit_log_configs&quot;: [
             #             {
             #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
@@ -2186,18 +2186,18 @@ See the operation documentation for the appropriate value for this field. (requi
             #               ]
             #             },
             #             {
-            #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+            #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
             #             },
             #             {
-            #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
+            #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
             #             }
             #           ]
             #         },
             #         {
-            #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
+            #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
             #           &quot;audit_log_configs&quot;: [
             #             {
-            #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+            #               &quot;log_type&quot;: &quot;DATA_READ&quot;
             #             },
             #             {
             #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
@@ -2213,6 +2213,9 @@ See the operation documentation for the appropriate value for this field. (requi
             # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
             # logging. It also exempts jose@example.com from DATA_READ logging, and
             # aliya@example.com from DATA_WRITE logging.
+          &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
+              # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
+              # `allServices` is a special value that covers all services.
           &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
             { # Provides the configuration for logging a type of permissions.
                 # Example:
@@ -2226,24 +2229,21 @@ See the operation documentation for the appropriate value for this field. (requi
                 #           ]
                 #         },
                 #         {
-                #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+                #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
                 #         }
                 #       ]
                 #     }
                 #
                 # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting
                 # jose@example.com from DATA_READ logging.
+              &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
               &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of
                   # permission.
                   # Follows the same format of Binding.members.
                 &quot;A String&quot;,
               ],
-              &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
             },
           ],
-          &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
-              # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
-              # `allServices` is a special value that covers all services.
         },
       ],
     },
@@ -2329,12 +2329,22 @@ Returns:
       #
       # For a description of IAM and its features, see the
       # [IAM documentation](https://cloud.google.com/iam/docs/).
+    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
+        # prevent simultaneous updates of a policy from overwriting each other.
+        # It is strongly suggested that systems make use of the `etag` in the
+        # read-modify-write cycle to perform policy updates in order to avoid race
+        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
+        # systems are expected to put that etag in the request to `setIamPolicy` to
+        # ensure that their change will be applied to the same version of the policy.
+        #
+        # **Important:** If you use IAM Conditions, you must include the `etag` field
+        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
+        # you to overwrite a version `3` policy with a version `1` policy, and all of
+        # the conditions in the version `3` policy are lost.
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a
         # `condition` that determines how and when the `bindings` are applied. Each
         # of the `bindings` must contain at least one member.
       { # Associates `members` with a `role`.
-        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
-            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
         &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) # The condition that is associated with this binding.
             #
             # If the condition evaluates to `true`, then this binding applies to the
@@ -2377,16 +2387,18 @@ Returns:
             # The exact variables and functions that may be referenced within an expression
             # are determined by the service that evaluates it. See the service
             # documentation for additional information.
+          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
+              # syntax.
+          &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
+              # reporting, e.g. a file name and a position in the file.
           &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing
               # its purpose. This can be used e.g. in UIs which allow to enter the
               # expression.
-          &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error
-              # reporting, e.g. a file name and a position in the file.
           &quot;description&quot;: &quot;A String&quot;, # Optional. Description of the expression. This is a longer text which
               # describes the expression, e.g. when hovered over it in a UI.
-          &quot;expression&quot;: &quot;A String&quot;, # Textual representation of an expression in Common Expression Language
-              # syntax.
         },
+        &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`.
+            # For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
         &quot;members&quot;: [ # Specifies the identities requesting access for a Cloud Platform resource.
             # `members` can have the following values:
             #
@@ -2434,18 +2446,6 @@ Returns:
         ],
       },
     ],
-    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help
-        # prevent simultaneous updates of a policy from overwriting each other.
-        # It is strongly suggested that systems make use of the `etag` in the
-        # read-modify-write cycle to perform policy updates in order to avoid race
-        # conditions: An `etag` is returned in the response to `getIamPolicy`, and
-        # systems are expected to put that etag in the request to `setIamPolicy` to
-        # ensure that their change will be applied to the same version of the policy.
-        #
-        # **Important:** If you use IAM Conditions, you must include the `etag` field
-        # whenever you call `setIamPolicy`. If you omit this field, then IAM allows
-        # you to overwrite a version `3` policy with a version `1` policy, and all of
-        # the conditions in the version `3` policy are lost.
     &quot;version&quot;: 42, # Specifies the format of the policy.
         #
         # Valid values are `0`, `1`, and `3`. Requests that specify an invalid value
@@ -2486,7 +2486,7 @@ Returns:
           #     {
           #       &quot;audit_configs&quot;: [
           #         {
-          #           &quot;service&quot;: &quot;allServices&quot;
+          #           &quot;service&quot;: &quot;allServices&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
           #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
@@ -2495,18 +2495,18 @@ Returns:
           #               ]
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;
           #             },
           #             {
-          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;,
+          #               &quot;log_type&quot;: &quot;ADMIN_READ&quot;
           #             }
           #           ]
           #         },
           #         {
-          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;
+          #           &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;,
           #           &quot;audit_log_configs&quot;: [
           #             {
-          #               &quot;log_type&quot;: &quot;DATA_READ&quot;,
+          #               &quot;log_type&quot;: &quot;DATA_READ&quot;
           #             },
           #             {
           #               &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
@@ -2522,6 +2522,9 @@ Returns:
           # For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ
           # logging. It also exempts jose@example.com from DATA_READ logging, and
           # aliya@example.com from DATA_WRITE logging.
+        &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
+            # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
+            # `allServices` is a special value that covers all services.
         &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
           { # Provides the configuration for logging a type of permissions.
               # Example:
@@ -2535,24 +2538,21 @@ Returns:
               #           ]
               #         },
               #         {
-              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;,
+              #           &quot;log_type&quot;: &quot;DATA_WRITE&quot;
               #         }
               #       ]
               #     }
               #
               # This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting
               # jose@example.com from DATA_READ logging.
+            &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
             &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of
                 # permission.
                 # Follows the same format of Binding.members.
               &quot;A String&quot;,
             ],
-            &quot;logType&quot;: &quot;A String&quot;, # The log type that this config enables.
           },
         ],
-        &quot;service&quot;: &quot;A String&quot;, # Specifies a service that will be enabled for audit logging.
-            # For example, `storage.googleapis.com`, `cloudsql.googleapis.com`.
-            # `allServices` is a special value that covers all services.
       },
     ],
   }</pre>
