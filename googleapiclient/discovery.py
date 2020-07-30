@@ -29,7 +29,7 @@ from six.moves.urllib.parse import urlencode, urlparse, urljoin, urlunparse, par
 
 # Standard library imports
 import copy
-
+from collections import OrderedDict
 try:
     from email.generator import BytesGenerator
 except ImportError:
@@ -241,7 +241,8 @@ def build(
     else:
         discovery_http = http
 
-    for discovery_url in (discoveryServiceUrl, V2_DISCOVERY_URI):
+    for discovery_url in \
+            _discovery_service_uri_options(discoveryServiceUrl, version):
         requested_url = uritemplate.expand(discovery_url, params)
 
         try:
@@ -268,6 +269,29 @@ def build(
                 raise e
 
     raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName, version))
+
+
+def _discovery_service_uri_options(discoveryServiceUrl, version):
+    """
+    Returns Discovery URIs to be used for attemnting to build the API Resource.
+
+  Args:
+    discoveryServiceUrl:
+        string, the Original Discovery Service URL preferred by the customer.
+    version:
+        string, API Version requested
+
+  Returns:
+      A list of URIs to be tried for the Service Discovery, in order.
+    """
+
+    urls = [discoveryServiceUrl, V2_DISCOVERY_URI]
+    # V1 Discovery won't work if the requested version is None
+    if discoveryServiceUrl == V1_DISCOVERY_URI and version is None:
+        logger.warning(
+            "Discovery V1 does not support empty versions. Defaulting to V2...")
+        urls.pop(0)
+    return list(OrderedDict.fromkeys(urls))
 
 
 def _retrieve_discovery_doc(url, http, cache_discovery,
