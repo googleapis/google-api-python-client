@@ -837,6 +837,37 @@ class DiscoveryFromHttp(unittest.TestCase):
         )
         self.assertEqual(zoo._baseUrl, api_endpoint)
 
+    def test_discovery_with_empty_version_uses_v2(self):
+        http = HttpMockSequence(
+            [
+                ({"status": "200"}, read_datafile("zoo.json", "rb")),
+            ]
+        )
+        build("zoo", version=None, http=http, cache_discovery=False)
+        validate_discovery_requests(self, http, "zoo", None, V2_DISCOVERY_URI)
+
+    def test_discovery_with_empty_version_preserves_custom_uri(self):
+        http = HttpMockSequence(
+            [
+                ({"status": "200"}, read_datafile("zoo.json", "rb")),
+            ]
+        )
+        custom_discovery_uri = "https://foo.bar/$discovery"
+        build(
+            "zoo", version=None, http=http,
+            cache_discovery=False, discoveryServiceUrl=custom_discovery_uri)
+        validate_discovery_requests(
+            self, http, "zoo", None, custom_discovery_uri)
+
+    def test_discovery_with_valid_version_uses_v1(self):
+        http = HttpMockSequence(
+            [
+                ({"status": "200"}, read_datafile("zoo.json", "rb")),
+            ]
+        )
+        build("zoo", version="v123", http=http, cache_discovery=False)
+        validate_discovery_requests(self, http, "zoo", "v123", V1_DISCOVERY_URI)
+
 
 class DiscoveryRetryFromHttp(unittest.TestCase):
     def test_repeated_500_retries_and_fails(self):
