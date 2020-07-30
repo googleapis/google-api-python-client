@@ -98,7 +98,7 @@ The response is a Python object built from the JSON response sent by the API ser
 ```python
 import json
 ...
-print json.dumps(response, sort_keys=True, indent=4)
+print(json.dumps(response, sort_keys=True, indent=4))
 ```
 
 For example, if the printed JSON is the following:
