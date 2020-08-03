@@ -226,7 +226,7 @@ def method_params(doc):
             parameters.append(pname)
 
         for line in args:
-            m = re.search("^\s+([a-zA-Z0-9_]+): (.*)", line)
+            m = re.search(r"^\s+([a-zA-Z0-9_]+): (.*)", line)
             if m is None:
                 desc += line
                 continue
@@ -284,7 +284,7 @@ def breadcrumbs(path, root_discovery):
         display = p
         if i == 0:
             display = root_discovery.get("title", display)
-        crumbs.append('<a href="%s.html">%s</a>' % (prefix + p, display))
+        crumbs.append('<a href="{}.html">{}</a>'.format(prefix + p, display))
         accumulated.append(p)
 
     return " . ".join(crumbs)
@@ -407,7 +407,7 @@ def document_api(name, version, uri):
     version = safe_version(version)
 
     document_collection_recursive(
-        service, "%s_%s." % (name, version), discovery, discovery
+        service, "{}_{}.".format(name, version), discovery, discovery
     )
 
 
@@ -427,7 +427,7 @@ def document_api_from_discovery_document(uri):
     version = safe_version(discovery["version"])
 
     document_collection_recursive(
-        service, "%s_%s." % (name, version), discovery, discovery
+        service, "{}_{}.".format(name, version), discovery, discovery
     )
 
 
