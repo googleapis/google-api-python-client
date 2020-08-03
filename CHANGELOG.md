@@ -1,5 +1,19 @@
 # Changelog
 
+### [1.10.1](https://www.github.com/googleapis/google-api-python-client/compare/v1.10.0...v1.10.1) (2020-08-03)
+
+
+### Bug Fixes
+
+* discovery uses V2 when version is None ([#975](https://www.github.com/googleapis/google-api-python-client/issues/975)) ([cd4e8f4](https://www.github.com/googleapis/google-api-python-client/commit/cd4e8f429422232dd82ef7e9bc685061d5df94a1)), closes [#971](https://www.github.com/googleapis/google-api-python-client/issues/971)
+
+
+### Documentation
+
+* fix deprecation warnings due to invalid escape sequences. ([#996](https://www.github.com/googleapis/google-api-python-client/issues/996)) ([0f60eda](https://www.github.com/googleapis/google-api-python-client/commit/0f60eda81ea524dcd1358d87b06da701412bb414)), closes [#995](https://www.github.com/googleapis/google-api-python-client/issues/995)
+* fix link to service accounts documentation ([#986](https://www.github.com/googleapis/google-api-python-client/issues/986)) ([edb2516](https://www.github.com/googleapis/google-api-python-client/commit/edb2516eb59770546e7960ca633c7be0ca7b1ad4))
+* update generated docs ([#981](https://www.github.com/googleapis/google-api-python-client/issues/981)) ([d059ad8](https://www.github.com/googleapis/google-api-python-client/commit/d059ad881c7ae58c67931c48788d0bd7343ab16c))
+
 ## [1.10.0](https://www.github.com/googleapis/google-api-python-client/compare/v1.9.3...v1.10.0) (2020-07-15)
 
 
