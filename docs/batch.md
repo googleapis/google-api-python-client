@@ -70,7 +70,7 @@ batch = service.new_batch_http_request()
 
 batch.add(service.animals().list(), callback=list_animals)
 batch.add(service.farmers().list(), callback=list_farmers)
-batch.execute(http=http)
+batch.execute()
 ```
 
 ```python
@@ -90,5 +90,5 @@ batch = service.new_batch_http_request(callback=insert_animal)
 batch.add(service.animals().insert(name="sheep"))
 batch.add(service.animals().insert(name="pig"))
 batch.add(service.animals().insert(name="llama"))
-batch.execute(http=http)
+batch.execute()
 ```
