@@ -117,6 +117,10 @@ MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE = {
 }
 _PAGE_TOKEN_NAMES = ("pageToken", "nextPageToken")
 
+# Parameters controlling mTLS behavior. See https://google.aip.dev/auth/4114.
+GOOGLE_API_USE_CLIENT_CERTIFICATE = "GOOGLE_API_USE_CLIENT_CERTIFICATE"
+GOOGLE_API_USE_MTLS_ENDPOINT = "GOOGLE_API_USE_MTLS_ENDPOINT"
+
 # Parameters accepted by the stack, but not visible via discovery.
 # TODO(dhermes): Remove 'userip' in 'v2'.
 STACK_QUERY_PARAMETERS = frozenset(["trace", "pp", "userip", "strict"])
@@ -215,15 +219,30 @@ def build(
     cache: googleapiclient.discovery_cache.base.CacheBase, an optional
       cache object for the discovery documents.
     client_options: Mapping object or google.api_core.client_options, client
-      options to set user options on the client. The API endpoint should be set
-      through client_options. client_cert_source is not supported, client cert
-      should be provided using client_encrypted_cert_source instead.
+      options to set user options on the client.
+      (1) The API endpoint should be set through client_options. If API endpoint
+      is not set, `GOOGLE_API_USE_MTLS_ENDPOINT` environment variable can be used
+      to control which endpoint to use.
+      (2) client_cert_source is not supported, client cert should be provided using
+      client_encrypted_cert_source instead. In order to use the provided client
+      cert, `GOOGLE_API_USE_CLIENT_CERTIFICATE` environment variable must be
+      set to `true`.
+      More details on the environment variables are here:
+      https://google.aip.dev/auth/4114
     adc_cert_path: str, client certificate file path to save the application
       default client certificate for mTLS. This field is required if you want to
-      use the default client certificate.
+      use the default client certificate. `GOOGLE_API_USE_CLIENT_CERTIFICATE`
+      environment variable must be set to `true` in order to use this field,
+      otherwise this field doesn't nothing.
+      More details on the environment variables are here:
+      https://google.aip.dev/auth/4114
     adc_key_path: str, client encrypted private key file path to save the
       application default client encrypted private key for mTLS. This field is
       required if you want to use the default client certificate.
+      `GOOGLE_API_USE_CLIENT_CERTIFICATE` environment variable must be set to
+      `true` in order to use this field, otherwise this field doesn't nothing.
+      More details on the environment variables are here:
+      https://google.aip.dev/auth/4114
     num_retries: Integer, number of times to retry discovery with
       randomized exponential backoff in case of intermittent/connection issues.
 
@@ -392,15 +411,30 @@ def build_from_document(
       google.auth.credentials.Credentials, credentials to be used for
       authentication.
     client_options: Mapping object or google.api_core.client_options, client
-      options to set user options on the client. The API endpoint should be set
-      through client_options. client_cert_source is not supported, client cert
-      should be provided using client_encrypted_cert_source instead.
+      options to set user options on the client.
+      (1) The API endpoint should be set through client_options. If API endpoint
+      is not set, `GOOGLE_API_USE_MTLS_ENDPOINT` environment variable can be used
+      to control which endpoint to use.
+      (2) client_cert_source is not supported, client cert should be provided using
+      client_encrypted_cert_source instead. In order to use the provided client
+      cert, `GOOGLE_API_USE_CLIENT_CERTIFICATE` environment variable must be
+      set to `true`.
+      More details on the environment variables are here:
+      https://google.aip.dev/auth/4114
     adc_cert_path: str, client certificate file path to save the application
       default client certificate for mTLS. This field is required if you want to
-      use the default client certificate.
+      use the default client certificate. `GOOGLE_API_USE_CLIENT_CERTIFICATE`
+      environment variable must be set to `true` in order to use this field,
+      otherwise this field doesn't nothing.
+      More details on the environment variables are here:
+      https://google.aip.dev/auth/4114
     adc_key_path: str, client encrypted private key file path to save the
       application default client encrypted private key for mTLS. This field is
       required if you want to use the default client certificate.
+      `GOOGLE_API_USE_CLIENT_CERTIFICATE` environment variable must be set to
+      `true` in order to use this field, otherwise this field doesn't nothing.
+      More details on the environment variables are here:
+      https://google.aip.dev/auth/4114
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -469,20 +503,26 @@ def build_from_document(
 
         # Obtain client cert and create mTLS http channel if cert exists.
         client_cert_to_use = None
+        use_client_cert = os.getenv(GOOGLE_API_USE_CLIENT_CERTIFICATE, "false")
+        if not use_client_cert in ("true", "false"):
+            raise MutualTLSChannelError(
+                "Unsupported GOOGLE_API_USE_CLIENT_CERTIFICATE value. Accepted values: true, false"
+            )
         if client_options and client_options.client_cert_source:
             raise MutualTLSChannelError(
                 "ClientOptions.client_cert_source is not supported, please use ClientOptions.client_encrypted_cert_source."
             )
-        if (
-            client_options
-            and hasattr(client_options, "client_encrypted_cert_source")
-            and client_options.client_encrypted_cert_source
-        ):
-            client_cert_to_use = client_options.client_encrypted_cert_source
-        elif adc_cert_path and adc_key_path and mtls.has_default_client_cert_source():
-            client_cert_to_use = mtls.default_client_encrypted_cert_source(
-                adc_cert_path, adc_key_path
-            )
+        if use_client_cert == "true":
+            if (
+                client_options
+                and hasattr(client_options, "client_encrypted_cert_source")
+                and client_options.client_encrypted_cert_source
+            ):
+                client_cert_to_use = client_options.client_encrypted_cert_source
+            elif adc_cert_path and adc_key_path and mtls.has_default_client_cert_source():
+                client_cert_to_use = mtls.default_client_encrypted_cert_source(
+                    adc_cert_path, adc_key_path
+                )
         if client_cert_to_use:
             cert_path, key_path, passphrase = client_cert_to_use()
 
@@ -503,17 +543,17 @@ def build_from_document(
             not client_options or not client_options.api_endpoint
         ):
             mtls_endpoint = urljoin(service["mtlsRootUrl"], service["servicePath"])
-            use_mtls_env = os.getenv("GOOGLE_API_USE_MTLS", "never")
+            use_mtls_endpoint = os.getenv(GOOGLE_API_USE_MTLS_ENDPOINT, "auto")
 
-            if not use_mtls_env in ("never", "auto", "always"):
+            if not use_mtls_endpoint in ("never", "auto", "always"):
                 raise MutualTLSChannelError(
-                    "Unsupported GOOGLE_API_USE_MTLS value. Accepted values: never, auto, always"
+                    "Unsupported GOOGLE_API_USE_MTLS_ENDPOINT value. Accepted values: never, auto, always"
                 )
 
             # Switch to mTLS endpoint, if environment variable is "always", or
             # environment varibable is "auto" and client cert exists.
-            if use_mtls_env == "always" or (
-                use_mtls_env == "auto" and client_cert_to_use
+            if use_mtls_endpoint == "always" or (
+                use_mtls_endpoint == "auto" and client_cert_to_use
             ):
                 base = mtls_endpoint
 
