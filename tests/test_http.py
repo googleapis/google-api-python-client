@@ -1651,7 +1651,7 @@ class TestHttpBuild(unittest.TestCase):
         socket.setdefaulttimeout(0)
         http = build_http()
         self.assertEqual(http.timeout, 0)
-    
+
     def test_build_http_default_308_is_excluded_as_redirect(self):
         http = build_http()
         self.assertTrue(308 not in http.redirect_codes)

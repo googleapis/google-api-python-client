@@ -44,7 +44,7 @@ def lint(session):
     )
 
 
-@nox.session(python=["2.7", "3.5", "3.6", "3.7"])
+@nox.session(python=["2.7", "3.5", "3.6", "3.7", "3.8"])
 @nox.parametrize(
     "oauth2client",
     [
