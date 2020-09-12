@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.12.0](https://www.github.com/googleapis/google-api-python-client/compare/v1.11.0...v1.12.0) (2020-09-12)
+
+
+### Features
+
+* add quota_project, credentials_file, and scopes support ([#1022](https://www.github.com/googleapis/google-api-python-client/issues/1022)) ([790e702](https://www.github.com/googleapis/google-api-python-client/commit/790e70224c8110bfb1191333ce448c2b0fe54ea6))
+
+
+### Documentation
+
+* convert `print` statement to function ([#988](https://www.github.com/googleapis/google-api-python-client/issues/988)) ([16448bc](https://www.github.com/googleapis/google-api-python-client/commit/16448bc666e032abd83096faadcda56f86f36f18)), closes [#987](https://www.github.com/googleapis/google-api-python-client/issues/987)
+* remove http from batch execute docs ([#1003](https://www.github.com/googleapis/google-api-python-client/issues/1003)) ([5028fe7](https://www.github.com/googleapis/google-api-python-client/commit/5028fe76c8075c6594b1999074f91eed7f7dd329)), closes [#1002](https://www.github.com/googleapis/google-api-python-client/issues/1002)
+
 ## [1.11.0](https://www.github.com/googleapis/google-api-python-client/compare/v1.10.1...v1.11.0) (2020-08-27)
 
 
