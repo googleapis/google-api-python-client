@@ -30,6 +30,7 @@ from six.moves.urllib.parse import urlencode, urlparse, urljoin, urlunparse, par
 # Standard library imports
 import copy
 from collections import OrderedDict
+
 try:
     from email.generator import BytesGenerator
 except ImportError:
@@ -260,14 +261,17 @@ def build(
     else:
         discovery_http = http
 
-    for discovery_url in \
-            _discovery_service_uri_options(discoveryServiceUrl, version):
+    for discovery_url in _discovery_service_uri_options(discoveryServiceUrl, version):
         requested_url = uritemplate.expand(discovery_url, params)
 
         try:
             content = _retrieve_discovery_doc(
-                requested_url, discovery_http, cache_discovery, cache,
-                developerKey, num_retries=num_retries
+                requested_url,
+                discovery_http,
+                cache_discovery,
+                cache,
+                developerKey,
+                num_retries=num_retries,
             )
             return build_from_document(
                 content,
@@ -308,13 +312,15 @@ def _discovery_service_uri_options(discoveryServiceUrl, version):
     # V1 Discovery won't work if the requested version is None
     if discoveryServiceUrl == V1_DISCOVERY_URI and version is None:
         logger.warning(
-            "Discovery V1 does not support empty versions. Defaulting to V2...")
+            "Discovery V1 does not support empty versions. Defaulting to V2..."
+        )
         urls.pop(0)
     return list(OrderedDict.fromkeys(urls))
 
 
-def _retrieve_discovery_doc(url, http, cache_discovery,
-    cache=None, developerKey=None, num_retries=1):
+def _retrieve_discovery_doc(
+    url, http, cache_discovery, cache=None, developerKey=None, num_retries=1
+):
     """Retrieves the discovery_doc from cache or the internet.
 
   Args:
@@ -444,8 +450,20 @@ def build_from_document(
       setting up mutual TLS channel.
   """
 
-    if http is not None and credentials is not None:
-        raise ValueError("Arguments http and credentials are mutually exclusive.")
+    if client_options is None:
+        client_options = google.api_core.client_options.ClientOptions()
+    if isinstance(client_options, six.moves.collections_abc.Mapping):
+        client_options = google.api_core.client_options.from_dict(client_options)
+
+    if http is not None:
+        # if http is passed, the user cannot provide credentials
+        banned_options = [
+            (credentials, "credentials"),
+            (client_options.credentials_file, "client_options.credentials_file"),
+        ]
+        for option, name in banned_options:
+            if option is not None:
+                raise ValueError("Arguments http and {} are mutually exclusive".format(name))
 
     if isinstance(service, six.string_types):
         service = json.loads(service)
@@ -463,11 +481,8 @@ def build_from_document(
 
     # If an API Endpoint is provided on client options, use that as the base URL
     base = urljoin(service["rootUrl"], service["servicePath"])
-    if client_options:
-        if isinstance(client_options, six.moves.collections_abc.Mapping):
-            client_options = google.api_core.client_options.from_dict(client_options)
-        if client_options.api_endpoint:
-            base = client_options.api_endpoint
+    if client_options.api_endpoint:
+        base = client_options.api_endpoint
 
     schema = Schemas(service)
 
@@ -483,13 +498,30 @@ def build_from_document(
         # If so, then the we need to setup authentication if no developerKey is
         # specified.
         if scopes and not developerKey:
+            # Make sure the user didn't pass multiple credentials
+            if client_options.credentials_file and credentials:
+                raise google.api_core.exceptions.DuplicateCredentialArgs(
+                    "client_options.credentials_file and credentials are mutually exclusive."
+            )
+            # Check for credentials file via client options
+            if client_options.credentials_file:
+                credentials = _auth.credentials_from_file(
+                    client_options.credentials_file,
+                    scopes=client_options.scopes,
+                    quota_project_id=client_options.quota_project_id,
+                )
             # If the user didn't pass in credentials, attempt to acquire application
             # default credentials.
             if credentials is None:
-                credentials = _auth.default_credentials()
+                credentials = _auth.default_credentials(
+                    scopes=client_options.scopes,
+                    quota_project_id=client_options.quota_project_id,
+                )
 
             # The credentials need to be scoped.
-            credentials = _auth.with_scopes(credentials, scopes)
+            # If the user provided scopes via client_options don't override them
+            if not client_options.scopes:
+                credentials = _auth.with_scopes(credentials, scopes)
 
         # If credentials are provided, create an authorized http instance;
         # otherwise, skip authentication.
@@ -519,7 +551,9 @@ def build_from_document(
                 and client_options.client_encrypted_cert_source
             ):
                 client_cert_to_use = client_options.client_encrypted_cert_source
-            elif adc_cert_path and adc_key_path and mtls.has_default_client_cert_source():
+            elif (
+                adc_cert_path and adc_key_path and mtls.has_default_client_cert_source()
+            ):
                 client_cert_to_use = mtls.default_client_encrypted_cert_source(
                     adc_cert_path, adc_key_path
                 )

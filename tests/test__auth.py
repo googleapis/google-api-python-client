@@ -40,6 +40,35 @@ class TestAuthWithGoogleAuth(unittest.TestCase):
 
             self.assertEqual(credentials, mock.sentinel.credentials)
 
+    def test_credentials_from_file(self):
+        with mock.patch(
+            "google.auth.load_credentials_from_file", autospec=True
+        ) as default:
+            default.return_value = (mock.sentinel.credentials, mock.sentinel.project)
+
+            credentials = _auth.credentials_from_file("credentials.json")
+
+            self.assertEqual(credentials, mock.sentinel.credentials)
+            default.assert_called_once_with(
+                "credentials.json", scopes=None, quota_project_id=None
+            )
+
+    def test_default_credentials_with_scopes(self):
+        with mock.patch("google.auth.default", autospec=True) as default:
+            default.return_value = (mock.sentinel.credentials, mock.sentinel.project)
+            credentials = _auth.default_credentials(scopes=["1", "2"])
+
+            default.assert_called_once_with(scopes=["1", "2"], quota_project_id=None)
+            self.assertEqual(credentials, mock.sentinel.credentials)
+
+    def test_default_credentials_with_quota_project(self):
+        with mock.patch("google.auth.default", autospec=True) as default:
+            default.return_value = (mock.sentinel.credentials, mock.sentinel.project)
+            credentials = _auth.default_credentials(quota_project_id="my-project")
+
+            default.assert_called_once_with(scopes=None, quota_project_id="my-project")
+            self.assertEqual(credentials, mock.sentinel.credentials)
+
     def test_with_scopes_non_scoped(self):
         credentials = mock.Mock(spec=google.auth.credentials.Credentials)
 
@@ -94,6 +123,16 @@ class TestAuthWithOAuth2Client(unittest.TestCase):
             credentials = _auth.default_credentials()
 
             self.assertEqual(credentials, mock.sentinel.credentials)
+
+    def test_credentials_from_file(self):
+        with self.assertRaises(EnvironmentError):
+            credentials = _auth.credentials_from_file("credentials.json")
+
+    def test_default_credentials_with_scopes_and_quota_project(self):
+        with self.assertRaises(EnvironmentError):
+            credentials = _auth.default_credentials(
+                scopes=["1", "2"], quota_project_id="my-project"
+            )
 
     def test_with_scopes_non_scoped(self):
         credentials = mock.Mock(spec=oauth2client.client.Credentials)
