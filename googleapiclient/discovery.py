@@ -1321,8 +1321,6 @@ class Resource(object):
                 rootDesc["rootUrl"],
                 rootDesc.get("batchPath", "batch"),
             )
-            if batch_uri == "https://www.googleapis.com/batch/plus/v1":
-                import pdb; pdb.set_trace()
 
             def new_batch_http_request(callback=None):
                 """Create a BatchHttpRequest object based on the discovery document.
