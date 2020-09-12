@@ -1305,7 +1305,7 @@ class Discovery(unittest.TestCase):
     def test_batch_request_from_default(self):
         self.http = HttpMock(datafile("plus.json"), {"status": "200"})
         # plus does not define a batchPath
-        plus = build("plus", "v1", http=self.http)
+        plus = build("plus", "v1", http=self.http, cache_discovery=False)
         batch_request = plus.new_batch_http_request()
         self.assertEqual(batch_request._batch_uri, "https://www.googleapis.com/batch")
 
