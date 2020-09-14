@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.12.1](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.0...v1.12.1) (2020-09-14)
+
+
+### Bug Fixes
+
+* **deps:** require six>=1.13.0 ([#1030](https://www.github.com/googleapis/google-api-python-client/issues/1030)) ([4acecc3](https://www.github.com/googleapis/google-api-python-client/commit/4acecc3c0cd31308f9a256f065b7b1d1c3a4798d))
+
 ## [1.12.0](https://www.github.com/googleapis/google-api-python-client/compare/v1.11.0...v1.12.0) (2020-09-12)
 
 
