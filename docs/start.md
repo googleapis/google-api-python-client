@@ -45,12 +45,24 @@ This section describes how to build an API-specific service object, make calls t
 
 ### Build the service object
 
-Whether you are using simple or authorized API access, you use the [build()](http://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build) function to create a service object. It takes an API name and API version as arguments. You can see the list of all API versions on the [Supported APIs](dyn/index.md) page. The service object is constructed with methods specific to the given API. To create it, do the following:
+Whether you are using simple or authorized API access, you use the [build()](http://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build) function to create a service object. It takes an API name and API version as arguments. You can see the list of all API versions on the [Supported APIs](dyn/index.md) page. The service object is constructed with methods specific to the given API. 
+
+`httplib2`, the underlying transport library, makes all connections persistent by default. Use the service object with a context manager or call `close` to avoid leaving sockets open.
 
 
 ```python
 from googleapiclient.discovery import build
-service = build('api_name', 'api_version', ...)
+
+service = build('drive', 'v3')
+# ...
+service.close()
+```
+
+```python
+from googleapiclient.discovery import build
+
+with build('drive', 'v3') as service:
+    # ...
 ```
 
 ### Collections

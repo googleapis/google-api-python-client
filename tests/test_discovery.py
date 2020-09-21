@@ -437,6 +437,13 @@ class Utilities(unittest.TestCase):
         self.assertEqual(parameters.enum_params, {})
 
 
+class Discovery(unittest.TestCase):
+    def test_discovery_http_is_closed(self):
+        http = HttpMock(datafile("malformed.json"), {"status": "200"})
+        service = build("plus", "v1", credentials=mock.sentinel.credentials)
+        http.close.assert_called_once()
+
+
 class DiscoveryErrors(unittest.TestCase):
     def test_tests_should_be_run_with_strict_positional_enforcement(self):
         try:
@@ -571,6 +578,25 @@ class DiscoveryFromDocument(unittest.TestCase):
         # It should not be an AuthorizedHttp, because that would indicate that
         # application default credentials were used.
         self.assertNotIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
+
+    def test_building_with_context_manager(self):
+        discovery = read_datafile("plus.json")
+        with mock.patch("httplib2.Http") as http:
+            with build_from_document(discovery, base="https://www.googleapis.com/", credentials=self.MOCK_CREDENTIALS) as plus:
+                self.assertIsNotNone(plus)
+                self.assertTrue(hasattr(plus, "activities"))
+            plus._http.http.close.assert_called_once()
+
+    def test_resource_close(self):
+        discovery = read_datafile("plus.json")
+        with mock.patch("httplib2.Http") as http:
+            plus = build_from_document(
+                discovery,
+                base="https://www.googleapis.com/",
+                credentials=self.MOCK_CREDENTIALS,
+            )
+            plus.close()
+            plus._http.http.close.assert_called_once()
 
     def test_api_endpoint_override_from_client_options(self):
         discovery = read_datafile("plus.json")

@@ -261,6 +261,8 @@ def build(
     else:
         discovery_http = http
 
+    service = None
+
     for discovery_url in _discovery_service_uri_options(discoveryServiceUrl, version):
         requested_url = uritemplate.expand(discovery_url, params)
 
@@ -273,7 +275,7 @@ def build(
                 developerKey,
                 num_retries=num_retries,
             )
-            return build_from_document(
+            service = build_from_document(
                 content,
                 base=discovery_url,
                 http=http,
@@ -285,13 +287,22 @@ def build(
                 adc_cert_path=adc_cert_path,
                 adc_key_path=adc_key_path,
             )
+            break  # exit if a service was created
         except HttpError as e:
             if e.resp.status == http_client.NOT_FOUND:
                 continue
             else:
                 raise e
 
-    raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName, version))
+    # If discovery_http was created by this function, we are done with it
+    # and can safely close it
+    if http is None:
+        discovery_http.close()
+
+    if service is None:
+        raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName, version))
+    else:
+        return service
 
 
 def _discovery_service_uri_options(discoveryServiceUrl, version):
@@ -1308,6 +1319,20 @@ class Resource(object):
         self.__dict__.update(state)
         self._dynamic_attrs = []
         self._set_service_methods()
+
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, exc_tb):
+        self.close()
+
+    def close(self):
+        """Close httplib2 connections."""
+        # httplib2 leaves sockets open by default.
+        # Cleanup using the `close` method.
+        # https://github.com/httplib2/httplib2/issues/148
+        self._http.http.close()
 
     def _set_service_methods(self):
         self._add_basic_methods(self._resourceDesc, self._rootDesc, self._schema)
