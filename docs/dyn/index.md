@@ -299,8 +299,8 @@
 
 
 ## dfareporting
-* [v3.3](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3.3.html)
-* [v3.4](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3.4.html)
+* [v3.3](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3_3.html)
+* [v3.4](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3_4.html)
 
 
 ## dialogflow
