@@ -1720,6 +1720,8 @@ class HttpMock(object):
         self.headers = headers
         return httplib2.Response(self.response_headers), self.data
 
+    def close(self):
+        return None
 
 class HttpMockSequence(object):
     """Mock of httplib2.Http
