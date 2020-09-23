@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.12.2](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.1...v1.12.2) (2020-09-23)
+
+
+### Bug Fixes
+
+* add method to close httplib2 connections ([#1038](https://www.github.com/googleapis/google-api-python-client/issues/1038)) ([98888da](https://www.github.com/googleapis/google-api-python-client/commit/98888dadf04e7e00524b6de273d28d02d7abc2c0)), closes [#618](https://www.github.com/googleapis/google-api-python-client/issues/618) 
+
 ### [1.12.1](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.0...v1.12.1) (2020-09-14)
 
 
