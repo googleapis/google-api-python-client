@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.12.3](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.2...v1.12.3) (2020-09-29)
+
+
+### Bug Fixes
+
+* **deps:** update setup.py to install httplib2>=0.15.0 ([#1050](https://www.github.com/googleapis/google-api-python-client/issues/1050)) ([c00f70d](https://www.github.com/googleapis/google-api-python-client/commit/c00f70d565a002b92374356be087927b131ce135))
+
 ### [1.12.2](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.1...v1.12.2) (2020-09-23)
 
 
