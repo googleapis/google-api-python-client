@@ -78,6 +78,9 @@ h1, h2, h3 {
   <code><a href="#addSignedUrlKey">addSignedUrlKey(project, backendBucket, body=None, requestId=None)</a></code></p>
 <p class="firstline">Adds a key for validating requests with signed URLs for this backend bucket.</p>
 <p class="toc_element">
+  <code><a href="#close">close()</a></code></p>
+<p class="firstline">Close httplib2 connections.</p>
+<p class="toc_element">
   <code><a href="#delete">delete(project, backendBucket, requestId=None)</a></code></p>
 <p class="firstline">Deletes the specified BackendBucket resource.</p>
 <p class="toc_element">
@@ -194,6 +197,11 @@ Returns:
     ],
     &quot;zone&quot;: &quot;A String&quot;, # [Output Only] The URL of the zone where the operation resides. Only applicable when performing per-zone operations.
   }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="close">close()</code>
+  <pre>Close httplib2 connections.</pre>
 </div>
 
 <div class="method">
@@ -367,12 +375,33 @@ Returns:
       # This Cloud Storage bucket resource is referenced by a URL map of a load balancer. For more information, read Backend Buckets.
     &quot;bucketName&quot;: &quot;A String&quot;, # Cloud Storage bucket name.
     &quot;cdnPolicy&quot;: { # Message containing Cloud CDN configuration for a backend bucket. # Cloud CDN configuration for this BackendBucket.
+      &quot;bypassCacheOnRequestHeaders&quot;: [ # Bypass the cache when the specified request headers are matched - e.g. Pragma or Authorization headers. Up to 5 headers can be specified. The cache is bypassed for all cdnPolicy.cacheMode settings.
+        { # Bypass the cache when the specified request headers are present, e.g. Pragma or Authorization headers. Values are case insensitive. The presence of such a header overrides the cache_mode setting.
+          &quot;headerName&quot;: &quot;A String&quot;, # The header field name to match on when bypassing cache. Values are case-insensitive.
+        },
+      ],
+      &quot;cacheMode&quot;: &quot;A String&quot;,
+      &quot;clientTtl&quot;: 42, # Specifies a separate client (e.g. browser client) TTL, separate from the TTL for Cloud CDN&#x27;s edge caches. Leaving this empty will use the same cache TTL for both Cloud CDN and the client-facing response. The maximum allowed value is 86400s (1 day).
+      &quot;defaultTtl&quot;: 42, # Specifies the default TTL for cached content served by this origin for responses that do not have an existing valid TTL (max-age or s-max-age). Setting a TTL of &quot;0&quot; means &quot;always revalidate&quot;. The value of defaultTTL cannot be set to a value greater than that of maxTTL, but can be equal. When the cacheMode is set to FORCE_CACHE_ALL, the defaultTTL will overwrite the TTL set in all responses. The maximum allowed value is 31,622,400s (1 year), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+      &quot;maxTtl&quot;: 42, # Specifies the maximum allowed TTL for cached content served by this origin. Cache directives that attempt to set a max-age or s-maxage higher than this, or an Expires header more than maxTTL seconds in the future will be capped at the value of maxTTL, as if it were the value of an s-maxage Cache-Control directive. Headers sent to the client will not be modified. Setting a TTL of &quot;0&quot; means &quot;always revalidate&quot;. The maximum allowed value is 31,622,400s (1 year), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+      &quot;negativeCaching&quot;: True or False, # Negative caching allows per-status code TTLs to be set, in order to apply fine-grained caching for common errors or redirects. This can reduce the load on your origin and improve end-user experience by reducing response latency. By default, Cloud CDN will apply the following default TTLs to these status codes: HTTP 300 (Multiple Choice), 301, 308 (Permanent Redirects): 10m HTTP 404 (Not Found), 410 (Gone), 451 (Unavailable For Legal Reasons): 120s HTTP 405 (Method Not Found), 421 (Misdirected Request), 501 (Not Implemented): 60s These defaults can be overridden in negative_caching_policy
+      &quot;negativeCachingPolicy&quot;: [ # Sets a cache TTL for the specified HTTP status code. negative_caching must be enabled to configure negative_caching_policy. Omitting the policy and leaving negative_caching enabled will use Cloud CDN&#x27;s default cache TTLs. Note that when specifying an explicit negative_caching_policy, you should take care to specify a cache TTL for all response codes that you wish to cache. Cloud CDN will not apply any default negative caching when a policy exists.
+        { # Specify CDN TTLs for response error codes.
+          &quot;code&quot;: 42, # The HTTP status code to define a TTL against. Only HTTP status codes 300, 301, 308, 404, 405, 410, 421, 451 and 501 are can be specified as values, and you cannot specify a status code more than once.
+          &quot;ttl&quot;: 42, # The TTL (in seconds) to cache responses with the corresponding status code for. The maximum allowed value is 1800s (30 minutes), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+        },
+      ],
+      &quot;requestCoalescing&quot;: True or False, # If true then Cloud CDN will combine multiple concurrent cache fill requests into a small number of requests to the origin.
+      &quot;serveWhileStale&quot;: 42, # Serve existing content from the cache (if available) when revalidating content with the origin, or when an error is encountered when refreshing the cache. This setting defines the default &quot;max-stale&quot; duration for any cached responses that do not specify a max-stale directive. Stale responses that exceed the TTL configured here will not be served. The default limit (max-stale) is 86400s (1 day), which will allow stale content to be served up to this limit beyond the max-age (or s-max-age) of a cached response. The maximum allowed value is 604800 (1 week). Set this to zero (0) to disable serve-while-stale.
       &quot;signedUrlCacheMaxAgeSec&quot;: &quot;A String&quot;, # Maximum number of seconds the response to a signed URL request will be considered fresh. After this time period, the response will be revalidated before being served. Defaults to 1hr (3600s). When serving responses to signed URL requests, Cloud CDN will internally behave as though all responses from this backend had a &quot;Cache-Control: public, max-age=[TTL]&quot; header, regardless of any existing Cache-Control header. The actual headers served in responses will not be altered.
       &quot;signedUrlKeyNames&quot;: [ # [Output Only] Names of the keys for signing request URLs.
         &quot;A String&quot;,
       ],
     },
     &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
+    &quot;customResponseHeaders&quot;: [ # Headers that the HTTP/S load balancer should add to proxied responses.
+      &quot;A String&quot;,
+    ],
     &quot;description&quot;: &quot;A String&quot;, # An optional textual description of the resource; provided by the client when the resource is created.
     &quot;enableCdn&quot;: True or False, # If true, enable Cloud CDN for this BackendBucket.
     &quot;id&quot;: &quot;A String&quot;, # [Output Only] Unique identifier for the resource; defined by the server.
@@ -443,6 +472,7 @@ Returns:
     ],
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a `condition` that determines how and when the `bindings` are applied. Each of the `bindings` must contain at least one member.
       { # Associates `members` with a `role`.
+        &quot;bindingId&quot;: &quot;A String&quot;, # A client-specified ID for this binding. Expected to be globally unique to support the internal bindings-by-ID API.
         &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) syntax. CEL is a C-like expression language. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec. # The condition that is associated with this binding.
             #
             # If the condition evaluates to `true`, then this binding applies to the current request.
@@ -592,12 +622,33 @@ Args:
     # This Cloud Storage bucket resource is referenced by a URL map of a load balancer. For more information, read Backend Buckets.
   &quot;bucketName&quot;: &quot;A String&quot;, # Cloud Storage bucket name.
   &quot;cdnPolicy&quot;: { # Message containing Cloud CDN configuration for a backend bucket. # Cloud CDN configuration for this BackendBucket.
+    &quot;bypassCacheOnRequestHeaders&quot;: [ # Bypass the cache when the specified request headers are matched - e.g. Pragma or Authorization headers. Up to 5 headers can be specified. The cache is bypassed for all cdnPolicy.cacheMode settings.
+      { # Bypass the cache when the specified request headers are present, e.g. Pragma or Authorization headers. Values are case insensitive. The presence of such a header overrides the cache_mode setting.
+        &quot;headerName&quot;: &quot;A String&quot;, # The header field name to match on when bypassing cache. Values are case-insensitive.
+      },
+    ],
+    &quot;cacheMode&quot;: &quot;A String&quot;,
+    &quot;clientTtl&quot;: 42, # Specifies a separate client (e.g. browser client) TTL, separate from the TTL for Cloud CDN&#x27;s edge caches. Leaving this empty will use the same cache TTL for both Cloud CDN and the client-facing response. The maximum allowed value is 86400s (1 day).
+    &quot;defaultTtl&quot;: 42, # Specifies the default TTL for cached content served by this origin for responses that do not have an existing valid TTL (max-age or s-max-age). Setting a TTL of &quot;0&quot; means &quot;always revalidate&quot;. The value of defaultTTL cannot be set to a value greater than that of maxTTL, but can be equal. When the cacheMode is set to FORCE_CACHE_ALL, the defaultTTL will overwrite the TTL set in all responses. The maximum allowed value is 31,622,400s (1 year), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+    &quot;maxTtl&quot;: 42, # Specifies the maximum allowed TTL for cached content served by this origin. Cache directives that attempt to set a max-age or s-maxage higher than this, or an Expires header more than maxTTL seconds in the future will be capped at the value of maxTTL, as if it were the value of an s-maxage Cache-Control directive. Headers sent to the client will not be modified. Setting a TTL of &quot;0&quot; means &quot;always revalidate&quot;. The maximum allowed value is 31,622,400s (1 year), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+    &quot;negativeCaching&quot;: True or False, # Negative caching allows per-status code TTLs to be set, in order to apply fine-grained caching for common errors or redirects. This can reduce the load on your origin and improve end-user experience by reducing response latency. By default, Cloud CDN will apply the following default TTLs to these status codes: HTTP 300 (Multiple Choice), 301, 308 (Permanent Redirects): 10m HTTP 404 (Not Found), 410 (Gone), 451 (Unavailable For Legal Reasons): 120s HTTP 405 (Method Not Found), 421 (Misdirected Request), 501 (Not Implemented): 60s These defaults can be overridden in negative_caching_policy
+    &quot;negativeCachingPolicy&quot;: [ # Sets a cache TTL for the specified HTTP status code. negative_caching must be enabled to configure negative_caching_policy. Omitting the policy and leaving negative_caching enabled will use Cloud CDN&#x27;s default cache TTLs. Note that when specifying an explicit negative_caching_policy, you should take care to specify a cache TTL for all response codes that you wish to cache. Cloud CDN will not apply any default negative caching when a policy exists.
+      { # Specify CDN TTLs for response error codes.
+        &quot;code&quot;: 42, # The HTTP status code to define a TTL against. Only HTTP status codes 300, 301, 308, 404, 405, 410, 421, 451 and 501 are can be specified as values, and you cannot specify a status code more than once.
+        &quot;ttl&quot;: 42, # The TTL (in seconds) to cache responses with the corresponding status code for. The maximum allowed value is 1800s (30 minutes), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+      },
+    ],
+    &quot;requestCoalescing&quot;: True or False, # If true then Cloud CDN will combine multiple concurrent cache fill requests into a small number of requests to the origin.
+    &quot;serveWhileStale&quot;: 42, # Serve existing content from the cache (if available) when revalidating content with the origin, or when an error is encountered when refreshing the cache. This setting defines the default &quot;max-stale&quot; duration for any cached responses that do not specify a max-stale directive. Stale responses that exceed the TTL configured here will not be served. The default limit (max-stale) is 86400s (1 day), which will allow stale content to be served up to this limit beyond the max-age (or s-max-age) of a cached response. The maximum allowed value is 604800 (1 week). Set this to zero (0) to disable serve-while-stale.
     &quot;signedUrlCacheMaxAgeSec&quot;: &quot;A String&quot;, # Maximum number of seconds the response to a signed URL request will be considered fresh. After this time period, the response will be revalidated before being served. Defaults to 1hr (3600s). When serving responses to signed URL requests, Cloud CDN will internally behave as though all responses from this backend had a &quot;Cache-Control: public, max-age=[TTL]&quot; header, regardless of any existing Cache-Control header. The actual headers served in responses will not be altered.
     &quot;signedUrlKeyNames&quot;: [ # [Output Only] Names of the keys for signing request URLs.
       &quot;A String&quot;,
     ],
   },
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
+  &quot;customResponseHeaders&quot;: [ # Headers that the HTTP/S load balancer should add to proxied responses.
+    &quot;A String&quot;,
+  ],
   &quot;description&quot;: &quot;A String&quot;, # An optional textual description of the resource; provided by the client when the resource is created.
   &quot;enableCdn&quot;: True or False, # If true, enable Cloud CDN for this BackendBucket.
   &quot;id&quot;: &quot;A String&quot;, # [Output Only] Unique identifier for the resource; defined by the server.
@@ -710,12 +761,33 @@ Returns:
           # This Cloud Storage bucket resource is referenced by a URL map of a load balancer. For more information, read Backend Buckets.
         &quot;bucketName&quot;: &quot;A String&quot;, # Cloud Storage bucket name.
         &quot;cdnPolicy&quot;: { # Message containing Cloud CDN configuration for a backend bucket. # Cloud CDN configuration for this BackendBucket.
+          &quot;bypassCacheOnRequestHeaders&quot;: [ # Bypass the cache when the specified request headers are matched - e.g. Pragma or Authorization headers. Up to 5 headers can be specified. The cache is bypassed for all cdnPolicy.cacheMode settings.
+            { # Bypass the cache when the specified request headers are present, e.g. Pragma or Authorization headers. Values are case insensitive. The presence of such a header overrides the cache_mode setting.
+              &quot;headerName&quot;: &quot;A String&quot;, # The header field name to match on when bypassing cache. Values are case-insensitive.
+            },
+          ],
+          &quot;cacheMode&quot;: &quot;A String&quot;,
+          &quot;clientTtl&quot;: 42, # Specifies a separate client (e.g. browser client) TTL, separate from the TTL for Cloud CDN&#x27;s edge caches. Leaving this empty will use the same cache TTL for both Cloud CDN and the client-facing response. The maximum allowed value is 86400s (1 day).
+          &quot;defaultTtl&quot;: 42, # Specifies the default TTL for cached content served by this origin for responses that do not have an existing valid TTL (max-age or s-max-age). Setting a TTL of &quot;0&quot; means &quot;always revalidate&quot;. The value of defaultTTL cannot be set to a value greater than that of maxTTL, but can be equal. When the cacheMode is set to FORCE_CACHE_ALL, the defaultTTL will overwrite the TTL set in all responses. The maximum allowed value is 31,622,400s (1 year), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+          &quot;maxTtl&quot;: 42, # Specifies the maximum allowed TTL for cached content served by this origin. Cache directives that attempt to set a max-age or s-maxage higher than this, or an Expires header more than maxTTL seconds in the future will be capped at the value of maxTTL, as if it were the value of an s-maxage Cache-Control directive. Headers sent to the client will not be modified. Setting a TTL of &quot;0&quot; means &quot;always revalidate&quot;. The maximum allowed value is 31,622,400s (1 year), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+          &quot;negativeCaching&quot;: True or False, # Negative caching allows per-status code TTLs to be set, in order to apply fine-grained caching for common errors or redirects. This can reduce the load on your origin and improve end-user experience by reducing response latency. By default, Cloud CDN will apply the following default TTLs to these status codes: HTTP 300 (Multiple Choice), 301, 308 (Permanent Redirects): 10m HTTP 404 (Not Found), 410 (Gone), 451 (Unavailable For Legal Reasons): 120s HTTP 405 (Method Not Found), 421 (Misdirected Request), 501 (Not Implemented): 60s These defaults can be overridden in negative_caching_policy
+          &quot;negativeCachingPolicy&quot;: [ # Sets a cache TTL for the specified HTTP status code. negative_caching must be enabled to configure negative_caching_policy. Omitting the policy and leaving negative_caching enabled will use Cloud CDN&#x27;s default cache TTLs. Note that when specifying an explicit negative_caching_policy, you should take care to specify a cache TTL for all response codes that you wish to cache. Cloud CDN will not apply any default negative caching when a policy exists.
+            { # Specify CDN TTLs for response error codes.
+              &quot;code&quot;: 42, # The HTTP status code to define a TTL against. Only HTTP status codes 300, 301, 308, 404, 405, 410, 421, 451 and 501 are can be specified as values, and you cannot specify a status code more than once.
+              &quot;ttl&quot;: 42, # The TTL (in seconds) to cache responses with the corresponding status code for. The maximum allowed value is 1800s (30 minutes), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+            },
+          ],
+          &quot;requestCoalescing&quot;: True or False, # If true then Cloud CDN will combine multiple concurrent cache fill requests into a small number of requests to the origin.
+          &quot;serveWhileStale&quot;: 42, # Serve existing content from the cache (if available) when revalidating content with the origin, or when an error is encountered when refreshing the cache. This setting defines the default &quot;max-stale&quot; duration for any cached responses that do not specify a max-stale directive. Stale responses that exceed the TTL configured here will not be served. The default limit (max-stale) is 86400s (1 day), which will allow stale content to be served up to this limit beyond the max-age (or s-max-age) of a cached response. The maximum allowed value is 604800 (1 week). Set this to zero (0) to disable serve-while-stale.
           &quot;signedUrlCacheMaxAgeSec&quot;: &quot;A String&quot;, # Maximum number of seconds the response to a signed URL request will be considered fresh. After this time period, the response will be revalidated before being served. Defaults to 1hr (3600s). When serving responses to signed URL requests, Cloud CDN will internally behave as though all responses from this backend had a &quot;Cache-Control: public, max-age=[TTL]&quot; header, regardless of any existing Cache-Control header. The actual headers served in responses will not be altered.
           &quot;signedUrlKeyNames&quot;: [ # [Output Only] Names of the keys for signing request URLs.
             &quot;A String&quot;,
           ],
         },
         &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
+        &quot;customResponseHeaders&quot;: [ # Headers that the HTTP/S load balancer should add to proxied responses.
+          &quot;A String&quot;,
+        ],
         &quot;description&quot;: &quot;A String&quot;, # An optional textual description of the resource; provided by the client when the resource is created.
         &quot;enableCdn&quot;: True or False, # If true, enable Cloud CDN for this BackendBucket.
         &quot;id&quot;: &quot;A String&quot;, # [Output Only] Unique identifier for the resource; defined by the server.
@@ -771,12 +843,33 @@ Args:
     # This Cloud Storage bucket resource is referenced by a URL map of a load balancer. For more information, read Backend Buckets.
   &quot;bucketName&quot;: &quot;A String&quot;, # Cloud Storage bucket name.
   &quot;cdnPolicy&quot;: { # Message containing Cloud CDN configuration for a backend bucket. # Cloud CDN configuration for this BackendBucket.
+    &quot;bypassCacheOnRequestHeaders&quot;: [ # Bypass the cache when the specified request headers are matched - e.g. Pragma or Authorization headers. Up to 5 headers can be specified. The cache is bypassed for all cdnPolicy.cacheMode settings.
+      { # Bypass the cache when the specified request headers are present, e.g. Pragma or Authorization headers. Values are case insensitive. The presence of such a header overrides the cache_mode setting.
+        &quot;headerName&quot;: &quot;A String&quot;, # The header field name to match on when bypassing cache. Values are case-insensitive.
+      },
+    ],
+    &quot;cacheMode&quot;: &quot;A String&quot;,
+    &quot;clientTtl&quot;: 42, # Specifies a separate client (e.g. browser client) TTL, separate from the TTL for Cloud CDN&#x27;s edge caches. Leaving this empty will use the same cache TTL for both Cloud CDN and the client-facing response. The maximum allowed value is 86400s (1 day).
+    &quot;defaultTtl&quot;: 42, # Specifies the default TTL for cached content served by this origin for responses that do not have an existing valid TTL (max-age or s-max-age). Setting a TTL of &quot;0&quot; means &quot;always revalidate&quot;. The value of defaultTTL cannot be set to a value greater than that of maxTTL, but can be equal. When the cacheMode is set to FORCE_CACHE_ALL, the defaultTTL will overwrite the TTL set in all responses. The maximum allowed value is 31,622,400s (1 year), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+    &quot;maxTtl&quot;: 42, # Specifies the maximum allowed TTL for cached content served by this origin. Cache directives that attempt to set a max-age or s-maxage higher than this, or an Expires header more than maxTTL seconds in the future will be capped at the value of maxTTL, as if it were the value of an s-maxage Cache-Control directive. Headers sent to the client will not be modified. Setting a TTL of &quot;0&quot; means &quot;always revalidate&quot;. The maximum allowed value is 31,622,400s (1 year), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+    &quot;negativeCaching&quot;: True or False, # Negative caching allows per-status code TTLs to be set, in order to apply fine-grained caching for common errors or redirects. This can reduce the load on your origin and improve end-user experience by reducing response latency. By default, Cloud CDN will apply the following default TTLs to these status codes: HTTP 300 (Multiple Choice), 301, 308 (Permanent Redirects): 10m HTTP 404 (Not Found), 410 (Gone), 451 (Unavailable For Legal Reasons): 120s HTTP 405 (Method Not Found), 421 (Misdirected Request), 501 (Not Implemented): 60s These defaults can be overridden in negative_caching_policy
+    &quot;negativeCachingPolicy&quot;: [ # Sets a cache TTL for the specified HTTP status code. negative_caching must be enabled to configure negative_caching_policy. Omitting the policy and leaving negative_caching enabled will use Cloud CDN&#x27;s default cache TTLs. Note that when specifying an explicit negative_caching_policy, you should take care to specify a cache TTL for all response codes that you wish to cache. Cloud CDN will not apply any default negative caching when a policy exists.
+      { # Specify CDN TTLs for response error codes.
+        &quot;code&quot;: 42, # The HTTP status code to define a TTL against. Only HTTP status codes 300, 301, 308, 404, 405, 410, 421, 451 and 501 are can be specified as values, and you cannot specify a status code more than once.
+        &quot;ttl&quot;: 42, # The TTL (in seconds) to cache responses with the corresponding status code for. The maximum allowed value is 1800s (30 minutes), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+      },
+    ],
+    &quot;requestCoalescing&quot;: True or False, # If true then Cloud CDN will combine multiple concurrent cache fill requests into a small number of requests to the origin.
+    &quot;serveWhileStale&quot;: 42, # Serve existing content from the cache (if available) when revalidating content with the origin, or when an error is encountered when refreshing the cache. This setting defines the default &quot;max-stale&quot; duration for any cached responses that do not specify a max-stale directive. Stale responses that exceed the TTL configured here will not be served. The default limit (max-stale) is 86400s (1 day), which will allow stale content to be served up to this limit beyond the max-age (or s-max-age) of a cached response. The maximum allowed value is 604800 (1 week). Set this to zero (0) to disable serve-while-stale.
     &quot;signedUrlCacheMaxAgeSec&quot;: &quot;A String&quot;, # Maximum number of seconds the response to a signed URL request will be considered fresh. After this time period, the response will be revalidated before being served. Defaults to 1hr (3600s). When serving responses to signed URL requests, Cloud CDN will internally behave as though all responses from this backend had a &quot;Cache-Control: public, max-age=[TTL]&quot; header, regardless of any existing Cache-Control header. The actual headers served in responses will not be altered.
     &quot;signedUrlKeyNames&quot;: [ # [Output Only] Names of the keys for signing request URLs.
       &quot;A String&quot;,
     ],
   },
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
+  &quot;customResponseHeaders&quot;: [ # Headers that the HTTP/S load balancer should add to proxied responses.
+    &quot;A String&quot;,
+  ],
   &quot;description&quot;: &quot;A String&quot;, # An optional textual description of the resource; provided by the client when the resource is created.
   &quot;enableCdn&quot;: True or False, # If true, enable Cloud CDN for this BackendBucket.
   &quot;id&quot;: &quot;A String&quot;, # [Output Only] Unique identifier for the resource; defined by the server.
@@ -869,6 +962,7 @@ Args:
 {
     &quot;bindings&quot;: [ # Flatten Policy to create a backward compatible wire-format. Deprecated. Use &#x27;policy&#x27; to specify bindings.
       { # Associates `members` with a `role`.
+        &quot;bindingId&quot;: &quot;A String&quot;, # A client-specified ID for this binding. Expected to be globally unique to support the internal bindings-by-ID API.
         &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) syntax. CEL is a C-like expression language. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec. # The condition that is associated with this binding.
             #
             # If the condition evaluates to `true`, then this binding applies to the current request.
@@ -976,6 +1070,7 @@ Args:
       ],
       &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a `condition` that determines how and when the `bindings` are applied. Each of the `bindings` must contain at least one member.
         { # Associates `members` with a `role`.
+          &quot;bindingId&quot;: &quot;A String&quot;, # A client-specified ID for this binding. Expected to be globally unique to support the internal bindings-by-ID API.
           &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) syntax. CEL is a C-like expression language. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec. # The condition that is associated with this binding.
               #
               # If the condition evaluates to `true`, then this binding applies to the current request.
@@ -1163,6 +1258,7 @@ Returns:
     ],
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a `condition` that determines how and when the `bindings` are applied. Each of the `bindings` must contain at least one member.
       { # Associates `members` with a `role`.
+        &quot;bindingId&quot;: &quot;A String&quot;, # A client-specified ID for this binding. Expected to be globally unique to support the internal bindings-by-ID API.
         &quot;condition&quot;: { # Represents a textual expression in the Common Expression Language (CEL) syntax. CEL is a C-like expression language. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec. # The condition that is associated with this binding.
             #
             # If the condition evaluates to `true`, then this binding applies to the current request.
@@ -1340,12 +1436,33 @@ Args:
     # This Cloud Storage bucket resource is referenced by a URL map of a load balancer. For more information, read Backend Buckets.
   &quot;bucketName&quot;: &quot;A String&quot;, # Cloud Storage bucket name.
   &quot;cdnPolicy&quot;: { # Message containing Cloud CDN configuration for a backend bucket. # Cloud CDN configuration for this BackendBucket.
+    &quot;bypassCacheOnRequestHeaders&quot;: [ # Bypass the cache when the specified request headers are matched - e.g. Pragma or Authorization headers. Up to 5 headers can be specified. The cache is bypassed for all cdnPolicy.cacheMode settings.
+      { # Bypass the cache when the specified request headers are present, e.g. Pragma or Authorization headers. Values are case insensitive. The presence of such a header overrides the cache_mode setting.
+        &quot;headerName&quot;: &quot;A String&quot;, # The header field name to match on when bypassing cache. Values are case-insensitive.
+      },
+    ],
+    &quot;cacheMode&quot;: &quot;A String&quot;,
+    &quot;clientTtl&quot;: 42, # Specifies a separate client (e.g. browser client) TTL, separate from the TTL for Cloud CDN&#x27;s edge caches. Leaving this empty will use the same cache TTL for both Cloud CDN and the client-facing response. The maximum allowed value is 86400s (1 day).
+    &quot;defaultTtl&quot;: 42, # Specifies the default TTL for cached content served by this origin for responses that do not have an existing valid TTL (max-age or s-max-age). Setting a TTL of &quot;0&quot; means &quot;always revalidate&quot;. The value of defaultTTL cannot be set to a value greater than that of maxTTL, but can be equal. When the cacheMode is set to FORCE_CACHE_ALL, the defaultTTL will overwrite the TTL set in all responses. The maximum allowed value is 31,622,400s (1 year), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+    &quot;maxTtl&quot;: 42, # Specifies the maximum allowed TTL for cached content served by this origin. Cache directives that attempt to set a max-age or s-maxage higher than this, or an Expires header more than maxTTL seconds in the future will be capped at the value of maxTTL, as if it were the value of an s-maxage Cache-Control directive. Headers sent to the client will not be modified. Setting a TTL of &quot;0&quot; means &quot;always revalidate&quot;. The maximum allowed value is 31,622,400s (1 year), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+    &quot;negativeCaching&quot;: True or False, # Negative caching allows per-status code TTLs to be set, in order to apply fine-grained caching for common errors or redirects. This can reduce the load on your origin and improve end-user experience by reducing response latency. By default, Cloud CDN will apply the following default TTLs to these status codes: HTTP 300 (Multiple Choice), 301, 308 (Permanent Redirects): 10m HTTP 404 (Not Found), 410 (Gone), 451 (Unavailable For Legal Reasons): 120s HTTP 405 (Method Not Found), 421 (Misdirected Request), 501 (Not Implemented): 60s These defaults can be overridden in negative_caching_policy
+    &quot;negativeCachingPolicy&quot;: [ # Sets a cache TTL for the specified HTTP status code. negative_caching must be enabled to configure negative_caching_policy. Omitting the policy and leaving negative_caching enabled will use Cloud CDN&#x27;s default cache TTLs. Note that when specifying an explicit negative_caching_policy, you should take care to specify a cache TTL for all response codes that you wish to cache. Cloud CDN will not apply any default negative caching when a policy exists.
+      { # Specify CDN TTLs for response error codes.
+        &quot;code&quot;: 42, # The HTTP status code to define a TTL against. Only HTTP status codes 300, 301, 308, 404, 405, 410, 421, 451 and 501 are can be specified as values, and you cannot specify a status code more than once.
+        &quot;ttl&quot;: 42, # The TTL (in seconds) to cache responses with the corresponding status code for. The maximum allowed value is 1800s (30 minutes), noting that infrequently accessed objects may be evicted from the cache before the defined TTL.
+      },
+    ],
+    &quot;requestCoalescing&quot;: True or False, # If true then Cloud CDN will combine multiple concurrent cache fill requests into a small number of requests to the origin.
+    &quot;serveWhileStale&quot;: 42, # Serve existing content from the cache (if available) when revalidating content with the origin, or when an error is encountered when refreshing the cache. This setting defines the default &quot;max-stale&quot; duration for any cached responses that do not specify a max-stale directive. Stale responses that exceed the TTL configured here will not be served. The default limit (max-stale) is 86400s (1 day), which will allow stale content to be served up to this limit beyond the max-age (or s-max-age) of a cached response. The maximum allowed value is 604800 (1 week). Set this to zero (0) to disable serve-while-stale.
     &quot;signedUrlCacheMaxAgeSec&quot;: &quot;A String&quot;, # Maximum number of seconds the response to a signed URL request will be considered fresh. After this time period, the response will be revalidated before being served. Defaults to 1hr (3600s). When serving responses to signed URL requests, Cloud CDN will internally behave as though all responses from this backend had a &quot;Cache-Control: public, max-age=[TTL]&quot; header, regardless of any existing Cache-Control header. The actual headers served in responses will not be altered.
     &quot;signedUrlKeyNames&quot;: [ # [Output Only] Names of the keys for signing request URLs.
       &quot;A String&quot;,
     ],
   },
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
+  &quot;customResponseHeaders&quot;: [ # Headers that the HTTP/S load balancer should add to proxied responses.
+    &quot;A String&quot;,
+  ],
   &quot;description&quot;: &quot;A String&quot;, # An optional textual description of the resource; provided by the client when the resource is created.
   &quot;enableCdn&quot;: True or False, # If true, enable Cloud CDN for this BackendBucket.
   &quot;id&quot;: &quot;A String&quot;, # [Output Only] Unique identifier for the resource; defined by the server.
