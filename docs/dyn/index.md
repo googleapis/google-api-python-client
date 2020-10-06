@@ -131,7 +131,6 @@
 
 
 ## billingbudgets
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/billingbudgets_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/billingbudgets_v1beta1.html)
 
 
@@ -351,7 +350,6 @@
 
 ## documentai
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1beta2.html)
-* [v1beta3](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1beta3.html)
 
 
 ## domainsrdap
@@ -594,10 +592,6 @@
 
 ## prod_tt_sasportal
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/prod_tt_sasportal_v1alpha1.html)
-
-
-## programmablesearchelement
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/programmablesearchelement_v1.html)
 
 
 ## pubsub
