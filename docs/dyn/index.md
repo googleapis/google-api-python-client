@@ -16,9 +16,9 @@
 
 
 ## adexchangebuyer
-* [v1.2](http://googleapis.github.io/google-api-python-client/docs/dyn/adexchangebuyer_v1_2.html)
-* [v1.3](http://googleapis.github.io/google-api-python-client/docs/dyn/adexchangebuyer_v1_3.html)
-* [v1.4](http://googleapis.github.io/google-api-python-client/docs/dyn/adexchangebuyer_v1_4.html)
+* [v1.2](http://googleapis.github.io/google-api-python-client/docs/dyn/adexchangebuyer_v1.2.html)
+* [v1.3](http://googleapis.github.io/google-api-python-client/docs/dyn/adexchangebuyer_v1.3.html)
+* [v1.4](http://googleapis.github.io/google-api-python-client/docs/dyn/adexchangebuyer_v1.4.html)
 
 
 ## adexchangebuyer2
@@ -40,11 +40,11 @@
 
 
 ## adsense
-* [v1.4](http://googleapis.github.io/google-api-python-client/docs/dyn/adsense_v1_4.html)
+* [v1.4](http://googleapis.github.io/google-api-python-client/docs/dyn/adsense_v1.4.html)
 
 
 ## adsensehost
-* [v4.1](http://googleapis.github.io/google-api-python-client/docs/dyn/adsensehost_v4_1.html)
+* [v4.1](http://googleapis.github.io/google-api-python-client/docs/dyn/adsensehost_v4.1.html)
 
 
 ## alertcenter
@@ -131,7 +131,6 @@
 
 
 ## billingbudgets
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/billingbudgets_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/billingbudgets_v1beta1.html)
 
 
@@ -273,7 +272,7 @@
 
 ## content
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/content_v2.html)
-* [v2.1](http://googleapis.github.io/google-api-python-client/docs/dyn/content_v2_1.html)
+* [v2.1](http://googleapis.github.io/google-api-python-client/docs/dyn/content_v2.1.html)
 
 
 ## customsearch
@@ -311,8 +310,8 @@
 
 
 ## dfareporting
-* [v3.3](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3_3.html)
-* [v3.4](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3_4.html)
+* [v3.3](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3.3.html)
+* [v3.4](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3.4.html)
 
 
 ## dialogflow
@@ -351,7 +350,6 @@
 
 ## documentai
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1beta2.html)
-* [v1beta3](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1beta3.html)
 
 
 ## domainsrdap
@@ -360,7 +358,7 @@
 
 ## doubleclickbidmanager
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/doubleclickbidmanager_v1.html)
-* [v1.1](http://googleapis.github.io/google-api-python-client/docs/dyn/doubleclickbidmanager_v1_1.html)
+* [v1.1](http://googleapis.github.io/google-api-python-client/docs/dyn/doubleclickbidmanager_v1.1.html)
 
 
 ## doubleclicksearch
@@ -594,10 +592,6 @@
 
 ## prod_tt_sasportal
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/prod_tt_sasportal_v1alpha1.html)
-
-
-## programmablesearchelement
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/programmablesearchelement_v1.html)
 
 
 ## pubsub
