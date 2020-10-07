@@ -45,7 +45,7 @@ flow.run_local_server()
 
 ### Flow
 
-The example below uses the `Flow` class to handle the installed appplication authorization flow.
+The example below uses the `Flow` class to handle the installed application authorization flow.
 
 #### from_client_secrets_file()
 
