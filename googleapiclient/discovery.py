@@ -303,7 +303,7 @@ def build_from_document(
 
   if isinstance(service, six.string_types):
     service = json.loads(service)
-  base = urljoin(service['rootUrl'], service['servicePath'])
+  base = service['baseUrl']
   schema = Schemas(service)
 
   if credentials:
