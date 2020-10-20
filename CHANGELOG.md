@@ -1,5 +1,18 @@
 # Changelog
 
+### [1.12.4](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.3...v1.12.4) (2020-10-20)
+
+
+### Bug Fixes
+
+* don't set content-range on empty uploads ([#1070](https://www.github.com/googleapis/google-api-python-client/issues/1070)) ([af6035f](https://www.github.com/googleapis/google-api-python-client/commit/af6035f6754a155ee6b04bbbc5c39410c7316d6a))
+
+
+### Documentation
+
+* fix typo in oauth.md ([#1058](https://www.github.com/googleapis/google-api-python-client/issues/1058)) ([30eff9d](https://www.github.com/googleapis/google-api-python-client/commit/30eff9d8276919b8c4e50df2d3b1982594423692))
+* update generated docs ([#1053](https://www.github.com/googleapis/google-api-python-client/issues/1053)) ([3e17f89](https://www.github.com/googleapis/google-api-python-client/commit/3e17f8990db54bec16c48c319072799a14f5a53f)), closes [#1049](https://www.github.com/googleapis/google-api-python-client/issues/1049)
+
 ### [1.12.3](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.2...v1.12.3) (2020-09-29)
 
 
