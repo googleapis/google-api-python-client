@@ -443,6 +443,33 @@ class TestMediaIoBaseUpload(unittest.TestCase):
         request._sleep.assert_not_called()
 
 
+    def test_media_io_base_empty_file(self):
+        fd = BytesIO()
+        upload = MediaIoBaseUpload(
+            fd=fd, mimetype="image/png", chunksize=500, resumable=True
+        )
+
+        http = HttpMockSequence(
+            [
+                ({"status": "200", "location": "https://www.googleapis.com/someapi/v1/upload?foo=bar"}, "{}"),
+                ({"status": "200", "location": "https://www.googleapis.com/someapi/v1/upload?foo=bar"}, "{}")
+            ]
+        )
+
+        model = JsonModel()
+        uri = u"https://www.googleapis.com/someapi/v1/upload/?foo=bar"
+        method = u"POST"
+        request = HttpRequest(
+            http, model.response, uri, method=method, headers={}, resumable=upload
+        )
+
+        request.execute()
+
+        # Check that "Content-Range" header is not set in the PUT request
+        self.assertTrue("Content-Range" not in http.request_sequence[-1][-1])
+        self.assertEqual("0", http.request_sequence[-1][-1]["Content-Length"])
+
+
 class TestMediaIoBaseDownload(unittest.TestCase):
     def setUp(self):
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
