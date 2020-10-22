@@ -745,8 +745,16 @@ class MediaIoBaseDownload(object):
             if self._total_size is None or self._progress == self._total_size:
                 self._done = True
             return MediaDownloadProgress(self._progress, self._total_size), self._done
-        else:
-            raise HttpError(resp, content, uri=self._uri)
+        elif resp.status == 416:
+            # 416 is Range Not Satisfiable
+            # This typically occurs with a zero byte file
+            content_range = resp["content-range"]
+            length = content_range.rsplit("/", 1)[1]
+            self._total_size = int(length)
+            if self._total_size == 0:
+                self._done = True
+                return MediaDownloadProgress(self._progress, self._total_size), self._done
+        raise HttpError(resp, content, uri=self._uri)
 
 
 class _StreamSlice(object):
