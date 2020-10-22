@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.12.5](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.4...v1.12.5) (2020-10-22)
+
+
+### Bug Fixes
+
+* don't raise when downloading zero byte files ([#1074](https://www.github.com/googleapis/google-api-python-client/issues/1074)) ([86d8788](https://www.github.com/googleapis/google-api-python-client/commit/86d8788ee8a766ca6818620f3fd2899be0e44190))
+
 ### [1.12.4](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.3...v1.12.4) (2020-10-20)
 
 
