@@ -745,8 +745,16 @@ class MediaIoBaseDownload(object):
             if self._total_size is None or self._progress == self._total_size:
                 self._done = True
             return MediaDownloadProgress(self._progress, self._total_size), self._done
-        else:
-            raise HttpError(resp, content, uri=self._uri)
+        elif resp.status == 416:
+            # 416 is Range Not Satisfiable
+            # This typically occurs with a zero byte file
+            content_range = resp["content-range"]
+            length = content_range.rsplit("/", 1)[1]
+            self._total_size = int(length)
+            if self._total_size == 0:
+                self._done = True
+                return MediaDownloadProgress(self._progress, self._total_size), self._done
+        raise HttpError(resp, content, uri=self._uri)
 
 
 class _StreamSlice(object):
@@ -1026,12 +1034,16 @@ class HttpRequest(object):
             chunk_end = self.resumable_progress + len(data) - 1
 
         headers = {
-            "Content-Range": "bytes %d-%d/%s"
-            % (self.resumable_progress, chunk_end, size),
             # Must set the content-length header here because httplib can't
             # calculate the size when working with _StreamSlice.
             "Content-Length": str(chunk_end - self.resumable_progress + 1),
         }
+
+        # An empty file results in chunk_end = -1 and size = 0
+        # sending "bytes 0--1/0" results in an invalid request
+        # Only add header "Content-Range" if chunk_end != -1
+        if chunk_end != -1:
+            headers["Content-Range"] = "bytes %d-%d/%s" % (self.resumable_progress, chunk_end, size)
 
         for retry_num in range(num_retries + 1):
             if retry_num > 0:
