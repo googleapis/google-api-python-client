@@ -1567,7 +1567,8 @@ class TestBatch(unittest.TestCase):
         expected = (
             "<HttpError 403 when requesting "
             "https://www.googleapis.com/someapi/v1/collection/?foo=bar returned "
-            '"Access Not Configured">'
+            '"Access Not Configured". '
+            'Details: "Access Not Configured">'
         )
         self.assertEqual(expected, str(callbacks.exceptions["2"]))
 
