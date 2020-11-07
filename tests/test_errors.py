@@ -132,13 +132,12 @@ class Error(unittest.TestCase):
         self.assertEqual(str(error), '<HttpError 400 "">')
 
     def test_error_detail_for_missing_message_in_error(self):
-        """Test handling of data with missing 'message' element."""
+        """Test handling of data with missing 'details' or 'detail' element."""
         resp, content = fake_response(
             JSON_ERROR_CONTENT_NO_DETAIL,
             {"status": "400", "content-type": "application/json"},
             reason="Failed",
         )
         error = HttpError(resp, content, uri="http://example.org ")
-        self.assertEqual(str(
-            error), '<HttpError 400 when requesting http://example.org  returned "country is required". Details: "country is required">')
+        self.assertEqual(str(error), '<HttpError 400 when requesting http://example.org  returned "country is required". Details: "country is required">')
         self.assertEqual(error.error_details, 'country is required')
