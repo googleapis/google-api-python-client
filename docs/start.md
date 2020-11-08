@@ -94,7 +94,10 @@ request = collection.list(cents=5)
 Creating a request does not actually call the API. To execute the request and get a response, call the `execute()` function:
 
 ```python
-response = request.execute()
+try:
+    response = request.execute()
+except HttpError as e:
+    print('Error response status code : {0}, reason : {1}'.format(e.resp.status, e.error_details))
 ```
 
 Alternatively, you can combine previous steps on a single line:

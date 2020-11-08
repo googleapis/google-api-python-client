@@ -47,6 +47,24 @@ JSON_ERROR_CONTENT = b"""
 }
 """
 
+JSON_ERROR_CONTENT_NO_DETAIL = b"""
+{
+ "error": {
+  "errors": [
+   {
+    "domain": "global",
+    "reason": "required",
+    "message": "country is required",
+    "locationType": "parameter",
+    "location": "country"
+   }
+  ],
+  "code": 400,
+  "message": "country is required"
+ }
+}
+"""
+
 
 def fake_response(data, headers, reason="Ok"):
     response = httplib2.Response(headers)
@@ -112,3 +130,14 @@ class Error(unittest.TestCase):
         resp, content = fake_response(b"}NOT OK", {"status": "400"}, reason=None)
         error = HttpError(resp, content)
         self.assertEqual(str(error), '<HttpError 400 "">')
+
+    def test_error_detail_for_missing_message_in_error(self):
+        """Test handling of data with missing 'details' or 'detail' element."""
+        resp, content = fake_response(
+            JSON_ERROR_CONTENT_NO_DETAIL,
+            {"status": "400", "content-type": "application/json"},
+            reason="Failed",
+        )
+        error = HttpError(resp, content)
+        self.assertEqual(str(error), '<HttpError 400 when requesting None returned "country is required". Details: "country is required">')
+        self.assertEqual(error.error_details, 'country is required')
