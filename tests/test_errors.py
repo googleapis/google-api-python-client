@@ -49,19 +49,19 @@ JSON_ERROR_CONTENT = b"""
 
 JSON_ERROR_CONTENT_NO_DETAIL = b"""
 {
-"error": {
-"errors": [
-{
+ "error": {
+  "errors": [
+   {
     "domain": "global",
     "reason": "required",
     "message": "country is required",
     "locationType": "parameter",
     "location": "country"
-}
-],
-"code": 400,
-"message": "country is required"
-}
+   }
+  ],
+  "code": 400,
+  "message": "country is required"
+ }
 }
 """
 
@@ -138,6 +138,6 @@ class Error(unittest.TestCase):
             {"status": "400", "content-type": "application/json"},
             reason="Failed",
         )
-        error = HttpError(resp, content, uri="http://example.org ")
-        self.assertEqual(str(error), '<HttpError 400 when requesting http://example.org  returned "country is required". Details: "country is required">')
+        error = HttpError(resp, content)
+        self.assertEqual(str(error), '<HttpError 400 when requesting None returned "country is required". Details: "country is required">')
         self.assertEqual(error.error_details, 'country is required')
