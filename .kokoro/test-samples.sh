@@ -28,6 +28,12 @@ if [[ $KOKORO_BUILD_ARTIFACTS_SUBDIR = *"periodic"* ]]; then
     git checkout $LATEST_RELEASE
 fi
 
+# Exit early if samples directory doesn't exist
+if [ ! -d "./samples" ]; then
+  echo "No tests run. `./samples` not found"
+  exit 0
+fi
+
 # Disable buffering, so that the logs stream through.
 export PYTHONUNBUFFERED=1
 

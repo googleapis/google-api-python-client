@@ -460,7 +460,7 @@ if __name__ == "__main__":
                 for version in versions:
                     markdown.append(
                         "* [%s](http://googleapis.github.io/google-api-python-client/docs/dyn/%s_%s.html)"
-                        % (version, api, version)
+                        % (version, api, safe_version(version))
                     )
                 markdown.append("\n")
 
