@@ -58,7 +58,7 @@ from google_auth_oauthlib.flow import Flow
 ...
 flow = Flow.from_client_secrets_file(
     'path/to/client_secrets.json',
-    scopes=['profile', 'email'],
+    scopes=['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'],
     redirect_uri='urn:ietf:wg:oauth:2.0:oob')
 ```                               
 
@@ -125,12 +125,18 @@ from googleapiclient.discovery import build
 
 flow = InstalledAppFlow.from_client_secrets_file(
     'client_secrets.json',
-    scopes=['profile', 'email'])
+    scopes=['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'])
 
 flow.run_local_server()
 credentials = flow.credentials
 
 service = build('calendar', 'v3', credentials=credentials)
+
+# Optionally, view the email address of the authenticated user.
+user_info_service = build('oauth2', 'v2', credentials=credentials)
+user_info = user_info_service.userinfo().get().execute()
+print(user_info['email'])
+
 ```
 
 ## Storage
