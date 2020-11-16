@@ -157,7 +157,7 @@ def execute_request(service, property_uri, request):
   """Executes a searchAnalytics.query request.
 
   Args:
-    service: The webmasters service to use when executing the query.
+    service: The searchconsole service to use when executing the query.
     property_uri: The site or app URI to request data for.
     request: The request to be executed.
 
