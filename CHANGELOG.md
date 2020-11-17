@@ -1,5 +1,13 @@
 # Changelog
 
+### [1.12.6](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.5...v1.12.6) (2020-11-16)
+
+
+### Documentation
+
+* Change error parsing to check for 'message' ([#1083](https://www.github.com/googleapis/google-api-python-client/issues/1083)) ([a341c5a](https://www.github.com/googleapis/google-api-python-client/commit/a341c5a5e31ba16da109658127b58cb7e5dbeedd)), closes [#1082](https://www.github.com/googleapis/google-api-python-client/issues/1082)
+* Update oauth docs to include snippet to get email address of authenticated user ([#1088](https://www.github.com/googleapis/google-api-python-client/issues/1088)) ([25fba64](https://www.github.com/googleapis/google-api-python-client/commit/25fba648ea647b62f2a6edc54ae927c1ed381b45)), closes [#1071](https://www.github.com/googleapis/google-api-python-client/issues/1071)
+
 ### [1.12.5](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.4...v1.12.5) (2020-10-22)
 
 
