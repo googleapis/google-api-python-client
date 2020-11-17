@@ -35,10 +35,7 @@ from setuptools import setup
 packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
 
 install_requires = [
-    # NOTE: Apache Beam tests depend on this library and cannot
-    # currently upgrade their httplib2 version.
-    # Please see https://github.com/googleapis/google-api-python-client/pull/841
-    "httplib2>=0.9.2,<1dev",
+    "httplib2>=0.15.0,<1dev",
     "google-auth>=1.16.0",
     "google-auth-httplib2>=0.0.3",
     "google-api-core>=1.21.0,<2dev",
@@ -52,7 +49,7 @@ readme_filename = os.path.join(package_root, "README.md")
 with io.open(readme_filename, encoding="utf-8") as readme_file:
     readme = readme_file.read()
 
-version = "1.12.1"
+version = "1.12.6"
 
 setup(
     name="google-api-python-client",

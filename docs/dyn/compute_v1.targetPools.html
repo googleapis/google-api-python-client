@@ -81,11 +81,14 @@ h1, h2, h3 {
   <code><a href="#addInstance">addInstance(project, region, targetPool, body=None, requestId=None)</a></code></p>
 <p class="firstline">Adds an instance to a target pool.</p>
 <p class="toc_element">
-  <code><a href="#aggregatedList">aggregatedList(project, filter=None, includeAllScopes=None, maxResults=None, orderBy=None, pageToken=None)</a></code></p>
+  <code><a href="#aggregatedList">aggregatedList(project, filter=None, includeAllScopes=None, maxResults=None, orderBy=None, pageToken=None, returnPartialSuccess=None)</a></code></p>
 <p class="firstline">Retrieves an aggregated list of target pools.</p>
 <p class="toc_element">
   <code><a href="#aggregatedList_next">aggregatedList_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
+<p class="toc_element">
+  <code><a href="#close">close()</a></code></p>
+<p class="firstline">Close httplib2 connections.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(project, region, targetPool, requestId=None)</a></code></p>
 <p class="firstline">Deletes the specified target pool.</p>
@@ -99,7 +102,7 @@ h1, h2, h3 {
   <code><a href="#insert">insert(project, region, body=None, requestId=None)</a></code></p>
 <p class="firstline">Creates a target pool in the specified project and region using the data included in the request.</p>
 <p class="toc_element">
-  <code><a href="#list">list(project, region, filter=None, maxResults=None, orderBy=None, pageToken=None)</a></code></p>
+  <code><a href="#list">list(project, region, filter=None, maxResults=None, orderBy=None, pageToken=None, returnPartialSuccess=None)</a></code></p>
 <p class="firstline">Retrieves a list of target pools available to the specified project and region.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -297,7 +300,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="aggregatedList">aggregatedList(project, filter=None, includeAllScopes=None, maxResults=None, orderBy=None, pageToken=None)</code>
+    <code class="details" id="aggregatedList">aggregatedList(project, filter=None, includeAllScopes=None, maxResults=None, orderBy=None, pageToken=None, returnPartialSuccess=None)</code>
   <pre>Retrieves an aggregated list of target pools.
 
 Args:
@@ -317,6 +320,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
 
 Returns:
   An object of the form:
@@ -329,7 +333,7 @@ Returns:
           { # Represents a Target Pool resource.
               #
               # Target pools are used for network TCP/UDP load balancing. A target pool references member instances, an associated legacy HttpHealthCheck resource, and, optionally, a backup target pool. For more information, read Using target pools. (== resource_for {$api_version}.targetPools ==)
-            &quot;backupPool&quot;: &quot;A String&quot;, # This field is applicable only when the containing target pool is serving a forwarding rule as the primary pool, and its failoverRatio field is properly set to a value between [0, 1].
+            &quot;backupPool&quot;: &quot;A String&quot;, # The server-defined URL for the resource. This field is applicable only when the containing target pool is serving a forwarding rule as the primary pool, and its failoverRatio field is properly set to a value between [0, 1].
                 #
                 # backupPool and failoverRatio together define the fallback behavior of the primary target pool: if the ratio of the healthy instances in the primary pool is at or below failoverRatio, traffic arriving at the load-balanced IP will be directed to the backup pool.
                 #
@@ -341,7 +345,7 @@ Returns:
                 # If set, backupPool must also be set. They together define the fallback behavior of the primary target pool: if the ratio of the healthy instances in the primary pool is at or below this number, traffic arriving at the load-balanced IP will be directed to the backup pool.
                 #
                 # In case where failoverRatio is not set or all the instances in the backup pool are unhealthy, the traffic will be directed back to the primary pool in the &quot;force&quot; mode, where traffic will be spread to the healthy instances with the best effort, or to all instances when no instance is healthy.
-            &quot;healthChecks&quot;: [ # The URL of the HttpHealthCheck resource. A member instance in this pool is considered healthy if and only if the health checks pass. An empty list means all member instances will be considered healthy at all times. Only HttpHealthChecks are supported. Only one health check may be specified.
+            &quot;healthChecks&quot;: [ # The URL of the HttpHealthCheck resource. A member instance in this pool is considered healthy if and only if the health checks pass. An empty list means all member instances will be considered healthy at all times. Only legacy HttpHealthChecks are supported. Only one health check may be specified.
               &quot;A String&quot;,
             ],
             &quot;id&quot;: &quot;A String&quot;, # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
@@ -374,6 +378,9 @@ Returns:
     &quot;kind&quot;: &quot;compute#targetPoolAggregatedList&quot;, # [Output Only] Type of resource. Always compute#targetPoolAggregatedList for aggregated lists of target pools.
     &quot;nextPageToken&quot;: &quot;A String&quot;, # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
     &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for this resource.
+    &quot;unreachables&quot;: [ # [Output Only] Unreachable resources.
+      &quot;A String&quot;,
+    ],
     &quot;warning&quot;: { # [Output Only] Informational warning message.
       &quot;code&quot;: &quot;A String&quot;, # [Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.
       &quot;data&quot;: [ # [Output Only] Metadata about this warning in key: value format. For example:
@@ -400,6 +407,11 @@ Returns:
   A request object that you can call &#x27;execute()&#x27; on to request the next
   page. Returns None if there are no more items in the collection.
     </pre>
+</div>
+
+<div class="method">
+    <code class="details" id="close">close()</code>
+  <pre>Close httplib2 connections.</pre>
 </div>
 
 <div class="method">
@@ -494,7 +506,7 @@ Returns:
     { # Represents a Target Pool resource.
       #
       # Target pools are used for network TCP/UDP load balancing. A target pool references member instances, an associated legacy HttpHealthCheck resource, and, optionally, a backup target pool. For more information, read Using target pools. (== resource_for {$api_version}.targetPools ==)
-    &quot;backupPool&quot;: &quot;A String&quot;, # This field is applicable only when the containing target pool is serving a forwarding rule as the primary pool, and its failoverRatio field is properly set to a value between [0, 1].
+    &quot;backupPool&quot;: &quot;A String&quot;, # The server-defined URL for the resource. This field is applicable only when the containing target pool is serving a forwarding rule as the primary pool, and its failoverRatio field is properly set to a value between [0, 1].
         #
         # backupPool and failoverRatio together define the fallback behavior of the primary target pool: if the ratio of the healthy instances in the primary pool is at or below failoverRatio, traffic arriving at the load-balanced IP will be directed to the backup pool.
         #
@@ -506,7 +518,7 @@ Returns:
         # If set, backupPool must also be set. They together define the fallback behavior of the primary target pool: if the ratio of the healthy instances in the primary pool is at or below this number, traffic arriving at the load-balanced IP will be directed to the backup pool.
         #
         # In case where failoverRatio is not set or all the instances in the backup pool are unhealthy, the traffic will be directed back to the primary pool in the &quot;force&quot; mode, where traffic will be spread to the healthy instances with the best effort, or to all instances when no instance is healthy.
-    &quot;healthChecks&quot;: [ # The URL of the HttpHealthCheck resource. A member instance in this pool is considered healthy if and only if the health checks pass. An empty list means all member instances will be considered healthy at all times. Only HttpHealthChecks are supported. Only one health check may be specified.
+    &quot;healthChecks&quot;: [ # The URL of the HttpHealthCheck resource. A member instance in this pool is considered healthy if and only if the health checks pass. An empty list means all member instances will be considered healthy at all times. Only legacy HttpHealthChecks are supported. Only one health check may be specified.
       &quot;A String&quot;,
     ],
     &quot;id&quot;: &quot;A String&quot;, # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
@@ -572,7 +584,7 @@ Args:
 { # Represents a Target Pool resource.
     # 
     # Target pools are used for network TCP/UDP load balancing. A target pool references member instances, an associated legacy HttpHealthCheck resource, and, optionally, a backup target pool. For more information, read Using target pools. (== resource_for {$api_version}.targetPools ==)
-  &quot;backupPool&quot;: &quot;A String&quot;, # This field is applicable only when the containing target pool is serving a forwarding rule as the primary pool, and its failoverRatio field is properly set to a value between [0, 1].
+  &quot;backupPool&quot;: &quot;A String&quot;, # The server-defined URL for the resource. This field is applicable only when the containing target pool is serving a forwarding rule as the primary pool, and its failoverRatio field is properly set to a value between [0, 1].
       # 
       # backupPool and failoverRatio together define the fallback behavior of the primary target pool: if the ratio of the healthy instances in the primary pool is at or below failoverRatio, traffic arriving at the load-balanced IP will be directed to the backup pool.
       # 
@@ -584,7 +596,7 @@ Args:
       # If set, backupPool must also be set. They together define the fallback behavior of the primary target pool: if the ratio of the healthy instances in the primary pool is at or below this number, traffic arriving at the load-balanced IP will be directed to the backup pool.
       # 
       # In case where failoverRatio is not set or all the instances in the backup pool are unhealthy, the traffic will be directed back to the primary pool in the &quot;force&quot; mode, where traffic will be spread to the healthy instances with the best effort, or to all instances when no instance is healthy.
-  &quot;healthChecks&quot;: [ # The URL of the HttpHealthCheck resource. A member instance in this pool is considered healthy if and only if the health checks pass. An empty list means all member instances will be considered healthy at all times. Only HttpHealthChecks are supported. Only one health check may be specified.
+  &quot;healthChecks&quot;: [ # The URL of the HttpHealthCheck resource. A member instance in this pool is considered healthy if and only if the health checks pass. An empty list means all member instances will be considered healthy at all times. Only legacy HttpHealthChecks are supported. Only one health check may be specified.
     &quot;A String&quot;,
   ],
   &quot;id&quot;: &quot;A String&quot;, # [Output Only] The unique identifier for the resource. This identifier is defined by the server.
@@ -671,7 +683,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(project, region, filter=None, maxResults=None, orderBy=None, pageToken=None)</code>
+    <code class="details" id="list">list(project, region, filter=None, maxResults=None, orderBy=None, pageToken=None, returnPartialSuccess=None)</code>
   <pre>Retrieves a list of target pools available to the specified project and region.
 
 Args:
@@ -691,6 +703,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
 
 Returns:
   An object of the form:
@@ -701,7 +714,7 @@ Returns:
       { # Represents a Target Pool resource.
           #
           # Target pools are used for network TCP/UDP load balancing. A target pool references member instances, an associated legacy HttpHealthCheck resource, and, optionally, a backup target pool. For more information, read Using target pools. (== resource_for {$api_version}.targetPools ==)
-        &quot;backupPool&quot;: &quot;A String&quot;, # This field is applicable only when the containing target pool is serving a forwarding rule as the primary pool, and its failoverRatio field is properly set to a value between [0, 1].
+        &quot;backupPool&quot;: &quot;A String&quot;, # The server-defined URL for the resource. This field is applicable only when the containing target pool is serving a forwarding rule as the primary pool, and its failoverRatio field is properly set to a value between [0, 1].
             #
             # backupPool and failoverRatio together define the fallback behavior of the primary target pool: if the ratio of the healthy instances in the primary pool is at or below failoverRatio, traffic arriving at the load-balanced IP will be directed to the backup pool.
             #
@@ -713,7 +726,7 @@ Returns:
             # If set, backupPool must also be set. They together define the fallback behavior of the primary target pool: if the ratio of the healthy instances in the primary pool is at or below this number, traffic arriving at the load-balanced IP will be directed to the backup pool.
             #
             # In case where failoverRatio is not set or all the instances in the backup pool are unhealthy, the traffic will be directed back to the primary pool in the &quot;force&quot; mode, where traffic will be spread to the healthy instances with the best effort, or to all instances when no instance is healthy.
-        &quot;healthChecks&quot;: [ # The URL of the HttpHealthCheck resource. A member instance in this pool is considered healthy if and only if the health checks pass. An empty list means all member instances will be considered healthy at all times. Only HttpHealthChecks are supported. Only one health check may be specified.
+        &quot;healthChecks&quot;: [ # The URL of the HttpHealthCheck resource. A member instance in this pool is considered healthy if and only if the health checks pass. An empty list means all member instances will be considered healthy at all times. Only legacy HttpHealthChecks are supported. Only one health check may be specified.
           &quot;A String&quot;,
         ],
         &quot;id&quot;: &quot;A String&quot;, # [Output Only] The unique identifier for the resource. This identifier is defined by the server.

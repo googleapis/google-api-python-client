@@ -75,6 +75,9 @@ h1, h2, h3 {
 <h1><a href="compute_beta.html">Compute Engine API</a> . <a href="compute_beta.regionAutoscalers.html">regionAutoscalers</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
+  <code><a href="#close">close()</a></code></p>
+<p class="firstline">Close httplib2 connections.</p>
+<p class="toc_element">
   <code><a href="#delete">delete(project, region, autoscaler, requestId=None)</a></code></p>
 <p class="firstline">Deletes the specified autoscaler.</p>
 <p class="toc_element">
@@ -84,7 +87,7 @@ h1, h2, h3 {
   <code><a href="#insert">insert(project, region, body=None, requestId=None)</a></code></p>
 <p class="firstline">Creates an autoscaler in the specified project using the data included in the request.</p>
 <p class="toc_element">
-  <code><a href="#list">list(project, region, filter=None, maxResults=None, orderBy=None, pageToken=None)</a></code></p>
+  <code><a href="#list">list(project, region, filter=None, maxResults=None, orderBy=None, pageToken=None, returnPartialSuccess=None)</a></code></p>
 <p class="firstline">Retrieves a list of autoscalers contained within the specified region.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -99,6 +102,11 @@ h1, h2, h3 {
   <code><a href="#update">update(project, region, body=None, autoscaler=None, requestId=None)</a></code></p>
 <p class="firstline">Updates an autoscaler in the specified project using the data included in the request.</p>
 <h3>Method Details</h3>
+<div class="method">
+    <code class="details" id="close">close()</code>
+  <pre>Close httplib2 connections.</pre>
+</div>
+
 <div class="method">
     <code class="details" id="delete">delete(project, region, autoscaler, requestId=None)</code>
   <pre>Deletes the specified autoscaler.
@@ -192,7 +200,7 @@ Returns:
       #
       # Google Compute Engine has two Autoscaler resources:
       #
-      # * [Global](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
+      # * [Zonal](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
       #
       # Use autoscalers to automatically add or delete instances from a managed instance group according to your defined autoscaling policy. For more information, read Autoscaling Groups of Instances.
       #
@@ -206,6 +214,9 @@ Returns:
           #
           # Virtual machine initialization times might vary because of numerous factors. We recommend that you test how long an instance may take to initialize. To do this, create an instance and time the startup process.
       &quot;cpuUtilization&quot;: { # CPU utilization policy. # Defines the CPU utilization policy that allows the autoscaler to scale based on the average CPU utilization of a managed instance group.
+        &quot;predictiveMethod&quot;: &quot;A String&quot;, # Indicates whether predictive autoscaling based on CPU metric is enabled. Valid values are:
+            #
+            # * NONE (default). No predictive method is used. The autoscaler scales the group to meet current demand based on real-time metrics. * OPTIMIZE_AVAILABILITY. Predictive autoscaling improves availability by monitoring daily and weekly load patterns and scaling out ahead of anticipated demand.
         &quot;utilizationTarget&quot;: 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.6.
             #
             # If the CPU level is below the target utilization, the autoscaler scales down the number of instances until it reaches the minimum number of instances you specified or until the average CPU of your instances reaches the target utilization.
@@ -236,7 +247,7 @@ Returns:
               # A bad example would be a metric exporting an average or median latency, since this value can&#x27;t include a chunk assignable to a single instance, it could be better used with utilization_target instead.
           &quot;utilizationTarget&quot;: 3.14, # The target value of the metric that autoscaler should maintain. This must be a positive value. A utilization metric scales number of virtual machines handling requests to increase or decrease proportionally to the metric.
               #
-              # For example, a good metric to use as a utilization_target is compute.googleapis.com/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
+              # For example, a good metric to use as a utilization_target is https://www.googleapis.com/compute/v1/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
           &quot;utilizationTargetType&quot;: &quot;A String&quot;, # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE.
         },
       ],
@@ -270,6 +281,16 @@ Returns:
         },
         &quot;timeWindowSec&quot;: 42, # How long back autoscaling should look when computing recommendations to include directives regarding slower scale in, as described above.
       },
+      &quot;scalingSchedules&quot;: { # Scaling schedules defined for an autoscaler. Multiple schedules can be set on an autoscaler and they can overlap. During overlapping periods the greatest min_required_replicas of all scaling schedules will be applied. Up to 128 scaling schedules are allowed.
+        &quot;a_key&quot;: { # Scaling based on user-defined schedule. The message describes a single scaling schedule. A scaling schedule changes the minimum number of VM instances an autoscaler can recommend, which can trigger scaling out.
+          &quot;description&quot;: &quot;A String&quot;, # A description of a scaling schedule.
+          &quot;disabled&quot;: True or False, # A boolean value that specifies if a scaling schedule can influence autoscaler recommendations. If set to true, then a scaling schedule has no effect. This field is optional and its value is false by default.
+          &quot;durationSec&quot;: 42, # The duration of time intervals (in seconds) for which this scaling schedule will be running. The minimum allowed value is 300. This field is required.
+          &quot;minRequiredReplicas&quot;: 42, # Minimum number of VM instances that autoscaler will recommend in time intervals starting according to schedule. This field is required.
+          &quot;schedule&quot;: &quot;A String&quot;, # The start timestamps of time intervals when this scaling schedule should provide a scaling signal. This field uses the extended cron format (with an optional year field). The expression may describe a single timestamp if the optional year is set, in which case a scaling schedule will run once. schedule is interpreted with respect to time_zone. This field is required. NOTE: these timestamps only describe when autoscaler will start providing the scaling signal. The VMs will need additional time to become serving.
+          &quot;timeZone&quot;: &quot;A String&quot;, # The time zone to be used when interpreting the schedule. The value of this field must be a time zone name from the tz database: http://en.wikipedia.org/wiki/Tz_database. This field will be assigned a default value of ?UTC? if left empty.
+        },
+      },
     },
     &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
     &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -278,6 +299,13 @@ Returns:
     &quot;name&quot;: &quot;A String&quot;, # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
     &quot;recommendedSize&quot;: 42, # [Output Only] Target recommended MIG size (number of instances) computed by autoscaler. Autoscaler calculates recommended MIG size even when autoscaling policy mode is different from ON. This field is empty when autoscaler is not connected to the existing managed instance group or autoscaler did not generate its prediction.
     &quot;region&quot;: &quot;A String&quot;, # [Output Only] URL of the region where the instance group resides (for autoscalers living in regional scope).
+    &quot;scalingScheduleStatus&quot;: { # [Output Only] Status information of existing scaling schedules.
+      &quot;a_key&quot;: {
+        &quot;lastStartTime&quot;: &quot;A String&quot;, # [Output Only] The last time the scaling schedule became active. Note: this is a timestamp when a schedule actually became active, not when it was planned to do so. The timestamp is an RFC3339 string in RFC3339 text format.
+        &quot;nextStartTime&quot;: &quot;A String&quot;, # [Output Only] The next time the scaling schedule will become active. Note: this is a timestamp when a schedule is planned to run, but the actual time might be slightly different. The timestamp is an RFC3339 string in RFC3339 text format.
+        &quot;state&quot;: &quot;A String&quot;, # [Output Only] The current state of a scaling schedule.
+      },
+    },
     &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for the resource.
     &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the autoscaler configuration. Current set of possible values:
         # - PENDING: Autoscaler backend hasn&#x27;t read new/updated configuration.
@@ -325,7 +353,7 @@ Args:
     # 
     # Google Compute Engine has two Autoscaler resources:
     # 
-    # * [Global](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
+    # * [Zonal](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
     # 
     # Use autoscalers to automatically add or delete instances from a managed instance group according to your defined autoscaling policy. For more information, read Autoscaling Groups of Instances.
     # 
@@ -339,6 +367,9 @@ Args:
         #
         # Virtual machine initialization times might vary because of numerous factors. We recommend that you test how long an instance may take to initialize. To do this, create an instance and time the startup process.
     &quot;cpuUtilization&quot;: { # CPU utilization policy. # Defines the CPU utilization policy that allows the autoscaler to scale based on the average CPU utilization of a managed instance group.
+      &quot;predictiveMethod&quot;: &quot;A String&quot;, # Indicates whether predictive autoscaling based on CPU metric is enabled. Valid values are:
+          #
+          # * NONE (default). No predictive method is used. The autoscaler scales the group to meet current demand based on real-time metrics. * OPTIMIZE_AVAILABILITY. Predictive autoscaling improves availability by monitoring daily and weekly load patterns and scaling out ahead of anticipated demand.
       &quot;utilizationTarget&quot;: 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.6.
           #
           # If the CPU level is below the target utilization, the autoscaler scales down the number of instances until it reaches the minimum number of instances you specified or until the average CPU of your instances reaches the target utilization.
@@ -369,7 +400,7 @@ Args:
             # A bad example would be a metric exporting an average or median latency, since this value can&#x27;t include a chunk assignable to a single instance, it could be better used with utilization_target instead.
         &quot;utilizationTarget&quot;: 3.14, # The target value of the metric that autoscaler should maintain. This must be a positive value. A utilization metric scales number of virtual machines handling requests to increase or decrease proportionally to the metric.
             #
-            # For example, a good metric to use as a utilization_target is compute.googleapis.com/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
+            # For example, a good metric to use as a utilization_target is https://www.googleapis.com/compute/v1/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
         &quot;utilizationTargetType&quot;: &quot;A String&quot;, # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE.
       },
     ],
@@ -403,6 +434,16 @@ Args:
       },
       &quot;timeWindowSec&quot;: 42, # How long back autoscaling should look when computing recommendations to include directives regarding slower scale in, as described above.
     },
+    &quot;scalingSchedules&quot;: { # Scaling schedules defined for an autoscaler. Multiple schedules can be set on an autoscaler and they can overlap. During overlapping periods the greatest min_required_replicas of all scaling schedules will be applied. Up to 128 scaling schedules are allowed.
+      &quot;a_key&quot;: { # Scaling based on user-defined schedule. The message describes a single scaling schedule. A scaling schedule changes the minimum number of VM instances an autoscaler can recommend, which can trigger scaling out.
+        &quot;description&quot;: &quot;A String&quot;, # A description of a scaling schedule.
+        &quot;disabled&quot;: True or False, # A boolean value that specifies if a scaling schedule can influence autoscaler recommendations. If set to true, then a scaling schedule has no effect. This field is optional and its value is false by default.
+        &quot;durationSec&quot;: 42, # The duration of time intervals (in seconds) for which this scaling schedule will be running. The minimum allowed value is 300. This field is required.
+        &quot;minRequiredReplicas&quot;: 42, # Minimum number of VM instances that autoscaler will recommend in time intervals starting according to schedule. This field is required.
+        &quot;schedule&quot;: &quot;A String&quot;, # The start timestamps of time intervals when this scaling schedule should provide a scaling signal. This field uses the extended cron format (with an optional year field). The expression may describe a single timestamp if the optional year is set, in which case a scaling schedule will run once. schedule is interpreted with respect to time_zone. This field is required. NOTE: these timestamps only describe when autoscaler will start providing the scaling signal. The VMs will need additional time to become serving.
+        &quot;timeZone&quot;: &quot;A String&quot;, # The time zone to be used when interpreting the schedule. The value of this field must be a time zone name from the tz database: http://en.wikipedia.org/wiki/Tz_database. This field will be assigned a default value of ?UTC? if left empty.
+      },
+    },
   },
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
   &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -411,6 +452,13 @@ Args:
   &quot;name&quot;: &quot;A String&quot;, # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
   &quot;recommendedSize&quot;: 42, # [Output Only] Target recommended MIG size (number of instances) computed by autoscaler. Autoscaler calculates recommended MIG size even when autoscaling policy mode is different from ON. This field is empty when autoscaler is not connected to the existing managed instance group or autoscaler did not generate its prediction.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] URL of the region where the instance group resides (for autoscalers living in regional scope).
+  &quot;scalingScheduleStatus&quot;: { # [Output Only] Status information of existing scaling schedules.
+    &quot;a_key&quot;: {
+      &quot;lastStartTime&quot;: &quot;A String&quot;, # [Output Only] The last time the scaling schedule became active. Note: this is a timestamp when a schedule actually became active, not when it was planned to do so. The timestamp is an RFC3339 string in RFC3339 text format.
+      &quot;nextStartTime&quot;: &quot;A String&quot;, # [Output Only] The next time the scaling schedule will become active. Note: this is a timestamp when a schedule is planned to run, but the actual time might be slightly different. The timestamp is an RFC3339 string in RFC3339 text format.
+      &quot;state&quot;: &quot;A String&quot;, # [Output Only] The current state of a scaling schedule.
+    },
+  },
   &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for the resource.
   &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the autoscaler configuration. Current set of possible values:
       # - PENDING: Autoscaler backend hasn&#x27;t read new/updated configuration.
@@ -513,7 +561,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(project, region, filter=None, maxResults=None, orderBy=None, pageToken=None)</code>
+    <code class="details" id="list">list(project, region, filter=None, maxResults=None, orderBy=None, pageToken=None, returnPartialSuccess=None)</code>
   <pre>Retrieves a list of autoscalers contained within the specified region.
 
 Args:
@@ -533,6 +581,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
 
 Returns:
   An object of the form:
@@ -544,7 +593,7 @@ Returns:
           #
           # Google Compute Engine has two Autoscaler resources:
           #
-          # * [Global](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
+          # * [Zonal](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
           #
           # Use autoscalers to automatically add or delete instances from a managed instance group according to your defined autoscaling policy. For more information, read Autoscaling Groups of Instances.
           #
@@ -558,6 +607,9 @@ Returns:
               #
               # Virtual machine initialization times might vary because of numerous factors. We recommend that you test how long an instance may take to initialize. To do this, create an instance and time the startup process.
           &quot;cpuUtilization&quot;: { # CPU utilization policy. # Defines the CPU utilization policy that allows the autoscaler to scale based on the average CPU utilization of a managed instance group.
+            &quot;predictiveMethod&quot;: &quot;A String&quot;, # Indicates whether predictive autoscaling based on CPU metric is enabled. Valid values are:
+                #
+                # * NONE (default). No predictive method is used. The autoscaler scales the group to meet current demand based on real-time metrics. * OPTIMIZE_AVAILABILITY. Predictive autoscaling improves availability by monitoring daily and weekly load patterns and scaling out ahead of anticipated demand.
             &quot;utilizationTarget&quot;: 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.6.
                 #
                 # If the CPU level is below the target utilization, the autoscaler scales down the number of instances until it reaches the minimum number of instances you specified or until the average CPU of your instances reaches the target utilization.
@@ -588,7 +640,7 @@ Returns:
                   # A bad example would be a metric exporting an average or median latency, since this value can&#x27;t include a chunk assignable to a single instance, it could be better used with utilization_target instead.
               &quot;utilizationTarget&quot;: 3.14, # The target value of the metric that autoscaler should maintain. This must be a positive value. A utilization metric scales number of virtual machines handling requests to increase or decrease proportionally to the metric.
                   #
-                  # For example, a good metric to use as a utilization_target is compute.googleapis.com/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
+                  # For example, a good metric to use as a utilization_target is https://www.googleapis.com/compute/v1/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
               &quot;utilizationTargetType&quot;: &quot;A String&quot;, # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE.
             },
           ],
@@ -622,6 +674,16 @@ Returns:
             },
             &quot;timeWindowSec&quot;: 42, # How long back autoscaling should look when computing recommendations to include directives regarding slower scale in, as described above.
           },
+          &quot;scalingSchedules&quot;: { # Scaling schedules defined for an autoscaler. Multiple schedules can be set on an autoscaler and they can overlap. During overlapping periods the greatest min_required_replicas of all scaling schedules will be applied. Up to 128 scaling schedules are allowed.
+            &quot;a_key&quot;: { # Scaling based on user-defined schedule. The message describes a single scaling schedule. A scaling schedule changes the minimum number of VM instances an autoscaler can recommend, which can trigger scaling out.
+              &quot;description&quot;: &quot;A String&quot;, # A description of a scaling schedule.
+              &quot;disabled&quot;: True or False, # A boolean value that specifies if a scaling schedule can influence autoscaler recommendations. If set to true, then a scaling schedule has no effect. This field is optional and its value is false by default.
+              &quot;durationSec&quot;: 42, # The duration of time intervals (in seconds) for which this scaling schedule will be running. The minimum allowed value is 300. This field is required.
+              &quot;minRequiredReplicas&quot;: 42, # Minimum number of VM instances that autoscaler will recommend in time intervals starting according to schedule. This field is required.
+              &quot;schedule&quot;: &quot;A String&quot;, # The start timestamps of time intervals when this scaling schedule should provide a scaling signal. This field uses the extended cron format (with an optional year field). The expression may describe a single timestamp if the optional year is set, in which case a scaling schedule will run once. schedule is interpreted with respect to time_zone. This field is required. NOTE: these timestamps only describe when autoscaler will start providing the scaling signal. The VMs will need additional time to become serving.
+              &quot;timeZone&quot;: &quot;A String&quot;, # The time zone to be used when interpreting the schedule. The value of this field must be a time zone name from the tz database: http://en.wikipedia.org/wiki/Tz_database. This field will be assigned a default value of ?UTC? if left empty.
+            },
+          },
         },
         &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
         &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -630,6 +692,13 @@ Returns:
         &quot;name&quot;: &quot;A String&quot;, # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
         &quot;recommendedSize&quot;: 42, # [Output Only] Target recommended MIG size (number of instances) computed by autoscaler. Autoscaler calculates recommended MIG size even when autoscaling policy mode is different from ON. This field is empty when autoscaler is not connected to the existing managed instance group or autoscaler did not generate its prediction.
         &quot;region&quot;: &quot;A String&quot;, # [Output Only] URL of the region where the instance group resides (for autoscalers living in regional scope).
+        &quot;scalingScheduleStatus&quot;: { # [Output Only] Status information of existing scaling schedules.
+          &quot;a_key&quot;: {
+            &quot;lastStartTime&quot;: &quot;A String&quot;, # [Output Only] The last time the scaling schedule became active. Note: this is a timestamp when a schedule actually became active, not when it was planned to do so. The timestamp is an RFC3339 string in RFC3339 text format.
+            &quot;nextStartTime&quot;: &quot;A String&quot;, # [Output Only] The next time the scaling schedule will become active. Note: this is a timestamp when a schedule is planned to run, but the actual time might be slightly different. The timestamp is an RFC3339 string in RFC3339 text format.
+            &quot;state&quot;: &quot;A String&quot;, # [Output Only] The current state of a scaling schedule.
+          },
+        },
         &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for the resource.
         &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the autoscaler configuration. Current set of possible values:
             # - PENDING: Autoscaler backend hasn&#x27;t read new/updated configuration.
@@ -707,7 +776,7 @@ Args:
     # 
     # Google Compute Engine has two Autoscaler resources:
     # 
-    # * [Global](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
+    # * [Zonal](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
     # 
     # Use autoscalers to automatically add or delete instances from a managed instance group according to your defined autoscaling policy. For more information, read Autoscaling Groups of Instances.
     # 
@@ -721,6 +790,9 @@ Args:
         #
         # Virtual machine initialization times might vary because of numerous factors. We recommend that you test how long an instance may take to initialize. To do this, create an instance and time the startup process.
     &quot;cpuUtilization&quot;: { # CPU utilization policy. # Defines the CPU utilization policy that allows the autoscaler to scale based on the average CPU utilization of a managed instance group.
+      &quot;predictiveMethod&quot;: &quot;A String&quot;, # Indicates whether predictive autoscaling based on CPU metric is enabled. Valid values are:
+          #
+          # * NONE (default). No predictive method is used. The autoscaler scales the group to meet current demand based on real-time metrics. * OPTIMIZE_AVAILABILITY. Predictive autoscaling improves availability by monitoring daily and weekly load patterns and scaling out ahead of anticipated demand.
       &quot;utilizationTarget&quot;: 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.6.
           #
           # If the CPU level is below the target utilization, the autoscaler scales down the number of instances until it reaches the minimum number of instances you specified or until the average CPU of your instances reaches the target utilization.
@@ -751,7 +823,7 @@ Args:
             # A bad example would be a metric exporting an average or median latency, since this value can&#x27;t include a chunk assignable to a single instance, it could be better used with utilization_target instead.
         &quot;utilizationTarget&quot;: 3.14, # The target value of the metric that autoscaler should maintain. This must be a positive value. A utilization metric scales number of virtual machines handling requests to increase or decrease proportionally to the metric.
             #
-            # For example, a good metric to use as a utilization_target is compute.googleapis.com/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
+            # For example, a good metric to use as a utilization_target is https://www.googleapis.com/compute/v1/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
         &quot;utilizationTargetType&quot;: &quot;A String&quot;, # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE.
       },
     ],
@@ -785,6 +857,16 @@ Args:
       },
       &quot;timeWindowSec&quot;: 42, # How long back autoscaling should look when computing recommendations to include directives regarding slower scale in, as described above.
     },
+    &quot;scalingSchedules&quot;: { # Scaling schedules defined for an autoscaler. Multiple schedules can be set on an autoscaler and they can overlap. During overlapping periods the greatest min_required_replicas of all scaling schedules will be applied. Up to 128 scaling schedules are allowed.
+      &quot;a_key&quot;: { # Scaling based on user-defined schedule. The message describes a single scaling schedule. A scaling schedule changes the minimum number of VM instances an autoscaler can recommend, which can trigger scaling out.
+        &quot;description&quot;: &quot;A String&quot;, # A description of a scaling schedule.
+        &quot;disabled&quot;: True or False, # A boolean value that specifies if a scaling schedule can influence autoscaler recommendations. If set to true, then a scaling schedule has no effect. This field is optional and its value is false by default.
+        &quot;durationSec&quot;: 42, # The duration of time intervals (in seconds) for which this scaling schedule will be running. The minimum allowed value is 300. This field is required.
+        &quot;minRequiredReplicas&quot;: 42, # Minimum number of VM instances that autoscaler will recommend in time intervals starting according to schedule. This field is required.
+        &quot;schedule&quot;: &quot;A String&quot;, # The start timestamps of time intervals when this scaling schedule should provide a scaling signal. This field uses the extended cron format (with an optional year field). The expression may describe a single timestamp if the optional year is set, in which case a scaling schedule will run once. schedule is interpreted with respect to time_zone. This field is required. NOTE: these timestamps only describe when autoscaler will start providing the scaling signal. The VMs will need additional time to become serving.
+        &quot;timeZone&quot;: &quot;A String&quot;, # The time zone to be used when interpreting the schedule. The value of this field must be a time zone name from the tz database: http://en.wikipedia.org/wiki/Tz_database. This field will be assigned a default value of ?UTC? if left empty.
+      },
+    },
   },
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
   &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -793,6 +875,13 @@ Args:
   &quot;name&quot;: &quot;A String&quot;, # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
   &quot;recommendedSize&quot;: 42, # [Output Only] Target recommended MIG size (number of instances) computed by autoscaler. Autoscaler calculates recommended MIG size even when autoscaling policy mode is different from ON. This field is empty when autoscaler is not connected to the existing managed instance group or autoscaler did not generate its prediction.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] URL of the region where the instance group resides (for autoscalers living in regional scope).
+  &quot;scalingScheduleStatus&quot;: { # [Output Only] Status information of existing scaling schedules.
+    &quot;a_key&quot;: {
+      &quot;lastStartTime&quot;: &quot;A String&quot;, # [Output Only] The last time the scaling schedule became active. Note: this is a timestamp when a schedule actually became active, not when it was planned to do so. The timestamp is an RFC3339 string in RFC3339 text format.
+      &quot;nextStartTime&quot;: &quot;A String&quot;, # [Output Only] The next time the scaling schedule will become active. Note: this is a timestamp when a schedule is planned to run, but the actual time might be slightly different. The timestamp is an RFC3339 string in RFC3339 text format.
+      &quot;state&quot;: &quot;A String&quot;, # [Output Only] The current state of a scaling schedule.
+    },
+  },
   &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for the resource.
   &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the autoscaler configuration. Current set of possible values:
       # - PENDING: Autoscaler backend hasn&#x27;t read new/updated configuration.
@@ -937,7 +1026,7 @@ Args:
     # 
     # Google Compute Engine has two Autoscaler resources:
     # 
-    # * [Global](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
+    # * [Zonal](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
     # 
     # Use autoscalers to automatically add or delete instances from a managed instance group according to your defined autoscaling policy. For more information, read Autoscaling Groups of Instances.
     # 
@@ -951,6 +1040,9 @@ Args:
         #
         # Virtual machine initialization times might vary because of numerous factors. We recommend that you test how long an instance may take to initialize. To do this, create an instance and time the startup process.
     &quot;cpuUtilization&quot;: { # CPU utilization policy. # Defines the CPU utilization policy that allows the autoscaler to scale based on the average CPU utilization of a managed instance group.
+      &quot;predictiveMethod&quot;: &quot;A String&quot;, # Indicates whether predictive autoscaling based on CPU metric is enabled. Valid values are:
+          #
+          # * NONE (default). No predictive method is used. The autoscaler scales the group to meet current demand based on real-time metrics. * OPTIMIZE_AVAILABILITY. Predictive autoscaling improves availability by monitoring daily and weekly load patterns and scaling out ahead of anticipated demand.
       &quot;utilizationTarget&quot;: 3.14, # The target CPU utilization that the autoscaler should maintain. Must be a float value in the range (0, 1]. If not specified, the default is 0.6.
           #
           # If the CPU level is below the target utilization, the autoscaler scales down the number of instances until it reaches the minimum number of instances you specified or until the average CPU of your instances reaches the target utilization.
@@ -981,7 +1073,7 @@ Args:
             # A bad example would be a metric exporting an average or median latency, since this value can&#x27;t include a chunk assignable to a single instance, it could be better used with utilization_target instead.
         &quot;utilizationTarget&quot;: 3.14, # The target value of the metric that autoscaler should maintain. This must be a positive value. A utilization metric scales number of virtual machines handling requests to increase or decrease proportionally to the metric.
             #
-            # For example, a good metric to use as a utilization_target is compute.googleapis.com/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
+            # For example, a good metric to use as a utilization_target is https://www.googleapis.com/compute/v1/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
         &quot;utilizationTargetType&quot;: &quot;A String&quot;, # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE.
       },
     ],
@@ -1015,6 +1107,16 @@ Args:
       },
       &quot;timeWindowSec&quot;: 42, # How long back autoscaling should look when computing recommendations to include directives regarding slower scale in, as described above.
     },
+    &quot;scalingSchedules&quot;: { # Scaling schedules defined for an autoscaler. Multiple schedules can be set on an autoscaler and they can overlap. During overlapping periods the greatest min_required_replicas of all scaling schedules will be applied. Up to 128 scaling schedules are allowed.
+      &quot;a_key&quot;: { # Scaling based on user-defined schedule. The message describes a single scaling schedule. A scaling schedule changes the minimum number of VM instances an autoscaler can recommend, which can trigger scaling out.
+        &quot;description&quot;: &quot;A String&quot;, # A description of a scaling schedule.
+        &quot;disabled&quot;: True or False, # A boolean value that specifies if a scaling schedule can influence autoscaler recommendations. If set to true, then a scaling schedule has no effect. This field is optional and its value is false by default.
+        &quot;durationSec&quot;: 42, # The duration of time intervals (in seconds) for which this scaling schedule will be running. The minimum allowed value is 300. This field is required.
+        &quot;minRequiredReplicas&quot;: 42, # Minimum number of VM instances that autoscaler will recommend in time intervals starting according to schedule. This field is required.
+        &quot;schedule&quot;: &quot;A String&quot;, # The start timestamps of time intervals when this scaling schedule should provide a scaling signal. This field uses the extended cron format (with an optional year field). The expression may describe a single timestamp if the optional year is set, in which case a scaling schedule will run once. schedule is interpreted with respect to time_zone. This field is required. NOTE: these timestamps only describe when autoscaler will start providing the scaling signal. The VMs will need additional time to become serving.
+        &quot;timeZone&quot;: &quot;A String&quot;, # The time zone to be used when interpreting the schedule. The value of this field must be a time zone name from the tz database: http://en.wikipedia.org/wiki/Tz_database. This field will be assigned a default value of ?UTC? if left empty.
+      },
+    },
   },
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
   &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -1023,6 +1125,13 @@ Args:
   &quot;name&quot;: &quot;A String&quot;, # Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.
   &quot;recommendedSize&quot;: 42, # [Output Only] Target recommended MIG size (number of instances) computed by autoscaler. Autoscaler calculates recommended MIG size even when autoscaling policy mode is different from ON. This field is empty when autoscaler is not connected to the existing managed instance group or autoscaler did not generate its prediction.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] URL of the region where the instance group resides (for autoscalers living in regional scope).
+  &quot;scalingScheduleStatus&quot;: { # [Output Only] Status information of existing scaling schedules.
+    &quot;a_key&quot;: {
+      &quot;lastStartTime&quot;: &quot;A String&quot;, # [Output Only] The last time the scaling schedule became active. Note: this is a timestamp when a schedule actually became active, not when it was planned to do so. The timestamp is an RFC3339 string in RFC3339 text format.
+      &quot;nextStartTime&quot;: &quot;A String&quot;, # [Output Only] The next time the scaling schedule will become active. Note: this is a timestamp when a schedule is planned to run, but the actual time might be slightly different. The timestamp is an RFC3339 string in RFC3339 text format.
+      &quot;state&quot;: &quot;A String&quot;, # [Output Only] The current state of a scaling schedule.
+    },
+  },
   &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for the resource.
   &quot;status&quot;: &quot;A String&quot;, # [Output Only] The status of the autoscaler configuration. Current set of possible values:
       # - PENDING: Autoscaler backend hasn&#x27;t read new/updated configuration.
