@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.12.7](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.6...v1.12.7) (2020-11-17)
+
+
+### Documentation
+
+* Update Webmasters API sample ([#1092](https://www.github.com/googleapis/google-api-python-client/issues/1092)) ([12831f3](https://www.github.com/googleapis/google-api-python-client/commit/12831f3e4716292b55b63dd2b08c3351f09b8a15))
+
 ### [1.12.6](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.5...v1.12.6) (2020-11-16)
 
 
