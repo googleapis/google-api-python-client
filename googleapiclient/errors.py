@@ -51,10 +51,9 @@ class HttpError(Error):
             data = json.loads(self.content.decode("utf-8"))
             if isinstance(data, dict):
                 reason = data["error"]["message"]
-                if "details" in data["error"]:
-                    self.error_details = data["error"]["details"]
-                elif "detail" in data["error"]:
-                    self.error_details = data["error"]["detail"]
+                error_detail_keyword = next((kw for kw in ["detail", "details", "message"] if kw in data["error"]), "")
+                if error_detail_keyword:
+                    self.error_details = data["error"][error_detail_keyword]
             elif isinstance(data, list) and len(data) > 0:
                 first_error = data[0]
                 reason = first_error["error"]["message"]

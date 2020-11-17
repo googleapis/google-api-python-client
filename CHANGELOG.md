@@ -1,5 +1,88 @@
 # Changelog
 
+### [1.12.6](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.5...v1.12.6) (2020-11-16)
+
+
+### Documentation
+
+* Change error parsing to check for 'message' ([#1083](https://www.github.com/googleapis/google-api-python-client/issues/1083)) ([a341c5a](https://www.github.com/googleapis/google-api-python-client/commit/a341c5a5e31ba16da109658127b58cb7e5dbeedd)), closes [#1082](https://www.github.com/googleapis/google-api-python-client/issues/1082)
+* Update oauth docs to include snippet to get email address of authenticated user ([#1088](https://www.github.com/googleapis/google-api-python-client/issues/1088)) ([25fba64](https://www.github.com/googleapis/google-api-python-client/commit/25fba648ea647b62f2a6edc54ae927c1ed381b45)), closes [#1071](https://www.github.com/googleapis/google-api-python-client/issues/1071)
+
+### [1.12.5](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.4...v1.12.5) (2020-10-22)
+
+
+### Bug Fixes
+
+* don't raise when downloading zero byte files ([#1074](https://www.github.com/googleapis/google-api-python-client/issues/1074)) ([86d8788](https://www.github.com/googleapis/google-api-python-client/commit/86d8788ee8a766ca6818620f3fd2899be0e44190))
+
+### [1.12.4](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.3...v1.12.4) (2020-10-20)
+
+
+### Bug Fixes
+
+* don't set content-range on empty uploads ([#1070](https://www.github.com/googleapis/google-api-python-client/issues/1070)) ([af6035f](https://www.github.com/googleapis/google-api-python-client/commit/af6035f6754a155ee6b04bbbc5c39410c7316d6a))
+
+
+### Documentation
+
+* fix typo in oauth.md ([#1058](https://www.github.com/googleapis/google-api-python-client/issues/1058)) ([30eff9d](https://www.github.com/googleapis/google-api-python-client/commit/30eff9d8276919b8c4e50df2d3b1982594423692))
+* update generated docs ([#1053](https://www.github.com/googleapis/google-api-python-client/issues/1053)) ([3e17f89](https://www.github.com/googleapis/google-api-python-client/commit/3e17f8990db54bec16c48c319072799a14f5a53f)), closes [#1049](https://www.github.com/googleapis/google-api-python-client/issues/1049)
+
+### [1.12.3](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.2...v1.12.3) (2020-09-29)
+
+
+### Bug Fixes
+
+* **deps:** update setup.py to install httplib2>=0.15.0 ([#1050](https://www.github.com/googleapis/google-api-python-client/issues/1050)) ([c00f70d](https://www.github.com/googleapis/google-api-python-client/commit/c00f70d565a002b92374356be087927b131ce135))
+
+### [1.12.2](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.1...v1.12.2) (2020-09-23)
+
+
+### Bug Fixes
+
+* add method to close httplib2 connections ([#1038](https://www.github.com/googleapis/google-api-python-client/issues/1038)) ([98888da](https://www.github.com/googleapis/google-api-python-client/commit/98888dadf04e7e00524b6de273d28d02d7abc2c0)), closes [#618](https://www.github.com/googleapis/google-api-python-client/issues/618) 
+
+### [1.12.1](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.0...v1.12.1) (2020-09-14)
+
+
+### Bug Fixes
+
+* **deps:** require six>=1.13.0 ([#1030](https://www.github.com/googleapis/google-api-python-client/issues/1030)) ([4acecc3](https://www.github.com/googleapis/google-api-python-client/commit/4acecc3c0cd31308f9a256f065b7b1d1c3a4798d))
+
+## [1.12.0](https://www.github.com/googleapis/google-api-python-client/compare/v1.11.0...v1.12.0) (2020-09-12)
+
+
+### Features
+
+* add quota_project, credentials_file, and scopes support ([#1022](https://www.github.com/googleapis/google-api-python-client/issues/1022)) ([790e702](https://www.github.com/googleapis/google-api-python-client/commit/790e70224c8110bfb1191333ce448c2b0fe54ea6))
+
+
+### Documentation
+
+* convert `print` statement to function ([#988](https://www.github.com/googleapis/google-api-python-client/issues/988)) ([16448bc](https://www.github.com/googleapis/google-api-python-client/commit/16448bc666e032abd83096faadcda56f86f36f18)), closes [#987](https://www.github.com/googleapis/google-api-python-client/issues/987)
+* remove http from batch execute docs ([#1003](https://www.github.com/googleapis/google-api-python-client/issues/1003)) ([5028fe7](https://www.github.com/googleapis/google-api-python-client/commit/5028fe76c8075c6594b1999074f91eed7f7dd329)), closes [#1002](https://www.github.com/googleapis/google-api-python-client/issues/1002)
+
+## [1.11.0](https://www.github.com/googleapis/google-api-python-client/compare/v1.10.1...v1.11.0) (2020-08-27)
+
+
+### Features
+
+* add support for mtls env variables ([#1008](https://www.github.com/googleapis/google-api-python-client/issues/1008)) ([2fc5ca1](https://www.github.com/googleapis/google-api-python-client/commit/2fc5ca1b6aa880aab2067ab7eb96780a1b28d4c7))
+
+### [1.10.1](https://www.github.com/googleapis/google-api-python-client/compare/v1.10.0...v1.10.1) (2020-08-03)
+
+
+### Bug Fixes
+
+* discovery uses V2 when version is None ([#975](https://www.github.com/googleapis/google-api-python-client/issues/975)) ([cd4e8f4](https://www.github.com/googleapis/google-api-python-client/commit/cd4e8f429422232dd82ef7e9bc685061d5df94a1)), closes [#971](https://www.github.com/googleapis/google-api-python-client/issues/971)
+
+
+### Documentation
+
+* fix deprecation warnings due to invalid escape sequences. ([#996](https://www.github.com/googleapis/google-api-python-client/issues/996)) ([0f60eda](https://www.github.com/googleapis/google-api-python-client/commit/0f60eda81ea524dcd1358d87b06da701412bb414)), closes [#995](https://www.github.com/googleapis/google-api-python-client/issues/995)
+* fix link to service accounts documentation ([#986](https://www.github.com/googleapis/google-api-python-client/issues/986)) ([edb2516](https://www.github.com/googleapis/google-api-python-client/commit/edb2516eb59770546e7960ca633c7be0ca7b1ad4))
+* update generated docs ([#981](https://www.github.com/googleapis/google-api-python-client/issues/981)) ([d059ad8](https://www.github.com/googleapis/google-api-python-client/commit/d059ad881c7ae58c67931c48788d0bd7343ab16c))
+
 ## [1.10.0](https://www.github.com/googleapis/google-api-python-client/compare/v1.9.3...v1.10.0) (2020-07-15)
 
 

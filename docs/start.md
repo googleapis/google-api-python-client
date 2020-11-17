@@ -26,7 +26,7 @@ These API calls do not access any private user data. Your application must authe
 
 These API calls access private user data. Before you can call them, the user that has access to the private data must grant your application access. Therefore, your application must be authenticated, the user must grant access for your application, and the user must be authenticated in order to grant that access. All of this is accomplished with [OAuth 2.0](https://developers.google.com/identity/protocols/OAuth2) and libraries written for it.
 
-*   **Scope**: Each API defines one or more scopes that declare a set of operations permitted. For example, an API might have read-only and read-write scopes. When your application requests access to user data, the request must include one or more scopes. The user needs to approve the scope of access your application is requesting.
+*   **Scope**: Each API defines one or more scopes that declare a set of operations permitted. For example, an API might have read-only and read-write scopes. When your application requests access to user data, the request must include one or more scopes. The user needs to approve the scope of access your application is requesting. A list of accessible OAuth 2.0 scopes can be [found here](https://developers.google.com/identity/protocols/oauth2/scopes).
 *   **Refresh and access tokens**: When a user grants your application access, the OAuth 2.0 authorization server provides your application with refresh and access tokens. These tokens are only valid for the scope requested. Your application uses access tokens to authorize API calls. Access tokens expire, but refresh tokens do not. Your application can use a refresh token to acquire a new access token.
     
     > **Warning**: Keep refresh and access tokens private. If someone obtains your tokens, they could use them to access private user data.
@@ -45,12 +45,24 @@ This section describes how to build an API-specific service object, make calls t
 
 ### Build the service object
 
-Whether you are using simple or authorized API access, you use the [build()](http://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build) function to create a service object. It takes an API name and API version as arguments. You can see the list of all API versions on the [Supported APIs](dyn/index.md) page. The service object is constructed with methods specific to the given API. To create it, do the following:
+Whether you are using simple or authorized API access, you use the [build()](http://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build) function to create a service object. It takes an API name and API version as arguments. You can see the list of all API versions on the [Supported APIs](dyn/index.md) page. The service object is constructed with methods specific to the given API. 
+
+`httplib2`, the underlying transport library, makes all connections persistent by default. Use the service object with a context manager or call `close` to avoid leaving sockets open.
 
 
 ```python
 from googleapiclient.discovery import build
-service = build('api_name', 'api_version', ...)
+
+service = build('drive', 'v3')
+# ...
+service.close()
+```
+
+```python
+from googleapiclient.discovery import build
+
+with build('drive', 'v3') as service:
+    # ...
 ```
 
 ### Collections
@@ -82,7 +94,10 @@ request = collection.list(cents=5)
 Creating a request does not actually call the API. To execute the request and get a response, call the `execute()` function:
 
 ```python
-response = request.execute()
+try:
+    response = request.execute()
+except HttpError as e:
+    print('Error response status code : {0}, reason : {1}'.format(e.resp.status, e.error_details))
 ```
 
 Alternatively, you can combine previous steps on a single line:
@@ -98,7 +113,7 @@ The response is a Python object built from the JSON response sent by the API ser
 ```python
 import json
 ...
-print json.dumps(response, sort_keys=True, indent=4)
+print(json.dumps(response, sort_keys=True, indent=4))
 ```
 
 For example, if the printed JSON is the following:

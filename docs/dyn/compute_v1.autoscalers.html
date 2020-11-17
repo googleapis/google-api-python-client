@@ -75,11 +75,14 @@ h1, h2, h3 {
 <h1><a href="compute_v1.html">Compute Engine API</a> . <a href="compute_v1.autoscalers.html">autoscalers</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
-  <code><a href="#aggregatedList">aggregatedList(project, filter=None, includeAllScopes=None, maxResults=None, orderBy=None, pageToken=None)</a></code></p>
+  <code><a href="#aggregatedList">aggregatedList(project, filter=None, includeAllScopes=None, maxResults=None, orderBy=None, pageToken=None, returnPartialSuccess=None)</a></code></p>
 <p class="firstline">Retrieves an aggregated list of autoscalers.</p>
 <p class="toc_element">
   <code><a href="#aggregatedList_next">aggregatedList_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
+<p class="toc_element">
+  <code><a href="#close">close()</a></code></p>
+<p class="firstline">Close httplib2 connections.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(project, zone, autoscaler, requestId=None)</a></code></p>
 <p class="firstline">Deletes the specified autoscaler.</p>
@@ -90,7 +93,7 @@ h1, h2, h3 {
   <code><a href="#insert">insert(project, zone, body=None, requestId=None)</a></code></p>
 <p class="firstline">Creates an autoscaler in the specified project using the data included in the request.</p>
 <p class="toc_element">
-  <code><a href="#list">list(project, zone, filter=None, maxResults=None, orderBy=None, pageToken=None)</a></code></p>
+  <code><a href="#list">list(project, zone, filter=None, maxResults=None, orderBy=None, pageToken=None, returnPartialSuccess=None)</a></code></p>
 <p class="firstline">Retrieves a list of autoscalers contained within the specified zone.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -103,7 +106,7 @@ h1, h2, h3 {
 <p class="firstline">Updates an autoscaler in the specified project using the data included in the request.</p>
 <h3>Method Details</h3>
 <div class="method">
-    <code class="details" id="aggregatedList">aggregatedList(project, filter=None, includeAllScopes=None, maxResults=None, orderBy=None, pageToken=None)</code>
+    <code class="details" id="aggregatedList">aggregatedList(project, filter=None, includeAllScopes=None, maxResults=None, orderBy=None, pageToken=None, returnPartialSuccess=None)</code>
   <pre>Retrieves an aggregated list of autoscalers.
 
 Args:
@@ -123,6 +126,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
 
 Returns:
   An object of the form:
@@ -136,7 +140,7 @@ Returns:
               #
               # Google Compute Engine has two Autoscaler resources:
               #
-              # * [Global](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
+              # * [Zonal](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
               #
               # Use autoscalers to automatically add or delete instances from a managed instance group according to your defined autoscaling policy. For more information, read Autoscaling Groups of Instances.
               #
@@ -158,12 +162,29 @@ Returns:
               },
               &quot;customMetricUtilizations&quot;: [ # Configuration parameters of autoscaling based on a custom metric.
                 { # Custom utilization metric policy.
+                  &quot;filter&quot;: &quot;A String&quot;, # A filter string, compatible with a Stackdriver Monitoring filter string for TimeSeries.list API call. This filter is used to select a specific TimeSeries for the purpose of autoscaling and to determine whether the metric is exporting per-instance or per-group data.
+                      #
+                      # For the filter to be valid for autoscaling purposes, the following rules apply:
+                      # - You can only use the AND operator for joining selectors.
+                      # - You can only use direct equality comparison operator (=) without any functions for each selector.
+                      # - You can specify the metric in both the filter string and in the metric field. However, if specified in both places, the metric must be identical.
+                      # - The monitored resource type determines what kind of values are expected for the metric. If it is a gce_instance, the autoscaler expects the metric to include a separate TimeSeries for each instance in a group. In such a case, you cannot filter on resource labels.
+                      # If the resource type is any other value, the autoscaler expects this metric to contain values that apply to the entire autoscaled instance group and resource label filtering can be performed to point autoscaler at the correct TimeSeries to scale upon. This is called a per-group metric for the purpose of autoscaling.
+                      #
+                      # If not specified, the type defaults to gce_instance.
+                      #
+                      # You should provide a filter that is selective enough to pick just one TimeSeries for the autoscaled group or for each of the instances (if you are using gce_instance resource type). If multiple TimeSeries are returned upon the query execution, the autoscaler will sum their respective values to obtain its scaling value.
                   &quot;metric&quot;: &quot;A String&quot;, # The identifier (type) of the Stackdriver Monitoring metric. The metric cannot have negative values.
                       #
                       # The metric must have a value type of INT64 or DOUBLE.
+                  &quot;singleInstanceAssignment&quot;: 3.14, # If scaling is based on a per-group metric value that represents the total amount of work to be done or resource usage, set this value to an amount assigned for a single instance of the scaled group. Autoscaler will keep the number of instances proportional to the value of this metric, the metric itself should not change value due to group resizing.
+                      #
+                      # A good metric to use with the target is for example pubsub.googleapis.com/subscription/num_undelivered_messages or a custom metric exporting the total number of requests coming to your instances.
+                      #
+                      # A bad example would be a metric exporting an average or median latency, since this value can&#x27;t include a chunk assignable to a single instance, it could be better used with utilization_target instead.
                   &quot;utilizationTarget&quot;: 3.14, # The target value of the metric that autoscaler should maintain. This must be a positive value. A utilization metric scales number of virtual machines handling requests to increase or decrease proportionally to the metric.
                       #
-                      # For example, a good metric to use as a utilization_target is compute.googleapis.com/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
+                      # For example, a good metric to use as a utilization_target is https://www.googleapis.com/compute/v1/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
                   &quot;utilizationTargetType&quot;: &quot;A String&quot;, # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE.
                 },
               ],
@@ -173,6 +194,18 @@ Returns:
               &quot;maxNumReplicas&quot;: 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
               &quot;minNumReplicas&quot;: 42, # The minimum number of replicas that the autoscaler can scale down to. This cannot be less than 0. If not provided, autoscaler will choose a default value depending on maximum number of instances allowed.
               &quot;mode&quot;: &quot;A String&quot;, # Defines operating mode for this policy.
+              &quot;scaleInControl&quot;: { # Configuration that allows for slower scale in so that even if Autoscaler recommends an abrupt scale in of a MIG, it will be throttled as specified by the parameters below.
+                &quot;maxScaledInReplicas&quot;: { # Encapsulates numeric value that can be either absolute or relative. # Maximum allowed number (or %) of VMs that can be deducted from the peak recommendation during the window autoscaler looks at when computing recommendations. Possibly all these VMs can be deleted at once so user service needs to be prepared to lose that many VMs in one step.
+                  &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
+                      #
+                      #
+                      # - If the value is fixed, then the calculated value is equal to the fixed value.
+                      # - If the value is a percent, then the calculated value is percent/100 * targetSize. For example, the calculated value of a 80% of a managed instance group with 150 instances would be (80/100 * 150) = 120 VM instances. If there is a remainder, the number is rounded up.
+                  &quot;fixed&quot;: 42, # Specifies a fixed number of VM instances. This must be a positive integer.
+                  &quot;percent&quot;: 42, # Specifies a percentage of instances between 0 to 100%, inclusive. For example, specify 80 for 80%.
+                },
+                &quot;timeWindowSec&quot;: 42, # How long back autoscaling should look when computing recommendations to include directives regarding slower scale in, as described above.
+              },
             },
             &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
             &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -229,6 +262,9 @@ Returns:
     &quot;kind&quot;: &quot;compute#autoscalerAggregatedList&quot;, # [Output Only] Type of resource. Always compute#autoscalerAggregatedList for aggregated lists of autoscalers.
     &quot;nextPageToken&quot;: &quot;A String&quot;, # [Output Only] This token allows you to get the next page of results for list requests. If the number of results is larger than maxResults, use the nextPageToken as a value for the query parameter pageToken in the next list request. Subsequent list requests will have their own nextPageToken to continue paging through the results.
     &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] Server-defined URL for this resource.
+    &quot;unreachables&quot;: [ # [Output Only] Unreachable resources.
+      &quot;A String&quot;,
+    ],
     &quot;warning&quot;: { # [Output Only] Informational warning message.
       &quot;code&quot;: &quot;A String&quot;, # [Output Only] A warning code, if applicable. For example, Compute Engine returns NO_RESULTS_ON_PAGE if there are no results in the response.
       &quot;data&quot;: [ # [Output Only] Metadata about this warning in key: value format. For example:
@@ -255,6 +291,11 @@ Returns:
   A request object that you can call &#x27;execute()&#x27; on to request the next
   page. Returns None if there are no more items in the collection.
     </pre>
+</div>
+
+<div class="method">
+    <code class="details" id="close">close()</code>
+  <pre>Close httplib2 connections.</pre>
 </div>
 
 <div class="method">
@@ -350,7 +391,7 @@ Returns:
       #
       # Google Compute Engine has two Autoscaler resources:
       #
-      # * [Global](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
+      # * [Zonal](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
       #
       # Use autoscalers to automatically add or delete instances from a managed instance group according to your defined autoscaling policy. For more information, read Autoscaling Groups of Instances.
       #
@@ -372,12 +413,29 @@ Returns:
       },
       &quot;customMetricUtilizations&quot;: [ # Configuration parameters of autoscaling based on a custom metric.
         { # Custom utilization metric policy.
+          &quot;filter&quot;: &quot;A String&quot;, # A filter string, compatible with a Stackdriver Monitoring filter string for TimeSeries.list API call. This filter is used to select a specific TimeSeries for the purpose of autoscaling and to determine whether the metric is exporting per-instance or per-group data.
+              #
+              # For the filter to be valid for autoscaling purposes, the following rules apply:
+              # - You can only use the AND operator for joining selectors.
+              # - You can only use direct equality comparison operator (=) without any functions for each selector.
+              # - You can specify the metric in both the filter string and in the metric field. However, if specified in both places, the metric must be identical.
+              # - The monitored resource type determines what kind of values are expected for the metric. If it is a gce_instance, the autoscaler expects the metric to include a separate TimeSeries for each instance in a group. In such a case, you cannot filter on resource labels.
+              # If the resource type is any other value, the autoscaler expects this metric to contain values that apply to the entire autoscaled instance group and resource label filtering can be performed to point autoscaler at the correct TimeSeries to scale upon. This is called a per-group metric for the purpose of autoscaling.
+              #
+              # If not specified, the type defaults to gce_instance.
+              #
+              # You should provide a filter that is selective enough to pick just one TimeSeries for the autoscaled group or for each of the instances (if you are using gce_instance resource type). If multiple TimeSeries are returned upon the query execution, the autoscaler will sum their respective values to obtain its scaling value.
           &quot;metric&quot;: &quot;A String&quot;, # The identifier (type) of the Stackdriver Monitoring metric. The metric cannot have negative values.
               #
               # The metric must have a value type of INT64 or DOUBLE.
+          &quot;singleInstanceAssignment&quot;: 3.14, # If scaling is based on a per-group metric value that represents the total amount of work to be done or resource usage, set this value to an amount assigned for a single instance of the scaled group. Autoscaler will keep the number of instances proportional to the value of this metric, the metric itself should not change value due to group resizing.
+              #
+              # A good metric to use with the target is for example pubsub.googleapis.com/subscription/num_undelivered_messages or a custom metric exporting the total number of requests coming to your instances.
+              #
+              # A bad example would be a metric exporting an average or median latency, since this value can&#x27;t include a chunk assignable to a single instance, it could be better used with utilization_target instead.
           &quot;utilizationTarget&quot;: 3.14, # The target value of the metric that autoscaler should maintain. This must be a positive value. A utilization metric scales number of virtual machines handling requests to increase or decrease proportionally to the metric.
               #
-              # For example, a good metric to use as a utilization_target is compute.googleapis.com/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
+              # For example, a good metric to use as a utilization_target is https://www.googleapis.com/compute/v1/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
           &quot;utilizationTargetType&quot;: &quot;A String&quot;, # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE.
         },
       ],
@@ -387,6 +445,18 @@ Returns:
       &quot;maxNumReplicas&quot;: 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
       &quot;minNumReplicas&quot;: 42, # The minimum number of replicas that the autoscaler can scale down to. This cannot be less than 0. If not provided, autoscaler will choose a default value depending on maximum number of instances allowed.
       &quot;mode&quot;: &quot;A String&quot;, # Defines operating mode for this policy.
+      &quot;scaleInControl&quot;: { # Configuration that allows for slower scale in so that even if Autoscaler recommends an abrupt scale in of a MIG, it will be throttled as specified by the parameters below.
+        &quot;maxScaledInReplicas&quot;: { # Encapsulates numeric value that can be either absolute or relative. # Maximum allowed number (or %) of VMs that can be deducted from the peak recommendation during the window autoscaler looks at when computing recommendations. Possibly all these VMs can be deleted at once so user service needs to be prepared to lose that many VMs in one step.
+          &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
+              #
+              #
+              # - If the value is fixed, then the calculated value is equal to the fixed value.
+              # - If the value is a percent, then the calculated value is percent/100 * targetSize. For example, the calculated value of a 80% of a managed instance group with 150 instances would be (80/100 * 150) = 120 VM instances. If there is a remainder, the number is rounded up.
+          &quot;fixed&quot;: 42, # Specifies a fixed number of VM instances. This must be a positive integer.
+          &quot;percent&quot;: 42, # Specifies a percentage of instances between 0 to 100%, inclusive. For example, specify 80 for 80%.
+        },
+        &quot;timeWindowSec&quot;: 42, # How long back autoscaling should look when computing recommendations to include directives regarding slower scale in, as described above.
+      },
     },
     &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
     &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -442,7 +512,7 @@ Args:
     # 
     # Google Compute Engine has two Autoscaler resources:
     # 
-    # * [Global](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
+    # * [Zonal](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
     # 
     # Use autoscalers to automatically add or delete instances from a managed instance group according to your defined autoscaling policy. For more information, read Autoscaling Groups of Instances.
     # 
@@ -464,12 +534,29 @@ Args:
     },
     &quot;customMetricUtilizations&quot;: [ # Configuration parameters of autoscaling based on a custom metric.
       { # Custom utilization metric policy.
+        &quot;filter&quot;: &quot;A String&quot;, # A filter string, compatible with a Stackdriver Monitoring filter string for TimeSeries.list API call. This filter is used to select a specific TimeSeries for the purpose of autoscaling and to determine whether the metric is exporting per-instance or per-group data.
+            #
+            # For the filter to be valid for autoscaling purposes, the following rules apply:
+            # - You can only use the AND operator for joining selectors.
+            # - You can only use direct equality comparison operator (=) without any functions for each selector.
+            # - You can specify the metric in both the filter string and in the metric field. However, if specified in both places, the metric must be identical.
+            # - The monitored resource type determines what kind of values are expected for the metric. If it is a gce_instance, the autoscaler expects the metric to include a separate TimeSeries for each instance in a group. In such a case, you cannot filter on resource labels.
+            # If the resource type is any other value, the autoscaler expects this metric to contain values that apply to the entire autoscaled instance group and resource label filtering can be performed to point autoscaler at the correct TimeSeries to scale upon. This is called a per-group metric for the purpose of autoscaling.
+            #
+            # If not specified, the type defaults to gce_instance.
+            #
+            # You should provide a filter that is selective enough to pick just one TimeSeries for the autoscaled group or for each of the instances (if you are using gce_instance resource type). If multiple TimeSeries are returned upon the query execution, the autoscaler will sum their respective values to obtain its scaling value.
         &quot;metric&quot;: &quot;A String&quot;, # The identifier (type) of the Stackdriver Monitoring metric. The metric cannot have negative values.
             #
             # The metric must have a value type of INT64 or DOUBLE.
+        &quot;singleInstanceAssignment&quot;: 3.14, # If scaling is based on a per-group metric value that represents the total amount of work to be done or resource usage, set this value to an amount assigned for a single instance of the scaled group. Autoscaler will keep the number of instances proportional to the value of this metric, the metric itself should not change value due to group resizing.
+            #
+            # A good metric to use with the target is for example pubsub.googleapis.com/subscription/num_undelivered_messages or a custom metric exporting the total number of requests coming to your instances.
+            #
+            # A bad example would be a metric exporting an average or median latency, since this value can&#x27;t include a chunk assignable to a single instance, it could be better used with utilization_target instead.
         &quot;utilizationTarget&quot;: 3.14, # The target value of the metric that autoscaler should maintain. This must be a positive value. A utilization metric scales number of virtual machines handling requests to increase or decrease proportionally to the metric.
             #
-            # For example, a good metric to use as a utilization_target is compute.googleapis.com/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
+            # For example, a good metric to use as a utilization_target is https://www.googleapis.com/compute/v1/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
         &quot;utilizationTargetType&quot;: &quot;A String&quot;, # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE.
       },
     ],
@@ -479,6 +566,18 @@ Args:
     &quot;maxNumReplicas&quot;: 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
     &quot;minNumReplicas&quot;: 42, # The minimum number of replicas that the autoscaler can scale down to. This cannot be less than 0. If not provided, autoscaler will choose a default value depending on maximum number of instances allowed.
     &quot;mode&quot;: &quot;A String&quot;, # Defines operating mode for this policy.
+    &quot;scaleInControl&quot;: { # Configuration that allows for slower scale in so that even if Autoscaler recommends an abrupt scale in of a MIG, it will be throttled as specified by the parameters below.
+      &quot;maxScaledInReplicas&quot;: { # Encapsulates numeric value that can be either absolute or relative. # Maximum allowed number (or %) of VMs that can be deducted from the peak recommendation during the window autoscaler looks at when computing recommendations. Possibly all these VMs can be deleted at once so user service needs to be prepared to lose that many VMs in one step.
+        &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
+            #
+            #
+            # - If the value is fixed, then the calculated value is equal to the fixed value.
+            # - If the value is a percent, then the calculated value is percent/100 * targetSize. For example, the calculated value of a 80% of a managed instance group with 150 instances would be (80/100 * 150) = 120 VM instances. If there is a remainder, the number is rounded up.
+        &quot;fixed&quot;: 42, # Specifies a fixed number of VM instances. This must be a positive integer.
+        &quot;percent&quot;: 42, # Specifies a percentage of instances between 0 to 100%, inclusive. For example, specify 80 for 80%.
+      },
+      &quot;timeWindowSec&quot;: 42, # How long back autoscaling should look when computing recommendations to include directives regarding slower scale in, as described above.
+    },
   },
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
   &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -589,7 +688,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(project, zone, filter=None, maxResults=None, orderBy=None, pageToken=None)</code>
+    <code class="details" id="list">list(project, zone, filter=None, maxResults=None, orderBy=None, pageToken=None, returnPartialSuccess=None)</code>
   <pre>Retrieves a list of autoscalers contained within the specified zone.
 
 Args:
@@ -609,6 +708,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
 
 Returns:
   An object of the form:
@@ -620,7 +720,7 @@ Returns:
           #
           # Google Compute Engine has two Autoscaler resources:
           #
-          # * [Global](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
+          # * [Zonal](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
           #
           # Use autoscalers to automatically add or delete instances from a managed instance group according to your defined autoscaling policy. For more information, read Autoscaling Groups of Instances.
           #
@@ -642,12 +742,29 @@ Returns:
           },
           &quot;customMetricUtilizations&quot;: [ # Configuration parameters of autoscaling based on a custom metric.
             { # Custom utilization metric policy.
+              &quot;filter&quot;: &quot;A String&quot;, # A filter string, compatible with a Stackdriver Monitoring filter string for TimeSeries.list API call. This filter is used to select a specific TimeSeries for the purpose of autoscaling and to determine whether the metric is exporting per-instance or per-group data.
+                  #
+                  # For the filter to be valid for autoscaling purposes, the following rules apply:
+                  # - You can only use the AND operator for joining selectors.
+                  # - You can only use direct equality comparison operator (=) without any functions for each selector.
+                  # - You can specify the metric in both the filter string and in the metric field. However, if specified in both places, the metric must be identical.
+                  # - The monitored resource type determines what kind of values are expected for the metric. If it is a gce_instance, the autoscaler expects the metric to include a separate TimeSeries for each instance in a group. In such a case, you cannot filter on resource labels.
+                  # If the resource type is any other value, the autoscaler expects this metric to contain values that apply to the entire autoscaled instance group and resource label filtering can be performed to point autoscaler at the correct TimeSeries to scale upon. This is called a per-group metric for the purpose of autoscaling.
+                  #
+                  # If not specified, the type defaults to gce_instance.
+                  #
+                  # You should provide a filter that is selective enough to pick just one TimeSeries for the autoscaled group or for each of the instances (if you are using gce_instance resource type). If multiple TimeSeries are returned upon the query execution, the autoscaler will sum their respective values to obtain its scaling value.
               &quot;metric&quot;: &quot;A String&quot;, # The identifier (type) of the Stackdriver Monitoring metric. The metric cannot have negative values.
                   #
                   # The metric must have a value type of INT64 or DOUBLE.
+              &quot;singleInstanceAssignment&quot;: 3.14, # If scaling is based on a per-group metric value that represents the total amount of work to be done or resource usage, set this value to an amount assigned for a single instance of the scaled group. Autoscaler will keep the number of instances proportional to the value of this metric, the metric itself should not change value due to group resizing.
+                  #
+                  # A good metric to use with the target is for example pubsub.googleapis.com/subscription/num_undelivered_messages or a custom metric exporting the total number of requests coming to your instances.
+                  #
+                  # A bad example would be a metric exporting an average or median latency, since this value can&#x27;t include a chunk assignable to a single instance, it could be better used with utilization_target instead.
               &quot;utilizationTarget&quot;: 3.14, # The target value of the metric that autoscaler should maintain. This must be a positive value. A utilization metric scales number of virtual machines handling requests to increase or decrease proportionally to the metric.
                   #
-                  # For example, a good metric to use as a utilization_target is compute.googleapis.com/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
+                  # For example, a good metric to use as a utilization_target is https://www.googleapis.com/compute/v1/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
               &quot;utilizationTargetType&quot;: &quot;A String&quot;, # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE.
             },
           ],
@@ -657,6 +774,18 @@ Returns:
           &quot;maxNumReplicas&quot;: 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
           &quot;minNumReplicas&quot;: 42, # The minimum number of replicas that the autoscaler can scale down to. This cannot be less than 0. If not provided, autoscaler will choose a default value depending on maximum number of instances allowed.
           &quot;mode&quot;: &quot;A String&quot;, # Defines operating mode for this policy.
+          &quot;scaleInControl&quot;: { # Configuration that allows for slower scale in so that even if Autoscaler recommends an abrupt scale in of a MIG, it will be throttled as specified by the parameters below.
+            &quot;maxScaledInReplicas&quot;: { # Encapsulates numeric value that can be either absolute or relative. # Maximum allowed number (or %) of VMs that can be deducted from the peak recommendation during the window autoscaler looks at when computing recommendations. Possibly all these VMs can be deleted at once so user service needs to be prepared to lose that many VMs in one step.
+              &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
+                  #
+                  #
+                  # - If the value is fixed, then the calculated value is equal to the fixed value.
+                  # - If the value is a percent, then the calculated value is percent/100 * targetSize. For example, the calculated value of a 80% of a managed instance group with 150 instances would be (80/100 * 150) = 120 VM instances. If there is a remainder, the number is rounded up.
+              &quot;fixed&quot;: 42, # Specifies a fixed number of VM instances. This must be a positive integer.
+              &quot;percent&quot;: 42, # Specifies a percentage of instances between 0 to 100%, inclusive. For example, specify 80 for 80%.
+            },
+            &quot;timeWindowSec&quot;: 42, # How long back autoscaling should look when computing recommendations to include directives regarding slower scale in, as described above.
+          },
         },
         &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
         &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -742,7 +871,7 @@ Args:
     # 
     # Google Compute Engine has two Autoscaler resources:
     # 
-    # * [Global](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
+    # * [Zonal](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
     # 
     # Use autoscalers to automatically add or delete instances from a managed instance group according to your defined autoscaling policy. For more information, read Autoscaling Groups of Instances.
     # 
@@ -764,12 +893,29 @@ Args:
     },
     &quot;customMetricUtilizations&quot;: [ # Configuration parameters of autoscaling based on a custom metric.
       { # Custom utilization metric policy.
+        &quot;filter&quot;: &quot;A String&quot;, # A filter string, compatible with a Stackdriver Monitoring filter string for TimeSeries.list API call. This filter is used to select a specific TimeSeries for the purpose of autoscaling and to determine whether the metric is exporting per-instance or per-group data.
+            #
+            # For the filter to be valid for autoscaling purposes, the following rules apply:
+            # - You can only use the AND operator for joining selectors.
+            # - You can only use direct equality comparison operator (=) without any functions for each selector.
+            # - You can specify the metric in both the filter string and in the metric field. However, if specified in both places, the metric must be identical.
+            # - The monitored resource type determines what kind of values are expected for the metric. If it is a gce_instance, the autoscaler expects the metric to include a separate TimeSeries for each instance in a group. In such a case, you cannot filter on resource labels.
+            # If the resource type is any other value, the autoscaler expects this metric to contain values that apply to the entire autoscaled instance group and resource label filtering can be performed to point autoscaler at the correct TimeSeries to scale upon. This is called a per-group metric for the purpose of autoscaling.
+            #
+            # If not specified, the type defaults to gce_instance.
+            #
+            # You should provide a filter that is selective enough to pick just one TimeSeries for the autoscaled group or for each of the instances (if you are using gce_instance resource type). If multiple TimeSeries are returned upon the query execution, the autoscaler will sum their respective values to obtain its scaling value.
         &quot;metric&quot;: &quot;A String&quot;, # The identifier (type) of the Stackdriver Monitoring metric. The metric cannot have negative values.
             #
             # The metric must have a value type of INT64 or DOUBLE.
+        &quot;singleInstanceAssignment&quot;: 3.14, # If scaling is based on a per-group metric value that represents the total amount of work to be done or resource usage, set this value to an amount assigned for a single instance of the scaled group. Autoscaler will keep the number of instances proportional to the value of this metric, the metric itself should not change value due to group resizing.
+            #
+            # A good metric to use with the target is for example pubsub.googleapis.com/subscription/num_undelivered_messages or a custom metric exporting the total number of requests coming to your instances.
+            #
+            # A bad example would be a metric exporting an average or median latency, since this value can&#x27;t include a chunk assignable to a single instance, it could be better used with utilization_target instead.
         &quot;utilizationTarget&quot;: 3.14, # The target value of the metric that autoscaler should maintain. This must be a positive value. A utilization metric scales number of virtual machines handling requests to increase or decrease proportionally to the metric.
             #
-            # For example, a good metric to use as a utilization_target is compute.googleapis.com/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
+            # For example, a good metric to use as a utilization_target is https://www.googleapis.com/compute/v1/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
         &quot;utilizationTargetType&quot;: &quot;A String&quot;, # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE.
       },
     ],
@@ -779,6 +925,18 @@ Args:
     &quot;maxNumReplicas&quot;: 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
     &quot;minNumReplicas&quot;: 42, # The minimum number of replicas that the autoscaler can scale down to. This cannot be less than 0. If not provided, autoscaler will choose a default value depending on maximum number of instances allowed.
     &quot;mode&quot;: &quot;A String&quot;, # Defines operating mode for this policy.
+    &quot;scaleInControl&quot;: { # Configuration that allows for slower scale in so that even if Autoscaler recommends an abrupt scale in of a MIG, it will be throttled as specified by the parameters below.
+      &quot;maxScaledInReplicas&quot;: { # Encapsulates numeric value that can be either absolute or relative. # Maximum allowed number (or %) of VMs that can be deducted from the peak recommendation during the window autoscaler looks at when computing recommendations. Possibly all these VMs can be deleted at once so user service needs to be prepared to lose that many VMs in one step.
+        &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
+            #
+            #
+            # - If the value is fixed, then the calculated value is equal to the fixed value.
+            # - If the value is a percent, then the calculated value is percent/100 * targetSize. For example, the calculated value of a 80% of a managed instance group with 150 instances would be (80/100 * 150) = 120 VM instances. If there is a remainder, the number is rounded up.
+        &quot;fixed&quot;: 42, # Specifies a fixed number of VM instances. This must be a positive integer.
+        &quot;percent&quot;: 42, # Specifies a percentage of instances between 0 to 100%, inclusive. For example, specify 80 for 80%.
+      },
+      &quot;timeWindowSec&quot;: 42, # How long back autoscaling should look when computing recommendations to include directives regarding slower scale in, as described above.
+    },
   },
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
   &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -903,7 +1061,7 @@ Args:
     # 
     # Google Compute Engine has two Autoscaler resources:
     # 
-    # * [Global](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
+    # * [Zonal](/compute/docs/reference/rest/{$api_version}/autoscalers) * [Regional](/compute/docs/reference/rest/{$api_version}/regionAutoscalers)
     # 
     # Use autoscalers to automatically add or delete instances from a managed instance group according to your defined autoscaling policy. For more information, read Autoscaling Groups of Instances.
     # 
@@ -925,12 +1083,29 @@ Args:
     },
     &quot;customMetricUtilizations&quot;: [ # Configuration parameters of autoscaling based on a custom metric.
       { # Custom utilization metric policy.
+        &quot;filter&quot;: &quot;A String&quot;, # A filter string, compatible with a Stackdriver Monitoring filter string for TimeSeries.list API call. This filter is used to select a specific TimeSeries for the purpose of autoscaling and to determine whether the metric is exporting per-instance or per-group data.
+            #
+            # For the filter to be valid for autoscaling purposes, the following rules apply:
+            # - You can only use the AND operator for joining selectors.
+            # - You can only use direct equality comparison operator (=) without any functions for each selector.
+            # - You can specify the metric in both the filter string and in the metric field. However, if specified in both places, the metric must be identical.
+            # - The monitored resource type determines what kind of values are expected for the metric. If it is a gce_instance, the autoscaler expects the metric to include a separate TimeSeries for each instance in a group. In such a case, you cannot filter on resource labels.
+            # If the resource type is any other value, the autoscaler expects this metric to contain values that apply to the entire autoscaled instance group and resource label filtering can be performed to point autoscaler at the correct TimeSeries to scale upon. This is called a per-group metric for the purpose of autoscaling.
+            #
+            # If not specified, the type defaults to gce_instance.
+            #
+            # You should provide a filter that is selective enough to pick just one TimeSeries for the autoscaled group or for each of the instances (if you are using gce_instance resource type). If multiple TimeSeries are returned upon the query execution, the autoscaler will sum their respective values to obtain its scaling value.
         &quot;metric&quot;: &quot;A String&quot;, # The identifier (type) of the Stackdriver Monitoring metric. The metric cannot have negative values.
             #
             # The metric must have a value type of INT64 or DOUBLE.
+        &quot;singleInstanceAssignment&quot;: 3.14, # If scaling is based on a per-group metric value that represents the total amount of work to be done or resource usage, set this value to an amount assigned for a single instance of the scaled group. Autoscaler will keep the number of instances proportional to the value of this metric, the metric itself should not change value due to group resizing.
+            #
+            # A good metric to use with the target is for example pubsub.googleapis.com/subscription/num_undelivered_messages or a custom metric exporting the total number of requests coming to your instances.
+            #
+            # A bad example would be a metric exporting an average or median latency, since this value can&#x27;t include a chunk assignable to a single instance, it could be better used with utilization_target instead.
         &quot;utilizationTarget&quot;: 3.14, # The target value of the metric that autoscaler should maintain. This must be a positive value. A utilization metric scales number of virtual machines handling requests to increase or decrease proportionally to the metric.
             #
-            # For example, a good metric to use as a utilization_target is compute.googleapis.com/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
+            # For example, a good metric to use as a utilization_target is https://www.googleapis.com/compute/v1/instance/network/received_bytes_count. The autoscaler will work to keep this value constant for each of the instances.
         &quot;utilizationTargetType&quot;: &quot;A String&quot;, # Defines how target utilization value is expressed for a Stackdriver Monitoring metric. Either GAUGE, DELTA_PER_SECOND, or DELTA_PER_MINUTE.
       },
     ],
@@ -940,6 +1115,18 @@ Args:
     &quot;maxNumReplicas&quot;: 42, # The maximum number of instances that the autoscaler can scale up to. This is required when creating or updating an autoscaler. The maximum number of replicas should not be lower than minimal number of replicas.
     &quot;minNumReplicas&quot;: 42, # The minimum number of replicas that the autoscaler can scale down to. This cannot be less than 0. If not provided, autoscaler will choose a default value depending on maximum number of instances allowed.
     &quot;mode&quot;: &quot;A String&quot;, # Defines operating mode for this policy.
+    &quot;scaleInControl&quot;: { # Configuration that allows for slower scale in so that even if Autoscaler recommends an abrupt scale in of a MIG, it will be throttled as specified by the parameters below.
+      &quot;maxScaledInReplicas&quot;: { # Encapsulates numeric value that can be either absolute or relative. # Maximum allowed number (or %) of VMs that can be deducted from the peak recommendation during the window autoscaler looks at when computing recommendations. Possibly all these VMs can be deleted at once so user service needs to be prepared to lose that many VMs in one step.
+        &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
+            #
+            #
+            # - If the value is fixed, then the calculated value is equal to the fixed value.
+            # - If the value is a percent, then the calculated value is percent/100 * targetSize. For example, the calculated value of a 80% of a managed instance group with 150 instances would be (80/100 * 150) = 120 VM instances. If there is a remainder, the number is rounded up.
+        &quot;fixed&quot;: 42, # Specifies a fixed number of VM instances. This must be a positive integer.
+        &quot;percent&quot;: 42, # Specifies a percentage of instances between 0 to 100%, inclusive. For example, specify 80 for 80%.
+      },
+      &quot;timeWindowSec&quot;: 42, # How long back autoscaling should look when computing recommendations to include directives regarding slower scale in, as described above.
+    },
   },
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # [Output Only] Creation timestamp in RFC3339 text format.
   &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
