@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.12.8](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.7...v1.12.8) (2020-11-18)
+
+
+### Documentation
+
+* add httplib2 authorization to thread_safety ([#1005](https://www.github.com/googleapis/google-api-python-client/issues/1005)) ([205ae59](https://www.github.com/googleapis/google-api-python-client/commit/205ae5988bd89676823088d6c8a7bd17e3beefcf)), closes [#808](https://www.github.com/googleapis/google-api-python-client/issues/808) [#808](https://www.github.com/googleapis/google-api-python-client/issues/808)
+
 ### [1.12.7](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.6...v1.12.7) (2020-11-17)
 
 
