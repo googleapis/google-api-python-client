@@ -106,9 +106,11 @@
 
 ## artifactregistry
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/artifactregistry_v1beta1.html)
+* [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/artifactregistry_v1beta2.html)
 
 
 ## assuredworkloads
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/assuredworkloads_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/assuredworkloads_v1beta1.html)
 
 
