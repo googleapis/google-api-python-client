@@ -111,6 +111,7 @@
 
 ## assuredworkloads
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/assuredworkloads_v1.html)
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/assuredworkloads_v1beta1.html)
 
 
 ## bigquery
@@ -212,6 +213,7 @@
 
 ## cloudiot
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudiot_v1.html)
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudiot_v1alpha1.html)
 
 
 ## cloudkms
@@ -570,6 +572,7 @@
 ## monitoring
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/monitoring_v1.html)
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/monitoring_v3.html)
+* [v3p1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/monitoring_v3p1alpha1.html)
 
 
 ## networkmanagement
