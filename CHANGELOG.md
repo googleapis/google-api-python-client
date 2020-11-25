@@ -1,5 +1,13 @@
 # Changelog
 
+### [1.12.9](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.8...v1.12.9) (2020-11-25)
+
+
+### Documentation
+
+* fix typo in thread safety example code ([#1100](https://www.github.com/googleapis/google-api-python-client/issues/1100)) ([5ae088d](https://www.github.com/googleapis/google-api-python-client/commit/5ae088dc027b89517b896a89a0aeb2ca80f492cf))
+* update docs/dyn ([#1096](https://www.github.com/googleapis/google-api-python-client/issues/1096)) ([c2228be](https://www.github.com/googleapis/google-api-python-client/commit/c2228be4630e279e02a25b51566a0f93b67aa499))
+
 ### [1.12.8](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.7...v1.12.8) (2020-11-18)
 
 
