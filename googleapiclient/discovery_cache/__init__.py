@@ -41,9 +41,18 @@ def autodetect():
         except Exception:
             pass
     try:
-        from . import file_cache
+        try:
+          from . import file_cache
 
-        return file_cache.cache
+          return file_cache.cache
+        except ImportError:
+          # file_cache can only be imported if oauth2client < 4.0 is installed.
+          # Use directory_cache as a last resort since only read operations
+          # are supported. file_cache is preferred over directory_cache to avoid
+          # any breaking change to users that are still using file_cache.
+          from . import directory_cache
+
+          return directory_cache.cache
     except Exception as e:
         LOGGER.warning(e, exc_info=True)
         return None
