@@ -193,6 +193,7 @@ def build(
     adc_cert_path=None,
     adc_key_path=None,
     num_retries=1,
+    static_discovery=True,
 ):
     """Construct a Resource for interacting with an API.
 
@@ -246,6 +247,9 @@ def build(
       https://google.aip.dev/auth/4114
     num_retries: Integer, number of times to retry discovery with
       randomized exponential backoff in case of intermittent/connection issues.
+    static_discovery: Boolean, whether or not to use the static discovery docs
+      included in the package when the discovery doc is not available in the
+      cache.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -274,6 +278,7 @@ def build(
                 cache,
                 developerKey,
                 num_retries=num_retries,
+                static_discovery=static_discovery,
             )
             service = build_from_document(
                 content,
@@ -330,7 +335,13 @@ def _discovery_service_uri_options(discoveryServiceUrl, version):
 
 
 def _retrieve_discovery_doc(
-    url, http, cache_discovery, cache=None, developerKey=None, num_retries=1
+    url,
+    http,
+    cache_discovery,
+    cache=None,
+    developerKey=None,
+    num_retries=1,
+    static_discovery=True
 ):
     """Retrieves the discovery_doc from cache or the internet.
 
@@ -345,13 +356,18 @@ def _retrieve_discovery_doc(
       from the API Console.
     num_retries: Integer, number of times to retry discovery with
       randomized exponential backoff in case of intermittent/connection issues.
+    static_discovery: Boolean, whether or not to use the static discovery docs
+      included in the package when the discovery doc is not available in the
+      cache.
 
   Returns:
     A unicode string representation of the discovery document.
   """
-    if cache_discovery:
-        from . import discovery_cache
+    from . import discovery_cache
 
+    content = None
+
+    if cache_discovery:
         if cache is None:
             cache = discovery_cache.autodetect()
         if cache:
@@ -359,21 +375,29 @@ def _retrieve_discovery_doc(
             if content:
                 return content
 
-    actual_url = url
-    # REMOTE_ADDR is defined by the CGI spec [RFC3875] as the environment
-    # variable that contains the network address of the client sending the
-    # request. If it exists then add that to the request for the discovery
-    # document to avoid exceeding the quota on discovery requests.
-    if "REMOTE_ADDR" in os.environ:
-        actual_url = _add_query_parameter(url, "userIp", os.environ["REMOTE_ADDR"])
-    if developerKey:
-        actual_url = _add_query_parameter(url, "key", developerKey)
-    logger.debug("URL being requested: GET %s", actual_url)
+    # At this point, the discovery document was not found in the cache so
+    # we can attempt to retreive the static discovery document from the library.
+    if static_discovery:
+        content = discovery_cache.get_static_doc(url)
 
-    # Execute this request with retries build into HttpRequest
-    # Note that it will already raise an error if we don't get a 2xx response
-    req = HttpRequest(http, HttpRequest.null_postproc, actual_url)
-    resp, content = req.execute(num_retries=num_retries)
+    # If the content is None, retrieve the discovery doc from the internet
+    # because it is not in the cache or the static doc directory.
+    if content is None:
+        actual_url = url
+        # REMOTE_ADDR is defined by the CGI spec [RFC3875] as the environment
+        # variable that contains the network address of the client sending the
+        # request. If it exists then add that to the request for the discovery
+        # document to avoid exceeding the quota on discovery requests.
+        if "REMOTE_ADDR" in os.environ:
+            actual_url = _add_query_parameter(url, "userIp", os.environ["REMOTE_ADDR"])
+        if developerKey:
+            actual_url = _add_query_parameter(url, "key", developerKey)
+        logger.debug("URL being requested: GET %s", actual_url)
+
+        # Execute this request with retries build into HttpRequest
+        # Note that it will already raise an error if we don't get a 2xx response
+        req = HttpRequest(http, HttpRequest.null_postproc, actual_url)
+        resp, content = req.execute(num_retries=num_retries)
 
     try:
         content = content.decode("utf-8")
