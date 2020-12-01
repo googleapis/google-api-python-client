@@ -116,7 +116,9 @@ def _should_retry_response(resp_status, content):
         try:
             data = json.loads(content.decode("utf-8"))
             if isinstance(data, dict):
-                reason = data["error"]["errors"][0]["reason"]
+                reason = data["error"].get("status")
+                if reason is None:
+                    reason = data["error"]["errors"][0]["reason"]
             else:
                 reason = data[0]["error"]["errors"]["reason"]
         except (UnicodeDecodeError, ValueError, KeyError):
