@@ -84,7 +84,7 @@ credentials = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE, scopes=SCOPES, subject='user@domain.com')
 ```
 
-Use the `Credentials` object to call Google APIs in your application. The API requests would be authorized as `user@domain.com`, if you've authorized the service account accordingly in the G Suite Admin console.
+Use the `credentials` object to call Google APIs in your application. The API requests would be authorized as `user@domain.com`, if you've authorized the service account accordingly in the G Suite Admin console.
 
 
 ## Calling Google APIs
