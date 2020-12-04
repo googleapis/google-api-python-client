@@ -22,41 +22,14 @@ Finally, your application can use the access token to call Google APIs.
 
 ## Creating a service account
 
-A service account's credentials include a generated email address that is unique, a client ID, and at least one public/private key pair.
+https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating_service_account_keys
 
-If your application runs on Google App Engine, a service account is set up automatically when you create your project.
-
-If your application runs on Google Compute Engine, a service account is also set up automatically when you create your project, but you must specify the scopes that your application needs access to when you create a Google Compute Engine instance. For more information, see [Preparing an instance to use service accounts](https://cloud.google.com/compute/docs/authentication#using).
-
-If your application doesn't run on Google App Engine or Google Compute Engine, you must obtain these credentials in the Google API Console. To generate service-account credentials, or to view the public credentials that you've already generated, do the following:
-
-1. Open the [**Service accounts** page](https://console.developers.google.com/iam-admin/serviceaccounts). If prompted, select a project.
-1. Click **Create service account**.
-1. In the **Create service account** window, type a name for the service account, and select **Furnish a new private key**. If you want to [grant G Suite domain-wide authority](https://developers.google.com/identity/protocols/OAuth2ServiceAccount#delegatingauthority) to the service account, also select **Enable G Suite Domain-wide Delegation**. Then click **Create**.
-
-Your new public/private key pair is generated and downloaded to your machine; it serves as the only copy of this key. You are responsible for storing it securely.
-
-You can return to the [API Console](https://console.developers.google.com/) at any time to view the client ID, email address, and public key fingerprints, or to generate additional public/private key pairs. For more details about service account credentials in the API Console, see [Service accounts](https://developers.google.com/console/help/service-accounts) in the API Console help file.
-
-Take note of the service account's email address and store the service account's private key file in a location accessible to your application. Your application needs them to make authorized API calls.
-
-> **Note:** You must store and manage private keys securely in both development and production environments. Google does not keep a copy of your private keys, only your public keys.
 
 ## Delegating domain-wide authority to the service account
 
 If your application runs in a G Suite domain and accesses user data, the service account that you created needs to be granted access to the user data that you want to access.
 
-The following steps must be performed by an administrator of the G Suite domain:
-
-1. Go to your G Suite domain’s [Admin console](https://admin.google.com/).
-1. Select **Security** from the list of controls. If you don't see **Security** listed, select **More controls** from the gray bar at the bottom of the page, then select **Security** from the list of controls. If you can't see the controls, make sure you're signed in as an administrator for the domain.
-1. Select **Advanced settings** from the list of options.
-1. Select **Manage third party OAuth Client access** in the **Authentication** section.
-1. In the **Client name** field enter the service account's **Client ID**.
-1. In the **One or More API Scopes** field enter the list of scopes that your application should be granted access to. For example, if your application needs domain-wide access to the Google Drive API and the Google Calendar API, enter: `https://www.googleapis.com/auth/drive, https://www.googleapis.com/auth/calendar`.
-1. Click **Authorize**.
-
-Your application now has the authority to make API calls as users in your domain (to "impersonate" users). When you prepare to make authorized API calls, you specify the user to impersonate in the `subject` argument.
+https://developers.google.com/admin-sdk/directory/v1/guides/delegation
 
 ## Preparing to make an authorized API call
 
@@ -72,32 +45,21 @@ After you obtain the client email address and private key from the API Console, 
 
 ### Examples
 
-#### Google App Engine standard environment	
+#### Application Default Credentials
+
+Application Default Credentials abstracts authentication across the different Google Cloud Platform hosting environments. When running on any Google Cloud hosting environment or when running locally with the Google Cloud SDK installed, `google.auth.default()` can automatically determine the credentials from the environment. See https://google.aip.dev/auth/4110 and https://googleapis.dev/python/google-auth/latest/user-guide.html#application-default-credentials for details.
 
 ```python
-from google.auth import app_engine
+import google.auth
 
 SCOPES = ['https://www.googleapis.com/auth/sqlservice.admin']
 
-credentials = app_engine.Credentials(scopes=SCOPES)
+credentials, project = google.auth.default(scopes=SCOPES)
 ```
-
-> **Note:** You can only use App Engine credential objects in applications that are running in a Google App Engine standard environment. If you need to run your application in other environments—for example, to test your application locally—you must detect this situation and use a different credential mechanism (see [https://google-auth.readthedocs.io/en/latest/user-guide.html#the-app-engine-standard-environment)).
-
-#### Google Compute Engine
-
-```python
-from google.auth import compute_engine
-
-credentials = compute_engine.Credentials()
-```
-
-You must [configure your Compute Engine instance to allow access to the necessary scopes](https://cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances#changeserviceaccountandscopes).
-
-> **Note:** You can only use Compute Engine credential objects in applications that are running on Google Compute Engine. If you need to run your application in other environments—for example, to test your application locally—you must detect this situation and use a different credential mechanism (see [Other platforms](https://google-auth.readthedocs.io/en/latest/user-guide.html#compute-engine-container-engine-and-the-app-engine-flexible-environment)). You can use the [application default credentials](https://developers.google.com/accounts/docs/application-default-credentials) to simplify this process.
 
 #### Other Platforms
-
+Obtain a service account key file  by following this guide: 
+https://cloud.google.com/iam/docs/creating-managing-service-account-keys#creating_service_account_keys
 ```python
 from google.oauth2 import service_account
 
@@ -108,7 +70,7 @@ credentials = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 ```
 
-Use the `Credentials` object to call Google APIs in your application.
+Use the `credentials` object to call Google APIs in your application.
 
 #### Using Domain-wide Delegation
 
