@@ -50,7 +50,7 @@ class HttpError(Error):
         try:
             try:
                 data = json.loads(self.content.decode("utf-8"))
-            except:
+            except json.JSONDecodeError:
                 # In case it is not json
                 data = self.content.decode("utf-8")
             if isinstance(data, dict):
