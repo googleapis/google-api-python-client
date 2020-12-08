@@ -248,6 +248,10 @@ class TestMediaUpload(unittest.TestCase):
         self.assertEqual(500, new_upload.chunksize())
         self.assertEqual(b"PNG", new_upload.getbytes(1, 3))
 
+    def test_media_file_upload_raises_on_file_not_found(self):
+        with self.assertRaises(FileNotFoundError):
+            MediaFileUpload(datafile("missing.png"))
+
     def test_media_file_upload_raises_on_invalid_chunksize(self):
         self.assertRaises(
             InvalidChunkSizeError,
