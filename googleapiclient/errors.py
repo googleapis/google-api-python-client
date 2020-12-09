@@ -48,7 +48,11 @@ class HttpError(Error):
         """Calculate the reason for the error from the response content."""
         reason = self.resp.reason
         try:
-            data = json.loads(self.content.decode("utf-8"))
+            try:
+                data = json.loads(self.content.decode("utf-8"))
+            except json.JSONDecodeError:
+                # In case it is not json
+                data = self.content.decode("utf-8")
             if isinstance(data, dict):
                 reason = data["error"]["message"]
                 error_detail_keyword = next((kw for kw in ["detail", "details", "message"] if kw in data["error"]), "")
@@ -59,6 +63,8 @@ class HttpError(Error):
                 reason = first_error["error"]["message"]
                 if "details" in first_error["error"]:
                     self.error_details = first_error["error"]["details"]
+            else:
+                self.error_details = data
         except (ValueError, KeyError, TypeError):
             pass
         if reason is None:
