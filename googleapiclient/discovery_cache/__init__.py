@@ -44,6 +44,7 @@ def autodetect():
         from . import file_cache
 
         return file_cache.cache
-    except Exception as e:
-        LOGGER.warning(e, exc_info=True)
+    except Exception:
+        LOGGER.info("file_cache is only supported with oauth2client<4.0.0",
+            exc_info=False)
         return None
