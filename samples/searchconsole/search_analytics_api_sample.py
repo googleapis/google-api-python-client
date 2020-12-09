@@ -55,7 +55,7 @@ argparser.add_argument('end_date', type=str,
 
 def main(argv):
   service, flags = sample_tools.init(
-      argv, 'webmasters', 'v3', __doc__, __file__, parents=[argparser],
+      argv, 'searchconsole', 'v1', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/webmasters.readonly')
 
   # First run a query to learn which dates we have data for. You should always
@@ -157,7 +157,7 @@ def execute_request(service, property_uri, request):
   """Executes a searchAnalytics.query request.
 
   Args:
-    service: The webmasters service to use when executing the query.
+    service: The searchconsole service to use when executing the query.
     property_uri: The site or app URI to request data for.
     request: The request to be executed.
 

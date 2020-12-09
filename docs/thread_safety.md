@@ -9,14 +9,20 @@ The google-api-python-client library is built on top of the [httplib2](https://g
 The easiest way to provide threads with their own `httplib2.Http()` instances is to either override the construction of it within the service object or to pass an instance via the http argument to method calls.
 
 ```python
+import google.auth
+import googleapiclient
+import google_auth_httplib2
+import httplib2
+from googleapiclient import discovery
+
 # Create a new Http() object for every request
 def build_request(http, *args, **kwargs):
-  new_http = httplib2.Http()
-  return apiclient.http.HttpRequest(new_http, *args, **kwargs)
-service = build('api_name', 'api_version', requestBuilder=build_request)
+  new_http = google_auth_httplib2.AuthorizedHttp(credentials, http=httplib2.Http())
+  return googleapiclient.http.HttpRequest(new_http, *args, **kwargs)
+service = discovery.build('api_name', 'api_version', requestBuilder=build_request)
 
 # Pass in a new Http() manually for every request
-service = build('api_name', 'api_version')
-http = httplib2.Http()
+service = discovery.build('api_name', 'api_version')
+http = google_auth_httplib2.AuthorizedHttp(credentials, http=httplib2.Http())
 service.stamps().list().execute(http=http)
 ```
