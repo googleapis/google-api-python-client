@@ -18,6 +18,7 @@ import sys
 import nox
 
 test_dependencies = [
+    "django>=2.0.0",
     "google-auth",
     "google-auth-httplib2",
     "mox",
@@ -46,7 +47,7 @@ def lint(session):
     )
 
 
-@nox.session(python=["2.7", "3.5", "3.6", "3.7", "3.8"])
+@nox.session(python=["3.6", "3.7", "3.8", "3.9"])
 @nox.parametrize(
     "oauth2client",
     [
@@ -59,11 +60,6 @@ def lint(session):
 def unit(session, oauth2client):
     session.install(*test_dependencies)
     session.install(oauth2client)
-    if session.python < "3.0":
-        session.install("django<2.0.0")
-    else:
-        session.install("django>=2.0.0")
-
     session.install('.')
 
     # Run py.test against the unit tests.
