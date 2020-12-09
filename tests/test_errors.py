@@ -94,7 +94,7 @@ class Error(unittest.TestCase):
             b"{", {"status": "400", "content-type": "application/json"}, reason="Failed"
         )
         error = HttpError(resp, content)
-        self.assertEqual(str(error), '<HttpError 400 "Failed">')
+        self.assertEqual(str(error), '<HttpError 400 when requesting None returned "Failed". Details: "{">')
 
     def test_with_uri(self):
         """Test handling of passing in the request uri."""
@@ -106,7 +106,7 @@ class Error(unittest.TestCase):
         error = HttpError(resp, content, uri="http://example.org")
         self.assertEqual(
             str(error),
-            '<HttpError 400 when requesting http://example.org returned "Failure">',
+            '<HttpError 400 when requesting http://example.org returned "Failure". Details: "{">',
         )
 
     def test_missing_message_json_body(self):
@@ -121,15 +121,15 @@ class Error(unittest.TestCase):
 
     def test_non_json(self):
         """Test handling of non-JSON bodies"""
-        resp, content = fake_response(b"}NOT OK", {"status": "400"})
+        resp, content = fake_response(b"Invalid request", {"status": "400"})
         error = HttpError(resp, content)
-        self.assertEqual(str(error), '<HttpError 400 "Ok">')
+        self.assertEqual(str(error), '<HttpError 400 when requesting None returned "Ok". Details: "Invalid request">')
 
     def test_missing_reason(self):
         """Test an empty dict with a missing resp.reason."""
         resp, content = fake_response(b"}NOT OK", {"status": "400"}, reason=None)
         error = HttpError(resp, content)
-        self.assertEqual(str(error), '<HttpError 400 "">')
+        self.assertEqual(str(error), '<HttpError 400 when requesting None returned "". Details: "}NOT OK">')
 
     def test_error_detail_for_missing_message_in_error(self):
         """Test handling of data with missing 'details' or 'detail' element."""
