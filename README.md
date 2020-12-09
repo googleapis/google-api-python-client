@@ -50,9 +50,9 @@ virtualenv <your-env>
 
 Python 3.6 and 3.7, and 3.8 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions
 
-## Unsupported Python Versions	
+## Unsupported Python Versions
 
-Python == 2.7
+Python < 3.6
 
 ## Third Party Libraries and Dependencies
 
