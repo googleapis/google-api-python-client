@@ -19,6 +19,15 @@ are not already installed.
 """
 from __future__ import print_function
 
+import sys
+
+if sys.version_info < (2, 7):
+    print("google-api-python-client requires python version >= 2.7.", file=sys.stderr)
+    sys.exit(1)
+if (3, 1) <= sys.version_info < (3, 6):
+    print("google-api-python-client requires python3 version >= 3.6.", file=sys.stderr)
+    sys.exit(1)
+
 import io
 import os
 from setuptools import setup
@@ -52,14 +61,13 @@ setup(
     author_email="googleapis-packages@google.com",
     url="https://github.com/googleapis/google-api-python-client/",
     install_requires=install_requires,
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     packages=packages,
     package_data={},
     license="Apache 2.0",
     keywords="google api client",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
