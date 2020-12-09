@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import nox
 
 test_dependencies = [
@@ -73,3 +75,9 @@ def unit(session, oauth2client):
         "tests",
         *session.posargs,
     )
+
+
+@nox.session(python="3.6")
+def docs(session):
+    session.install('.')
+    session.run("python", "describe.py")

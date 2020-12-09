@@ -1,5 +1,34 @@
 # Changelog
 
+### [1.12.8](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.7...v1.12.8) (2020-11-18)
+
+
+### Documentation
+
+* add httplib2 authorization to thread_safety ([#1005](https://www.github.com/googleapis/google-api-python-client/issues/1005)) ([205ae59](https://www.github.com/googleapis/google-api-python-client/commit/205ae5988bd89676823088d6c8a7bd17e3beefcf)), closes [#808](https://www.github.com/googleapis/google-api-python-client/issues/808) [#808](https://www.github.com/googleapis/google-api-python-client/issues/808)
+
+### [1.12.7](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.6...v1.12.7) (2020-11-17)
+
+
+### Documentation
+
+* Update Webmasters API sample ([#1092](https://www.github.com/googleapis/google-api-python-client/issues/1092)) ([12831f3](https://www.github.com/googleapis/google-api-python-client/commit/12831f3e4716292b55b63dd2b08c3351f09b8a15))
+
+### [1.12.6](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.5...v1.12.6) (2020-11-16)
+
+
+### Documentation
+
+* Change error parsing to check for 'message' ([#1083](https://www.github.com/googleapis/google-api-python-client/issues/1083)) ([a341c5a](https://www.github.com/googleapis/google-api-python-client/commit/a341c5a5e31ba16da109658127b58cb7e5dbeedd)), closes [#1082](https://www.github.com/googleapis/google-api-python-client/issues/1082)
+* Update oauth docs to include snippet to get email address of authenticated user ([#1088](https://www.github.com/googleapis/google-api-python-client/issues/1088)) ([25fba64](https://www.github.com/googleapis/google-api-python-client/commit/25fba648ea647b62f2a6edc54ae927c1ed381b45)), closes [#1071](https://www.github.com/googleapis/google-api-python-client/issues/1071)
+
+### [1.12.5](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.4...v1.12.5) (2020-10-22)
+
+
+### Bug Fixes
+
+* don't raise when downloading zero byte files ([#1074](https://www.github.com/googleapis/google-api-python-client/issues/1074)) ([86d8788](https://www.github.com/googleapis/google-api-python-client/commit/86d8788ee8a766ca6818620f3fd2899be0e44190))
+
 ### [1.12.4](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.3...v1.12.4) (2020-10-20)
 
 

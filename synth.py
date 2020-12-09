@@ -14,6 +14,9 @@
 
 import synthtool as s
 from synthtool import gcp
+from synthtool.sources import git
+
+DISCOVERY_ARTIFACT_MANAGER_REPO = "googleapis/discovery-artifact-manager"
 
 common = gcp.CommonTemplates()
 
@@ -28,3 +31,21 @@ s.move(templated_files / '.kokoro', excludes=['**/docs/*', 'publish-docs.sh'])
 
 # Also move issue templates
 s.move(templated_files / '.github')
+
+# ----------------------------------------------------------------------------
+# Copy discoveries folder from discovery-artifact-manager repo
+# ----------------------------------------------------------------------------
+
+discovery_artifact_manager_url = git.make_repo_clone_url(DISCOVERY_ARTIFACT_MANAGER_REPO)
+discovery_artifacts = git.clone(discovery_artifact_manager_url) / "discoveries"
+
+excludes = [
+    "**/BUILD.bazel",
+]
+s.copy(discovery_artifacts,
+       "googleapiclient/discovery_cache/documents", excludes=excludes)
+
+# ----------------------------------------------------------------------------
+# Generate docs
+# ----------------------------------------------------------------------------
+s.shell.run(["nox", "-s", "docs"], hide_output=False)
