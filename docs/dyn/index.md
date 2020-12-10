@@ -331,6 +331,7 @@
 ## dialogflow
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/dialogflow_v2.html)
 * [v2beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/dialogflow_v2beta1.html)
+* [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/dialogflow_v3.html)
 * [v3beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/dialogflow_v3beta1.html)
 
 
@@ -514,9 +515,9 @@
 
 
 ## jobs
-* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v2.html)
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v3.html)
 * [v3p1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v3p1beta1.html)
+* [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v4.html)
 
 
 ## kgsearch
@@ -717,6 +718,7 @@
 
 
 ## servicedirectory
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/servicedirectory_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/servicedirectory_v1beta1.html)
 
 
