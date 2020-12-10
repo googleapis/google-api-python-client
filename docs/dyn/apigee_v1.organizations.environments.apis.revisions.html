@@ -88,7 +88,7 @@ h1, h2, h3 {
   <code><a href="#close">close()</a></code></p>
 <p class="firstline">Close httplib2 connections.</p>
 <p class="toc_element">
-  <code><a href="#deploy">deploy(name, override=None, sequencedRollout=None, x__xgafv=None)</a></code></p>
+  <code><a href="#deploy">deploy(name, sequencedRollout=None, override=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Deploys a revision of an API proxy. If another revision of the same API proxy revision is currently deployed, set the `override` parameter to `true` to have this revision replace the currently deployed revision. You cannot invoke an API proxy until it has been deployed to an environment. After you deploy an API proxy revision, you cannot edit it. To edit the API proxy, you must create and deploy a new revision. For a request path `organizations/{org}/environments/{env}/apis/{api}/revisions/{rev}/deployments`, two permissions are required: * `apigee.deployments.create` on the resource `organizations/{org}/environments/{env}` * `apigee.proxyrevisions.deploy` on the resource `organizations/{org}/apis/{api}/revisions/{rev}` </p>
 <p class="toc_element">
   <code><a href="#getDeployments">getDeployments(name, x__xgafv=None)</a></code></p>
@@ -103,13 +103,13 @@ h1, h2, h3 {
 </div>
 
 <div class="method">
-    <code class="details" id="deploy">deploy(name, override=None, sequencedRollout=None, x__xgafv=None)</code>
+    <code class="details" id="deploy">deploy(name, sequencedRollout=None, override=None, x__xgafv=None)</code>
   <pre>Deploys a revision of an API proxy. If another revision of the same API proxy revision is currently deployed, set the `override` parameter to `true` to have this revision replace the currently deployed revision. You cannot invoke an API proxy until it has been deployed to an environment. After you deploy an API proxy revision, you cannot edit it. To edit the API proxy, you must create and deploy a new revision. For a request path `organizations/{org}/environments/{env}/apis/{api}/revisions/{rev}/deployments`, two permissions are required: * `apigee.deployments.create` on the resource `organizations/{org}/environments/{env}` * `apigee.proxyrevisions.deploy` on the resource `organizations/{org}/apis/{api}/revisions/{rev}` 
 
 Args:
   name: string, Required. Name of the API proxy revision deployment in the following format: `organizations/{org}/environments/{env}/apis/{api}/revisions/{rev}` (required)
-  override: boolean, Flag that specifies whether the new deployment replaces other deployed revisions of the API proxy in the environment. Set override to true to replace other deployed revisions. By default, override is false and the deployment is rejected if other revisions of the API proxy are deployed in the environment.
   sequencedRollout: boolean, If true, a best-effort attempt will be made to roll out the routing rules corresponding to this deployment and the environment changes to add this deployment in a safe order. This reduces the risk of downtime that could be caused by changing the environment group&#x27;s routing before the new destination for the affected traffic is ready to receive it. This should only be necessary if the new deployment will be capturing traffic from another environment under a shared environment group or if traffic will be rerouted to a different environment due to a basepath removal. The GenerateDeployChangeReport API may be used to examine routing changes before issuing the deployment request, and its response will indicate if a sequenced rollout is recommended for the deployment.
+  override: boolean, Flag that specifies whether the new deployment replaces other deployed revisions of the API proxy in the environment. Set override to true to replace other deployed revisions. By default, override is false and the deployment is rejected if other revisions of the API proxy are deployed in the environment.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -119,7 +119,34 @@ Returns:
   An object of the form:
 
     {
-    &quot;revision&quot;: &quot;A String&quot;, # API proxy revision.
+    &quot;deployStartTime&quot;: &quot;A String&quot;, # Time the API proxy was marked `deployed` in the control plane in millisconds since epoch.
+    &quot;environment&quot;: &quot;A String&quot;, # Environment.
+    &quot;apiProxy&quot;: &quot;A String&quot;, # API proxy.
+    &quot;pods&quot;: [ # Status reported by runtime pods. This field is not populated for List APIs.
+      {
+        &quot;appVersion&quot;: &quot;A String&quot;, # Version of the application running in the pod.
+        &quot;podStatusTime&quot;: &quot;A String&quot;, # Time the pod status was reported in milliseconds since epoch.
+        &quot;deploymentStatusTime&quot;: &quot;A String&quot;, # Time the deployment status was reported in milliseconds since epoch.
+        &quot;deploymentTime&quot;: &quot;A String&quot;, # Time the proxy was deployed in milliseconds since epoch.
+        &quot;statusCodeDetails&quot;: &quot;A String&quot;, # Human-readable message associated with the status code.
+        &quot;podName&quot;: &quot;A String&quot;, # Name of the pod which is reporting the status.
+        &quot;deploymentStatus&quot;: &quot;A String&quot;, # Status of the deployment. Valid values include: - `deployed`: Successful. - `error` : Failed. - `pending` : Pod has not yet reported on the deployment.
+        &quot;statusCode&quot;: &quot;A String&quot;, # Code associated with the deployment status.
+        &quot;podStatus&quot;: &quot;A String&quot;, # Overall status of the pod (not this specific deployment). Valid values include: - `active`: Up to date. - `stale` : Recently out of date. Pods that have not reported status in a long time are excluded from the output.
+      },
+    ],
+    &quot;routeConflicts&quot;: [ # Conflicts in the desired state routing configuration. The presence of conflicts does not cause the state to be ERROR, but it will mean that some of the deployments basepaths are not routed to its environment. If the conflicts change, the state will transition to PROGRESSING until the latest configuration is rolled out to all instances. This field is not populated in List APIs.
+      { # Describes a routing conflict that may cause a deployment not to receive traffic at some basepath.
+        &quot;description&quot;: &quot;A String&quot;, # A human-readable description of this conflict.
+        &quot;environmentGroup&quot;: &quot;A String&quot;, # The name of the environment group in which this conflict exists.
+        &quot;conflictingDeployment&quot;: { # A tuple representing a basepath and the deployment containing it. # The existing basepath/deployment causing the conflict.
+          &quot;environment&quot;: &quot;A String&quot;, # The name of the environment in which the proxy is deployed.
+          &quot;apiProxy&quot;: &quot;A String&quot;, # The name of the deployed proxy revision containing the basepath.
+          &quot;revision&quot;: &quot;A String&quot;, # The name of the deployed proxy revision containing the basepath.
+          &quot;basepath&quot;: &quot;A String&quot;, # The basepath receiving traffic.
+        },
+      },
+    ],
     &quot;errors&quot;: [ # Errors reported for this deployment. Populated only when state == ERROR. This field is not populated in List APIs.
       { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).
         &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
@@ -131,53 +158,26 @@ Returns:
         &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
       },
     ],
-    &quot;pods&quot;: [ # Status reported by runtime pods. This field is not populated for List APIs.
-      {
-        &quot;statusCodeDetails&quot;: &quot;A String&quot;, # Human-readable message associated with the status code.
-        &quot;podStatus&quot;: &quot;A String&quot;, # Overall status of the pod (not this specific deployment). Valid values include: - `active`: Up to date. - `stale` : Recently out of date. Pods that have not reported status in a long time are excluded from the output.
-        &quot;podStatusTime&quot;: &quot;A String&quot;, # Time the pod status was reported in milliseconds since epoch.
-        &quot;statusCode&quot;: &quot;A String&quot;, # Code associated with the deployment status.
-        &quot;podName&quot;: &quot;A String&quot;, # Name of the pod which is reporting the status.
-        &quot;deploymentStatus&quot;: &quot;A String&quot;, # Status of the deployment. Valid values include: - `deployed`: Successful. - `error` : Failed. - `pending` : Pod has not yet reported on the deployment.
-        &quot;appVersion&quot;: &quot;A String&quot;, # Version of the application running in the pod.
-        &quot;deploymentTime&quot;: &quot;A String&quot;, # Time the proxy was deployed in milliseconds since epoch.
-        &quot;deploymentStatusTime&quot;: &quot;A String&quot;, # Time the deployment status was reported in milliseconds since epoch.
-      },
-    ],
-    &quot;routeConflicts&quot;: [ # Conflicts in the desired state routing configuration. The presence of conflicts does not cause the state to be ERROR, but it will mean that some of the deployments basepaths are not routed to its environment. If the conflicts change, the state will transition to PROGRESSING until the latest configuration is rolled out to all instances. This field is not populated in List APIs.
-      { # Describes a routing conflict that may cause a deployment not to receive traffic at some basepath.
-        &quot;description&quot;: &quot;A String&quot;, # A human-readable description of this conflict.
-        &quot;conflictingDeployment&quot;: { # A tuple representing a basepath and the deployment containing it. # The existing basepath/deployment causing the conflict.
-          &quot;apiProxy&quot;: &quot;A String&quot;, # The name of the deployed proxy revision containing the basepath.
-          &quot;revision&quot;: &quot;A String&quot;, # The name of the deployed proxy revision containing the basepath.
-          &quot;environment&quot;: &quot;A String&quot;, # The name of the environment in which the proxy is deployed.
-          &quot;basepath&quot;: &quot;A String&quot;, # The basepath receiving traffic.
-        },
-        &quot;environmentGroup&quot;: &quot;A String&quot;, # The name of the environment group in which this conflict exists.
-      },
-    ],
-    &quot;environment&quot;: &quot;A String&quot;, # Environment.
+    &quot;revision&quot;: &quot;A String&quot;, # API proxy revision.
     &quot;instances&quot;: [ # Status reported by each runtime instance. This field is not populated in List APIs.
       { # The status of a deployment as reported by a single instance.
-        &quot;deployedRoutes&quot;: [ # The current routes deployed in the ingress routing table. A route which is missing will appear in missing_routes.
-          { # A route deployed in the ingress routing table.
-            &quot;environment&quot;: &quot;A String&quot;, # The destination environment. This will be empty if the route is not yet reported.
-            &quot;envgroup&quot;: &quot;A String&quot;, # The envgroup where this route is installed.
-            &quot;basepath&quot;: &quot;A String&quot;, # The basepath in the routing table.
-            &quot;percentage&quot;: 42, # The percentage of ingress replicas reporting this route.
-          },
-        ],
         &quot;deployedRevisions&quot;: [ # Revisions currently deployed in MPs.
           { # Revisions deployed in the MPs.
-            &quot;percentage&quot;: 42, # The percentage of MP replicas reporting this revision
             &quot;revision&quot;: &quot;A String&quot;, # The proxy revision reported as deployed.
+            &quot;percentage&quot;: 42, # The percentage of MP replicas reporting this revision
+          },
+        ],
+        &quot;deployedRoutes&quot;: [ # The current routes deployed in the ingress routing table. A route which is missing will appear in missing_routes.
+          { # A route deployed in the ingress routing table.
+            &quot;envgroup&quot;: &quot;A String&quot;, # The envgroup where this route is installed.
+            &quot;environment&quot;: &quot;A String&quot;, # The destination environment. This will be empty if the route is not yet reported.
+            &quot;basepath&quot;: &quot;A String&quot;, # The basepath in the routing table.
+            &quot;percentage&quot;: 42, # The percentage of ingress replicas reporting this route.
           },
         ],
         &quot;instance&quot;: &quot;A String&quot;, # ID of the instance reporting the status.
       },
     ],
-    &quot;deployStartTime&quot;: &quot;A String&quot;, # Time the API proxy was marked `deployed` in the control plane in millisconds since epoch.
-    &quot;apiProxy&quot;: &quot;A String&quot;, # API proxy.
     &quot;state&quot;: &quot;A String&quot;, # Current state of the deployment. This field is not populated in List APIs.
   }</pre>
 </div>
@@ -197,7 +197,34 @@ Returns:
   An object of the form:
 
     {
-    &quot;revision&quot;: &quot;A String&quot;, # API proxy revision.
+    &quot;deployStartTime&quot;: &quot;A String&quot;, # Time the API proxy was marked `deployed` in the control plane in millisconds since epoch.
+    &quot;environment&quot;: &quot;A String&quot;, # Environment.
+    &quot;apiProxy&quot;: &quot;A String&quot;, # API proxy.
+    &quot;pods&quot;: [ # Status reported by runtime pods. This field is not populated for List APIs.
+      {
+        &quot;appVersion&quot;: &quot;A String&quot;, # Version of the application running in the pod.
+        &quot;podStatusTime&quot;: &quot;A String&quot;, # Time the pod status was reported in milliseconds since epoch.
+        &quot;deploymentStatusTime&quot;: &quot;A String&quot;, # Time the deployment status was reported in milliseconds since epoch.
+        &quot;deploymentTime&quot;: &quot;A String&quot;, # Time the proxy was deployed in milliseconds since epoch.
+        &quot;statusCodeDetails&quot;: &quot;A String&quot;, # Human-readable message associated with the status code.
+        &quot;podName&quot;: &quot;A String&quot;, # Name of the pod which is reporting the status.
+        &quot;deploymentStatus&quot;: &quot;A String&quot;, # Status of the deployment. Valid values include: - `deployed`: Successful. - `error` : Failed. - `pending` : Pod has not yet reported on the deployment.
+        &quot;statusCode&quot;: &quot;A String&quot;, # Code associated with the deployment status.
+        &quot;podStatus&quot;: &quot;A String&quot;, # Overall status of the pod (not this specific deployment). Valid values include: - `active`: Up to date. - `stale` : Recently out of date. Pods that have not reported status in a long time are excluded from the output.
+      },
+    ],
+    &quot;routeConflicts&quot;: [ # Conflicts in the desired state routing configuration. The presence of conflicts does not cause the state to be ERROR, but it will mean that some of the deployments basepaths are not routed to its environment. If the conflicts change, the state will transition to PROGRESSING until the latest configuration is rolled out to all instances. This field is not populated in List APIs.
+      { # Describes a routing conflict that may cause a deployment not to receive traffic at some basepath.
+        &quot;description&quot;: &quot;A String&quot;, # A human-readable description of this conflict.
+        &quot;environmentGroup&quot;: &quot;A String&quot;, # The name of the environment group in which this conflict exists.
+        &quot;conflictingDeployment&quot;: { # A tuple representing a basepath and the deployment containing it. # The existing basepath/deployment causing the conflict.
+          &quot;environment&quot;: &quot;A String&quot;, # The name of the environment in which the proxy is deployed.
+          &quot;apiProxy&quot;: &quot;A String&quot;, # The name of the deployed proxy revision containing the basepath.
+          &quot;revision&quot;: &quot;A String&quot;, # The name of the deployed proxy revision containing the basepath.
+          &quot;basepath&quot;: &quot;A String&quot;, # The basepath receiving traffic.
+        },
+      },
+    ],
     &quot;errors&quot;: [ # Errors reported for this deployment. Populated only when state == ERROR. This field is not populated in List APIs.
       { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).
         &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
@@ -209,53 +236,26 @@ Returns:
         &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
       },
     ],
-    &quot;pods&quot;: [ # Status reported by runtime pods. This field is not populated for List APIs.
-      {
-        &quot;statusCodeDetails&quot;: &quot;A String&quot;, # Human-readable message associated with the status code.
-        &quot;podStatus&quot;: &quot;A String&quot;, # Overall status of the pod (not this specific deployment). Valid values include: - `active`: Up to date. - `stale` : Recently out of date. Pods that have not reported status in a long time are excluded from the output.
-        &quot;podStatusTime&quot;: &quot;A String&quot;, # Time the pod status was reported in milliseconds since epoch.
-        &quot;statusCode&quot;: &quot;A String&quot;, # Code associated with the deployment status.
-        &quot;podName&quot;: &quot;A String&quot;, # Name of the pod which is reporting the status.
-        &quot;deploymentStatus&quot;: &quot;A String&quot;, # Status of the deployment. Valid values include: - `deployed`: Successful. - `error` : Failed. - `pending` : Pod has not yet reported on the deployment.
-        &quot;appVersion&quot;: &quot;A String&quot;, # Version of the application running in the pod.
-        &quot;deploymentTime&quot;: &quot;A String&quot;, # Time the proxy was deployed in milliseconds since epoch.
-        &quot;deploymentStatusTime&quot;: &quot;A String&quot;, # Time the deployment status was reported in milliseconds since epoch.
-      },
-    ],
-    &quot;routeConflicts&quot;: [ # Conflicts in the desired state routing configuration. The presence of conflicts does not cause the state to be ERROR, but it will mean that some of the deployments basepaths are not routed to its environment. If the conflicts change, the state will transition to PROGRESSING until the latest configuration is rolled out to all instances. This field is not populated in List APIs.
-      { # Describes a routing conflict that may cause a deployment not to receive traffic at some basepath.
-        &quot;description&quot;: &quot;A String&quot;, # A human-readable description of this conflict.
-        &quot;conflictingDeployment&quot;: { # A tuple representing a basepath and the deployment containing it. # The existing basepath/deployment causing the conflict.
-          &quot;apiProxy&quot;: &quot;A String&quot;, # The name of the deployed proxy revision containing the basepath.
-          &quot;revision&quot;: &quot;A String&quot;, # The name of the deployed proxy revision containing the basepath.
-          &quot;environment&quot;: &quot;A String&quot;, # The name of the environment in which the proxy is deployed.
-          &quot;basepath&quot;: &quot;A String&quot;, # The basepath receiving traffic.
-        },
-        &quot;environmentGroup&quot;: &quot;A String&quot;, # The name of the environment group in which this conflict exists.
-      },
-    ],
-    &quot;environment&quot;: &quot;A String&quot;, # Environment.
+    &quot;revision&quot;: &quot;A String&quot;, # API proxy revision.
     &quot;instances&quot;: [ # Status reported by each runtime instance. This field is not populated in List APIs.
       { # The status of a deployment as reported by a single instance.
-        &quot;deployedRoutes&quot;: [ # The current routes deployed in the ingress routing table. A route which is missing will appear in missing_routes.
-          { # A route deployed in the ingress routing table.
-            &quot;environment&quot;: &quot;A String&quot;, # The destination environment. This will be empty if the route is not yet reported.
-            &quot;envgroup&quot;: &quot;A String&quot;, # The envgroup where this route is installed.
-            &quot;basepath&quot;: &quot;A String&quot;, # The basepath in the routing table.
-            &quot;percentage&quot;: 42, # The percentage of ingress replicas reporting this route.
-          },
-        ],
         &quot;deployedRevisions&quot;: [ # Revisions currently deployed in MPs.
           { # Revisions deployed in the MPs.
-            &quot;percentage&quot;: 42, # The percentage of MP replicas reporting this revision
             &quot;revision&quot;: &quot;A String&quot;, # The proxy revision reported as deployed.
+            &quot;percentage&quot;: 42, # The percentage of MP replicas reporting this revision
+          },
+        ],
+        &quot;deployedRoutes&quot;: [ # The current routes deployed in the ingress routing table. A route which is missing will appear in missing_routes.
+          { # A route deployed in the ingress routing table.
+            &quot;envgroup&quot;: &quot;A String&quot;, # The envgroup where this route is installed.
+            &quot;environment&quot;: &quot;A String&quot;, # The destination environment. This will be empty if the route is not yet reported.
+            &quot;basepath&quot;: &quot;A String&quot;, # The basepath in the routing table.
+            &quot;percentage&quot;: 42, # The percentage of ingress replicas reporting this route.
           },
         ],
         &quot;instance&quot;: &quot;A String&quot;, # ID of the instance reporting the status.
       },
     ],
-    &quot;deployStartTime&quot;: &quot;A String&quot;, # Time the API proxy was marked `deployed` in the control plane in millisconds since epoch.
-    &quot;apiProxy&quot;: &quot;A String&quot;, # API proxy.
     &quot;state&quot;: &quot;A String&quot;, # Current state of the deployment. This field is not populated in List APIs.
   }</pre>
 </div>
