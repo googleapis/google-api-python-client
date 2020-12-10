@@ -101,7 +101,7 @@ h1, h2, h3 {
   <code><a href="#import_">import_(name, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Import messages to the HL7v2 store by loading data from the specified sources. This method is optimized to load large quantities of data using import semantics that ignore some HL7v2 store configuration options and are not suitable for all use cases. It is primarily intended to load data into an empty HL7v2 store that is not being used by other clients. An existing message will be overwritten if a duplicate message is imported. A duplicate message is a message with the same raw bytes as a message that already exists in this HL7v2 store. When a message is overwritten, its labels will also be overwritten. The import operation is idempotent unless the input data contains multiple valid messages with the same raw bytes but different labels. In that case, after the import completes, the store contains exactly one message with those raw bytes but there is no ordering guarantee on which version of the labels it has. The operation result counters do not count duplicated raw bytes as an error and count one success for each message in the input, which might result in a success count larger than the number of messages in the HL7v2 store. If some messages fail to import, for example due to parsing errors, successfully imported messages are not rolled back. This method returns an Operation that can be used to track the status of the import by calling GetOperation. Immediate fatal errors appear in the error field, errors are also logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-tos/logging)). Otherwise, when the operation finishes, a response of type ImportMessagesResponse is returned in the response field. The metadata field type for this operation is OperationMetadata.</p>
 <p class="toc_element">
-  <code><a href="#list">list(parent, filter=None, pageToken=None, pageSize=None, x__xgafv=None)</a></code></p>
+  <code><a href="#list">list(parent, pageToken=None, pageSize=None, filter=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists the HL7v2 stores in the given dataset.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
@@ -131,14 +131,13 @@ Args:
     The object takes the form of:
 
 { # Represents an HL7v2 store.
+    &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
     &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to determine whether to publish a message (both Ingest &amp; Create) on the corresponding notification destination. Only the message name is sent as part of the notification. Supplied by the client.
       { # Specifies where and whether to send notifications upon changes to a data store.
         &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. The notification is a `PubsubMessage` with the following fields: * `PubsubMessage.Data` contains the resource name. * `PubsubMessage.MessageId` is the ID of this notification. It is guaranteed to be unique within the topic. * `PubsubMessage.PublishTime` is the time when the message was published. Note that notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging. For more information, see [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging).
         &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is empty, all messages are matched. Syntax: https://cloud.google.com/appengine/docs/standard/python/search/query_strings The following fields and functions are available for filtering: * `message_type`, from the MSH-9.1 field. For example, `NOT message_type = &quot;ADT&quot;`. * `send_date` or `sendDate`, the YYYY-MM-DD date the message was sent in the dataset&#x27;s time_zone, from the MSH-7 segment. For example, `send_date &lt; &quot;2017-01-02&quot;`. * `send_time`, the timestamp when the message was sent, using the RFC3339 time format for comparisons, from the MSH-7 segment. For example, `send_time &lt; &quot;2017-01-02T00:00:00-05:00&quot;`. * `send_facility`, the care center that the message came from, from the MSH-4 segment. For example, `send_facility = &quot;ABC&quot;`. * `PatientId(value, type)`, which matches if the message lists a patient having an ID of the given value and type in the PID-2, PID-3, or PID-4 segments. For example, `PatientId(&quot;123456&quot;, &quot;MRN&quot;)`. * `labels.x`, a string value of the label with key `x` as set using the Message.labels map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be used to assert the existence of a label. For example, `labels.&quot;priority&quot;:*`.
       },
     ],
-    &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
-    &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
     &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores. Label keys must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: \p{Ll}\p{Lo}{0,62} Label values are optional, must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63} No more than 64 labels can be associated with a given store.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
@@ -146,12 +145,6 @@ Args:
       &quot;schema&quot;: { # A schema package contains a set of schemas and type definitions. # Schemas used to parse messages in this store, if schematized parsing is desired.
         &quot;schemas&quot;: [ # Schema configs that are layered based on their VersionSources that match the incoming message. Schema configs present in higher indices override those in lower indices with the same message type and trigger event if their VersionSources all match an incoming message.
           { # Root config message for HL7v2 schema. This contains a schema structure of groups and segments, and filters that determine which messages to apply the schema structure to.
-            &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
-              { # Describes a selector for extracting and matching an MSH field to a value.
-                &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
-                &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
-              },
-            ],
             &quot;messageSchemaConfigs&quot;: { # Map from each HL7v2 message type and trigger event pair, such as ADT_A04, to its schema configuration root group.
               &quot;a_key&quot;: { # An HL7v2 logical group construct.
                 &quot;members&quot;: [ # Nested groups and/or segments.
@@ -165,15 +158,21 @@ Args:
                   },
                 ],
                 &quot;minOccurs&quot;: 42, # The minimum number of times this group must be present/repeated.
-                &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
                 &quot;maxOccurs&quot;: 42, # The maximum number of times this group can be repeated. 0 or -1 means unbounded.
                 &quot;name&quot;: &quot;A String&quot;, # The name of this group. For example, &quot;ORDER_DETAIL&quot;.
+                &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
               },
             },
+            &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
+              { # Describes a selector for extracting and matching an MSH field to a value.
+                &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
+                &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
+              },
+            ],
           },
         ],
-        &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
         &quot;ignoreMinOccurs&quot;: True or False, # Flag to ignore all min_occurs restrictions in the schema. This means that incoming messages can omit any group, segment, field, component, or subcomponent.
+        &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
         &quot;types&quot;: [ # Schema type definitions that are layered based on their VersionSources that match the incoming message. Type definitions present in higher indices override those in lower indices with the same type name if their VersionSources all match an incoming message.
           { # Root config for HL7v2 datatype definitions for a specific HL7v2 version.
             &quot;type&quot;: [ # The HL7v2 type definitions.
@@ -182,9 +181,9 @@ Args:
                   { # A (sub) field of a type.
                     &quot;minOccurs&quot;: 42, # The minimum number of times this field must be present/repeated.
                     &quot;name&quot;: &quot;A String&quot;, # The name of the field. For example, &quot;PID-1&quot; or just &quot;1&quot;.
-                    &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
-                    &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
                     &quot;maxOccurs&quot;: 42, # The maximum number of times this field can be repeated. 0 or -1 means unbounded.
+                    &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
+                    &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
                   },
                 ],
                 &quot;primitive&quot;: &quot;A String&quot;, # If this is a primitive type then this field is the type of the primitive For example, STRING. Leave unspecified for composite types.
@@ -199,15 +198,16 @@ Args:
             ],
           },
         ],
-        &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
+        &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
       },
-      &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
       &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is used as segment terminator, matching the HL7 version 2 specification.
+      &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
       &quot;allowNullHeader&quot;: True or False, # Determines whether messages with no header are allowed.
     },
     &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # The notification destination all messages (both Ingest &amp; Create) are published on. Only the message name is sent as part of the notification. If this is unset, no notifications are sent. Supplied by the client.
       &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. PubsubMessage.Data contains the resource name. PubsubMessage.MessageId is the ID of this message. It is guaranteed to be unique within the topic. PubsubMessage.PublishTime is the time at which the message was published. Notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Cloud Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-tos/logging)). If the number of errors exceeds a certain rate, some aren&#x27;t submitted. Note that not all operations trigger notifications, see [Configuring Pub/Sub notifications](https://cloud.google.com/healthcare/docs/how-tos/pubsub) for specific details.
     },
+    &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
   }
 
   hl7V2StoreId: string, The ID of the HL7v2 store that is being created. The string must match the following regex: `[\p{L}\p{N}_\-\.]{1,256}`.
@@ -220,14 +220,13 @@ Returns:
   An object of the form:
 
     { # Represents an HL7v2 store.
+      &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
       &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to determine whether to publish a message (both Ingest &amp; Create) on the corresponding notification destination. Only the message name is sent as part of the notification. Supplied by the client.
         { # Specifies where and whether to send notifications upon changes to a data store.
           &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. The notification is a `PubsubMessage` with the following fields: * `PubsubMessage.Data` contains the resource name. * `PubsubMessage.MessageId` is the ID of this notification. It is guaranteed to be unique within the topic. * `PubsubMessage.PublishTime` is the time when the message was published. Note that notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging. For more information, see [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging).
           &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is empty, all messages are matched. Syntax: https://cloud.google.com/appengine/docs/standard/python/search/query_strings The following fields and functions are available for filtering: * `message_type`, from the MSH-9.1 field. For example, `NOT message_type = &quot;ADT&quot;`. * `send_date` or `sendDate`, the YYYY-MM-DD date the message was sent in the dataset&#x27;s time_zone, from the MSH-7 segment. For example, `send_date &lt; &quot;2017-01-02&quot;`. * `send_time`, the timestamp when the message was sent, using the RFC3339 time format for comparisons, from the MSH-7 segment. For example, `send_time &lt; &quot;2017-01-02T00:00:00-05:00&quot;`. * `send_facility`, the care center that the message came from, from the MSH-4 segment. For example, `send_facility = &quot;ABC&quot;`. * `PatientId(value, type)`, which matches if the message lists a patient having an ID of the given value and type in the PID-2, PID-3, or PID-4 segments. For example, `PatientId(&quot;123456&quot;, &quot;MRN&quot;)`. * `labels.x`, a string value of the label with key `x` as set using the Message.labels map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be used to assert the existence of a label. For example, `labels.&quot;priority&quot;:*`.
         },
       ],
-      &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
-      &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
       &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores. Label keys must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: \p{Ll}\p{Lo}{0,62} Label values are optional, must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63} No more than 64 labels can be associated with a given store.
         &quot;a_key&quot;: &quot;A String&quot;,
       },
@@ -235,12 +234,6 @@ Returns:
         &quot;schema&quot;: { # A schema package contains a set of schemas and type definitions. # Schemas used to parse messages in this store, if schematized parsing is desired.
           &quot;schemas&quot;: [ # Schema configs that are layered based on their VersionSources that match the incoming message. Schema configs present in higher indices override those in lower indices with the same message type and trigger event if their VersionSources all match an incoming message.
             { # Root config message for HL7v2 schema. This contains a schema structure of groups and segments, and filters that determine which messages to apply the schema structure to.
-              &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
-                { # Describes a selector for extracting and matching an MSH field to a value.
-                  &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
-                  &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
-                },
-              ],
               &quot;messageSchemaConfigs&quot;: { # Map from each HL7v2 message type and trigger event pair, such as ADT_A04, to its schema configuration root group.
                 &quot;a_key&quot;: { # An HL7v2 logical group construct.
                   &quot;members&quot;: [ # Nested groups and/or segments.
@@ -254,15 +247,21 @@ Returns:
                     },
                   ],
                   &quot;minOccurs&quot;: 42, # The minimum number of times this group must be present/repeated.
-                  &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
                   &quot;maxOccurs&quot;: 42, # The maximum number of times this group can be repeated. 0 or -1 means unbounded.
                   &quot;name&quot;: &quot;A String&quot;, # The name of this group. For example, &quot;ORDER_DETAIL&quot;.
+                  &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
                 },
               },
+              &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
+                { # Describes a selector for extracting and matching an MSH field to a value.
+                  &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
+                  &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
+                },
+              ],
             },
           ],
-          &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
           &quot;ignoreMinOccurs&quot;: True or False, # Flag to ignore all min_occurs restrictions in the schema. This means that incoming messages can omit any group, segment, field, component, or subcomponent.
+          &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
           &quot;types&quot;: [ # Schema type definitions that are layered based on their VersionSources that match the incoming message. Type definitions present in higher indices override those in lower indices with the same type name if their VersionSources all match an incoming message.
             { # Root config for HL7v2 datatype definitions for a specific HL7v2 version.
               &quot;type&quot;: [ # The HL7v2 type definitions.
@@ -271,9 +270,9 @@ Returns:
                     { # A (sub) field of a type.
                       &quot;minOccurs&quot;: 42, # The minimum number of times this field must be present/repeated.
                       &quot;name&quot;: &quot;A String&quot;, # The name of the field. For example, &quot;PID-1&quot; or just &quot;1&quot;.
-                      &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
-                      &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
                       &quot;maxOccurs&quot;: 42, # The maximum number of times this field can be repeated. 0 or -1 means unbounded.
+                      &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
+                      &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
                     },
                   ],
                   &quot;primitive&quot;: &quot;A String&quot;, # If this is a primitive type then this field is the type of the primitive For example, STRING. Leave unspecified for composite types.
@@ -288,15 +287,16 @@ Returns:
               ],
             },
           ],
-          &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
+          &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
         },
-        &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
         &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is used as segment terminator, matching the HL7 version 2 specification.
+        &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
         &quot;allowNullHeader&quot;: True or False, # Determines whether messages with no header are allowed.
       },
       &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # The notification destination all messages (both Ingest &amp; Create) are published on. Only the message name is sent as part of the notification. If this is unset, no notifications are sent. Supplied by the client.
         &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. PubsubMessage.Data contains the resource name. PubsubMessage.MessageId is the ID of this message. It is guaranteed to be unique within the topic. PubsubMessage.PublishTime is the time at which the message was published. Notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Cloud Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-tos/logging)). If the number of errors exceeds a certain rate, some aren&#x27;t submitted. Note that not all operations trigger notifications, see [Configuring Pub/Sub notifications](https://cloud.google.com/healthcare/docs/how-tos/pubsub) for specific details.
       },
+      &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
     }</pre>
 </div>
 
@@ -328,12 +328,12 @@ Args:
     The object takes the form of:
 
 { # Request to schedule an export.
+    &quot;startTime&quot;: &quot;A String&quot;, # The start of the range in `send_time` (MSH.7, https://www.hl7.org/documentcenter/public_temp_2E58C1F9-1C23-BA17-0C6126475344DA9D/wg/conf/HL7MSH.htm) to process. If not specified, the UNIX epoch (1970-01-01T00:00:00Z) is used. This value has to come before the `end_time` defined below. Only messages whose `send_time` lies in the range `start_time` (inclusive) to `end_time` (exclusive) are exported.
     &quot;gcsDestination&quot;: { # The Cloud Storage output destination. The Cloud Healthcare Service Agent requires the `roles/storage.objectAdmin` Cloud IAM roles on the Cloud Storage location. # Export to a Cloud Storage destination.
+      &quot;contentStructure&quot;: &quot;A String&quot;, # The format of the exported HL7v2 message files.
       &quot;uriPrefix&quot;: &quot;A String&quot;, # URI of an existing Cloud Storage directory where the server writes result files, in the format `gs://{bucket-id}/{path/to/destination/dir}`. If there is no trailing slash, the service appends one when composing the object path.
       &quot;messageView&quot;: &quot;A String&quot;, # Specifies the parts of the Message resource to include in the export. If not specified, FULL is used.
-      &quot;contentStructure&quot;: &quot;A String&quot;, # The format of the exported HL7v2 message files.
     },
-    &quot;startTime&quot;: &quot;A String&quot;, # The start of the range in `send_time` (MSH.7, https://www.hl7.org/documentcenter/public_temp_2E58C1F9-1C23-BA17-0C6126475344DA9D/wg/conf/HL7MSH.htm) to process. If not specified, the UNIX epoch (1970-01-01T00:00:00Z) is used. This value has to come before the `end_time` defined below. Only messages whose `send_time` lies in the range `start_time` (inclusive) to `end_time` (exclusive) are exported.
     &quot;endTime&quot;: &quot;A String&quot;, # The end of the range in `send_time` (MSH.7, https://www.hl7.org/documentcenter/public_temp_2E58C1F9-1C23-BA17-0C6126475344DA9D/wg/conf/HL7MSH.htm) to process. If not specified, the time when the export is scheduled is used. This value has to come after the `start_time` defined below. Only messages whose `send_time` lies in the range `start_time` (inclusive) to `end_time` (exclusive) are exported.
   }
 
@@ -350,19 +350,19 @@ Returns:
     &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
     &quot;metadata&quot;: { # Service-specific metadata associated with the operation. It typically contains progress information and common metadata such as create time. Some services might not provide such metadata. Any method that returns a long-running operation should document the metadata type, if any.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
     &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). # The error result of the operation in case of failure or cancellation.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
       &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
       &quot;details&quot;: [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
         {
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
         },
       ],
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
     },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
   }</pre>
 </div>
 
@@ -381,14 +381,13 @@ Returns:
   An object of the form:
 
     { # Represents an HL7v2 store.
+      &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
       &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to determine whether to publish a message (both Ingest &amp; Create) on the corresponding notification destination. Only the message name is sent as part of the notification. Supplied by the client.
         { # Specifies where and whether to send notifications upon changes to a data store.
           &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. The notification is a `PubsubMessage` with the following fields: * `PubsubMessage.Data` contains the resource name. * `PubsubMessage.MessageId` is the ID of this notification. It is guaranteed to be unique within the topic. * `PubsubMessage.PublishTime` is the time when the message was published. Note that notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging. For more information, see [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging).
           &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is empty, all messages are matched. Syntax: https://cloud.google.com/appengine/docs/standard/python/search/query_strings The following fields and functions are available for filtering: * `message_type`, from the MSH-9.1 field. For example, `NOT message_type = &quot;ADT&quot;`. * `send_date` or `sendDate`, the YYYY-MM-DD date the message was sent in the dataset&#x27;s time_zone, from the MSH-7 segment. For example, `send_date &lt; &quot;2017-01-02&quot;`. * `send_time`, the timestamp when the message was sent, using the RFC3339 time format for comparisons, from the MSH-7 segment. For example, `send_time &lt; &quot;2017-01-02T00:00:00-05:00&quot;`. * `send_facility`, the care center that the message came from, from the MSH-4 segment. For example, `send_facility = &quot;ABC&quot;`. * `PatientId(value, type)`, which matches if the message lists a patient having an ID of the given value and type in the PID-2, PID-3, or PID-4 segments. For example, `PatientId(&quot;123456&quot;, &quot;MRN&quot;)`. * `labels.x`, a string value of the label with key `x` as set using the Message.labels map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be used to assert the existence of a label. For example, `labels.&quot;priority&quot;:*`.
         },
       ],
-      &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
-      &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
       &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores. Label keys must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: \p{Ll}\p{Lo}{0,62} Label values are optional, must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63} No more than 64 labels can be associated with a given store.
         &quot;a_key&quot;: &quot;A String&quot;,
       },
@@ -396,12 +395,6 @@ Returns:
         &quot;schema&quot;: { # A schema package contains a set of schemas and type definitions. # Schemas used to parse messages in this store, if schematized parsing is desired.
           &quot;schemas&quot;: [ # Schema configs that are layered based on their VersionSources that match the incoming message. Schema configs present in higher indices override those in lower indices with the same message type and trigger event if their VersionSources all match an incoming message.
             { # Root config message for HL7v2 schema. This contains a schema structure of groups and segments, and filters that determine which messages to apply the schema structure to.
-              &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
-                { # Describes a selector for extracting and matching an MSH field to a value.
-                  &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
-                  &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
-                },
-              ],
               &quot;messageSchemaConfigs&quot;: { # Map from each HL7v2 message type and trigger event pair, such as ADT_A04, to its schema configuration root group.
                 &quot;a_key&quot;: { # An HL7v2 logical group construct.
                   &quot;members&quot;: [ # Nested groups and/or segments.
@@ -415,15 +408,21 @@ Returns:
                     },
                   ],
                   &quot;minOccurs&quot;: 42, # The minimum number of times this group must be present/repeated.
-                  &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
                   &quot;maxOccurs&quot;: 42, # The maximum number of times this group can be repeated. 0 or -1 means unbounded.
                   &quot;name&quot;: &quot;A String&quot;, # The name of this group. For example, &quot;ORDER_DETAIL&quot;.
+                  &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
                 },
               },
+              &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
+                { # Describes a selector for extracting and matching an MSH field to a value.
+                  &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
+                  &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
+                },
+              ],
             },
           ],
-          &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
           &quot;ignoreMinOccurs&quot;: True or False, # Flag to ignore all min_occurs restrictions in the schema. This means that incoming messages can omit any group, segment, field, component, or subcomponent.
+          &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
           &quot;types&quot;: [ # Schema type definitions that are layered based on their VersionSources that match the incoming message. Type definitions present in higher indices override those in lower indices with the same type name if their VersionSources all match an incoming message.
             { # Root config for HL7v2 datatype definitions for a specific HL7v2 version.
               &quot;type&quot;: [ # The HL7v2 type definitions.
@@ -432,9 +431,9 @@ Returns:
                     { # A (sub) field of a type.
                       &quot;minOccurs&quot;: 42, # The minimum number of times this field must be present/repeated.
                       &quot;name&quot;: &quot;A String&quot;, # The name of the field. For example, &quot;PID-1&quot; or just &quot;1&quot;.
-                      &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
-                      &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
                       &quot;maxOccurs&quot;: 42, # The maximum number of times this field can be repeated. 0 or -1 means unbounded.
+                      &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
+                      &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
                     },
                   ],
                   &quot;primitive&quot;: &quot;A String&quot;, # If this is a primitive type then this field is the type of the primitive For example, STRING. Leave unspecified for composite types.
@@ -449,15 +448,16 @@ Returns:
               ],
             },
           ],
-          &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
+          &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
         },
-        &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
         &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is used as segment terminator, matching the HL7 version 2 specification.
+        &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
         &quot;allowNullHeader&quot;: True or False, # Determines whether messages with no header are allowed.
       },
       &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # The notification destination all messages (both Ingest &amp; Create) are published on. Only the message name is sent as part of the notification. If this is unset, no notifications are sent. Supplied by the client.
         &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. PubsubMessage.Data contains the resource name. PubsubMessage.MessageId is the ID of this message. It is guaranteed to be unique within the topic. PubsubMessage.PublishTime is the time at which the message was published. Notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Cloud Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-tos/logging)). If the number of errors exceeds a certain rate, some aren&#x27;t submitted. Note that not all operations trigger notifications, see [Configuring Pub/Sub notifications](https://cloud.google.com/healthcare/docs/how-tos/pubsub) for specific details.
       },
+      &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
     }</pre>
 </div>
 
@@ -477,8 +477,6 @@ Returns:
   An object of the form:
 
     { # An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members` to a single `role`. Members can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** { &quot;bindings&quot;: [ { &quot;role&quot;: &quot;roles/resourcemanager.organizationAdmin&quot;, &quot;members&quot;: [ &quot;user:mike@example.com&quot;, &quot;group:admins@example.com&quot;, &quot;domain:google.com&quot;, &quot;serviceAccount:my-project-id@appspot.gserviceaccount.com&quot; ] }, { &quot;role&quot;: &quot;roles/resourcemanager.organizationViewer&quot;, &quot;members&quot;: [ &quot;user:eve@example.com&quot; ], &quot;condition&quot;: { &quot;title&quot;: &quot;expirable access&quot;, &quot;description&quot;: &quot;Does not grant access after Sep 2020&quot;, &quot;expression&quot;: &quot;request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;)&quot;, } } ], &quot;etag&quot;: &quot;BwWWja0YfJA=&quot;, &quot;version&quot;: 3 } **YAML example:** bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;) - etag: BwWWja0YfJA= - version: 3 For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/).
-    &quot;version&quot;: 42, # Specifies the format of the policy. Valid values are `0`, `1`, and `3`. Requests that specify an invalid value are rejected. Any operation that affects conditional role bindings must specify version `3`. This requirement applies to the following operations: * Getting a policy that includes a conditional role binding * Adding a conditional role binding to a policy * Changing a conditional role binding in a policy * Removing any role binding, with or without a condition, from a policy that includes conditions **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost. If a policy does not include any conditions, operations on that policy may specify any valid version or leave the field unset. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
-    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help prevent simultaneous updates of a policy from overwriting each other. It is strongly suggested that systems make use of the `etag` in the read-modify-write cycle to perform policy updates in order to avoid race conditions: An `etag` is returned in the response to `getIamPolicy`, and systems are expected to put that etag in the request to `setIamPolicy` to ensure that their change will be applied to the same version of the policy. **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost.
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a `condition` that determines how and when the `bindings` are applied. Each of the `bindings` must contain at least one member.
       { # Associates `members` with a `role`.
         &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`. For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
@@ -493,6 +491,8 @@ Returns:
         ],
       },
     ],
+    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help prevent simultaneous updates of a policy from overwriting each other. It is strongly suggested that systems make use of the `etag` in the read-modify-write cycle to perform policy updates in order to avoid race conditions: An `etag` is returned in the response to `getIamPolicy`, and systems are expected to put that etag in the request to `setIamPolicy` to ensure that their change will be applied to the same version of the policy. **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost.
+    &quot;version&quot;: 42, # Specifies the format of the policy. Valid values are `0`, `1`, and `3`. Requests that specify an invalid value are rejected. Any operation that affects conditional role bindings must specify version `3`. This requirement applies to the following operations: * Getting a policy that includes a conditional role binding * Adding a conditional role binding to a policy * Changing a conditional role binding in a policy * Removing any role binding, with or without a condition, from a policy that includes conditions **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost. If a policy does not include any conditions, operations on that policy may specify any valid version or leave the field unset. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
     &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
       { # Specifies the audit configuration for a service. The configuration determines which permission types are logged, and what identities, if any, are exempted from logging. An AuditConfig must have one or more AuditLogConfigs. If there are AuditConfigs for both `allServices` and a specific service, the union of the two AuditConfigs is used for that service: the log_types specified in each AuditConfig are enabled, and the exempted_members in each AuditLogConfig are exempted. Example Policy with multiple AuditConfigs: { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] } For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging, and aliya@example.com from DATA_WRITE logging.
         &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
@@ -537,31 +537,31 @@ Returns:
     &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
+    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
     &quot;metadata&quot;: { # Service-specific metadata associated with the operation. It typically contains progress information and common metadata such as create time. Some services might not provide such metadata. Any method that returns a long-running operation should document the metadata type, if any.
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
     },
     &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). # The error result of the operation in case of failure or cancellation.
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
       &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
       &quot;details&quot;: [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
         {
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
         },
       ],
-      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
     },
-    &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
   }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(parent, filter=None, pageToken=None, pageSize=None, x__xgafv=None)</code>
+    <code class="details" id="list">list(parent, pageToken=None, pageSize=None, filter=None, x__xgafv=None)</code>
   <pre>Lists the HL7v2 stores in the given dataset.
 
 Args:
   parent: string, Name of the dataset. (required)
-  filter: string, Restricts stores returned to those matching a filter. Syntax: https://cloud.google.com/appengine/docs/standard/python/search/query_strings Only filtering on labels is supported. For example, `labels.key=value`.
   pageToken: string, The next_page_token value returned from the previous List request, if any.
   pageSize: integer, Limit on the number of HL7v2 stores to return in a single response. If not specified, 100 is used. May not be larger than 1000.
+  filter: string, Restricts stores returned to those matching a filter. Syntax: https://cloud.google.com/appengine/docs/standard/python/search/query_strings Only filtering on labels is supported. For example, `labels.key=value`.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -571,17 +571,15 @@ Returns:
   An object of the form:
 
     { # Lists the HL7v2 stores in the given dataset.
-    &quot;nextPageToken&quot;: &quot;A String&quot;, # Token to retrieve the next page of results or empty if there are no more results in the list.
     &quot;hl7V2Stores&quot;: [ # The returned HL7v2 stores. Won&#x27;t be more HL7v2 stores than the value of page_size in the request.
       { # Represents an HL7v2 store.
+          &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
           &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to determine whether to publish a message (both Ingest &amp; Create) on the corresponding notification destination. Only the message name is sent as part of the notification. Supplied by the client.
             { # Specifies where and whether to send notifications upon changes to a data store.
               &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. The notification is a `PubsubMessage` with the following fields: * `PubsubMessage.Data` contains the resource name. * `PubsubMessage.MessageId` is the ID of this notification. It is guaranteed to be unique within the topic. * `PubsubMessage.PublishTime` is the time when the message was published. Note that notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging. For more information, see [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging).
               &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is empty, all messages are matched. Syntax: https://cloud.google.com/appengine/docs/standard/python/search/query_strings The following fields and functions are available for filtering: * `message_type`, from the MSH-9.1 field. For example, `NOT message_type = &quot;ADT&quot;`. * `send_date` or `sendDate`, the YYYY-MM-DD date the message was sent in the dataset&#x27;s time_zone, from the MSH-7 segment. For example, `send_date &lt; &quot;2017-01-02&quot;`. * `send_time`, the timestamp when the message was sent, using the RFC3339 time format for comparisons, from the MSH-7 segment. For example, `send_time &lt; &quot;2017-01-02T00:00:00-05:00&quot;`. * `send_facility`, the care center that the message came from, from the MSH-4 segment. For example, `send_facility = &quot;ABC&quot;`. * `PatientId(value, type)`, which matches if the message lists a patient having an ID of the given value and type in the PID-2, PID-3, or PID-4 segments. For example, `PatientId(&quot;123456&quot;, &quot;MRN&quot;)`. * `labels.x`, a string value of the label with key `x` as set using the Message.labels map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be used to assert the existence of a label. For example, `labels.&quot;priority&quot;:*`.
             },
           ],
-          &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
-          &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
           &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores. Label keys must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: \p{Ll}\p{Lo}{0,62} Label values are optional, must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63} No more than 64 labels can be associated with a given store.
             &quot;a_key&quot;: &quot;A String&quot;,
           },
@@ -589,12 +587,6 @@ Returns:
             &quot;schema&quot;: { # A schema package contains a set of schemas and type definitions. # Schemas used to parse messages in this store, if schematized parsing is desired.
               &quot;schemas&quot;: [ # Schema configs that are layered based on their VersionSources that match the incoming message. Schema configs present in higher indices override those in lower indices with the same message type and trigger event if their VersionSources all match an incoming message.
                 { # Root config message for HL7v2 schema. This contains a schema structure of groups and segments, and filters that determine which messages to apply the schema structure to.
-                  &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
-                    { # Describes a selector for extracting and matching an MSH field to a value.
-                      &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
-                      &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
-                    },
-                  ],
                   &quot;messageSchemaConfigs&quot;: { # Map from each HL7v2 message type and trigger event pair, such as ADT_A04, to its schema configuration root group.
                     &quot;a_key&quot;: { # An HL7v2 logical group construct.
                       &quot;members&quot;: [ # Nested groups and/or segments.
@@ -608,15 +600,21 @@ Returns:
                         },
                       ],
                       &quot;minOccurs&quot;: 42, # The minimum number of times this group must be present/repeated.
-                      &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
                       &quot;maxOccurs&quot;: 42, # The maximum number of times this group can be repeated. 0 or -1 means unbounded.
                       &quot;name&quot;: &quot;A String&quot;, # The name of this group. For example, &quot;ORDER_DETAIL&quot;.
+                      &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
                     },
                   },
+                  &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
+                    { # Describes a selector for extracting and matching an MSH field to a value.
+                      &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
+                      &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
+                    },
+                  ],
                 },
               ],
-              &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
               &quot;ignoreMinOccurs&quot;: True or False, # Flag to ignore all min_occurs restrictions in the schema. This means that incoming messages can omit any group, segment, field, component, or subcomponent.
+              &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
               &quot;types&quot;: [ # Schema type definitions that are layered based on their VersionSources that match the incoming message. Type definitions present in higher indices override those in lower indices with the same type name if their VersionSources all match an incoming message.
                 { # Root config for HL7v2 datatype definitions for a specific HL7v2 version.
                   &quot;type&quot;: [ # The HL7v2 type definitions.
@@ -625,9 +623,9 @@ Returns:
                         { # A (sub) field of a type.
                           &quot;minOccurs&quot;: 42, # The minimum number of times this field must be present/repeated.
                           &quot;name&quot;: &quot;A String&quot;, # The name of the field. For example, &quot;PID-1&quot; or just &quot;1&quot;.
-                          &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
-                          &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
                           &quot;maxOccurs&quot;: 42, # The maximum number of times this field can be repeated. 0 or -1 means unbounded.
+                          &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
+                          &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
                         },
                       ],
                       &quot;primitive&quot;: &quot;A String&quot;, # If this is a primitive type then this field is the type of the primitive For example, STRING. Leave unspecified for composite types.
@@ -642,17 +640,19 @@ Returns:
                   ],
                 },
               ],
-              &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
+              &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
             },
-            &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
             &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is used as segment terminator, matching the HL7 version 2 specification.
+            &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
             &quot;allowNullHeader&quot;: True or False, # Determines whether messages with no header are allowed.
           },
           &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # The notification destination all messages (both Ingest &amp; Create) are published on. Only the message name is sent as part of the notification. If this is unset, no notifications are sent. Supplied by the client.
             &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. PubsubMessage.Data contains the resource name. PubsubMessage.MessageId is the ID of this message. It is guaranteed to be unique within the topic. PubsubMessage.PublishTime is the time at which the message was published. Notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Cloud Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-tos/logging)). If the number of errors exceeds a certain rate, some aren&#x27;t submitted. Note that not all operations trigger notifications, see [Configuring Pub/Sub notifications](https://cloud.google.com/healthcare/docs/how-tos/pubsub) for specific details.
           },
+          &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
         },
     ],
+    &quot;nextPageToken&quot;: &quot;A String&quot;, # Token to retrieve the next page of results or empty if there are no more results in the list.
   }</pre>
 </div>
 
@@ -680,14 +680,13 @@ Args:
     The object takes the form of:
 
 { # Represents an HL7v2 store.
+    &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
     &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to determine whether to publish a message (both Ingest &amp; Create) on the corresponding notification destination. Only the message name is sent as part of the notification. Supplied by the client.
       { # Specifies where and whether to send notifications upon changes to a data store.
         &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. The notification is a `PubsubMessage` with the following fields: * `PubsubMessage.Data` contains the resource name. * `PubsubMessage.MessageId` is the ID of this notification. It is guaranteed to be unique within the topic. * `PubsubMessage.PublishTime` is the time when the message was published. Note that notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging. For more information, see [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging).
         &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is empty, all messages are matched. Syntax: https://cloud.google.com/appengine/docs/standard/python/search/query_strings The following fields and functions are available for filtering: * `message_type`, from the MSH-9.1 field. For example, `NOT message_type = &quot;ADT&quot;`. * `send_date` or `sendDate`, the YYYY-MM-DD date the message was sent in the dataset&#x27;s time_zone, from the MSH-7 segment. For example, `send_date &lt; &quot;2017-01-02&quot;`. * `send_time`, the timestamp when the message was sent, using the RFC3339 time format for comparisons, from the MSH-7 segment. For example, `send_time &lt; &quot;2017-01-02T00:00:00-05:00&quot;`. * `send_facility`, the care center that the message came from, from the MSH-4 segment. For example, `send_facility = &quot;ABC&quot;`. * `PatientId(value, type)`, which matches if the message lists a patient having an ID of the given value and type in the PID-2, PID-3, or PID-4 segments. For example, `PatientId(&quot;123456&quot;, &quot;MRN&quot;)`. * `labels.x`, a string value of the label with key `x` as set using the Message.labels map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be used to assert the existence of a label. For example, `labels.&quot;priority&quot;:*`.
       },
     ],
-    &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
-    &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
     &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores. Label keys must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: \p{Ll}\p{Lo}{0,62} Label values are optional, must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63} No more than 64 labels can be associated with a given store.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
@@ -695,12 +694,6 @@ Args:
       &quot;schema&quot;: { # A schema package contains a set of schemas and type definitions. # Schemas used to parse messages in this store, if schematized parsing is desired.
         &quot;schemas&quot;: [ # Schema configs that are layered based on their VersionSources that match the incoming message. Schema configs present in higher indices override those in lower indices with the same message type and trigger event if their VersionSources all match an incoming message.
           { # Root config message for HL7v2 schema. This contains a schema structure of groups and segments, and filters that determine which messages to apply the schema structure to.
-            &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
-              { # Describes a selector for extracting and matching an MSH field to a value.
-                &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
-                &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
-              },
-            ],
             &quot;messageSchemaConfigs&quot;: { # Map from each HL7v2 message type and trigger event pair, such as ADT_A04, to its schema configuration root group.
               &quot;a_key&quot;: { # An HL7v2 logical group construct.
                 &quot;members&quot;: [ # Nested groups and/or segments.
@@ -714,15 +707,21 @@ Args:
                   },
                 ],
                 &quot;minOccurs&quot;: 42, # The minimum number of times this group must be present/repeated.
-                &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
                 &quot;maxOccurs&quot;: 42, # The maximum number of times this group can be repeated. 0 or -1 means unbounded.
                 &quot;name&quot;: &quot;A String&quot;, # The name of this group. For example, &quot;ORDER_DETAIL&quot;.
+                &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
               },
             },
+            &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
+              { # Describes a selector for extracting and matching an MSH field to a value.
+                &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
+                &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
+              },
+            ],
           },
         ],
-        &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
         &quot;ignoreMinOccurs&quot;: True or False, # Flag to ignore all min_occurs restrictions in the schema. This means that incoming messages can omit any group, segment, field, component, or subcomponent.
+        &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
         &quot;types&quot;: [ # Schema type definitions that are layered based on their VersionSources that match the incoming message. Type definitions present in higher indices override those in lower indices with the same type name if their VersionSources all match an incoming message.
           { # Root config for HL7v2 datatype definitions for a specific HL7v2 version.
             &quot;type&quot;: [ # The HL7v2 type definitions.
@@ -731,9 +730,9 @@ Args:
                   { # A (sub) field of a type.
                     &quot;minOccurs&quot;: 42, # The minimum number of times this field must be present/repeated.
                     &quot;name&quot;: &quot;A String&quot;, # The name of the field. For example, &quot;PID-1&quot; or just &quot;1&quot;.
-                    &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
-                    &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
                     &quot;maxOccurs&quot;: 42, # The maximum number of times this field can be repeated. 0 or -1 means unbounded.
+                    &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
+                    &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
                   },
                 ],
                 &quot;primitive&quot;: &quot;A String&quot;, # If this is a primitive type then this field is the type of the primitive For example, STRING. Leave unspecified for composite types.
@@ -748,15 +747,16 @@ Args:
             ],
           },
         ],
-        &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
+        &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
       },
-      &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
       &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is used as segment terminator, matching the HL7 version 2 specification.
+      &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
       &quot;allowNullHeader&quot;: True or False, # Determines whether messages with no header are allowed.
     },
     &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # The notification destination all messages (both Ingest &amp; Create) are published on. Only the message name is sent as part of the notification. If this is unset, no notifications are sent. Supplied by the client.
       &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. PubsubMessage.Data contains the resource name. PubsubMessage.MessageId is the ID of this message. It is guaranteed to be unique within the topic. PubsubMessage.PublishTime is the time at which the message was published. Notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Cloud Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-tos/logging)). If the number of errors exceeds a certain rate, some aren&#x27;t submitted. Note that not all operations trigger notifications, see [Configuring Pub/Sub notifications](https://cloud.google.com/healthcare/docs/how-tos/pubsub) for specific details.
     },
+    &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
   }
 
   updateMask: string, The update mask applies to the resource. For the `FieldMask` definition, see https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#fieldmask
@@ -769,14 +769,13 @@ Returns:
   An object of the form:
 
     { # Represents an HL7v2 store.
+      &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
       &quot;notificationConfigs&quot;: [ # A list of notification configs. Each configuration uses a filter to determine whether to publish a message (both Ingest &amp; Create) on the corresponding notification destination. Only the message name is sent as part of the notification. Supplied by the client.
         { # Specifies where and whether to send notifications upon changes to a data store.
           &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. The notification is a `PubsubMessage` with the following fields: * `PubsubMessage.Data` contains the resource name. * `PubsubMessage.MessageId` is the ID of this notification. It is guaranteed to be unique within the topic. * `PubsubMessage.PublishTime` is the time when the message was published. Note that notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging. For more information, see [Viewing error logs in Cloud Logging](/healthcare/docs/how-tos/logging).
           &quot;filter&quot;: &quot;A String&quot;, # Restricts notifications sent for messages matching a filter. If this is empty, all messages are matched. Syntax: https://cloud.google.com/appengine/docs/standard/python/search/query_strings The following fields and functions are available for filtering: * `message_type`, from the MSH-9.1 field. For example, `NOT message_type = &quot;ADT&quot;`. * `send_date` or `sendDate`, the YYYY-MM-DD date the message was sent in the dataset&#x27;s time_zone, from the MSH-7 segment. For example, `send_date &lt; &quot;2017-01-02&quot;`. * `send_time`, the timestamp when the message was sent, using the RFC3339 time format for comparisons, from the MSH-7 segment. For example, `send_time &lt; &quot;2017-01-02T00:00:00-05:00&quot;`. * `send_facility`, the care center that the message came from, from the MSH-4 segment. For example, `send_facility = &quot;ABC&quot;`. * `PatientId(value, type)`, which matches if the message lists a patient having an ID of the given value and type in the PID-2, PID-3, or PID-4 segments. For example, `PatientId(&quot;123456&quot;, &quot;MRN&quot;)`. * `labels.x`, a string value of the label with key `x` as set using the Message.labels map. For example, `labels.&quot;priority&quot;=&quot;high&quot;`. The operator `:*` can be used to assert the existence of a label. For example, `labels.&quot;priority&quot;:*`.
         },
       ],
-      &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
-      &quot;name&quot;: &quot;A String&quot;, # Resource name of the HL7v2 store, of the form `projects/{project_id}/datasets/{dataset_id}/hl7V2Stores/{hl7v2_store_id}`.
       &quot;labels&quot;: { # User-supplied key-value pairs used to organize HL7v2 stores. Label keys must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: \p{Ll}\p{Lo}{0,62} Label values are optional, must be between 1 and 63 characters long, have a UTF-8 encoding of maximum 128 bytes, and must conform to the following PCRE regular expression: [\p{Ll}\p{Lo}\p{N}_-]{0,63} No more than 64 labels can be associated with a given store.
         &quot;a_key&quot;: &quot;A String&quot;,
       },
@@ -784,12 +783,6 @@ Returns:
         &quot;schema&quot;: { # A schema package contains a set of schemas and type definitions. # Schemas used to parse messages in this store, if schematized parsing is desired.
           &quot;schemas&quot;: [ # Schema configs that are layered based on their VersionSources that match the incoming message. Schema configs present in higher indices override those in lower indices with the same message type and trigger event if their VersionSources all match an incoming message.
             { # Root config message for HL7v2 schema. This contains a schema structure of groups and segments, and filters that determine which messages to apply the schema structure to.
-              &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
-                { # Describes a selector for extracting and matching an MSH field to a value.
-                  &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
-                  &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
-                },
-              ],
               &quot;messageSchemaConfigs&quot;: { # Map from each HL7v2 message type and trigger event pair, such as ADT_A04, to its schema configuration root group.
                 &quot;a_key&quot;: { # An HL7v2 logical group construct.
                   &quot;members&quot;: [ # Nested groups and/or segments.
@@ -803,15 +796,21 @@ Returns:
                     },
                   ],
                   &quot;minOccurs&quot;: 42, # The minimum number of times this group must be present/repeated.
-                  &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
                   &quot;maxOccurs&quot;: 42, # The maximum number of times this group can be repeated. 0 or -1 means unbounded.
                   &quot;name&quot;: &quot;A String&quot;, # The name of this group. For example, &quot;ORDER_DETAIL&quot;.
+                  &quot;choice&quot;: True or False, # True indicates that this is a choice group, meaning that only one of its segments can exist in a given message.
                 },
               },
+              &quot;version&quot;: [ # Each VersionSource is tested and only if they all match is the schema used for the message.
+                { # Describes a selector for extracting and matching an MSH field to a value.
+                  &quot;value&quot;: &quot;A String&quot;, # The value to match with the field. For example, &quot;My Application Name&quot; or &quot;2.3&quot;.
+                  &quot;mshField&quot;: &quot;A String&quot;, # The field to extract from the MSH segment. For example, &quot;3.1&quot; or &quot;18[1].1&quot;.
+                },
+              ],
             },
           ],
-          &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
           &quot;ignoreMinOccurs&quot;: True or False, # Flag to ignore all min_occurs restrictions in the schema. This means that incoming messages can omit any group, segment, field, component, or subcomponent.
+          &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
           &quot;types&quot;: [ # Schema type definitions that are layered based on their VersionSources that match the incoming message. Type definitions present in higher indices override those in lower indices with the same type name if their VersionSources all match an incoming message.
             { # Root config for HL7v2 datatype definitions for a specific HL7v2 version.
               &quot;type&quot;: [ # The HL7v2 type definitions.
@@ -820,9 +819,9 @@ Returns:
                     { # A (sub) field of a type.
                       &quot;minOccurs&quot;: 42, # The minimum number of times this field must be present/repeated.
                       &quot;name&quot;: &quot;A String&quot;, # The name of the field. For example, &quot;PID-1&quot; or just &quot;1&quot;.
-                      &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
-                      &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
                       &quot;maxOccurs&quot;: 42, # The maximum number of times this field can be repeated. 0 or -1 means unbounded.
+                      &quot;table&quot;: &quot;A String&quot;, # The HL7v2 table this field refers to. For example, PID-15 (Patient&#x27;s Primary Language) usually refers to table &quot;0296&quot;.
+                      &quot;type&quot;: &quot;A String&quot;, # The type of this field. A Type with this name must be defined in an Hl7TypesConfig.
                     },
                   ],
                   &quot;primitive&quot;: &quot;A String&quot;, # If this is a primitive type then this field is the type of the primitive For example, STRING. Leave unspecified for composite types.
@@ -837,15 +836,16 @@ Returns:
               ],
             },
           ],
-          &quot;schematizedParsingType&quot;: &quot;A String&quot;, # Determines how messages that fail to parse are handled.
+          &quot;unexpectedSegmentHandling&quot;: &quot;A String&quot;, # Determines how unexpected segments (segments not matched to the schema) are handled.
         },
-        &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
         &quot;segmentTerminator&quot;: &quot;A String&quot;, # Byte(s) to use as the segment terminator. If this is unset, &#x27;\r&#x27; is used as segment terminator, matching the HL7 version 2 specification.
+        &quot;version&quot;: &quot;A String&quot;, # Immutable. Determines the version of the unschematized parser to be used when `schema` is not given. This field is immutable after store creation.
         &quot;allowNullHeader&quot;: True or False, # Determines whether messages with no header are allowed.
       },
       &quot;notificationConfig&quot;: { # Specifies where to send notifications upon changes to a data store. # The notification destination all messages (both Ingest &amp; Create) are published on. Only the message name is sent as part of the notification. If this is unset, no notifications are sent. Supplied by the client.
         &quot;pubsubTopic&quot;: &quot;A String&quot;, # The [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. PubsubMessage.Data contains the resource name. PubsubMessage.MessageId is the ID of this message. It is guaranteed to be unique within the topic. PubsubMessage.PublishTime is the time at which the message was published. Notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. Cloud Healthcare API service account must have publisher permissions on the given Cloud Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail. If a notification can&#x27;t be published to Cloud Pub/Sub, errors are logged to Cloud Logging (see [Viewing logs](/healthcare/docs/how-tos/logging)). If the number of errors exceeds a certain rate, some aren&#x27;t submitted. Note that not all operations trigger notifications, see [Configuring Pub/Sub notifications](https://cloud.google.com/healthcare/docs/how-tos/pubsub) for specific details.
       },
+      &quot;rejectDuplicateMessage&quot;: True or False, # Determines whether to reject duplicate messages. A duplicate message is a message with the same raw bytes as a message that has already been ingested/created in this HL7v2 store. The default value is false, meaning that the store accepts the duplicate messages and it also returns the same ACK message in the IngestMessageResponse as has been returned previously. Note that only one resource is created in the store. When this field is set to true, CreateMessage/IngestMessage requests with a duplicate message will be rejected by the store, and IngestMessageErrorDetail returns a NACK message upon rejection.
     }</pre>
 </div>
 
@@ -859,10 +859,7 @@ Args:
     The object takes the form of:
 
 { # Request message for `SetIamPolicy` method.
-    &quot;updateMask&quot;: &quot;A String&quot;, # OPTIONAL: A FieldMask specifying which fields of the policy to modify. Only the fields in the mask will be modified. If no mask is provided, the following default mask is used: `paths: &quot;bindings, etag&quot;`
     &quot;policy&quot;: { # An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members` to a single `role`. Members can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** { &quot;bindings&quot;: [ { &quot;role&quot;: &quot;roles/resourcemanager.organizationAdmin&quot;, &quot;members&quot;: [ &quot;user:mike@example.com&quot;, &quot;group:admins@example.com&quot;, &quot;domain:google.com&quot;, &quot;serviceAccount:my-project-id@appspot.gserviceaccount.com&quot; ] }, { &quot;role&quot;: &quot;roles/resourcemanager.organizationViewer&quot;, &quot;members&quot;: [ &quot;user:eve@example.com&quot; ], &quot;condition&quot;: { &quot;title&quot;: &quot;expirable access&quot;, &quot;description&quot;: &quot;Does not grant access after Sep 2020&quot;, &quot;expression&quot;: &quot;request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;)&quot;, } } ], &quot;etag&quot;: &quot;BwWWja0YfJA=&quot;, &quot;version&quot;: 3 } **YAML example:** bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;) - etag: BwWWja0YfJA= - version: 3 For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/). # REQUIRED: The complete policy to be applied to the `resource`. The size of the policy is limited to a few 10s of KB. An empty policy is a valid policy but certain Cloud Platform services (such as Projects) might reject them.
-      &quot;version&quot;: 42, # Specifies the format of the policy. Valid values are `0`, `1`, and `3`. Requests that specify an invalid value are rejected. Any operation that affects conditional role bindings must specify version `3`. This requirement applies to the following operations: * Getting a policy that includes a conditional role binding * Adding a conditional role binding to a policy * Changing a conditional role binding in a policy * Removing any role binding, with or without a condition, from a policy that includes conditions **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost. If a policy does not include any conditions, operations on that policy may specify any valid version or leave the field unset. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
-      &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help prevent simultaneous updates of a policy from overwriting each other. It is strongly suggested that systems make use of the `etag` in the read-modify-write cycle to perform policy updates in order to avoid race conditions: An `etag` is returned in the response to `getIamPolicy`, and systems are expected to put that etag in the request to `setIamPolicy` to ensure that their change will be applied to the same version of the policy. **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost.
       &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a `condition` that determines how and when the `bindings` are applied. Each of the `bindings` must contain at least one member.
         { # Associates `members` with a `role`.
           &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`. For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
@@ -877,6 +874,8 @@ Args:
           ],
         },
       ],
+      &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help prevent simultaneous updates of a policy from overwriting each other. It is strongly suggested that systems make use of the `etag` in the read-modify-write cycle to perform policy updates in order to avoid race conditions: An `etag` is returned in the response to `getIamPolicy`, and systems are expected to put that etag in the request to `setIamPolicy` to ensure that their change will be applied to the same version of the policy. **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost.
+      &quot;version&quot;: 42, # Specifies the format of the policy. Valid values are `0`, `1`, and `3`. Requests that specify an invalid value are rejected. Any operation that affects conditional role bindings must specify version `3`. This requirement applies to the following operations: * Getting a policy that includes a conditional role binding * Adding a conditional role binding to a policy * Changing a conditional role binding in a policy * Removing any role binding, with or without a condition, from a policy that includes conditions **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost. If a policy does not include any conditions, operations on that policy may specify any valid version or leave the field unset. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
       &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
         { # Specifies the audit configuration for a service. The configuration determines which permission types are logged, and what identities, if any, are exempted from logging. An AuditConfig must have one or more AuditLogConfigs. If there are AuditConfigs for both `allServices` and a specific service, the union of the two AuditConfigs is used for that service: the log_types specified in each AuditConfig are enabled, and the exempted_members in each AuditLogConfig are exempted. Example Policy with multiple AuditConfigs: { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] } For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging, and aliya@example.com from DATA_WRITE logging.
           &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
@@ -891,6 +890,7 @@ Args:
         },
       ],
     },
+    &quot;updateMask&quot;: &quot;A String&quot;, # OPTIONAL: A FieldMask specifying which fields of the policy to modify. Only the fields in the mask will be modified. If no mask is provided, the following default mask is used: `paths: &quot;bindings, etag&quot;`
   }
 
   x__xgafv: string, V1 error format.
@@ -902,8 +902,6 @@ Returns:
   An object of the form:
 
     { # An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members` to a single `role`. Members can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** { &quot;bindings&quot;: [ { &quot;role&quot;: &quot;roles/resourcemanager.organizationAdmin&quot;, &quot;members&quot;: [ &quot;user:mike@example.com&quot;, &quot;group:admins@example.com&quot;, &quot;domain:google.com&quot;, &quot;serviceAccount:my-project-id@appspot.gserviceaccount.com&quot; ] }, { &quot;role&quot;: &quot;roles/resourcemanager.organizationViewer&quot;, &quot;members&quot;: [ &quot;user:eve@example.com&quot; ], &quot;condition&quot;: { &quot;title&quot;: &quot;expirable access&quot;, &quot;description&quot;: &quot;Does not grant access after Sep 2020&quot;, &quot;expression&quot;: &quot;request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;)&quot;, } } ], &quot;etag&quot;: &quot;BwWWja0YfJA=&quot;, &quot;version&quot;: 3 } **YAML example:** bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;) - etag: BwWWja0YfJA= - version: 3 For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/).
-    &quot;version&quot;: 42, # Specifies the format of the policy. Valid values are `0`, `1`, and `3`. Requests that specify an invalid value are rejected. Any operation that affects conditional role bindings must specify version `3`. This requirement applies to the following operations: * Getting a policy that includes a conditional role binding * Adding a conditional role binding to a policy * Changing a conditional role binding in a policy * Removing any role binding, with or without a condition, from a policy that includes conditions **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost. If a policy does not include any conditions, operations on that policy may specify any valid version or leave the field unset. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
-    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help prevent simultaneous updates of a policy from overwriting each other. It is strongly suggested that systems make use of the `etag` in the read-modify-write cycle to perform policy updates in order to avoid race conditions: An `etag` is returned in the response to `getIamPolicy`, and systems are expected to put that etag in the request to `setIamPolicy` to ensure that their change will be applied to the same version of the policy. **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost.
     &quot;bindings&quot;: [ # Associates a list of `members` to a `role`. Optionally, may specify a `condition` that determines how and when the `bindings` are applied. Each of the `bindings` must contain at least one member.
       { # Associates `members` with a `role`.
         &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to `members`. For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
@@ -918,6 +916,8 @@ Returns:
         ],
       },
     ],
+    &quot;etag&quot;: &quot;A String&quot;, # `etag` is used for optimistic concurrency control as a way to help prevent simultaneous updates of a policy from overwriting each other. It is strongly suggested that systems make use of the `etag` in the read-modify-write cycle to perform policy updates in order to avoid race conditions: An `etag` is returned in the response to `getIamPolicy`, and systems are expected to put that etag in the request to `setIamPolicy` to ensure that their change will be applied to the same version of the policy. **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost.
+    &quot;version&quot;: 42, # Specifies the format of the policy. Valid values are `0`, `1`, and `3`. Requests that specify an invalid value are rejected. Any operation that affects conditional role bindings must specify version `3`. This requirement applies to the following operations: * Getting a policy that includes a conditional role binding * Adding a conditional role binding to a policy * Changing a conditional role binding in a policy * Removing any role binding, with or without a condition, from a policy that includes conditions **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost. If a policy does not include any conditions, operations on that policy may specify any valid version or leave the field unset. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
     &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
       { # Specifies the audit configuration for a service. The configuration determines which permission types are logged, and what identities, if any, are exempted from logging. An AuditConfig must have one or more AuditLogConfigs. If there are AuditConfigs for both `allServices` and a specific service, the union of the two AuditConfigs is used for that service: the log_types specified in each AuditConfig are enabled, and the exempted_members in each AuditLogConfig are exempted. Example Policy with multiple AuditConfigs: { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] } For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging, and aliya@example.com from DATA_WRITE logging.
         &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
