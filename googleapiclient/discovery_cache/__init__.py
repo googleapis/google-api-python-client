@@ -52,7 +52,7 @@ def autodetect():
 
 def get_static_doc(serviceName, version):
     """Retrieves the discovery document from the directory defined in
-    DISCOVERY_DOC_STATIC_DIR corresponding to the uri provided.
+    DISCOVERY_DOC_DIR corresponding to the uri provided.
 
     Args:
         serviceName: string, name of the service.
