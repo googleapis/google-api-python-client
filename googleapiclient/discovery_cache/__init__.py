@@ -50,35 +50,28 @@ def autodetect():
             exc_info=False)
         return None
 
-def get_static_doc(uri):
+def get_static_doc(serviceName, version):
     """Retrieves the discovery document from the directory defined in
     DISCOVERY_DOC_STATIC_DIR corresponding to the uri provided.
 
     Args:
-        uri: string, The URI of the discovery document in the format
-        https://{domain}/discovery/{discoveryVer}/apis/{api}/{apiVersion}/rest
+        serviceName: string, name of the service.
+        version: string, the version of the service.
 
     Returns:
         A string containing the contents of the JSON discovery document,
         otherwise None if the JSON discovery document was not found.
     """
 
-    doc_name = None
     content = None
+    doc_name = "{}.{}.json".format(serviceName, version)
 
-    # Extract the {apiVersion} and {api} from the uri which are the 2nd and 3rd
-    # last parts of the uri respectively.
-    # https://www.googleapis.com/discovery/v1/apis/{api}/{apiVersion}/rest
-    uri_parts = uri.split('/')
-    if len(uri_parts) > 3:
-        doc_name = "{}.{}.json".format(uri_parts[-3], uri_parts[-2])
-
-        try:
-            with open(os.path.join(DISCOVERY_DOC_DIR, doc_name), 'r') as f:
-                content = f.read()
-        except FileNotFoundError:
-            # File does not exist. Nothing to do here.
-            pass
+    try:
+        with open(os.path.join(DISCOVERY_DOC_DIR, doc_name), 'r') as f:
+            content = f.read()
+    except FileNotFoundError:
+        # File does not exist. Nothing to do here.
+        pass
 
     return content
 

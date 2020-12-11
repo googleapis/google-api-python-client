@@ -275,6 +275,8 @@ def build(
                 requested_url,
                 discovery_http,
                 cache_discovery,
+                serviceName,
+                version,
                 cache,
                 developerKey,
                 num_retries=num_retries,
@@ -338,6 +340,8 @@ def _retrieve_discovery_doc(
     url,
     http,
     cache_discovery,
+    serviceName,
+    version,
     cache=None,
     developerKey=None,
     num_retries=1,
@@ -350,6 +354,8 @@ def _retrieve_discovery_doc(
     http: httplib2.Http, An instance of httplib2.Http or something that acts
       like it through which HTTP requests will be made.
     cache_discovery: Boolean, whether or not to cache the discovery doc.
+    serviceName: string, name of the service.
+    version: string, the version of the service.
     cache: googleapiclient.discovery_cache.base.Cache, an optional cache
       object for the discovery documents.
     developerKey: string, Key for controlling API usage, generated
@@ -378,7 +384,7 @@ def _retrieve_discovery_doc(
     # At this point, the discovery document was not found in the cache so
     # we can attempt to retreive the static discovery document from the library.
     if static_discovery:
-        content = discovery_cache.get_static_doc(url)
+        content = discovery_cache.get_static_doc(serviceName, version)
 
     # If the content is None, retrieve the discovery doc from the internet
     # because it is not in the cache or the static doc directory.
