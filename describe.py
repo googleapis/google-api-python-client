@@ -395,6 +395,16 @@ def document_api(name, version, uri):
   """
     try:
         service = build(name, version)
+
+        http = build_http()
+        response, content = http.request(
+            uri or uritemplate.expand(
+                FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
+            )
+        )
+        if 'status' in response:
+            if response['status'] == '404':
+                raise UnknownApiNameOrVersion
     except UnknownApiNameOrVersion as e:
         print("Warning: {} {} found but could not be built.".format(name, version))
         return
@@ -402,12 +412,6 @@ def document_api(name, version, uri):
         print("Warning: {} {} returned {}.".format(name, version, e))
         return
 
-    http = build_http()
-    response, content = http.request(
-        uri or uritemplate.expand(
-            FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
-        )
-    )
     discovery = json.loads(content)
 
     version = safe_version(version)
