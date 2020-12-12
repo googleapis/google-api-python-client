@@ -1151,14 +1151,22 @@ class DiscoveryFromAppEngineCache(unittest.TestCase):
 class DiscoveryFromStaticDocument(unittest.TestCase):
     def test_can_build_from_static_document_when_enabled(self):
         http = HttpMockSequence([({"status": "400"}, "")])
-        drive = build("drive", "v3", http=http, cache_discovery=False, static_discovery=True)
+        drive = build("drive", "v3", http=http, cache_discovery=False,
+                          static_discovery=True)
         self.assertIsNotNone(drive)
         self.assertTrue(hasattr(drive, "files"))
 
     def test_disable_build_from_static_document(self):
         http = HttpMockSequence([({"status": "400"}, "")])
         with self.assertRaises(HttpError):
-            build("drive", "v3", http=http, cache_discovery=False, static_discovery=False)
+            build("drive", "v3", http=http, cache_discovery=False,
+                      static_discovery=False)
+
+    def test_retrieve_from_internet_when_static_doc_does_not_exist(self):
+        http = HttpMockSequence([({"status": "400"}, "")])
+        with self.assertRaises(HttpError):
+            build("doesnotexist", "v3", http=http, cache_discovery=False,
+                      static_discovery=True)
 
 
 class DictCache(Cache):
