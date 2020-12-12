@@ -385,6 +385,8 @@ def _retrieve_discovery_doc(
     # we can attempt to retreive the static discovery document from the library.
     if static_discovery:
         content = discovery_cache.get_static_doc(serviceName, version)
+        if content:
+            return content
 
     # If the content is None, retrieve the discovery doc from the internet
     # because it is not in the cache or the static doc directory.
