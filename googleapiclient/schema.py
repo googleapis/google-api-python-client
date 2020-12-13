@@ -65,6 +65,7 @@ __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
 import copy
 
+from collections import OrderedDict
 from googleapiclient import _helpers as util
 
 
@@ -124,7 +125,7 @@ class Schemas(object):
         comments that conforms to the given schema.
     """
         # Return with trailing comma and newline removed.
-        return self._prettyPrintByName(name, seen=[], dent=1)[:-2]
+        return self._prettyPrintByName(name, seen=[], dent=0)[:-2]
 
     @util.positional(2)
     def _prettyPrintSchema(self, schema, seen=None, dent=0):
@@ -155,7 +156,7 @@ class Schemas(object):
         comments that conforms to the given schema.
     """
         # Return with trailing comma and newline removed.
-        return self._prettyPrintSchema(schema, dent=1)[:-2]
+        return self._prettyPrintSchema(schema, dent=0)[:-2]
 
     def get(self, name, default=None):
         """Get deserialized JSON schema from the schema name.
@@ -253,7 +254,9 @@ class _SchemaToStruct(object):
             self.emitEnd("{", schema.get("description", ""))
             self.indent()
             if "properties" in schema:
-                for pname, pschema in six.iteritems(schema.get("properties", {})):
+                properties = schema.get("properties", {})
+                sorted_properties = OrderedDict(sorted(properties.items()))
+                for pname, pschema in six.iteritems(sorted_properties):
                     self.emitBegin('"%s": ' % pname)
                     self._to_str_impl(pschema)
             elif "additionalProperties" in schema:

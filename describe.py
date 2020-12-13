@@ -234,7 +234,7 @@ def method_params(doc):
             pname = m.group(1)
             desc = m.group(2)
         add_param(pname, desc)
-        parameters = ", ".join(parameters)
+        parameters = ", ".join(sorted(parameters))
     else:
         parameters = ""
     return parameters

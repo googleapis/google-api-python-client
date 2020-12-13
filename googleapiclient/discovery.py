@@ -898,7 +898,9 @@ class ResourceMethodParameters(object):
           comes from the dictionary of methods stored in the 'methods' key in
           the deserialized discovery document.
     """
-        for arg, desc in six.iteritems(method_desc.get("parameters", {})):
+        parameters = method_desc.get("parameters", {})
+        sorted_parameters = OrderedDict(sorted(parameters.items()))
+        for arg, desc in six.iteritems(sorted_parameters):
             param = key2param(arg)
             self.argmap[param] = arg
 
@@ -1137,7 +1139,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     if "body" in all_args:
         args_ordered.append("body")
 
-    for name in all_args:
+    for name in sorted(all_args):
         if name not in args_ordered:
             args_ordered.append(name)
 
@@ -1155,7 +1157,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         paramdoc = paramdesc.get("description", "A parameter")
         if "$ref" in paramdesc:
             docs.append(
-                ("  %s: object, %s%s%s\n    The object takes the" " form of:\n\n%s\n\n")
+                ("  %s: object, %s%s%s\n    The object takes the form of:\n\n%s\n\n")
                 % (
                     arg,
                     paramdoc,
