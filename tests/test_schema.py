@@ -32,20 +32,20 @@ def datafile(filename):
 
 
 LOAD_FEED = """{
-    "items": [
-      {
-        "longVal": 42,
-        "kind": "zoo#loadValue",
-        "enumVal": "A String",
-        "anyVal": "", # Anything will do.
-        "nullVal": None,
-        "stringVal": "A String",
-        "doubleVal": 3.14,
-        "booleanVal": True or False, # True or False.
-      },
-    ],
-    "kind": "zoo#loadFeed",
-  }"""
+  "items": [
+    {
+      "longVal": 42,
+      "kind": "zoo#loadValue",
+      "enumVal": "A String",
+      "anyVal": "", # Anything will do.
+      "nullVal": None,
+      "stringVal": "A String",
+      "doubleVal": 3.14,
+      "booleanVal": True or False, # True or False.
+    },
+  ],
+  "kind": "zoo#loadFeed",
+}"""
 
 
 class SchemasTest(unittest.TestCase):
