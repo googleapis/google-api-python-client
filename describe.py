@@ -215,6 +215,7 @@ def method_params(doc):
             args = doclines[begin + 1 :]
 
         parameters = []
+        sorted_parameters = []
         pname = None
         desc = ""
 
@@ -223,7 +224,11 @@ def method_params(doc):
                 return
             if "(required)" not in desc:
                 pname = pname + "=None"
-            parameters.append(pname)
+                parameters.append(pname)
+            else:
+                # required params should be put straight into sorted_parameters
+                # to maintain order for positional args
+                sorted_parameters.append(pname)
 
         for line in args:
             m = re.search(r"^\s+([a-zA-Z0-9_]+): (.*)", line)
@@ -234,10 +239,11 @@ def method_params(doc):
             pname = m.group(1)
             desc = m.group(2)
         add_param(pname, desc)
-        parameters = ", ".join(sorted(parameters))
+        sorted_parameters.extend(sorted(parameters))
+        sorted_parameters = ", ".join(sorted_parameters)
     else:
-        parameters = ""
-    return parameters
+        sorted_parameters = ""
+    return sorted_parameters
 
 
 def method(name, doc):
