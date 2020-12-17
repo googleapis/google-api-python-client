@@ -19,24 +19,24 @@ It is important to understand the basics of how API authentication and authoriza
 These API calls do not access any private user data. Your application must authenticate itself as an application belonging to your Google Cloud project. This is needed to measure project usage for accounting purposes.
 
 **API key**: To authenticate your application, use an [API key](https://cloud.google.com/docs/authentication/api-keys) for your Google Cloud Console project. Every simple access call your application makes must include this key.
-    
+
 > **Warning**: Keep your API key private. If someone obtains your key, they could use it to consume your quota or incur charges against your Google Cloud project.
-    
+
 ### 2. Authorized API access (OAuth 2.0)
 
 These API calls access private user data. Before you can call them, the user that has access to the private data must grant your application access. Therefore, your application must be authenticated, the user must grant access for your application, and the user must be authenticated in order to grant that access. All of this is accomplished with [OAuth 2.0](https://developers.google.com/identity/protocols/OAuth2) and libraries written for it.
 
 *   **Scope**: Each API defines one or more scopes that declare a set of operations permitted. For example, an API might have read-only and read-write scopes. When your application requests access to user data, the request must include one or more scopes. The user needs to approve the scope of access your application is requesting. A list of accessible OAuth 2.0 scopes can be [found here](https://developers.google.com/identity/protocols/oauth2/scopes).
 *   **Refresh and access tokens**: When a user grants your application access, the OAuth 2.0 authorization server provides your application with refresh and access tokens. These tokens are only valid for the scope requested. Your application uses access tokens to authorize API calls. Access tokens expire, but refresh tokens do not. Your application can use a refresh token to acquire a new access token.
-    
+
     > **Warning**: Keep refresh and access tokens private. If someone obtains your tokens, they could use them to access private user data.
-    
+
 *   **Client ID and client secret**: These strings uniquely identify your application and are used to acquire tokens. They are created for your Google Cloud project on the [API Access pane](https://console.developers.google.com/apis/credentials) of the Google Cloud. There are several types of client IDs, so be sure to get the correct type for your application:
-    
+
     *   Web application client IDs
     *   Installed application client IDs
     *   [Service Account](https://developers.google.com/identity/protocols/OAuth2ServiceAccount) client IDs
-    
+
     > **Warning**: Keep your client secret private. If someone obtains your client secret, they could use it to consume your quota, incur charges against your Google Cloud project, and request access to user data.
 
 ## Building and calling a service
@@ -45,7 +45,7 @@ This section describes how to build an API-specific service object, make calls t
 
 ### Build the service object
 
-Whether you are using simple or authorized API access, you use the [build()](http://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build) function to create a service object. It takes an API name and API version as arguments. You can see the list of all API versions on the [Supported APIs](dyn/index.md) page. The service object is constructed with methods specific to the given API. 
+Whether you are using simple or authorized API access, you use the [build()](http://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build) function to create a service object. It takes an API name and API version as arguments. You can see the list of all API versions on the [Supported APIs](dyn/index.md) page. When `build()` is called, a service object will attempt to be constructed with methods specific to the given API.
 
 `httplib2`, the underlying transport library, makes all connections persistent by default. Use the service object with a context manager or call `close` to avoid leaving sockets open.
 
@@ -62,6 +62,17 @@ service.close()
 from googleapiclient.discovery import build
 
 with build('drive', 'v3') as service:
+    # ...
+```
+
+**Note**: Under the hood, the `build()` function retrieves a discovery artifact in order to construct the service object.  If the `cache_discovery` argument of `build()` is set to `True`, the library will attempt to retrieve the discovery artifact from the legacy cache which is only supported with `oauth2client<4.0`. If the artifact is not available in the legacy cache and the `static_discovery` argument of `build()` is set to `True`, the library will attempt to retieve the discovery artifact from the static copy of the discovery artifacts that are shipped with the library. As a last resort if the discovery artifact is not on disk, the discovery artifact will be retrieved from the internet. The maintainers recommend keeping `static_discovery=True`, which is the default, in order to avoid reliability issues related to transient network errors. The library currently does not detect breaking changes of discovery artifacts, and as a result, user code is not guaranteed to continue to succeed or fail with different versions of `google-api-python-client`. Users can set `static_discovery=False` as workaround if there is an incompatible discovery artifact shipped with the library. In addition, users may roll back the version of `google-api-python-client` if there is a breaking change in a discovery artifact. The maintainers of `google-api-python-client` encourage users to report issues with discovery artifacts so that the discovery artifacts can be corrected.
+
+In the below example, the discovery artifact for `'drive'` version `'v3'` will only be retrieved from the internet if it is not available in the legacy cache and it is not one of the static discovery artifacts shipped with the library.
+
+```python
+from googleapiclient.discovery import build
+
+with build('drive', 'v3', cache_discovery=True, static_discovery=True):
     # ...
 ```
 
