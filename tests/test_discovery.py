@@ -1162,10 +1162,9 @@ class DiscoveryFromStaticDocument(unittest.TestCase):
             build("drive", "v3", http=http, cache_discovery=False,
                       static_discovery=False)
 
-    def test_retrieve_from_internet_when_static_doc_does_not_exist(self):
-        http = HttpMockSequence([({"status": "400"}, "")])
-        with self.assertRaises(HttpError):
-            build("doesnotexist", "v3", http=http, cache_discovery=False,
+    def test_unknown_api_when_static_discovery_true(self):
+        with self.assertRaises(UnknownApiNameOrVersion):
+            build("doesnotexist", "v3", cache_discovery=False,
                       static_discovery=True)
 
 

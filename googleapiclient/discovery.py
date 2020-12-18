@@ -248,8 +248,7 @@ def build(
     num_retries: Integer, number of times to retry discovery with
       randomized exponential backoff in case of intermittent/connection issues.
     static_discovery: Boolean, whether or not to use the static discovery docs
-      included in the package when the discovery doc is not available in the
-      cache.
+      included in the library.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -363,15 +362,12 @@ def _retrieve_discovery_doc(
     num_retries: Integer, number of times to retry discovery with
       randomized exponential backoff in case of intermittent/connection issues.
     static_discovery: Boolean, whether or not to use the static discovery docs
-      included in the package when the discovery doc is not available in the
-      cache.
+      included in the library.
 
   Returns:
     A unicode string representation of the discovery document.
   """
     from . import discovery_cache
-
-    content = None
 
     if cache_discovery:
         if cache is None:
@@ -381,31 +377,30 @@ def _retrieve_discovery_doc(
             if content:
                 return content
 
-    # At this point, the discovery document was not found in the cache so
-    # we can attempt to retreive the static discovery document from the library.
+    # When `static_discovery=True`, use static discovery artifacts included
+    # with the library
     if static_discovery:
         content = discovery_cache.get_static_doc(serviceName, version)
         if content:
             return content
+        else:
+            raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName, version))
 
-    # If the content is None, retrieve the discovery doc from the internet
-    # because it is not in the cache or the static doc directory.
-    if content is None:
-        actual_url = url
-        # REMOTE_ADDR is defined by the CGI spec [RFC3875] as the environment
-        # variable that contains the network address of the client sending the
-        # request. If it exists then add that to the request for the discovery
-        # document to avoid exceeding the quota on discovery requests.
-        if "REMOTE_ADDR" in os.environ:
-            actual_url = _add_query_parameter(url, "userIp", os.environ["REMOTE_ADDR"])
-        if developerKey:
-            actual_url = _add_query_parameter(url, "key", developerKey)
-        logger.debug("URL being requested: GET %s", actual_url)
+    actual_url = url
+    # REMOTE_ADDR is defined by the CGI spec [RFC3875] as the environment
+    # variable that contains the network address of the client sending the
+    # request. If it exists then add that to the request for the discovery
+    # document to avoid exceeding the quota on discovery requests.
+    if "REMOTE_ADDR" in os.environ:
+        actual_url = _add_query_parameter(url, "userIp", os.environ["REMOTE_ADDR"])
+    if developerKey:
+        actual_url = _add_query_parameter(url, "key", developerKey)
+    logger.debug("URL being requested: GET %s", actual_url)
 
-        # Execute this request with retries build into HttpRequest
-        # Note that it will already raise an error if we don't get a 2xx response
-        req = HttpRequest(http, HttpRequest.null_postproc, actual_url)
-        resp, content = req.execute(num_retries=num_retries)
+    # Execute this request with retries build into HttpRequest
+    # Note that it will already raise an error if we don't get a 2xx response
+    req = HttpRequest(http, HttpRequest.null_postproc, actual_url)
+    resp, content = req.execute(num_retries=num_retries)
 
     try:
         content = content.decode("utf-8")

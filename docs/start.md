@@ -65,16 +65,7 @@ with build('drive', 'v3') as service:
     # ...
 ```
 
-**Note**: Under the hood, the `build()` function retrieves a discovery artifact in order to construct the service object.  If the `cache_discovery` argument of `build()` is set to `True`, the library will attempt to retrieve the discovery artifact from the legacy cache which is only supported with `oauth2client<4.0`. If the artifact is not available in the legacy cache and the `static_discovery` argument of `build()` is set to `True`, the library will attempt to retieve the discovery artifact from the static copy of the discovery artifacts that are shipped with the library. As a last resort if the discovery artifact is not on disk, the discovery artifact will be retrieved from the internet. The maintainers recommend keeping `static_discovery=True`, which is the default, in order to avoid reliability issues related to transient network errors. The library currently does not detect breaking changes of discovery artifacts, and as a result, user code is not guaranteed to continue to succeed or fail with different versions of `google-api-python-client`. Users can set `static_discovery=False` as workaround if there is an incompatible discovery artifact shipped with the library. In addition, users may roll back the version of `google-api-python-client` if there is a breaking change in a discovery artifact. The maintainers of `google-api-python-client` encourage users to report issues with discovery artifacts so that the discovery artifacts can be corrected.
-
-In the below example, the discovery artifact for `'drive'` version `'v3'` will only be retrieved from the internet if it is not available in the legacy cache and it is not one of the static discovery artifacts shipped with the library.
-
-```python
-from googleapiclient.discovery import build
-
-with build('drive', 'v3', cache_discovery=True, static_discovery=True):
-    # ...
-```
+**Note**: Under the hood, the `build()` function retrieves a discovery artifact in order to construct the service object.  If the `cache_discovery` argument of `build()` is set to `True`, the library will attempt to retrieve the discovery artifact from the legacy cache which is only supported with `oauth2client<4.0`. If the artifact is not available in the legacy cache and the `static_discovery` argument of `build()` is set to `True`, the library will attempt to retieve the discovery artifact from the static copy of the discovery artifacts that are shipped with the library. The maintainers recommend keeping `static_discovery=True`, which is the default, in order to avoid reliability issues related to transient network errors. The library currently does not detect breaking changes of discovery artifacts, and as a result, user code is not guaranteed to continue to succeed or fail with different versions of `google-api-python-client`. Users can set `static_discovery=False` as workaround if there is an incompatible discovery artifact shipped with the library. In addition, users may roll back the version of `google-api-python-client` if there is a breaking change in a discovery artifact. The maintainers of `google-api-python-client` encourage users to report issues with discovery artifacts so that the discovery artifacts can be corrected.
 
 ### Collections
 
