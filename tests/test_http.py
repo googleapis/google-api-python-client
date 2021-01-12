@@ -174,10 +174,10 @@ class HttpMockWithNonRetriableErrors(object):
             # set errno to a non-retriable value
             try:
                 # For Windows:
-                ex.errno = socket.errno.WSAECONNREFUSED
+                ex.errno = socket.errno.WSAEHOSTUNREACH
             except AttributeError:
                 # For Linux/Mac:
-                ex.errno = socket.errno.ECONNREFUSED
+                ex.errno = socket.errno.EHOSTUNREACH
             # Now raise the correct timeout error.
             raise ex
 

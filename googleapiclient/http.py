@@ -28,9 +28,7 @@ __author__ = "jcgregorio@google.com (Joe Gregorio)"
 from six import BytesIO, StringIO
 from six.moves.urllib.parse import urlparse, urlunparse, quote, unquote
 
-import base64
 import copy
-import gzip
 import httplib2
 import json
 import logging
@@ -38,7 +36,6 @@ import mimetypes
 import os
 import random
 import socket
-import sys
 import time
 import uuid
 
@@ -190,11 +187,16 @@ def _retry_request(
             exception = connection_error
         except socket.error as socket_error:
             # errno's contents differ by platform, so we have to match by name.
+            # Some of these same errors may have been caught above, e.g. ECONNRESET *should* be
+            # raised as a ConnectionError, but some libraries will raise it as a socket.error
+            # with an errno corresponding to ECONNRESET
             if socket.errno.errorcode.get(socket_error.errno) not in {
                 "WSAETIMEDOUT",
                 "ETIMEDOUT",
                 "EPIPE",
                 "ECONNABORTED",
+                "ECONNREFUSED",
+                "ECONNRESET",
             }:
                 raise
             exception = socket_error
