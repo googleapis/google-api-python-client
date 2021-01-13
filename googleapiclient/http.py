@@ -178,14 +178,13 @@ def _retry_request(
         except _ssl_SSLError as ssl_error:
             exception = ssl_error
         except socket.timeout as socket_timeout:
-            # It's important that this be before socket.error as it's a subclass
+            # Needs to be before socket.error as it's a subclass of OSError
             # socket.timeout has no errorcode
             exception = socket_timeout
         except ConnectionError as connection_error:
-            # Needs to be before socket.error as it's a subclass of
-            # OSError (socket.error)
+            # Needs to be before socket.error as it's a subclass of OSError
             exception = connection_error
-        except socket.error as socket_error:
+        except OSError as socket_error:
             # errno's contents differ by platform, so we have to match by name.
             # Some of these same errors may have been caught above, e.g. ECONNRESET *should* be
             # raised as a ConnectionError, but some libraries will raise it as a socket.error
