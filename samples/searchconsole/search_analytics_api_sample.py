@@ -55,7 +55,7 @@ argparser.add_argument('end_date', type=str,
 
 def main(argv):
   service, flags = sample_tools.init(
-      argv, 'searchconsole', 'v1', __doc__, __file__, parents=[argparser],
+      argv, 'webmasters', 'v3', __doc__, __file__, parents=[argparser],
       scope='https://www.googleapis.com/auth/webmasters.readonly')
 
   # First run a query to learn which dates we have data for. You should always
