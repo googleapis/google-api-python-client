@@ -137,7 +137,7 @@ class HttpMockWithErrors(object):
         elif self.num_errors == 4:
             ex = httplib2.ServerNotFoundError()
         elif self.num_errors == 3:
-            ex = socket.error()
+            ex = OSError()
             ex.errno = socket.errno.EPIPE
         elif self.num_errors == 2:
             ex = ssl.SSLError()
@@ -145,14 +145,14 @@ class HttpMockWithErrors(object):
             # Initialize the timeout error code to the platform's error code.
             try:
                 # For Windows:
-                ex = socket.error()
+                ex = OSError()
                 ex.errno = socket.errno.WSAETIMEDOUT
             except AttributeError:
                 # For Linux/Mac:
                 if PY3:
                     ex = socket.timeout()
                 else:
-                    ex = socket.error()
+                    ex = OSError()
                     ex.errno = socket.errno.ETIMEDOUT
 
         self.num_errors -= 1
@@ -170,7 +170,7 @@ class HttpMockWithNonRetriableErrors(object):
             return httplib2.Response(self.success_json), self.success_data
         else:
             self.num_errors -= 1
-            ex = socket.error()
+            ex = OSError()
             # set errno to a non-retriable value
             try:
                 # For Windows:
@@ -943,7 +943,7 @@ class TestHttpRequest(unittest.TestCase):
         )
         request._sleep = lambda _x: 0  # do nothing
         request._rand = lambda: 10
-        with self.assertRaises(socket.error):
+        with self.assertRaises(OSError):
             response = request.execute(num_retries=3)
 
     def test_retry_connection_errors_non_resumable(self):
