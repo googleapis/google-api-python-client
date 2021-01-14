@@ -396,7 +396,7 @@ def document_api(name, version, uri):
   """
     try:
         service = build(name, version)
-        content = googleapiclient.discovery_cache.get_static_doc(name, version)
+        content = get_static_doc(name, version)
     except UnknownApiNameOrVersion as e:
         print("Warning: {} {} found but could not be built.".format(name, version))
         return
