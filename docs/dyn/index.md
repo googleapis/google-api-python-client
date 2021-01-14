@@ -394,7 +394,6 @@
 
 
 ## eventarc
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/eventarc_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/eventarc_v1beta1.html)
 
 
@@ -475,7 +474,6 @@
 
 
 ## gmailpostmastertools
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/gmailpostmastertools_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/gmailpostmastertools_v1beta1.html)
 
 
