@@ -48,7 +48,7 @@ class Mocks(unittest.TestCase):
 
     def test_default_response(self):
         requestBuilder = RequestMockBuilder({})
-        plus = build("plus", "v1", http=self.http, requestBuilder=requestBuilder)
+        plus = build("plus", "v1", http=self.http, requestBuilder=requestBuilder, static_discovery=False)
         activity = plus.activities().get(activityId="tag:blah").execute()
         self.assertEqual({}, activity)
 
@@ -56,7 +56,7 @@ class Mocks(unittest.TestCase):
         requestBuilder = RequestMockBuilder(
             {"plus.activities.get": (None, '{"foo": "bar"}')}
         )
-        plus = build("plus", "v1", http=self.http, requestBuilder=requestBuilder)
+        plus = build("plus", "v1", http=self.http, requestBuilder=requestBuilder, static_discovery=False)
 
         activity = plus.activities().get(activityId="tag:blah").execute()
         self.assertEqual({"foo": "bar"}, activity)
@@ -64,7 +64,7 @@ class Mocks(unittest.TestCase):
     def test_unexpected_call(self):
         requestBuilder = RequestMockBuilder({}, check_unexpected=True)
 
-        plus = build("plus", "v1", http=self.http, requestBuilder=requestBuilder)
+        plus = build("plus", "v1", http=self.http, requestBuilder=requestBuilder, static_discovery=False)
 
         try:
             plus.activities().get(activityId="tag:blah").execute()
@@ -76,7 +76,7 @@ class Mocks(unittest.TestCase):
         requestBuilder = RequestMockBuilder(
             {"zoo.animals.insert": (None, '{"data": {"foo": "bar"}}', None)}
         )
-        zoo = build("zoo", "v1", http=self.zoo_http, requestBuilder=requestBuilder)
+        zoo = build("zoo", "v1", http=self.zoo_http, requestBuilder=requestBuilder, static_discovery=False)
 
         try:
             zoo.animals().insert(body="{}").execute()
@@ -88,7 +88,7 @@ class Mocks(unittest.TestCase):
         requestBuilder = RequestMockBuilder(
             {"zoo.animals.insert": (None, '{"data": {"foo": "bar"}}', "{}")}
         )
-        zoo = build("zoo", "v1", http=self.zoo_http, requestBuilder=requestBuilder)
+        zoo = build("zoo", "v1", http=self.zoo_http, requestBuilder=requestBuilder, static_discovery=False)
 
         try:
             zoo.animals().insert(body="").execute()
@@ -106,7 +106,7 @@ class Mocks(unittest.TestCase):
                 )
             }
         )
-        zoo = build("zoo", "v1", http=self.zoo_http, requestBuilder=requestBuilder)
+        zoo = build("zoo", "v1", http=self.zoo_http, requestBuilder=requestBuilder, static_discovery=False)
 
         try:
             zoo.animals().insert(body='{"data": {"foo": "blah"}}').execute()
@@ -124,7 +124,7 @@ class Mocks(unittest.TestCase):
                 )
             }
         )
-        zoo = build("zoo", "v1", http=self.zoo_http, requestBuilder=requestBuilder)
+        zoo = build("zoo", "v1", http=self.zoo_http, requestBuilder=requestBuilder, static_discovery=False)
 
         activity = zoo.animals().insert(body={"data": {"foo": "bar"}}).execute()
         self.assertEqual({"foo": "bar"}, activity)
@@ -139,7 +139,7 @@ class Mocks(unittest.TestCase):
                 )
             }
         )
-        zoo = build("zoo", "v1", http=self.zoo_http, requestBuilder=requestBuilder)
+        zoo = build("zoo", "v1", http=self.zoo_http, requestBuilder=requestBuilder, static_discovery=False)
 
         activity = zoo.animals().insert(body={"data": {"foo": "bar"}}).execute()
         self.assertEqual({"foo": "bar"}, activity)
@@ -149,7 +149,7 @@ class Mocks(unittest.TestCase):
         requestBuilder = RequestMockBuilder(
             {"plus.activities.list": (errorResponse, b"{}")}
         )
-        plus = build("plus", "v1", http=self.http, requestBuilder=requestBuilder)
+        plus = build("plus", "v1", http=self.http, requestBuilder=requestBuilder, static_discovery=False)
 
         try:
             activity = (

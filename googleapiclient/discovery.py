@@ -193,6 +193,7 @@ def build(
     adc_cert_path=None,
     adc_key_path=None,
     num_retries=1,
+    static_discovery=True,
 ):
     """Construct a Resource for interacting with an API.
 
@@ -246,6 +247,8 @@ def build(
       https://google.aip.dev/auth/4114
     num_retries: Integer, number of times to retry discovery with
       randomized exponential backoff in case of intermittent/connection issues.
+    static_discovery: Boolean, whether or not to use the static discovery docs
+      included in the library.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -271,9 +274,12 @@ def build(
                 requested_url,
                 discovery_http,
                 cache_discovery,
+                serviceName,
+                version,
                 cache,
                 developerKey,
                 num_retries=num_retries,
+                static_discovery=static_discovery,
             )
             service = build_from_document(
                 content,
@@ -330,7 +336,15 @@ def _discovery_service_uri_options(discoveryServiceUrl, version):
 
 
 def _retrieve_discovery_doc(
-    url, http, cache_discovery, cache=None, developerKey=None, num_retries=1
+    url,
+    http,
+    cache_discovery,
+    serviceName,
+    version,
+    cache=None,
+    developerKey=None,
+    num_retries=1,
+    static_discovery=True
 ):
     """Retrieves the discovery_doc from cache or the internet.
 
@@ -339,25 +353,38 @@ def _retrieve_discovery_doc(
     http: httplib2.Http, An instance of httplib2.Http or something that acts
       like it through which HTTP requests will be made.
     cache_discovery: Boolean, whether or not to cache the discovery doc.
+    serviceName: string, name of the service.
+    version: string, the version of the service.
     cache: googleapiclient.discovery_cache.base.Cache, an optional cache
       object for the discovery documents.
     developerKey: string, Key for controlling API usage, generated
       from the API Console.
     num_retries: Integer, number of times to retry discovery with
       randomized exponential backoff in case of intermittent/connection issues.
+    static_discovery: Boolean, whether or not to use the static discovery docs
+      included in the library.
 
   Returns:
     A unicode string representation of the discovery document.
   """
-    if cache_discovery:
-        from . import discovery_cache
+    from . import discovery_cache
 
+    if cache_discovery:
         if cache is None:
             cache = discovery_cache.autodetect()
         if cache:
             content = cache.get(url)
             if content:
                 return content
+
+    # When `static_discovery=True`, use static discovery artifacts included
+    # with the library
+    if static_discovery:
+        content = discovery_cache.get_static_doc(serviceName, version)
+        if content:
+            return content
+        else:
+            raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName, version))
 
     actual_url = url
     # REMOTE_ADDR is defined by the CGI spec [RFC3875] as the environment

@@ -23,7 +23,8 @@ import os
 LOGGER = logging.getLogger(__name__)
 
 DISCOVERY_DOC_MAX_AGE = 60 * 60 * 24  # 1 day
-
+DISCOVERY_DOC_DIR = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), 'documents')
 
 def autodetect():
     """Detects an appropriate cache module and returns it.
@@ -48,3 +49,29 @@ def autodetect():
         LOGGER.info("file_cache is only supported with oauth2client<4.0.0",
             exc_info=False)
         return None
+
+def get_static_doc(serviceName, version):
+    """Retrieves the discovery document from the directory defined in
+    DISCOVERY_DOC_DIR corresponding to the serviceName and version provided.
+
+    Args:
+        serviceName: string, name of the service.
+        version: string, the version of the service.
+
+    Returns:
+        A string containing the contents of the JSON discovery document,
+        otherwise None if the JSON discovery document was not found.
+    """
+
+    content = None
+    doc_name = "{}.{}.json".format(serviceName, version)
+
+    try:
+        with open(os.path.join(DISCOVERY_DOC_DIR, doc_name), 'r') as f:
+            content = f.read()
+    except FileNotFoundError:
+        # File does not exist. Nothing to do here.
+        pass
+
+    return content
+

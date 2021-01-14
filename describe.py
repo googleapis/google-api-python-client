@@ -37,6 +37,7 @@ from googleapiclient.discovery import DISCOVERY_URI
 from googleapiclient.discovery import build
 from googleapiclient.discovery import build_from_document
 from googleapiclient.discovery import UnknownApiNameOrVersion
+from googleapiclient.discovery_cache import get_static_doc
 from googleapiclient.http import build_http
 from googleapiclient.errors import HttpError
 
@@ -395,6 +396,7 @@ def document_api(name, version, uri):
   """
     try:
         service = build(name, version)
+        content = get_static_doc(name, version)
     except UnknownApiNameOrVersion as e:
         print("Warning: {} {} found but could not be built.".format(name, version))
         return
@@ -402,12 +404,6 @@ def document_api(name, version, uri):
         print("Warning: {} {} returned {}.".format(name, version, e))
         return
 
-    http = build_http()
-    response, content = http.request(
-        uri or uritemplate.expand(
-            FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
-        )
-    )
     discovery = json.loads(content)
 
     version = safe_version(version)

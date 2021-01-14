@@ -447,7 +447,7 @@ class Discovery(unittest.TestCase):
 class DiscoveryErrors(unittest.TestCase):
     def test_tests_should_be_run_with_strict_positional_enforcement(self):
         try:
-            plus = build("plus", "v1", None)
+            plus = build("plus", "v1", None, static_discovery=False)
             self.fail("should have raised a TypeError exception over missing http=.")
         except TypeError:
             pass
@@ -455,7 +455,7 @@ class DiscoveryErrors(unittest.TestCase):
     def test_failed_to_parse_discovery_json(self):
         self.http = HttpMock(datafile("malformed.json"), {"status": "200"})
         try:
-            plus = build("plus", "v1", http=self.http, cache_discovery=False)
+            plus = build("plus", "v1", http=self.http, cache_discovery=False, static_discovery=False)
             self.fail("should have raised an exception over malformed JSON.")
         except InvalidJsonError:
             pass
@@ -473,7 +473,7 @@ class DiscoveryErrors(unittest.TestCase):
     def test_credentials_and_http_mutually_exclusive(self):
         http = HttpMock(datafile("plus.json"), {"status": "200"})
         with self.assertRaises(ValueError):
-            build("plus", "v1", http=http, credentials=mock.sentinel.credentials)
+            build("plus", "v1", http=http, credentials=mock.sentinel.credentials, static_discovery=False)
 
     def test_credentials_file_and_http_mutually_exclusive(self):
         http = HttpMock(datafile("plus.json"), {"status": "200"})
@@ -485,6 +485,7 @@ class DiscoveryErrors(unittest.TestCase):
                 client_options=google.api_core.client_options.ClientOptions(
                     credentials_file="credentials.json"
                 ),
+                static_discovery=False,
             )
 
     def test_credentials_and_credentials_file_mutually_exclusive(self):
@@ -496,6 +497,7 @@ class DiscoveryErrors(unittest.TestCase):
                 client_options=google.api_core.client_options.ClientOptions(
                     credentials_file="credentials.json"
                 ),
+                static_discovery=False,
             )
 
 
@@ -912,6 +914,7 @@ class DiscoveryFromHttp(unittest.TestCase):
                 http=http,
                 developerKey=None,
                 discoveryServiceUrl="http://example.com",
+                static_discovery=False,
             )
             self.fail("Should have raised an exception.")
         except HttpError as e:
@@ -930,6 +933,7 @@ class DiscoveryFromHttp(unittest.TestCase):
                 http=http,
                 developerKey=None,
                 discoveryServiceUrl="http://example.com",
+                static_discovery=False,
             )
             self.fail("Should have raised an exception.")
         except HttpError as e:
@@ -948,6 +952,7 @@ class DiscoveryFromHttp(unittest.TestCase):
                 http=http,
                 developerKey="foo",
                 discoveryServiceUrl="http://example.com",
+                static_discovery=False,
             )
             self.fail("Should have raised an exception.")
         except HttpError as e:
@@ -960,7 +965,7 @@ class DiscoveryFromHttp(unittest.TestCase):
                 ({"status": "200"}, read_datafile("zoo.json", "rb")),
             ]
         )
-        zoo = build("zoo", "v1", http=http, cache_discovery=False)
+        zoo = build("zoo", "v1", http=http, cache_discovery=False, static_discovery=False)
         self.assertTrue(hasattr(zoo, "animals"))
 
     def test_api_endpoint_override_from_client_options(self):
@@ -975,7 +980,7 @@ class DiscoveryFromHttp(unittest.TestCase):
             api_endpoint=api_endpoint
         )
         zoo = build(
-            "zoo", "v1", http=http, cache_discovery=False, client_options=options
+            "zoo", "v1", http=http, cache_discovery=False, client_options=options, static_discovery=False
         )
         self.assertEqual(zoo._baseUrl, api_endpoint)
 
@@ -993,12 +998,13 @@ class DiscoveryFromHttp(unittest.TestCase):
             http=http,
             cache_discovery=False,
             client_options={"api_endpoint": api_endpoint},
+            static_discovery=False,
         )
         self.assertEqual(zoo._baseUrl, api_endpoint)
 
     def test_discovery_with_empty_version_uses_v2(self):
         http = HttpMockSequence([({"status": "200"}, read_datafile("zoo.json", "rb")),])
-        build("zoo", version=None, http=http, cache_discovery=False)
+        build("zoo", version=None, http=http, cache_discovery=False, static_discovery=False)
         validate_discovery_requests(self, http, "zoo", None, V2_DISCOVERY_URI)
 
     def test_discovery_with_empty_version_preserves_custom_uri(self):
@@ -1010,12 +1016,13 @@ class DiscoveryFromHttp(unittest.TestCase):
             http=http,
             cache_discovery=False,
             discoveryServiceUrl=custom_discovery_uri,
+            static_discovery=False,
         )
         validate_discovery_requests(self, http, "zoo", None, custom_discovery_uri)
 
     def test_discovery_with_valid_version_uses_v1(self):
         http = HttpMockSequence([({"status": "200"}, read_datafile("zoo.json", "rb")),])
-        build("zoo", version="v123", http=http, cache_discovery=False)
+        build("zoo", version="v123", http=http, cache_discovery=False, static_discovery=False)
         validate_discovery_requests(self, http, "zoo", "v123", V1_DISCOVERY_URI)
 
 
@@ -1029,7 +1036,7 @@ class DiscoveryRetryFromHttp(unittest.TestCase):
         )
         with self.assertRaises(HttpError):
             with mock.patch("time.sleep") as mocked_sleep:
-                build("zoo", "v1", http=http, cache_discovery=False)
+                build("zoo", "v1", http=http, cache_discovery=False, static_discovery=False)
 
         mocked_sleep.assert_called_once()
         # We also want to verify that we stayed with v1 discovery
@@ -1045,7 +1052,7 @@ class DiscoveryRetryFromHttp(unittest.TestCase):
         )
         with self.assertRaises(HttpError):
             with mock.patch("time.sleep") as mocked_sleep:
-                build("zoo", "v1", http=http, cache_discovery=False)
+                build("zoo", "v1", http=http, cache_discovery=False, static_discovery=False)
 
         mocked_sleep.assert_called_once()
         # We also want to verify that we switched to v2 discovery
@@ -1059,7 +1066,7 @@ class DiscoveryRetryFromHttp(unittest.TestCase):
             ]
         )
         with mock.patch("time.sleep") as mocked_sleep:
-            zoo = build("zoo", "v1", http=http, cache_discovery=False)
+            zoo = build("zoo", "v1", http=http, cache_discovery=False, static_discovery=False)
 
         self.assertTrue(hasattr(zoo, "animals"))
         mocked_sleep.assert_called_once()
@@ -1075,7 +1082,7 @@ class DiscoveryRetryFromHttp(unittest.TestCase):
             ]
         )
         with mock.patch("time.sleep") as mocked_sleep:
-            zoo = build("zoo", "v1", http=http, cache_discovery=False)
+            zoo = build("zoo", "v1", http=http, cache_discovery=False, static_discovery=False)
 
         self.assertTrue(hasattr(zoo, "animals"))
         mocked_sleep.assert_called_once()
@@ -1111,7 +1118,7 @@ class DiscoveryFromAppEngineCache(unittest.TestCase):
 
             self.mocked_api.memcache.get.return_value = None
 
-            plus = build("plus", "v1", http=self.http)
+            plus = build("plus", "v1", http=self.http, static_discovery=False)
 
             # memcache.get is called once
             url = "https://www.googleapis.com/discovery/v1/apis/plus/v1/rest"
@@ -1132,7 +1139,7 @@ class DiscoveryFromAppEngineCache(unittest.TestCase):
             # (Otherwise it should through an error)
             self.http = HttpMock(None, {"status": "200"})
 
-            plus = build("plus", "v1", http=self.http)
+            plus = build("plus", "v1", http=self.http, static_discovery=False)
 
             # memcache.get is called twice
             self.mocked_api.memcache.get.assert_has_calls(
@@ -1146,6 +1153,26 @@ class DiscoveryFromAppEngineCache(unittest.TestCase):
             self.mocked_api.memcache.set.assert_called_once_with(
                 url, content, time=DISCOVERY_DOC_MAX_AGE, namespace=namespace
             )
+
+
+class DiscoveryFromStaticDocument(unittest.TestCase):
+    def test_retrieve_from_local_when_static_discovery_true(self):
+        http = HttpMockSequence([({"status": "400"}, "")])
+        drive = build("drive", "v3", http=http, cache_discovery=False,
+                          static_discovery=True)
+        self.assertIsNotNone(drive)
+        self.assertTrue(hasattr(drive, "files"))
+
+    def test_retrieve_from_internet_when_static_discovery_false(self):
+        http = HttpMockSequence([({"status": "400"}, "")])
+        with self.assertRaises(HttpError):
+            build("drive", "v3", http=http, cache_discovery=False,
+                      static_discovery=False)
+
+    def test_unknown_api_when_static_discovery_true(self):
+        with self.assertRaises(UnknownApiNameOrVersion):
+            build("doesnotexist", "v3", cache_discovery=False,
+                      static_discovery=True)
 
 
 class DictCache(Cache):
@@ -1170,7 +1197,7 @@ class DiscoveryFromFileCache(unittest.TestCase):
         ):
             self.http = HttpMock(datafile("plus.json"), {"status": "200"})
 
-            plus = build("plus", "v1", http=self.http)
+            plus = build("plus", "v1", http=self.http, static_discovery=False)
 
             # cache.get is called once
             url = "https://www.googleapis.com/discovery/v1/apis/plus/v1/rest"
@@ -1187,7 +1214,7 @@ class DiscoveryFromFileCache(unittest.TestCase):
             # (Otherwise it should through an error)
             self.http = HttpMock(None, {"status": "200"})
 
-            plus = build("plus", "v1", http=self.http)
+            plus = build("plus", "v1", http=self.http, static_discovery=False)
 
             # cache.get is called twice
             cache.get.assert_has_calls([mock.call(url), mock.call(url)])
@@ -1199,7 +1226,7 @@ class DiscoveryFromFileCache(unittest.TestCase):
 class Discovery(unittest.TestCase):
     def test_method_error_checking(self):
         self.http = HttpMock(datafile("plus.json"), {"status": "200"})
-        plus = build("plus", "v1", http=self.http)
+        plus = build("plus", "v1", http=self.http, static_discovery=False)
 
         # Missing required parameters
         try:
@@ -1242,7 +1269,7 @@ class Discovery(unittest.TestCase):
 
     def test_type_coercion(self):
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=http)
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
 
         request = zoo.query(
             q="foo", i=1.0, n=1.0, b=0, a=[1, 2, 3], o={"a": 1}, e="bar"
@@ -1275,7 +1302,7 @@ class Discovery(unittest.TestCase):
 
     def test_optional_stack_query_parameters(self):
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=http)
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
         request = zoo.query(trace="html", fields="description")
 
         parsed = urlparse(request.uri)
@@ -1285,7 +1312,7 @@ class Discovery(unittest.TestCase):
 
     def test_string_params_value_of_none_get_dropped(self):
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=http)
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
         request = zoo.query(trace=None, fields="description")
 
         parsed = urlparse(request.uri)
@@ -1294,7 +1321,7 @@ class Discovery(unittest.TestCase):
 
     def test_model_added_query_parameters(self):
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=http)
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
         request = zoo.animals().get(name="Lion")
 
         parsed = urlparse(request.uri)
@@ -1304,7 +1331,7 @@ class Discovery(unittest.TestCase):
 
     def test_fallback_to_raw_model(self):
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=http)
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
         request = zoo.animals().getmedia(name="Lion")
 
         parsed = urlparse(request.uri)
@@ -1314,7 +1341,7 @@ class Discovery(unittest.TestCase):
 
     def test_patch(self):
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=http)
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
         request = zoo.animals().patch(name="lion", body='{"description": "foo"}')
 
         self.assertEqual(request.method, "PATCH")
@@ -1322,7 +1349,7 @@ class Discovery(unittest.TestCase):
     def test_batch_request_from_discovery(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
         # zoo defines a batchPath
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
         batch_request = zoo.new_batch_http_request()
         self.assertEqual(
             batch_request._batch_uri, "https://www.googleapis.com/batchZoo"
@@ -1331,7 +1358,7 @@ class Discovery(unittest.TestCase):
     def test_batch_request_from_default(self):
         self.http = HttpMock(datafile("plus.json"), {"status": "200"})
         # plus does not define a batchPath
-        plus = build("plus", "v1", http=self.http, cache_discovery=False)
+        plus = build("plus", "v1", http=self.http, cache_discovery=False, static_discovery=False)
         batch_request = plus.new_batch_http_request()
         self.assertEqual(batch_request._batch_uri, "https://www.googleapis.com/batch")
 
@@ -1343,14 +1370,14 @@ class Discovery(unittest.TestCase):
             ]
         )
         http = tunnel_patch(http)
-        zoo = build("zoo", "v1", http=http, cache_discovery=False)
+        zoo = build("zoo", "v1", http=http, cache_discovery=False, static_discovery=False)
         resp = zoo.animals().patch(name="lion", body='{"description": "foo"}').execute()
 
         self.assertTrue("x-http-method-override" in resp)
 
     def test_plus_resources(self):
         self.http = HttpMock(datafile("plus.json"), {"status": "200"})
-        plus = build("plus", "v1", http=self.http)
+        plus = build("plus", "v1", http=self.http, static_discovery=False)
         self.assertTrue(getattr(plus, "activities"))
         self.assertTrue(getattr(plus, "people"))
 
@@ -1381,7 +1408,7 @@ class Discovery(unittest.TestCase):
         # Zoo should exercise all discovery facets
         # and should also have no future.json file.
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
         self.assertTrue(getattr(zoo, "animals"))
 
         request = zoo.animals().list(name="bat", projection="full")
@@ -1392,7 +1419,7 @@ class Discovery(unittest.TestCase):
 
     def test_nested_resources(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
         self.assertTrue(getattr(zoo, "animals"))
         request = zoo.my().favorites().list(max_results="5")
         parsed = urlparse(request.uri)
@@ -1410,7 +1437,7 @@ class Discovery(unittest.TestCase):
 
     def test_top_level_functions(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
         self.assertTrue(getattr(zoo, "query"))
         request = zoo.query(q="foo")
         parsed = urlparse(request.uri)
@@ -1419,20 +1446,20 @@ class Discovery(unittest.TestCase):
 
     def test_simple_media_uploads(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
         doc = getattr(zoo.animals().insert, "__doc__")
         self.assertTrue("media_body" in doc)
 
     def test_simple_media_upload_no_max_size_provided(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
         request = zoo.animals().crossbreed(media_body=datafile("small.png"))
         self.assertEqual("image/png", request.headers["content-type"])
         self.assertEqual(b"PNG", request.body[1:4])
 
     def test_simple_media_raise_correct_exceptions(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         try:
             zoo.animals().insert(media_body=datafile("smiley.png"))
@@ -1448,7 +1475,7 @@ class Discovery(unittest.TestCase):
 
     def test_simple_media_good_upload(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         request = zoo.animals().insert(media_body=datafile("small.png"))
         self.assertEqual("image/png", request.headers["content-type"])
@@ -1461,7 +1488,7 @@ class Discovery(unittest.TestCase):
 
     def test_simple_media_unknown_mimetype(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         try:
             zoo.animals().insert(media_body=datafile("small-png"))
@@ -1482,7 +1509,7 @@ class Discovery(unittest.TestCase):
 
     def test_multipart_media_raise_correct_exceptions(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         try:
             zoo.animals().insert(media_body=datafile("smiley.png"), body={})
@@ -1496,9 +1523,9 @@ class Discovery(unittest.TestCase):
         except UnacceptableMimeTypeError:
             pass
 
-    def test_multipart_media_good_upload(self):
+    def test_multipart_media_good_upload(self, static_discovery=False):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         request = zoo.animals().insert(media_body=datafile("small.png"), body={})
         self.assertTrue(request.headers["content-type"].startswith("multipart/related"))
@@ -1531,14 +1558,14 @@ class Discovery(unittest.TestCase):
 
     def test_media_capable_method_without_media(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         request = zoo.animals().insert(body={})
         self.assertTrue(request.headers["content-type"], "application/json")
 
     def test_resumable_multipart_media_good_upload(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         media_upload = MediaFileUpload(datafile("small.png"), resumable=True)
         request = zoo.animals().insert(media_body=media_upload, body={})
@@ -1606,7 +1633,7 @@ class Discovery(unittest.TestCase):
     def test_resumable_media_good_upload(self):
         """Not a multipart upload."""
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         media_upload = MediaFileUpload(datafile("small.png"), resumable=True)
         request = zoo.animals().insert(media_body=media_upload, body=None)
@@ -1665,7 +1692,7 @@ class Discovery(unittest.TestCase):
     def test_resumable_media_good_upload_from_execute(self):
         """Not a multipart upload."""
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         media_upload = MediaFileUpload(datafile("small.png"), resumable=True)
         request = zoo.animals().insert(media_body=media_upload, body=None)
@@ -1704,7 +1731,7 @@ class Discovery(unittest.TestCase):
     def test_resumable_media_fail_unknown_response_code_first_request(self):
         """Not a multipart upload."""
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         media_upload = MediaFileUpload(datafile("small.png"), resumable=True)
         request = zoo.animals().insert(media_body=media_upload, body=None)
@@ -1722,7 +1749,7 @@ class Discovery(unittest.TestCase):
     def test_resumable_media_fail_unknown_response_code_subsequent_request(self):
         """Not a multipart upload."""
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         media_upload = MediaFileUpload(datafile("small.png"), resumable=True)
         request = zoo.animals().insert(media_body=media_upload, body=None)
@@ -1764,7 +1791,7 @@ class Discovery(unittest.TestCase):
 
     def test_media_io_base_stream_unlimited_chunksize_resume(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         # Set up a seekable stream and try to upload in single chunk.
         fd = BytesIO(b'01234"56789"')
@@ -1795,7 +1822,7 @@ class Discovery(unittest.TestCase):
 
     def test_media_io_base_stream_chunksize_resume(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         # Set up a seekable stream and try to upload in chunks.
         fd = BytesIO(b"0123456789")
@@ -1827,7 +1854,7 @@ class Discovery(unittest.TestCase):
         )
 
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         # Create an upload that doesn't know the full size of the media.
         class IoBaseUnknownLength(MediaUpload):
@@ -1854,7 +1881,7 @@ class Discovery(unittest.TestCase):
 
     def test_resumable_media_no_streaming_on_unsupported_platforms(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         class IoBaseHasStream(MediaUpload):
             def chunksize(self):
@@ -1907,7 +1934,7 @@ class Discovery(unittest.TestCase):
         )
 
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         fd = BytesIO(b"data goes here")
 
@@ -1931,7 +1958,7 @@ class Discovery(unittest.TestCase):
         )
 
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         # Create an upload that doesn't know the full size of the media.
         fd = BytesIO(b"data goes here")
@@ -1981,7 +2008,7 @@ class Discovery(unittest.TestCase):
         ]
 
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=http)
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
         self.assertEqual(sorted(zoo.__dict__.keys()), sorted_resource_keys)
 
         pickled_zoo = pickle.dumps(zoo)
@@ -2054,7 +2081,7 @@ class Discovery(unittest.TestCase):
         http = credentials.authorize(http)
         self.assertTrue(hasattr(http.request, "credentials"))
 
-        zoo = build("zoo", "v1", http=http)
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
         pickled_zoo = pickle.dumps(zoo)
         new_zoo = pickle.loads(pickled_zoo)
         self.assertEqual(sorted(zoo.__dict__.keys()), sorted(new_zoo.__dict__.keys()))
@@ -2063,7 +2090,7 @@ class Discovery(unittest.TestCase):
 
     def test_resumable_media_upload_no_content(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
+        zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         media_upload = MediaFileUpload(datafile("empty"), resumable=True)
         request = zoo.animals().insert(media_body=media_upload, body=None)
@@ -2134,7 +2161,7 @@ class Next(unittest.TestCase):
 
     def test_next_with_method_with_no_properties(self):
         self.http = HttpMock(datafile("latitude.json"), {"status": "200"})
-        service = build("latitude", "v1", http=self.http)
+        service = build("latitude", "v1", http=self.http, static_discovery=False)
         service.currentLocation().get()
 
     def test_next_nonexistent_with_no_next_page_token(self):
@@ -2156,7 +2183,7 @@ class Next(unittest.TestCase):
 class MediaGet(unittest.TestCase):
     def test_get_media(self):
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=http)
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
         request = zoo.animals().get_media(name="Lion")
 
         parsed = urlparse(request.uri)

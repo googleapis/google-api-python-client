@@ -477,7 +477,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
 class TestMediaIoBaseDownload(unittest.TestCase):
     def setUp(self):
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=http)
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
         self.request = zoo.animals().get_media(name="Lion")
         self.fd = BytesIO()
 
