@@ -85,6 +85,7 @@
 
 
 ## apigateway
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/apigateway_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/apigateway_v1beta.html)
 
 
@@ -105,6 +106,7 @@
 
 
 ## artifactregistry
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/artifactregistry_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/artifactregistry_v1beta1.html)
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/artifactregistry_v1beta2.html)
 
@@ -127,7 +129,6 @@
 
 ## bigqueryreservation
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigqueryreservation_v1.html)
-* [v1alpha2](http://googleapis.github.io/google-api-python-client/docs/dyn/bigqueryreservation_v1alpha2.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigqueryreservation_v1beta1.html)
 
 
@@ -331,6 +332,7 @@
 ## dialogflow
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/dialogflow_v2.html)
 * [v2beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/dialogflow_v2beta1.html)
+* [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/dialogflow_v3.html)
 * [v3beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/dialogflow_v3beta1.html)
 
 
@@ -392,6 +394,7 @@
 
 
 ## eventarc
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/eventarc_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/eventarc_v1beta1.html)
 
 
@@ -472,6 +475,7 @@
 
 
 ## gmailpostmastertools
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/gmailpostmastertools_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/gmailpostmastertools_v1beta1.html)
 
 
@@ -514,9 +518,9 @@
 
 
 ## jobs
-* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v2.html)
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v3.html)
 * [v3p1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v3p1beta1.html)
+* [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v4.html)
 
 
 ## kgsearch
@@ -561,6 +565,11 @@
 
 ## memcache
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/memcache_v1beta2.html)
+
+
+## metastore
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/metastore_v1alpha.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/metastore_v1beta.html)
 
 
 ## ml
@@ -668,6 +677,12 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/reseller_v1.html)
 
 
+## retail
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/retail_v2.html)
+* [v2alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/retail_v2alpha.html)
+* [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/retail_v2beta.html)
+
+
 ## run
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/run_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/run_v1alpha1.html)
@@ -717,6 +732,7 @@
 
 
 ## servicedirectory
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/servicedirectory_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/servicedirectory_v1beta1.html)
 
 
@@ -879,7 +895,6 @@
 
 
 ## youtubeAnalytics
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/youtubeAnalytics_v1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/youtubeAnalytics_v2.html)
 
 
