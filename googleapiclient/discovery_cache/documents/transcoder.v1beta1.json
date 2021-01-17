@@ -1,41 +1,418 @@
 {
-  "mtlsRootUrl": "https://transcoder.mtls.googleapis.com/",
-  "name": "transcoder",
-  "basePath": "",
-  "title": "Transcoder API",
-  "protocol": "rest",
-  "canonicalName": "Transcoder",
+  "ownerDomain": "google.com",
   "version_module": true,
-  "icons": {
-    "x32": "http://www.google.com/images/icons/product/search-32.gif",
-    "x16": "http://www.google.com/images/icons/product/search-16.gif"
-  },
+  "discoveryVersion": "v1",
+  "documentationLink": "https://cloud.google.com/transcoder/docs/",
+  "fullyEncodeReservedExpansion": true,
+  "kind": "discovery#restDescription",
+  "batchPath": "batch",
+  "name": "transcoder",
+  "baseUrl": "https://transcoder.googleapis.com/",
+  "version": "v1beta1",
+  "basePath": "",
   "schemas": {
-    "Job": {
-      "id": "Job",
-      "description": "Transcoding job resource.",
+    "Empty": {
+      "type": "object",
+      "id": "Empty",
+      "properties": {},
+      "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); } The JSON representation for `Empty` is empty JSON object `{}`."
+    },
+    "Denoise": {
+      "id": "Denoise",
+      "type": "object",
+      "description": "Denoise preprocessing configuration.",
       "properties": {
-        "priority": {
+        "strength": {
+          "format": "double",
+          "description": "Set strength of the denoise. Enter a value between 0 and 1. The higher the value, the smoother the image. 0 is no denoising. The default is 0.",
+          "type": "number"
+        },
+        "tune": {
+          "description": "Set the denoiser mode. The default is `\"standard\"`. Supported denoiser modes: - 'standard' - 'grain'",
+          "type": "string"
+        }
+      }
+    },
+    "ListJobsResponse": {
+      "type": "object",
+      "properties": {
+        "nextPageToken": {
+          "description": "The pagination token.",
+          "type": "string"
+        },
+        "jobs": {
+          "items": {
+            "$ref": "Job"
+          },
+          "description": "List of jobs in the specified region.",
+          "type": "array"
+        }
+      },
+      "description": "Response message for `TranscoderService.ListJobs`.",
+      "id": "ListJobsResponse"
+    },
+    "Deblock": {
+      "properties": {
+        "strength": {
+          "format": "double",
+          "type": "number",
+          "description": "Set strength of the deblocker. Enter a value between 0 and 1. The higher the value, the stronger the block removal. 0 is no deblocking. The default is 0."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable deblocker. The default is `false`."
+        }
+      },
+      "id": "Deblock",
+      "type": "object",
+      "description": "Deblock preprocessing configuration."
+    },
+    "Output": {
+      "properties": {
+        "uri": {
+          "description": "URI for the output file(s). For example, `gs://my-bucket/outputs/`. If empty the value is populated from `Job.output_uri`.",
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "description": "Location of output file(s) in a Cloud Storage bucket.",
+      "id": "Output"
+    },
+    "VideoStream": {
+      "properties": {
+        "tune": {
+          "description": "Enforces the specified codec tune. The available options are FFmpeg-compatible. Note that certain values for this field may cause the transcoder to override other fields you set in the `VideoStream` message.",
+          "type": "string"
+        },
+        "vbvSizeBits": {
           "type": "integer",
-          "description": "Specify the priority of the job. Enter a value between 0 and 100, where 0 is the lowest priority and 100 is the highest priority. The default is 0.",
+          "description": "Size of the Video Buffering Verifier (VBV) buffer in bits. Must be greater than zero. The default is equal to `VideoStream.bitrate_bps`.",
           "format": "int32"
         },
-        "inputUri": {
-          "type": "string",
-          "description": "Input only. Specify the `input_uri` to populate empty `uri` fields in each element of `Job.config.inputs` or `JobTemplate.config.inputs` when using template. URI of the media. It must be stored in Cloud Storage. For example, `gs://bucket/inputs/file.mp4`."
+        "widthPixels": {
+          "format": "int32",
+          "type": "integer",
+          "description": "The width of the video in pixels. Must be an even integer. When not specified, the width is adjusted to match the specified height and input aspect ratio. If both are omitted, the input width is used."
         },
-        "progress": {
-          "description": "Output only. Estimated fractional progress, from `0` to `1` for each step. *Note*: This feature is not yet available.",
-          "$ref": "Progress",
+        "allowOpenGop": {
+          "type": "boolean",
+          "description": "Specifies whether an open Group of Pictures (GOP) structure should be allowed or not. The default is `false`."
+        },
+        "vbvFullnessBits": {
+          "format": "int32",
+          "type": "integer",
+          "description": "Initial fullness of the Video Buffering Verifier (VBV) buffer in bits. Must be greater than zero. The default is equal to 90% of `VideoStream.vbv_size_bits`."
+        },
+        "profile": {
+          "description": "Enforces the specified codec profile. The following profiles are supported: * `baseline` * `main` * `high` (default) The available options are FFmpeg-compatible. Note that certain values for this field may cause the transcoder to override other fields you set in the `VideoStream` message.",
+          "type": "string"
+        },
+        "frameRate": {
+          "format": "double",
+          "type": "number",
+          "description": "Required. The target video frame rate in frames per second (FPS). Must be less than or equal to 120. Will default to the input frame rate if larger than the input frame rate. The API will generate an output FPS that is divisible by the input FPS, and smaller or equal to the target FPS. The following table shows the computed video FPS given the target FPS (in parenthesis) and input FPS (in the first column): | | (30) | (60) | (25) | (50) | |--------|--------|--------|------|------| | 240 | Fail | Fail | Fail | Fail | | 120 | 30 | 60 | 20 | 30 | | 100 | 25 | 50 | 20 | 30 | | 50 | 25 | 50 | 20 | 30 | | 60 | 30 | 60 | 20 | 30 | | 59.94 | 29.97 | 59.94 | 20 | 30 | | 48 | 24 | 48 | 20 | 30 | | 30 | 30 | 30 | 20 | 30 | | 25 | 25 | 25 | 20 | 30 | | 24 | 24 | 24 | 20 | 30 | | 23.976 | 23.976 | 23.976 | 20 | 30 | | 15 | 15 | 15 | 20 | 30 | | 12 | 12 | 12 | 20 | 30 | | 10 | 10 | 10 | 20 | 30 |"
+        },
+        "codec": {
+          "type": "string",
+          "description": "Codec type. The following codecs are supported: * `h264` (default) * `h265` * `vp9`"
+        },
+        "preset": {
+          "description": "Enforces the specified codec preset. The default is `veryfast`. The available options are FFmpeg-compatible. Note that certain values for this field may cause the transcoder to override other fields you set in the `VideoStream` message.",
+          "type": "string"
+        },
+        "bPyramid": {
+          "description": "Allow B-pyramid for reference frame selection. This may not be supported on all decoders. The default is `false`.",
+          "type": "boolean"
+        },
+        "entropyCoder": {
+          "type": "string",
+          "description": "The entropy coder to use. The default is `\"cabac\"`. Supported entropy coders: - 'cavlc' - 'cabac'"
+        },
+        "crfLevel": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Target CRF level. Must be between 10 and 36, where 10 is the highest quality and 36 is the most efficient compression. The default is 21."
+        },
+        "gopFrameCount": {
+          "format": "int32",
+          "type": "integer",
+          "description": "Select the GOP size based on the specified frame count. Must be greater than zero."
+        },
+        "pixelFormat": {
+          "type": "string",
+          "description": "Pixel format to use. The default is `\"yuv420p\"`. Supported pixel formats: - 'yuv420p' pixel format. - 'yuv422p' pixel format. - 'yuv444p' pixel format. - 'yuv420p10' 10-bit HDR pixel format. - 'yuv422p10' 10-bit HDR pixel format. - 'yuv444p10' 10-bit HDR pixel format. - 'yuv420p12' 12-bit HDR pixel format. - 'yuv422p12' 12-bit HDR pixel format. - 'yuv444p12' 12-bit HDR pixel format."
+        },
+        "enableTwoPass": {
+          "description": "Use two-pass encoding strategy to achieve better video quality. `VideoStream.rate_control_mode` must be `\"vbr\"`. The default is `false`.",
+          "type": "boolean"
+        },
+        "heightPixels": {
+          "format": "int32",
+          "description": "The height of the video in pixels. Must be an even integer. When not specified, the height is adjusted to match the specified width and input aspect ratio. If both are omitted, the input height is used.",
+          "type": "integer"
+        },
+        "aqStrength": {
+          "description": "Specify the intensity of the adaptive quantizer (AQ). Must be between 0 and 1, where 0 disables the quantizer and 1 maximizes the quantizer. A higher value equals a lower bitrate but smoother image. The default is 0.",
+          "format": "double",
+          "type": "number"
+        },
+        "bitrateBps": {
+          "format": "int32",
+          "type": "integer",
+          "description": "Required. The video bitrate in bits per second. Must be between 1 and 1,000,000,000."
+        },
+        "gopDuration": {
+          "type": "string",
+          "description": "Select the GOP size based on the specified duration. The default is `\"3s\"`.",
+          "format": "google-duration"
+        },
+        "rateControlMode": {
+          "description": "Specify the `rate_control_mode`. The default is `\"vbr\"`. Supported rate control modes: - 'vbr' - variable bitrate - 'crf' - constant rate factor",
+          "type": "string"
+        },
+        "bFrameCount": {
+          "description": "The number of consecutive B-frames. Must be greater than or equal to zero. Must be less than `VideoStream.gop_frame_count` if set. The default is 0.",
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "id": "VideoStream",
+      "type": "object",
+      "description": "Video stream resource."
+    },
+    "ListJobTemplatesResponse": {
+      "type": "object",
+      "id": "ListJobTemplatesResponse",
+      "properties": {
+        "nextPageToken": {
+          "type": "string",
+          "description": "The pagination token."
+        },
+        "jobTemplates": {
+          "description": "List of job templates in the specified region.",
+          "type": "array",
+          "items": {
+            "$ref": "JobTemplate"
+          }
+        }
+      },
+      "description": "Response message for `TranscoderService.ListJobTemplates`."
+    },
+    "JobTemplate": {
+      "description": "Transcoding job template resource.",
+      "properties": {
+        "name": {
+          "description": "The resource name of the job template. Format: `projects/{project}/locations/{location}/jobTemplates/{job_template}`",
+          "type": "string"
+        },
+        "config": {
+          "$ref": "JobConfig",
+          "description": "The configuration for this template."
+        }
+      },
+      "type": "object",
+      "id": "JobTemplate"
+    },
+    "Encryption": {
+      "id": "Encryption",
+      "description": "Encryption settings.",
+      "properties": {
+        "aes128": {
+          "description": "Configuration for AES-128 encryption.",
+          "$ref": "Aes128Encryption"
+        },
+        "mpegCenc": {
+          "description": "Configuration for MPEG Common Encryption (MPEG-CENC).",
+          "$ref": "MpegCommonEncryption"
+        },
+        "sampleAes": {
+          "$ref": "SampleAesEncryption",
+          "description": "Configuration for SAMPLE-AES encryption."
+        },
+        "iv": {
+          "type": "string",
+          "description": "Required. 128 bit Initialization Vector (IV) represented as lowercase hexadecimal digits."
+        },
+        "key": {
+          "description": "Required. 128 bit encryption key represented as lowercase hexadecimal digits.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AudioChannelInput": {
+      "id": "AudioChannelInput",
+      "description": "Identifies which input file, track, and channel should be used.",
+      "type": "object",
+      "properties": {
+        "track": {
+          "description": "Required. The zero-based index of the track in the input file.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "channel": {
+          "description": "Required. The zero-based index of the channel in the input file.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "key": {
+          "type": "string",
+          "description": "Required. The `Input.key` that identifies the input file."
+        },
+        "gainDb": {
+          "description": "Audio volume control in dB. Negative values decrease volume, positive values increase. The default is 0.",
+          "format": "double",
+          "type": "number"
+        }
+      }
+    },
+    "AudioAtom": {
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Required. The `EditAtom.key` that references the atom with audio inputs in the `Job.edit_list`."
+        },
+        "channels": {
+          "items": {
+            "$ref": "AudioChannel"
+          },
+          "type": "array",
+          "description": "List of `Channel`s for this audio stream. for in-depth explanation."
+        }
+      },
+      "id": "AudioAtom",
+      "description": "The mapping for the `Job.edit_list` atoms with audio `EditAtom.inputs`.",
+      "type": "object"
+    },
+    "PreprocessingConfig": {
+      "description": "Preprocessing configurations.",
+      "type": "object",
+      "id": "PreprocessingConfig",
+      "properties": {
+        "crop": {
+          "$ref": "Crop",
+          "description": "Specify the video cropping configuration."
+        },
+        "deblock": {
+          "description": "Deblock preprocessing configuration.",
+          "$ref": "Deblock"
+        },
+        "color": {
+          "$ref": "Color",
+          "description": "Color preprocessing configuration."
+        },
+        "audio": {
+          "description": "Audio preprocessing configuration.",
+          "$ref": "Audio"
+        },
+        "denoise": {
+          "description": "Denoise preprocessing configuration.",
+          "$ref": "Denoise"
+        }
+      }
+    },
+    "Color": {
+      "description": "Color preprocessing configuration.",
+      "id": "Color",
+      "properties": {
+        "brightness": {
+          "format": "double",
+          "description": "Control brightness of the video. Enter a value between -1 and 1, where -1 is minimum brightness and 1 is maximum brightness. 0 is no change. The default is 0.",
+          "type": "number"
+        },
+        "saturation": {
+          "type": "number",
+          "description": "Control color saturation of the video. Enter a value between -1 and 1, where -1 is fully desaturated and 1 is maximum saturation. 0 is no change. The default is 0.",
+          "format": "double"
+        },
+        "contrast": {
+          "format": "double",
+          "description": "Control black and white contrast of the video. Enter a value between -1 and 1, where -1 is minimum contrast and 1 is maximum contrast. 0 is no change. The default is 0.",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "SegmentSettings": {
+      "type": "object",
+      "description": "Segment settings for `\"ts\"`, `\"fmp4\"` and `\"vtt\"`.",
+      "properties": {
+        "segmentDuration": {
+          "format": "google-duration",
+          "description": "Duration of the segments in seconds. The default is `\"6.0s\"`.",
+          "type": "string"
+        },
+        "individualSegments": {
+          "description": "Required. Create an individual segment file. The default is `false`.",
+          "type": "boolean"
+        }
+      },
+      "id": "SegmentSettings"
+    },
+    "Job": {
+      "description": "Transcoding job resource.",
+      "properties": {
+        "failureReason": {
+          "description": "Output only. A description of the reason for the failure. This property is always present when `state` is `FAILED`.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "createTime": {
+          "description": "Output only. The time the job was created.",
+          "type": "string",
+          "format": "google-datetime",
+          "readOnly": true
+        },
+        "ttlAfterCompletionDays": {
+          "type": "integer",
+          "description": "Job time to live value in days, which will be effective after job completion. Job should be deleted automatically after the given TTL. Enter a value between 1 and 90. The default is 30.",
+          "format": "int32"
+        },
+        "name": {
+          "description": "The resource name of the job. Format: `projects/{project}/locations/{location}/jobs/{job}`",
+          "type": "string"
+        },
+        "outputUri": {
+          "description": "Input only. Specify the `output_uri` to populate an empty `Job.config.output.uri` or `JobTemplate.config.output.uri` when using template. URI for the output file(s). For example, `gs://my-bucket/outputs/`.",
+          "type": "string"
+        },
+        "priority": {
+          "format": "int32",
+          "description": "Specify the priority of the job. Enter a value between 0 and 100, where 0 is the lowest priority and 100 is the highest priority. The default is 0.",
+          "type": "integer"
+        },
+        "failureDetails": {
+          "description": "Output only. List of failure details. This property may contain additional information about the failure when `failure_reason` is present. *Note*: This feature is not yet available.",
+          "items": {
+            "$ref": "FailureDetail"
+          },
+          "type": "array",
           "readOnly": true
         },
         "config": {
           "description": "The configuration for this job.",
           "$ref": "JobConfig"
         },
-        "state": {
+        "inputUri": {
           "type": "string",
+          "description": "Input only. Specify the `input_uri` to populate empty `uri` fields in each element of `Job.config.inputs` or `JobTemplate.config.inputs` when using template. URI of the media. It must be stored in Cloud Storage. For example, `gs://bucket/inputs/file.mp4`."
+        },
+        "templateId": {
+          "description": "Input only. Specify the `template_id` to use for populating `Job.config`. The default is `preset/web-hd`. Preset Transcoder templates: - `preset/{preset_id}` - User defined JobTemplate: `{job_template_id}`",
+          "type": "string"
+        },
+        "originUri": {
           "readOnly": true,
+          "$ref": "OriginUri",
+          "description": "Output only. The origin URI. *Note*: This feature is not yet available."
+        },
+        "startTime": {
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string",
+          "description": "Output only. The time the transcoding started."
+        },
+        "state": {
           "enumDescriptions": [
             "The processing state is not specified.",
             "The job is enqueued and will be picked up for processing soon.",
@@ -43,6 +420,7 @@
             "The job has been completed successfully.",
             "The job has failed. For additional information, see `failure_reason` and `failure_details`"
           ],
+          "description": "Output only. The current state of the job.",
           "enum": [
             "PROCESSING_STATE_UNSPECIFIED",
             "PENDING",
@@ -50,292 +428,99 @@
             "SUCCEEDED",
             "FAILED"
           ],
-          "description": "Output only. The current state of the job."
-        },
-        "createTime": {
-          "format": "google-datetime",
-          "readOnly": true,
-          "description": "Output only. The time the job was created.",
-          "type": "string"
-        },
-        "originUri": {
-          "readOnly": true,
-          "description": "Output only. The origin URI. *Note*: This feature is not yet available.",
-          "$ref": "OriginUri"
-        },
-        "outputUri": {
-          "description": "Input only. Specify the `output_uri` to populate an empty `Job.config.output.uri` or `JobTemplate.config.output.uri` when using template. URI for the output file(s). For example, `gs://my-bucket/outputs/`.",
-          "type": "string"
-        },
-        "failureReason": {
-          "readOnly": true,
           "type": "string",
-          "description": "Output only. A description of the reason for the failure. This property is always present when `state` is `FAILED`."
+          "readOnly": true
         },
-        "failureDetails": {
-          "readOnly": true,
-          "description": "Output only. List of failure details. This property may contain additional information about the failure when `failure_reason` is present. *Note*: This feature is not yet available.",
-          "items": {
-            "$ref": "FailureDetail"
-          },
-          "type": "array"
-        },
-        "startTime": {
-          "format": "google-datetime",
-          "type": "string",
-          "readOnly": true,
-          "description": "Output only. The time the transcoding started."
-        },
-        "name": {
-          "description": "The resource name of the job. Format: `projects/{project}/locations/{location}/jobs/{job}`",
-          "type": "string"
-        },
-        "templateId": {
-          "description": "Input only. Specify the `template_id` to use for populating `Job.config`. The default is `preset/web-hd`. Preset Transcoder templates: - `preset/{preset_id}` - User defined JobTemplate: `{job_template_id}`",
-          "type": "string"
+        "progress": {
+          "$ref": "Progress",
+          "description": "Output only. Estimated fractional progress, from `0` to `1` for each step. *Note*: This feature is not yet available.",
+          "readOnly": true
         },
         "endTime": {
-          "type": "string",
-          "format": "google-datetime",
           "readOnly": true,
-          "description": "Output only. The time the transcoding finished."
+          "format": "google-datetime",
+          "description": "Output only. The time the transcoding finished.",
+          "type": "string"
         }
       },
+      "id": "Job",
       "type": "object"
     },
-    "SegmentSettings": {
+    "Input": {
       "type": "object",
-      "id": "SegmentSettings",
       "properties": {
-        "individualSegments": {
-          "type": "boolean",
-          "description": "Required. Create an individual segment file. The default is `false`."
-        },
-        "segmentDuration": {
-          "description": "Duration of the segments in seconds. The default is `\"6.0s\"`.",
+        "uri": {
           "type": "string",
-          "format": "google-duration"
-        }
-      },
-      "description": "Segment settings for `\"ts\"`, `\"fmp4\"` and `\"vtt\"`."
-    },
-    "Color": {
-      "id": "Color",
-      "type": "object",
-      "description": "Color preprocessing configuration.",
-      "properties": {
-        "brightness": {
-          "description": "Control brightness of the video. Enter a value between -1 and 1, where -1 is minimum brightness and 1 is maximum brightness. 0 is no change. The default is 0.",
-          "type": "number",
-          "format": "double"
+          "description": "URI of the media. It must be stored in Cloud Storage. Example `gs://bucket/inputs/file.mp4`. If empty the value will be populated from `Job.input_uri`."
         },
-        "saturation": {
-          "format": "double",
-          "type": "number",
-          "description": "Control color saturation of the video. Enter a value between -1 and 1, where -1 is fully desaturated and 1 is maximum saturation. 0 is no change. The default is 0."
-        },
-        "contrast": {
-          "type": "number",
-          "description": "Control black and white contrast of the video. Enter a value between -1 and 1, where -1 is minimum contrast and 1 is maximum contrast. 0 is no change. The default is 0.",
-          "format": "double"
-        }
-      }
-    },
-    "Crop": {
-      "id": "Crop",
-      "description": "Video cropping configuration.",
-      "type": "object",
-      "properties": {
-        "leftPixels": {
-          "type": "integer",
-          "format": "int32",
-          "description": "The number of pixels to crop from the left. The default is 0."
-        },
-        "topPixels": {
-          "format": "int32",
-          "type": "integer",
-          "description": "The number of pixels to crop from the top. The default is 0."
-        },
-        "rightPixels": {
-          "description": "The number of pixels to crop from the right. The default is 0.",
-          "type": "integer",
-          "format": "int32"
-        },
-        "bottomPixels": {
-          "description": "The number of pixels to crop from the bottom. The default is 0.",
-          "format": "int32",
-          "type": "integer"
-        }
-      }
-    },
-    "AdBreak": {
-      "type": "object",
-      "properties": {
-        "startTimeOffset": {
-          "format": "google-duration",
-          "description": "Start time in seconds for the ad break, relative to the output file timeline. The default is `0s`.",
+        "key": {
+          "description": "A unique key for this input. Must be specified when using advanced mapping and edit lists.",
           "type": "string"
-        }
-      },
-      "description": "Ad break.",
-      "id": "AdBreak"
-    },
-    "JobTemplate": {
-      "id": "JobTemplate",
-      "description": "Transcoding job template resource.",
-      "properties": {
-        "config": {
-          "$ref": "JobConfig",
-          "description": "The configuration for this template."
         },
-        "name": {
-          "description": "The resource name of the job template. Format: `projects/{project}/locations/{location}/jobTemplates/{job_template}`",
-          "type": "string"
+        "preprocessingConfig": {
+          "$ref": "PreprocessingConfig",
+          "description": "Preprocessing configurations."
         }
       },
-      "type": "object"
+      "description": "Input asset.",
+      "id": "Input"
     },
     "TextAtom": {
-      "type": "object",
+      "id": "TextAtom",
       "properties": {
-        "key": {
-          "description": "Required. The `EditAtom.key` that references atom with text inputs in the `Job.edit_list`.",
-          "type": "string"
-        },
         "inputs": {
-          "description": "List of `Job.inputs` that should be embedded in this atom. Only one input is supported.",
           "type": "array",
+          "description": "List of `Job.inputs` that should be embedded in this atom. Only one input is supported.",
           "items": {
             "$ref": "TextInput"
           }
-        }
-      },
-      "id": "TextAtom",
-      "description": "The mapping for the `Job.edit_list` atoms with text `EditAtom.inputs`."
-    },
-    "Progress": {
-      "id": "Progress",
-      "type": "object",
-      "description": "Estimated fractional progress for each step, from `0` to `1`.",
-      "properties": {
-        "notified": {
-          "type": "number",
-          "format": "double",
-          "description": "Estimated fractional progress for `notifying` step."
-        },
-        "analyzed": {
-          "type": "number",
-          "description": "Estimated fractional progress for `analyzing` step.",
-          "format": "double"
-        },
-        "encoded": {
-          "type": "number",
-          "format": "double",
-          "description": "Estimated fractional progress for `encoding` step."
-        },
-        "uploaded": {
-          "format": "double",
-          "description": "Estimated fractional progress for `uploading` step.",
-          "type": "number"
-        }
-      }
-    },
-    "NormalizedCoordinate": {
-      "id": "NormalizedCoordinate",
-      "properties": {
-        "y": {
-          "description": "Normalized y coordinate.",
-          "format": "double",
-          "type": "number"
-        },
-        "x": {
-          "format": "double",
-          "type": "number",
-          "description": "Normalized x coordinate."
-        }
-      },
-      "type": "object",
-      "description": "2D normalized coordinates. Default: `{0.0, 0.0}`"
-    },
-    "PreprocessingConfig": {
-      "id": "PreprocessingConfig",
-      "description": "Preprocessing configurations.",
-      "type": "object",
-      "properties": {
-        "denoise": {
-          "description": "Denoise preprocessing configuration.",
-          "$ref": "Denoise"
-        },
-        "audio": {
-          "$ref": "Audio",
-          "description": "Audio preprocessing configuration."
-        },
-        "color": {
-          "$ref": "Color",
-          "description": "Color preprocessing configuration."
-        },
-        "deblock": {
-          "description": "Deblock preprocessing configuration.",
-          "$ref": "Deblock"
-        },
-        "crop": {
-          "description": "Specify the video cropping configuration.",
-          "$ref": "Crop"
-        }
-      }
-    },
-    "Denoise": {
-      "properties": {
-        "strength": {
-          "format": "double",
-          "type": "number",
-          "description": "Set strength of the denoise. Enter a value between 0 and 1. The higher the value, the smoother the image. 0 is no denoising. The default is 0."
-        },
-        "tune": {
-          "type": "string",
-          "description": "Set the denoiser mode. The default is `\"standard\"`. Supported denoiser modes: - 'standard' - 'grain'"
-        }
-      },
-      "id": "Denoise",
-      "type": "object",
-      "description": "Denoise preprocessing configuration."
-    },
-    "TextInput": {
-      "id": "TextInput",
-      "properties": {
-        "track": {
-          "format": "int32",
-          "type": "integer",
-          "description": "Required. The zero-based index of the track in the input file."
         },
         "key": {
-          "description": "Required. The `Input.key` that identifies the input file.",
-          "type": "string"
+          "type": "string",
+          "description": "Required. The `EditAtom.key` that references atom with text inputs in the `Job.edit_list`."
         }
       },
       "type": "object",
-      "description": "Identifies which input file and track should be used."
+      "description": "The mapping for the `Job.edit_list` atoms with text `EditAtom.inputs`."
+    },
+    "SampleAesEncryption": {
+      "id": "SampleAesEncryption",
+      "description": "Configuration for SAMPLE-AES encryption.",
+      "type": "object",
+      "properties": {
+        "keyUri": {
+          "description": "Required. URI of the key delivery service. This URI is inserted into the M3U8 header.",
+          "type": "string"
+        }
+      }
+    },
+    "Image": {
+      "description": "Overlaid jpeg image.",
+      "id": "Image",
+      "type": "object",
+      "properties": {
+        "alpha": {
+          "format": "double",
+          "description": "Target image opacity. Valid values: `1` (solid, default), `0` (transparent).",
+          "type": "number"
+        },
+        "uri": {
+          "description": "Required. URI of the image in Cloud Storage. For example, `gs://bucket/inputs/image.jpeg`.",
+          "type": "string"
+        },
+        "resolution": {
+          "description": "Normalized image resolution, based on output video resolution. Valid values: `0.0`–`1.0`. To respect the original image aspect ratio, set either `x` or `y` to `0.0`. To use the original image resolution, set both `x` and `y` to `0.0`.",
+          "$ref": "NormalizedCoordinate"
+        }
+      }
     },
     "MuxStream": {
+      "description": "Multiplexing settings for output stream.",
+      "type": "object",
       "properties": {
-        "elementaryStreams": {
-          "description": "List of `ElementaryStream.key`s multiplexed in this stream.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "fileName": {
-          "description": "The name of the generated file. The default is `MuxStream.key` with the extension suffix corresponding to the `MuxStream.container`. Individual segments also have an incremental 10-digit zero-padded suffix starting from 0 before the extension, such as `\"mux_stream0000000123.ts\"`.",
-          "type": "string"
-        },
-        "container": {
-          "description": "The container format. The default is `\"mp4\"` Supported container formats: - 'ts' - 'fmp4'- the corresponding file extension is `\".m4s\"` - 'mp4' - 'vtt'",
-          "type": "string"
-        },
         "encryption": {
-          "$ref": "Encryption",
-          "description": "Encryption settings."
+          "description": "Encryption settings.",
+          "$ref": "Encryption"
         },
         "segmentSettings": {
           "description": "Segment settings for `\"ts\"`, `\"fmp4\"` and `\"vtt\"`.",
@@ -344,152 +529,41 @@
         "key": {
           "description": "A unique key for this multiplexed stream. HLS media manifests will be named `MuxStream.key` with the `\".m3u8\"` extension suffix.",
           "type": "string"
-        }
-      },
-      "id": "MuxStream",
-      "description": "Multiplexing settings for output stream.",
-      "type": "object"
-    },
-    "Deblock": {
-      "type": "object",
-      "id": "Deblock",
-      "description": "Deblock preprocessing configuration.",
-      "properties": {
-        "enabled": {
-          "description": "Enable deblocker. The default is `false`.",
-          "type": "boolean"
-        },
-        "strength": {
-          "format": "double",
-          "type": "number",
-          "description": "Set strength of the deblocker. Enter a value between 0 and 1. The higher the value, the stronger the block removal. 0 is no deblocking. The default is 0."
-        }
-      }
-    },
-    "JobConfig": {
-      "properties": {
-        "inputs": {
-          "type": "array",
-          "description": "List of input assets stored in Cloud Storage.",
-          "items": {
-            "$ref": "Input"
-          }
-        },
-        "spriteSheets": {
-          "type": "array",
-          "description": "List of output sprite sheets.",
-          "items": {
-            "$ref": "SpriteSheet"
-          }
         },
         "elementaryStreams": {
-          "description": "List of elementary streams.",
           "type": "array",
           "items": {
-            "$ref": "ElementaryStream"
-          }
-        },
-        "adBreaks": {
-          "type": "array",
-          "items": {
-            "$ref": "AdBreak"
+            "type": "string"
           },
-          "description": "List of ad breaks. Specifies where to insert ad break tags in the output manifests."
+          "description": "List of `ElementaryStream.key`s multiplexed in this stream."
         },
-        "output": {
-          "$ref": "Output",
-          "description": "Output configuration."
-        },
-        "pubsubDestination": {
-          "description": "Destination on Pub/Sub.",
-          "$ref": "PubsubDestination"
-        },
-        "muxStreams": {
-          "description": "List of multiplexing settings for output streams.",
-          "items": {
-            "$ref": "MuxStream"
-          },
-          "type": "array"
-        },
-        "overlays": {
-          "description": "List of overlays on the output video, in descending Z-order.",
-          "type": "array",
-          "items": {
-            "$ref": "Overlay"
-          }
-        },
-        "editList": {
-          "type": "array",
-          "items": {
-            "$ref": "EditAtom"
-          },
-          "description": "List of `Edit atom`s. Defines the ultimate timeline of the resulting file or manifest."
-        },
-        "manifests": {
-          "description": "List of output manifests.",
-          "items": {
-            "$ref": "Manifest"
-          },
-          "type": "array"
-        }
-      },
-      "type": "object",
-      "description": "Job configuration",
-      "id": "JobConfig"
-    },
-    "MpegCommonEncryption": {
-      "description": "Configuration for MPEG Common Encryption (MPEG-CENC).",
-      "id": "MpegCommonEncryption",
-      "properties": {
-        "scheme": {
-          "description": "Required. Specify the encryption scheme. Supported encryption schemes: - 'cenc' - 'cbcs'",
+        "fileName": {
+          "description": "The name of the generated file. The default is `MuxStream.key` with the extension suffix corresponding to the `MuxStream.container`. Individual segments also have an incremental 10-digit zero-padded suffix starting from 0 before the extension, such as `\"mux_stream0000000123.ts\"`.",
           "type": "string"
         },
-        "keyId": {
+        "container": {
           "type": "string",
-          "description": "Required. 128 bit Key ID represented as lowercase hexadecimal digits for use with common encryption."
+          "description": "The container format. The default is `\"mp4\"` Supported container formats: - 'ts' - 'fmp4'- the corresponding file extension is `\".m4s\"` - 'mp4' - 'vtt'"
         }
       },
-      "type": "object"
-    },
-    "ListJobTemplatesResponse": {
-      "description": "Response message for `TranscoderService.ListJobTemplates`.",
-      "id": "ListJobTemplatesResponse",
-      "type": "object",
-      "properties": {
-        "nextPageToken": {
-          "description": "The pagination token.",
-          "type": "string"
-        },
-        "jobTemplates": {
-          "type": "array",
-          "items": {
-            "$ref": "JobTemplate"
-          },
-          "description": "List of job templates in the specified region."
-        }
-      }
+      "id": "MuxStream"
     },
     "AnimationFade": {
+      "id": "AnimationFade",
       "properties": {
         "fadeType": {
-          "type": "string",
-          "description": "Required. Type of fade animation: `FADE_IN` or `FADE_OUT`.",
           "enum": [
             "FADE_TYPE_UNSPECIFIED",
             "FADE_IN",
             "FADE_OUT"
           ],
+          "description": "Required. Type of fade animation: `FADE_IN` or `FADE_OUT`.",
+          "type": "string",
           "enumDescriptions": [
             "The fade type is not specified.",
             "Fade the overlay object into view.",
             "Fade the overlay object out of view."
           ]
-        },
-        "endTimeOffset": {
-          "description": "The time to end the fade animation, in seconds. Default: `start_time_offset` + 1s",
-          "type": "string",
-          "format": "google-duration"
         },
         "startTimeOffset": {
           "description": "The time to start the fade animation, in seconds. Default: 0",
@@ -497,63 +571,34 @@
           "format": "google-duration"
         },
         "xy": {
-          "$ref": "NormalizedCoordinate",
-          "description": "Normalized coordinates based on output video resolution. Valid values: `0.0`–`1.0`. `xy` is the upper-left coordinate of the overlay object."
-        }
-      },
-      "id": "AnimationFade",
-      "type": "object",
-      "description": "Display overlay object with fade animation."
-    },
-    "AnimationStatic": {
-      "id": "AnimationStatic",
-      "type": "object",
-      "description": "Display static overlay object.",
-      "properties": {
-        "startTimeOffset": {
-          "type": "string",
-          "description": "The time to start displaying the overlay object, in seconds. Default: 0",
-          "format": "google-duration"
+          "description": "Normalized coordinates based on output video resolution. Valid values: `0.0`–`1.0`. `xy` is the upper-left coordinate of the overlay object.",
+          "$ref": "NormalizedCoordinate"
         },
-        "xy": {
-          "$ref": "NormalizedCoordinate",
-          "description": "Normalized coordinates based on output video resolution. Valid values: `0.0`–`1.0`. `xy` is the upper-left coordinate of the overlay object."
-        }
-      }
-    },
-    "AnimationEnd": {
-      "type": "object",
-      "description": "End previous overlay animation from the video. Without AnimationEnd, the overlay object will keep the state of previous animation until the end of the video.",
-      "id": "AnimationEnd",
-      "properties": {
-        "startTimeOffset": {
-          "format": "google-duration",
+        "endTimeOffset": {
           "type": "string",
-          "description": "The time to end overlay object, in seconds. Default: 0"
-        }
-      }
-    },
-    "FailureDetail": {
-      "properties": {
-        "description": {
-          "type": "string",
-          "description": "A description of the failure."
+          "description": "The time to end the fade animation, in seconds. Default: `start_time_offset` + 1s",
+          "format": "google-duration"
         }
       },
-      "description": "Additional information about the reasons for the failure.",
-      "id": "FailureDetail",
+      "description": "Display overlay object with fade animation.",
       "type": "object"
     },
-    "TextStream": {
+    "Aes128Encryption": {
       "type": "object",
+      "description": "Configuration for AES-128 encryption.",
+      "id": "Aes128Encryption",
       "properties": {
-        "mapping": {
-          "type": "array",
-          "description": "The mapping for the `Job.edit_list` atoms with text `EditAtom.inputs`.",
-          "items": {
-            "$ref": "TextAtom"
-          }
-        },
+        "keyUri": {
+          "description": "Required. URI of the key delivery service. This URI is inserted into the M3U8 header.",
+          "type": "string"
+        }
+      }
+    },
+    "TextStream": {
+      "id": "TextStream",
+      "type": "object",
+      "description": "Encoding of a text stream. For example, closed captions or subtitles.",
+      "properties": {
         "languageCode": {
           "type": "string",
           "description": "Required. The BCP-47 language code, such as `\"en-US\"` or `\"sr-Latn\"`. For more information, see https://www.unicode.org/reports/tr35/#Unicode_locale_identifier."
@@ -561,46 +606,216 @@
         "codec": {
           "type": "string",
           "description": "The codec for this text stream. The default is `\"webvtt\"`. Supported text codecs: - 'srt' - 'ttml' - 'cea608' - 'cea708' - 'webvtt'"
+        },
+        "mapping": {
+          "description": "The mapping for the `Job.edit_list` atoms with text `EditAtom.inputs`.",
+          "items": {
+            "$ref": "TextAtom"
+          },
+          "type": "array"
+        }
+      }
+    },
+    "TextInput": {
+      "properties": {
+        "key": {
+          "description": "Required. The `Input.key` that identifies the input file.",
+          "type": "string"
+        },
+        "track": {
+          "type": "integer",
+          "description": "Required. The zero-based index of the track in the input file.",
+          "format": "int32"
         }
       },
-      "description": "Encoding of a text stream. For example, closed captions or subtitles.",
-      "id": "TextStream"
+      "type": "object",
+      "id": "TextInput",
+      "description": "Identifies which input file and track should be used."
+    },
+    "Crop": {
+      "type": "object",
+      "description": "Video cropping configuration for the input video. The cropped input video is scaled to match the output resolution.",
+      "properties": {
+        "bottomPixels": {
+          "format": "int32",
+          "description": "The number of pixels to crop from the bottom. The default is 0.",
+          "type": "integer"
+        },
+        "rightPixels": {
+          "type": "integer",
+          "description": "The number of pixels to crop from the right. The default is 0.",
+          "format": "int32"
+        },
+        "topPixels": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The number of pixels to crop from the top. The default is 0."
+        },
+        "leftPixels": {
+          "description": "The number of pixels to crop from the left. The default is 0.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "id": "Crop"
+    },
+    "Audio": {
+      "properties": {
+        "highBoost": {
+          "type": "boolean",
+          "description": "Enable boosting high frequency components. The default is `false`."
+        },
+        "lowBoost": {
+          "description": "Enable boosting low frequency components. The default is `false`.",
+          "type": "boolean"
+        },
+        "lufs": {
+          "description": "Specify audio loudness normalization in loudness units relative to full scale (LUFS). Enter a value between -24 and 0, where -24 is the Advanced Television Systems Committee (ATSC A/85), -23 is the EU R128 broadcast standard, -19 is the prior standard for online mono audio, -18 is the ReplayGain standard, -16 is the prior standard for stereo audio, -14 is the new online audio standard recommended by Spotify, as well as Amazon Echo, and 0 disables normalization. The default is 0.",
+          "format": "double",
+          "type": "number"
+        }
+      },
+      "description": "Audio preprocessing configuration.",
+      "id": "Audio",
+      "type": "object"
+    },
+    "AnimationStatic": {
+      "properties": {
+        "startTimeOffset": {
+          "format": "google-duration",
+          "description": "The time to start displaying the overlay object, in seconds. Default: 0",
+          "type": "string"
+        },
+        "xy": {
+          "$ref": "NormalizedCoordinate",
+          "description": "Normalized coordinates based on output video resolution. Valid values: `0.0`–`1.0`. `xy` is the upper-left coordinate of the overlay object."
+        }
+      },
+      "type": "object",
+      "description": "Display static overlay object.",
+      "id": "AnimationStatic"
     },
     "Manifest": {
+      "type": "object",
+      "id": "Manifest",
+      "description": "Manifest configuration.",
       "properties": {
+        "fileName": {
+          "type": "string",
+          "description": "The name of the generated file. The default is `\"manifest\"` with the extension suffix corresponding to the `Manifest.type`."
+        },
+        "muxStreams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Required. List of user given `MuxStream.key`s that should appear in this manifest. When `Manifest.type` is `HLS`, a media manifest with name `MuxStream.key` and `.m3u8` extension is generated for each element of the `Manifest.mux_streams`."
+        },
         "type": {
-          "description": "Required. Type of the manifest, can be \"HLS\" or \"DASH\".",
+          "enumDescriptions": [
+            "The manifest type is not specified.",
+            "Create `\"HLS\"` manifest. The corresponding file extension is `\".m3u8\"`.",
+            "Create `\"DASH\"` manifest. The corresponding file extension is `\".mpd\"`."
+          ],
           "enum": [
             "MANIFEST_TYPE_UNSPECIFIED",
             "HLS",
             "DASH"
           ],
-          "type": "string",
-          "enumDescriptions": [
-            "The manifest type is not specified.",
-            "Create `\"HLS\"` manifest. The corresponding file extension is `\".m3u8\"`.",
-            "Create `\"DASH\"` manifest. The corresponding file extension is `\".mpd\"`."
-          ]
+          "description": "Required. Type of the manifest, can be \"HLS\" or \"DASH\".",
+          "type": "string"
+        }
+      }
+    },
+    "Overlay": {
+      "properties": {
+        "image": {
+          "$ref": "Image",
+          "description": "Image overlay."
         },
-        "muxStreams": {
-          "type": "array",
-          "description": "Required. List of user given `MuxStream.key`s that should appear in this manifest. When `Manifest.type` is `HLS`, a media manifest with name `MuxStream.key` and `.m3u8` extension is generated for each element of the `Manifest.mux_streams`.",
+        "animations": {
           "items": {
-            "type": "string"
-          }
-        },
-        "fileName": {
-          "type": "string",
-          "description": "The name of the generated file. The default is `\"manifest\"` with the extension suffix corresponding to the `Manifest.type`."
+            "$ref": "Animation"
+          },
+          "description": "List of Animations. The list should be chronological, without any time overlap.",
+          "type": "array"
         }
       },
+      "description": "Overlay configuration.",
       "type": "object",
-      "description": "Manifest configuration.",
-      "id": "Manifest"
+      "id": "Overlay"
+    },
+    "Animation": {
+      "id": "Animation",
+      "description": "Animation types.",
+      "type": "object",
+      "properties": {
+        "animationEnd": {
+          "$ref": "AnimationEnd",
+          "description": "End previous animation."
+        },
+        "animationStatic": {
+          "description": "Display static overlay object.",
+          "$ref": "AnimationStatic"
+        },
+        "animationFade": {
+          "description": "Display overlay object with fade animation.",
+          "$ref": "AnimationFade"
+        }
+      }
+    },
+    "NormalizedCoordinate": {
+      "description": "2D normalized coordinates. Default: `{0.0, 0.0}`",
+      "id": "NormalizedCoordinate",
+      "type": "object",
+      "properties": {
+        "x": {
+          "description": "Normalized x coordinate.",
+          "type": "number",
+          "format": "double"
+        },
+        "y": {
+          "description": "Normalized y coordinate.",
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "FailureDetail": {
+      "description": "Additional information about the reasons for the failure.",
+      "id": "FailureDetail",
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "A description of the failure."
+        }
+      },
+      "type": "object"
+    },
+    "PubsubDestination": {
+      "description": "A Pub/Sub destination.",
+      "type": "object",
+      "id": "PubsubDestination",
+      "properties": {
+        "topic": {
+          "description": "The name of the Pub/Sub topic to publish job completion notification to. For example: `projects/{project}/topics/{topic}`.",
+          "type": "string"
+        }
+      }
+    },
+    "AdBreak": {
+      "description": "Ad break.",
+      "id": "AdBreak",
+      "properties": {
+        "startTimeOffset": {
+          "description": "Start time in seconds for the ad break, relative to the output file timeline. The default is `0s`.",
+          "format": "google-duration",
+          "type": "string"
+        }
+      },
+      "type": "object"
     },
     "AudioChannel": {
-      "description": "The audio channel.",
-      "type": "object",
       "id": "AudioChannel",
       "properties": {
         "inputs": {
@@ -610,247 +825,82 @@
           },
           "description": "List of `Job.inputs` for this audio channel."
         }
+      },
+      "type": "object",
+      "description": "The audio channel."
+    },
+    "MpegCommonEncryption": {
+      "type": "object",
+      "description": "Configuration for MPEG Common Encryption (MPEG-CENC).",
+      "id": "MpegCommonEncryption",
+      "properties": {
+        "keyId": {
+          "type": "string",
+          "description": "Required. 128 bit Key ID represented as lowercase hexadecimal digits for use with common encryption."
+        },
+        "scheme": {
+          "type": "string",
+          "description": "Required. Specify the encryption scheme. Supported encryption schemes: - 'cenc' - 'cbcs'"
+        }
       }
     },
-    "Image": {
-      "description": "Overlaid jpeg image.",
-      "id": "Image",
+    "SpriteSheet": {
       "properties": {
-        "alpha": {
-          "type": "number",
-          "description": "Target image opacity. Valid values: `1` (solid, default), `0` (transparent).",
-          "format": "double"
-        },
-        "uri": {
-          "description": "Required. URI of the image in Cloud Storage. For example, `gs://bucket/inputs/image.jpeg`.",
-          "type": "string"
-        },
-        "resolution": {
-          "$ref": "NormalizedCoordinate",
-          "description": "Normalized image resolution, based on output video resolution. Valid values: `0.0`–`1.0`. To respect the original image aspect ratio, set either `x` or `y` to `0.0`. To use the original image resolution, set both `x` and `y` to `0.0`."
-        }
-      },
-      "type": "object"
-    },
-    "ListJobsResponse": {
-      "type": "object",
-      "properties": {
-        "jobs": {
-          "type": "array",
-          "description": "List of jobs in the specified region.",
-          "items": {
-            "$ref": "Job"
-          }
-        },
-        "nextPageToken": {
-          "type": "string",
-          "description": "The pagination token."
-        }
-      },
-      "description": "Response message for `TranscoderService.ListJobs`.",
-      "id": "ListJobsResponse"
-    },
-    "VideoStream": {
-      "type": "object",
-      "id": "VideoStream",
-      "properties": {
-        "preset": {
-          "description": "Enforces the specified codec preset. The default is `veryfast`. The available options are FFmpeg-compatible. Note that certain values for this field may cause the transcoder to override other fields you set in the `VideoStream` message.",
-          "type": "string"
-        },
-        "bitrateBps": {
-          "description": "Required. The video bitrate in bits per second. Must be between 1 and 1,000,000,000.",
-          "format": "int32",
-          "type": "integer"
-        },
-        "pixelFormat": {
-          "type": "string",
-          "description": "Pixel format to use. The default is `\"yuv420p\"`. Supported pixel formats: - 'yuv420p' pixel format. - 'yuv422p' pixel format. - 'yuv444p' pixel format. - 'yuv420p10' 10-bit HDR pixel format. - 'yuv422p10' 10-bit HDR pixel format. - 'yuv444p10' 10-bit HDR pixel format. - 'yuv420p12' 12-bit HDR pixel format. - 'yuv422p12' 12-bit HDR pixel format. - 'yuv444p12' 12-bit HDR pixel format."
-        },
-        "gopFrameCount": {
-          "format": "int32",
+        "rowCount": {
           "type": "integer",
-          "description": "Select the GOP size based on the specified frame count. Must be greater than zero."
-        },
-        "profile": {
-          "type": "string",
-          "description": "Enforces the specified codec profile. The following profiles are supported: * `baseline` * `main` * `high` (default) The available options are FFmpeg-compatible. Note that certain values for this field may cause the transcoder to override other fields you set in the `VideoStream` message."
-        },
-        "frameRate": {
-          "format": "double",
-          "type": "number",
-          "description": "Required. The target video frame rate in frames per second (FPS). Must be less than or equal to 120. Will default to the input frame rate if larger than the input frame rate. The API will generate an output FPS that is divisible by the input FPS, and smaller or equal to the target FPS. The following table shows the computed video FPS given the target FPS (in parenthesis) and input FPS (in the first column): | | (30) | (60) | (25) | (50) | |--------|--------|--------|------|------| | 240 | Fail | Fail | Fail | Fail | | 120 | 30 | 60 | 20 | 30 | | 100 | 25 | 50 | 20 | 30 | | 50 | 25 | 50 | 20 | 30 | | 60 | 30 | 60 | 20 | 30 | | 59.94 | 29.97 | 59.94 | 20 | 30 | | 48 | 24 | 48 | 20 | 30 | | 30 | 30 | 30 | 20 | 30 | | 25 | 25 | 25 | 20 | 30 | | 24 | 24 | 24 | 20 | 30 | | 23.976 | 23.976 | 23.976 | 20 | 30 | | 15 | 15 | 15 | 20 | 30 | | 12 | 12 | 12 | 20 | 30 | | 10 | 10 | 10 | 20 | 30 |"
-        },
-        "vbvSizeBits": {
-          "type": "integer",
-          "format": "int32",
-          "description": "Size of the Video Buffering Verifier (VBV) buffer in bits. Must be greater than zero. The default is equal to `VideoStream.bitrate_bps`."
-        },
-        "heightPixels": {
-          "description": "The height of the video in pixels. Must be an even integer. When not specified, the height is adjusted to match the specified width and input aspect ratio. If both are omitted, the input height is used.",
-          "format": "int32",
-          "type": "integer"
-        },
-        "tune": {
-          "description": "Enforces the specified codec tune. The available options are FFmpeg-compatible. Note that certain values for this field may cause the transcoder to override other fields you set in the `VideoStream` message.",
-          "type": "string"
-        },
-        "codec": {
-          "description": "Codec type. The following codecs are supported: * `h264` (default) * `h265` * `vp9`",
-          "type": "string"
-        },
-        "allowOpenGop": {
-          "type": "boolean",
-          "description": "Specifies whether an open Group of Pictures (GOP) structure should be allowed or not. The default is `false`."
-        },
-        "bFrameCount": {
-          "format": "int32",
-          "description": "The number of consecutive B-frames. Must be greater than or equal to zero. Must be less than `VideoStream.gop_frame_count` if set. The default is 0.",
-          "type": "integer"
-        },
-        "rateControlMode": {
-          "type": "string",
-          "description": "Specify the `rate_control_mode`. The default is `\"vbr\"`. Supported rate control modes: - 'vbr' - variable bitrate - 'crf' - constant rate factor"
-        },
-        "widthPixels": {
-          "type": "integer",
-          "description": "The width of the video in pixels. Must be an even integer. When not specified, the width is adjusted to match the specified height and input aspect ratio. If both are omitted, the input width is used.",
+          "description": "The maximum number of rows per sprite sheet. When the sprite sheet is full, a new sprite sheet is created. The default is 0, which indicates no maximum limit.",
           "format": "int32"
         },
-        "enableTwoPass": {
-          "type": "boolean",
-          "description": "Use two-pass encoding strategy to achieve better video quality. `VideoStream.rate_control_mode` must be `\"vbr\"`. The default is `false`."
-        },
-        "entropyCoder": {
-          "type": "string",
-          "description": "The entropy coder to use. The default is `\"cabac\"`. Supported entropy coders: - 'cavlc' - 'cabac'"
-        },
-        "aqStrength": {
-          "format": "double",
-          "description": "Specify the intensity of the adaptive quantizer (AQ). Must be between 0 and 1, where 0 disables the quantizer and 1 maximizes the quantizer. A higher value equals a lower bitrate but smoother image. The default is 0.",
-          "type": "number"
-        },
-        "bPyramid": {
-          "type": "boolean",
-          "description": "Allow B-pyramid for reference frame selection. This may not be supported on all decoders. The default is `false`."
-        },
-        "vbvFullnessBits": {
-          "format": "int32",
-          "type": "integer",
-          "description": "Initial fullness of the Video Buffering Verifier (VBV) buffer in bits. Must be greater than zero. The default is equal to 90% of `VideoStream.vbv_size_bits`."
-        },
-        "gopDuration": {
+        "startTimeOffset": {
+          "description": "Start time in seconds, relative to the output file timeline. Determines the first sprite to pick. The default is `0s`.",
           "format": "google-duration",
-          "type": "string",
-          "description": "Select the GOP size based on the specified duration. The default is `\"3s\"`."
+          "type": "string"
         },
-        "crfLevel": {
+        "interval": {
+          "type": "string",
+          "format": "google-duration",
+          "description": "Starting from `0s`, create sprites at regular intervals. Specify the interval value in seconds."
+        },
+        "spriteWidthPixels": {
           "format": "int32",
-          "description": "Target CRF level. Must be between 10 and 36, where 10 is the highest quality and 36 is the most efficient compression. The default is 21.",
+          "type": "integer",
+          "description": "Required. The width of sprite in pixels. Must be an even integer."
+        },
+        "totalCount": {
+          "format": "int32",
+          "description": "Total number of sprites. Create the specified number of sprites distributed evenly across the timeline of the output media. The default is 100.",
           "type": "integer"
+        },
+        "format": {
+          "description": "Format type. The default is `\"jpeg\"`. Supported formats: - 'jpeg'",
+          "type": "string"
+        },
+        "endTimeOffset": {
+          "format": "google-duration",
+          "description": "End time in seconds, relative to the output file timeline. When `end_time_offset` is not specified, the sprites are generated until the end of the output file.",
+          "type": "string"
+        },
+        "spriteHeightPixels": {
+          "description": "Required. The height of sprite in pixels. Must be an even integer.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "columnCount": {
+          "format": "int32",
+          "description": "The maximum number of sprites per row in a sprite sheet. The default is 0, which indicates no maximum limit.",
+          "type": "integer"
+        },
+        "filePrefix": {
+          "description": "Required. File name prefix for the generated sprite sheets. Each sprite sheet has an incremental 10-digit zero-padded suffix starting from 0 before the extension, such as `\"sprite_sheet0000000123.jpeg\"`.",
+          "type": "string"
         }
       },
-      "description": "Video stream resource."
-    },
-    "Audio": {
+      "description": "Sprite sheet configuration.",
       "type": "object",
-      "properties": {
-        "lowBoost": {
-          "description": "Enable boosting low frequency components. The default is `false`.",
-          "type": "boolean"
-        },
-        "lufs": {
-          "description": "Specify audio loudness normalization in loudness units relative to full scale (LUFS). Enter a value between -24 and 0, where -24 is the Advanced Television Systems Committee (ATSC A/85), -23 is the EU R128 broadcast standard, -19 is the prior standard for online mono audio, -18 is the ReplayGain standard, -16 is the prior standard for stereo audio, -14 is the new online audio standard recommended by Spotify, as well as Amazon Echo, and 0 disables normalization. The default is 0.",
-          "format": "double",
-          "type": "number"
-        },
-        "highBoost": {
-          "description": "Enable boosting high frequency components. The default is `false`.",
-          "type": "boolean"
-        }
-      },
-      "description": "Audio preprocessing configuration.",
-      "id": "Audio"
-    },
-    "AudioStream": {
-      "description": "Audio stream resource.",
-      "id": "AudioStream",
-      "type": "object",
-      "properties": {
-        "channelCount": {
-          "description": "Number of audio channels. Must be between 1 and 6. The default is 2.",
-          "type": "integer",
-          "format": "int32"
-        },
-        "bitrateBps": {
-          "type": "integer",
-          "format": "int32",
-          "description": "Required. Audio bitrate in bits per second. Must be between 1 and 10,000,000."
-        },
-        "mapping": {
-          "type": "array",
-          "items": {
-            "$ref": "AudioAtom"
-          },
-          "description": "The mapping for the `Job.edit_list` atoms with audio `EditAtom.inputs`."
-        },
-        "channelLayout": {
-          "type": "array",
-          "description": "A list of channel names specifying layout of the audio channels. This only affects the metadata embedded in the container headers, if supported by the specified format. The default is `[\"fl\", \"fr\"]`. Supported channel names: - 'fl' - Front left channel - 'fr' - Front right channel - 'sl' - Side left channel - 'sr' - Side right channel - 'fc' - Front center channel - 'lfe' - Low frequency",
-          "items": {
-            "type": "string"
-          }
-        },
-        "sampleRateHertz": {
-          "format": "int32",
-          "description": "The audio sample rate in Hertz. The default is 48000 Hertz.",
-          "type": "integer"
-        },
-        "codec": {
-          "type": "string",
-          "description": "The codec for this audio stream. The default is `\"aac\"`. Supported audio codecs: - 'aac' - 'aac-he' - 'aac-he-v2' - 'mp3' - 'ac3' - 'eac3'"
-        }
-      }
-    },
-    "AudioChannelInput": {
-      "id": "AudioChannelInput",
-      "type": "object",
-      "description": "Identifies which input file, track, and channel should be used.",
-      "properties": {
-        "channel": {
-          "description": "Required. The zero-based index of the channel in the input file.",
-          "format": "int32",
-          "type": "integer"
-        },
-        "gainDb": {
-          "description": "Audio volume control in dB. Negative values decrease volume, positive values increase. The default is 0.",
-          "format": "double",
-          "type": "number"
-        },
-        "track": {
-          "format": "int32",
-          "description": "Required. The zero-based index of the track in the input file.",
-          "type": "integer"
-        },
-        "key": {
-          "type": "string",
-          "description": "Required. The `Input.key` that identifies the input file."
-        }
-      }
+      "id": "SpriteSheet"
     },
     "ElementaryStream": {
-      "id": "ElementaryStream",
-      "type": "object",
-      "description": "Encoding of an input file such as an audio, video, or text track. Elementary streams must be packaged before mapping and sharing between different output formats.",
       "properties": {
-        "textStream": {
-          "description": "Encoding of a text stream. For example, closed captions or subtitles.",
-          "$ref": "TextStream"
-        },
-        "audioStream": {
-          "$ref": "AudioStream",
-          "description": "Encoding of an audio stream."
-        },
         "key": {
           "description": "A unique key for this elementary stream.",
           "type": "string"
@@ -858,37 +908,177 @@
         "videoStream": {
           "description": "Encoding of a video stream.",
           "$ref": "VideoStream"
+        },
+        "textStream": {
+          "$ref": "TextStream",
+          "description": "Encoding of a text stream. For example, closed captions or subtitles."
+        },
+        "audioStream": {
+          "description": "Encoding of an audio stream.",
+          "$ref": "AudioStream"
+        }
+      },
+      "type": "object",
+      "id": "ElementaryStream",
+      "description": "Encoding of an input file such as an audio, video, or text track. Elementary streams must be packaged before mapping and sharing between different output formats."
+    },
+    "Progress": {
+      "id": "Progress",
+      "properties": {
+        "encoded": {
+          "type": "number",
+          "format": "double",
+          "description": "Estimated fractional progress for `encoding` step."
+        },
+        "analyzed": {
+          "description": "Estimated fractional progress for `analyzing` step.",
+          "format": "double",
+          "type": "number"
+        },
+        "uploaded": {
+          "type": "number",
+          "description": "Estimated fractional progress for `uploading` step.",
+          "format": "double"
+        },
+        "notified": {
+          "format": "double",
+          "type": "number",
+          "description": "Estimated fractional progress for `notifying` step."
+        }
+      },
+      "description": "Estimated fractional progress for each step, from `0` to `1`.",
+      "type": "object"
+    },
+    "AudioStream": {
+      "description": "Audio stream resource.",
+      "properties": {
+        "codec": {
+          "type": "string",
+          "description": "The codec for this audio stream. The default is `\"aac\"`. Supported audio codecs: - 'aac' - 'aac-he' - 'aac-he-v2' - 'mp3' - 'ac3' - 'eac3'"
+        },
+        "bitrateBps": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Required. Audio bitrate in bits per second. Must be between 1 and 10,000,000."
+        },
+        "sampleRateHertz": {
+          "description": "The audio sample rate in Hertz. The default is 48000 Hertz.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "channelCount": {
+          "format": "int32",
+          "description": "Number of audio channels. Must be between 1 and 6. The default is 2.",
+          "type": "integer"
+        },
+        "channelLayout": {
+          "description": "A list of channel names specifying layout of the audio channels. This only affects the metadata embedded in the container headers, if supported by the specified format. The default is `[\"fl\", \"fr\"]`. Supported channel names: - 'fl' - Front left channel - 'fr' - Front right channel - 'sl' - Side left channel - 'sr' - Side right channel - 'fc' - Front center channel - 'lfe' - Low frequency",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mapping": {
+          "items": {
+            "$ref": "AudioAtom"
+          },
+          "type": "array",
+          "description": "The mapping for the `Job.edit_list` atoms with audio `EditAtom.inputs`."
+        }
+      },
+      "id": "AudioStream",
+      "type": "object"
+    },
+    "JobConfig": {
+      "id": "JobConfig",
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "items": {
+            "$ref": "Input"
+          },
+          "description": "List of input assets stored in Cloud Storage."
+        },
+        "editList": {
+          "type": "array",
+          "items": {
+            "$ref": "EditAtom"
+          },
+          "description": "List of `Edit atom`s. Defines the ultimate timeline of the resulting file or manifest."
+        },
+        "spriteSheets": {
+          "type": "array",
+          "description": "List of output sprite sheets.",
+          "items": {
+            "$ref": "SpriteSheet"
+          }
+        },
+        "adBreaks": {
+          "items": {
+            "$ref": "AdBreak"
+          },
+          "description": "List of ad breaks. Specifies where to insert ad break tags in the output manifests.",
+          "type": "array"
+        },
+        "pubsubDestination": {
+          "$ref": "PubsubDestination",
+          "description": "Destination on Pub/Sub."
+        },
+        "elementaryStreams": {
+          "items": {
+            "$ref": "ElementaryStream"
+          },
+          "description": "List of elementary streams.",
+          "type": "array"
+        },
+        "output": {
+          "$ref": "Output",
+          "description": "Output configuration."
+        },
+        "overlays": {
+          "type": "array",
+          "description": "List of overlays on the output video, in descending Z-order.",
+          "items": {
+            "$ref": "Overlay"
+          }
+        },
+        "muxStreams": {
+          "description": "List of multiplexing settings for output streams.",
+          "items": {
+            "$ref": "MuxStream"
+          },
+          "type": "array"
+        },
+        "manifests": {
+          "type": "array",
+          "description": "List of output manifests.",
+          "items": {
+            "$ref": "Manifest"
+          }
+        }
+      },
+      "description": "Job configuration",
+      "type": "object"
+    },
+    "OriginUri": {
+      "id": "OriginUri",
+      "type": "object",
+      "description": "The origin URI.",
+      "properties": {
+        "dash": {
+          "description": "Dash manifest URI. If multiple Dash manifests are created, only the first one is listed.",
+          "type": "string"
+        },
+        "hls": {
+          "type": "string",
+          "description": "HLS manifest URI per https://tools.ietf.org/html/rfc8216#section-4.3.4. If multiple HLS manifests are created, only the first one is listed."
         }
       }
     },
-    "Encryption": {
-      "id": "Encryption",
-      "type": "object",
-      "properties": {
-        "aes128": {
-          "$ref": "Aes128Encryption",
-          "description": "Configuration for AES-128 encryption."
-        },
-        "iv": {
-          "type": "string",
-          "description": "Required. 128 bit Initialization Vector (IV) represented as lowercase hexadecimal digits."
-        },
-        "sampleAes": {
-          "description": "Configuration for SAMPLE-AES encryption.",
-          "$ref": "SampleAesEncryption"
-        },
-        "key": {
-          "type": "string",
-          "description": "Required. 128 bit encryption key represented as lowercase hexadecimal digits."
-        },
-        "mpegCenc": {
-          "$ref": "MpegCommonEncryption",
-          "description": "Configuration for MPEG Common Encryption (MPEG-CENC)."
-        }
-      },
-      "description": "Encryption settings."
-    },
     "EditAtom": {
+      "id": "EditAtom",
+      "type": "object",
+      "description": "Edit atom.",
       "properties": {
         "inputs": {
           "type": "array",
@@ -898,305 +1088,35 @@
           "description": "List of `Input.key`s identifying files that should be used in this atom. The listed `inputs` must have the same timeline."
         },
         "key": {
-          "description": "A unique key for this atom. Must be specified when using advanced mapping.",
-          "type": "string"
+          "type": "string",
+          "description": "A unique key for this atom. Must be specified when using advanced mapping."
         },
         "startTimeOffset": {
-          "format": "google-duration",
           "description": "Start time in seconds for the atom, relative to the input file timeline. The default is `0s`.",
-          "type": "string"
-        },
-        "endTimeOffset": {
-          "type": "string",
-          "format": "google-duration",
-          "description": "End time in seconds for the atom, relative to the input file timeline. When `end_time_offset` is not specified, the `inputs` are used until the end of the atom."
-        }
-      },
-      "description": "Edit atom.",
-      "id": "EditAtom",
-      "type": "object"
-    },
-    "SampleAesEncryption": {
-      "type": "object",
-      "properties": {
-        "keyUri": {
-          "description": "Required. URI of the key delivery service. This URI is inserted into the M3U8 header.",
-          "type": "string"
-        }
-      },
-      "description": "Configuration for SAMPLE-AES encryption.",
-      "id": "SampleAesEncryption"
-    },
-    "Aes128Encryption": {
-      "type": "object",
-      "properties": {
-        "keyUri": {
-          "type": "string",
-          "description": "Required. URI of the key delivery service. This URI is inserted into the M3U8 header."
-        }
-      },
-      "description": "Configuration for AES-128 encryption.",
-      "id": "Aes128Encryption"
-    },
-    "Input": {
-      "description": "Input asset.",
-      "type": "object",
-      "properties": {
-        "key": {
-          "type": "string",
-          "description": "A unique key for this input. Must be specified when using advanced mapping and edit lists."
-        },
-        "uri": {
-          "description": "URI of the media. It must be stored in Cloud Storage. Example `gs://bucket/inputs/file.mp4`. If empty the value will be populated from `Job.input_uri`.",
-          "type": "string"
-        },
-        "preprocessingConfig": {
-          "description": "Preprocessing configurations.",
-          "$ref": "PreprocessingConfig"
-        }
-      },
-      "id": "Input"
-    },
-    "SpriteSheet": {
-      "type": "object",
-      "id": "SpriteSheet",
-      "description": "Sprite sheet configuration.",
-      "properties": {
-        "format": {
-          "description": "Format type. The default is `\"jpeg\"`. Supported formats: - 'jpeg'",
-          "type": "string"
-        },
-        "columnCount": {
-          "type": "integer",
-          "format": "int32",
-          "description": "The maximum number of sprites per row in a sprite sheet. The default is 0, which indicates no maximum limit."
-        },
-        "totalCount": {
-          "format": "int32",
-          "description": "Total number of sprites. Create the specified number of sprites distributed evenly across the timeline of the output media. The default is 100.",
-          "type": "integer"
-        },
-        "rowCount": {
-          "type": "integer",
-          "description": "The maximum number of rows per sprite sheet. When the sprite sheet is full, a new sprite sheet is created. The default is 0, which indicates no maximum limit.",
-          "format": "int32"
-        },
-        "interval": {
-          "description": "Starting from `0s`, create sprites at regular intervals. Specify the interval value in seconds.",
           "type": "string",
           "format": "google-duration"
         },
-        "spriteHeightPixels": {
-          "format": "int32",
-          "type": "integer",
-          "description": "Required. The height of sprite in pixels. Must be an even integer."
-        },
-        "startTimeOffset": {
-          "description": "Start time in seconds, relative to the output file timeline. Determines the first sprite to pick. The default is `0s`.",
-          "format": "google-duration",
-          "type": "string"
-        },
-        "spriteWidthPixels": {
-          "type": "integer",
-          "format": "int32",
-          "description": "Required. The width of sprite in pixels. Must be an even integer."
-        },
-        "filePrefix": {
-          "description": "Required. File name prefix for the generated sprite sheets. Each sprite sheet has an incremental 10-digit zero-padded suffix starting from 0 before the extension, such as `\"sprite_sheet0000000123.jpeg\"`.",
-          "type": "string"
-        },
         "endTimeOffset": {
+          "type": "string",
+          "description": "End time in seconds for the atom, relative to the input file timeline. When `end_time_offset` is not specified, the `inputs` are used until the end of the atom.",
+          "format": "google-duration"
+        }
+      }
+    },
+    "AnimationEnd": {
+      "type": "object",
+      "description": "End previous overlay animation from the video. Without AnimationEnd, the overlay object will keep the state of previous animation until the end of the video.",
+      "properties": {
+        "startTimeOffset": {
+          "description": "The time to end overlay object, in seconds. Default: 0",
           "format": "google-duration",
-          "description": "End time in seconds, relative to the output file timeline. When `end_time_offset` is not specified, the sprites are generated until the end of the output file.",
-          "type": "string"
-        }
-      }
-    },
-    "AudioAtom": {
-      "type": "object",
-      "properties": {
-        "channels": {
-          "items": {
-            "$ref": "AudioChannel"
-          },
-          "description": "List of `Channel`s for this audio stream. for in-depth explanation.",
-          "type": "array"
-        },
-        "key": {
-          "type": "string",
-          "description": "Required. The `EditAtom.key` that references the atom with audio inputs in the `Job.edit_list`."
-        }
-      },
-      "description": "The mapping for the `Job.edit_list` atoms with audio `EditAtom.inputs`.",
-      "id": "AudioAtom"
-    },
-    "Output": {
-      "type": "object",
-      "description": "Location of output file(s) in a Cloud Storage bucket.",
-      "id": "Output",
-      "properties": {
-        "uri": {
-          "type": "string",
-          "description": "URI for the output file(s). For example, `gs://my-bucket/outputs/`. If empty the value is populated from `Job.output_uri`."
-        }
-      }
-    },
-    "Overlay": {
-      "id": "Overlay",
-      "properties": {
-        "image": {
-          "description": "Image overlay.",
-          "$ref": "Image"
-        },
-        "animations": {
-          "items": {
-            "$ref": "Animation"
-          },
-          "type": "array",
-          "description": "List of Animations. The list should be chronological, without any time overlap."
-        }
-      },
-      "description": "Overlay configuration.",
-      "type": "object"
-    },
-    "PubsubDestination": {
-      "type": "object",
-      "description": "A Pub/Sub destination.",
-      "id": "PubsubDestination",
-      "properties": {
-        "topic": {
-          "description": "The name of the Pub/Sub topic to publish job completion notification to. For example: `projects/{project}/topics/{topic}`.",
-          "type": "string"
-        }
-      }
-    },
-    "OriginUri": {
-      "id": "OriginUri",
-      "properties": {
-        "dash": {
-          "type": "string",
-          "description": "Dash manifest URI. If multiple Dash manifests are created, only the first one is listed."
-        },
-        "hls": {
-          "description": "HLS manifest URI per https://tools.ietf.org/html/rfc8216#section-4.3.4. If multiple HLS manifests are created, only the first one is listed.",
           "type": "string"
         }
       },
-      "type": "object",
-      "description": "The origin URI."
-    },
-    "Empty": {
-      "id": "Empty",
-      "properties": {},
-      "type": "object",
-      "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); } The JSON representation for `Empty` is empty JSON object `{}`."
-    },
-    "Animation": {
-      "description": "Animation types.",
-      "properties": {
-        "animationEnd": {
-          "$ref": "AnimationEnd",
-          "description": "End previous animation."
-        },
-        "animationFade": {
-          "$ref": "AnimationFade",
-          "description": "Display overlay object with fade animation."
-        },
-        "animationStatic": {
-          "description": "Display static overlay object.",
-          "$ref": "AnimationStatic"
-        }
-      },
-      "type": "object",
-      "id": "Animation"
+      "id": "AnimationEnd"
     }
   },
-  "revision": "20201111",
-  "parameters": {
-    "$.xgafv": {
-      "location": "query",
-      "enum": [
-        "1",
-        "2"
-      ],
-      "description": "V1 error format.",
-      "type": "string",
-      "enumDescriptions": [
-        "v1 error format",
-        "v2 error format"
-      ]
-    },
-    "alt": {
-      "type": "string",
-      "enumDescriptions": [
-        "Responses with Content-Type of application/json",
-        "Media download with context-dependent Content-Type",
-        "Responses with Content-Type of application/x-protobuf"
-      ],
-      "location": "query",
-      "description": "Data format for response.",
-      "default": "json",
-      "enum": [
-        "json",
-        "media",
-        "proto"
-      ]
-    },
-    "fields": {
-      "description": "Selector specifying which fields to include in a partial response.",
-      "type": "string",
-      "location": "query"
-    },
-    "key": {
-      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
-      "location": "query",
-      "type": "string"
-    },
-    "uploadType": {
-      "location": "query",
-      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
-      "type": "string"
-    },
-    "callback": {
-      "location": "query",
-      "type": "string",
-      "description": "JSONP"
-    },
-    "quotaUser": {
-      "type": "string",
-      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
-      "location": "query"
-    },
-    "upload_protocol": {
-      "type": "string",
-      "location": "query",
-      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\")."
-    },
-    "access_token": {
-      "description": "OAuth access token.",
-      "type": "string",
-      "location": "query"
-    },
-    "oauth_token": {
-      "location": "query",
-      "description": "OAuth 2.0 token for the current user.",
-      "type": "string"
-    },
-    "prettyPrint": {
-      "description": "Returns response with indentations and line breaks.",
-      "location": "query",
-      "default": "true",
-      "type": "boolean"
-    }
-  },
-  "description": "This API converts video files into formats suitable for consumer distribution. ",
   "rootUrl": "https://transcoder.googleapis.com/",
-  "version": "v1beta1",
-  "id": "transcoder:v1beta1",
-  "fullyEncodeReservedExpansion": true,
-  "ownerName": "Google",
-  "servicePath": "",
-  "baseUrl": "https://transcoder.googleapis.com/",
   "auth": {
     "oauth2": {
       "scopes": {
@@ -1206,11 +1126,9 @@
       }
     }
   },
-  "documentationLink": "https://cloud.google.com/transcoder/docs/",
-  "discoveryVersion": "v1",
-  "ownerDomain": "google.com",
-  "batchPath": "batch",
-  "kind": "discovery#restDescription",
+  "title": "Transcoder API",
+  "mtlsRootUrl": "https://transcoder.mtls.googleapis.com/",
+  "ownerName": "Google",
   "resources": {
     "projects": {
       "resources": {
@@ -1218,242 +1136,242 @@
           "resources": {
             "jobTemplates": {
               "methods": {
-                "delete": {
-                  "path": "v1beta1/{+name}",
-                  "response": {
-                    "$ref": "Empty"
-                  },
-                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobTemplates/{jobTemplatesId}",
-                  "description": "Deletes a job template.",
-                  "parameters": {
-                    "name": {
-                      "pattern": "^projects/[^/]+/locations/[^/]+/jobTemplates/[^/]+$",
-                      "required": true,
-                      "type": "string",
-                      "description": "Required. The name of the job template to delete. `projects/{project}/locations/{location}/jobTemplates/{job_template}`",
-                      "location": "path"
-                    }
-                  },
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ],
-                  "id": "transcoder.projects.locations.jobTemplates.delete",
-                  "parameterOrder": [
-                    "name"
-                  ],
-                  "httpMethod": "DELETE"
-                },
-                "list": {
-                  "id": "transcoder.projects.locations.jobTemplates.list",
-                  "httpMethod": "GET",
-                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobTemplates",
-                  "path": "v1beta1/{+parent}/jobTemplates",
-                  "parameterOrder": [
-                    "parent"
-                  ],
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ],
-                  "response": {
-                    "$ref": "ListJobTemplatesResponse"
-                  },
-                  "parameters": {
-                    "parent": {
-                      "required": true,
-                      "pattern": "^projects/[^/]+/locations/[^/]+$",
-                      "type": "string",
-                      "location": "path",
-                      "description": "Required. The parent location from which to retrieve the collection of job templates. Format: `projects/{project}/locations/{location}`"
-                    },
-                    "pageToken": {
-                      "location": "query",
-                      "type": "string",
-                      "description": "The `next_page_token` value returned from a previous List request, if any."
-                    },
-                    "pageSize": {
-                      "type": "integer",
-                      "description": "The maximum number of items to return.",
-                      "format": "int32",
-                      "location": "query"
-                    }
-                  },
-                  "description": "Lists job templates in the specified region."
-                },
                 "create": {
                   "httpMethod": "POST",
-                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobTemplates",
-                  "path": "v1beta1/{+parent}/jobTemplates",
+                  "id": "transcoder.projects.locations.jobTemplates.create",
                   "parameterOrder": [
                     "parent"
                   ],
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ],
-                  "id": "transcoder.projects.locations.jobTemplates.create",
                   "description": "Creates a job template in the specified region.",
                   "parameters": {
                     "parent": {
                       "location": "path",
-                      "required": true,
                       "pattern": "^projects/[^/]+/locations/[^/]+$",
                       "type": "string",
+                      "required": true,
                       "description": "Required. The parent location to create this job template. Format: `projects/{project}/locations/{location}`"
                     },
                     "jobTemplateId": {
-                      "description": "Required. The ID to use for the job template, which will become the final component of the job template's resource name. This value should be 4-63 characters, and valid characters must match the regular expression `a-zA-Z*`.",
+                      "type": "string",
                       "location": "query",
-                      "type": "string"
+                      "description": "Required. The ID to use for the job template, which will become the final component of the job template's resource name. This value should be 4-63 characters, and valid characters must match the regular expression `a-zA-Z*`."
                     }
                   },
-                  "response": {
-                    "$ref": "JobTemplate"
-                  },
+                  "path": "v1beta1/{+parent}/jobTemplates",
                   "request": {
                     "$ref": "JobTemplate"
-                  }
-                },
-                "get": {
-                  "id": "transcoder.projects.locations.jobTemplates.get",
-                  "path": "v1beta1/{+name}",
-                  "parameters": {
-                    "name": {
-                      "pattern": "^projects/[^/]+/locations/[^/]+/jobTemplates/[^/]+$",
-                      "description": "Required. The name of the job template to retrieve. Format: `projects/{project}/locations/{location}/jobTemplates/{job_template}`",
-                      "type": "string",
-                      "location": "path",
-                      "required": true
-                    }
                   },
-                  "parameterOrder": [
-                    "name"
-                  ],
-                  "description": "Returns the job template data.",
-                  "httpMethod": "GET",
-                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobTemplates/{jobTemplatesId}",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobTemplates",
                   "scopes": [
                     "https://www.googleapis.com/auth/cloud-platform"
                   ],
                   "response": {
                     "$ref": "JobTemplate"
                   }
+                },
+                "get": {
+                  "parameters": {
+                    "name": {
+                      "location": "path",
+                      "type": "string",
+                      "description": "Required. The name of the job template to retrieve. Format: `projects/{project}/locations/{location}/jobTemplates/{job_template}`",
+                      "required": true,
+                      "pattern": "^projects/[^/]+/locations/[^/]+/jobTemplates/[^/]+$"
+                    }
+                  },
+                  "description": "Returns the job template data.",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "id": "transcoder.projects.locations.jobTemplates.get",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobTemplates/{jobTemplatesId}",
+                  "httpMethod": "GET",
+                  "path": "v1beta1/{+name}",
+                  "response": {
+                    "$ref": "JobTemplate"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "list": {
+                  "parameters": {
+                    "parent": {
+                      "type": "string",
+                      "description": "Required. The parent location from which to retrieve the collection of job templates. Format: `projects/{project}/locations/{location}`",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "required": true,
+                      "location": "path"
+                    },
+                    "pageSize": {
+                      "format": "int32",
+                      "description": "The maximum number of items to return.",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "pageToken": {
+                      "description": "The `next_page_token` value returned from a previous List request, if any.",
+                      "type": "string",
+                      "location": "query"
+                    }
+                  },
+                  "description": "Lists job templates in the specified region.",
+                  "response": {
+                    "$ref": "ListJobTemplatesResponse"
+                  },
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobTemplates",
+                  "path": "v1beta1/{+parent}/jobTemplates",
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ],
+                  "httpMethod": "GET",
+                  "id": "transcoder.projects.locations.jobTemplates.list"
+                },
+                "delete": {
+                  "httpMethod": "DELETE",
+                  "response": {
+                    "$ref": "Empty"
+                  },
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobTemplates/{jobTemplatesId}",
+                  "parameters": {
+                    "name": {
+                      "required": true,
+                      "location": "path",
+                      "description": "Required. The name of the job template to delete. `projects/{project}/locations/{location}/jobTemplates/{job_template}`",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/jobTemplates/[^/]+$",
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1beta1/{+name}",
+                  "description": "Deletes a job template.",
+                  "id": "transcoder.projects.locations.jobTemplates.delete",
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ],
+                  "parameterOrder": [
+                    "name"
+                  ]
                 }
               }
             },
             "jobs": {
               "methods": {
-                "list": {
-                  "httpMethod": "GET",
+                "create": {
+                  "request": {
+                    "$ref": "Job"
+                  },
                   "path": "v1beta1/{+parent}/jobs",
-                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobs",
-                  "parameterOrder": [
-                    "parent"
-                  ],
+                  "response": {
+                    "$ref": "Job"
+                  },
                   "scopes": [
                     "https://www.googleapis.com/auth/cloud-platform"
                   ],
-                  "id": "transcoder.projects.locations.jobs.list",
-                  "response": {
-                    "$ref": "ListJobsResponse"
-                  },
-                  "description": "Lists jobs in the specified region.",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobs",
+                  "id": "transcoder.projects.locations.jobs.create",
+                  "parameterOrder": [
+                    "parent"
+                  ],
                   "parameters": {
                     "parent": {
-                      "description": "Required. Format: `projects/{project}/locations/{location}`",
+                      "description": "Required. The parent location to create and process this job. Format: `projects/{project}/locations/{location}`",
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
                       "type": "string",
                       "location": "path",
+                      "required": true
+                    }
+                  },
+                  "description": "Creates a job in the specified region.",
+                  "httpMethod": "POST"
+                },
+                "list": {
+                  "httpMethod": "GET",
+                  "parameterOrder": [
+                    "parent"
+                  ],
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobs",
+                  "parameters": {
+                    "parent": {
+                      "pattern": "^projects/[^/]+/locations/[^/]+$",
+                      "description": "Required. Format: `projects/{project}/locations/{location}`",
                       "required": true,
-                      "pattern": "^projects/[^/]+/locations/[^/]+$"
+                      "type": "string",
+                      "location": "path"
+                    },
+                    "pageSize": {
+                      "format": "int32",
+                      "description": "The maximum number of items to return.",
+                      "location": "query",
+                      "type": "integer"
                     },
                     "pageToken": {
                       "location": "query",
                       "description": "The `next_page_token` value returned from a previous List request, if any.",
                       "type": "string"
-                    },
-                    "pageSize": {
-                      "location": "query",
-                      "type": "integer",
-                      "format": "int32",
-                      "description": "The maximum number of items to return."
-                    }
-                  }
-                },
-                "get": {
-                  "path": "v1beta1/{+name}",
-                  "description": "Returns the job data.",
-                  "parameters": {
-                    "name": {
-                      "pattern": "^projects/[^/]+/locations/[^/]+/jobs/[^/]+$",
-                      "description": "Required. The name of the job to retrieve. Format: `projects/{project}/locations/{location}/jobs/{job}`",
-                      "type": "string",
-                      "required": true,
-                      "location": "path"
                     }
                   },
-                  "id": "transcoder.projects.locations.jobs.get",
+                  "id": "transcoder.projects.locations.jobs.list",
                   "response": {
-                    "$ref": "Job"
+                    "$ref": "ListJobsResponse"
                   },
-                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobs/{jobsId}",
+                  "path": "v1beta1/{+parent}/jobs",
                   "scopes": [
                     "https://www.googleapis.com/auth/cloud-platform"
                   ],
+                  "description": "Lists jobs in the specified region."
+                },
+                "delete": {
                   "parameterOrder": [
                     "name"
                   ],
-                  "httpMethod": "GET"
-                },
-                "delete": {
                   "scopes": [
                     "https://www.googleapis.com/auth/cloud-platform"
                   ],
+                  "id": "transcoder.projects.locations.jobs.delete",
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobs/{jobsId}",
                   "response": {
                     "$ref": "Empty"
                   },
+                  "path": "v1beta1/{+name}",
                   "parameters": {
                     "name": {
-                      "pattern": "^projects/[^/]+/locations/[^/]+/jobs/[^/]+$",
                       "required": true,
+                      "pattern": "^projects/[^/]+/locations/[^/]+/jobs/[^/]+$",
                       "description": "Required. The name of the job to delete. Format: `projects/{project}/locations/{location}/jobs/{job}`",
                       "location": "path",
                       "type": "string"
                     }
                   },
-                  "path": "v1beta1/{+name}",
-                  "description": "Deletes a job.",
-                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobs/{jobsId}",
                   "httpMethod": "DELETE",
-                  "id": "transcoder.projects.locations.jobs.delete",
-                  "parameterOrder": [
-                    "name"
-                  ]
+                  "description": "Deletes a job."
                 },
-                "create": {
+                "get": {
+                  "response": {
+                    "$ref": "Job"
+                  },
+                  "httpMethod": "GET",
+                  "path": "v1beta1/{+name}",
                   "parameters": {
-                    "parent": {
+                    "name": {
+                      "description": "Required. The name of the job to retrieve. Format: `projects/{project}/locations/{location}/jobs/{job}`",
                       "type": "string",
-                      "pattern": "^projects/[^/]+/locations/[^/]+$",
-                      "description": "Required. The parent location to create and process this job. Format: `projects/{project}/locations/{location}`",
+                      "required": true,
                       "location": "path",
-                      "required": true
+                      "pattern": "^projects/[^/]+/locations/[^/]+/jobs/[^/]+$"
                     }
                   },
+                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobs/{jobsId}",
+                  "description": "Returns the job data.",
                   "scopes": [
                     "https://www.googleapis.com/auth/cloud-platform"
                   ],
-                  "path": "v1beta1/{+parent}/jobs",
-                  "request": {
-                    "$ref": "Job"
-                  },
-                  "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/jobs",
-                  "description": "Creates a job in the specified region.",
-                  "httpMethod": "POST",
-                  "id": "transcoder.projects.locations.jobs.create",
                   "parameterOrder": [
-                    "parent"
+                    "name"
                   ],
-                  "response": {
-                    "$ref": "Job"
-                  }
+                  "id": "transcoder.projects.locations.jobs.get"
                 }
               }
             }
@@ -1461,5 +1379,92 @@
         }
       }
     }
+  },
+  "id": "transcoder:v1beta1",
+  "protocol": "rest",
+  "parameters": {
+    "prettyPrint": {
+      "default": "true",
+      "type": "boolean",
+      "location": "query",
+      "description": "Returns response with indentations and line breaks."
+    },
+    "access_token": {
+      "description": "OAuth access token.",
+      "location": "query",
+      "type": "string"
+    },
+    "upload_protocol": {
+      "location": "query",
+      "type": "string",
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\")."
+    },
+    "quotaUser": {
+      "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters.",
+      "type": "string",
+      "location": "query"
+    },
+    "uploadType": {
+      "location": "query",
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "type": "string"
+    },
+    "fields": {
+      "description": "Selector specifying which fields to include in a partial response.",
+      "location": "query",
+      "type": "string"
+    },
+    "alt": {
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "location": "query",
+      "enumDescriptions": [
+        "Responses with Content-Type of application/json",
+        "Media download with context-dependent Content-Type",
+        "Responses with Content-Type of application/x-protobuf"
+      ],
+      "default": "json",
+      "type": "string",
+      "description": "Data format for response."
+    },
+    "callback": {
+      "description": "JSONP",
+      "location": "query",
+      "type": "string"
+    },
+    "key": {
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "location": "query",
+      "type": "string"
+    },
+    "oauth_token": {
+      "location": "query",
+      "type": "string",
+      "description": "OAuth 2.0 token for the current user."
+    },
+    "$.xgafv": {
+      "location": "query",
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "description": "V1 error format.",
+      "enum": [
+        "1",
+        "2"
+      ],
+      "type": "string"
+    }
+  },
+  "description": "This API converts video files into formats suitable for consumer distribution. ",
+  "revision": "20201209",
+  "canonicalName": "Transcoder",
+  "servicePath": "",
+  "icons": {
+    "x32": "http://www.google.com/images/icons/product/search-32.gif",
+    "x16": "http://www.google.com/images/icons/product/search-16.gif"
   }
 }
