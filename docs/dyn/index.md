@@ -564,6 +564,7 @@
 
 
 ## memcache
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/memcache_v1.html)
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/memcache_v1beta2.html)
 
 
@@ -651,6 +652,7 @@
 
 ## realtimebidding
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/realtimebidding_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/realtimebidding_v1alpha.html)
 
 
 ## recommendationengine
