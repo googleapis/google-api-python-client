@@ -582,6 +582,10 @@
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/monitoring_v3.html)
 
 
+## networkconnectivity
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkconnectivity_v1alpha1.html)
+
+
 ## networkmanagement
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkmanagement_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkmanagement_v1beta1.html)
