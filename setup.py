@@ -33,7 +33,7 @@ packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
 
 install_requires = [
     "httplib2>=0.15.0,<1dev",
-    "google-auth>=1.16.0",
+    "google-auth>=1.16.0,<2dev",
     "google-auth-httplib2>=0.0.3",
     "google-api-core>=1.21.0,<2dev",
     "six>=1.13.0,<2dev",
