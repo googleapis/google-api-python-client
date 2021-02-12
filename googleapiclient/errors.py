@@ -44,6 +44,10 @@ class HttpError(Error):
         self.uri = uri
         self.error_details = ""
 
+    @property
+    def status_code(self):
+        return self.resp.status
+
     def _get_reason(self):
         """Calculate the reason for the error from the response content."""
         reason = self.resp.reason
