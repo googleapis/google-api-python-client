@@ -220,7 +220,7 @@ h1, h2, h3 {
 <p class="firstline">Updates the Display config for a VM instance. You can only use this method on a stopped VM instance. This method supports PATCH semantics and uses the JSON merge patch format and processing rules.</p>
 <p class="toc_element">
   <code><a href="#updateNetworkInterface">updateNetworkInterface(project, zone, instance, networkInterface, body=None, requestId=None)</a></code></p>
-<p class="firstline">Updates an instance's network interface. This method follows PATCH semantics.</p>
+<p class="firstline">Updates an instance's network interface. This method can only update an interface's alias IP range and attached network. See Modifying alias IP ranges for an existing instance for instructions on changing alias IP ranges. See Migrating a VM between networks for instructions on migrating an interface. This method follows PATCH semantics.</p>
 <p class="toc_element">
   <code><a href="#updateShieldedInstanceConfig">updateShieldedInstanceConfig(project, zone, instance, body=None, requestId=None)</a></code></p>
 <p class="firstline">Updates the Shielded Instance config for an instance. You can only use this method on a stopped instance. This method supports PATCH semantics and uses the JSON merge patch format and processing rules.</p>
@@ -430,7 +430,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
-  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.
 
 Returns:
   An object of the form:
@@ -443,6 +443,9 @@ Returns:
         { # Represents an Instance resource.
             #
             # An instance is a virtual machine that is hosted on Google Cloud Platform. For more information, read Virtual Machine Instances. (== resource_for {$api_version}.instances ==)
+          &quot;advancedMachineFeatures&quot;: { # Specifies options for controlling advanced machine features. Options that would traditionally be configured in a BIOS belong here. Features that require operating system support may have corresponding entries in the GuestOsFeatures of an Image (e.g., whether or not the OS in the Image supports nested virtualization being enabled or disabled). # Controls for advanced machine-related behavior features.
+            &quot;enableNestedVirtualization&quot;: True or False, # Whether to enable nested virtualization or not (default is false).
+          },
           &quot;canIpForward&quot;: True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
           &quot;confidentialInstanceConfig&quot;: { # A set of Confidential Instance options.
             &quot;enableConfidentialCompute&quot;: True or False, # Defines whether the instance should have confidential compute enabled.
@@ -513,6 +516,7 @@ Returns:
                 },
                 &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
                 &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
+                &quot;provisionedIops&quot;: &quot;A String&quot;, # Indicates how many IOPS must be provisioned for the disk.
                 &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
                   &quot;A String&quot;,
                 ],
@@ -691,11 +695,15 @@ Returns:
                   # - projects/project/global/networks/network
                   # - global/networks/default
               &quot;networkIP&quot;: &quot;A String&quot;, # An IPv4 internal IP address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
+              &quot;nicType&quot;: &quot;A String&quot;, # The type of vNIC to be used on this interface. This may be gVNIC or VirtioNet.
               &quot;subnetwork&quot;: &quot;A String&quot;, # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not specify this field. If the network is in auto subnet mode, specifying the subnetwork is optional. If the network is in custom subnet mode, specifying the subnetwork is required. If you specify this field, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
                   # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
                   # - regions/region/subnetworks/subnetwork
             },
           ],
+          &quot;networkPerformanceConfig&quot;: {
+            &quot;totalEgressBandwidthTier&quot;: &quot;A String&quot;,
+          },
           &quot;privateIpv6GoogleAccess&quot;: &quot;A String&quot;, # The private IPv6 google access type for the VM. If not specified, use  INHERIT_FROM_SUBNETWORK as default.
           &quot;reservationAffinity&quot;: { # Specifies the reservations that this instance can consume from. # Specifies the reservations that this instance can consume from.
             &quot;consumeReservationType&quot;: &quot;A String&quot;, # Specifies the type of reservation from which this instance can consume resources: ANY_RESERVATION (default), SPECIFIC_RESERVATION, or NO_RESERVATION. See  Consuming reserved instances for examples.
@@ -707,10 +715,12 @@ Returns:
           &quot;resourcePolicies&quot;: [ # Resource policies applied to this instance.
             &quot;A String&quot;,
           ],
-          &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 13 # Sets the scheduling options for this instance.
+          &quot;satisfiesPzs&quot;: True or False, # [Output Only] Reserved for future use.
+          &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 17 # Sets the scheduling options for this instance.
             &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
                 #
                 # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
+            &quot;locationHint&quot;: &quot;A String&quot;, # An opaque location hint used to place the instance close to other resources. This field is for use by internal tools that use the public API.
             &quot;minNodeCpus&quot;: 42, # The minimum number of virtual CPUs this instance will consume when running on a sole-tenant node.
             &quot;nodeAffinities&quot;: [ # A set of node affinity and anti-affinity configurations. Refer to Configuring node affinity for more information. Overrides reservationAffinity.
               { # Node Affinity: the configuration of desired nodes onto which this Instance could be scheduled.
@@ -897,6 +907,7 @@ Args:
     },
     &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
     &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
+    &quot;provisionedIops&quot;: &quot;A String&quot;, # Indicates how many IOPS must be provisioned for the disk.
     &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
       &quot;A String&quot;,
     ],
@@ -1315,6 +1326,9 @@ Returns:
     { # Represents an Instance resource.
     #
     # An instance is a virtual machine that is hosted on Google Cloud Platform. For more information, read Virtual Machine Instances. (== resource_for {$api_version}.instances ==)
+  &quot;advancedMachineFeatures&quot;: { # Specifies options for controlling advanced machine features. Options that would traditionally be configured in a BIOS belong here. Features that require operating system support may have corresponding entries in the GuestOsFeatures of an Image (e.g., whether or not the OS in the Image supports nested virtualization being enabled or disabled). # Controls for advanced machine-related behavior features.
+    &quot;enableNestedVirtualization&quot;: True or False, # Whether to enable nested virtualization or not (default is false).
+  },
   &quot;canIpForward&quot;: True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
   &quot;confidentialInstanceConfig&quot;: { # A set of Confidential Instance options.
     &quot;enableConfidentialCompute&quot;: True or False, # Defines whether the instance should have confidential compute enabled.
@@ -1385,6 +1399,7 @@ Returns:
         },
         &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
         &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
+        &quot;provisionedIops&quot;: &quot;A String&quot;, # Indicates how many IOPS must be provisioned for the disk.
         &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
           &quot;A String&quot;,
         ],
@@ -1563,11 +1578,15 @@ Returns:
           # - projects/project/global/networks/network
           # - global/networks/default
       &quot;networkIP&quot;: &quot;A String&quot;, # An IPv4 internal IP address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
+      &quot;nicType&quot;: &quot;A String&quot;, # The type of vNIC to be used on this interface. This may be gVNIC or VirtioNet.
       &quot;subnetwork&quot;: &quot;A String&quot;, # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not specify this field. If the network is in auto subnet mode, specifying the subnetwork is optional. If the network is in custom subnet mode, specifying the subnetwork is required. If you specify this field, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
           # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
           # - regions/region/subnetworks/subnetwork
     },
   ],
+  &quot;networkPerformanceConfig&quot;: {
+    &quot;totalEgressBandwidthTier&quot;: &quot;A String&quot;,
+  },
   &quot;privateIpv6GoogleAccess&quot;: &quot;A String&quot;, # The private IPv6 google access type for the VM. If not specified, use  INHERIT_FROM_SUBNETWORK as default.
   &quot;reservationAffinity&quot;: { # Specifies the reservations that this instance can consume from. # Specifies the reservations that this instance can consume from.
     &quot;consumeReservationType&quot;: &quot;A String&quot;, # Specifies the type of reservation from which this instance can consume resources: ANY_RESERVATION (default), SPECIFIC_RESERVATION, or NO_RESERVATION. See  Consuming reserved instances for examples.
@@ -1579,10 +1598,12 @@ Returns:
   &quot;resourcePolicies&quot;: [ # Resource policies applied to this instance.
     &quot;A String&quot;,
   ],
-  &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 13 # Sets the scheduling options for this instance.
+  &quot;satisfiesPzs&quot;: True or False, # [Output Only] Reserved for future use.
+  &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 17 # Sets the scheduling options for this instance.
     &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
         #
         # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
+    &quot;locationHint&quot;: &quot;A String&quot;, # An opaque location hint used to place the instance close to other resources. This field is for use by internal tools that use the public API.
     &quot;minNodeCpus&quot;: 42, # The minimum number of virtual CPUs this instance will consume when running on a sole-tenant node.
     &quot;nodeAffinities&quot;: [ # A set of node affinity and anti-affinity configurations. Refer to Configuring node affinity for more information. Overrides reservationAffinity.
       { # Node Affinity: the configuration of desired nodes onto which this Instance could be scheduled.
@@ -1672,12 +1693,12 @@ Returns:
       &quot;rules&quot;: [ # The rules that apply to the network.
         { # Represents a rule that describes one or more match conditions along with the action to be taken when traffic matches this condition (allow or deny).
           &quot;action&quot;: &quot;A String&quot;, # The Action to perform when the client connection triggers the rule. Can currently be either &quot;allow&quot; or &quot;deny()&quot; where valid values for status are 403, 404, and 502.
-          &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
+          &quot;description&quot;: &quot;A String&quot;, # An optional description for this resource.
           &quot;direction&quot;: &quot;A String&quot;, # The direction in which this rule applies.
           &quot;disabled&quot;: True or False, # Denotes whether the firewall policy rule is disabled. When set to true, the firewall policy rule is not enforced and traffic behaves as if it did not exist. If this is unspecified, the firewall policy rule will be enabled.
           &quot;enableLogging&quot;: True or False, # Denotes whether to enable logging for a particular rule. If logging is enabled, logs will be exported to the configured export destination in Stackdriver. Logs may be exported to BigQuery or Pub/Sub. Note: you cannot enable logging on &quot;goto_next&quot; rules.
           &quot;kind&quot;: &quot;compute#firewallPolicyRule&quot;, # [Output only] Type of the resource. Always compute#firewallPolicyRule for firewall policy rules
-          &quot;match&quot;: { # Represents a match condition that incoming traffic is evaluated against. Exactly one field must be specified. # A match condition that incoming traffic is evaluated against. If it evaluates to true, the corresponding ?action? is enforced.
+          &quot;match&quot;: { # Represents a match condition that incoming traffic is evaluated against. Exactly one field must be specified. # A match condition that incoming traffic is evaluated against. If it evaluates to true, the corresponding &#x27;action&#x27; is enforced.
             &quot;destIpRanges&quot;: [ # CIDR IP address range. Maximum number of destination CIDR IP ranges allowed is 256.
               &quot;A String&quot;,
             ],
@@ -1700,7 +1721,7 @@ Returns:
           },
           &quot;priority&quot;: 42, # An integer indicating the priority of a rule in the list. The priority must be a positive value between 0 and 2147483647. Rules are evaluated from highest to lowest priority where 0 is the highest priority and 2147483647 is the lowest prority.
           &quot;ruleTupleCount&quot;: 42, # [Output Only] Calculation of the complexity of a single firewall policy rule.
-          &quot;targetResources&quot;: [ # A list of network resource URLs to which this rule applies. This field allows you to control which network?s VMs get this rule. If this field is left blank, all VMs within the organization will receive the rule.
+          &quot;targetResources&quot;: [ # A list of network resource URLs to which this rule applies. This field allows you to control which network&#x27;s VMs get this rule. If this field is left blank, all VMs within the organization will receive the rule.
             &quot;A String&quot;,
           ],
           &quot;targetSecureLabels&quot;: [ # A list of secure labels that controls which instances the firewall rule applies to. If targetSecureLabel are specified, then the firewall rule applies only to instances in the VPC network that have one of those secure labels. targetSecureLabel may not be set at the same time as targetServiceAccounts. If neither targetServiceAccounts nor targetSecureLabel are specified, the firewall rule applies to all instances on the specified network. Maximum number of target label values allowed is 256.
@@ -1842,7 +1863,7 @@ Returns:
             &quot;versionedExpr&quot;: &quot;A String&quot;, # Preconfigured versioned expression. If this field is specified, config must also be specified. Available preconfigured expressions along with their requirements are: SRC_IPS_V1 - must specify the corresponding src_ip_range field in config.
           },
           &quot;preview&quot;: True or False, # If set to true, the specified action is not enforced.
-          &quot;priority&quot;: 42, # An integer indicating the priority of a rule in the list. The priority must be a positive value between 0 and 2147483647. Rules are evaluated from highest to lowest priority where 0 is the highest priority and 2147483647 is the lowest prority.
+          &quot;priority&quot;: 42, # An integer indicating the priority of a rule in the list. The priority must be a positive value between 0 and 2147483647. Rules are evaluated from highest to lowest priority where 0 is the highest priority and 2147483647 is the lowest priority.
           &quot;ruleNumber&quot;: &quot;A String&quot;, # Identifier for the rule. This is only unique within the given security policy. This can only be set during rule creation, if rule number is not specified it will be generated by the server.
           &quot;ruleTupleCount&quot;: 42, # [Output Only] Calculation of the complexity of a single firewall security policy rule.
           &quot;targetResources&quot;: [ # A list of network resource URLs to which this rule applies. This field allows you to control which network&#x27;s VMs get this rule. If this field is left blank, all VMs within the organization will receive the rule.
@@ -2197,6 +2218,9 @@ Args:
 { # Represents an Instance resource.
     # 
     # An instance is a virtual machine that is hosted on Google Cloud Platform. For more information, read Virtual Machine Instances. (== resource_for {$api_version}.instances ==)
+  &quot;advancedMachineFeatures&quot;: { # Specifies options for controlling advanced machine features. Options that would traditionally be configured in a BIOS belong here. Features that require operating system support may have corresponding entries in the GuestOsFeatures of an Image (e.g., whether or not the OS in the Image supports nested virtualization being enabled or disabled). # Controls for advanced machine-related behavior features.
+    &quot;enableNestedVirtualization&quot;: True or False, # Whether to enable nested virtualization or not (default is false).
+  },
   &quot;canIpForward&quot;: True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
   &quot;confidentialInstanceConfig&quot;: { # A set of Confidential Instance options.
     &quot;enableConfidentialCompute&quot;: True or False, # Defines whether the instance should have confidential compute enabled.
@@ -2267,6 +2291,7 @@ Args:
         },
         &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
         &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
+        &quot;provisionedIops&quot;: &quot;A String&quot;, # Indicates how many IOPS must be provisioned for the disk.
         &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
           &quot;A String&quot;,
         ],
@@ -2445,11 +2470,15 @@ Args:
           # - projects/project/global/networks/network
           # - global/networks/default
       &quot;networkIP&quot;: &quot;A String&quot;, # An IPv4 internal IP address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
+      &quot;nicType&quot;: &quot;A String&quot;, # The type of vNIC to be used on this interface. This may be gVNIC or VirtioNet.
       &quot;subnetwork&quot;: &quot;A String&quot;, # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not specify this field. If the network is in auto subnet mode, specifying the subnetwork is optional. If the network is in custom subnet mode, specifying the subnetwork is required. If you specify this field, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
           # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
           # - regions/region/subnetworks/subnetwork
     },
   ],
+  &quot;networkPerformanceConfig&quot;: {
+    &quot;totalEgressBandwidthTier&quot;: &quot;A String&quot;,
+  },
   &quot;privateIpv6GoogleAccess&quot;: &quot;A String&quot;, # The private IPv6 google access type for the VM. If not specified, use  INHERIT_FROM_SUBNETWORK as default.
   &quot;reservationAffinity&quot;: { # Specifies the reservations that this instance can consume from. # Specifies the reservations that this instance can consume from.
     &quot;consumeReservationType&quot;: &quot;A String&quot;, # Specifies the type of reservation from which this instance can consume resources: ANY_RESERVATION (default), SPECIFIC_RESERVATION, or NO_RESERVATION. See  Consuming reserved instances for examples.
@@ -2461,10 +2490,12 @@ Args:
   &quot;resourcePolicies&quot;: [ # Resource policies applied to this instance.
     &quot;A String&quot;,
   ],
-  &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 13 # Sets the scheduling options for this instance.
+  &quot;satisfiesPzs&quot;: True or False, # [Output Only] Reserved for future use.
+  &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 17 # Sets the scheduling options for this instance.
     &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
         #
         # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
+    &quot;locationHint&quot;: &quot;A String&quot;, # An opaque location hint used to place the instance close to other resources. This field is for use by internal tools that use the public API.
     &quot;minNodeCpus&quot;: 42, # The minimum number of virtual CPUs this instance will consume when running on a sole-tenant node.
     &quot;nodeAffinities&quot;: [ # A set of node affinity and anti-affinity configurations. Refer to Configuring node affinity for more information. Overrides reservationAffinity.
       { # Node Affinity: the configuration of desired nodes onto which this Instance could be scheduled.
@@ -2634,7 +2665,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
-  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.
 
 Returns:
   An object of the form:
@@ -2645,6 +2676,9 @@ Returns:
     { # Represents an Instance resource.
         #
         # An instance is a virtual machine that is hosted on Google Cloud Platform. For more information, read Virtual Machine Instances. (== resource_for {$api_version}.instances ==)
+      &quot;advancedMachineFeatures&quot;: { # Specifies options for controlling advanced machine features. Options that would traditionally be configured in a BIOS belong here. Features that require operating system support may have corresponding entries in the GuestOsFeatures of an Image (e.g., whether or not the OS in the Image supports nested virtualization being enabled or disabled). # Controls for advanced machine-related behavior features.
+        &quot;enableNestedVirtualization&quot;: True or False, # Whether to enable nested virtualization or not (default is false).
+      },
       &quot;canIpForward&quot;: True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
       &quot;confidentialInstanceConfig&quot;: { # A set of Confidential Instance options.
         &quot;enableConfidentialCompute&quot;: True or False, # Defines whether the instance should have confidential compute enabled.
@@ -2715,6 +2749,7 @@ Returns:
             },
             &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
             &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
+            &quot;provisionedIops&quot;: &quot;A String&quot;, # Indicates how many IOPS must be provisioned for the disk.
             &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
               &quot;A String&quot;,
             ],
@@ -2893,11 +2928,15 @@ Returns:
               # - projects/project/global/networks/network
               # - global/networks/default
           &quot;networkIP&quot;: &quot;A String&quot;, # An IPv4 internal IP address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
+          &quot;nicType&quot;: &quot;A String&quot;, # The type of vNIC to be used on this interface. This may be gVNIC or VirtioNet.
           &quot;subnetwork&quot;: &quot;A String&quot;, # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not specify this field. If the network is in auto subnet mode, specifying the subnetwork is optional. If the network is in custom subnet mode, specifying the subnetwork is required. If you specify this field, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
               # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
               # - regions/region/subnetworks/subnetwork
         },
       ],
+      &quot;networkPerformanceConfig&quot;: {
+        &quot;totalEgressBandwidthTier&quot;: &quot;A String&quot;,
+      },
       &quot;privateIpv6GoogleAccess&quot;: &quot;A String&quot;, # The private IPv6 google access type for the VM. If not specified, use  INHERIT_FROM_SUBNETWORK as default.
       &quot;reservationAffinity&quot;: { # Specifies the reservations that this instance can consume from. # Specifies the reservations that this instance can consume from.
         &quot;consumeReservationType&quot;: &quot;A String&quot;, # Specifies the type of reservation from which this instance can consume resources: ANY_RESERVATION (default), SPECIFIC_RESERVATION, or NO_RESERVATION. See  Consuming reserved instances for examples.
@@ -2909,10 +2948,12 @@ Returns:
       &quot;resourcePolicies&quot;: [ # Resource policies applied to this instance.
         &quot;A String&quot;,
       ],
-      &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 13 # Sets the scheduling options for this instance.
+      &quot;satisfiesPzs&quot;: True or False, # [Output Only] Reserved for future use.
+      &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 17 # Sets the scheduling options for this instance.
         &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
             #
             # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
+        &quot;locationHint&quot;: &quot;A String&quot;, # An opaque location hint used to place the instance close to other resources. This field is for use by internal tools that use the public API.
         &quot;minNodeCpus&quot;: 42, # The minimum number of virtual CPUs this instance will consume when running on a sole-tenant node.
         &quot;nodeAffinities&quot;: [ # A set of node affinity and anti-affinity configurations. Refer to Configuring node affinity for more information. Overrides reservationAffinity.
           { # Node Affinity: the configuration of desired nodes onto which this Instance could be scheduled.
@@ -3019,7 +3060,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
-  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.
 
 Returns:
   An object of the form:
@@ -4497,10 +4538,11 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # Sets the scheduling options for an Instance. NextID: 13
+{ # Sets the scheduling options for an Instance. NextID: 17
   &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
       # 
       # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
+  &quot;locationHint&quot;: &quot;A String&quot;, # An opaque location hint used to place the instance close to other resources. This field is for use by internal tools that use the public API.
   &quot;minNodeCpus&quot;: 42, # The minimum number of virtual CPUs this instance will consume when running on a sole-tenant node.
   &quot;nodeAffinities&quot;: [ # A set of node affinity and anti-affinity configurations. Refer to Configuring node affinity for more information. Overrides reservationAffinity.
     { # Node Affinity: the configuration of desired nodes onto which this Instance could be scheduled.
@@ -5378,6 +5420,9 @@ Args:
 { # Represents an Instance resource.
     # 
     # An instance is a virtual machine that is hosted on Google Cloud Platform. For more information, read Virtual Machine Instances. (== resource_for {$api_version}.instances ==)
+  &quot;advancedMachineFeatures&quot;: { # Specifies options for controlling advanced machine features. Options that would traditionally be configured in a BIOS belong here. Features that require operating system support may have corresponding entries in the GuestOsFeatures of an Image (e.g., whether or not the OS in the Image supports nested virtualization being enabled or disabled). # Controls for advanced machine-related behavior features.
+    &quot;enableNestedVirtualization&quot;: True or False, # Whether to enable nested virtualization or not (default is false).
+  },
   &quot;canIpForward&quot;: True or False, # Allows this instance to send and receive packets with non-matching destination or source IPs. This is required if you plan to use this instance to forward routes. For more information, see Enabling IP Forwarding.
   &quot;confidentialInstanceConfig&quot;: { # A set of Confidential Instance options.
     &quot;enableConfidentialCompute&quot;: True or False, # Defines whether the instance should have confidential compute enabled.
@@ -5448,6 +5493,7 @@ Args:
         },
         &quot;multiWriter&quot;: True or False, # Indicates whether or not the disk can be read/write attached to more than one instance.
         &quot;onUpdateAction&quot;: &quot;A String&quot;, # Specifies which action to take on instance update with this disk. Default is to use the existing disk.
+        &quot;provisionedIops&quot;: &quot;A String&quot;, # Indicates how many IOPS must be provisioned for the disk.
         &quot;resourcePolicies&quot;: [ # Resource policies applied to this disk for automatic snapshot creations. Specified using the full or partial URL. For instance template, specify only the resource policy name.
           &quot;A String&quot;,
         ],
@@ -5626,11 +5672,15 @@ Args:
           # - projects/project/global/networks/network
           # - global/networks/default
       &quot;networkIP&quot;: &quot;A String&quot;, # An IPv4 internal IP address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
+      &quot;nicType&quot;: &quot;A String&quot;, # The type of vNIC to be used on this interface. This may be gVNIC or VirtioNet.
       &quot;subnetwork&quot;: &quot;A String&quot;, # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not specify this field. If the network is in auto subnet mode, specifying the subnetwork is optional. If the network is in custom subnet mode, specifying the subnetwork is required. If you specify this field, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
           # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
           # - regions/region/subnetworks/subnetwork
     },
   ],
+  &quot;networkPerformanceConfig&quot;: {
+    &quot;totalEgressBandwidthTier&quot;: &quot;A String&quot;,
+  },
   &quot;privateIpv6GoogleAccess&quot;: &quot;A String&quot;, # The private IPv6 google access type for the VM. If not specified, use  INHERIT_FROM_SUBNETWORK as default.
   &quot;reservationAffinity&quot;: { # Specifies the reservations that this instance can consume from. # Specifies the reservations that this instance can consume from.
     &quot;consumeReservationType&quot;: &quot;A String&quot;, # Specifies the type of reservation from which this instance can consume resources: ANY_RESERVATION (default), SPECIFIC_RESERVATION, or NO_RESERVATION. See  Consuming reserved instances for examples.
@@ -5642,10 +5692,12 @@ Args:
   &quot;resourcePolicies&quot;: [ # Resource policies applied to this instance.
     &quot;A String&quot;,
   ],
-  &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 13 # Sets the scheduling options for this instance.
+  &quot;satisfiesPzs&quot;: True or False, # [Output Only] Reserved for future use.
+  &quot;scheduling&quot;: { # Sets the scheduling options for an Instance. NextID: 17 # Sets the scheduling options for this instance.
     &quot;automaticRestart&quot;: True or False, # Specifies whether the instance should be automatically restarted if it is terminated by Compute Engine (not terminated by a user). You can only set the automatic restart option for standard instances. Preemptible instances cannot be automatically restarted.
         #
         # By default, this is set to true so an instance is automatically restarted if it is terminated by Compute Engine.
+    &quot;locationHint&quot;: &quot;A String&quot;, # An opaque location hint used to place the instance close to other resources. This field is for use by internal tools that use the public API.
     &quot;minNodeCpus&quot;: 42, # The minimum number of virtual CPUs this instance will consume when running on a sole-tenant node.
     &quot;nodeAffinities&quot;: [ # A set of node affinity and anti-affinity configurations. Refer to Configuring node affinity for more information. Overrides reservationAffinity.
       { # Node Affinity: the configuration of desired nodes onto which this Instance could be scheduled.
@@ -5975,7 +6027,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="updateNetworkInterface">updateNetworkInterface(project, zone, instance, networkInterface, body=None, requestId=None)</code>
-  <pre>Updates an instance&#x27;s network interface. This method follows PATCH semantics.
+  <pre>Updates an instance&#x27;s network interface. This method can only update an interface&#x27;s alias IP range and attached network. See Modifying alias IP ranges for an existing instance for instructions on changing alias IP ranges. See Migrating a VM between networks for instructions on migrating an interface. This method follows PATCH semantics.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -6018,6 +6070,7 @@ Args:
       # - projects/project/global/networks/network
       # - global/networks/default
   &quot;networkIP&quot;: &quot;A String&quot;, # An IPv4 internal IP address to assign to the instance for this network interface. If not specified by the user, an unused internal IP is assigned by the system.
+  &quot;nicType&quot;: &quot;A String&quot;, # The type of vNIC to be used on this interface. This may be gVNIC or VirtioNet.
   &quot;subnetwork&quot;: &quot;A String&quot;, # The URL of the Subnetwork resource for this instance. If the network resource is in legacy mode, do not specify this field. If the network is in auto subnet mode, specifying the subnetwork is optional. If the network is in custom subnet mode, specifying the subnetwork is required. If you specify this field, you can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs:
       # - https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork
       # - regions/region/subnetworks/subnetwork
