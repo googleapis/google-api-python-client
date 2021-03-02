@@ -18,6 +18,7 @@ import google.auth.credentials
 import google_auth_httplib2
 import httplib2
 import oauth2client.client
+import pkg_resources
 import unittest2 as unittest
 
 from googleapiclient import _auth
@@ -82,6 +83,8 @@ class TestAuthWithGoogleAuth(unittest.TestCase):
         ):
             pass
 
+        google_auth_version = pkg_resources.get_distribution("google-auth").parsed_version
+
         credentials = mock.Mock(spec=CredentialsWithScopes)
         credentials.requires_scopes = True
 
@@ -89,7 +92,12 @@ class TestAuthWithGoogleAuth(unittest.TestCase):
 
         self.assertNotEqual(credentials, returned)
         self.assertEqual(returned, credentials.with_scopes.return_value)
-        credentials.with_scopes.assert_called_once_with(mock.sentinel.scopes, default_scopes=None)
+
+        # The `default_scopes` argument was added in google-auth==1.25.0
+        if google_auth_version >= pkg_resources.parse_version("1.25.0"):
+            credentials.with_scopes.assert_called_once_with(mock.sentinel.scopes, default_scopes=None)
+        else:
+            credentials.with_scopes.assert_called_once_with(mock.sentinel.scopes)
 
     def test_authorized_http(self):
         credentials = mock.Mock(spec=google.auth.credentials.Credentials)
