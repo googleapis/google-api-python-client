@@ -148,7 +148,7 @@ h1, h2, h3 {
 <p class="firstline">Resizes the managed instance group with advanced configuration options like disabling creation retries. This is an extended version of the resize method.</p>
 <p class="toc_element">
   <code><a href="#setAutoHealingPolicies">setAutoHealingPolicies(project, zone, instanceGroupManager, body=None, requestId=None)</a></code></p>
-<p class="firstline">Motifies the autohealing policy for the instances in this managed instance group. [Deprecated] This method is deprecated. Use instanceGroupManagers.patch instead.</p>
+<p class="firstline">Modifies the autohealing policies. [Deprecated] This method is deprecated. Please use Patch instead.</p>
 <p class="toc_element">
   <code><a href="#setInstanceTemplate">setInstanceTemplate(project, zone, instanceGroupManager, body=None, requestId=None)</a></code></p>
 <p class="firstline">Specifies the instance template to use when creating new instances in this group. The templates for existing instances in the group do not change unless you run recreateInstances, run applyUpdatesToInstances, or set the group's updatePolicy.type to PROACTIVE.</p>
@@ -228,7 +228,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -277,7 +276,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
-  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
 
 Returns:
   An object of the form:
@@ -317,7 +316,7 @@ Returns:
           },
           &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
           &quot;distributionPolicy&quot;: { # Policy specifying the intended distribution of managed instances across zones in a regional managed instance group.
-            &quot;targetShape&quot;: &quot;A String&quot;, # The distribution shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType).
+            &quot;targetShape&quot;: &quot;A String&quot;, # The shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType). The possible values are EVEN and ANY. For EVEN the group attempts to preserve a balanced number of instances across zones. For ANY the group creates new instances where resources are available to fulfill the request; as a result, instances may be distributed unevenly across zones in this mode. The default value is EVEN.
             &quot;zones&quot;: [ # Zones where the regional managed instance group will create and manage its instances.
               {
                 &quot;zone&quot;: &quot;A String&quot;, # The URL of the zone. The zone must exist in the region where the managed instance group is located.
@@ -339,6 +338,12 @@ Returns:
               &quot;port&quot;: 42, # The port number, which can be a value between 1 and 65535.
             },
           ],
+          &quot;pendingActions&quot;: { # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The list of instance actions and the number of instances in this managed instance group that are pending for each of those actions.
+            &quot;creating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be created.
+            &quot;deleting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be deleted.
+            &quot;recreating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be recreated.
+            &quot;restarting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be restarted.
+          },
           &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the managed instance group resides (for regional resources).
           &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] The URL for this managed instance group. The server defines this URL.
           &quot;serviceAccount&quot;: &quot;A String&quot;, # The service account to be used as credentials for all operations performed by the managed instance group on instances. The service accounts needs all permissions required to create and delete instances. By default, the service account {projectNumber}@cloudservices.gserviceaccount.com is used.
@@ -373,7 +378,7 @@ Returns:
             &quot;instanceRedistributionType&quot;: &quot;A String&quot;, # The  instance redistribution policy for regional managed instance groups. Valid values are:
                 # - PROACTIVE (default): The group attempts to maintain an even distribution of VM instances across zones in the region.
                 # - NONE: For non-autoscaled groups, proactive redistribution is disabled.
-            &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxSurge is a fixed value equal to the number of zones in which the managed instance group operates.
+            &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
                 #
                 # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxSurge.
               &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -388,7 +393,7 @@ Returns:
                 #
                 #
                 # - The instance&#x27;s status is RUNNING.
-                # - If there is a health check on the instance group, the instance&#x27;s health check status must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxUnavailable is a fixed value equal to the number of zones in which the managed instance group operates.
+                # - If there is a health check on the instance group, the instance&#x27;s liveness health check result must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
                 #
                 # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxUnavailable.
               &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -538,7 +543,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -646,7 +650,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -724,7 +727,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -815,7 +817,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -897,7 +898,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -967,7 +967,7 @@ Returns:
   },
   &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
   &quot;distributionPolicy&quot;: { # Policy specifying the intended distribution of managed instances across zones in a regional managed instance group.
-    &quot;targetShape&quot;: &quot;A String&quot;, # The distribution shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType).
+    &quot;targetShape&quot;: &quot;A String&quot;, # The shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType). The possible values are EVEN and ANY. For EVEN the group attempts to preserve a balanced number of instances across zones. For ANY the group creates new instances where resources are available to fulfill the request; as a result, instances may be distributed unevenly across zones in this mode. The default value is EVEN.
     &quot;zones&quot;: [ # Zones where the regional managed instance group will create and manage its instances.
       {
         &quot;zone&quot;: &quot;A String&quot;, # The URL of the zone. The zone must exist in the region where the managed instance group is located.
@@ -989,6 +989,12 @@ Returns:
       &quot;port&quot;: 42, # The port number, which can be a value between 1 and 65535.
     },
   ],
+  &quot;pendingActions&quot;: { # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The list of instance actions and the number of instances in this managed instance group that are pending for each of those actions.
+    &quot;creating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be created.
+    &quot;deleting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be deleted.
+    &quot;recreating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be recreated.
+    &quot;restarting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be restarted.
+  },
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the managed instance group resides (for regional resources).
   &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] The URL for this managed instance group. The server defines this URL.
   &quot;serviceAccount&quot;: &quot;A String&quot;, # The service account to be used as credentials for all operations performed by the managed instance group on instances. The service accounts needs all permissions required to create and delete instances. By default, the service account {projectNumber}@cloudservices.gserviceaccount.com is used.
@@ -1023,7 +1029,7 @@ Returns:
     &quot;instanceRedistributionType&quot;: &quot;A String&quot;, # The  instance redistribution policy for regional managed instance groups. Valid values are:
         # - PROACTIVE (default): The group attempts to maintain an even distribution of VM instances across zones in the region.
         # - NONE: For non-autoscaled groups, proactive redistribution is disabled.
-    &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxSurge is a fixed value equal to the number of zones in which the managed instance group operates.
+    &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
         #
         # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxSurge.
       &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -1038,7 +1044,7 @@ Returns:
         #
         #
         # - The instance&#x27;s status is RUNNING.
-        # - If there is a health check on the instance group, the instance&#x27;s health check status must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxUnavailable is a fixed value equal to the number of zones in which the managed instance group operates.
+        # - If there is a health check on the instance group, the instance&#x27;s liveness health check result must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
         #
         # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxUnavailable.
       &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -1119,7 +1125,7 @@ Args:
   },
   &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
   &quot;distributionPolicy&quot;: { # Policy specifying the intended distribution of managed instances across zones in a regional managed instance group.
-    &quot;targetShape&quot;: &quot;A String&quot;, # The distribution shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType).
+    &quot;targetShape&quot;: &quot;A String&quot;, # The shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType). The possible values are EVEN and ANY. For EVEN the group attempts to preserve a balanced number of instances across zones. For ANY the group creates new instances where resources are available to fulfill the request; as a result, instances may be distributed unevenly across zones in this mode. The default value is EVEN.
     &quot;zones&quot;: [ # Zones where the regional managed instance group will create and manage its instances.
       {
         &quot;zone&quot;: &quot;A String&quot;, # The URL of the zone. The zone must exist in the region where the managed instance group is located.
@@ -1141,6 +1147,12 @@ Args:
       &quot;port&quot;: 42, # The port number, which can be a value between 1 and 65535.
     },
   ],
+  &quot;pendingActions&quot;: { # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The list of instance actions and the number of instances in this managed instance group that are pending for each of those actions.
+    &quot;creating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be created.
+    &quot;deleting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be deleted.
+    &quot;recreating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be recreated.
+    &quot;restarting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be restarted.
+  },
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the managed instance group resides (for regional resources).
   &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] The URL for this managed instance group. The server defines this URL.
   &quot;serviceAccount&quot;: &quot;A String&quot;, # The service account to be used as credentials for all operations performed by the managed instance group on instances. The service accounts needs all permissions required to create and delete instances. By default, the service account {projectNumber}@cloudservices.gserviceaccount.com is used.
@@ -1175,7 +1187,7 @@ Args:
     &quot;instanceRedistributionType&quot;: &quot;A String&quot;, # The  instance redistribution policy for regional managed instance groups. Valid values are:
         # - PROACTIVE (default): The group attempts to maintain an even distribution of VM instances across zones in the region.
         # - NONE: For non-autoscaled groups, proactive redistribution is disabled.
-    &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxSurge is a fixed value equal to the number of zones in which the managed instance group operates.
+    &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
         #
         # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxSurge.
       &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -1190,7 +1202,7 @@ Args:
         #
         #
         # - The instance&#x27;s status is RUNNING.
-        # - If there is a health check on the instance group, the instance&#x27;s health check status must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxUnavailable is a fixed value equal to the number of zones in which the managed instance group operates.
+        # - If there is a health check on the instance group, the instance&#x27;s liveness health check result must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
         #
         # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxUnavailable.
       &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -1270,7 +1282,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -1319,7 +1330,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
-  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
 
 Returns:
   An object of the form:
@@ -1357,7 +1368,7 @@ Returns:
       },
       &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
       &quot;distributionPolicy&quot;: { # Policy specifying the intended distribution of managed instances across zones in a regional managed instance group.
-        &quot;targetShape&quot;: &quot;A String&quot;, # The distribution shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType).
+        &quot;targetShape&quot;: &quot;A String&quot;, # The shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType). The possible values are EVEN and ANY. For EVEN the group attempts to preserve a balanced number of instances across zones. For ANY the group creates new instances where resources are available to fulfill the request; as a result, instances may be distributed unevenly across zones in this mode. The default value is EVEN.
         &quot;zones&quot;: [ # Zones where the regional managed instance group will create and manage its instances.
           {
             &quot;zone&quot;: &quot;A String&quot;, # The URL of the zone. The zone must exist in the region where the managed instance group is located.
@@ -1379,6 +1390,12 @@ Returns:
           &quot;port&quot;: 42, # The port number, which can be a value between 1 and 65535.
         },
       ],
+      &quot;pendingActions&quot;: { # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The list of instance actions and the number of instances in this managed instance group that are pending for each of those actions.
+        &quot;creating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be created.
+        &quot;deleting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be deleted.
+        &quot;recreating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be recreated.
+        &quot;restarting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be restarted.
+      },
       &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the managed instance group resides (for regional resources).
       &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] The URL for this managed instance group. The server defines this URL.
       &quot;serviceAccount&quot;: &quot;A String&quot;, # The service account to be used as credentials for all operations performed by the managed instance group on instances. The service accounts needs all permissions required to create and delete instances. By default, the service account {projectNumber}@cloudservices.gserviceaccount.com is used.
@@ -1413,7 +1430,7 @@ Returns:
         &quot;instanceRedistributionType&quot;: &quot;A String&quot;, # The  instance redistribution policy for regional managed instance groups. Valid values are:
             # - PROACTIVE (default): The group attempts to maintain an even distribution of VM instances across zones in the region.
             # - NONE: For non-autoscaled groups, proactive redistribution is disabled.
-        &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxSurge is a fixed value equal to the number of zones in which the managed instance group operates.
+        &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
             #
             # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxSurge.
           &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -1428,7 +1445,7 @@ Returns:
             #
             #
             # - The instance&#x27;s status is RUNNING.
-            # - If there is a health check on the instance group, the instance&#x27;s health check status must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxUnavailable is a fixed value equal to the number of zones in which the managed instance group operates.
+            # - If there is a health check on the instance group, the instance&#x27;s liveness health check result must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
             #
             # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxUnavailable.
           &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -1505,7 +1522,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
-  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
 
 Returns:
   An object of the form:
@@ -1568,7 +1585,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
-  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
 
 Returns:
   An object of the form:
@@ -1676,7 +1693,7 @@ You can also sort results in descending order based on the creation timestamp us
 
 Currently, only sorting by `name` or `creationTimestamp desc` is supported.
   pageToken: string, Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.
-  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.
+  returnPartialSuccess: boolean, Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.
 
 Returns:
   An object of the form:
@@ -1785,7 +1802,7 @@ Args:
   },
   &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
   &quot;distributionPolicy&quot;: { # Policy specifying the intended distribution of managed instances across zones in a regional managed instance group.
-    &quot;targetShape&quot;: &quot;A String&quot;, # The distribution shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType).
+    &quot;targetShape&quot;: &quot;A String&quot;, # The shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType). The possible values are EVEN and ANY. For EVEN the group attempts to preserve a balanced number of instances across zones. For ANY the group creates new instances where resources are available to fulfill the request; as a result, instances may be distributed unevenly across zones in this mode. The default value is EVEN.
     &quot;zones&quot;: [ # Zones where the regional managed instance group will create and manage its instances.
       {
         &quot;zone&quot;: &quot;A String&quot;, # The URL of the zone. The zone must exist in the region where the managed instance group is located.
@@ -1807,6 +1824,12 @@ Args:
       &quot;port&quot;: 42, # The port number, which can be a value between 1 and 65535.
     },
   ],
+  &quot;pendingActions&quot;: { # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The list of instance actions and the number of instances in this managed instance group that are pending for each of those actions.
+    &quot;creating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be created.
+    &quot;deleting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be deleted.
+    &quot;recreating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be recreated.
+    &quot;restarting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be restarted.
+  },
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the managed instance group resides (for regional resources).
   &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] The URL for this managed instance group. The server defines this URL.
   &quot;serviceAccount&quot;: &quot;A String&quot;, # The service account to be used as credentials for all operations performed by the managed instance group on instances. The service accounts needs all permissions required to create and delete instances. By default, the service account {projectNumber}@cloudservices.gserviceaccount.com is used.
@@ -1841,7 +1864,7 @@ Args:
     &quot;instanceRedistributionType&quot;: &quot;A String&quot;, # The  instance redistribution policy for regional managed instance groups. Valid values are:
         # - PROACTIVE (default): The group attempts to maintain an even distribution of VM instances across zones in the region.
         # - NONE: For non-autoscaled groups, proactive redistribution is disabled.
-    &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxSurge is a fixed value equal to the number of zones in which the managed instance group operates.
+    &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
         #
         # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxSurge.
       &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -1856,7 +1879,7 @@ Args:
         #
         #
         # - The instance&#x27;s status is RUNNING.
-        # - If there is a health check on the instance group, the instance&#x27;s health check status must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxUnavailable is a fixed value equal to the number of zones in which the managed instance group operates.
+        # - If there is a health check on the instance group, the instance&#x27;s liveness health check result must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
         #
         # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxUnavailable.
       &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -1936,7 +1959,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -2039,7 +2061,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -2130,7 +2151,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -2217,7 +2237,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -2313,7 +2332,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -2343,7 +2361,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="setAutoHealingPolicies">setAutoHealingPolicies(project, zone, instanceGroupManager, body=None, requestId=None)</code>
-  <pre>Motifies the autohealing policy for the instances in this managed instance group. [Deprecated] This method is deprecated. Use instanceGroupManagers.patch instead.
+  <pre>Modifies the autohealing policies. [Deprecated] This method is deprecated. Please use Patch instead.
 
 Args:
   project: string, Project ID for this request. (required)
@@ -2403,7 +2421,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -2488,7 +2505,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -2576,7 +2592,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -2673,7 +2688,7 @@ Args:
   },
   &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
   &quot;distributionPolicy&quot;: { # Policy specifying the intended distribution of managed instances across zones in a regional managed instance group.
-    &quot;targetShape&quot;: &quot;A String&quot;, # The distribution shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType).
+    &quot;targetShape&quot;: &quot;A String&quot;, # The shape to which the group converges either proactively or on resize events (depending on the value set in updatePolicy.instanceRedistributionType). The possible values are EVEN and ANY. For EVEN the group attempts to preserve a balanced number of instances across zones. For ANY the group creates new instances where resources are available to fulfill the request; as a result, instances may be distributed unevenly across zones in this mode. The default value is EVEN.
     &quot;zones&quot;: [ # Zones where the regional managed instance group will create and manage its instances.
       {
         &quot;zone&quot;: &quot;A String&quot;, # The URL of the zone. The zone must exist in the region where the managed instance group is located.
@@ -2695,6 +2710,12 @@ Args:
       &quot;port&quot;: 42, # The port number, which can be a value between 1 and 65535.
     },
   ],
+  &quot;pendingActions&quot;: { # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The list of instance actions and the number of instances in this managed instance group that are pending for each of those actions.
+    &quot;creating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be created.
+    &quot;deleting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be deleted.
+    &quot;recreating&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be recreated.
+    &quot;restarting&quot;: 42, # [Deprecated] This field is deprecated and will be removed. Prefer using the status field instead. Please contact cloud-updater-feedback@google.com to leave feedback if your workload relies on this field. [Output Only] The number of instances in the managed instance group that are pending to be restarted.
+  },
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the managed instance group resides (for regional resources).
   &quot;selfLink&quot;: &quot;A String&quot;, # [Output Only] The URL for this managed instance group. The server defines this URL.
   &quot;serviceAccount&quot;: &quot;A String&quot;, # The service account to be used as credentials for all operations performed by the managed instance group on instances. The service accounts needs all permissions required to create and delete instances. By default, the service account {projectNumber}@cloudservices.gserviceaccount.com is used.
@@ -2729,7 +2750,7 @@ Args:
     &quot;instanceRedistributionType&quot;: &quot;A String&quot;, # The  instance redistribution policy for regional managed instance groups. Valid values are:
         # - PROACTIVE (default): The group attempts to maintain an even distribution of VM instances across zones in the region.
         # - NONE: For non-autoscaled groups, proactive redistribution is disabled.
-    &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxSurge is a fixed value equal to the number of zones in which the managed instance group operates.
+    &quot;maxSurge&quot;: { # Encapsulates numeric value that can be either absolute or relative. # The maximum number of instances that can be created above the specified targetSize during the update process. By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
         #
         # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxSurge.
       &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -2744,7 +2765,7 @@ Args:
         #
         #
         # - The instance&#x27;s status is RUNNING.
-        # - If there is a health check on the instance group, the instance&#x27;s health check status must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  This value can be either a fixed number or, if the group has 10 or more instances, a percentage. If you set a percentage, the number of instances is rounded up if necessary. The default value for maxUnavailable is a fixed value equal to the number of zones in which the managed instance group operates.
+        # - If there is a health check on the instance group, the instance&#x27;s liveness health check result must be HEALTHY at least once. If there is no health check on the group, then the instance only needs to have a status of RUNNING to be considered available.  By default, a fixed value of 1 is used. This value can be either a fixed number or a percentage if the instance group has 10 or more instances. If you set a percentage, the number of instances will be rounded up if necessary.
         #
         # At least one of either maxSurge or maxUnavailable must be greater than 0. Learn more about maxUnavailable.
       &quot;calculated&quot;: 42, # [Output Only] Absolute value of VM instances calculated based on the specific mode.
@@ -2824,7 +2845,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
@@ -2927,7 +2947,6 @@ Returns:
   &quot;insertTime&quot;: &quot;A String&quot;, # [Output Only] The time that this operation was requested. This value is in RFC3339 text format.
   &quot;kind&quot;: &quot;compute#operation&quot;, # [Output Only] Type of the resource. Always `compute#operation` for Operation resources.
   &quot;name&quot;: &quot;A String&quot;, # [Output Only] Name of the operation.
-  &quot;operationGroupId&quot;: &quot;A String&quot;, # [Output Only] An ID that represents a group of operations, such as when a group of operations results from a `bulkInsert` API request.
   &quot;operationType&quot;: &quot;A String&quot;, # [Output Only] The type of operation, such as `insert`, `update`, or `delete`, and so on.
   &quot;progress&quot;: 42, # [Output Only] An optional progress indicator that ranges from 0 to 100. There is no requirement that this be linear or support any granularity of operations. This should not be used to guess when the operation will be complete. This number should monotonically increase as the operation progresses.
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] The URL of the region where the operation resides. Only applicable when performing regional operations.
