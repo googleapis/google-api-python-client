@@ -32,12 +32,12 @@ version of a service definition is more important than reliability.
 > **WARNING**: Breaking change
 
 The 2.0.0 release no longer retrieves discovery documents dynamically on each
-call to `discovery.build()`. Instead, discovery docouments are retrieved from
+call to `discovery.build()`. Instead, discovery documents are retrieved from
 the client library itself.
 
 Under the hood, the `discovery.build()` function retrieves a discovery artifact
 in order to construct the service object. The breaking change is that the
-`discovery.build()` funciton will no longer retrieve discovery artifacts
+`discovery.build()` function will no longer retrieve discovery artifacts
 dynamically. Instead it will use service definitions shipped in the library.
 
 
