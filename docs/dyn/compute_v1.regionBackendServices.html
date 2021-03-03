@@ -214,26 +214,12 @@ Returns:
       # Not supported when the backend service is referenced by a URL map that is bound to target gRPC proxy that has validateForProxyless field set to true.
   &quot;backends&quot;: [ # The list of backends that serve this BackendService.
     { # Message containing information of one individual backend.
-      &quot;balancingMode&quot;: &quot;A String&quot;, # Specifies the balancing mode for the backend.
+      &quot;balancingMode&quot;: &quot;A String&quot;, # Specifies how to determine whether the backend of a load balancer can handle additional traffic or is fully loaded. For usage guidelines, see  Connection balancing mode.
+      &quot;capacityScaler&quot;: 3.14, # A multiplier applied to the backend&#x27;s target capacity of its balancing mode. The default value is 1, which means the group serves up to 100% of its configured capacity (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available capacity. The valid ranges are 0.0 and [0.1,1.0]. You cannot configure a setting larger than 0 and smaller than 0.1. You cannot configure a setting of 0 when there is only one backend attached to the backend service.
           #
-          # When choosing a balancing mode, you need to consider the loadBalancingScheme, and protocol for the backend service, as well as the type of backend (instance group or NEG).
+          # Not supported by:
           #
-          #
-          # - If the load balancing mode is CONNECTION, then the load is spread based on how many concurrent connections the backend can handle.
-          # You can use the CONNECTION balancing mode if the protocol for the backend service is SSL, TCP, or UDP.
-          #
-          # If the loadBalancingScheme for the backend service is EXTERNAL (SSL Proxy and TCP Proxy load balancers), you must also specify exactly one of the following parameters: maxConnections (except for regional managed instance groups), maxConnectionsPerInstance, or maxConnectionsPerEndpoint.
-          #
-          # If the loadBalancingScheme for the backend service is INTERNAL (internal TCP/UDP Load Balancers) or EXTERNAL  (Network Load Balancing), you cannot specify any additional parameters.
-          #
-          # - If the load balancing mode is RATE, the load is spread based on the rate of HTTP requests per second (RPS).
-          # You can use the RATE balancing mode if the protocol for the backend service is HTTP, HTTP2, or HTTPS. You must specify exactly one of the following parameters: maxRate (except for regional managed instance groups), maxRatePerInstance, or maxRatePerEndpoint.
-          #
-          # - If the load balancing mode is UTILIZATION, the load is spread based on the backend utilization of instances in an instance group.
-          # You can use the UTILIZATION balancing mode if the loadBalancingScheme of the backend service is EXTERNAL (except Network Load Balancing), INTERNAL_SELF_MANAGED, or INTERNAL_MANAGED and the backends are instance groups. There are no restrictions on the backend service protocol.
-      &quot;capacityScaler&quot;: 3.14, # A multiplier applied to the group&#x27;s maximum servicing capacity (based on UTILIZATION, RATE or CONNECTION). Default value is 1, which means the group will serve up to 100% of its configured capacity (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available capacity. Valid range is 0.0 and [0.1,1.0]. You cannot configure a setting larger than 0 and smaller than 0.1. You cannot configure a setting of 0 when there is only one backend attached to the backend service.
-          #
-          # This cannot be used for Internal TCP/UDP Load Balancing and Network Load Balancing.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing
       &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
       &quot;failover&quot;: True or False, # This field designates whether this is a failover backend. More than one failover backend can be configured for a given BackendService.
       &quot;group&quot;: &quot;A String&quot;, # The fully-qualified URL of an instance group or network endpoint group (NEG) resource. The type of backend that a backend service supports depends on the backend service&#x27;s loadBalancingScheme.
@@ -247,33 +233,29 @@ Returns:
           # For regional services, the backend must be in the same region as the backend service.
           #
           # You must use the fully-qualified URL (starting with https://www.googleapis.com/) to specify the instance group or NEG. Partial URLs are not supported.
-      &quot;maxConnections&quot;: 42, # Defines a target maximum number of simultaneous connections that the backend can handle. Valid for network endpoint group and instance group backends (except for regional managed instance groups). If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter, maxConnectionsPerInstance, or maxConnectionsPerEndpoint.
+      &quot;maxConnections&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode. Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxConnectionsPerEndpoint&quot;: 42, # Defines a target maximum number of simultaneous connections for an endpoint of a NEG. This is multiplied by the number of endpoints in the NEG to implicitly calculate a maximum number of target maximum simultaneous connections for the NEG. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter, maxConnections, or maxConnectionsPerInstance.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing
+      &quot;maxConnectionsPerEndpoint&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode.
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxConnectionsPerInstance&quot;: 42, # Defines a target maximum number of simultaneous connections for a single VM in a backend instance group. This is multiplied by the number of instances in the instance group to implicitly calculate a target maximum number of simultaneous connections for the whole instance group. If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter,  maxConnections, or maxConnectionsPerEndpoint.
+          # Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxRate&quot;: 42, # Defines a maximum number of HTTP requests per second (RPS) that the backend can handle. Valid for network endpoint group and instance group backends (except for regional managed instance groups). Must not be defined if the backend is a managed instance group that uses autoscaling based on load balancing.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing.
+      &quot;maxConnectionsPerInstance&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode.
           #
-          # If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is RATE, you must specify maxRate, maxRatePerInstance, or maxRatePerEndpoint.
+          # Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxRatePerEndpoint&quot;: 3.14, # Defines a maximum target for requests per second (RPS) for an endpoint of a NEG. This is multiplied by the number of endpoints in the NEG to implicitly calculate a target maximum rate for the NEG.
-          #
-          # If the backend&#x27;s balancingMode is RATE, you must specify either this parameter, maxRate (except for regional managed instance groups), or maxRatePerInstance.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing.
+      &quot;maxRate&quot;: 42, # Defines a maximum number of HTTP requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
           # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxRatePerInstance&quot;: 3.14, # Defines a maximum target for requests per second (RPS) for a single VM in a backend instance group. This is multiplied by the number of instances in the instance group to implicitly calculate a target maximum rate for the whole instance group.
-          #
-          # If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is RATE, you must specify either this parameter, maxRate (except for regional managed instance groups), or maxRatePerEndpoint.
+      &quot;maxRatePerEndpoint&quot;: 3.14, # Defines a maximum target for requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
           # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxUtilization&quot;: 3.14, # Defines the maximum average backend utilization of a backend VM in an instance group. The valid range is [0.0, 1.0]. This is an optional parameter if the backend&#x27;s balancingMode is UTILIZATION.
+      &quot;maxRatePerInstance&quot;: 3.14, # Defines a maximum target for requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
-          # This parameter can be used in conjunction with maxRate, maxRatePerInstance, maxConnections (except for regional managed instance groups), or maxConnectionsPerInstance.
+          # Not available if the backend&#x27;s balancingMode is CONNECTION.
+      &quot;maxUtilization&quot;: 3.14,
     },
   ],
   &quot;cdnPolicy&quot;: { # Message containing Cloud CDN configuration for a backend service. # Cloud CDN configuration for this BackendService. Not available for Internal TCP/UDP Load Balancing and Network Load Balancing.
@@ -317,7 +299,7 @@ Returns:
     &quot;maxRetries&quot;: 42, # The maximum number of parallel retries allowed to the backend cluster. If not specified, the default is 1.
   },
   &quot;connectionDraining&quot;: { # Message containing connection draining configuration.
-    &quot;drainingTimeoutSec&quot;: 42, # The amount of time in seconds to allow existing connections to persist while on unhealthy backend VMs. Only applicable if the protocol is not UDP. The valid range is [0, 3600].
+    &quot;drainingTimeoutSec&quot;: 42, # Configures a duration timeout for existing requests on a removed backend instance. For supported load balancers and protocols, as described in Enabling connection draining.
   },
   &quot;consistentHash&quot;: { # This message defines settings for a consistent hash style load balancer. # Consistent Hash-based load balancing can be used to provide soft session affinity based on HTTP headers, cookies or other properties. This load balancing policy is applicable only for HTTP connections. The affinity to a particular destination host will be lost when one or more hosts are added/removed from the destination service. This field specifies parameters that control consistent hashing. This field is only applicable when localityLbPolicy is set to MAGLEV or RING_HASH.
       #
@@ -453,7 +435,7 @@ Returns:
       # When the loadBalancingScheme is INTERNAL_SELF_MANAGED, or INTERNAL_MANAGED, possible values are NONE, CLIENT_IP, GENERATED_COOKIE, HEADER_FIELD, or HTTP_COOKIE.
       #
       # Not supported when the backend service is referenced by a URL map that is bound to target gRPC proxy that has validateForProxyless field set to true.
-  &quot;timeoutSec&quot;: 42, # The backend service timeout has a different meaning depending on the type of load balancer. For more information see,  Backend service settings The default is 30 seconds.
+  &quot;timeoutSec&quot;: 42, # The backend service timeout has a different meaning depending on the type of load balancer. For more information see,  Backend service settings The default is 30 seconds. The full range of timeout values allowed is 1 - 2,147,483,647 seconds.
 }</pre>
 </div>
 
@@ -525,26 +507,12 @@ Args:
       # Not supported when the backend service is referenced by a URL map that is bound to target gRPC proxy that has validateForProxyless field set to true.
   &quot;backends&quot;: [ # The list of backends that serve this BackendService.
     { # Message containing information of one individual backend.
-      &quot;balancingMode&quot;: &quot;A String&quot;, # Specifies the balancing mode for the backend.
+      &quot;balancingMode&quot;: &quot;A String&quot;, # Specifies how to determine whether the backend of a load balancer can handle additional traffic or is fully loaded. For usage guidelines, see  Connection balancing mode.
+      &quot;capacityScaler&quot;: 3.14, # A multiplier applied to the backend&#x27;s target capacity of its balancing mode. The default value is 1, which means the group serves up to 100% of its configured capacity (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available capacity. The valid ranges are 0.0 and [0.1,1.0]. You cannot configure a setting larger than 0 and smaller than 0.1. You cannot configure a setting of 0 when there is only one backend attached to the backend service.
           #
-          # When choosing a balancing mode, you need to consider the loadBalancingScheme, and protocol for the backend service, as well as the type of backend (instance group or NEG).
+          # Not supported by:
           #
-          #
-          # - If the load balancing mode is CONNECTION, then the load is spread based on how many concurrent connections the backend can handle.
-          # You can use the CONNECTION balancing mode if the protocol for the backend service is SSL, TCP, or UDP.
-          #
-          # If the loadBalancingScheme for the backend service is EXTERNAL (SSL Proxy and TCP Proxy load balancers), you must also specify exactly one of the following parameters: maxConnections (except for regional managed instance groups), maxConnectionsPerInstance, or maxConnectionsPerEndpoint.
-          #
-          # If the loadBalancingScheme for the backend service is INTERNAL (internal TCP/UDP Load Balancers) or EXTERNAL  (Network Load Balancing), you cannot specify any additional parameters.
-          #
-          # - If the load balancing mode is RATE, the load is spread based on the rate of HTTP requests per second (RPS).
-          # You can use the RATE balancing mode if the protocol for the backend service is HTTP, HTTP2, or HTTPS. You must specify exactly one of the following parameters: maxRate (except for regional managed instance groups), maxRatePerInstance, or maxRatePerEndpoint.
-          #
-          # - If the load balancing mode is UTILIZATION, the load is spread based on the backend utilization of instances in an instance group.
-          # You can use the UTILIZATION balancing mode if the loadBalancingScheme of the backend service is EXTERNAL (except Network Load Balancing), INTERNAL_SELF_MANAGED, or INTERNAL_MANAGED and the backends are instance groups. There are no restrictions on the backend service protocol.
-      &quot;capacityScaler&quot;: 3.14, # A multiplier applied to the group&#x27;s maximum servicing capacity (based on UTILIZATION, RATE or CONNECTION). Default value is 1, which means the group will serve up to 100% of its configured capacity (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available capacity. Valid range is 0.0 and [0.1,1.0]. You cannot configure a setting larger than 0 and smaller than 0.1. You cannot configure a setting of 0 when there is only one backend attached to the backend service.
-          #
-          # This cannot be used for Internal TCP/UDP Load Balancing and Network Load Balancing.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing
       &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
       &quot;failover&quot;: True or False, # This field designates whether this is a failover backend. More than one failover backend can be configured for a given BackendService.
       &quot;group&quot;: &quot;A String&quot;, # The fully-qualified URL of an instance group or network endpoint group (NEG) resource. The type of backend that a backend service supports depends on the backend service&#x27;s loadBalancingScheme.
@@ -558,33 +526,29 @@ Args:
           # For regional services, the backend must be in the same region as the backend service.
           #
           # You must use the fully-qualified URL (starting with https://www.googleapis.com/) to specify the instance group or NEG. Partial URLs are not supported.
-      &quot;maxConnections&quot;: 42, # Defines a target maximum number of simultaneous connections that the backend can handle. Valid for network endpoint group and instance group backends (except for regional managed instance groups). If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter, maxConnectionsPerInstance, or maxConnectionsPerEndpoint.
+      &quot;maxConnections&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode. Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxConnectionsPerEndpoint&quot;: 42, # Defines a target maximum number of simultaneous connections for an endpoint of a NEG. This is multiplied by the number of endpoints in the NEG to implicitly calculate a maximum number of target maximum simultaneous connections for the NEG. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter, maxConnections, or maxConnectionsPerInstance.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing
+      &quot;maxConnectionsPerEndpoint&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode.
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxConnectionsPerInstance&quot;: 42, # Defines a target maximum number of simultaneous connections for a single VM in a backend instance group. This is multiplied by the number of instances in the instance group to implicitly calculate a target maximum number of simultaneous connections for the whole instance group. If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter,  maxConnections, or maxConnectionsPerEndpoint.
+          # Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxRate&quot;: 42, # Defines a maximum number of HTTP requests per second (RPS) that the backend can handle. Valid for network endpoint group and instance group backends (except for regional managed instance groups). Must not be defined if the backend is a managed instance group that uses autoscaling based on load balancing.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing.
+      &quot;maxConnectionsPerInstance&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode.
           #
-          # If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is RATE, you must specify maxRate, maxRatePerInstance, or maxRatePerEndpoint.
+          # Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxRatePerEndpoint&quot;: 3.14, # Defines a maximum target for requests per second (RPS) for an endpoint of a NEG. This is multiplied by the number of endpoints in the NEG to implicitly calculate a target maximum rate for the NEG.
-          #
-          # If the backend&#x27;s balancingMode is RATE, you must specify either this parameter, maxRate (except for regional managed instance groups), or maxRatePerInstance.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing.
+      &quot;maxRate&quot;: 42, # Defines a maximum number of HTTP requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
           # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxRatePerInstance&quot;: 3.14, # Defines a maximum target for requests per second (RPS) for a single VM in a backend instance group. This is multiplied by the number of instances in the instance group to implicitly calculate a target maximum rate for the whole instance group.
-          #
-          # If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is RATE, you must specify either this parameter, maxRate (except for regional managed instance groups), or maxRatePerEndpoint.
+      &quot;maxRatePerEndpoint&quot;: 3.14, # Defines a maximum target for requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
           # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxUtilization&quot;: 3.14, # Defines the maximum average backend utilization of a backend VM in an instance group. The valid range is [0.0, 1.0]. This is an optional parameter if the backend&#x27;s balancingMode is UTILIZATION.
+      &quot;maxRatePerInstance&quot;: 3.14, # Defines a maximum target for requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
-          # This parameter can be used in conjunction with maxRate, maxRatePerInstance, maxConnections (except for regional managed instance groups), or maxConnectionsPerInstance.
+          # Not available if the backend&#x27;s balancingMode is CONNECTION.
+      &quot;maxUtilization&quot;: 3.14,
     },
   ],
   &quot;cdnPolicy&quot;: { # Message containing Cloud CDN configuration for a backend service. # Cloud CDN configuration for this BackendService. Not available for Internal TCP/UDP Load Balancing and Network Load Balancing.
@@ -628,7 +592,7 @@ Args:
     &quot;maxRetries&quot;: 42, # The maximum number of parallel retries allowed to the backend cluster. If not specified, the default is 1.
   },
   &quot;connectionDraining&quot;: { # Message containing connection draining configuration.
-    &quot;drainingTimeoutSec&quot;: 42, # The amount of time in seconds to allow existing connections to persist while on unhealthy backend VMs. Only applicable if the protocol is not UDP. The valid range is [0, 3600].
+    &quot;drainingTimeoutSec&quot;: 42, # Configures a duration timeout for existing requests on a removed backend instance. For supported load balancers and protocols, as described in Enabling connection draining.
   },
   &quot;consistentHash&quot;: { # This message defines settings for a consistent hash style load balancer. # Consistent Hash-based load balancing can be used to provide soft session affinity based on HTTP headers, cookies or other properties. This load balancing policy is applicable only for HTTP connections. The affinity to a particular destination host will be lost when one or more hosts are added/removed from the destination service. This field specifies parameters that control consistent hashing. This field is only applicable when localityLbPolicy is set to MAGLEV or RING_HASH.
       # 
@@ -764,7 +728,7 @@ Args:
       # When the loadBalancingScheme is INTERNAL_SELF_MANAGED, or INTERNAL_MANAGED, possible values are NONE, CLIENT_IP, GENERATED_COOKIE, HEADER_FIELD, or HTTP_COOKIE.
       # 
       # Not supported when the backend service is referenced by a URL map that is bound to target gRPC proxy that has validateForProxyless field set to true.
-  &quot;timeoutSec&quot;: 42, # The backend service timeout has a different meaning depending on the type of load balancer. For more information see,  Backend service settings The default is 30 seconds.
+  &quot;timeoutSec&quot;: 42, # The backend service timeout has a different meaning depending on the type of load balancer. For more information see,  Backend service settings The default is 30 seconds. The full range of timeout values allowed is 1 - 2,147,483,647 seconds.
 }
 
   requestId: string, An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.
@@ -883,26 +847,12 @@ Returns:
           # Not supported when the backend service is referenced by a URL map that is bound to target gRPC proxy that has validateForProxyless field set to true.
       &quot;backends&quot;: [ # The list of backends that serve this BackendService.
         { # Message containing information of one individual backend.
-          &quot;balancingMode&quot;: &quot;A String&quot;, # Specifies the balancing mode for the backend.
+          &quot;balancingMode&quot;: &quot;A String&quot;, # Specifies how to determine whether the backend of a load balancer can handle additional traffic or is fully loaded. For usage guidelines, see  Connection balancing mode.
+          &quot;capacityScaler&quot;: 3.14, # A multiplier applied to the backend&#x27;s target capacity of its balancing mode. The default value is 1, which means the group serves up to 100% of its configured capacity (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available capacity. The valid ranges are 0.0 and [0.1,1.0]. You cannot configure a setting larger than 0 and smaller than 0.1. You cannot configure a setting of 0 when there is only one backend attached to the backend service.
               #
-              # When choosing a balancing mode, you need to consider the loadBalancingScheme, and protocol for the backend service, as well as the type of backend (instance group or NEG).
+              # Not supported by:
               #
-              #
-              # - If the load balancing mode is CONNECTION, then the load is spread based on how many concurrent connections the backend can handle.
-              # You can use the CONNECTION balancing mode if the protocol for the backend service is SSL, TCP, or UDP.
-              #
-              # If the loadBalancingScheme for the backend service is EXTERNAL (SSL Proxy and TCP Proxy load balancers), you must also specify exactly one of the following parameters: maxConnections (except for regional managed instance groups), maxConnectionsPerInstance, or maxConnectionsPerEndpoint.
-              #
-              # If the loadBalancingScheme for the backend service is INTERNAL (internal TCP/UDP Load Balancers) or EXTERNAL  (Network Load Balancing), you cannot specify any additional parameters.
-              #
-              # - If the load balancing mode is RATE, the load is spread based on the rate of HTTP requests per second (RPS).
-              # You can use the RATE balancing mode if the protocol for the backend service is HTTP, HTTP2, or HTTPS. You must specify exactly one of the following parameters: maxRate (except for regional managed instance groups), maxRatePerInstance, or maxRatePerEndpoint.
-              #
-              # - If the load balancing mode is UTILIZATION, the load is spread based on the backend utilization of instances in an instance group.
-              # You can use the UTILIZATION balancing mode if the loadBalancingScheme of the backend service is EXTERNAL (except Network Load Balancing), INTERNAL_SELF_MANAGED, or INTERNAL_MANAGED and the backends are instance groups. There are no restrictions on the backend service protocol.
-          &quot;capacityScaler&quot;: 3.14, # A multiplier applied to the group&#x27;s maximum servicing capacity (based on UTILIZATION, RATE or CONNECTION). Default value is 1, which means the group will serve up to 100% of its configured capacity (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available capacity. Valid range is 0.0 and [0.1,1.0]. You cannot configure a setting larger than 0 and smaller than 0.1. You cannot configure a setting of 0 when there is only one backend attached to the backend service.
-              #
-              # This cannot be used for Internal TCP/UDP Load Balancing and Network Load Balancing.
+              # - Internal TCP/UDP Load Balancing - Network Load Balancing
           &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
           &quot;failover&quot;: True or False, # This field designates whether this is a failover backend. More than one failover backend can be configured for a given BackendService.
           &quot;group&quot;: &quot;A String&quot;, # The fully-qualified URL of an instance group or network endpoint group (NEG) resource. The type of backend that a backend service supports depends on the backend service&#x27;s loadBalancingScheme.
@@ -916,33 +866,29 @@ Returns:
               # For regional services, the backend must be in the same region as the backend service.
               #
               # You must use the fully-qualified URL (starting with https://www.googleapis.com/) to specify the instance group or NEG. Partial URLs are not supported.
-          &quot;maxConnections&quot;: 42, # Defines a target maximum number of simultaneous connections that the backend can handle. Valid for network endpoint group and instance group backends (except for regional managed instance groups). If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter, maxConnectionsPerInstance, or maxConnectionsPerEndpoint.
+          &quot;maxConnections&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode. Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
               #
-              # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-          &quot;maxConnectionsPerEndpoint&quot;: 42, # Defines a target maximum number of simultaneous connections for an endpoint of a NEG. This is multiplied by the number of endpoints in the NEG to implicitly calculate a maximum number of target maximum simultaneous connections for the NEG. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter, maxConnections, or maxConnectionsPerInstance.
+              # - Internal TCP/UDP Load Balancing - Network Load Balancing
+          &quot;maxConnectionsPerEndpoint&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode.
               #
-              # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-          &quot;maxConnectionsPerInstance&quot;: 42, # Defines a target maximum number of simultaneous connections for a single VM in a backend instance group. This is multiplied by the number of instances in the instance group to implicitly calculate a target maximum number of simultaneous connections for the whole instance group. If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter,  maxConnections, or maxConnectionsPerEndpoint.
+              # Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
               #
-              # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-          &quot;maxRate&quot;: 42, # Defines a maximum number of HTTP requests per second (RPS) that the backend can handle. Valid for network endpoint group and instance group backends (except for regional managed instance groups). Must not be defined if the backend is a managed instance group that uses autoscaling based on load balancing.
+              # - Internal TCP/UDP Load Balancing - Network Load Balancing.
+          &quot;maxConnectionsPerInstance&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode.
               #
-              # If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is RATE, you must specify maxRate, maxRatePerInstance, or maxRatePerEndpoint.
+              # Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
               #
-              # Not available if the backend&#x27;s balancingMode is CONNECTION.
-          &quot;maxRatePerEndpoint&quot;: 3.14, # Defines a maximum target for requests per second (RPS) for an endpoint of a NEG. This is multiplied by the number of endpoints in the NEG to implicitly calculate a target maximum rate for the NEG.
-              #
-              # If the backend&#x27;s balancingMode is RATE, you must specify either this parameter, maxRate (except for regional managed instance groups), or maxRatePerInstance.
+              # - Internal TCP/UDP Load Balancing - Network Load Balancing.
+          &quot;maxRate&quot;: 42, # Defines a maximum number of HTTP requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
               #
               # Not available if the backend&#x27;s balancingMode is CONNECTION.
-          &quot;maxRatePerInstance&quot;: 3.14, # Defines a maximum target for requests per second (RPS) for a single VM in a backend instance group. This is multiplied by the number of instances in the instance group to implicitly calculate a target maximum rate for the whole instance group.
-              #
-              # If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is RATE, you must specify either this parameter, maxRate (except for regional managed instance groups), or maxRatePerEndpoint.
+          &quot;maxRatePerEndpoint&quot;: 3.14, # Defines a maximum target for requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
               #
               # Not available if the backend&#x27;s balancingMode is CONNECTION.
-          &quot;maxUtilization&quot;: 3.14, # Defines the maximum average backend utilization of a backend VM in an instance group. The valid range is [0.0, 1.0]. This is an optional parameter if the backend&#x27;s balancingMode is UTILIZATION.
+          &quot;maxRatePerInstance&quot;: 3.14, # Defines a maximum target for requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
               #
-              # This parameter can be used in conjunction with maxRate, maxRatePerInstance, maxConnections (except for regional managed instance groups), or maxConnectionsPerInstance.
+              # Not available if the backend&#x27;s balancingMode is CONNECTION.
+          &quot;maxUtilization&quot;: 3.14,
         },
       ],
       &quot;cdnPolicy&quot;: { # Message containing Cloud CDN configuration for a backend service. # Cloud CDN configuration for this BackendService. Not available for Internal TCP/UDP Load Balancing and Network Load Balancing.
@@ -986,7 +932,7 @@ Returns:
         &quot;maxRetries&quot;: 42, # The maximum number of parallel retries allowed to the backend cluster. If not specified, the default is 1.
       },
       &quot;connectionDraining&quot;: { # Message containing connection draining configuration.
-        &quot;drainingTimeoutSec&quot;: 42, # The amount of time in seconds to allow existing connections to persist while on unhealthy backend VMs. Only applicable if the protocol is not UDP. The valid range is [0, 3600].
+        &quot;drainingTimeoutSec&quot;: 42, # Configures a duration timeout for existing requests on a removed backend instance. For supported load balancers and protocols, as described in Enabling connection draining.
       },
       &quot;consistentHash&quot;: { # This message defines settings for a consistent hash style load balancer. # Consistent Hash-based load balancing can be used to provide soft session affinity based on HTTP headers, cookies or other properties. This load balancing policy is applicable only for HTTP connections. The affinity to a particular destination host will be lost when one or more hosts are added/removed from the destination service. This field specifies parameters that control consistent hashing. This field is only applicable when localityLbPolicy is set to MAGLEV or RING_HASH.
           #
@@ -1122,7 +1068,7 @@ Returns:
           # When the loadBalancingScheme is INTERNAL_SELF_MANAGED, or INTERNAL_MANAGED, possible values are NONE, CLIENT_IP, GENERATED_COOKIE, HEADER_FIELD, or HTTP_COOKIE.
           #
           # Not supported when the backend service is referenced by a URL map that is bound to target gRPC proxy that has validateForProxyless field set to true.
-      &quot;timeoutSec&quot;: 42, # The backend service timeout has a different meaning depending on the type of load balancer. For more information see,  Backend service settings The default is 30 seconds.
+      &quot;timeoutSec&quot;: 42, # The backend service timeout has a different meaning depending on the type of load balancer. For more information see,  Backend service settings The default is 30 seconds. The full range of timeout values allowed is 1 - 2,147,483,647 seconds.
     },
   ],
   &quot;kind&quot;: &quot;compute#backendServiceList&quot;, # [Output Only] Type of resource. Always compute#backendServiceList for lists of backend services.
@@ -1185,26 +1131,12 @@ Args:
       # Not supported when the backend service is referenced by a URL map that is bound to target gRPC proxy that has validateForProxyless field set to true.
   &quot;backends&quot;: [ # The list of backends that serve this BackendService.
     { # Message containing information of one individual backend.
-      &quot;balancingMode&quot;: &quot;A String&quot;, # Specifies the balancing mode for the backend.
+      &quot;balancingMode&quot;: &quot;A String&quot;, # Specifies how to determine whether the backend of a load balancer can handle additional traffic or is fully loaded. For usage guidelines, see  Connection balancing mode.
+      &quot;capacityScaler&quot;: 3.14, # A multiplier applied to the backend&#x27;s target capacity of its balancing mode. The default value is 1, which means the group serves up to 100% of its configured capacity (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available capacity. The valid ranges are 0.0 and [0.1,1.0]. You cannot configure a setting larger than 0 and smaller than 0.1. You cannot configure a setting of 0 when there is only one backend attached to the backend service.
           #
-          # When choosing a balancing mode, you need to consider the loadBalancingScheme, and protocol for the backend service, as well as the type of backend (instance group or NEG).
+          # Not supported by:
           #
-          #
-          # - If the load balancing mode is CONNECTION, then the load is spread based on how many concurrent connections the backend can handle.
-          # You can use the CONNECTION balancing mode if the protocol for the backend service is SSL, TCP, or UDP.
-          #
-          # If the loadBalancingScheme for the backend service is EXTERNAL (SSL Proxy and TCP Proxy load balancers), you must also specify exactly one of the following parameters: maxConnections (except for regional managed instance groups), maxConnectionsPerInstance, or maxConnectionsPerEndpoint.
-          #
-          # If the loadBalancingScheme for the backend service is INTERNAL (internal TCP/UDP Load Balancers) or EXTERNAL  (Network Load Balancing), you cannot specify any additional parameters.
-          #
-          # - If the load balancing mode is RATE, the load is spread based on the rate of HTTP requests per second (RPS).
-          # You can use the RATE balancing mode if the protocol for the backend service is HTTP, HTTP2, or HTTPS. You must specify exactly one of the following parameters: maxRate (except for regional managed instance groups), maxRatePerInstance, or maxRatePerEndpoint.
-          #
-          # - If the load balancing mode is UTILIZATION, the load is spread based on the backend utilization of instances in an instance group.
-          # You can use the UTILIZATION balancing mode if the loadBalancingScheme of the backend service is EXTERNAL (except Network Load Balancing), INTERNAL_SELF_MANAGED, or INTERNAL_MANAGED and the backends are instance groups. There are no restrictions on the backend service protocol.
-      &quot;capacityScaler&quot;: 3.14, # A multiplier applied to the group&#x27;s maximum servicing capacity (based on UTILIZATION, RATE or CONNECTION). Default value is 1, which means the group will serve up to 100% of its configured capacity (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available capacity. Valid range is 0.0 and [0.1,1.0]. You cannot configure a setting larger than 0 and smaller than 0.1. You cannot configure a setting of 0 when there is only one backend attached to the backend service.
-          #
-          # This cannot be used for Internal TCP/UDP Load Balancing and Network Load Balancing.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing
       &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
       &quot;failover&quot;: True or False, # This field designates whether this is a failover backend. More than one failover backend can be configured for a given BackendService.
       &quot;group&quot;: &quot;A String&quot;, # The fully-qualified URL of an instance group or network endpoint group (NEG) resource. The type of backend that a backend service supports depends on the backend service&#x27;s loadBalancingScheme.
@@ -1218,33 +1150,29 @@ Args:
           # For regional services, the backend must be in the same region as the backend service.
           #
           # You must use the fully-qualified URL (starting with https://www.googleapis.com/) to specify the instance group or NEG. Partial URLs are not supported.
-      &quot;maxConnections&quot;: 42, # Defines a target maximum number of simultaneous connections that the backend can handle. Valid for network endpoint group and instance group backends (except for regional managed instance groups). If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter, maxConnectionsPerInstance, or maxConnectionsPerEndpoint.
+      &quot;maxConnections&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode. Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxConnectionsPerEndpoint&quot;: 42, # Defines a target maximum number of simultaneous connections for an endpoint of a NEG. This is multiplied by the number of endpoints in the NEG to implicitly calculate a maximum number of target maximum simultaneous connections for the NEG. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter, maxConnections, or maxConnectionsPerInstance.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing
+      &quot;maxConnectionsPerEndpoint&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode.
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxConnectionsPerInstance&quot;: 42, # Defines a target maximum number of simultaneous connections for a single VM in a backend instance group. This is multiplied by the number of instances in the instance group to implicitly calculate a target maximum number of simultaneous connections for the whole instance group. If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter,  maxConnections, or maxConnectionsPerEndpoint.
+          # Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxRate&quot;: 42, # Defines a maximum number of HTTP requests per second (RPS) that the backend can handle. Valid for network endpoint group and instance group backends (except for regional managed instance groups). Must not be defined if the backend is a managed instance group that uses autoscaling based on load balancing.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing.
+      &quot;maxConnectionsPerInstance&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode.
           #
-          # If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is RATE, you must specify maxRate, maxRatePerInstance, or maxRatePerEndpoint.
+          # Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxRatePerEndpoint&quot;: 3.14, # Defines a maximum target for requests per second (RPS) for an endpoint of a NEG. This is multiplied by the number of endpoints in the NEG to implicitly calculate a target maximum rate for the NEG.
-          #
-          # If the backend&#x27;s balancingMode is RATE, you must specify either this parameter, maxRate (except for regional managed instance groups), or maxRatePerInstance.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing.
+      &quot;maxRate&quot;: 42, # Defines a maximum number of HTTP requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
           # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxRatePerInstance&quot;: 3.14, # Defines a maximum target for requests per second (RPS) for a single VM in a backend instance group. This is multiplied by the number of instances in the instance group to implicitly calculate a target maximum rate for the whole instance group.
-          #
-          # If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is RATE, you must specify either this parameter, maxRate (except for regional managed instance groups), or maxRatePerEndpoint.
+      &quot;maxRatePerEndpoint&quot;: 3.14, # Defines a maximum target for requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
           # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxUtilization&quot;: 3.14, # Defines the maximum average backend utilization of a backend VM in an instance group. The valid range is [0.0, 1.0]. This is an optional parameter if the backend&#x27;s balancingMode is UTILIZATION.
+      &quot;maxRatePerInstance&quot;: 3.14, # Defines a maximum target for requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
-          # This parameter can be used in conjunction with maxRate, maxRatePerInstance, maxConnections (except for regional managed instance groups), or maxConnectionsPerInstance.
+          # Not available if the backend&#x27;s balancingMode is CONNECTION.
+      &quot;maxUtilization&quot;: 3.14,
     },
   ],
   &quot;cdnPolicy&quot;: { # Message containing Cloud CDN configuration for a backend service. # Cloud CDN configuration for this BackendService. Not available for Internal TCP/UDP Load Balancing and Network Load Balancing.
@@ -1288,7 +1216,7 @@ Args:
     &quot;maxRetries&quot;: 42, # The maximum number of parallel retries allowed to the backend cluster. If not specified, the default is 1.
   },
   &quot;connectionDraining&quot;: { # Message containing connection draining configuration.
-    &quot;drainingTimeoutSec&quot;: 42, # The amount of time in seconds to allow existing connections to persist while on unhealthy backend VMs. Only applicable if the protocol is not UDP. The valid range is [0, 3600].
+    &quot;drainingTimeoutSec&quot;: 42, # Configures a duration timeout for existing requests on a removed backend instance. For supported load balancers and protocols, as described in Enabling connection draining.
   },
   &quot;consistentHash&quot;: { # This message defines settings for a consistent hash style load balancer. # Consistent Hash-based load balancing can be used to provide soft session affinity based on HTTP headers, cookies or other properties. This load balancing policy is applicable only for HTTP connections. The affinity to a particular destination host will be lost when one or more hosts are added/removed from the destination service. This field specifies parameters that control consistent hashing. This field is only applicable when localityLbPolicy is set to MAGLEV or RING_HASH.
       # 
@@ -1424,7 +1352,7 @@ Args:
       # When the loadBalancingScheme is INTERNAL_SELF_MANAGED, or INTERNAL_MANAGED, possible values are NONE, CLIENT_IP, GENERATED_COOKIE, HEADER_FIELD, or HTTP_COOKIE.
       # 
       # Not supported when the backend service is referenced by a URL map that is bound to target gRPC proxy that has validateForProxyless field set to true.
-  &quot;timeoutSec&quot;: 42, # The backend service timeout has a different meaning depending on the type of load balancer. For more information see,  Backend service settings The default is 30 seconds.
+  &quot;timeoutSec&quot;: 42, # The backend service timeout has a different meaning depending on the type of load balancer. For more information see,  Backend service settings The default is 30 seconds. The full range of timeout values allowed is 1 - 2,147,483,647 seconds.
 }
 
   requestId: string, An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.
@@ -1525,26 +1453,12 @@ Args:
       # Not supported when the backend service is referenced by a URL map that is bound to target gRPC proxy that has validateForProxyless field set to true.
   &quot;backends&quot;: [ # The list of backends that serve this BackendService.
     { # Message containing information of one individual backend.
-      &quot;balancingMode&quot;: &quot;A String&quot;, # Specifies the balancing mode for the backend.
+      &quot;balancingMode&quot;: &quot;A String&quot;, # Specifies how to determine whether the backend of a load balancer can handle additional traffic or is fully loaded. For usage guidelines, see  Connection balancing mode.
+      &quot;capacityScaler&quot;: 3.14, # A multiplier applied to the backend&#x27;s target capacity of its balancing mode. The default value is 1, which means the group serves up to 100% of its configured capacity (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available capacity. The valid ranges are 0.0 and [0.1,1.0]. You cannot configure a setting larger than 0 and smaller than 0.1. You cannot configure a setting of 0 when there is only one backend attached to the backend service.
           #
-          # When choosing a balancing mode, you need to consider the loadBalancingScheme, and protocol for the backend service, as well as the type of backend (instance group or NEG).
+          # Not supported by:
           #
-          #
-          # - If the load balancing mode is CONNECTION, then the load is spread based on how many concurrent connections the backend can handle.
-          # You can use the CONNECTION balancing mode if the protocol for the backend service is SSL, TCP, or UDP.
-          #
-          # If the loadBalancingScheme for the backend service is EXTERNAL (SSL Proxy and TCP Proxy load balancers), you must also specify exactly one of the following parameters: maxConnections (except for regional managed instance groups), maxConnectionsPerInstance, or maxConnectionsPerEndpoint.
-          #
-          # If the loadBalancingScheme for the backend service is INTERNAL (internal TCP/UDP Load Balancers) or EXTERNAL  (Network Load Balancing), you cannot specify any additional parameters.
-          #
-          # - If the load balancing mode is RATE, the load is spread based on the rate of HTTP requests per second (RPS).
-          # You can use the RATE balancing mode if the protocol for the backend service is HTTP, HTTP2, or HTTPS. You must specify exactly one of the following parameters: maxRate (except for regional managed instance groups), maxRatePerInstance, or maxRatePerEndpoint.
-          #
-          # - If the load balancing mode is UTILIZATION, the load is spread based on the backend utilization of instances in an instance group.
-          # You can use the UTILIZATION balancing mode if the loadBalancingScheme of the backend service is EXTERNAL (except Network Load Balancing), INTERNAL_SELF_MANAGED, or INTERNAL_MANAGED and the backends are instance groups. There are no restrictions on the backend service protocol.
-      &quot;capacityScaler&quot;: 3.14, # A multiplier applied to the group&#x27;s maximum servicing capacity (based on UTILIZATION, RATE or CONNECTION). Default value is 1, which means the group will serve up to 100% of its configured capacity (depending on balancingMode). A setting of 0 means the group is completely drained, offering 0% of its available capacity. Valid range is 0.0 and [0.1,1.0]. You cannot configure a setting larger than 0 and smaller than 0.1. You cannot configure a setting of 0 when there is only one backend attached to the backend service.
-          #
-          # This cannot be used for Internal TCP/UDP Load Balancing and Network Load Balancing.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing
       &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
       &quot;failover&quot;: True or False, # This field designates whether this is a failover backend. More than one failover backend can be configured for a given BackendService.
       &quot;group&quot;: &quot;A String&quot;, # The fully-qualified URL of an instance group or network endpoint group (NEG) resource. The type of backend that a backend service supports depends on the backend service&#x27;s loadBalancingScheme.
@@ -1558,33 +1472,29 @@ Args:
           # For regional services, the backend must be in the same region as the backend service.
           #
           # You must use the fully-qualified URL (starting with https://www.googleapis.com/) to specify the instance group or NEG. Partial URLs are not supported.
-      &quot;maxConnections&quot;: 42, # Defines a target maximum number of simultaneous connections that the backend can handle. Valid for network endpoint group and instance group backends (except for regional managed instance groups). If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter, maxConnectionsPerInstance, or maxConnectionsPerEndpoint.
+      &quot;maxConnections&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode. Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxConnectionsPerEndpoint&quot;: 42, # Defines a target maximum number of simultaneous connections for an endpoint of a NEG. This is multiplied by the number of endpoints in the NEG to implicitly calculate a maximum number of target maximum simultaneous connections for the NEG. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter, maxConnections, or maxConnectionsPerInstance.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing
+      &quot;maxConnectionsPerEndpoint&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode.
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxConnectionsPerInstance&quot;: 42, # Defines a target maximum number of simultaneous connections for a single VM in a backend instance group. This is multiplied by the number of instances in the instance group to implicitly calculate a target maximum number of simultaneous connections for the whole instance group. If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is CONNECTION, and backend is attached to a backend service whose loadBalancingScheme is EXTERNAL (except Network Load Balancing), you must specify either this parameter,  maxConnections, or maxConnectionsPerEndpoint.
+          # Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is RATE. Cannot be specified for Network Load Balancing or Internal TCP/UDP Load Balancing, even though those load balancers require a balancing mode of CONNECTION.
-      &quot;maxRate&quot;: 42, # Defines a maximum number of HTTP requests per second (RPS) that the backend can handle. Valid for network endpoint group and instance group backends (except for regional managed instance groups). Must not be defined if the backend is a managed instance group that uses autoscaling based on load balancing.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing.
+      &quot;maxConnectionsPerInstance&quot;: 42, # Defines a target maximum number of simultaneous connections. For usage guidelines, see Connection balancing mode and Utilization balancing mode.
           #
-          # If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is RATE, you must specify maxRate, maxRatePerInstance, or maxRatePerEndpoint.
+          # Not available if the backend&#x27;s balancingMode is RATE. Not supported by:
           #
-          # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxRatePerEndpoint&quot;: 3.14, # Defines a maximum target for requests per second (RPS) for an endpoint of a NEG. This is multiplied by the number of endpoints in the NEG to implicitly calculate a target maximum rate for the NEG.
-          #
-          # If the backend&#x27;s balancingMode is RATE, you must specify either this parameter, maxRate (except for regional managed instance groups), or maxRatePerInstance.
+          # - Internal TCP/UDP Load Balancing - Network Load Balancing.
+      &quot;maxRate&quot;: 42, # Defines a maximum number of HTTP requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
           # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxRatePerInstance&quot;: 3.14, # Defines a maximum target for requests per second (RPS) for a single VM in a backend instance group. This is multiplied by the number of instances in the instance group to implicitly calculate a target maximum rate for the whole instance group.
-          #
-          # If the backend&#x27;s balancingMode is UTILIZATION, this is an optional parameter. If the backend&#x27;s balancingMode is RATE, you must specify either this parameter, maxRate (except for regional managed instance groups), or maxRatePerEndpoint.
+      &quot;maxRatePerEndpoint&quot;: 3.14, # Defines a maximum target for requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
           # Not available if the backend&#x27;s balancingMode is CONNECTION.
-      &quot;maxUtilization&quot;: 3.14, # Defines the maximum average backend utilization of a backend VM in an instance group. The valid range is [0.0, 1.0]. This is an optional parameter if the backend&#x27;s balancingMode is UTILIZATION.
+      &quot;maxRatePerInstance&quot;: 3.14, # Defines a maximum target for requests per second (RPS). For usage guidelines, see Rate balancing mode and Utilization balancing mode.
           #
-          # This parameter can be used in conjunction with maxRate, maxRatePerInstance, maxConnections (except for regional managed instance groups), or maxConnectionsPerInstance.
+          # Not available if the backend&#x27;s balancingMode is CONNECTION.
+      &quot;maxUtilization&quot;: 3.14,
     },
   ],
   &quot;cdnPolicy&quot;: { # Message containing Cloud CDN configuration for a backend service. # Cloud CDN configuration for this BackendService. Not available for Internal TCP/UDP Load Balancing and Network Load Balancing.
@@ -1628,7 +1538,7 @@ Args:
     &quot;maxRetries&quot;: 42, # The maximum number of parallel retries allowed to the backend cluster. If not specified, the default is 1.
   },
   &quot;connectionDraining&quot;: { # Message containing connection draining configuration.
-    &quot;drainingTimeoutSec&quot;: 42, # The amount of time in seconds to allow existing connections to persist while on unhealthy backend VMs. Only applicable if the protocol is not UDP. The valid range is [0, 3600].
+    &quot;drainingTimeoutSec&quot;: 42, # Configures a duration timeout for existing requests on a removed backend instance. For supported load balancers and protocols, as described in Enabling connection draining.
   },
   &quot;consistentHash&quot;: { # This message defines settings for a consistent hash style load balancer. # Consistent Hash-based load balancing can be used to provide soft session affinity based on HTTP headers, cookies or other properties. This load balancing policy is applicable only for HTTP connections. The affinity to a particular destination host will be lost when one or more hosts are added/removed from the destination service. This field specifies parameters that control consistent hashing. This field is only applicable when localityLbPolicy is set to MAGLEV or RING_HASH.
       # 
@@ -1764,7 +1674,7 @@ Args:
       # When the loadBalancingScheme is INTERNAL_SELF_MANAGED, or INTERNAL_MANAGED, possible values are NONE, CLIENT_IP, GENERATED_COOKIE, HEADER_FIELD, or HTTP_COOKIE.
       # 
       # Not supported when the backend service is referenced by a URL map that is bound to target gRPC proxy that has validateForProxyless field set to true.
-  &quot;timeoutSec&quot;: 42, # The backend service timeout has a different meaning depending on the type of load balancer. For more information see,  Backend service settings The default is 30 seconds.
+  &quot;timeoutSec&quot;: 42, # The backend service timeout has a different meaning depending on the type of load balancer. For more information see,  Backend service settings The default is 30 seconds. The full range of timeout values allowed is 1 - 2,147,483,647 seconds.
 }
 
   requestId: string, An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed.
