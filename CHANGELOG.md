@@ -1,5 +1,45 @@
 # Changelog
 
+## [2.0.0](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.8...v2.0.0) (2021-03-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deps:** require 3.6+ (#961)
+
+### Features
+
+* Add support for using static discovery documents ([#1109](https://www.github.com/googleapis/google-api-python-client/issues/1109)) ([32d1c59](https://www.github.com/googleapis/google-api-python-client/commit/32d1c597b364e2641eca33ccf6df802bb218eea1))
+* Update synth.py to copy discovery files from discovery-artifact-manager ([#1104](https://www.github.com/googleapis/google-api-python-client/issues/1104)) ([af918e8](https://www.github.com/googleapis/google-api-python-client/commit/af918e8ef422438aaca0c468de8b3b2c184d884e))
+
+
+### Bug Fixes
+
+* Catch ECONNRESET and other errors more reliably ([#1147](https://www.github.com/googleapis/google-api-python-client/issues/1147)) ([ae9cd99](https://www.github.com/googleapis/google-api-python-client/commit/ae9cd99134160a5540e6f8d6d33d855122854e10))
+* **deps:** add upper-bound google-auth dependency ([#1180](https://www.github.com/googleapis/google-api-python-client/issues/1180)) ([c687f42](https://www.github.com/googleapis/google-api-python-client/commit/c687f4207b9c574e539a7eab75201a58f2e91f35))
+* handle error on service not enabled ([#1117](https://www.github.com/googleapis/google-api-python-client/issues/1117)) ([c691283](https://www.github.com/googleapis/google-api-python-client/commit/c6912836e88eea45aef7d515383e549082d37717))
+* Improve support for error_details ([#1126](https://www.github.com/googleapis/google-api-python-client/issues/1126)) ([e6a1da3](https://www.github.com/googleapis/google-api-python-client/commit/e6a1da3542e230e5287863f339ce1d28292cd92f))
+* MediaFileUpload error if file does not exist ([#1127](https://www.github.com/googleapis/google-api-python-client/issues/1127)) ([2c6d029](https://www.github.com/googleapis/google-api-python-client/commit/2c6d0297851c806ef850ca23686c51ca5878ac48))
+* replace deprecated socket.error with OSError ([#1161](https://www.github.com/googleapis/google-api-python-client/issues/1161)) ([b7b9986](https://www.github.com/googleapis/google-api-python-client/commit/b7b9986fe13c483eeefb77673b4091911978ee46))
+* Use logging level info when file_cache is not available ([#1125](https://www.github.com/googleapis/google-api-python-client/issues/1125)) ([0b32e69](https://www.github.com/googleapis/google-api-python-client/commit/0b32e69900eafec2cd1197ba054d4f9a765a3f29))
+
+
+### Miscellaneous Chores
+
+* **deps:** require 3.6+ ([#961](https://www.github.com/googleapis/google-api-python-client/issues/961)) ([8325d24](https://www.github.com/googleapis/google-api-python-client/commit/8325d24acaa2b2077acaaea26ea5fafb6dd856c5))
+
+
+### Documentation
+
+* add networkconnectivity v1alpha1 ([#1176](https://www.github.com/googleapis/google-api-python-client/issues/1176)) ([91b61d3](https://www.github.com/googleapis/google-api-python-client/commit/91b61d3272de9b5aebad0cf1eb76ca53c24f22f9))
+* Delete redundant oauth-web.md ([#1142](https://www.github.com/googleapis/google-api-python-client/issues/1142)) ([70bc6c9](https://www.github.com/googleapis/google-api-python-client/commit/70bc6c9db99eed5af7536b87448bd9323db9320b))
+* fix MediaIoBaseUpload broken link ([#1112](https://www.github.com/googleapis/google-api-python-client/issues/1112)) ([334b6e6](https://www.github.com/googleapis/google-api-python-client/commit/334b6e6d9e4924398e57bad2e53747584abf8cf4))
+* fix regression with incorrect args order in docs ([#1141](https://www.github.com/googleapis/google-api-python-client/issues/1141)) ([4249a7b](https://www.github.com/googleapis/google-api-python-client/commit/4249a7b92e891d1ecaf93944ca9c062ffbd54f77))
+* fix typo in thread safety example code ([#1100](https://www.github.com/googleapis/google-api-python-client/issues/1100)) ([5ae088d](https://www.github.com/googleapis/google-api-python-client/commit/5ae088dc027b89517b896a89a0aeb2ca80f492cf))
+* Reduce noisy changes in docs regen ([#1135](https://www.github.com/googleapis/google-api-python-client/issues/1135)) ([b1b0c83](https://www.github.com/googleapis/google-api-python-client/commit/b1b0c83ae0737e7b63cb77e4e7757213a216b88e))
+* update docs/dyn ([#1096](https://www.github.com/googleapis/google-api-python-client/issues/1096)) ([c2228be](https://www.github.com/googleapis/google-api-python-client/commit/c2228be4630e279e02a25b51566a0f93b67aa499))
+* update guidance on service accounts ([#1120](https://www.github.com/googleapis/google-api-python-client/issues/1120)) ([b2ea122](https://www.github.com/googleapis/google-api-python-client/commit/b2ea122c40ccac09c9e7b0b29f6b2bcca6db107b))
+
 ### [1.12.8](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.7...v1.12.8) (2020-11-18)
 
 
