@@ -30,6 +30,10 @@ the client library itself.
 
 ## Method Calls
 
+**Note**: Existing code written for earlier versions of this library will not
+require updating. You should only update your code if always using the latest
+version of a service definition is more important than reliability.
+
 > **WARNING**: Breaking change
 
 Under the hood, the `discovery.build()` function retrieves a discovery artifact
@@ -37,9 +41,6 @@ in order to construct the service object. The breaking change is that the
 `discovery.build()` funciton will no longer retrieve discovery artifacts
 dynamically. Instead it will use service definitions shipped in the library.
 
-**Note**: Existing code written for earlier versions of this library will not
-require updating. You should only update your code if always using the latest
-version of a service definition is more important than reliability.
 
 **Before:**
 ```py
@@ -53,6 +54,10 @@ with build('drive', 'v3') as service:
 **After:**
 ```py
 from googleapiclient.discovery import build
+
+# Retrieve discovery artifacts from the client library
+with build('drive', 'v3') as service:
+    # ...
 
 # Retrieve discovery artifacts from the internet
 with build('drive', 'v3', static_discovery=False) as service:
