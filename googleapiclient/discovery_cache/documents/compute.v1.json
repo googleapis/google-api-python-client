@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"-2NioU2H8y8siEzrBOV_qzRI6kQ/mIZBtT5XI04WAMcpQOOpJwzHbMk\"",
+ "etag": "\"-2NioU2H8y8siEzrBOV_qzRI6kQ/2VKALUYVODXz_STeDzLh8Yoo8OI\"",
  "discoveryVersion": "v1",
  "id": "compute:v1",
  "name": "compute",
  "version": "v1",
- "revision": "20210111",
+ "revision": "20210129",
  "title": "Compute Engine API",
  "description": "Creates and runs virtual machines on Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -635,10 +635,12 @@
       "DNS_RESOLVER",
       "GCE_ENDPOINT",
       "NAT_AUTO",
+      "PRIVATE_SERVICE_CONNECT",
       "SHARED_LOADBALANCER_VIP",
       "VPC_PEERING"
      ],
      "enumDescriptions": [
+      "",
       "",
       "",
       "",
@@ -648,7 +650,7 @@
     },
     "region": {
      "type": "string",
-     "description": "[Output Only] The URL of the region where the regional address resides. This field is not applicable to global addresses. You must specify this field as part of the HTTP request URL."
+     "description": "[Output Only] The URL of the region where a regional address resides. For regional addresses, you must specify the region as a path parameter in the HTTP request URL. This field is not applicable to global addresses."
     },
     "selfLink": {
      "type": "string",
@@ -1086,6 +1088,10 @@
       "$ref": "AllocationSpecificSKUAllocationAllocatedInstancePropertiesReservedDisk"
      }
     },
+    "locationHint": {
+     "type": "string",
+     "description": "An opaque location hint used to place the allocation close to other resources. This field is for use by internal tools that use the public API."
+    },
     "machineType": {
      "type": "string",
      "description": "Specifies type of machine (name only) which has fixed number of vCPUs and fixed amount of memory. This also includes specifying custom machine type following custom-NUMBER_OF_CPUS-AMOUNT_OF_MEMORY pattern."
@@ -1259,6 +1265,11 @@
       "",
       ""
      ]
+    },
+    "provisionedIops": {
+     "type": "string",
+     "description": "Indicates how many IOPS must be provisioned for the disk.",
+     "format": "int64"
     },
     "resourcePolicies": {
      "type": "array",
@@ -2288,7 +2299,7 @@
     },
     "cdnPolicy": {
      "$ref": "BackendServiceCdnPolicy",
-     "description": "Cloud CDN configuration for this BackendService. Not available for Internal TCP/UDP Load Balancing and Network Load Balancing."
+     "description": "Cloud CDN configuration for this BackendService. Only available for  external HTTP(S) Load Balancing."
     },
     "circuitBreakers": {
      "$ref": "CircuitBreakers",
@@ -2416,7 +2427,7 @@
     },
     "port": {
      "type": "integer",
-     "description": "Deprecated in favor of portName. The TCP port to connect on the backend. The default value is 80.\n\nThis cannot be used if the loadBalancingScheme is INTERNAL (Internal TCP/UDP Load Balancing).",
+     "description": "Deprecated in favor of portName. The TCP port to connect on the backend. The default value is 80.\n\nBackend services for Internal TCP/UDP Load Balancing and Network Load Balancing require you omit port.",
      "format": "int32"
     },
     "portName": {
@@ -3890,6 +3901,11 @@
     "physicalBlockSizeBytes": {
      "type": "string",
      "description": "Physical block size of the persistent disk, in bytes. If not present in a request, a default value is used. The currently supported size is 4096, other sizes may be added in the future. If an unsupported value is requested, the error message will list the supported values for the caller's project.",
+     "format": "int64"
+    },
+    "provisionedIops": {
+     "type": "string",
+     "description": "Indicates how many IOPS must be provisioned for the disk.",
      "format": "int64"
     },
     "region": {
@@ -5800,7 +5816,7 @@
     },
     "description": {
      "type": "string",
-     "description": "An optional description of this resource. Provide this property when you create the resource."
+     "description": "An optional description for this resource."
     },
     "direction": {
      "type": "string",
@@ -6089,6 +6105,11 @@
       "type": "string"
      }
     },
+    "pscConnectionId": {
+     "type": "string",
+     "description": "[Output Only] The PSC connection id of the PSC Forwarding Rule.",
+     "format": "uint64"
+    },
     "region": {
      "type": "string",
      "description": "[Output Only] URL of the region where the regional forwarding rule resides. This field is not applicable to global forwarding rules. You must specify this field as part of the HTTP request URL. It is not settable as a field in the request body."
@@ -6096,6 +6117,13 @@
     "selfLink": {
      "type": "string",
      "description": "[Output Only] Server-defined URL for the resource."
+    },
+    "serviceDirectoryRegistrations": {
+     "type": "array",
+     "description": "Service Directory resources to register this forwarding rule with. Currently, only supports a single Service Directory resource.\n\nIt is only supported for Internal TCP/UDP Load Balancing and Internal HTTP(S) Load Balancing.",
+     "items": {
+      "$ref": "ForwardingRuleServiceDirectoryRegistration"
+     }
     },
     "serviceLabel": {
      "type": "string",
@@ -6361,6 +6389,25 @@
    "properties": {
     "forwardingRule": {
      "type": "string"
+    }
+   }
+  },
+  "ForwardingRuleServiceDirectoryRegistration": {
+   "id": "ForwardingRuleServiceDirectoryRegistration",
+   "type": "object",
+   "description": "Describes the auto-registration of the Forwarding Rule to Service Directory. The region and project of the Service Directory resource generated from this registration will be the same as this Forwarding Rule.",
+   "properties": {
+    "namespace": {
+     "type": "string",
+     "description": "Service Directory namespace to register the forwarding rule under."
+    },
+    "service": {
+     "type": "string",
+     "description": "Service Directory service to register the forwarding rule under."
+    },
+    "serviceDirectoryRegion": {
+     "type": "string",
+     "description": "[Optional] Service Directory region to register this global forwarding rule under. Default to \"us-central1\". Only used for PSC for Google APIs. All PSC for Google APIs Forwarding Rules on the same network should use the same Service Directory region."
     }
    }
   },
@@ -7527,7 +7574,7 @@
     },
     "ipAddress": {
      "type": "string",
-     "description": "A forwarding rule IP address assigned to this instance."
+     "description": "For target pool based Network Load Balancing, it indicates the forwarding rule's IP address assigned to this instance. For other types of load balancing, the field indicates VM internal ip."
     },
     "port": {
      "type": "integer",
@@ -8450,6 +8497,10 @@
        }
       }
      }
+    },
+    "satisfiesPzs": {
+     "type": "boolean",
+     "description": "[Output Only] Reserved for future use."
     },
     "selfLink": {
      "type": "string",
@@ -11258,6 +11309,59 @@
     }
    }
   },
+  "InstancesGetEffectiveFirewallsResponse": {
+   "id": "InstancesGetEffectiveFirewallsResponse",
+   "type": "object",
+   "properties": {
+    "firewallPolicys": {
+     "type": "array",
+     "description": "Effective firewalls from firewall policies.",
+     "items": {
+      "$ref": "InstancesGetEffectiveFirewallsResponseEffectiveFirewallPolicy"
+     }
+    },
+    "firewalls": {
+     "type": "array",
+     "description": "Effective firewalls on the instance.",
+     "items": {
+      "$ref": "Firewall"
+     }
+    }
+   }
+  },
+  "InstancesGetEffectiveFirewallsResponseEffectiveFirewallPolicy": {
+   "id": "InstancesGetEffectiveFirewallsResponseEffectiveFirewallPolicy",
+   "type": "object",
+   "properties": {
+    "displayName": {
+     "type": "string",
+     "description": "[Output Only] The display name of the firewall policy."
+    },
+    "name": {
+     "type": "string",
+     "description": "[Output Only] The name of the firewall policy."
+    },
+    "rules": {
+     "type": "array",
+     "description": "The rules that apply to the network.",
+     "items": {
+      "$ref": "FirewallPolicyRule"
+     }
+    },
+    "type": {
+     "type": "string",
+     "description": "[Output Only] The type of the firewall policy.",
+     "enum": [
+      "HIERARCHY",
+      "UNSPECIFIED"
+     ],
+     "enumDescriptions": [
+      "",
+      ""
+     ]
+    }
+   }
+  },
   "InstancesRemoveResourcePoliciesRequest": {
    "id": "InstancesRemoveResourcePoliciesRequest",
    "type": "object",
@@ -14062,6 +14166,7 @@
      "type": "string",
      "description": "Type of network endpoints in this network endpoint group. Can be one of GCE_VM_IP_PORT, NON_GCP_PRIVATE_IP_PORT, INTERNET_FQDN_PORT, INTERNET_IP_PORT, or SERVERLESS.",
      "enum": [
+      "GCE_VM_IP",
       "GCE_VM_IP_PORT",
       "INTERNET_FQDN_PORT",
       "INTERNET_IP_PORT",
@@ -14069,6 +14174,7 @@
       "SERVERLESS"
      ],
      "enumDescriptions": [
+      "",
       "",
       "",
       "",
@@ -14947,6 +15053,61 @@
     }
    }
   },
+  "NetworksGetEffectiveFirewallsResponse": {
+   "id": "NetworksGetEffectiveFirewallsResponse",
+   "type": "object",
+   "properties": {
+    "firewallPolicys": {
+     "type": "array",
+     "description": "Effective firewalls from firewall policy.",
+     "items": {
+      "$ref": "NetworksGetEffectiveFirewallsResponseEffectiveFirewallPolicy"
+     }
+    },
+    "firewalls": {
+     "type": "array",
+     "description": "Effective firewalls on the network.",
+     "items": {
+      "$ref": "Firewall"
+     }
+    }
+   }
+  },
+  "NetworksGetEffectiveFirewallsResponseEffectiveFirewallPolicy": {
+   "id": "NetworksGetEffectiveFirewallsResponseEffectiveFirewallPolicy",
+   "type": "object",
+   "properties": {
+    "displayName": {
+     "type": "string",
+     "description": "[Output Only] The display name of the firewall policy."
+    },
+    "name": {
+     "type": "string",
+     "description": "[Output Only] The name of the firewall policy."
+    },
+    "rules": {
+     "type": "array",
+     "description": "The rules that apply to the network.",
+     "items": {
+      "$ref": "FirewallPolicyRule"
+     }
+    },
+    "type": {
+     "type": "string",
+     "description": "[Output Only] The type of the firewall policy.",
+     "enum": [
+      "HIERARCHY",
+      "NETWORK",
+      "UNSPECIFIED"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      ""
+     ]
+    }
+   }
+  },
   "NetworksRemovePeeringRequest": {
    "id": "NetworksRemovePeeringRequest",
    "type": "object",
@@ -14996,6 +15157,10 @@
      "type": "string",
      "description": "[Output Only] The type of the resource. Always compute#nodeGroup for node group.",
      "default": "compute#nodeGroup"
+    },
+    "locationHint": {
+     "type": "string",
+     "description": "An opaque location hint used to place the Node close to other resources. This field is for use by internal tools that use the public API. The location hint here on the NodeGroup overrides any location_hint present in the NodeTemplate."
     },
     "maintenancePolicy": {
      "type": "string",
@@ -15386,6 +15551,10 @@
     "nodeType": {
      "type": "string",
      "description": "The type of this node."
+    },
+    "satisfiesPzs": {
+     "type": "boolean",
+     "description": "[Output Only] Reserved for future use."
     },
     "serverBinding": {
      "$ref": "ServerBinding",
@@ -18249,6 +18418,7 @@
       "COMMITTED_A2_CPUS",
       "COMMITTED_C2_CPUS",
       "COMMITTED_CPUS",
+      "COMMITTED_E2_CPUS",
       "COMMITTED_LICENSES",
       "COMMITTED_LOCAL_SSD_TOTAL_GB",
       "COMMITTED_MEMORY_OPTIMIZED_CPUS",
@@ -18351,6 +18521,7 @@
       "XPN_SERVICE_PROJECTS"
      ],
      "enumDescriptions": [
+      "",
       "",
       "",
       "",
@@ -19757,6 +19928,10 @@
       ]
      }
     },
+    "satisfiesPzs": {
+     "type": "boolean",
+     "description": "[Output Only] Reserved for future use."
+    },
     "selfLink": {
      "type": "string",
      "description": "[Output Only] Server-defined fully-qualified URL for this resource."
@@ -20338,6 +20513,10 @@
      "description": "[Output Only] The unique identifier for the resource. This identifier is defined by the server.",
      "format": "uint64"
     },
+    "instanceSchedulePolicy": {
+     "$ref": "ResourcePolicyInstanceSchedulePolicy",
+     "description": "Resource policy for scheduling instance operations."
+    },
     "kind": {
      "type": "string",
      "description": "[Output Only] Type of the resource. Always compute#resource_policies for resource policies.",
@@ -20356,6 +20535,10 @@
     "region": {
      "type": "string"
     },
+    "resourceStatus": {
+     "$ref": "ResourcePolicyResourceStatus",
+     "description": "[Output Only] The system status of the resource policy."
+    },
     "selfLink": {
      "type": "string",
      "description": "[Output Only] Server-defined fully-qualified URL for this resource."
@@ -20370,10 +20553,12 @@
      "enum": [
       "CREATING",
       "DELETING",
+      "EXPIRED",
       "INVALID",
       "READY"
      ],
      "enumDescriptions": [
+      "",
       "",
       "",
       "",
@@ -20578,6 +20763,44 @@
     }
    }
   },
+  "ResourcePolicyInstanceSchedulePolicy": {
+   "id": "ResourcePolicyInstanceSchedulePolicy",
+   "type": "object",
+   "description": "An InstanceSchedulePolicy specifies when and how frequent certain operations are performed on the instance.",
+   "properties": {
+    "expirationTime": {
+     "type": "string",
+     "description": "The expiration time of the schedule. The timestamp is an RFC3339 string."
+    },
+    "startTime": {
+     "type": "string",
+     "description": "The start time of the schedule. The timestamp is an RFC3339 string."
+    },
+    "timeZone": {
+     "type": "string",
+     "description": "Specifies the time zone to be used in interpreting Schedule.schedule. The value of this field must be a time zone name from the tz database: http://en.wikipedia.org/wiki/Tz_database."
+    },
+    "vmStartSchedule": {
+     "$ref": "ResourcePolicyInstanceSchedulePolicySchedule",
+     "description": "Specifies the schedule for starting instances."
+    },
+    "vmStopSchedule": {
+     "$ref": "ResourcePolicyInstanceSchedulePolicySchedule",
+     "description": "Specifies the schedule for stopping instances."
+    }
+   }
+  },
+  "ResourcePolicyInstanceSchedulePolicySchedule": {
+   "id": "ResourcePolicyInstanceSchedulePolicySchedule",
+   "type": "object",
+   "description": "Schedule for an instance operation.",
+   "properties": {
+    "schedule": {
+     "type": "string",
+     "description": "Specifies the frequency for the operation, using the unix-cron format."
+    }
+   }
+  },
   "ResourcePolicyList": {
    "id": "ResourcePolicyList",
    "type": "object",
@@ -20693,6 +20916,31 @@
        "description": "[Output Only] A human-readable description of the warning code."
       }
      }
+    }
+   }
+  },
+  "ResourcePolicyResourceStatus": {
+   "id": "ResourcePolicyResourceStatus",
+   "type": "object",
+   "description": "Contains output only fields. Use this sub-message for all output fields set on ResourcePolicy. The internal structure of this \"status\" field should mimic the structure of ResourcePolicy proto specification.",
+   "properties": {
+    "instanceSchedulePolicy": {
+     "$ref": "ResourcePolicyResourceStatusInstanceSchedulePolicyStatus",
+     "description": "[Output Only] Specifies a set of output values reffering to the instance_schedule_policy system status. This field should have the same name as corresponding policy field."
+    }
+   }
+  },
+  "ResourcePolicyResourceStatusInstanceSchedulePolicyStatus": {
+   "id": "ResourcePolicyResourceStatusInstanceSchedulePolicyStatus",
+   "type": "object",
+   "properties": {
+    "lastRunStartTime": {
+     "type": "string",
+     "description": "[Output Only] The last time the schedule successfully ran. The timestamp is an RFC3339 string."
+    },
+    "nextRunStartTime": {
+     "type": "string",
+     "description": "[Output Only] The next time the schedule is planned to run. The actual time might be slightly different. The timestamp is an RFC3339 string."
     }
    }
   },
@@ -22195,7 +22443,7 @@
   "Scheduling": {
    "id": "Scheduling",
    "type": "object",
-   "description": "Sets the scheduling options for an Instance. NextID: 13",
+   "description": "Sets the scheduling options for an Instance. NextID: 17",
    "properties": {
     "automaticRestart": {
      "type": "boolean",
@@ -26532,6 +26780,10 @@
      "description": "Name of the resource. Provided by the client when the resource is created. The name must be 1-63 characters long, and comply with RFC1035. Specifically, the name must be 1-63 characters long and match the regular expression `[a-z]([-a-z0-9]*[a-z0-9])?` which means the first character must be a lowercase letter, and all following characters must be a dash, lowercase letter, or digit, except the last character, which cannot be a dash.",
      "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?"
     },
+    "proxyBind": {
+     "type": "boolean",
+     "description": "This field only applies when the forwarding rule that references this target proxy has a loadBalancingScheme set to INTERNAL_SELF_MANAGED.\n\nWhen this field is set to true, Envoy proxies set up inbound traffic interception and bind to the IP address and port specified in the forwarding rule. This is generally useful when using Traffic Director to configure Envoy as a gateway or middle proxy (in other words, not a sidecar proxy). The Envoy proxy listens for inbound requests and handles requests when it receives them.\n\nThe default is false."
+    },
     "proxyHeader": {
      "type": "string",
      "description": "Specifies the type of proxy header to append before sending data to the backend, either NONE or PROXY_V1. The default is NONE.",
@@ -29506,7 +29758,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -29602,7 +29854,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -29673,7 +29925,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -29863,7 +30115,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -29927,7 +30179,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -30110,7 +30362,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -30459,7 +30711,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -30644,7 +30896,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -30883,7 +31135,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -31068,7 +31320,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -31164,7 +31416,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -31284,7 +31536,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -31573,7 +31825,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -31980,7 +32232,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -32394,7 +32646,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -32809,7 +33061,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -32954,7 +33206,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -33144,7 +33396,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -33455,7 +33707,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -33618,7 +33870,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -33977,7 +34229,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -34037,7 +34289,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -34101,7 +34353,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -34219,7 +34471,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -34367,7 +34619,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -34427,7 +34679,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -34586,7 +34838,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -34831,7 +35083,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -35076,7 +35328,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -35444,7 +35696,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -35704,7 +35956,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -36060,7 +36312,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -36127,7 +36379,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -36195,7 +36447,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -36263,7 +36515,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -36715,7 +36967,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -36893,7 +37145,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -36960,7 +37212,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -37268,7 +37520,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -37509,7 +37761,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -37773,6 +38025,55 @@
      ],
      "response": {
       "$ref": "Instance"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "getEffectiveFirewalls": {
+     "id": "compute.instances.getEffectiveFirewalls",
+     "path": "projects/{project}/zones/{zone}/instances/{instance}/getEffectiveFirewalls",
+     "httpMethod": "GET",
+     "description": "Returns effective firewalls applied to an interface of the instance.",
+     "parameters": {
+      "instance": {
+       "type": "string",
+       "description": "Name of the instance scoping this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "networkInterface": {
+       "type": "string",
+       "description": "The name of the network interface to get the effective firewalls.",
+       "required": true,
+       "location": "query"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "zone": {
+       "type": "string",
+       "description": "The name of the zone for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "zone",
+      "instance",
+      "networkInterface"
+     ],
+     "response": {
+      "$ref": "InstancesGetEffectiveFirewallsResponse"
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
@@ -38105,7 +38406,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -38174,7 +38475,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -39459,7 +39760,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -39654,7 +39955,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -39796,7 +40097,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -39993,7 +40294,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -40315,7 +40616,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -40451,7 +40752,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -40547,7 +40848,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -40618,7 +40919,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -40890,7 +41191,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -40957,7 +41258,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -41146,6 +41447,40 @@
       "https://www.googleapis.com/auth/compute.readonly"
      ]
     },
+    "getEffectiveFirewalls": {
+     "id": "compute.networks.getEffectiveFirewalls",
+     "path": "projects/{project}/global/networks/{network}/getEffectiveFirewalls",
+     "httpMethod": "GET",
+     "description": "Returns the effective firewalls on a given network.",
+     "parameters": {
+      "network": {
+       "type": "string",
+       "description": "Name of the network for this request.",
+       "required": true,
+       "pattern": "[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?",
+       "location": "path"
+      },
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "network"
+     ],
+     "response": {
+      "$ref": "NetworksGetEffectiveFirewallsResponse"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
     "insert": {
      "id": "compute.networks.insert",
      "path": "projects/{project}/global/networks",
@@ -41217,7 +41552,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -41301,7 +41636,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -41575,7 +41910,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -41863,7 +42198,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -41932,7 +42267,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -42191,7 +42526,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -42429,7 +42764,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -42582,7 +42917,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -42678,7 +43013,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -42749,7 +43084,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -42939,7 +43274,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -43269,7 +43604,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -43322,7 +43657,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -43686,7 +44021,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -44019,7 +44354,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -44181,7 +44516,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -44325,7 +44660,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -44433,7 +44768,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -44778,7 +45113,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -45207,7 +45542,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -45450,7 +45785,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -45962,7 +46297,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -46029,7 +46364,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -46097,7 +46432,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -46165,7 +46500,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -46606,7 +46941,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -46673,7 +47008,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -46913,7 +47248,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -47108,7 +47443,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -47254,7 +47589,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -47491,7 +47826,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -47686,7 +48021,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -47930,7 +48265,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -48223,7 +48558,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -48458,7 +48793,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -48521,7 +48856,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -48752,7 +49087,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -48961,7 +49296,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -49199,7 +49534,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -49352,7 +49687,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -49501,7 +49836,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "router": {
@@ -49654,7 +49989,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -49961,7 +50296,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -50200,7 +50535,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -50254,7 +50589,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -50545,7 +50880,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -50717,7 +51052,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -50876,7 +51211,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -51037,7 +51372,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -51091,7 +51426,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -51194,7 +51529,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -51481,7 +51816,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -51536,7 +51871,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -51892,7 +52227,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -51996,7 +52331,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -52155,7 +52490,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -52300,7 +52635,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -52459,7 +52794,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -52725,7 +53060,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -52908,7 +53243,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -53077,7 +53412,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -53312,7 +53647,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -53629,7 +53964,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -53955,7 +54290,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -54100,7 +54435,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -54290,7 +54625,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -54354,7 +54689,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -54554,7 +54889,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -54735,7 +55070,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -54967,7 +55302,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -55125,7 +55460,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -55315,7 +55650,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
@@ -55454,7 +55789,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       },
       "zone": {
@@ -55596,7 +55931,7 @@
       },
       "returnPartialSuccess": {
        "type": "boolean",
-       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false and the logic is the same as today.",
+       "description": "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false.",
        "location": "query"
       }
      },
