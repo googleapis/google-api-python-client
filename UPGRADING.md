@@ -23,11 +23,6 @@ If you experience issues or have questions, please file an [issue](https://githu
 The 2.0.0 release requires Python 3.6+, as such you must upgrade to Python 3.6+
 to use version 2.0.0.
 
-The 2.0.0 release no longer retrieves discovery documents dynamically on each
-call to `discovery.build()`. Instead, discovery docouments are retrieved from
-the client library itself.
-
-
 ## Method Calls
 
 **Note**: Existing code written for earlier versions of this library will not
@@ -35,6 +30,10 @@ require updating. You should only update your code if always using the latest
 version of a service definition is more important than reliability.
 
 > **WARNING**: Breaking change
+
+The 2.0.0 release no longer retrieves discovery documents dynamically on each
+call to `discovery.build()`. Instead, discovery docouments are retrieved from
+the client library itself.
 
 Under the hood, the `discovery.build()` function retrieves a discovery artifact
 in order to construct the service object. The breaking change is that the
