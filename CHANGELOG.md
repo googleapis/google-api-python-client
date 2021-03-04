@@ -5,7 +5,9 @@
 
 ### ⚠ BREAKING CHANGES
 
-* **deps:** require 3.6+ (#961)
+The 2.0 release of `google-api-python-client` is a significant upgrade compared to v1. Please see the [Migration Guide](UPGRADING.md) for more information.
+
+* **deps:** require 3.6+.  (#961)
 
 ### Features
 
