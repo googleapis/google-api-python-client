@@ -1,5 +1,12 @@
 # Changelog
 
+### [2.0.2](https://www.github.com/googleapis/google-api-python-client/compare/v2.0.1...v2.0.2) (2021-03-04)
+
+
+### Bug Fixes
+
+* Include discovery artifacts in published package ([#1221](https://www.github.com/googleapis/google-api-python-client/issues/1221)) ([ad618d0](https://www.github.com/googleapis/google-api-python-client/commit/ad618d0b266b86a795871d946367552905f4ccb6))
+
 ### [2.0.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.0.0...v2.0.1) (2021-03-04)
 
 
