@@ -1,5 +1,17 @@
 # Changelog
 
+### [2.0.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.0.0...v2.0.1) (2021-03-04)
+
+
+### Bug Fixes
+
+* add static discovery docs  ([#1216](https://www.github.com/googleapis/google-api-python-client/issues/1216)) ([b5d33d6](https://www.github.com/googleapis/google-api-python-client/commit/b5d33d6d520ca9589eefd08d34fe96844f420bce))
+
+
+### Documentation
+
+* add a link to the migration guide in the changelog ([#1213](https://www.github.com/googleapis/google-api-python-client/issues/1213)) ([b85da5b](https://www.github.com/googleapis/google-api-python-client/commit/b85da5bb7d6d6da60ff611221d3c4719eadb478a))
+
 ## [2.0.0](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.8...v2.0.0) (2021-03-03)
 
 
