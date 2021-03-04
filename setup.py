@@ -60,7 +60,7 @@ setup(
     install_requires=install_requires,
     python_requires=">=3.6",
     packages=packages,
-    package_data={},
+    package_data={"googleapiclient": ["discovery_cache/documents/*.json"]},
     license="Apache 2.0",
     keywords="google api client",
     classifiers=[
