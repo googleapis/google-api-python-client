@@ -7,11 +7,24 @@ please continue to use version 1.x as we will continue supporting python 2.7+ in
 
 In addition, discovery documents will no longer be retrieved dynamically when
 you call  `discovery.build()`. The discovery documents will instead be retrieved
-from the client library directly. Existing code written for earlier versions of
-this library will not require updating. We believe this new default behaviour
-will provide a more predictable experience for users. If always using the latest
-version of a service definition is more important than reliability, users should
-set the `static_discovery` argument of `discovery.build()` to `False` to
+from the client library directly.
+
+For users of public APIs
+------------------------
+Existing code written for earlier versions of this library will not require
+updating. We believe this new default behaviour will provide a more predictable
+experience for users. If always using the latest version of a service definition
+is more important than reliability, users should set the `static_discovery`
+argument of `discovery.build()` to `False` to retrieve the service definition
+from the internet.
+
+For users of private APIs
+-------------------------
+If the discovery document requires an authentication key to access it, the
+discovery document is private and it will not be shipped with the library.
+Only discovery documents listed in [this public directory](https://www.googleapis.com/discovery/v1/apis/)
+are included in the library. Users of private APIs should set the
+`static_discovery` argument of `discovery.build()` to `False` to continue to
 retrieve the service definition from the internet.
 
 If you experience issues or have questions, please file an [issue](https://github.com/googleapis/google-api-python-client/issues).
@@ -27,7 +40,8 @@ to use version 2.0.0.
 
 **Note**: Existing code written for earlier versions of this library will not
 require updating. You should only update your code if always using the latest
-version of a service definition is more important than reliability.
+version of a service definition is more important than reliability or if you
+are using an API which does not have a public discovery document.
 
 > **WARNING**: Breaking change
 
