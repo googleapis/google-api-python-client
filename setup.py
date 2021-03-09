@@ -46,7 +46,7 @@ readme_filename = os.path.join(package_root, "README.md")
 with io.open(readme_filename, encoding="utf-8") as readme_file:
     readme = readme_file.read()
 
-version = "1.12.8"
+version = "2.0.2"
 
 setup(
     name="google-api-python-client",
@@ -60,7 +60,7 @@ setup(
     install_requires=install_requires,
     python_requires=">=3.6",
     packages=packages,
-    package_data={},
+    package_data={"googleapiclient": ["discovery_cache/documents/*.json"]},
     license="Apache 2.0",
     keywords="google api client",
     classifiers=[
