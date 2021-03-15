@@ -1,5 +1,19 @@
 # Changelog
 
+### [2.0.3](https://www.github.com/googleapis/google-api-python-client/compare/v2.0.2...v2.0.3) (2021-03-15)
+
+
+### Bug Fixes
+
+* fix .close() ([#1231](https://www.github.com/googleapis/google-api-python-client/issues/1231)) ([a9583f7](https://www.github.com/googleapis/google-api-python-client/commit/a9583f712d13c67aa282d14cd30e00999b530d7c))
+* Resolve issue where num_retries would have no effect ([#1244](https://www.github.com/googleapis/google-api-python-client/issues/1244)) ([c518472](https://www.github.com/googleapis/google-api-python-client/commit/c518472e836c32ba2ff5e8480ab5a7643f722d46))
+
+
+### Documentation
+
+* Distinguish between public/private docs in 2.0 guide ([#1226](https://www.github.com/googleapis/google-api-python-client/issues/1226)) ([a6f1706](https://www.github.com/googleapis/google-api-python-client/commit/a6f17066caf6e911b7e94e8feab52fa3af2def1b))
+* Update README to promote cloud client libraries ([#1252](https://www.github.com/googleapis/google-api-python-client/issues/1252)) ([22807c9](https://www.github.com/googleapis/google-api-python-client/commit/22807c92ce754ff3d60f240ec5c38de50c5b654b))
+
 ### [2.0.2](https://www.github.com/googleapis/google-api-python-client/compare/v2.0.1...v2.0.2) (2021-03-04)
 
 
