@@ -2,13 +2,24 @@
 
 [![PyPI version](https://badge.fury.io/py/google-api-python-client.svg)](https://badge.fury.io/py/google-api-python-client)
 
-This is the Python client library for Google's discovery based APIs. To get started, please see the [docs folder](https://github.com/googleapis/google-api-python-client/blob/master/docs/README.md).
+This is the [Google API Python client library](https://cloud.google.com/apis/docs/client-libraries-explained#google_api_client_libraries)
+for Google's discovery based APIs. To get started, please see the
+[docs folder](https://github.com/googleapis/google-api-python-client/blob/master/docs/README.md).
 
-These client libraries are officially supported by Google.  However, the libraries are considered complete and are in maintenance mode. This means that we will address critical bugs and security issues but will not add any new features.
+This library is considered complete and is in maintenance mode. This means
+that we will address critical bugs and security issues but will not add any
+new features.
+
+This library is officially supported by Google.  However, the maintainers of
+this repository recommend using [Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
+where possible, for new code development. For more information, please visit
+[Client Libraries Explained](https://cloud.google.com/apis/docs/client-libraries-explained).
 
 ## Version 2.0 Release
 The 2.0 release of `google-api-python-client` is a significant upgrade compared
 to v1. Please see the [Migration Guide](https://github.com/googleapis/google-api-python-client/blob/master/UPGRADING.md) for more information.
+As a result of caching the discovery documents, the size of this package is at
+least 50 MB larger compared to the previous version.
 
 ## Documentation
 
@@ -16,7 +27,29 @@ See the [docs folder](https://github.com/googleapis/google-api-python-client/blo
 
 ## Other Google API libraries
 
-For Google Cloud Platform APIs such as Datastore, Cloud Storage or Pub/Sub, we recommend using [Cloud Client Libraries for Python](https://github.com/GoogleCloudPlatform/google-cloud-python).
+The maintainers of this repository recommend using
+[Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
+where possible, for new code development due to the following reasons:
+
+With [Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python):
+- There is a separate client library for each API, so you can choose
+which client libraries to download. Whereas, `google-api-python-client` is a
+single client library for all APIs. As a result, the total package size for
+`google-api-python-client` exceeds 50MB.
+- There are stricter controls for breaking changes to the underlying APIs
+as each client library is focused on a specific API.
+- There are more features in these Cloud Client Libraries as each library is
+focused on a specific API, and in some cases, the libraries are owned by team
+who specialized in that API.
+- Developers will benefit from intellisense.
+
+For more information, please visit
+[Client Libraries Explained](https://cloud.google.com/apis/docs/client-libraries-explained).
+
+Although there are many benefits to moving to
+[Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
+the maintainers want to emphasize that `google-api-python-client` will continue
+to be supported.
 
 For Google Ads API, we recommend using [Google Ads API Client Library for Python](https://github.com/googleads/google-ads-python/).
 

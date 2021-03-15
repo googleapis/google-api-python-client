@@ -7,7 +7,10 @@ please continue to use version 1.x as we will continue supporting python 2.7+ in
 
 In addition, discovery documents will no longer be retrieved dynamically when
 you call  `discovery.build()`. The discovery documents will instead be retrieved
-from the client library directly.
+from the client library directly. As a result of caching the discovery
+documents, the size of this package is at least 50 MB larger compared to the
+previous version.
+
 
 For users of public APIs
 ------------------------
