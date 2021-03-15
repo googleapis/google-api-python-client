@@ -401,7 +401,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
                 ({"status": "500"}, ""),
                 ({"status": "503"}, ""),
                 ({"status": "200", "location": "location"}, ""),
-                ({"status": "403"}, USER_RATE_LIMIT_EXCEEDED_RESPONSE),
+                ({"status": "403"}, USER_RATE_LIMIT_EXCEEDED_RESPONSE_NO_STATUS),
                 ({"status": "403"}, RATE_LIMIT_EXCEEDED_RESPONSE),
                 ({"status": "429"}, ""),
                 ({"status": "200"}, "{}"),
