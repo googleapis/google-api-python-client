@@ -2,16 +2,18 @@
 
 [![PyPI version](https://badge.fury.io/py/google-api-python-client.svg)](https://badge.fury.io/py/google-api-python-client)
 
-This is the legacy Python client library for Google's discovery based APIs.
-To get started, please see the [docs folder](https://github.com/googleapis/google-api-python-client/blob/master/docs/README.md).
+This is the [Google API Python client library](https://cloud.google.com/apis/docs/client-libraries-explained#google_api_client_libraries)
+for Google's discovery based APIs. To get started, please see the
+[docs folder](https://github.com/googleapis/google-api-python-client/blob/master/docs/README.md).
 
-The libraries are considered complete and are in maintenance mode. This means
+This library is considered complete and is in maintenance mode. This means
 that we will address critical bugs and security issues but will not add any
 new features.
 
 This library is officially supported by Google.  However, the maintainers of
 this repository recommend using [Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
-where possible, for new code development.
+where possible, for new code development. For more information, please visit
+[Client Libraries Explained](https://cloud.google.com/apis/docs/client-libraries-explained).
 
 ## Version 2.0 Release
 The 2.0 release of `google-api-python-client` is a significant upgrade compared
@@ -40,6 +42,9 @@ as each client library is focused on a specific API.
 focused on a specific API, and in some cases, the libraries are owned by team
 who specialized in that API.
 - Developers will benefit from intellisense.
+
+For more information, please visit
+[Client Libraries Explained](https://cloud.google.com/apis/docs/client-libraries-explained).
 
 Although there are many benefits to moving to
 [Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
