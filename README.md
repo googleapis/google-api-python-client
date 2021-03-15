@@ -2,17 +2,17 @@
 
 [![PyPI version](https://badge.fury.io/py/google-api-python-client.svg)](https://badge.fury.io/py/google-api-python-client)
 
-This is the Python client library for Google's discovery based APIs. To get started, please see the [docs folder](docs/README.md).
+This is the Python client library for Google's discovery based APIs. To get started, please see the [docs folder](https://github.com/googleapis/google-api-python-client/blob/master/docs/README.md).
 
 These client libraries are officially supported by Google.  However, the libraries are considered complete and are in maintenance mode. This means that we will address critical bugs and security issues but will not add any new features.
 
 ## Version 2.0 Release
 The 2.0 release of `google-api-python-client` is a significant upgrade compared
-to v1. Please see the [Migration Guide](UPGRADING.md) for more information.
+to v1. Please see the [Migration Guide](https://github.com/googleapis/google-api-python-client/blob/master/UPGRADING.md) for more information.
 
 ## Documentation
 
-See the [docs folder](docs/README.md) for more detailed instructions and additional documentation.
+See the [docs folder](https://github.com/googleapis/google-api-python-client/blob/master/docs/README.md) for more detailed instructions and additional documentation.
 
 ## Other Google API libraries
 
@@ -70,6 +70,6 @@ For development you will also need the following libraries:
 
 ## Contributing
 
-Please see our [Contribution Guide](CONTRIBUTING.rst).
+Please see our [Contribution Guide](https://github.com/googleapis/google-api-python-client/blob/master/CONTRIBUTING.rst).
 In particular, we love pull requests - but please make sure to sign
 the contributor license agreement.
