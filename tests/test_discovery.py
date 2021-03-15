@@ -87,6 +87,7 @@ from googleapiclient.schema import Schemas
 from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.client import OAuth2Credentials, GoogleCredentials
 
+
 from googleapiclient import _helpers as util
 
 import uritemplate
@@ -591,14 +592,27 @@ class DiscoveryFromDocument(unittest.TestCase):
 
     def test_resource_close(self):
         discovery = read_datafile("plus.json")
-        with mock.patch("httplib2.Http") as http:
+        
+        with mock.patch("httplib2.Http", autospec=True) as httplib2_http:
+            http = httplib2_http()
+            plus = build_from_document(
+                discovery,
+                base="https://www.googleapis.com/",
+                http=http,
+            )
+            plus.close()
+            http.close.assert_called_once()
+
+    def test_resource_close_authorized_http(self):
+        discovery = read_datafile("plus.json")
+        with mock.patch("google_auth_httplib2.AuthorizedHttp", autospec=True):
             plus = build_from_document(
                 discovery,
                 base="https://www.googleapis.com/",
                 credentials=self.MOCK_CREDENTIALS,
             )
             plus.close()
-            plus._http.http.close.assert_called_once()
+            plus._http.close.assert_called_once()
 
     def test_api_endpoint_override_from_client_options(self):
         discovery = read_datafile("plus.json")
