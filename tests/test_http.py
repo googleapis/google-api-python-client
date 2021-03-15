@@ -834,7 +834,7 @@ ETag: "etag/pony"\r\n\r\n{"foo": 42}
 --batch_foobarbaz--"""
 
 
-USER_RATE_LIMIT_EXCEEDED_RESPONSE = """{
+USER_RATE_LIMIT_EXCEEDED_RESPONSE_NO_STATUS = """{
  "error": {
   "errors": [
    {
@@ -848,6 +848,20 @@ USER_RATE_LIMIT_EXCEEDED_RESPONSE = """{
  }
 }"""
 
+USER_RATE_LIMIT_EXCEEDED_RESPONSE_WITH_STATUS = """{
+ "error": {
+  "errors": [
+   {
+    "domain": "usageLimits",
+    "reason": "userRateLimitExceeded",
+    "message": "User Rate Limit Exceeded"
+   }
+  ],
+  "code": 403,
+  "message": "User Rate Limit Exceeded",
+  "status": "PERMISSION_DENIED"
+ }
+}"""
 
 RATE_LIMIT_EXCEEDED_RESPONSE = """{
  "error": {
@@ -981,10 +995,11 @@ class TestHttpRequest(unittest.TestCase):
         self.assertEqual({u"foo": u"bar"}, response)
 
     def test_retry(self):
-        num_retries = 5
-        resp_seq = [({"status": "500"}, "")] * (num_retries - 3)
+        num_retries = 6
+        resp_seq = [({"status": "500"}, "")] * (num_retries - 4)
         resp_seq.append(({"status": "403"}, RATE_LIMIT_EXCEEDED_RESPONSE))
-        resp_seq.append(({"status": "403"}, USER_RATE_LIMIT_EXCEEDED_RESPONSE))
+        resp_seq.append(({"status": "403"}, USER_RATE_LIMIT_EXCEEDED_RESPONSE_NO_STATUS))
+        resp_seq.append(({"status": "403"}, USER_RATE_LIMIT_EXCEEDED_RESPONSE_WITH_STATUS))
         resp_seq.append(({"status": "429"}, ""))
         resp_seq.append(({"status": "200"}, "{}"))
 
