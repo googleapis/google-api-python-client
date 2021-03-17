@@ -1361,7 +1361,7 @@ class Resource(object):
         # httplib2 leaves sockets open by default.
         # Cleanup using the `close` method.
         # https://github.com/httplib2/httplib2/issues/148
-        self._http.http.close()
+        self._http.close()
 
     def _set_service_methods(self):
         self._add_basic_methods(self._resourceDesc, self._rootDesc, self._schema)

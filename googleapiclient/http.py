@@ -94,6 +94,8 @@ def _should_retry_response(resp_status, content):
   Returns:
     True if the response should be retried, otherwise False.
   """
+    reason = None
+
     # Retry on 5xx errors.
     if resp_status >= 500:
         return True
@@ -113,9 +115,22 @@ def _should_retry_response(resp_status, content):
         try:
             data = json.loads(content.decode("utf-8"))
             if isinstance(data, dict):
-                reason = data["error"].get("status")
-                if reason is None:
-                    reason = data["error"]["errors"][0]["reason"]
+                # There are many variations of the error json so we need
+                # to determine the keyword which has the error detail. Make sure
+                # that the order of the keywords below isn't changed as it can
+                # break user code. If the "errors" key exists, we must use that
+                # first.
+                # See Issue #1243
+                # https://github.com/googleapis/google-api-python-client/issues/1243
+                error_detail_keyword = next((kw for kw in ["errors", "status", "message"] if kw in data["error"]), "")
+
+                if error_detail_keyword:
+                    reason = data["error"][error_detail_keyword]
+
+                    if isinstance(reason, list) and len(reason) > 0:
+                        reason = reason[0]
+                        if "reason" in reason:
+                            reason = reason["reason"]
             else:
                 reason = data[0]["error"]["errors"]["reason"]
         except (UnicodeDecodeError, ValueError, KeyError):
