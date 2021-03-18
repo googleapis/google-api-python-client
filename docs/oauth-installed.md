@@ -109,7 +109,7 @@ Google's OAuth 2.0 server authenticates the user and obtains consent from the us
 
 Use the authorized `Http` object to call Google APIs by completing the following steps:
 
-1. Build a service object for the API that you want to call. You build a a service object by calling the `build` function with the name and version of the API and the authorized Http object. For example, to call version 2 of the Drive API:
+1. Build a service object for the API that you want to call. You build a a service object by calling the `build` function with the name and version of the API and the authorized Http object. For example, to call version 3 of the Drive API:
 
     ```python
     from googleapiclient.discovery import build
