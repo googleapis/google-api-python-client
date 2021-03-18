@@ -83,6 +83,8 @@ class Error(unittest.TestCase):
             reason="Failed",
         )
         error = HttpError(resp, content, uri="http://example.org")
+        self.assertEqual(error.error_details, "error details")
+        self.assertEqual(error.status_code, 400)
         self.assertEqual(
             str(error),
             '<HttpError 400 when requesting http://example.org returned "country is required". Details: "error details">',

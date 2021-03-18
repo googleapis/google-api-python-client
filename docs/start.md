@@ -99,7 +99,7 @@ Creating a request does not actually call the API. To execute the request and ge
 try:
     response = request.execute()
 except HttpError as e:
-    print('Error response status code : {0}, reason : {1}'.format(e.resp.status, e.error_details))
+    print('Error response status code : {0}, reason : {1}'.format(e.status_code, e.error_details))
 ```
 
 Alternatively, you can combine previous steps on a single line:
