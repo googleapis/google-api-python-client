@@ -201,6 +201,7 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbuild_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbuild_v1alpha1.html)
 * [v1alpha2](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbuild_v1alpha2.html)
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbuild_v1beta1.html)
 
 
 ## cloudchannel
@@ -449,6 +450,10 @@
 
 ## firebaserules
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaserules_v1.html)
+
+
+## firebasestorage
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasestorage_v1beta.html)
 
 
 ## firestore
