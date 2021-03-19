@@ -182,7 +182,7 @@ def build(
     serviceName,
     version,
     http=None,
-    discoveryServiceUrl=DISCOVERY_URI,
+    discoveryServiceUrl=None,
     developerKey=None,
     model=None,
     requestBuilder=HttpRequest,
@@ -193,7 +193,7 @@ def build(
     adc_cert_path=None,
     adc_key_path=None,
     num_retries=1,
-    static_discovery=True,
+    static_discovery=None,
 ):
     """Construct a Resource for interacting with an API.
 
@@ -248,7 +248,10 @@ def build(
     num_retries: Integer, number of times to retry discovery with
       randomized exponential backoff in case of intermittent/connection issues.
     static_discovery: Boolean, whether or not to use the static discovery docs
-      included in the library.
+      included in the library. The default value for `static_discovery` depends
+      on the value of `discoveryServiceUrl`. `static_discovery` will default to
+      `True` when `discoveryServiceUrl` is also not provided, otherwise it will
+      default to `False`.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -258,6 +261,21 @@ def build(
       setting up mutual TLS channel.
   """
     params = {"api": serviceName, "apiVersion": version}
+
+    # The default value for `static_discovery` depends on the value of
+    # `discoveryServiceUrl`. `static_discovery` will default to `True` when
+    # `discoveryServiceUrl` is also not provided, otherwise it will default to
+    # `False`. This is added for backwards compatability with
+    # google-api-python-client 1.x which does not support the `static_discovery`
+    # parameter.
+    if static_discovery is None:
+        if discoveryServiceUrl is None:
+            static_discovery = True
+        else:
+            static_discovery = False
+
+    if discoveryServiceUrl is None:
+        discoveryServiceUrl = DISCOVERY_URI
 
     if http is None:
         discovery_http = build_http()
