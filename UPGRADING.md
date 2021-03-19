@@ -28,7 +28,10 @@ discovery document is private and it will not be shipped with the library.
 Only discovery documents listed in [this public directory](https://www.googleapis.com/discovery/v1/apis/)
 are included in the library. Users of private APIs should set the
 `static_discovery` argument of `discovery.build()` to `False` to continue to
-retrieve the service definition from the internet.
+retrieve the service definition from the internet. As of version 2.1.0,
+for backwards compatability with version 1.x, if `static_discovery` is not
+specified, the default value for `static_discovery` will be `True` when
+the `discoveryServiceUrl` argument of `discovery.build()` is provided.
 
 If you experience issues or have questions, please file an [issue](https://github.com/googleapis/google-api-python-client/issues).
 
