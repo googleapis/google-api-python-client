@@ -256,7 +256,6 @@
 
 ## cloudshell
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudshell_v1.html)
-* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudshell_v1alpha1.html)
 
 
 ## cloudtasks
@@ -319,6 +318,7 @@
 
 
 ## datamigration
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datamigration_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/datamigration_v1beta1.html)
 
 
@@ -489,6 +489,14 @@
 * [v2alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/genomics_v2alpha1.html)
 
 
+## gkehub
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v1alpha.html)
+* [v1alpha2](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v1alpha2.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v1beta.html)
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v1beta1.html)
+
+
 ## gmail
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/gmail_v1.html)
 
@@ -624,6 +632,10 @@
 
 ## ondemandscanning
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1beta1.html)
+
+
+## orgpolicy
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/orgpolicy_v2.html)
 
 
 ## osconfig
