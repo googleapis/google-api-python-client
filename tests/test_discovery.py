@@ -592,7 +592,7 @@ class DiscoveryFromDocument(unittest.TestCase):
 
     def test_resource_close(self):
         discovery = read_datafile("plus.json")
-        
+
         with mock.patch("httplib2.Http", autospec=True) as httplib2_http:
             http = httplib2_http()
             plus = build_from_document(
@@ -927,8 +927,7 @@ class DiscoveryFromHttp(unittest.TestCase):
                 "v1",
                 http=http,
                 developerKey=None,
-                discoveryServiceUrl="http://example.com",
-                static_discovery=False,
+                discoveryServiceUrl="http://example.com"
             )
             self.fail("Should have raised an exception.")
         except HttpError as e:
@@ -946,8 +945,7 @@ class DiscoveryFromHttp(unittest.TestCase):
                 "v1",
                 http=http,
                 developerKey=None,
-                discoveryServiceUrl="http://example.com",
-                static_discovery=False,
+                discoveryServiceUrl="http://example.com"
             )
             self.fail("Should have raised an exception.")
         except HttpError as e:
