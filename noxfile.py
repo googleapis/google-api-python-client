@@ -75,9 +75,3 @@ def unit(session, oauth2client):
         "tests",
         *session.posargs,
     )
-
-
-@nox.session(python="3.6")
-def docs(session):
-    session.install('.')
-    session.run("python", "describe.py")
