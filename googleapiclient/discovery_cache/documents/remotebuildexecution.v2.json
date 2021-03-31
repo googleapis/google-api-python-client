@@ -3,7 +3,7 @@
         "oauth2": {
             "scopes": {
                 "https://www.googleapis.com/auth/cloud-platform": {
-                    "description": "View and manage your data across Google Cloud Platform services"
+                    "description": "See, edit, configure, and delete your Google Cloud Platform data"
                 }
             }
         }
@@ -447,7 +447,7 @@
             }
         }
     },
-    "revision": "20210224",
+    "revision": "20210322",
     "rootUrl": "https://remotebuildexecution.googleapis.com/",
     "schemas": {
         "BuildBazelRemoteExecutionV2Action": {
@@ -712,6 +712,21 @@
                     "description": "Maximum total size of blobs to be uploaded/downloaded using batch methods. A value of 0 means no limit is set, although in practice there will always be a message size limitation of the protocol in use, e.g. GRPC.",
                     "format": "int64",
                     "type": "string"
+                },
+                "supportedCompressor": {
+                    "description": "Compressors supported by the \"compressed-blobs\" bytestream resources. Servers MUST support identity/no-compression, even if it is not listed here. Note that this does not imply which if any compressors are supported by the server at the gRPC level.",
+                    "items": {
+                        "enum": [
+                            "IDENTITY",
+                            "ZSTD"
+                        ],
+                        "enumDescriptions": [
+                            "No compression. Servers and clients MUST always support this, and do not need to advertise it.",
+                            "Zstandard compression."
+                        ],
+                        "type": "string"
+                    },
+                    "type": "array"
                 },
                 "symlinkAbsolutePathStrategy": {
                     "description": "Whether absolute symlink targets are supported.",
@@ -1328,8 +1343,20 @@
                     "description": "An identifier that ties multiple requests to the same action. For example, multiple requests to the CAS, Action Cache, and Execution API are used in order to compile foo.cc.",
                     "type": "string"
                 },
+                "actionMnemonic": {
+                    "description": "A brief description of the kind of action, for example, CppCompile or GoLink. There is no standard agreed set of values for this, and they are expected to vary between different client tools.",
+                    "type": "string"
+                },
+                "configurationId": {
+                    "description": "An identifier for the configuration in which the target was built, e.g. for differentiating building host tools or different target platforms. There is no expectation that this value will have any particular structure, or equality across invocations, though some client tools may offer these guarantees.",
+                    "type": "string"
+                },
                 "correlatedInvocationsId": {
                     "description": "An identifier to tie multiple tool invocations together. For example, runs of foo_test, bar_test and baz_test on a post-submit of a given patch.",
+                    "type": "string"
+                },
+                "targetId": {
+                    "description": "An identifier for the target which produced this action. No guarantees are made around how many actions may relate to a single target.",
                     "type": "string"
                 },
                 "toolDetails": {
@@ -1544,7 +1571,7 @@
                 "cmUsage": {
                     "description": "Indicates if and how Container Manager is being used for task execution.",
                     "enum": [
-                        "NONE",
+                        "CONFIG_NONE",
                         "CONFIG_MATCH",
                         "CONFIG_MISMATCH"
                     ],
@@ -1576,6 +1603,24 @@
                 "numWarnings": {
                     "description": "The number of warnings reported.",
                     "format": "uint64",
+                    "type": "string"
+                },
+                "outputLocation": {
+                    "description": "Indicates whether output files and/or output directories were found relative to the execution root or to the user provided work directory or both or none.",
+                    "enum": [
+                        "LOCATION_UNDEFINED",
+                        "LOCATION_NONE",
+                        "LOCATION_EXEC_ROOT_RELATIVE",
+                        "LOCATION_WORKING_DIR_RELATIVE",
+                        "LOCATION_EXEC_ROOT_AND_WORKING_DIR_RELATIVE"
+                    ],
+                    "enumDescriptions": [
+                        "Location is set to LOCATION_UNDEFINED for tasks where the working directorty is not specified or is identical to the execution root directory.",
+                        "No output files or directories were found neither relative to the execution root directory nor relative to the working directory.",
+                        "Output files or directories were found relative to the execution root directory but not relative to the working directory.",
+                        "Output files or directories were found relative to the working directory but not relative to the execution root directory.",
+                        "Output files or directories were found both relative to the execution root directory and relative to the working directory."
+                    ],
                     "type": "string"
                 },
                 "usedAsyncContainer": {
@@ -1631,7 +1676,8 @@
                         "DOCKER_CREATE_PROCESS_FILE_NOT_FOUND",
                         "DOCKER_CREATE_COMPUTE_SYSTEM_INCORRECT_PARAMETER_ERROR",
                         "DOCKER_TOO_MANY_SYMBOLIC_LINK_LEVELS",
-                        "LOCAL_CONTAINER_MANAGER_NOT_RUNNING"
+                        "LOCAL_CONTAINER_MANAGER_NOT_RUNNING",
+                        "DOCKER_IMAGE_VPCSC_PERMISSION_DENIED"
                     ],
                     "enumDescriptions": [
                         "The command succeeded.",
@@ -1673,7 +1719,8 @@
                         "Docker failed to create process because of file not found.",
                         "Docker failed to run containers with CreateComputeSystem error that involves an incorrect parameter (more specific version of DOCKER_CREATE_COMPUTE_SYSTEM_ERROR that is user-caused).",
                         "Docker failed to create an overlay mount because of too many levels of symbolic links.",
-                        "The local Container Manager is not running."
+                        "The local Container Manager is not running.",
+                        "Docker failed because a request was denied by the organization's policy."
                     ],
                     "type": "string"
                 },
