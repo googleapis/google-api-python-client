@@ -29,8 +29,3 @@ s.move(templated_files / '.kokoro', excludes=['**/docs/*', 'publish-docs.sh'])
 
 # Also move issue templates
 s.move(templated_files / '.github')
-
-# ----------------------------------------------------------------------------
-# Generate docs
-# ----------------------------------------------------------------------------
-s.shell.run(["nox", "-s", "docs"], hide_output=False)
