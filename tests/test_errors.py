@@ -141,5 +141,6 @@ class Error(unittest.TestCase):
             reason="Failed",
         )
         error = HttpError(resp, content)
-        self.assertEqual(str(error), '<HttpError 400 when requesting None returned "country is required". Details: "country is required">')
-        self.assertEqual(error.error_details, 'country is required')
+        expected_error_details = "[{'domain': 'global', 'reason': 'required', 'message': 'country is required', 'locationType': 'parameter', 'location': 'country'}]"
+        self.assertEqual(str(error), '<HttpError 400 when requesting None returned "country is required". Details: "%s">' % expected_error_details)
+        self.assertEqual(str(error.error_details), expected_error_details)
