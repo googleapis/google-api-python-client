@@ -1587,7 +1587,7 @@ class TestBatch(unittest.TestCase):
             "<HttpError 403 when requesting "
             "https://www.googleapis.com/someapi/v1/collection/?foo=bar returned "
             '"Access Not Configured". '
-            'Details: "Access Not Configured">'
+            "Details: \"[{'domain': 'usageLimits', 'reason': 'accessNotConfigured', 'message': 'Access Not Configured', 'debugInfo': 'QuotaState: BLOCKED'}]\">"
         )
         self.assertEqual(expected, str(callbacks.exceptions["2"]))
 
