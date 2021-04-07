@@ -1,0 +1,67 @@
+# Copyright 2021 Google LLC
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     https://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import subprocess
+import tempfile
+import shutil
+import os
+
+import describe
+import changesummary
+
+DISCOVERY_DOC_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                    '../googleapiclient/discovery_cache/documents')
+REFERENCE_DOC_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                    '../docs/dyn')
+
+# Clear discovery documents and reference documents directory
+shutil.rmtree(DISCOVERY_DOC_DIR, ignore_errors=True)
+shutil.rmtree(REFERENCE_DOC_DIR, ignore_errors=True)
+
+# Clear temporary directory
+shutil.rmtree('temp', ignore_errors=True)
+
+# Check out a fresh copy
+subprocess.call(['git', 'checkout', DISCOVERY_DOC_DIR])
+subprocess.call(['git', 'checkout', REFERENCE_DOC_DIR])
+
+# Snapshot current discovery artifacts to a temporary directory
+with tempfile.TemporaryDirectory() as tmpdirname:
+    shutil.copytree(DISCOVERY_DOC_DIR, tmpdirname, dirs_exist_ok=True)
+
+    # Download discovery artifacts and generate documentation
+    describe.generate_all_api_documents()
+
+    # Get a list of files changed using `git diff`
+    git_diff_output = subprocess.check_output(['git',
+                                      'diff',
+                                      'origin/master',
+                                      '--name-only',
+                                      '--',
+                                      (os.path.join(DISCOVERY_DOC_DIR, '*.json')),
+                                      (os.path.join(REFERENCE_DOC_DIR, '*.html')),
+                                      (os.path.join(REFERENCE_DOC_DIR, '*.md')),
+                                      ],
+                                      universal_newlines=True)
+
+    # Create lists of the changed files
+    all_changed_files = [os.path.basename(file_name) for file_name in git_diff_output.split('\n')]
+    json_changed_files = [file for file in all_changed_files if file.endswith(".json")]
+
+    # Analyze the changes in discovery artifacts using the changesummary module
+    changesummary.ChangeSummary(DISCOVERY_DOC_DIR, tmpdirname, json_changed_files).detect_discovery_changes()
+
+    # Write a list of the files changed to a file called `changed files` which will be used in the `createcommits.sh` script.
+    with open(os.path.join("temp", "changed_files"), "w") as f:
+        f.writelines('\n'.join(all_changed_files))
