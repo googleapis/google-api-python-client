@@ -61,7 +61,7 @@ class HttpError(Error):
                 data = self.content.decode("utf-8")
             if isinstance(data, dict):
                 reason = data["error"]["message"]
-                error_detail_keyword = next((kw for kw in ["detail", "details", "message"] if kw in data["error"]), "")
+                error_detail_keyword = next((kw for kw in ["detail", "details", "errors", "message"] if kw in data["error"]), "")
                 if error_detail_keyword:
                     self.error_details = data["error"][error_detail_keyword]
             elif isinstance(data, list) and len(data) > 0:
