@@ -123,7 +123,7 @@ class ChangeSummary:
         combined_docs = (
             pd.concat([current_doc, new_doc], keys=["CurrentValue", "NewValue"])
             .transpose()
-            .rename_axis("Key")
+            .rename_axis(index="Key")
             .reset_index()
         )
 
