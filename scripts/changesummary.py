@@ -119,7 +119,7 @@ class ChangeSummary:
 
         # Concatenate the 2 dataframes, transpose them, and create
         # a new dataframe called combined_docs with columns
-        # `Keys`, `CurrentValue`, `NewValue`.
+        # `Key`, `CurrentValue`, `NewValue`.
         combined_docs = (
             pd.concat([current_doc, new_doc], keys=["CurrentValue", "NewValue"])
             .transpose()
