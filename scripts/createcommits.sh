@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # If this is a github job, configure git
-if [[ $GITHUB_JOB == 1 ]]; then
+if [[ $GITHUB_JOB ]]; then
     git config --global user.name 'Yoshi Automation'
     git config --global user.email 'yoshi-automation@google.com'
 fi
