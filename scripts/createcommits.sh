@@ -13,8 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-git config --global user.name 'Yoshi Automation'
-git config --global user.email 'yoshi-automation@google.com'
+# If this is a github job, configure git
+if [[ $GITHUB_JOB == 1 ]]; then
+    git config --global user.name 'Yoshi Automation'
+    git config --global user.email 'yoshi-automation@google.com'
+fi
 
 while read api;
 do
