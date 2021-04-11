@@ -20,25 +20,25 @@ import os
 import describe
 import changesummary
 
-DISCOVERY_DOC_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                    '../googleapiclient/discovery_cache/documents')
-REFERENCE_DOC_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                    '../docs/dyn')
+SCRIPTS_DIR = os.path.dirname(os.path.realpath(__file__))
+DISCOVERY_DOC_DIR = os.path.join(SCRIPTS_DIR, '../googleapiclient/discovery_cache/documents')
+REFERENCE_DOC_DIR = os.path.join(SCRIPTS_DIR, '../docs/dyn')
+TEMP_DIR = os.path.join(SCRIPTS_DIR, 'temp')
 
 # Clear discovery documents and reference documents directory
 shutil.rmtree(DISCOVERY_DOC_DIR, ignore_errors=True)
 shutil.rmtree(REFERENCE_DOC_DIR, ignore_errors=True)
 
 # Clear temporary directory
-shutil.rmtree('temp', ignore_errors=True)
+shutil.rmtree(TEMP_DIR, ignore_errors=True)
 
 # Check out a fresh copy
 subprocess.call(['git', 'checkout', DISCOVERY_DOC_DIR])
 subprocess.call(['git', 'checkout', REFERENCE_DOC_DIR])
 
 # Snapshot current discovery artifacts to a temporary directory
-with tempfile.TemporaryDirectory() as tmpdirname:
-    shutil.copytree(DISCOVERY_DOC_DIR, tmpdirname, dirs_exist_ok=True)
+with tempfile.TemporaryDirectory() as current_discovery_doc_dir:
+    shutil.copytree(DISCOVERY_DOC_DIR, current_discovery_doc_dir, dirs_exist_ok=True)
 
     # Download discovery artifacts and generate documentation
     describe.generate_all_api_documents()
@@ -59,9 +59,12 @@ with tempfile.TemporaryDirectory() as tmpdirname:
     all_changed_files = [os.path.basename(file_name) for file_name in git_diff_output.split('\n')]
     json_changed_files = [file for file in all_changed_files if file.endswith(".json")]
 
+    # Create temporary directory
+    os.mkdir(TEMP_DIR)
+
     # Analyze the changes in discovery artifacts using the changesummary module
-    changesummary.ChangeSummary(DISCOVERY_DOC_DIR, tmpdirname, json_changed_files).detect_discovery_changes()
+    changesummary.ChangeSummary(DISCOVERY_DOC_DIR, current_discovery_doc_dir, TEMP_DIR, json_changed_files).detect_discovery_changes()
 
     # Write a list of the files changed to a file called `changed files` which will be used in the `createcommits.sh` script.
-    with open(os.path.join("temp", "changed_files"), "w") as f:
+    with open(os.path.join(TEMP_DIR, "changed_files"), "w") as f:
         f.writelines('\n'.join(all_changed_files))

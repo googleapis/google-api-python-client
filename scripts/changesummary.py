@@ -49,7 +49,7 @@ class ChangeSummary:
         artifacts.
     """
 
-    def __init__(self, new_artifacts_dir, current_artifacts_dir, file_list):
+    def __init__(self, new_artifacts_dir, current_artifacts_dir, temp_dir, file_list):
         """Initializes an instance of a ChangeSummary.
 
         Args:
@@ -57,6 +57,8 @@ class ChangeSummary:
                 new discovery artifacts.
             current_artifacts_dir (str): The relative path to the directory with
                 the current discovery artifacts.
+            temp_dir (str): The relative path to the directory used for
+                temporary storage where intermediate files will be stored.
             file_list (list): A list of strings containing files to analyze.
         """
         if file_list is None:
@@ -65,6 +67,7 @@ class ChangeSummary:
         self._file_list = file_list
         self._new_artifacts_dir = new_artifacts_dir
         self._current_artifacts_dir = current_artifacts_dir
+        self._temp_dir = temp_dir
 
         # Sanity checks to ensure artifact directories exist
         self._raise_if_artifacts_dir_not_found(self._new_artifacts_dir)
@@ -497,16 +500,15 @@ class ChangeSummary:
             sort_columns = ["Name", "Version", "ChangeType", "Key"]
             result.sort_values(by=sort_columns, ascending=True, inplace=True)
 
-            # Create a temp/ folder which be used by the `createcommits.sh` and
-            # `buildprbody.py` scripts
-            temp_folder = "temp/"
-            os.makedirs(os.path.dirname(temp_folder), exist_ok=True)
+            # Create a folder which be used by the `createcommits.sh` and
+            # `buildprbody.py` scripts.
+            os.makedirs(os.path.dirname(self._temp_dir), exist_ok=True)
 
             # Create a summary which contains a conventional commit message
             # for each API and write it to disk.
-            summary_df = self._get_summary_and_write_to_disk(result, temp_folder)
+            summary_df = self._get_summary_and_write_to_disk(result, self._temp_dir)
 
             # Create verbose change information for each API which contains
             # a list of changes by key and write it to disk.
-            self._write_verbose_changes_to_disk(result, temp_folder, summary_df)
+            self._write_verbose_changes_to_disk(result, self._temp_dir, summary_df)
 
