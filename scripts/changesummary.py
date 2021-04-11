@@ -173,7 +173,7 @@ class ChangeSummary:
         parent_added_agg = (
             combined_docs.groupby("Parent")
             .Added.value_counts(normalize=True)
-            .reset_index(name="Percent")
+            .reset_index(name="Proportion")
         )
 
         # Add a column NumLevels to inicate the number of levels in the tree
@@ -187,7 +187,7 @@ class ChangeSummary:
         parent_deleted_agg = (
             combined_docs.groupby("Parent")
             .Deleted.value_counts(normalize=True)
-            .reset_index(name="Percent")
+            .reset_index(name="Proportion")
         )
 
         # Add a column NumLevels to inicate the number of levels in the tree
@@ -197,22 +197,22 @@ class ChangeSummary:
         )
 
         # Create a list of all parents that have been added in hierarchical
-        # order. When `Percent` is 1, it means that the parent is new as all
+        # order. When `Proportion` is 1, it means that the parent is new as all
         # children keys have been added.
         all_added = (
             parent_added_agg[
-                (parent_added_agg["Percent"] == 1) & (parent_added_agg["Added"] == True)
+                (parent_added_agg["Proportion"] == 1) & (parent_added_agg["Added"] == True)
             ][["Parent", "NumLevels"]]
             .sort_values("NumLevels", ascending=True)
             .Parent.to_list()
         )
 
         # Create a list of all parents that have been deleted in hierarchical
-        # order. When `Percent` is 1, it means that the parent is new as all
+        # order. When `Proportion` is 1, it means that the parent is new as all
         # children keys have been added.
         all_deleted = (
             parent_deleted_agg[
-                (parent_deleted_agg["Percent"] == 1)
+                (parent_deleted_agg["Proportion"] == 1)
                 & (parent_deleted_agg["Deleted"] == True)
             ][["Parent", "NumLevels"]]
             .sort_values("NumLevels", ascending=True)
