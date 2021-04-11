@@ -122,14 +122,15 @@ class ChangeSummary:
         # `Key`, `CurrentValue`, `NewValue`.
         combined_docs = (
             pd.concat([current_doc, new_doc], keys=["CurrentValue", "NewValue"])
+            # Drop the index column
+            .reset_index(drop=True,level=1)
+            # Transpose the DataFrame, Resulting Columns should be
+            # ["Key", "CurrentValue", "New Value"]
+            .rename_axis(['Key'], axis=1)
             .transpose()
-            .rename_axis(index="Key")
+            # Drop the index column
             .reset_index()
         )
-
-        # This line is for cleanup purposes. As a result of the previous code
-        # we have a multi-index which is not needed so we need to drop a level.
-        combined_docs.columns = combined_docs.columns.droplevel(1)
 
         # When discovery documents are added, the column `CurrentValue` will
         # not exist. In that case, we'll just populate with `np.nan`.
