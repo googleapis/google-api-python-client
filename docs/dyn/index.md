@@ -61,7 +61,7 @@
 
 
 ## analyticsdata
-* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/analyticsdata_v1alpha.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/analyticsdata_v1beta.html)
 
 
 ## analyticsreporting
@@ -97,8 +97,6 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/appengine_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/appengine_v1alpha.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/appengine_v1beta.html)
-* [v1beta4](http://googleapis.github.io/google-api-python-client/docs/dyn/appengine_v1beta4.html)
-* [v1beta5](http://googleapis.github.io/google-api-python-client/docs/dyn/appengine_v1beta5.html)
 
 
 ## area120tables
@@ -377,6 +375,7 @@
 
 
 ## documentai
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1.html)
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1beta2.html)
 * [v1beta3](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1beta3.html)
 
@@ -613,6 +612,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessaccountmanagement_v1.html)
 
 
+## mybusinesslodging
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinesslodging_v1.html)
+
+
 ## networkconnectivity
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkconnectivity_v1alpha1.html)
 
@@ -631,6 +634,7 @@
 
 
 ## ondemandscanning
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1beta1.html)
 
 
@@ -666,6 +670,7 @@
 
 
 ## policysimulator
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/policysimulator_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/policysimulator_v1beta1.html)
 
 
