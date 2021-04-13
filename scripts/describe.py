@@ -420,7 +420,7 @@ def document_api(name, version, uri, doc_destination_dir):
             except json.JSONDecodeError:
                 revision = None
 
-            if revision and discovery['revision'] >= revision:
+            if revision is None or discovery['revision'] >= revision:
                 # Reset position to the beginning
                 f.seek(0)
                 # Write the changes to disk
