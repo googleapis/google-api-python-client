@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.1.0...v2.2.0) (2021-04-13)
+
+
+### Features
+
+* Adds support for errors.py to also use 'errors' for error_details  ([#1281](https://www.github.com/googleapis/google-api-python-client/issues/1281)) ([a5d2081](https://www.github.com/googleapis/google-api-python-client/commit/a5d20813e8d7589b0cec030c149748e53ea555a5))
+
 ## [2.1.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.0.2...v2.1.0) (2021-03-31)
 
 
