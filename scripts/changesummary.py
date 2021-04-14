@@ -82,7 +82,7 @@ class ChangeSummary:
         """
         if not os.path.exists(directory):
             raise ArtifactsDirDoesNotExist(
-                "Artifacts directory does not " " exist : {0}".format(directory)
+                "Artifacts directory does not exist : {0}".format(directory)
             )
 
     def _load_json_to_dataframe(self, file_path):
