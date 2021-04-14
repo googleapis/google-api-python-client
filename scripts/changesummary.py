@@ -393,6 +393,10 @@ class ChangeSummary:
         # each api
         verbose_changes = []
 
+        # Sort the dataframe to minimize file operations below.
+        dataframe.sort_values(by=["Name","Version","ChangeType"],
+                                ascending=True, inplace=True)
+
         # Select only the relevant columns. We need to create verbose output
         # by Api Name, Version and ChangeType so we need to group by these
         # columns.
