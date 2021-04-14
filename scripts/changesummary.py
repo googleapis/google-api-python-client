@@ -88,7 +88,7 @@ class ChangeSummary:
 
         # Create an empty dataframe as we will need to return it if the file
         # doesn't exist
-        dataframe_doc = None
+        dataframe_doc = pd.DataFrame()
 
         if os.path.exists(file_path):
             with open(file_path, "r") as f:
