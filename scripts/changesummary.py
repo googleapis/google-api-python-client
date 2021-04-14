@@ -209,7 +209,7 @@ class ChangeSummary:
 
         # Create a list of all parents that have been deleted in hierarchical
         # order. When `Proportion` is 1, it means that the parent is new as all
-        # children keys have been added.
+        # children keys have been deleted.
         all_deleted = (
             parent_deleted_agg[
                 (parent_deleted_agg["Proportion"] == 1)
