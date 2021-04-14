@@ -32,8 +32,8 @@ class ChangeType(IntEnum):
     CHANGED = 3
 
 
-class ArtifactsDirDoesNotExist(ValueError):
-    """Raised when the artifacts directory doesn't exist."""
+class DirectoryDoesNotExist(ValueError):
+    """Raised when the specified directory does not exist."""
 
     pass
 
@@ -69,20 +69,21 @@ class ChangeSummary:
         self._current_artifacts_dir = current_artifacts_dir
         self._temp_dir = temp_dir
 
-        # Sanity checks to ensure artifact directories exist
-        self._raise_if_artifacts_dir_not_found(self._new_artifacts_dir)
-        self._raise_if_artifacts_dir_not_found(self._current_artifacts_dir)
+        # Sanity checks to ensure directories exist
+        self._raise_if_directory_not_found(self._new_artifacts_dir)
+        self._raise_if_directory_not_found(self._current_artifacts_dir)
+        self._raise_if_directory_not_found(self._temp_dir)
 
-    def _raise_if_artifacts_dir_not_found(self, directory):
-        """Raises ArtifactsDirDoesNotExist if the `directory` doesn't exist
+    def _raise_if_directory_not_found(self, directory):
+        """Raises if the `directory` doesn't exist
 
         args:
-            directory (str): The relative path to the `directory` with the \
-                artifacts.
+            directory (str): The relative path to the `directory`
         """
+
         if not os.path.exists(directory):
-            raise ArtifactsDirDoesNotExist(
-                "Artifacts directory does not exist : {0}".format(directory)
+            raise DirectoryDoesNotExist(
+                "Directory does not exist : {0}".format(directory)
             )
 
     def _load_json_to_dataframe(self, file_path):
