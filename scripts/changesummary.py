@@ -378,7 +378,7 @@ class ChangeSummary:
         return dataframe
 
     def _write_verbose_changes_to_disk(self, dataframe, directory, summary_df):
-        """ "Writes verbose information to file about changes made to discovery
+        """ Writes verbose information to file about changes made to discovery
         artifacts based on the provided dataframe. A separate file is saved
         for each api in the current working directory. The extension of the
         files will be `'.verbose'`.
