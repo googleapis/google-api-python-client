@@ -50,7 +50,7 @@ version = "2.2.0"
 
 setup(
     name="google-api-python-client",
-    version=version,
+    version=setuptools.sic(version),
     description="Google API Client Library for Python",
     long_description=readme,
     long_description_content_type='text/markdown',
