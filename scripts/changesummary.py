@@ -266,7 +266,7 @@ class ChangeSummary:
             np.where(added_condition, ChangeType.ADDED, ChangeType.CHANGED),
         )
 
-        # Filter out keys which appear to be less important such as:
+        # Filter out keys which rarely affect functionality. For example:
         # {"description", "documentation", "enum", "etag", "revision", "title",
         # "url", "rootUrl"}
         docs_diff = docs_diff[
