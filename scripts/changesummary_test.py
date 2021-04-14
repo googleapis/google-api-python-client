@@ -38,22 +38,25 @@ TEMP_DIR = os.path.join(SCRIPTS_DIR, "test_resources", "temp")
 
 class TestChangeSummary(unittest.TestCase):
     def setUp(self):
+        # Create temporary directory
+        os.mkdir(TEMP_DIR)
+
         self.cs = ChangeSummary(NEW_ARTIFACTS_DIR, CURRENT_ARTIFACTS_DIR, TEMP_DIR, [])
 
     def test_raises_on_directory_not_found_new_artifacts_dir(self):
         with self.assertRaises(DirectoryDoesNotExist):
             ChangeSummary(
-                "invalid_artifact_dir", CURRENT_ARTIFACTS_DIR, "", []
+                "invalid_artifact_dir", CURRENT_ARTIFACTS_DIR, TEMP_DIR, []
             ).detect_discovery_changes()
 
     def test_raises_on_directory_not_found_current_artifacts_dir(self):
         with self.assertRaises(DirectoryDoesNotExist):
             ChangeSummary(
-                NEW_ARTIFACTS_DIR, "invalid_artifact_dir", "", []
+                NEW_ARTIFACTS_DIR, "invalid_artifact_dir", TEMP_DIR, []
             ).detect_discovery_changes()
 
     def test_raises_on_directory_not_found_temp_dir(self):
-        # Clear temporary directory
+        # Remove temporary directory
         shutil.rmtree(TEMP_DIR, ignore_errors=True)
 
         with self.assertRaises(DirectoryDoesNotExist):
