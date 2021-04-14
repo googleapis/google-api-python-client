@@ -38,12 +38,6 @@ class DirectoryDoesNotExist(ValueError):
     pass
 
 
-class FileListCannotBeEmpty(ValueError):
-    """Raised when a file_list is empty."""
-
-    pass
-
-
 class ChangeSummary:
     """Represents the change summary between 2 directories containing \
         artifacts.
@@ -61,8 +55,6 @@ class ChangeSummary:
                 temporary storage where intermediate files will be stored.
             file_list (list): A list of strings containing files to analyze.
         """
-        if file_list is None:
-            raise FileListCannotBeEmpty("file_list should not be empty")
 
         self._file_list = file_list
         self._new_artifacts_dir = new_artifacts_dir
