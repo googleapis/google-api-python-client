@@ -311,8 +311,8 @@ class ChangeSummary:
         return "{0}({1}): update the api".format(commit_type, api_name)
 
     def _get_keys_to_ignore(self):
-        """Returns keys to ignore as an array of strings. # Filter out keys
-            which appear to be less important.
+        """Returns a list of strings with keys to ignore because they rarely
+            affect functionality.
 
         args: None
         """
