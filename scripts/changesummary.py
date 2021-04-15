@@ -321,6 +321,20 @@ class ChangeSummary:
         ]
         return keys_to_ignore
 
+    def _get_stable_versions(self, versions):
+        """ Returns a pandas series `pd.Series()` of boolean values,
+        corresponding to the given series, indicating whether the version is
+        considered stable or not.
+        args:
+            versions (object): a pandas series containing version
+                information for all discovery artifacts.
+        """
+        # Use a regex on the version to find versions with the pattern
+        # <v>.<0-9>.<0-9>.<0-9> . Any api that matches this pattern will be
+        # labeled as stable. In other words, v1, v1.4 and v1.4.5 is stable
+        # but v1b1 v1aplha and v1beta1 is not stable.
+        return versions.str.extract(r"(v\d?\.?\d?\.?\d+$)").notnull()
+
     def _get_summary_and_write_to_disk(self, dataframe, directory):
         """Writes summary information to file about changes made to discovery
         artifacts based on the provided dataframe and returns a dataframe
@@ -332,13 +346,7 @@ class ChangeSummary:
             directory (str): path where the summary file should be saved
         """
 
-        # Use a regex on the version to find versions with the pattern
-        # <v>.<0-9>.<0-9>.<0-9> . Any api that matches this pattern will be
-        # labeled as stable. In other words, v1, v1.4 and v1.4.5 is stable
-        # but v1b1 v1aplha and v1beta1 is not stable.
-        dataframe["IsStable"] = (
-            dataframe["Version"].str.extract(r"(v\d?\.?\d?\.?\d+$)").notnull()
-        )
+        dataframe["IsStable"] = self._get_stable_versions(dataframe["Version"])
 
         # Create a filter for features, which contains only rows which have keys
         # that have been deleted or added, that will be used as an argument in
@@ -475,8 +483,8 @@ class ChangeSummary:
             f = None
 
     def detect_discovery_changes(self):
-        """Prints a summary of the changes to the discovery artifacts to the
-        console.
+        """Writes a summary of the changes to the discovery artifacts to disk
+            at the path specified in `temp_dir`.
 
         args: None
         """
