@@ -13,7 +13,9 @@ To update discovery artifacts locally:
 6. Run `git checkout -b update-discovery-artifacts-manual`
 7. Run `python3 updatediscoveryartifacts.py`
 8. Run `./createcommits.sh`
-9. Create a pull request with the changes
+9. Run `python3 buildprbody.py`
+10. Create a pull request with the changes.
+11. Copy the contents of `temp/allapis.summary` into the PR Body.
 
 ## Questions
 Feel free to submit an issue!
