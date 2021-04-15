@@ -44,7 +44,7 @@ from googleapiclient.errors import HttpError
 import uritemplate
 
 DISCOVERY_DOC_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                    '../googleapiclient/discovery_cache/documents')
+                                    'googleapiclient/discovery_cache/documents')
 
 CSS = """<style>
 
@@ -137,7 +137,7 @@ METHOD_LINK = """<p class="toc_element">
 <p class="firstline">$firstline</p>"""
 
 BASE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                        "../docs/dyn")
+                        "docs/dyn")
 
 DIRECTORY_URI = "https://www.googleapis.com/discovery/v1/apis"
 
