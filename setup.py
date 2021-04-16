@@ -27,7 +27,22 @@ if sys.version_info < (3, 6):
 
 import io
 import os
-from setuptools import setup
+import setuptools
+
+# Disable version normalization performed by setuptools.setup()
+try:
+    # Try the approach of using sic(), added in setuptools 46.1.0
+    from setuptools import sic
+except ImportError:
+    # Try the approach of replacing packaging.version.Version
+    sic = lambda v: v
+    try:
+        # setuptools >=39.0.0 uses packaging from setuptools.extern
+        from setuptools.extern import packaging
+    except ImportError:
+        # setuptools <39.0.0 uses packaging from pkg_resources.extern
+        from pkg_resources.extern import packaging
+    packaging.version.Version = packaging.version.LegacyVersion
 
 packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
 
@@ -48,9 +63,9 @@ with io.open(readme_filename, encoding="utf-8") as readme_file:
 
 version = "2.2.0"
 
-setup(
+setuptools.setup(
     name="google-api-python-client",
-    version=version,
+    version=sic(version),
     description="Google API Client Library for Python",
     long_description=readme,
     long_description_content_type='text/markdown',
