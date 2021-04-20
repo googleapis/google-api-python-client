@@ -18,7 +18,6 @@ import sys
 import nox
 import os
 import shutil
-from shutil import rmtree
 
 test_dependencies = [
     "django>=2.0.0",
@@ -62,8 +61,8 @@ def lint(session):
 )
 def unit(session, oauth2client):
     # Clean up dist and build folders
-    rmtree('dist', ignore_errors=True)
-    rmtree('build', ignore_errors=True)
+    shutil.rmtree('dist', ignore_errors=True)
+    shutil.rmtree('build', ignore_errors=True)
 
     session.install(*test_dependencies)
     session.install(oauth2client)
