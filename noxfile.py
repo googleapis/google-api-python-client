@@ -16,6 +16,9 @@
 import sys
 
 import nox
+import os
+import shutil
+from shutil import rmtree
 
 test_dependencies = [
     "django>=2.0.0",
@@ -58,9 +61,22 @@ def lint(session):
     ],
 )
 def unit(session, oauth2client):
+    # Clean up dist and build folders
+    rmtree('dist', ignore_errors=True)
+    rmtree('build', ignore_errors=True)
+
     session.install(*test_dependencies)
     session.install(oauth2client)
-    session.install('.')
+
+    # Create and install wheels
+    session.run('python3', 'setup.py', 'bdist_wheel')
+    session.install(os.path.join('dist', os.listdir('dist').pop()))
+
+    # Run tests from a different directory to test the package artifacts
+    root_dir = os.path.dirname(os.path.realpath(__file__))
+    temp_dir = session.create_tmp()
+    session.chdir(temp_dir)
+    shutil.copytree(os.path.join(root_dir, 'tests'), 'tests')
 
     # Run py.test against the unit tests.
     session.run(
