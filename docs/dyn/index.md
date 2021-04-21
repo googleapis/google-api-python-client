@@ -42,6 +42,7 @@
 
 ## adsense
 * [v1.4](http://googleapis.github.io/google-api-python-client/docs/dyn/adsense_v1_4.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/adsense_v2.html)
 
 
 ## adsensehost
@@ -91,6 +92,10 @@
 
 ## apigee
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/apigee_v1.html)
+
+
+## apikeys
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/apikeys_v2.html)
 
 
 ## appengine
