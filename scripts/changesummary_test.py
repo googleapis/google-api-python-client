@@ -16,7 +16,7 @@
 
 __author__ = "partheniou@google.com (Anthonios Partheniou)"
 
-import os
+import pathlib
 import shutil
 import unittest
 
@@ -26,13 +26,10 @@ from changesummary import ChangeSummary
 from changesummary import ChangeType
 from changesummary import DirectoryDoesNotExist
 
-
-SCRIPTS_DIR = os.path.dirname(os.path.realpath(__file__))
-NEW_ARTIFACTS_DIR = os.path.join(SCRIPTS_DIR, "test_resources", "new_artifacts_dir")
-CURRENT_ARTIFACTS_DIR = os.path.join(
-    SCRIPTS_DIR, "test_resources", "current_artifacts_dir"
-)
-TEMP_DIR = os.path.join(SCRIPTS_DIR, "test_resources", "temp")
+SCRIPTS_DIR = pathlib.Path(__file__).parent.resolve()
+NEW_ARTIFACTS_DIR = SCRIPTS_DIR / "test_resources" / "new_artifacts_dir"
+CURRENT_ARTIFACTS_DIR = SCRIPTS_DIR / "test_resources" / "current_artifacts_dir"
+TEMP_DIR = SCRIPTS_DIR / "test_resources" / "temp"
 
 
 class TestChangeSummary(unittest.TestCase):
@@ -40,7 +37,7 @@ class TestChangeSummary(unittest.TestCase):
         # Clear temporary directory
         shutil.rmtree(TEMP_DIR, ignore_errors=True)
         # Create temporary directory
-        os.mkdir(TEMP_DIR)
+        pathlib.Path(TEMP_DIR).mkdir()
 
         self.cs = ChangeSummary(NEW_ARTIFACTS_DIR, CURRENT_ARTIFACTS_DIR, TEMP_DIR, [])
 
@@ -66,7 +63,7 @@ class TestChangeSummary(unittest.TestCase):
             ).detect_discovery_changes()
 
         # Create temporary directory
-        os.mkdir(TEMP_DIR)
+        pathlib.Path(TEMP_DIR).mkdir()
 
         ChangeSummary(
             NEW_ARTIFACTS_DIR, CURRENT_ARTIFACTS_DIR, TEMP_DIR, []
@@ -81,7 +78,7 @@ class TestChangeSummary(unittest.TestCase):
         self.assertTrue(df.empty)
 
     def test_load_json_to_dataframe_returns_expected_data(self):
-        doc_path = os.path.join(NEW_ARTIFACTS_DIR, "drive.v3.json")
+        doc_path = NEW_ARTIFACTS_DIR / "drive.v3.json"
         df = self.cs._load_json_to_dataframe(file_path=doc_path)
         self.assertEqual(df["name"].iloc[0], "drive")
         self.assertEqual(df["version"].iloc[0], "v3")
@@ -184,7 +181,7 @@ class TestChangeSummary(unittest.TestCase):
         )
         cs.detect_discovery_changes()
         print("test")
-        result = pd.read_csv(os.path.join(TEMP_DIR, "allapis.dataframe"))
+        result = pd.read_csv(TEMP_DIR / "allapis.dataframe")
 
         # bigquery was added
         # 28 key changes in total.

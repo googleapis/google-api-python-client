@@ -15,12 +15,17 @@
 from enum import IntEnum
 import json
 from multiprocessing import Pool
-import os
 import pandas as pd
+import pathlib
 import numpy as np
 
-BRANCH_ARTIFACTS_DIR = "googleapiclient/discovery_cache/documents/"
-MAIN_ARTIFACTS_DIR = "../main/googleapiclient/discovery_cache/documents/"
+BRANCH_ARTIFACTS_DIR = (
+    pathlib.Path(__file__).parent.resolve() / "googleapiclient" / "discovery_cache" / "documents"
+)
+MAIN_ARTIFACTS_DIR = (
+    pathlib.Path(__file__).parent.resolve() / ".." / "main" / "googleapiclient" / "discovery_cache" / "documents"
+)
+
 MULTIPROCESSING_NUM_PER_BATCH = 5
 MULTIPROCESSING_NUM_AGENTS = 10
 
@@ -57,9 +62,9 @@ class ChangeSummary:
         """
 
         self._file_list = file_list
-        self._new_artifacts_dir = new_artifacts_dir
-        self._current_artifacts_dir = current_artifacts_dir
-        self._temp_dir = temp_dir
+        self._new_artifacts_dir = pathlib.Path(new_artifacts_dir)
+        self._current_artifacts_dir = pathlib.Path(current_artifacts_dir)
+        self._temp_dir = pathlib.Path(temp_dir)
 
         # Sanity checks to ensure directories exist
         self._raise_if_directory_not_found(self._new_artifacts_dir)
@@ -73,7 +78,7 @@ class ChangeSummary:
             directory (str): The relative path to the `directory`
         """
 
-        if not os.path.exists(directory):
+        if not pathlib.Path(directory).exists():
             raise DirectoryDoesNotExist(
                 "Directory does not exist : {0}".format(directory)
             )
@@ -90,7 +95,7 @@ class ChangeSummary:
         # doesn't exist
         dataframe_doc = pd.DataFrame()
 
-        if os.path.exists(file_path):
+        if pathlib.Path(file_path).is_file():
             with open(file_path, "r") as f:
                 # Now load the json file into a pandas dataframe as a flat table
                 dataframe_doc = pd.json_normalize(json.load(f))
@@ -105,8 +110,8 @@ class ChangeSummary:
             filename (str): The name of the discovery artifact to parse.
         """
         # The paths of the 2 discovery artifacts to compare
-        current_artifact_path = os.path.join(self._current_artifacts_dir, filename)
-        new_artifact_path = os.path.join(self._new_artifacts_dir, filename)
+        current_artifact_path = self._current_artifacts_dir / filename
+        new_artifact_path = self._new_artifacts_dir / filename
 
         # Use a helper functions to load the discovery artifacts into pandas
         # dataframes
@@ -375,7 +380,7 @@ class ChangeSummary:
 
         # Write the final dataframe to disk as it will be used in the
         # buildprbody.py script
-        dataframe.to_csv(os.path.join(directory, "allapis.dataframe"))
+        dataframe.to_csv(directory / "allapis.dataframe")
         return dataframe
 
     def _write_verbose_changes_to_disk(self, dataframe, directory, summary_df):
@@ -432,7 +437,7 @@ class ChangeSummary:
                 # Create a file which contains verbose changes for the current
                 # API being processed
                 filename = "{0}.verbose".format(currentApi)
-                f = open(os.path.join(directory, filename), "a")
+                f = open(pathlib.Path(directory / filename), "a")
                 lastApi = currentApi
 
                 # Create a filter with only the rows for the current API
@@ -507,7 +512,7 @@ class ChangeSummary:
 
             # Create a folder which be used by the `createcommits.sh` and
             # `buildprbody.py` scripts.
-            os.makedirs(os.path.dirname(self._temp_dir), exist_ok=True)
+            pathlib.Path(self._temp_dir).mkdir(exist_ok=True)
 
             # Create a summary which contains a conventional commit message
             # for each API and write it to disk.

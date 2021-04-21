@@ -14,9 +14,8 @@
 
 from enum import IntEnum
 import numpy as np
-import os
 import pandas as pd
-
+import pathlib
 
 class ChangeType(IntEnum):
     UNKNOWN = 0
@@ -36,8 +35,8 @@ def get_commit_link(name):
     sha = None
     api_link = ""
 
-    file_path = os.path.join(directory, "{0}.sha".format(name))
-    if os.path.exists(file_path):
+    file_path = pathlib.Path(directory).joinpath("{0}.sha".format(name))
+    if file_path.is_file():
         with open(file_path, "r") as f:
             sha = f.readline().rstrip()
             if sha:
@@ -47,7 +46,7 @@ def get_commit_link(name):
 
 
 if __name__ == "__main__":
-    directory = "temp"
+    directory = pathlib.Path("temp")
     dataframe = pd.read_csv("temp/allapis.dataframe")
     dataframe["Version"] = dataframe["Version"].astype(str)
 
@@ -80,7 +79,7 @@ if __name__ == "__main__":
         .values
     )
 
-    with open(os.path.join(directory, "allapis.summary"), "w") as f:
+    with open(directory / "allapis.summary", "w") as f:
         if len(stable_and_breaking) > 0:
             f.writelines(
                 [

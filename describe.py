@@ -28,7 +28,6 @@ from collections import OrderedDict
 import argparse
 import collections
 import json
-import os
 import pathlib
 import re
 import string
@@ -43,8 +42,9 @@ from googleapiclient.errors import HttpError
 
 import uritemplate
 
-DISCOVERY_DOC_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                    'googleapiclient/discovery_cache/documents')
+DISCOVERY_DOC_DIR = (
+    pathlib.Path(__file__).parent.resolve() / "googleapiclient" / "discovery_cache" / "documents"
+)
 
 CSS = """<style>
 
@@ -136,8 +136,7 @@ METHOD_LINK = """<p class="toc_element">
   <code><a href="#$name">$name($params)</a></code></p>
 <p class="firstline">$firstline</p>"""
 
-BASE = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                        "docs/dyn")
+BASE = pathlib.Path(__file__).parent.resolve() / "docs" / "dyn"
 
 DIRECTORY_URI = "https://www.googleapis.com/discovery/v1/apis"
 
@@ -361,7 +360,7 @@ def document_collection(resource, path, root_discovery, discovery, css=CSS):
 def document_collection_recursive(resource, path, root_discovery, discovery, doc_destination_dir):
     html = document_collection(resource, path, root_discovery, discovery)
 
-    f = open(os.path.join(doc_destination_dir, path + "html"), "w")
+    f = open(pathlib.Path(doc_destination_dir).joinpath(path + "html"), "w")
 
     f.write(html)
     f.close()
@@ -407,7 +406,7 @@ def document_api(name, version, uri, doc_destination_dir):
         version = safe_version(version)
         doc_name = "{}.{}.json".format(name, version.replace("_", ""))
 
-        discovery_file_path = os.path.join(DISCOVERY_DOC_DIR, doc_name)
+        discovery_file_path = DISCOVERY_DOC_DIR / doc_name
         revision = None
 
         pathlib.Path(discovery_file_path).touch(exist_ok=True)
@@ -495,7 +494,7 @@ def generate_all_api_documents(directory_uri=DIRECTORY_URI, doc_destination_dir=
                 )
             markdown.append("\n")
 
-        with open(os.path.join(BASE, "index.md"), "w") as f:
+        with open(BASE / "index.md", "w") as f:
             markdown = "\n".join(markdown)
             f.write(markdown)
 

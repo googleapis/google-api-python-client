@@ -95,8 +95,8 @@ def unit(session, oauth2client):
 @nox.session(python=["3.9"])
 def scripts(session):
     session.install(*test_dependencies)
-    session.install(".")
-    session.install("-r", os.path.join("scripts", "requirements.txt"))
+    session.install("-e", ".")
+    session.install("-r", "scripts/requirements.txt")
 
     # Run py.test against the unit tests.
     session.run(
