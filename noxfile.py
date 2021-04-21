@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import sys
 
 import nox
@@ -88,5 +89,23 @@ def unit(session, oauth2client):
         "--cov-report=",
         "--cov-fail-under=85",
         "tests",
+        *session.posargs,
+    )
+
+@nox.session(python=["3.9"])
+def scripts(session):
+    session.install(*test_dependencies)
+    session.install("-e", ".")
+    session.install("-r", "scripts/requirements.txt")
+
+    # Run py.test against the unit tests.
+    session.run(
+        "py.test",
+        "--quiet",
+        "--cov=scripts",
+        "--cov-config=.coveragerc",
+        "--cov-report=",
+        "--cov-fail-under=80",
+        "scripts",
         *session.posargs,
     )
