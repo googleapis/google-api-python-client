@@ -471,9 +471,7 @@ def generate_all_api_documents(directory_uri=DIRECTORY_URI, doc_destination_dir=
     """
     api_directory = collections.defaultdict(list)
     http = build_http()
-    resp, content = http.request(
-        directory_uri, headers={"X-User-IP": "0.0.0.0"}
-    )
+    resp, content = http.request(directory_uri)
     if resp.status == 200:
         directory = json.loads(content)["items"]
         for api in directory:
