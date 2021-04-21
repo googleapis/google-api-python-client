@@ -1,0 +1,126 @@
+# Copyright 2021 Google LLC
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     https://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: A workflow for updating discovery artifacts
+# Controls when the action will run.
+
+on:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # Run this Github Action every day at 7 AM UTC
+    - cron:  '* 7 * * *'
+
+  # Triggers the workflow on pull request events but only for the master branch
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Update Discovery Artifacts PR
+    runs-on: ubuntu-latest
+    if: |
+      ${{github.event.pull_request.user.login == 'parthea' && github.event.pull_request.title == 'chore: Add github action to update discovery artifacts'}}
+    steps:
+      - name: Check out master branch
+        uses: actions/checkout@v2
+        with:
+          ref: refs/heads/master
+
+      - name: Create branch
+        run: |
+          git checkout -b update-discovery-artifacts
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.9
+
+      - name: Install google-api-python-client
+        run: pip3 install -e .
+
+      - name: Install script dependencies
+        run: pip3 install -r requirements.txt
+        working-directory: ./scripts
+
+      # Apply a workaround to discovery.py to avoid DefaultCredentialsError
+      # which is raised when calling `build_from_document()` as a result of
+      # `google.auth.default()`. The workaround is to bypass the code block that
+      # attempts to load default credentials.
+      - name: Workaround to avoid DefaultCredentialsError in discovery.py
+        run: sed -i -e 's/if credentials is None/if False/g' googleapiclient/discovery.py
+
+      - name: Run Change Summary
+        run: python3 updatediscoveryartifacts.py
+        working-directory: ./scripts
+
+      - name: Commit changes
+        run: ./createcommits.sh
+        working-directory: ./scripts
+
+      - name: Push changes
+        run: git push -f --set-upstream origin update-discovery-artifacts
+
+      - name: Prepare summary for PR Body
+        id: pr_body
+        shell: bash
+        run: |
+          python3 buildprbody.py
+          output=$(cat temp/allapis.summary)
+          output="${output//'%'/'%25'}"
+          output="${output//$'\n'/'%0A'}"
+          output="${output//$'\r'/'%0D'}"
+          echo "::set-output name=change_summary::$output"
+        working-directory: ./scripts
+
+      - name: Create PR
+        uses: actions/github-script@v2.0.0
+        with:
+          github-token: ${{secrets.YOSHI_CODE_BOT_TOKEN}}
+          script: |
+            async function createPR () {
+              const { owner, repo } = context.repo
+              const branch = 'update-discovery-artifacts'
+              let prBody = `${{ steps.pr_body.outputs.change_summary }}`
+              const prTitle = 'chore: Update discovery artifacts'
+              const pullRequests = await github.pulls.list({
+                owner: owner,
+                repo: repo,
+                head: `${owner}:${branch}`,
+                state: 'open'
+              })
+
+              if (pullRequests.data.length === 1) {
+                prNumber = pullRequests.data[0].number
+                await github.pulls.update({
+                  owner: owner,
+                  repo: repo,
+                  pull_number: prNumber,
+                  title: prTitle,
+                  body: prBody
+                })
+                console.log('Updated PR')
+              } else {
+                const createPrResult = await github.pulls.create({
+                  owner: owner,
+                  repo: repo,
+                  base: 'master',
+                  head: `${owner}:${branch}`,
+                  title: prTitle,
+                  body: prBody
+                })
+                prNumber = createPrResult.data.number
+                console.log('Created PR')
+              }
+            }
+            createPR()
