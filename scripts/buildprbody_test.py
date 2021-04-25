@@ -20,8 +20,6 @@ import pathlib
 import shutil
 import unittest
 
-# import pandas as pd
-
 from buildprbody import BuildPrBody
 from changesummary import ChangeType
 
