@@ -20,10 +20,18 @@ import pathlib
 import numpy as np
 
 BRANCH_ARTIFACTS_DIR = (
-    pathlib.Path(__file__).parent.resolve() / "googleapiclient" / "discovery_cache" / "documents"
+    pathlib.Path(__file__).parent.resolve()
+    / "googleapiclient"
+    / "discovery_cache"
+    / "documents"
 )
 MAIN_ARTIFACTS_DIR = (
-    pathlib.Path(__file__).parent.resolve() / ".." / "main" / "googleapiclient" / "discovery_cache" / "documents"
+    pathlib.Path(__file__).parent.resolve()
+    / ".."
+    / "main"
+    / "googleapiclient"
+    / "discovery_cache"
+    / "documents"
 )
 
 MULTIPROCESSING_NUM_PER_BATCH = 5
@@ -124,11 +132,10 @@ class ChangeSummary:
         combined_docs = (
             pd.concat([current_doc, new_doc], keys=["CurrentValue", "NewValue"])
             # Drop the index column
-            .reset_index(drop=True,level=1)
+            .reset_index(drop=True, level=1)
             # Transpose the DataFrame, Resulting Columns should be
             # ["Key", "CurrentValue", "New Value"]
-            .rename_axis(['Key'], axis=1)
-            .transpose()
+            .rename_axis(["Key"], axis=1).transpose()
             # Drop the index column
             .reset_index()
         )
@@ -199,7 +206,8 @@ class ChangeSummary:
         # children keys have been added.
         all_added = (
             parent_added_agg[
-                (parent_added_agg["Proportion"] == 1) & (parent_added_agg["Added"] == True)
+                (parent_added_agg["Proportion"] == 1)
+                & (parent_added_agg["Added"] == True)
             ][["Parent", "NumLevels"]]
             .sort_values("NumLevels", ascending=True)
             .Parent.to_list()
@@ -327,7 +335,7 @@ class ChangeSummary:
         return keys_to_ignore
 
     def _get_stable_versions(self, versions):
-        """ Returns a pandas series `pd.Series()` of boolean values,
+        """Returns a pandas series `pd.Series()` of boolean values,
         corresponding to the given series, indicating whether the version is
         considered stable or not.
         args:
@@ -374,8 +382,7 @@ class ChangeSummary:
         # Create a new column `Summary`, which will contain a string with the
         # conventional commit message.
         dataframe["Summary"] = np.vectorize(self._build_summary_message)(
-            dataframe["Name"],
-            dataframe["IsFeatureAggregate"]
+            dataframe["Name"], dataframe["IsFeatureAggregate"]
         )
 
         # Write the final dataframe to disk as it will be used in the
@@ -384,7 +391,7 @@ class ChangeSummary:
         return dataframe
 
     def _write_verbose_changes_to_disk(self, dataframe, directory, summary_df):
-        """ Writes verbose information to file about changes made to discovery
+        """Writes verbose information to file about changes made to discovery
         artifacts based on the provided dataframe. A separate file is saved
         for each api in the current working directory. The extension of the
         files will be `'.verbose'`.
@@ -400,8 +407,9 @@ class ChangeSummary:
         verbose_changes = []
 
         # Sort the dataframe to minimize file operations below.
-        dataframe.sort_values(by=["Name","Version","ChangeType"],
-                                ascending=True, inplace=True)
+        dataframe.sort_values(
+            by=["Name", "Version", "ChangeType"], ascending=True, inplace=True
+        )
 
         # Select only the relevant columns. We need to create verbose output
         # by Api Name, Version and ChangeType so we need to group by these
@@ -433,7 +441,7 @@ class ChangeSummary:
                 # Clear the array of strings with information from the previous
                 # api and reset the last version
                 verbose_changes = []
-                lastVersion = ''
+                lastVersion = ""
                 # Create a file which contains verbose changes for the current
                 # API being processed
                 filename = "{0}.verbose".format(currentApi)
@@ -450,12 +458,13 @@ class ChangeSummary:
                 # summary column are the same for a given API.
                 verbose_changes.append(summary_df[current_api_filter].Summary.iloc[0])
 
-
             # If the version has changed, we need to create append a new heading
             # in the verbose summary which contains the api and version.
             if lastVersion != currentVersion:
                 # Append a header string with the API and version
-                verbose_changes.append("\n\n#### {0}:{1}\n\n".format(currentApi, currentVersion))
+                verbose_changes.append(
+                    "\n\n#### {0}:{1}\n\n".format(currentApi, currentVersion)
+                )
 
                 lastVersion = currentVersion
                 lastType = ChangeType.UNKNOWN
@@ -476,7 +485,7 @@ class ChangeSummary:
                 # type group.
                 verbose_changes.extend(
                     [
-                        "- {0} (Total Keys: {1})\n".format(row['Key'], row['Count'])
+                        "- {0} (Total Keys: {1})\n".format(row["Key"], row["Count"])
                         for index, row in group[["Key", "Count"]].iterrows()
                     ]
                 )
@@ -521,4 +530,3 @@ class ChangeSummary:
             # Create verbose change information for each API which contains
             # a list of changes by key and write it to disk.
             self._write_verbose_changes_to_disk(result, self._temp_dir, summary_df)
-

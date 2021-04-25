@@ -220,20 +220,17 @@ class TestChangeSummary(unittest.TestCase):
         # drive was updated
         # 74 key changes in total. All 74 key changes should be additions
         self.assertEqual(len(result[result["Name"] == "drive"]), 74)
-        self.assertEqual(
-            len(result[(result["Name"] == "drive") & result["Added"]]), 74
-        )
+        self.assertEqual(len(result[(result["Name"] == "drive") & result["Added"]]), 74)
         self.assertEqual(
             len(result[(result["Name"] == "drive") & result["Deleted"]]), 0
         )
         self.assertTrue(result[(result["Name"] == "drive")].IsStable.all())
-        self.assertTrue(
-            result[(result["Name"] == "drive")].IsFeatureAggregate.all()
-        )
+        self.assertTrue(result[(result["Name"] == "drive")].IsFeatureAggregate.all())
         self.assertEqual(
             result[(result["Name"] == "drive")].Summary.iloc[0],
             "feat(drive): update the api",
         )
+
 
 if __name__ == "__main__":
     unittest.main()
