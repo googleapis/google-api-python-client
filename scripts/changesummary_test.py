@@ -180,7 +180,6 @@ class TestChangeSummary(unittest.TestCase):
             NEW_ARTIFACTS_DIR, CURRENT_ARTIFACTS_DIR, TEMP_DIR, files_changed
         )
         cs.detect_discovery_changes()
-        print("test")
         result = pd.read_csv(TEMP_DIR / "allapis.dataframe")
 
         # bigquery was added
