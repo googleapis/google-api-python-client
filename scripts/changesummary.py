@@ -343,7 +343,7 @@ class ChangeSummary:
     def _get_summary_and_write_to_disk(self, dataframe, directory):
         """Writes summary information to file about changes made to discovery
         artifacts based on the provided dataframe and returns a dataframe
-        with the same. The file `'allapis.summary'` is saved to the current
+        with the same. The file `'allapis.dataframe'` is saved to the current
         working directory.
         args:
             dataframe (object): a pandas dataframe containing summary change
