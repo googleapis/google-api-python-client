@@ -625,6 +625,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinesslodging_v1.html)
 
 
+## mybusinessplaceactions
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessplaceactions_v1.html)
+
+
 ## networkconnectivity
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkconnectivity_v1alpha1.html)
 
@@ -664,6 +668,10 @@
 
 ## pagespeedonline
 * [v5](http://googleapis.github.io/google-api-python-client/docs/dyn/pagespeedonline_v5.html)
+
+
+## paymentsresellersubscription
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/paymentsresellersubscription_v1.html)
 
 
 ## people
