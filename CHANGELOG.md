@@ -1,5 +1,12 @@
 # Changelog
 
+### [2.3.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.3.0...v2.3.1) (2021-04-29)
+
+
+### Bug Fixes
+
+* preventing accessing predefined discovery URLs when override is provided ([#1324](https://www.github.com/googleapis/google-api-python-client/issues/1324)) ([1c4d199](https://www.github.com/googleapis/google-api-python-client/commit/1c4d1998086d89238ca5d961bc1c8eee5685345c))
+
 ## [2.3.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.2.0...v2.3.0) (2021-04-28)
 
 
