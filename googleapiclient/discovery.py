@@ -340,7 +340,7 @@ def _discovery_service_uri_options(discoveryServiceUrl, version):
       A list of URIs to be tried for the Service Discovery, in order.
     """
 
-    if not discoveryServiceUrl is None:
+    if discoveryServiceUrl is not None:
         return [discoveryServiceUrl]
     if version is None:
         # V1 Discovery won't work if the requested version is None
