@@ -274,9 +274,6 @@ def build(
         else:
             static_discovery = False
 
-    if discoveryServiceUrl is None:
-        discoveryServiceUrl = DISCOVERY_URI
-
     if http is None:
         discovery_http = build_http()
     else:
@@ -343,14 +340,16 @@ def _discovery_service_uri_options(discoveryServiceUrl, version):
       A list of URIs to be tried for the Service Discovery, in order.
     """
 
-    urls = [discoveryServiceUrl, V2_DISCOVERY_URI]
-    # V1 Discovery won't work if the requested version is None
-    if discoveryServiceUrl == V1_DISCOVERY_URI and version is None:
+    if discoveryServiceUrl is not None:
+        return [discoveryServiceUrl]
+    if version is None:
+        # V1 Discovery won't work if the requested version is None
         logger.warning(
             "Discovery V1 does not support empty versions. Defaulting to V2..."
         )
-        urls.pop(0)
-    return list(OrderedDict.fromkeys(urls))
+        return [V2_DISCOVERY_URI]
+    else:
+        return [DISCOVERY_URI, V2_DISCOVERY_URI]
 
 
 def _retrieve_discovery_doc(

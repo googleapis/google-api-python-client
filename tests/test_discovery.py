@@ -632,7 +632,9 @@ class DiscoveryFromDocument(unittest.TestCase):
         api_endpoint = "https://foo.googleapis.com/"
         mapping_object = defaultdict(str)
         mapping_object["api_endpoint"] = api_endpoint
-        plus = build_from_document(discovery, client_options=mapping_object)
+        plus = build_from_document(
+            discovery, client_options=mapping_object, credentials=self.MOCK_CREDENTIALS
+        )
 
         self.assertEqual(plus._baseUrl, api_endpoint)
 
