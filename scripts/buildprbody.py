@@ -39,7 +39,8 @@ class BuildPrBody:
 
     def get_commit_uri(self, name):
         """Return a uri to the last commit for the given API Name.
-        args:
+
+        Args:
             name (str): The name of the api.
         """
 
