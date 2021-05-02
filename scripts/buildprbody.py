@@ -48,9 +48,7 @@ class BuildPrBody:
         sha = None
         api_link = ""
 
-        file_path = pathlib.Path(self._change_summary_directory).joinpath(
-            "{0}.sha".format(name)
-        )
+        file_path = pathlib.Path(self._change_summary_directory) / "{0}.sha".format(name)
         if file_path.is_file():
             with open(file_path, "r") as f:
                 sha = f.readline().rstrip()
