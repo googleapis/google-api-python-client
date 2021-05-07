@@ -285,20 +285,24 @@ class ChangeSummary:
         # called 'Count' which indicates the number of keys that have been
         # grouped together. The reason for the count column is that when keys
         # have the same parent, we group them together to improve readability.
-        docs_diff = (
+        docs_diff_with_count = (
             docs_diff.groupby(
                 ["Parent", "Added", "Deleted", "Name", "Version", "ChangeType"]
             )
             .size()
-            .reset_index(name="Count")[
-                ["Parent", "Added", "Deleted", "Name", "Version", "ChangeType", "Count"]
-            ]
+            .reset_index(name="Count")
         )
 
-        # Rename the Parent column to the Key Column since we are reporting
-        # summary information of keys with the same parent.
-        docs_diff.rename(columns={"Parent": "Key"}, inplace=True)
-        return docs_diff
+        # Add counts column
+        docs_diff = docs_diff.merge(docs_diff_with_count)
+
+        # When the count is greater than 1, update the key with the name of the
+        # parent since we are consolidating keys with the same parent.
+        docs_diff.loc[docs_diff["Count"] > 1, "Key"] = docs_diff["Parent"]
+
+        return docs_diff[
+            ["Key", "Added", "Deleted", "Name", "Version", "ChangeType", "Count"]
+        ].drop_duplicates()
 
     def _build_summary_message(self, api_name, is_feature):
         """Returns a string containing the summary for a given api. The string
