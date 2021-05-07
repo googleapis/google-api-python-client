@@ -193,8 +193,8 @@ class TestChangeSummary(unittest.TestCase):
         # Confirm that key "schemas.ProjectReference.newkey" exists for bigquery
         self.assertEqual(
             result[
-                (result["Name"] == "bigquery") & result["Added"] & result["Count"] == 1
-            ]["Key"],
+                (result["Name"] == "bigquery") & (result["Added"]) & (result["Count"] == 1)
+            ]["Key"].iloc[0],
             "schemas.ProjectReference.newkey",
         )
 
