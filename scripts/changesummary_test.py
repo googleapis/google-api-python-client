@@ -96,18 +96,18 @@ class TestChangeSummary(unittest.TestCase):
         self.assertTrue(df["Added"].all())
         self.assertTrue((~df["Deleted"]).all())
 
-        # There should be 74 unique key differences
-        self.assertEqual(len(df), 74)
+        # There should be 4 unique key differences
+        self.assertEqual(len(df), 4)
 
-        # Expected Result for key 'schemas.File'
+        # Expected Result for key 'schemas.FileList'
         # Key            Added   Deleted  Name   Version  ChangeType  Count
-        # schemas.File   True    False    drive      v3           2    168
-        self.assertTrue(df[df["Key"] == "schemas.File"].Added.iloc[0])
-        self.assertFalse(df[df["Key"] == "schemas.File"].Deleted.iloc[0])
+        # schemas.FileList   True    False  drive      v3           2      8
+        self.assertTrue(df[df["Key"] == "schemas.FileList"].Added.iloc[0])
+        self.assertFalse(df[df["Key"] == "schemas.FileList"].Deleted.iloc[0])
         self.assertEqual(
-            df[df["Key"] == "schemas.File"].ChangeType.iloc[0], ChangeType.ADDED
+            df[df["Key"] == "schemas.FileList"].ChangeType.iloc[0], ChangeType.ADDED
         )
-        self.assertEqual(df[df["Key"] == "schemas.File"].Count.iloc[0], 168)
+        self.assertEqual(df[df["Key"] == "schemas.FileList"].Count.iloc[0], 8)
 
     def test_get_discovery_differences_for_deleted_doc_returns_expected_dataframe(self):
         df = self.cs._get_discovery_differences("cloudtasks.v2.json")
@@ -122,8 +122,8 @@ class TestChangeSummary(unittest.TestCase):
         self.assertTrue((~df["Added"]).all())
         self.assertTrue(df["Deleted"].all())
 
-        # There should be 72 unique key differences
-        self.assertEqual(len(df), 72)
+        # There should be 6 unique key differences
+        self.assertEqual(len(df), 6)
 
         # Expected Result for key 'schemas.Task'
         # Key           Added   Deleted Name        Version  ChangeType  Count
@@ -144,11 +144,11 @@ class TestChangeSummary(unittest.TestCase):
         self.assertEqual(df["Version"].iloc[0], "v2")
 
         # There should be 28 unique key differences
-        # 11 unique keys changed, 13 unique keys added, 4 unique keys deleted
-        self.assertEqual(len(df), 28)
-        self.assertEqual(len(df[df["ChangeType"] == ChangeType.CHANGED]), 11)
-        self.assertEqual(len(df[df["ChangeType"] == ChangeType.ADDED]), 13)
-        self.assertEqual(len(df[df["ChangeType"] == ChangeType.DELETED]), 4)
+        # 1 unique keys changed, 1 unique keys added, 2 unique keys deleted
+        self.assertEqual(len(df), 4)
+        self.assertEqual(len(df[df["ChangeType"] == ChangeType.CHANGED]), 1)
+        self.assertEqual(len(df[df["ChangeType"] == ChangeType.ADDED]), 1)
+        self.assertEqual(len(df[df["ChangeType"] == ChangeType.DELETED]), 2)
 
         # Expected Result for key 'schemas.PrincipalComponentInfo'
         # Key                             Added  Deleted  Name     Version  ChangeType  Count
@@ -183,14 +183,23 @@ class TestChangeSummary(unittest.TestCase):
         result = pd.read_csv(TEMP_DIR / "allapis.dataframe")
 
         # bigquery was added
-        # 28 key changes in total.
-        # 11 unique keys changed, 13 unique keys added, 4 unique keys deleted
-        self.assertEqual(len(result[result["Name"] == "bigquery"]), 28)
+        # 4 key changes in total.
+        # 1 unique keys changed, 1 unique keys added, 2 unique keys deleted
+        self.assertEqual(len(result[result["Name"] == "bigquery"]), 4)
         self.assertEqual(
-            len(result[(result["Name"] == "bigquery") & result["Added"]]), 13
+            len(result[(result["Name"] == "bigquery") & result["Added"]]), 1
         )
+
+        # Confirm that key "schemas.ProjectReference.newkey" exists for bigquery
         self.assertEqual(
-            len(result[(result["Name"] == "bigquery") & result["Deleted"]]), 4
+            result[
+                (result["Name"] == "bigquery") & result["Added"] & result["Count"] == 1
+            ]["Key"],
+            "schemas.ProjectReference.newkey",
+        )
+
+        self.assertEqual(
+            len(result[(result["Name"] == "bigquery") & result["Deleted"]]), 2
         )
         self.assertTrue(result[result["Name"] == "bigquery"].IsStable.all())
         self.assertTrue(result[result["Name"] == "bigquery"].IsFeatureAggregate.all())
@@ -200,13 +209,13 @@ class TestChangeSummary(unittest.TestCase):
         )
 
         # cloudtasks was deleted
-        # 72 key changes in total. All 72 key changes should be deletions.
-        self.assertEqual(len(result[result["Name"] == "cloudtasks"]), 72)
+        # 6 key changes in total. All 6 key changes should be deletions.
+        self.assertEqual(len(result[result["Name"] == "cloudtasks"]), 6)
         self.assertEqual(
             len(result[(result["Name"] == "cloudtasks") & result["Added"]]), 0
         )
         self.assertEqual(
-            len(result[(result["Name"] == "cloudtasks") & result["Deleted"]]), 72
+            len(result[(result["Name"] == "cloudtasks") & result["Deleted"]]), 6
         )
         self.assertTrue(result[(result["Name"] == "cloudtasks")].IsStable.all())
         self.assertTrue(
@@ -218,9 +227,9 @@ class TestChangeSummary(unittest.TestCase):
         )
 
         # drive was updated
-        # 74 key changes in total. All 74 key changes should be additions
-        self.assertEqual(len(result[result["Name"] == "drive"]), 74)
-        self.assertEqual(len(result[(result["Name"] == "drive") & result["Added"]]), 74)
+        # 4 key changes in total. All 4 key changes should be additions
+        self.assertEqual(len(result[result["Name"] == "drive"]), 4)
+        self.assertEqual(len(result[(result["Name"] == "drive") & result["Added"]]), 4)
         self.assertEqual(
             len(result[(result["Name"] == "drive") & result["Deleted"]]), 0
         )
