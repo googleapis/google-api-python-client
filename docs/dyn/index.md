@@ -118,6 +118,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/assuredworkloads_v1.html)
 
 
+## baremetalsolution
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1.html)
+
+
 ## bigquery
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/bigquery_v2.html)
 
