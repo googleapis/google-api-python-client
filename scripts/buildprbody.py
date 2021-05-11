@@ -17,88 +17,111 @@ import numpy as np
 import pandas as pd
 import pathlib
 
-class ChangeType(IntEnum):
-    UNKNOWN = 0
-    DELETED = 1
-    ADDED = 2
-    CHANGED = 3
+from changesummary import ChangeType
+
+SCRIPTS_DIR = pathlib.Path(__file__).parent.resolve()
+CHANGE_SUMMARY_DIR = SCRIPTS_DIR / "temp"
 
 
-def get_commit_link(name):
-    """Return a string with a link to the last commit for the given
-        API Name.
-    args:
-        name (str): The name of the api.
+class BuildPrBody:
+    """Represents the PR body which contains the change summary between 2
+    directories containing artifacts.
     """
 
-    url = "https://github.com/googleapis/google-api-python-client/commit/"
-    sha = None
-    api_link = ""
+    def __init__(self, change_summary_directory):
+        """Initializes an instance of a BuildPrBody.
 
-    file_path = pathlib.Path(directory).joinpath("{0}.sha".format(name))
-    if file_path.is_file():
-        with open(file_path, "r") as f:
-            sha = f.readline().rstrip()
-            if sha:
-                api_link = "[{0}]({1}{2})".format(" [More details]", url, sha)
+        Args:
+            change_summary_directory (str): The relative path to the directory
+            which contains the change summary output.
+        """
+        self._change_summary_directory = change_summary_directory
 
-    return api_link
+    def get_commit_uri(self, name):
+        """Return a uri to the last commit for the given API Name.
+
+        Args:
+            name (str): The name of the api.
+        """
+
+        url = "https://github.com/googleapis/google-api-python-client/commit/"
+        sha = None
+        api_link = ""
+
+        file_path = pathlib.Path(self._change_summary_directory) / "{0}.sha".format(name)
+        if file_path.is_file():
+            with open(file_path, "r") as f:
+                sha = f.readline().rstrip()
+                if sha:
+                    api_link = "{0}{1}".format(url, sha)
+
+        return api_link
+
+    def generate_pr_body(self):
+        """
+        Generates a PR body given an input file `'allapis.dataframe'` and
+        writes it to disk with file name `'allapis.summary'`.
+        """
+        directory = pathlib.Path(self._change_summary_directory)
+        dataframe = pd.read_csv(directory / "allapis.dataframe")
+        dataframe["Version"] = dataframe["Version"].astype(str)
+
+        dataframe["Commit"] = np.vectorize(self.get_commit_uri)(dataframe["Name"])
+
+        stable_and_breaking = (
+            dataframe[
+                dataframe["IsStable"] & (dataframe["ChangeType"] == ChangeType.DELETED)
+            ][["Name", "Version", "Commit"]]
+            .drop_duplicates()
+            .agg(" ".join, axis=1)
+            .values
+        )
+
+        prestable_and_breaking = (
+            dataframe[
+                (dataframe["IsStable"] == False)
+                & (dataframe["ChangeType"] == ChangeType.DELETED)
+            ][["Name", "Version", "Commit"]]
+            .drop_duplicates()
+            .agg(" ".join, axis=1)
+            .values
+        )
+
+        all_apis = (
+            dataframe[["Summary", "Commit"]]
+            .drop_duplicates()
+            .agg(" ".join, axis=1)
+            .values
+        )
+
+        with open(directory / "allapis.summary", "w") as f:
+            if len(stable_and_breaking) > 0:
+                f.writelines(
+                    [
+                        "## Deleted keys were detected in the following stable discovery artifacts:\n",
+                        "\n".join(stable_and_breaking),
+                        "\n\n",
+                    ]
+                )
+
+            if len(prestable_and_breaking) > 0:
+                f.writelines(
+                    [
+                        "## Deleted keys were detected in the following pre-stable discovery artifacts:\n",
+                        "\n".join(prestable_and_breaking),
+                        "\n\n",
+                    ]
+                )
+
+            if len(all_apis) > 0:
+                f.writelines(
+                    [
+                        "## Discovery Artifact Change Summary:\n",
+                        "\n".join(all_apis),
+                        "\n",
+                    ]
+                )
 
 
 if __name__ == "__main__":
-    directory = pathlib.Path("temp")
-    dataframe = pd.read_csv("temp/allapis.dataframe")
-    dataframe["Version"] = dataframe["Version"].astype(str)
-
-    dataframe["Commit"] = np.vectorize(get_commit_link)(dataframe["Name"])
-
-    stable_and_breaking = (
-        dataframe[
-            dataframe["IsStable"]
-            & (dataframe["ChangeType"] == ChangeType.DELETED)
-        ][["Name", "Version", "Commit"]]
-        .drop_duplicates()
-        .agg("".join, axis=1)
-        .values
-    )
-
-    prestable_and_breaking = (
-        dataframe[
-            (dataframe["IsStable"] == False)
-            & (dataframe["ChangeType"] == ChangeType.DELETED)
-        ][["Name", "Version", "Commit"]]
-        .drop_duplicates()
-        .agg("".join, axis=1)
-        .values
-    )
-
-    all_apis = (
-        dataframe[["Name", "Version", "Commit"]]
-        .drop_duplicates()
-        .agg("".join, axis=1)
-        .values
-    )
-
-    with open(directory / "allapis.summary", "w") as f:
-        if len(stable_and_breaking) > 0:
-            f.writelines(
-                [
-                    "## Deleted keys were detected in the following stable discovery artifacts:\n",
-                    "\n".join(stable_and_breaking),
-                    "\n\n",
-                ]
-            )
-
-        if len(prestable_and_breaking) > 0:
-            f.writelines(
-                [
-                    "## Deleted keys were detected in the following pre-stable discovery artifacts:\n",
-                    "\n".join(prestable_and_breaking),
-                    "\n\n",
-                ]
-            )
-
-        if len(all_apis) > 0:
-            f.writelines(
-                ["## Discovery Artifact Change Summary:\n", "\n".join(all_apis), "\n"]
-            )
+    BuildPrBody(CHANGE_SUMMARY_DIR).generate_pr_body()
