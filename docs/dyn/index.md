@@ -727,6 +727,10 @@
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/realtimebidding_v1alpha.html)
 
 
+## recaptchaenterprise
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/recaptchaenterprise_v1.html)
+
+
 ## recommendationengine
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/recommendationengine_v1beta1.html)
 
