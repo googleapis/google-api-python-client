@@ -443,6 +443,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/firebase_v1beta1.html)
 
 
+## firebaseappcheck
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseappcheck_v1beta.html)
+
+
 ## firebasedatabase
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedatabase_v1beta.html)
 
@@ -662,6 +666,7 @@
 
 ## osconfig
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1alpha.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1beta.html)
 
 
