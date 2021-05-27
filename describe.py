@@ -403,9 +403,7 @@ def document_api(name, version, uri, doc_destination_dir):
     if resp.status == 200:
         discovery = json.loads(content)
         service = build_from_document(discovery)
-        version = safe_version(version)
-        doc_name = "{}.{}.json".format(name, version.replace("_", ""))
-
+        doc_name = "{}.{}.json".format(name, version)
         discovery_file_path = DISCOVERY_DOC_DIR / doc_name
         revision = None
 
@@ -435,7 +433,7 @@ def document_api(name, version, uri, doc_destination_dir):
         return
 
     document_collection_recursive(
-        service, "{}_{}.".format(name, version), discovery, discovery, doc_destination_dir
+        service, "{}_{}.".format(name, safe_version(version)), discovery, discovery, doc_destination_dir
     )
 
 
