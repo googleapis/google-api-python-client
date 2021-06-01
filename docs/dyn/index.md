@@ -553,6 +553,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/iap_v1beta1.html)
 
 
+## ideahub
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/ideahub_v1alpha.html)
+
+
 ## identitytoolkit
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/identitytoolkit_v3.html)
 
