@@ -715,6 +715,7 @@
 
 
 ## privateca
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/privateca_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/privateca_v1beta1.html)
 
 
