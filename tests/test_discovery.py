@@ -2172,6 +2172,9 @@ class Next(unittest.TestCase):
         next_request = logging.entries().list_next(request, {"nextPageToken": "123abc"})
         body = JsonModel().deserialize(next_request.body)
         self.assertEqual(body["pageToken"], "123abc")
+        # The body is changed, make sure that body_length is changed too (see
+        # github #1403)
+        self.assertEqual(next_request.body_size, len(next_request.body))
 
     def test_next_with_method_with_no_properties(self):
         self.http = HttpMock(datafile("latitude.json"), {"status": "200"})
