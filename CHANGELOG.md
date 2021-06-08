@@ -1,5 +1,12 @@
 # Changelog
 
+### [2.8.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.8.0...v2.8.1) (2021-06-08)
+
+
+### Bug Fixes
+
+* update content-length header for next page ([#1404](https://www.github.com/googleapis/google-api-python-client/issues/1404)) ([8019f2f](https://www.github.com/googleapis/google-api-python-client/commit/8019f2f96abc6a4375873becb2f17b399f738654)), closes [#1403](https://www.github.com/googleapis/google-api-python-client/issues/1403)
+
 ## [2.8.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.7.0...v2.8.0) (2021-06-08)
 
 
