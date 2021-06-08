@@ -571,6 +571,10 @@
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v4.html)
 
 
+## keep
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/keep_v1.html)
+
+
 ## kgsearch
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/kgsearch_v1.html)
 
