@@ -501,8 +501,6 @@
 
 
 ## genomics
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/genomics_v1.html)
-* [v1alpha2](http://googleapis.github.io/google-api-python-client/docs/dyn/genomics_v1alpha2.html)
 * [v2alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/genomics_v2alpha1.html)
 
 
