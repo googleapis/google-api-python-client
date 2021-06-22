@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.10.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.9.0...v2.10.0) (2021-06-22)
+
+
+### Features
+
+* **analyticsadmin:** update the api https://github.com/googleapis/google-api-python-client/commit/5a2e42e9a4631216c4883d5538c970a5faad59eb ([b1eafb3](https://www.github.com/googleapis/google-api-python-client/commit/b1eafb327669474d202bb2a430ed9e9561102db3))
+* **androidmanagement:** update the api https://github.com/googleapis/google-api-python-client/commit/5fcc274bcd4a9a71a0a568e2771c443a2b2b20b0 ([b1eafb3](https://www.github.com/googleapis/google-api-python-client/commit/b1eafb327669474d202bb2a430ed9e9561102db3))
+* **bigqueryreservation:** update the api https://github.com/googleapis/google-api-python-client/commit/63c00f6819408b943c2a7cc4bd2185828be173c6 ([3659137](https://www.github.com/googleapis/google-api-python-client/commit/365913780592552488cc5792d26b3f22b9e9ed1b))
+* **dialogflow:** update the api https://github.com/googleapis/google-api-python-client/commit/512fc42343fa946889ec155456a05f0d64969903 ([b1eafb3](https://www.github.com/googleapis/google-api-python-client/commit/b1eafb327669474d202bb2a430ed9e9561102db3))
+* **firebaserules:** update the api https://github.com/googleapis/google-api-python-client/commit/7b2000437a01ecd25e4ba571049f62c5b6dc9d63 ([3659137](https://www.github.com/googleapis/google-api-python-client/commit/365913780592552488cc5792d26b3f22b9e9ed1b))
+* **iap:** update the api https://github.com/googleapis/google-api-python-client/commit/18550fd0501057584ef6d2fa329f09b75dad97d8 ([3659137](https://www.github.com/googleapis/google-api-python-client/commit/365913780592552488cc5792d26b3f22b9e9ed1b))
+* **keep:** update the api https://github.com/googleapis/google-api-python-client/commit/45eb6dac450c1055a6ced84332529b70b0a8c831 ([b1eafb3](https://www.github.com/googleapis/google-api-python-client/commit/b1eafb327669474d202bb2a430ed9e9561102db3))
+* **managedidentities:** update the api https://github.com/googleapis/google-api-python-client/commit/d2220014e787c2a2c90808cfd1e49a25cd783e72 ([3659137](https://www.github.com/googleapis/google-api-python-client/commit/365913780592552488cc5792d26b3f22b9e9ed1b))
+
+
+### Bug Fixes
+
+* **smartdevicemanagement:** update the api https://github.com/googleapis/google-api-python-client/commit/772982044da691f9116073855e692f7793edacce ([b1eafb3](https://www.github.com/googleapis/google-api-python-client/commit/b1eafb327669474d202bb2a430ed9e9561102db3))
+
 ## [2.9.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.8.0...v2.9.0) (2021-06-12)
 
 
