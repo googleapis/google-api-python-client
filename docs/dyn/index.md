@@ -308,6 +308,7 @@
 
 
 ## datacatalog
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datacatalog_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/datacatalog_v1beta1.html)
 
 
@@ -653,6 +654,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkmanagement_v1beta1.html)
 
 
+## networksecurity
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/networksecurity_v1beta1.html)
+
+
 ## notebooks
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/notebooks_v1.html)
 
@@ -766,6 +771,10 @@
 
 ## reseller
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/reseller_v1.html)
+
+
+## resourcesettings
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/resourcesettings_v1.html)
 
 
 ## retail
