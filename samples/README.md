@@ -195,6 +195,21 @@ Documentation for the Search API For Shopping in
   </tr>
 </table>
 
+## ![](https://www.google.com/images/icons/product/compute_engine-32.png) Cloud Compute Engine API
+
+Lets you manage the Google Compute Engine instances in your projects.
+
+Documentation for the Cloud Compute Engine API in
+[PyDoc](https://cloud.google.com/compute/docs/tutorials/python-guide).
+
+<table>
+  <tr>
+    <td><a href="storage">samples/compute</a></td>
+    <td>Creates a Google Compute Engine instance to modify a samples image and upload the result
+        to a Cloud Storage bucket, then deletes the instance.</td>
+  </tr>
+</table>
+
 ## ![](https://www.google.com/images/icons/product/cloud_storage-32.png) Cloud Storage API
 
 Lets you store and retrieve potentially-large, immutable data objects.
