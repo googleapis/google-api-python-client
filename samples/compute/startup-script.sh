@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START startup_script]
+# [START compute_apiary_startup_script]
 apt-get update
 apt-get -y install imagemagick
 
@@ -37,4 +37,4 @@ gsutil mb gs://$CS_BUCKET
 # to read it.
 gsutil cp -a public-read output.png gs://$CS_BUCKET/output.png
 
-# [END startup_script]
+# [END compute_apiary_startup_script]
