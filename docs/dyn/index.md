@@ -120,6 +120,7 @@
 
 ## baremetalsolution
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1.html)
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1alpha1.html)
 
 
 ## bigquery
@@ -881,6 +882,7 @@
 
 
 ## sqladmin
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/sqladmin_v1.html)
 * [v1beta4](http://googleapis.github.io/google-api-python-client/docs/dyn/sqladmin_v1beta4.html)
 
 
@@ -952,6 +954,7 @@
 
 ## verifiedaccess
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/verifiedaccess_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/verifiedaccess_v2.html)
 
 
 ## videointelligence
