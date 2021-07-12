@@ -25,7 +25,7 @@ please continue to use version 1.x as we will continue supporting python 2.7+ in
 [v1](https://github.com/googleapis/google-api-python-client/tree/v1).
 
 Discovery documents will no longer be retrieved dynamically when
-you call  `discovery.build()`. The discovery documents will instead be retrieved
+you call `discovery.build()`. The discovery documents will instead be retrieved
 from the client library directly. New versions of this library are released weekly.
 As a result of caching the discovery documents, the size of this package is at least 
 50 MB larger compared to the previous version. 
