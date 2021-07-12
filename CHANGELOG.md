@@ -1,5 +1,12 @@
 # Changelog
 
+### [2.12.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.12.0...v2.12.1) (2021-07-12)
+
+
+### Documentation
+
+* add recommendation to use v2.x and static discovery artifacts ([#1434](https://www.github.com/googleapis/google-api-python-client/issues/1434)) ([ca7328c](https://www.github.com/googleapis/google-api-python-client/commit/ca7328cb5340ea282a3d98782926a0b6881a33ed))
+
 ## [2.12.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.11.0...v2.12.0) (2021-07-06)
 
 
