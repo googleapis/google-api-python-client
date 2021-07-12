@@ -1683,7 +1683,7 @@
       }
     }
   },
-  "revision": "20210503",
+  "revision": "20210617",
   "rootUrl": "https://bigquery.googleapis.com/",
   "schemas": {
     "AggregateClassificationMetrics": {
@@ -2133,6 +2133,40 @@
             "Data reads. Example: CloudSQL Users list"
           ],
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BiEngineReason": {
+      "id": "BiEngineReason",
+      "properties": {
+        "code": {
+          "default": "$(reason.code)",
+          "description": "[Output-only] High-level BI Engine reason for partial or disabled acceleration.",
+          "type": "string"
+        },
+        "message": {
+          "default": "$(reason.message)",
+          "description": "[Output-only] Free form human-readable reason for partial or disabled acceleration.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BiEngineStatistics": {
+      "id": "BiEngineStatistics",
+      "properties": {
+        "biEngineMode": {
+          "default": "$(stats.bi_engine_mode)",
+          "description": "[Output-only] Specifies which mode of BI Engine acceleration was performed (if any).",
+          "type": "string"
+        },
+        "biEngineReasons": {
+          "description": "In case of DISABLED or PARTIAL bi_engine_mode, these contain the explanatory reasons as to why BI Engine could not accelerate. In case the full query was accelerated, this field is not populated.",
+          "items": {
+            "$ref": "BiEngineReason"
+          },
+          "type": "array"
         }
       },
       "type": "object"
@@ -2860,6 +2894,27 @@
       },
       "type": "object"
     },
+    "DmlStatistics": {
+      "id": "DmlStatistics",
+      "properties": {
+        "deletedRowCount": {
+          "description": "Number of deleted Rows. populated by DML DELETE, MERGE and TRUNCATE statements.",
+          "format": "int64",
+          "type": "string"
+        },
+        "insertedRowCount": {
+          "description": "Number of inserted Rows. Populated by DML INSERT and MERGE statements.",
+          "format": "int64",
+          "type": "string"
+        },
+        "updatedRowCount": {
+          "description": "Number of updated Rows. Populated by DML UPDATE and MERGE statements.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "EncryptionConfiguration": {
       "id": "EncryptionConfiguration",
       "properties": {
@@ -3115,22 +3170,6 @@
       },
       "type": "object"
     },
-    "Explanation": {
-      "description": "Explanation for a single feature.",
-      "id": "Explanation",
-      "properties": {
-        "attribution": {
-          "description": "Attribution of feature.",
-          "format": "double",
-          "type": "number"
-        },
-        "featureName": {
-          "description": "Full name of the feature. For non-numerical features, will be formatted like .. Overall size of feature name will always be truncated to first 120 characters.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "Expr": {
       "description": "Represents a textual expression in the Common Expression Language (CEL) syntax. CEL is a C-like expression language. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec. Example (Comparison): title: \"Summary size limit\" description: \"Determines if a summary is less than 100 chars\" expression: \"document.summary.size() < 100\" Example (Equality): title: \"Requestor is owner\" description: \"Determines if requestor is the document owner\" expression: \"document.owner == request.auth.claims.email\" Example (Logic): title: \"Public documents\" description: \"Determine whether the document should be publicly visible\" expression: \"document.type != 'private' && document.type != 'internal'\" Example (Data Manipulation): title: \"Notification string\" description: \"Create a notification string with a timestamp.\" expression: \"'New message received at ' + string(document.create_time)\" The exact variables and functions that may be referenced within an expression are determined by the service that evaluates it. See the service documentation for additional information.",
       "id": "Expr",
@@ -3176,6 +3215,13 @@
         "csvOptions": {
           "$ref": "CsvOptions",
           "description": "Additional properties to set if sourceFormat is set to CSV."
+        },
+        "decimalTargetTypes": {
+          "description": "[Optional] Defines the list of possible SQL data types to which the source decimal values are converted. This list and the precision and the scale parameters of the decimal field determine the target type. In the order of NUMERIC, BIGNUMERIC, and STRING, a type is picked if it is in the specified list and if it supports the precision and the scale. STRING supports all precision and scale values. If none of the listed types supports the precision and the scale, the type supporting the widest range in the specified list is picked, and if a value exceeds the supported range when reading the data, an error will be thrown. Example: Suppose the value of this field is [\"NUMERIC\", \"BIGNUMERIC\"]. If (precision,scale) is: (38,9) -> NUMERIC; (39,9) -> BIGNUMERIC (NUMERIC cannot hold 30 integer digits); (38,10) -> BIGNUMERIC (NUMERIC cannot hold 10 fractional digits); (76,38) -> BIGNUMERIC; (77,38) -> BIGNUMERIC (error if value exeeds supported range). This field cannot contain duplicate types. The order of the types in this field is ignored. For example, [\"BIGNUMERIC\", \"NUMERIC\"] is the same as [\"NUMERIC\", \"BIGNUMERIC\"] and NUMERIC always takes precedence over BIGNUMERIC. Defaults to [\"NUMERIC\", \"STRING\"] for ORC and [\"NUMERIC\"] for the other file formats.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "googleSheetsOptions": {
           "$ref": "GoogleSheetsOptions",
@@ -3334,24 +3380,6 @@
           "default": "bigquery#getServiceAccountResponse",
           "description": "The resource type of the response.",
           "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "GlobalExplanation": {
-      "description": "Global explanations containing the top most important features after training.",
-      "id": "GlobalExplanation",
-      "properties": {
-        "classLabel": {
-          "description": "Class label for this set of global explanations. Will be empty/null for binary logistic and linear regression models. Sorted alphabetically in descending order.",
-          "type": "string"
-        },
-        "explanations": {
-          "description": "A list of the top global explanations. Sorted by absolute value of attribution in descending order.",
-          "items": {
-            "$ref": "Explanation"
-          },
-          "type": "array"
         }
       },
       "type": "object"
@@ -3601,7 +3629,7 @@
           "type": "string"
         },
         "decimalTargetTypes": {
-          "description": "Defines the list of possible SQL data types to which the source decimal values are converted. This list and the precision and the scale parameters of the decimal field determine the target type. In the order of NUMERIC, BIGNUMERIC ([Preview](/products/#product-launch-stages)), and STRING, a type is picked if it is in the specified list and if it supports the precision and the scale. STRING supports all precision and scale values. If none of the listed types supports the precision and the scale, the type supporting the widest range in the specified list is picked, and if a value exceeds the supported range when reading the data, an error will be thrown. Example: Suppose the value of this field is [\"NUMERIC\", \"BIGNUMERIC\"]. If (precision,scale) is: * (38,9) -> NUMERIC; * (39,9) -> BIGNUMERIC (NUMERIC cannot hold 30 integer digits); * (38,10) -> BIGNUMERIC (NUMERIC cannot hold 10 fractional digits); * (76,38) -> BIGNUMERIC; * (77,38) -> BIGNUMERIC (error if value exeeds supported range). This field cannot contain duplicate types. The order of the types in this field is ignored. For example, [\"BIGNUMERIC\", \"NUMERIC\"] is the same as [\"NUMERIC\", \"BIGNUMERIC\"] and NUMERIC always takes precedence over BIGNUMERIC. Defaults to [\"NUMERIC\", \"STRING\"] for ORC and [\"NUMERIC\"] for the other file formats.",
+          "description": "[Optional] Defines the list of possible SQL data types to which the source decimal values are converted. This list and the precision and the scale parameters of the decimal field determine the target type. In the order of NUMERIC, BIGNUMERIC, and STRING, a type is picked if it is in the specified list and if it supports the precision and the scale. STRING supports all precision and scale values. If none of the listed types supports the precision and the scale, the type supporting the widest range in the specified list is picked, and if a value exceeds the supported range when reading the data, an error will be thrown. Example: Suppose the value of this field is [\"NUMERIC\", \"BIGNUMERIC\"]. If (precision,scale) is: (38,9) -> NUMERIC; (39,9) -> BIGNUMERIC (NUMERIC cannot hold 30 integer digits); (38,10) -> BIGNUMERIC (NUMERIC cannot hold 10 fractional digits); (76,38) -> BIGNUMERIC; (77,38) -> BIGNUMERIC (error if value exeeds supported range). This field cannot contain duplicate types. The order of the types in this field is ignored. For example, [\"BIGNUMERIC\", \"NUMERIC\"] is the same as [\"NUMERIC\", \"BIGNUMERIC\"] and NUMERIC always takes precedence over BIGNUMERIC. Defaults to [\"NUMERIC\", \"STRING\"] for ORC and [\"NUMERIC\"] for the other file formats.",
           "items": {
             "type": "string"
           },
@@ -4053,7 +4081,7 @@
           "$ref": "ScriptStatistics",
           "description": "[Output-only] Statistics for a child job of a script."
         },
-        "sessionInfoTemplate": {
+        "sessionInfo": {
           "$ref": "SessionInfo",
           "description": "[Output-only] [Preview] Information of the session if this job is part of one."
         },
@@ -4072,7 +4100,7 @@
           "format": "int64",
           "type": "string"
         },
-        "transactionInfoTemplate": {
+        "transactionInfo": {
           "$ref": "TransactionInfo",
           "description": "[Output-only] [Alpha] Information of the multi-statement transaction if this job is part of one."
         }
@@ -4082,6 +4110,10 @@
     "JobStatistics2": {
       "id": "JobStatistics2",
       "properties": {
+        "biEngineStatistics": {
+          "$ref": "BiEngineStatistics",
+          "description": "BI Engine specific Statistics. [Output-only] BI Engine specific Statistics."
+        },
         "billingTier": {
           "description": "[Output-only] Billing tier for the job.",
           "format": "int32",
@@ -4119,6 +4151,10 @@
         "ddlTargetTable": {
           "$ref": "TableReference",
           "description": "[Output-only] The DDL target table. Present only for CREATE/DROP TABLE/VIEW and DROP ALL ROW ACCESS POLICIES queries."
+        },
+        "dmlStats": {
+          "$ref": "DmlStatistics",
+          "description": "[Output-only] Detailed statistics for DML statements Present only for DML statements INSERT, UPDATE, DELETE or TRUNCATE."
         },
         "estimatedBytesProcessed": {
           "description": "[Output-only] The original estimate of bytes processed for the job.",
@@ -4879,6 +4915,10 @@
           "description": "Whether the query result was fetched from the query cache.",
           "type": "boolean"
         },
+        "dmlStats": {
+          "$ref": "DmlStatistics",
+          "description": "[Output-only] Detailed statistics for DML statements Present only for DML statements INSERT, UPDATE, DELETE or TRUNCATE."
+        },
         "errors": {
           "description": "[Output-only] The first errors or warnings encountered during the running of the job. The final message includes the number of errors that caused the process to stop. Errors here do not necessarily mean that the job has completed or was unsuccessful.",
           "items": {
@@ -5341,10 +5381,10 @@
       "properties": {
         "baseTableReference": {
           "$ref": "TableReference",
-          "description": "[Required] Reference describing the ID of the table that is snapshotted."
+          "description": "[Required] Reference describing the ID of the table that was snapshot."
         },
         "snapshotTime": {
-          "description": "[Required] The time at which the base table was snapshot.",
+          "description": "[Required] The time at which the base table was snapshot. This value is reported in the JSON response using RFC3339 format.",
           "format": "date-time",
           "type": "string"
         }
@@ -6467,13 +6507,6 @@
           "$ref": "EvaluationMetrics",
           "description": "The evaluation metrics over training/eval data that were computed at the end of training."
         },
-        "globalExplanations": {
-          "description": "Global explanations for important features of the model. For multi-class models, there is one entry for each label class. For other models, there is only one entry in the list.",
-          "items": {
-            "$ref": "GlobalExplanation"
-          },
-          "type": "array"
-        },
         "results": {
           "description": "Output of each iteration run, results.size() <= max_iterations.",
           "items": {
@@ -6524,6 +6557,10 @@
         "query": {
           "description": "[Required] A query that BigQuery executes when the view is referenced.",
           "type": "string"
+        },
+        "useExplicitColumnNames": {
+          "description": "True if the column names are explicitly specified. For example by using the 'CREATE VIEW v(c1, c2) AS ...' syntax. Can only be set using BigQuery's standard SQL: https://cloud.google.com/bigquery/sql-reference/",
+          "type": "boolean"
         },
         "useLegacySql": {
           "description": "Specifies whether to use BigQuery's legacy SQL for this view. The default value is true. If set to false, the view will use BigQuery's standard SQL: https://cloud.google.com/bigquery/sql-reference/ Queries and views that reference this view must use the same flag value.",

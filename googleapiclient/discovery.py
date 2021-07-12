@@ -1283,6 +1283,9 @@ Returns:
             body = model.deserialize(request.body)
             body[pageTokenName] = nextPageToken
             request.body = model.serialize(body)
+            request.body_size = len(request.body)
+            if "content-length" in request.headers:
+              del request.headers["content-length"]
             logger.debug("Next page request body: %s %s" % (methodName, body))
 
         return request

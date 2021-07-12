@@ -120,6 +120,7 @@
 
 ## baremetalsolution
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1.html)
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1alpha1.html)
 
 
 ## bigquery
@@ -308,6 +309,7 @@
 
 
 ## datacatalog
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datacatalog_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/datacatalog_v1beta1.html)
 
 
@@ -349,6 +351,7 @@
 ## dfareporting
 * [v3.3](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3_3.html)
 * [v3.4](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3_4.html)
+* [v3.5](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3_5.html)
 
 
 ## dialogflow
@@ -442,6 +445,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/firebase_v1beta1.html)
 
 
+## firebaseappcheck
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseappcheck_v1beta.html)
+
+
 ## firebasedatabase
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedatabase_v1beta.html)
 
@@ -496,8 +503,6 @@
 
 
 ## genomics
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/genomics_v1.html)
-* [v1alpha2](http://googleapis.github.io/google-api-python-client/docs/dyn/genomics_v1alpha2.html)
 * [v2alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/genomics_v2alpha1.html)
 
 
@@ -548,6 +553,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/iap_v1beta1.html)
 
 
+## ideahub
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/ideahub_v1alpha.html)
+
+
 ## identitytoolkit
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/identitytoolkit_v3.html)
 
@@ -560,6 +569,10 @@
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v3.html)
 * [v3p1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v3p1beta1.html)
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/jobs_v4.html)
+
+
+## keep
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/keep_v1.html)
 
 
 ## kgsearch
@@ -642,6 +655,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkmanagement_v1beta1.html)
 
 
+## networksecurity
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/networksecurity_v1beta1.html)
+
+
 ## notebooks
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/notebooks_v1.html)
 
@@ -661,6 +678,7 @@
 
 ## osconfig
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1alpha.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1beta.html)
 
 
@@ -705,6 +723,7 @@
 
 
 ## privateca
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/privateca_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/privateca_v1beta1.html)
 
 
@@ -753,6 +772,10 @@
 
 ## reseller
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/reseller_v1.html)
+
+
+## resourcesettings
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/resourcesettings_v1.html)
 
 
 ## retail
@@ -859,6 +882,7 @@
 
 
 ## sqladmin
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/sqladmin_v1.html)
 * [v1beta4](http://googleapis.github.io/google-api-python-client/docs/dyn/sqladmin_v1beta4.html)
 
 
@@ -930,6 +954,7 @@
 
 ## verifiedaccess
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/verifiedaccess_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/verifiedaccess_v2.html)
 
 
 ## videointelligence
