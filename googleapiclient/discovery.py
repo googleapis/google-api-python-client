@@ -22,7 +22,6 @@ import six
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 __all__ = ["build", "build_from_document", "fix_method_name", "key2param"]
 
-# from six import BytesIO
 from six.moves import http_client
 # from six.moves.urllib.parse import urlencode, urlparse, urljoin, urlunparse, parse_qsl
 from six.moves.urllib.parse import urljoin  
