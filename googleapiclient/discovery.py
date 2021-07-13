@@ -18,7 +18,6 @@ A client library for Google's discovery based APIs.
 """
 from __future__ import absolute_import
 import six
-# from six.moves import zip
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 __all__ = ["build", "build_from_document", "fix_method_name", "key2param"]
