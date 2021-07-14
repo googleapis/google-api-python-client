@@ -20,9 +20,9 @@ set -eo pipefail
 # Enables `**` to include files nested inside sub-folders
 shopt -s globstar
 
-# Exit early if samples directory doesn't exist
-if [ ! -d "./samples" ]; then
-  echo "No tests run. `./samples` not found"
+# Exit early if samples don't exist
+if ! find samples -name 'requirements.txt' | grep -q .; then
+  echo "No tests run. './samples/**/requirements.txt' not found"
   exit 0
 fi
 
