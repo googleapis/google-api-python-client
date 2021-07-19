@@ -26,7 +26,7 @@ This tutorial uses billable components of Google Cloud including Compute Engine.
    [Go to project selector](https://console.cloud.google.com/projectselector2/home/dashboard).
 1. Make sure that billing is enabled for your cloud project. 
    [Learn how to confirm that billing is enabled for your project.](https://cloud.google.com/billing/docs/how-to/modify-project)
-1. [Install Google Cloud SDK](https://cloud.google.com/sdk)
+1. [Install Google Cloud SDK and `gcloud`](https://cloud.google.com/sdk)
 1. After the SDK is installed, run `gcloud auth application-default login`.
 1. Install the [google-api-python-client](http://github.com/googleapis/google-api-python-client) library. Typically, you can run:
    
@@ -36,7 +36,7 @@ This tutorial uses billable components of Google Cloud including Compute Engine.
 
 1. Enable the Cloud Storage API.
    ```bash
-   gcloud services enable pubsub.googleapis.com
+   gcloud services enable storage.googleapis.com
    ```
 1. [Create a Cloud Storage bucket](https://cloud.google.com/storage/docs/creating-buckets) and note the bucket name for later.
 
@@ -122,8 +122,8 @@ to apply text to an image and upload it to [Cloud Storage](https://cloud.google.
 ## Deleting an Instance
 
 To delete an instance, you need to call the `compute.instances().delete()` method and provide the name, 
-zone, and project ID of the instance to delete. Because you set the `autoDelete` parameter for the 
-boot disk it is also deleted when the instance is deleted. This setting is off by default but is 
+zone, and project ID of the instance to delete. When the `autoDelete` parameter is set to `true` for the 
+boot disk it is also deleted with the instance. This setting is off by default but is 
 useful when your use case calls for disks and instances to be deleted together.
 
 ```python
