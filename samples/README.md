@@ -199,9 +199,6 @@ Documentation for the Search API For Shopping in
 
 Lets you manage the Google Compute Engine instances in your projects.
 
-Documentation for the Cloud Compute Engine API in
-[PyDoc](https://cloud.google.com/compute/docs/tutorials/python-guide).
-
 <table>
   <tr>
     <td><a href="compute">samples/compute</a></td>
