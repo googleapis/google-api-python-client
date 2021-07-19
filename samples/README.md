@@ -204,7 +204,7 @@ Documentation for the Cloud Compute Engine API in
 
 <table>
   <tr>
-    <td><a href="storage">samples/compute</a></td>
+    <td><a href="compute">samples/compute</a></td>
     <td>Creates a Google Compute Engine instance to modify a samples image and upload the result
         to a Cloud Storage bucket, then deletes the instance.</td>
   </tr>
@@ -412,4 +412,3 @@ Documentation for the YouTube Data API in
     Getting Started with Google Tasks API</a></td>
   </tr>
 </table>
-

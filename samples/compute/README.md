@@ -2,7 +2,7 @@
 
 This document demonstrates how to use the Cloud Client Libraries for Python for Compute Engine. 
 It describes how to authorize requests and how to create, list, and delete instances. 
-This exercise discusses how to use the google-api-python-client library to access Compute Engine 
+This exercise discusses how to use the `google-api-python-client` library to access Compute Engine 
 resources. You can run this sample from your local machine or on a VM instance, provided that 
 you have authorized the sample correctly.
 
@@ -13,10 +13,8 @@ To view the full code example with all of the necessary imports, see the [create
 
 ## Objectives
 
- * Perform OAuth 2.0 authorization using the oauth2client library
- * Create an instance using the google-python-client library
- * List instances using the google-python-client library
- * Delete an instance using the google-python-client library
+ * Perform OAuth 2.0 authorization using the `oauth2client` library
+ * Create, list and delete instances using the `google-api-python-client` library
 
 ## Costs
 
@@ -25,18 +23,17 @@ This tutorial uses billable components of Google Cloud including Compute Engine.
 ## Before you begin
 
 1. In the Google Cloud Console, on the project selector page, select or create a Google Cloud project.
-   [Got to project inspector](https://console.cloud.google.com/projectselector2/home/dashboard).
-1. Make sure that billing is enabled for your Cloud project. 
+   [Go to project selector](https://console.cloud.google.com/projectselector2/home/dashboard).
+1. Make sure that billing is enabled for your cloud project. 
    [Learn how to confirm that billing is enabled for your project.](https://cloud.google.com/billing/docs/how-to/modify-project)
-1. [Install Cloud SDK](https://cloud.google.com/sdk)
+1. [Install Google Cloud SDK](https://cloud.google.com/sdk)
 1. After the SDK is installed, run `gcloud auth application-default login`.
-1. Install the [google-api-python-client](http://github.com/google/google-api-python-client) library. Typically, you can run:
+1. Install the [google-api-python-client](http://github.com/googleapis/google-api-python-client) library. Typically, you can run:
    
    ```bash
    pip install --upgrade google-api-python-client
    ```
 
-   You also need to have Python 2.7 or 3.3+ to run the Cloud Client Libraries for Python.
 1. Enable the Cloud Storage API.
    ```bash
    gcloud services enable pubsub.googleapis.com
@@ -55,6 +52,7 @@ Application default credentials are provided in Google API Client Libraries auto
 You just have to build and initialize the API:
 
 ```python
+import googleapiclient
 compute = googleapiclient.discovery.build('compute', 'v1')
 ```
 
@@ -63,8 +61,7 @@ client is built and used.
 
 ## Listing instances
 
-Using the Cloud Client Libraries for Python, you can list instances by using the 
-`compute.instances().list` method. 
+Using `google-api-python-client`, you can list instances by using the `compute.instances().list()` method. 
 You need to provide the project ID and the zone for which you want to list instances. For example:
 
 ```python
@@ -104,7 +101,7 @@ You can see an example of instance creation in the `create_instance` method in [
 All instances must boot from a [root persistent disk](https://cloud.google.com/compute/docs/disks/create-root-persistent-disks).
 The root persistent disk contains all of the necessary files required for starting an instance. 
 When you create a root persistent disk you must select a public image or a custom image to apply to 
-the disk. In the example above, you created a new root persistent disk based on Debian 8 at the same 
+the disk. In the example above, a new root persistent disk is created based on Debian 8 at the same 
 time as the instance. However, it is also possible to create a disk beforehand and attach it to the 
 instance.
 
@@ -119,14 +116,12 @@ images, see [Creating an instance from a custom image](https://cloud.google.com/
 When you create your instance, you might want to include instance metadata such as a [startup script](https://cloud.google.com/compute/docs/startupscript), 
 configuration variables, and SSH keys. In the example above, you used the `metadata` field in your 
 request body to specify a startup script for the instance and some configuration variables as 
-key/values pairs. The startup script, listed below, shows how to read these variables and use them 
+key/values pairs. The [startup-script.sh](startup-script.sh) shows how to read these variables and use them 
 to apply text to an image and upload it to [Cloud Storage](https://cloud.google.com/storage).
-
-The contents of the startup script used in this example can be found in [startup-script.sh](startup-script.sh).
 
 ## Deleting an Instance
 
-To delete an instance, you need to call the `instances().delete` method and provide the name, 
+To delete an instance, you need to call the `compute.instances().delete()` method and provide the name, 
 zone, and project ID of the instance to delete. Because you set the `autoDelete` parameter for the 
 boot disk it is also deleted when the instance is deleted. This setting is off by default but is 
 useful when your use case calls for disks and instances to be deleted together.
@@ -187,8 +182,8 @@ def wait_for_operation(compute, project, zone, operation):
         time.sleep(1)
 ```
 
-When you query per-zone operations, use the `zoneOperations.get()` method. When you query global 
-operations, use the `globalOperations.get()` method. For more information, see zone resources.
+When you query per-zone operations, use the `compute.zoneOperations.get()` method. When you query global 
+operations, use the `compute.globalOperations.get()` method. For more information, see zone resources.
 
 ## Cleaning up
 
