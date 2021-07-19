@@ -72,7 +72,7 @@ def list_instances(compute, project, zone):
 
 ## Adding an instance
 
-To add an instance, use the `instances().insert` method and specify the properties of the new 
+To add an instance, use the `compute.instances().insert()` method and specify the properties of the new 
 instance. These properties are specified in the request body; for details about each property see 
 the [API reference for `instances.insert`](https://cloud.google.com/compute/docs/reference/latest/instances/insert).
 
