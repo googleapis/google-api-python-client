@@ -18,14 +18,13 @@ A client library for Google's discovery based APIs.
 """
 from __future__ import absolute_import
 import six
-from six.moves import zip
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 __all__ = ["build", "build_from_document", "fix_method_name", "key2param"]
 
-from six import BytesIO
 from six.moves import http_client
-from six.moves.urllib.parse import urlencode, urlparse, urljoin, urlunparse, parse_qsl
+from six.moves.urllib.parse import urljoin  
+
 
 # Standard library imports
 import copy
@@ -1145,7 +1144,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                     msgRoot.attach(msg)
                     # encode the body: note that we can't use `as_string`, because
                     # it plays games with `From ` lines.
-                    fp = BytesIO()
+                    fp = six.BytesIO()
                     g = _BytesGenerator(fp, mangle_from_=False)
                     g.flatten(msgRoot, unixfrom=False)
                     body = fp.getvalue()
@@ -1219,7 +1218,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         enumDesc = paramdesc.get("enumDescriptions", [])
         if enum and enumDesc:
             docs.append("    Allowed values\n")
-            for (name, desc) in zip(enum, enumDesc):
+            for (name, desc) in six.moves.zip(enum, enumDesc):
                 docs.append("      %s - %s\n" % (name, desc))
     if "response" in methodDesc:
         if methodName.endswith("_media"):
