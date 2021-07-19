@@ -195,6 +195,18 @@ Documentation for the Search API For Shopping in
   </tr>
 </table>
 
+## ![](https://www.google.com/images/icons/product/compute_engine-32.png) Cloud Compute Engine API
+
+Lets you manage the Google Compute Engine instances in your projects.
+
+<table>
+  <tr>
+    <td><a href="compute">samples/compute</a></td>
+    <td>Creates a Google Compute Engine instance to modify a samples image and upload the result
+        to a Cloud Storage bucket, then deletes the instance.</td>
+  </tr>
+</table>
+
 ## ![](https://www.google.com/images/icons/product/cloud_storage-32.png) Cloud Storage API
 
 Lets you store and retrieve potentially-large, immutable data objects.
@@ -397,4 +409,3 @@ Documentation for the YouTube Data API in
     Getting Started with Google Tasks API</a></td>
   </tr>
 </table>
-
