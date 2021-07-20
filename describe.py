@@ -24,7 +24,6 @@ from __future__ import print_function
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
-from collections import OrderedDict
 import argparse
 import collections
 import json
@@ -36,14 +35,15 @@ import sys
 from googleapiclient.discovery import DISCOVERY_URI
 from googleapiclient.discovery import build
 from googleapiclient.discovery import build_from_document
-from googleapiclient.discovery import UnknownApiNameOrVersion
 from googleapiclient.http import build_http
-from googleapiclient.errors import HttpError
 
 import uritemplate
 
 DISCOVERY_DOC_DIR = (
-    pathlib.Path(__file__).parent.resolve() / "googleapiclient" / "discovery_cache" / "documents"
+    pathlib.Path(__file__).parent.resolve()
+    / "googleapiclient"
+    / "discovery_cache"
+    / "documents"
 )
 
 CSS = """<style>
@@ -171,16 +171,16 @@ parser.add_argument(
 def safe_version(version):
     """Create a safe version of the verion string.
 
-  Needed so that we can distinguish between versions
-  and sub-collections in URIs. I.e. we don't want
-  adsense_v1.1 to refer to the '1' collection in the v1
-  version of the adsense api.
+    Needed so that we can distinguish between versions
+    and sub-collections in URIs. I.e. we don't want
+    adsense_v1.1 to refer to the '1' collection in the v1
+    version of the adsense api.
 
-  Args:
-    version: string, The version string.
-  Returns:
-    The string with '.' replaced with '_'.
-  """
+    Args:
+      version: string, The version string.
+    Returns:
+      The string with '.' replaced with '_'.
+    """
 
     return version.replace(".", "_")
 
@@ -188,14 +188,14 @@ def safe_version(version):
 def unsafe_version(version):
     """Undoes what safe_version() does.
 
-  See safe_version() for the details.
+    See safe_version() for the details.
 
 
-  Args:
-    version: string, The safe version string.
-  Returns:
-    The string with '_' replaced with '.'.
-  """
+    Args:
+      version: string, The safe version string.
+    Returns:
+      The string with '_' replaced with '.'.
+    """
 
     return version.replace("_", ".")
 
@@ -203,12 +203,12 @@ def unsafe_version(version):
 def method_params(doc):
     """Document the parameters of a method.
 
-  Args:
-    doc: string, The method's docstring.
+    Args:
+      doc: string, The method's docstring.
 
-  Returns:
-    The method signature as a string.
-  """
+    Returns:
+      The method signature as a string.
+    """
     doclines = doc.splitlines()
     if "Args:" in doclines:
         begin = doclines.index("Args:")
@@ -253,10 +253,10 @@ def method_params(doc):
 def method(name, doc):
     """Documents an individual method.
 
-  Args:
-    name: string, Name of the method.
-    doc: string, The methods docstring.
-  """
+    Args:
+      name: string, Name of the method.
+      doc: string, The methods docstring.
+    """
     import html
 
     params = method_params(doc)
@@ -269,13 +269,13 @@ def method(name, doc):
 def breadcrumbs(path, root_discovery):
     """Create the breadcrumb trail to this page of documentation.
 
-  Args:
-    path: string, Dot separated name of the resource.
-    root_discovery: Deserialized discovery document.
+    Args:
+      path: string, Dot separated name of the resource.
+      root_discovery: Deserialized discovery document.
 
-  Returns:
-    HTML with links to each of the parent resources of this resource.
-  """
+    Returns:
+      HTML with links to each of the parent resources of this resource.
+    """
     parts = path.split(".")
 
     crumbs = []
@@ -299,14 +299,14 @@ def breadcrumbs(path, root_discovery):
 def document_collection(resource, path, root_discovery, discovery, css=CSS):
     """Document a single collection in an API.
 
-  Args:
-    resource: Collection or service being documented.
-    path: string, Dot separated name of the resource.
-    root_discovery: Deserialized discovery document.
-    discovery: Deserialized discovery document, but just the portion that
-      describes the resource.
-    css: string, The CSS to include in the generated file.
-  """
+    Args:
+      resource: Collection or service being documented.
+      path: string, Dot separated name of the resource.
+      root_discovery: Deserialized discovery document.
+      discovery: Deserialized discovery document, but just the portion that
+        describes the resource.
+      css: string, The CSS to include in the generated file.
+    """
     collections = []
     methods = []
     resource_name = path.split(".")[-2]
@@ -357,7 +357,9 @@ def document_collection(resource, path, root_discovery, discovery, css=CSS):
     return "\n".join(html)
 
 
-def document_collection_recursive(resource, path, root_discovery, discovery, doc_destination_dir):
+def document_collection_recursive(
+    resource, path, root_discovery, discovery, doc_destination_dir
+):
     html = document_collection(resource, path, root_discovery, discovery)
 
     f = open(pathlib.Path(doc_destination_dir).joinpath(path + "html"), "w")
@@ -379,7 +381,7 @@ def document_collection_recursive(resource, path, root_discovery, discovery, doc
                 path + name + ".",
                 root_discovery,
                 discovery["resources"].get(dname, {}),
-                doc_destination_dir
+                doc_destination_dir,
             )
 
 
@@ -392,10 +394,11 @@ def document_api(name, version, uri, doc_destination_dir):
         uri (str): URI of the API's discovery document
         doc_destination_dir (str): relative path where the reference
             documentation should be saved.
-  """
+    """
     http = build_http()
     resp, content = http.request(
-        uri or uritemplate.expand(
+        uri
+        or uritemplate.expand(
             FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
         )
     )
@@ -413,11 +416,11 @@ def document_api(name, version, uri, doc_destination_dir):
         with open(discovery_file_path, "r+") as f:
             try:
                 json_data = json.load(f)
-                revision = json_data['revision']
+                revision = json_data["revision"]
             except json.JSONDecodeError:
                 revision = None
 
-            if revision is None or discovery['revision'] >= revision:
+            if revision is None or discovery["revision"] >= revision:
                 # Reset position to the beginning
                 f.seek(0)
                 # Write the changes to disk
@@ -426,25 +429,35 @@ def document_api(name, version, uri, doc_destination_dir):
                 f.truncate()
 
     elif resp.status == 404:
-        print("Warning: {} {} not found. HTTP Code: {}".format(name, version, resp.status))
+        print(
+            "Warning: {} {} not found. HTTP Code: {}".format(name, version, resp.status)
+        )
         return
     else:
-        print("Warning: {} {} could not be built. HTTP Code: {}".format(name, version, resp.status))
+        print(
+            "Warning: {} {} could not be built. HTTP Code: {}".format(
+                name, version, resp.status
+            )
+        )
         return
 
     document_collection_recursive(
-        service, "{}_{}.".format(name, safe_version(version)), discovery, discovery, doc_destination_dir
+        service,
+        "{}_{}.".format(name, safe_version(version)),
+        discovery,
+        discovery,
+        doc_destination_dir,
     )
 
 
 def document_api_from_discovery_document(discovery_url, doc_destination_dir):
     """Document the given API.
 
-  Args:
-    discovery_url (str): URI of discovery document.
-    doc_destination_dir (str): relative path where the reference
-        documentation should be saved.
-  """
+    Args:
+      discovery_url (str): URI of discovery document.
+      doc_destination_dir (str): relative path where the reference
+          documentation should be saved.
+    """
     http = build_http()
     response, content = http.request(discovery_url)
     discovery = json.loads(content)
@@ -455,11 +468,16 @@ def document_api_from_discovery_document(discovery_url, doc_destination_dir):
     version = safe_version(discovery["version"])
 
     document_collection_recursive(
-        service, "{}_{}.".format(name, version), discovery, discovery, doc_destination_dir
+        service,
+        "{}_{}.".format(name, version),
+        discovery,
+        discovery,
+        doc_destination_dir,
     )
 
+
 def generate_all_api_documents(directory_uri=DIRECTORY_URI, doc_destination_dir=BASE):
-    """ Retrieve discovery artifacts and fetch reference documentations
+    """Retrieve discovery artifacts and fetch reference documentations
     for all apis listed in the public discovery directory.
     args:
         directory_uri (str): uri of the public discovery directory.
@@ -472,13 +490,18 @@ def generate_all_api_documents(directory_uri=DIRECTORY_URI, doc_destination_dir=
     if resp.status == 200:
         directory = json.loads(content)["items"]
         for api in directory:
-            document_api(api["name"], api["version"], api["discoveryRestUrl"], doc_destination_dir)
+            document_api(
+                api["name"],
+                api["version"],
+                api["discoveryRestUrl"],
+                doc_destination_dir,
+            )
             api_directory[api["name"]].append(api["version"])
 
         # sort by api name and version number
         for api in api_directory:
             api_directory[api] = sorted(api_directory[api])
-        api_directory = OrderedDict(
+        api_directory = collections.OrderedDict(
             sorted(api_directory.items(), key=lambda x: x[0])
         )
 
@@ -499,9 +522,14 @@ def generate_all_api_documents(directory_uri=DIRECTORY_URI, doc_destination_dir=
     else:
         sys.exit("Failed to load the discovery document.")
 
+
 if __name__ == "__main__":
     FLAGS = parser.parse_args(sys.argv[1:])
     if FLAGS.discovery_uri:
-        document_api_from_discovery_document(discovery_url=FLAGS.discovery_uri, doc_destination_dir=FLAGS.dest)
+        document_api_from_discovery_document(
+            discovery_url=FLAGS.discovery_uri, doc_destination_dir=FLAGS.dest
+        )
     else:
-        generate_all_api_documents(directory_uri=FLAGS.directory_uri, doc_destination_dir=FLAGS.dest)
+        generate_all_api_documents(
+            directory_uri=FLAGS.directory_uri, doc_destination_dir=FLAGS.dest
+        )

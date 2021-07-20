@@ -435,6 +435,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/fcm_v1.html)
 
 
+## fcmdata
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/fcmdata_v1beta1.html)
+
+
 ## file
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/file_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/file_v1beta1.html)
@@ -639,6 +643,10 @@
 
 ## mybusinesslodging
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinesslodging_v1.html)
+
+
+## mybusinessnotifications
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessnotifications_v1.html)
 
 
 ## mybusinessplaceactions
@@ -881,6 +889,7 @@
 
 
 ## sqladmin
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/sqladmin_v1.html)
 * [v1beta4](http://googleapis.github.io/google-api-python-client/docs/dyn/sqladmin_v1beta4.html)
 
 
@@ -952,6 +961,7 @@
 
 ## verifiedaccess
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/verifiedaccess_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/verifiedaccess_v2.html)
 
 
 ## videointelligence

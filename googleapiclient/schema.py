@@ -63,7 +63,6 @@ import six
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
-import copy
 
 from collections import OrderedDict
 from googleapiclient import _helpers as util
@@ -75,10 +74,10 @@ class Schemas(object):
     def __init__(self, discovery):
         """Constructor.
 
-    Args:
-      discovery: object, Deserialized discovery document from which we pull
-        out the named schema.
-    """
+        Args:
+          discovery: object, Deserialized discovery document from which we pull
+            out the named schema.
+        """
         self.schemas = discovery.get("schemas", {})
 
         # Cache of pretty printed schemas.
@@ -88,15 +87,15 @@ class Schemas(object):
     def _prettyPrintByName(self, name, seen=None, dent=0):
         """Get pretty printed object prototype from the schema name.
 
-    Args:
-      name: string, Name of schema in the discovery document.
-      seen: list of string, Names of schema already seen. Used to handle
-        recursive definitions.
+        Args:
+          name: string, Name of schema in the discovery document.
+          seen: list of string, Names of schema already seen. Used to handle
+            recursive definitions.
 
-    Returns:
-      string, A string that contains a prototype object with
-        comments that conforms to the given schema.
-    """
+        Returns:
+          string, A string that contains a prototype object with
+            comments that conforms to the given schema.
+        """
         if seen is None:
             seen = []
 
@@ -117,13 +116,13 @@ class Schemas(object):
     def prettyPrintByName(self, name):
         """Get pretty printed object prototype from the schema name.
 
-    Args:
-      name: string, Name of schema in the discovery document.
+        Args:
+          name: string, Name of schema in the discovery document.
 
-    Returns:
-      string, A string that contains a prototype object with
-        comments that conforms to the given schema.
-    """
+        Returns:
+          string, A string that contains a prototype object with
+            comments that conforms to the given schema.
+        """
         # Return with trailing comma and newline removed.
         return self._prettyPrintByName(name, seen=[], dent=0)[:-2]
 
@@ -131,15 +130,15 @@ class Schemas(object):
     def _prettyPrintSchema(self, schema, seen=None, dent=0):
         """Get pretty printed object prototype of schema.
 
-    Args:
-      schema: object, Parsed JSON schema.
-      seen: list of string, Names of schema already seen. Used to handle
-        recursive definitions.
+        Args:
+          schema: object, Parsed JSON schema.
+          seen: list of string, Names of schema already seen. Used to handle
+            recursive definitions.
 
-    Returns:
-      string, A string that contains a prototype object with
-        comments that conforms to the given schema.
-    """
+        Returns:
+          string, A string that contains a prototype object with
+            comments that conforms to the given schema.
+        """
         if seen is None:
             seen = []
 
@@ -148,23 +147,23 @@ class Schemas(object):
     def prettyPrintSchema(self, schema):
         """Get pretty printed object prototype of schema.
 
-    Args:
-      schema: object, Parsed JSON schema.
+        Args:
+          schema: object, Parsed JSON schema.
 
-    Returns:
-      string, A string that contains a prototype object with
-        comments that conforms to the given schema.
-    """
+        Returns:
+          string, A string that contains a prototype object with
+            comments that conforms to the given schema.
+        """
         # Return with trailing comma and newline removed.
         return self._prettyPrintSchema(schema, dent=0)[:-2]
 
     def get(self, name, default=None):
         """Get deserialized JSON schema from the schema name.
 
-    Args:
-      name: string, Schema name.
-      default: object, return value if name not found.
-    """
+        Args:
+          name: string, Schema name.
+          default: object, return value if name not found.
+        """
         return self.schemas.get(name, default)
 
 
@@ -175,12 +174,12 @@ class _SchemaToStruct(object):
     def __init__(self, schema, seen, dent=0):
         """Constructor.
 
-    Args:
-      schema: object, Parsed JSON schema.
-      seen: list, List of names of schema already seen while parsing. Used to
-        handle recursive definitions.
-      dent: int, Initial indentation depth.
-    """
+        Args:
+          schema: object, Parsed JSON schema.
+          seen: list, List of names of schema already seen while parsing. Used to
+            handle recursive definitions.
+          dent: int, Initial indentation depth.
+        """
         # The result of this parsing kept as list of strings.
         self.value = []
 
@@ -203,26 +202,26 @@ class _SchemaToStruct(object):
     def emit(self, text):
         """Add text as a line to the output.
 
-    Args:
-      text: string, Text to output.
-    """
+        Args:
+          text: string, Text to output.
+        """
         self.value.extend(["  " * self.dent, text, "\n"])
 
     def emitBegin(self, text):
         """Add text to the output, but with no line terminator.
 
-    Args:
-      text: string, Text to output.
-      """
+        Args:
+          text: string, Text to output.
+        """
         self.value.extend(["  " * self.dent, text])
 
     def emitEnd(self, text, comment):
         """Add text and comment to the output with line terminator.
 
-    Args:
-      text: string, Text to output.
-      comment: string, Python comment.
-    """
+        Args:
+          text: string, Text to output.
+          comment: string, Python comment.
+        """
         if comment:
             divider = "\n" + "  " * (self.dent + 2) + "# "
             lines = comment.splitlines()
@@ -243,12 +242,12 @@ class _SchemaToStruct(object):
     def _to_str_impl(self, schema):
         """Prototype object based on the schema, in Python code with comments.
 
-    Args:
-      schema: object, Parsed JSON schema file.
+        Args:
+          schema: object, Parsed JSON schema file.
 
-    Returns:
-      Prototype object based on the schema, in Python code with comments.
-    """
+        Returns:
+          Prototype object based on the schema, in Python code with comments.
+        """
         stype = schema.get("type")
         if stype == "object":
             self.emitEnd("{", schema.get("description", ""))
@@ -305,14 +304,14 @@ class _SchemaToStruct(object):
     def to_str(self, from_cache):
         """Prototype object based on the schema, in Python code with comments.
 
-    Args:
-      from_cache: callable(name, seen), Callable that retrieves an object
-         prototype for a schema with the given name. Seen is a list of schema
-         names already seen as we recursively descend the schema definition.
+        Args:
+          from_cache: callable(name, seen), Callable that retrieves an object
+             prototype for a schema with the given name. Seen is a list of schema
+             names already seen as we recursively descend the schema definition.
 
-    Returns:
-      Prototype object based on the schema, in Python code with comments.
-      The lines of the code will all be properly indented.
-    """
+        Returns:
+          Prototype object based on the schema, in Python code with comments.
+          The lines of the code will all be properly indented.
+        """
         self.from_cache = from_cache
         return self._to_str_impl(self.schema)
