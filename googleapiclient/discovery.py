@@ -17,18 +17,19 @@
 A client library for Google's discovery based APIs.
 """
 from __future__ import absolute_import
-import six
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 __all__ = ["build", "build_from_document", "fix_method_name", "key2param"]
 
-from six.moves import http_client
-from six.moves.urllib.parse import urljoin  
+import http.client as http_client
+import urllib
 
 
 # Standard library imports
 import copy
 from collections import OrderedDict
+import collections.abc
+import io
 
 try:
     from email.generator import BytesGenerator
@@ -506,7 +507,7 @@ def build_from_document(
 
     if client_options is None:
         client_options = google.api_core.client_options.ClientOptions()
-    if isinstance(client_options, six.moves.collections_abc.Mapping):
+    if isinstance(client_options, collections.abc.Mapping):
         client_options = google.api_core.client_options.from_dict(client_options)
 
     if http is not None:
@@ -519,9 +520,9 @@ def build_from_document(
             if option is not None:
                 raise ValueError("Arguments http and {} are mutually exclusive".format(name))
 
-    if isinstance(service, six.string_types):
+    if isinstance(service, str):
         service = json.loads(service)
-    elif isinstance(service, six.binary_type):
+    elif isinstance(service, bytes):
         service = json.loads(service.decode("utf-8"))
 
     if "rootUrl" not in service and isinstance(http, (HttpMock, HttpMockSequence)):
@@ -534,7 +535,7 @@ def build_from_document(
         raise InvalidJsonError()
 
     # If an API Endpoint is provided on client options, use that as the base URL
-    base = urljoin(service["rootUrl"], service["servicePath"])
+    base = urllib.parse.urljoin(service["rootUrl"], service["servicePath"])
     if client_options.api_endpoint:
         base = client_options.api_endpoint
 
@@ -630,7 +631,7 @@ def build_from_document(
         if "mtlsRootUrl" in service and (
             not client_options or not client_options.api_endpoint
         ):
-            mtls_endpoint = urljoin(service["mtlsRootUrl"], service["servicePath"])
+            mtls_endpoint = urllib.parse.urljoin(service["mtlsRootUrl"], service["servicePath"])
             use_mtls_endpoint = os.getenv(GOOGLE_API_USE_MTLS_ENDPOINT, "auto")
 
             if not use_mtls_endpoint in ("never", "auto", "always"):
@@ -759,7 +760,7 @@ def _fix_up_parameters(method_desc, root_desc, http_method, schema):
     parameters = method_desc.setdefault("parameters", {})
 
     # Add in the parameters common to all methods.
-    for name, description in six.iteritems(root_desc.get("parameters", {})):
+    for name, description in root_desc.get("parameters", {}).items():
         parameters[name] = description
 
     # Add in undocumented query parameters.
@@ -875,7 +876,7 @@ def _urljoin(base, url):
     # exception here is the case of media uploads, where url will be an
     # absolute url.
     if url.startswith("http://") or url.startswith("https://"):
-        return urljoin(base, url)
+        return urllib.parse.urljoin(base, url)
     new_base = base if base.endswith("/") else base + "/"
     new_url = url[1:] if url.startswith("/") else url
     return new_base + new_url
@@ -943,7 +944,7 @@ class ResourceMethodParameters(object):
     """
         parameters = method_desc.get("parameters", {})
         sorted_parameters = OrderedDict(sorted(parameters.items()))
-        for arg, desc in six.iteritems(sorted_parameters):
+        for arg, desc in sorted_parameters.items():
             param = key2param(arg)
             self.argmap[param] = arg
 
@@ -997,9 +998,9 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     def method(self, **kwargs):
         # Don't bother with doc string, it will be over-written by createMethod.
 
-        for name in six.iterkeys(kwargs):
+        for name in kwargs:
             if name not in parameters.argmap:
-                raise TypeError('Got an unexpected keyword argument "%s"' % name)
+                raise TypeError('Got an unexpected keyword argument {}'.format(name))
 
         # Remove args that have a value of None.
         keys = list(kwargs.keys())
@@ -1016,9 +1017,9 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                 ):
                     raise TypeError('Missing required parameter "%s"' % name)
 
-        for name, regex in six.iteritems(parameters.pattern_params):
+        for name, regex in parameters.pattern_params.items():
             if name in kwargs:
-                if isinstance(kwargs[name], six.string_types):
+                if isinstance(kwargs[name], str):
                     pvalues = [kwargs[name]]
                 else:
                     pvalues = kwargs[name]
@@ -1029,13 +1030,13 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                             % (name, pvalue, regex)
                         )
 
-        for name, enums in six.iteritems(parameters.enum_params):
+        for name, enums in parameters.enum_params.items():
             if name in kwargs:
                 # We need to handle the case of a repeated enum
                 # name differently, since we want to handle both
                 # arg='value' and arg=['value1', 'value2']
                 if name in parameters.repeated_params and not isinstance(
-                    kwargs[name], six.string_types
+                    kwargs[name], str
                 ):
                     values = kwargs[name]
                 else:
@@ -1049,7 +1050,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
 
         actual_query_params = {}
         actual_path_params = {}
-        for key, value in six.iteritems(kwargs):
+        for key, value in kwargs.items():
             to_type = parameters.param_types.get(key, "string")
             # For repeated parameters we cast each member of the list.
             if key in parameters.repeated_params and type(value) == type([]):
@@ -1086,7 +1087,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
 
         if media_filename:
             # Ensure we end up with a valid MediaUpload object.
-            if isinstance(media_filename, six.string_types):
+            if isinstance(media_filename, str):
                 if media_mime_type is None:
                     logger.warning(
                         "media_mime_type argument not specified: trying to auto-detect for %s",
@@ -1144,7 +1145,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                     msgRoot.attach(msg)
                     # encode the body: note that we can't use `as_string`, because
                     # it plays games with `From ` lines.
-                    fp = six.BytesIO()
+                    fp = io.BytesIO()
                     g = _BytesGenerator(fp, mangle_from_=False)
                     g.flatten(msgRoot, unixfrom=False)
                     body = fp.getvalue()
@@ -1218,7 +1219,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         enumDesc = paramdesc.get("enumDescriptions", [])
         if enum and enumDesc:
             docs.append("    Allowed values\n")
-            for (name, desc) in six.moves.zip(enum, enumDesc):
+            for (name, desc) in zip(enum, enumDesc):
                 docs.append("      %s - %s\n" % (name, desc))
     if "response" in methodDesc:
         if methodName.endswith("_media"):
@@ -1415,7 +1416,7 @@ class Resource(object):
 
         # Add basic methods to Resource
         if "methods" in resourceDesc:
-            for methodName, methodDesc in six.iteritems(resourceDesc["methods"]):
+            for methodName, methodDesc in resourceDesc["methods"].items():
                 fixedMethodName, method = createMethod(
                     methodName, methodDesc, rootDesc, schema
                 )
@@ -1463,7 +1464,7 @@ class Resource(object):
 
                 return (methodName, methodResource)
 
-            for methodName, methodDesc in six.iteritems(resourceDesc["resources"]):
+            for methodName, methodDesc in resourceDesc["resources"].items():
                 fixedMethodName, method = createResourceMethod(methodName, methodDesc)
                 self._set_dynamic_attr(
                     fixedMethodName, method.__get__(self, self.__class__)
@@ -1475,7 +1476,7 @@ class Resource(object):
         # type either the method's request (query parameters) or request body.
         if "methods" not in resourceDesc:
             return
-        for methodName, methodDesc in six.iteritems(resourceDesc["methods"]):
+        for methodName, methodDesc in resourceDesc["methods"].items():
             nextPageTokenName = _findPageTokenName(
                 _methodProperties(methodDesc, schema, "response")
             )

@@ -23,7 +23,6 @@ Contents:
 """
 from __future__ import absolute_import
 from functools import reduce
-import six
 
 __version__ = "0.1.3"
 __author__ = "Joe Gregorio"
@@ -105,7 +104,7 @@ def fitness_and_quality_parsed(mime_type, parsed_ranges):
                 lambda x, y: x + y,
                 [
                     1
-                    for (key, value) in six.iteritems(target_params)
+                    for (key, value) in target_params.items()
                     if key != "q" and key in params and value == params[key]
                 ],
                 0,

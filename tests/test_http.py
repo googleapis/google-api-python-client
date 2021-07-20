@@ -19,14 +19,10 @@
 Unit tests for the googleapiclient.http.
 """
 from __future__ import absolute_import
-from six.moves import range
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
-from six import PY3
-from six import BytesIO, StringIO
 from io import FileIO
-from six.moves.urllib.parse import urlencode
 
 # Do not remove the httplib2 import
 import json
@@ -36,6 +32,7 @@ import logging
 import mock
 import os
 import unittest2 as unittest
+import urllib
 import random
 import socket
 import ssl
@@ -132,7 +129,7 @@ class HttpMockWithErrors(object):
     def request(self, *args, **kwargs):
         if not self.num_errors:
             return httplib2.Response(self.success_json), self.success_data
-        elif self.num_errors == 5 and PY3:
+        elif self.num_errors == 5:
             ex = ConnectionResetError  # noqa: F821
         elif self.num_errors == 4:
             ex = httplib2.ServerNotFoundError()
@@ -149,11 +146,7 @@ class HttpMockWithErrors(object):
                 ex.errno = socket.errno.WSAETIMEDOUT
             except AttributeError:
                 # For Linux/Mac:
-                if PY3:
-                    ex = socket.timeout()
-                else:
-                    ex = OSError()
-                    ex.errno = socket.errno.ETIMEDOUT
+                ex = socket.timeout()
 
         self.num_errors -= 1
         raise ex
@@ -214,12 +207,8 @@ class TestMediaUpload(unittest.TestCase):
     def test_media_file_upload_closes_fd_in___del__(self):
         file_desc = mock.Mock(spec=io.TextIOWrapper)
         opener = mock.mock_open(file_desc)
-        if PY3:
-            with mock.patch("builtins.open", return_value=opener):
-                upload = MediaFileUpload(datafile("test_close"), mimetype="text/plain")
-        else:
-            with mock.patch("__builtin__.open", return_value=opener):
-                upload = MediaFileUpload(datafile("test_close"), mimetype="text/plain")
+        with mock.patch("builtins.open", return_value=opener):
+            upload = MediaFileUpload(datafile("test_close"), mimetype="text/plain")
         self.assertIs(upload.stream(), file_desc)
         del upload
         file_desc.close.assert_called_once_with()
@@ -338,25 +327,10 @@ class TestMediaIoBaseUpload(unittest.TestCase):
         except NotImplementedError:
             pass
 
-    @unittest.skipIf(PY3, "Strings and Bytes are different types")
-    def test_media_io_base_upload_from_string_io(self):
-        f = open(datafile("small.png"), "rb")
-        fd = StringIO(f.read())
-        f.close()
-
-        upload = MediaIoBaseUpload(
-            fd=fd, mimetype="image/png", chunksize=500, resumable=True
-        )
-        self.assertEqual("image/png", upload.mimetype())
-        self.assertEqual(190, upload.size())
-        self.assertEqual(True, upload.resumable())
-        self.assertEqual(500, upload.chunksize())
-        self.assertEqual(b"PNG", upload.getbytes(1, 3))
-        f.close()
 
     def test_media_io_base_upload_from_bytes(self):
         f = open(datafile("small.png"), "rb")
-        fd = BytesIO(f.read())
+        fd = io.BytesIO(f.read())
         upload = MediaIoBaseUpload(
             fd=fd, mimetype="image/png", chunksize=500, resumable=True
         )
@@ -368,7 +342,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
 
     def test_media_io_base_upload_raises_on_invalid_chunksize(self):
         f = open(datafile("small.png"), "rb")
-        fd = BytesIO(f.read())
+        fd = io.BytesIO(f.read())
         self.assertRaises(
             InvalidChunkSizeError,
             MediaIoBaseUpload,
@@ -379,7 +353,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
         )
 
     def test_media_io_base_upload_streamable(self):
-        fd = BytesIO(b"stuff")
+        fd = io.BytesIO(b"stuff")
         upload = MediaIoBaseUpload(
             fd=fd, mimetype="image/png", chunksize=500, resumable=True
         )
@@ -388,7 +362,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
 
     def test_media_io_base_next_chunk_retries(self):
         f = open(datafile("small.png"), "rb")
-        fd = BytesIO(f.read())
+        fd = io.BytesIO(f.read())
         upload = MediaIoBaseUpload(
             fd=fd, mimetype="image/png", chunksize=500, resumable=True
         )
@@ -423,7 +397,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
         self.assertEqual([20, 40, 80, 20, 40, 80], sleeptimes)
 
     def test_media_io_base_next_chunk_no_retry_403_not_configured(self):
-        fd = BytesIO(b"i am png")
+        fd = io.BytesIO(b"i am png")
         upload = MediaIoBaseUpload(
             fd=fd, mimetype="image/png", chunksize=500, resumable=True
         )
@@ -448,7 +422,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
 
 
     def test_media_io_base_empty_file(self):
-        fd = BytesIO()
+        fd = io.BytesIO()
         upload = MediaIoBaseUpload(
             fd=fd, mimetype="image/png", chunksize=500, resumable=True
         )
@@ -479,7 +453,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
         zoo = build("zoo", "v1", http=http, static_discovery=False)
         self.request = zoo.animals().get_media(name="Lion")
-        self.fd = BytesIO()
+        self.fd = io.BytesIO()
 
     def test_media_io_base_download(self):
         self.request.http = HttpMockSequence(
@@ -544,7 +518,7 @@ class TestMediaIoBaseDownload(unittest.TestCase):
 
         self.assertEqual(result.get("Cache-Control"), "no-store")
 
-        download._fd = self.fd = BytesIO()
+        download._fd = self.fd = io.BytesIO()
         status, done = download.next_chunk()
 
         result = json.loads(self.fd.getvalue().decode("utf-8"))
@@ -974,7 +948,7 @@ class TestHttpRequest(unittest.TestCase):
 
     def test_retry_connection_errors_resumable(self):
         with open(datafile("small.png"), "rb") as small_png_file:
-            small_png_fd = BytesIO(small_png_file.read())
+            small_png_fd = io.BytesIO(small_png_file.read())
         upload = MediaIoBaseUpload(
             fd=small_png_fd, mimetype="image/png", chunksize=500, resumable=True
         )
@@ -1609,7 +1583,7 @@ class TestRequestUriTooLong(unittest.TestCase):
         req = HttpRequest(
             http,
             _postproc,
-            "http://example.com?" + urlencode(query),
+            "http://example.com?" + urllib.parse.urlencode(query),
             method="GET",
             body=None,
             headers={},
@@ -1632,7 +1606,7 @@ class TestStreamSlice(unittest.TestCase):
     """Test _StreamSlice."""
 
     def setUp(self):
-        self.stream = BytesIO(b"0123456789")
+        self.stream = io.BytesIO(b"0123456789")
 
     def test_read(self):
         s = _StreamSlice(self.stream, 0, 4)

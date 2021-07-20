@@ -57,7 +57,6 @@ For example, given the schema:
 The constructor takes a discovery document in which to look up named schema.
 """
 from __future__ import absolute_import
-import six
 
 # TODO(jcgregorio) support format, enum, minimum, maximum
 
@@ -255,7 +254,7 @@ class _SchemaToStruct(object):
             if "properties" in schema:
                 properties = schema.get("properties", {})
                 sorted_properties = OrderedDict(sorted(properties.items()))
-                for pname, pschema in six.iteritems(sorted_properties):
+                for pname, pschema in sorted_properties.items():
                     self.emitBegin('"%s": ' % pname)
                     self._to_str_impl(pschema)
             elif "additionalProperties" in schema:
