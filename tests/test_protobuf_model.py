@@ -25,7 +25,6 @@ __author__ = "mmcdonald@google.com (Matt McDonald)"
 import unittest2 as unittest
 import httplib2
 
-from googleapiclient.errors import HttpError
 from googleapiclient.model import ProtocolBufferModel
 
 
