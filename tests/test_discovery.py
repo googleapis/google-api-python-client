@@ -24,6 +24,7 @@ from __future__ import absolute_import
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
+from collections import defaultdict
 import copy
 import datetime
 import httplib2
@@ -36,7 +37,6 @@ import re
 import sys
 import unittest2 as unittest
 import urllib
-from collections import defaultdict
 
 from parameterized import parameterized
 import mock
