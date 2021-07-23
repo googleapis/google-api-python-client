@@ -21,28 +21,22 @@ from __future__ import absolute_import
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 __all__ = ["build", "build_from_document", "fix_method_name", "key2param"]
 
-import http.client as http_client
-import urllib
-
-
 # Standard library imports
 import copy
 from collections import OrderedDict
 import collections.abc
-import io
-
-try:
-    from email.generator import BytesGenerator
-except ImportError:
-    from email.generator import Generator as BytesGenerator
+from email.generator import BytesGenerator
 from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
+import http.client as http_client
+import io
 import json
 import keyword
 import logging
 import mimetypes
 import os
 import re
+import urllib
 
 # Third-party imports
 import httplib2
