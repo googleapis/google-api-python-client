@@ -17,10 +17,7 @@
 import functools
 import inspect
 import logging
-import warnings
-
-import six
-from six.moves import urllib
+import urllib
 
 
 logger = logging.getLogger(__name__)
@@ -135,7 +132,7 @@ def positional(max_positional_args):
 
         return positional_wrapper
 
-    if isinstance(max_positional_args, six.integer_types):
+    if isinstance(max_positional_args, int):
         return positional_decorator
     else:
         args, _, _, defaults = inspect.getargspec(max_positional_args)
@@ -156,7 +153,7 @@ def parse_unique_urlencoded(content):
     """
     urlencoded_params = urllib.parse.parse_qs(content)
     params = {}
-    for key, value in six.iteritems(urlencoded_params):
+    for key, value in urlencoded_params.items():
         if len(value) != 1:
             msg = "URL-encoded content contains a repeated value:" "%s -> %s" % (
                 key,

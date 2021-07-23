@@ -21,16 +21,14 @@
 Unit tests for objects created from discovery documents.
 """
 from __future__ import absolute_import
-import six
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
-from six import BytesIO, StringIO
-from six.moves.urllib.parse import urlparse, parse_qs
-
+from collections import defaultdict
 import copy
 import datetime
 import httplib2
+import io
 import itertools
 import json
 import os
@@ -38,7 +36,7 @@ import pickle
 import re
 import sys
 import unittest2 as unittest
-from collections import defaultdict
+import urllib
 
 from parameterized import parameterized
 import mock
@@ -98,15 +96,15 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 def assertUrisEqual(testcase, expected, actual):
     """Test that URIs are the same, up to reordering of query parameters."""
-    expected = urlparse(expected)
-    actual = urlparse(actual)
+    expected = urllib.parse.urlparse(expected)
+    actual = urllib.parse.urlparse(actual)
     testcase.assertEqual(expected.scheme, actual.scheme)
     testcase.assertEqual(expected.netloc, actual.netloc)
     testcase.assertEqual(expected.path, actual.path)
     testcase.assertEqual(expected.params, actual.params)
     testcase.assertEqual(expected.fragment, actual.fragment)
-    expected_query = parse_qs(expected.query)
-    actual_query = parse_qs(actual.query)
+    expected_query = urllib.parse.parse_qs(expected.query)
+    actual_query = urllib.parse.parse_qs(actual.query)
     for name in list(expected_query.keys()):
         testcase.assertEqual(expected_query[name], actual_query[name])
     for name in list(actual_query.keys()):
@@ -175,7 +173,7 @@ class Utilities(unittest.TestCase):
                 STACK_QUERY_PARAMETER_DEFAULT_VALUE, parameters[param_name]
             )
 
-        for param_name, value in six.iteritems(root_desc.get("parameters", {})):
+        for param_name, value in root_desc.get("parameters", {}).items():
             self.assertEqual(value, parameters[param_name])
 
         return parameters
@@ -1271,8 +1269,8 @@ class Discovery(unittest.TestCase):
             self.assertTrue("unexpected" in str(e))
 
     def _check_query_types(self, request):
-        parsed = urlparse(request.uri)
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["q"], ["foo"])
         self.assertEqual(q["i"], ["1"])
         self.assertEqual(q["n"], ["1.0"])
@@ -1319,8 +1317,8 @@ class Discovery(unittest.TestCase):
         zoo = build("zoo", "v1", http=http, static_discovery=False)
         request = zoo.query(trace="html", fields="description")
 
-        parsed = urlparse(request.uri)
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["trace"], ["html"])
         self.assertEqual(q["fields"], ["description"])
 
@@ -1329,8 +1327,8 @@ class Discovery(unittest.TestCase):
         zoo = build("zoo", "v1", http=http, static_discovery=False)
         request = zoo.query(trace=None, fields="description")
 
-        parsed = urlparse(request.uri)
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertFalse("trace" in q)
 
     def test_model_added_query_parameters(self):
@@ -1338,8 +1336,8 @@ class Discovery(unittest.TestCase):
         zoo = build("zoo", "v1", http=http, static_discovery=False)
         request = zoo.animals().get(name="Lion")
 
-        parsed = urlparse(request.uri)
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["alt"], ["json"])
         self.assertEqual(request.headers["accept"], "application/json")
 
@@ -1348,8 +1346,8 @@ class Discovery(unittest.TestCase):
         zoo = build("zoo", "v1", http=http, static_discovery=False)
         request = zoo.animals().getmedia(name="Lion")
 
-        parsed = urlparse(request.uri)
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertTrue("alt" not in q)
         self.assertEqual(request.headers["accept"], "*/*")
 
@@ -1426,8 +1424,8 @@ class Discovery(unittest.TestCase):
         self.assertTrue(getattr(zoo, "animals"))
 
         request = zoo.animals().list(name="bat", projection="full")
-        parsed = urlparse(request.uri)
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["name"], ["bat"])
         self.assertEqual(q["projection"], ["full"])
 
@@ -1436,26 +1434,17 @@ class Discovery(unittest.TestCase):
         zoo = build("zoo", "v1", http=self.http, static_discovery=False)
         self.assertTrue(getattr(zoo, "animals"))
         request = zoo.my().favorites().list(max_results="5")
-        parsed = urlparse(request.uri)
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["max-results"], ["5"])
-
-    @unittest.skipIf(six.PY3, "print is not a reserved name in Python 3")
-    def test_methods_with_reserved_names(self):
-        self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
-        zoo = build("zoo", "v1", http=self.http)
-        self.assertTrue(getattr(zoo, "animals"))
-        request = zoo.global_().print_().assert_(max_results="5")
-        parsed = urlparse(request.uri)
-        self.assertEqual(parsed[2], "/zoo/v1/global/print/assert")
 
     def test_top_level_functions(self):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
         zoo = build("zoo", "v1", http=self.http, static_discovery=False)
         self.assertTrue(getattr(zoo, "query"))
         request = zoo.query(q="foo")
-        parsed = urlparse(request.uri)
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["q"], ["foo"])
 
     def test_simple_media_uploads(self):
@@ -1808,7 +1797,7 @@ class Discovery(unittest.TestCase):
         zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         # Set up a seekable stream and try to upload in single chunk.
-        fd = BytesIO(b'01234"56789"')
+        fd = io.BytesIO(b'01234"56789"')
         media_upload = MediaIoBaseUpload(
             fd=fd, mimetype="text/plain", chunksize=-1, resumable=True
         )
@@ -1839,7 +1828,7 @@ class Discovery(unittest.TestCase):
         zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         # Set up a seekable stream and try to upload in chunks.
-        fd = BytesIO(b"0123456789")
+        fd = io.BytesIO(b"0123456789")
         media_upload = MediaIoBaseUpload(
             fd=fd, mimetype="text/plain", chunksize=5, resumable=True
         )
@@ -1950,7 +1939,7 @@ class Discovery(unittest.TestCase):
         self.http = HttpMock(datafile("zoo.json"), {"status": "200"})
         zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
-        fd = BytesIO(b"data goes here")
+        fd = io.BytesIO(b"data goes here")
 
         # Create an upload that doesn't know the full size of the media.
         upload = MediaIoBaseUpload(
@@ -1975,7 +1964,7 @@ class Discovery(unittest.TestCase):
         zoo = build("zoo", "v1", http=self.http, static_discovery=False)
 
         # Create an upload that doesn't know the full size of the media.
-        fd = BytesIO(b"data goes here")
+        fd = io.BytesIO(b"data goes here")
 
         upload = MediaIoBaseUpload(
             fd=fd, mimetype="image/png", chunksize=500, resumable=True
@@ -2152,8 +2141,8 @@ class Next(unittest.TestCase):
         tasks = build("tasks", "v1", http=self.http)
         request = tasks.tasklists().list()
         next_request = tasks.tasklists().list_next(request, {"nextPageToken": "123abc"})
-        parsed = list(urlparse(next_request.uri))
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(next_request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["pageToken"][0], "123abc")
 
     def test_next_successful_with_next_page_token_alternate_name(self):
@@ -2161,8 +2150,8 @@ class Next(unittest.TestCase):
         bigquery = build("bigquery", "v2", http=self.http)
         request = bigquery.tabledata().list(datasetId="", projectId="", tableId="")
         next_request = bigquery.tabledata().list_next(request, {"pageToken": "123abc"})
-        parsed = list(urlparse(next_request.uri))
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(next_request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["pageToken"][0], "123abc")
 
     def test_next_successful_with_next_page_token_in_body(self):
@@ -2192,8 +2181,8 @@ class Next(unittest.TestCase):
         drive = build("drive", "v3", http=self.http)
         request = drive.changes().list(pageToken="startPageToken")
         next_request = drive.changes().list_next(request, {"nextPageToken": "123abc"})
-        parsed = list(urlparse(next_request.uri))
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(next_request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["pageToken"][0], "123abc")
 
 
@@ -2203,8 +2192,8 @@ class MediaGet(unittest.TestCase):
         zoo = build("zoo", "v1", http=http, static_discovery=False)
         request = zoo.animals().get_media(name="Lion")
 
-        parsed = urlparse(request.uri)
-        q = parse_qs(parsed[4])
+        parsed = urllib.parse.urlparse(request.uri)
+        q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["alt"], ["media"])
         self.assertEqual(request.headers["accept"], "*/*")
 

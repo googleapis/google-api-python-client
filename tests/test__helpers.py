@@ -15,12 +15,9 @@
 """Unit tests for googleapiclient._helpers."""
 
 import unittest
+import urllib
 
 import mock
-
-import six
-from six.moves import urllib
-
 from googleapiclient import _helpers
 
 

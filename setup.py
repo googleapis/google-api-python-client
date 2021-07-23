@@ -42,7 +42,6 @@ install_requires = [
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-api-core>=1.21.0,<3.0.0dev",
-    "six>=1.13.0,<2dev",
     "uritemplate>=3.0.0,<4dev",
 ]
 

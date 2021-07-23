@@ -27,7 +27,6 @@ import os
 import time
 
 import googleapiclient.discovery
-from six.moves import input
 
 
 # [START compute_apiary_list_instances]
