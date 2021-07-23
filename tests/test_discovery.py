@@ -2141,7 +2141,7 @@ class Next(unittest.TestCase):
         tasks = build("tasks", "v1", http=self.http)
         request = tasks.tasklists().list()
         next_request = tasks.tasklists().list_next(request, {"nextPageToken": "123abc"})
-        parsed = list(urllib.parse.urlparse(next_request.uri))
+        parsed = urllib.parse.urlparse(next_request.uri)
         q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["pageToken"][0], "123abc")
 
@@ -2150,7 +2150,7 @@ class Next(unittest.TestCase):
         bigquery = build("bigquery", "v2", http=self.http)
         request = bigquery.tabledata().list(datasetId="", projectId="", tableId="")
         next_request = bigquery.tabledata().list_next(request, {"pageToken": "123abc"})
-        parsed = list(urllib.parse.urlparse(next_request.uri))
+        parsed = urllib.parse.urlparse(next_request.uri)
         q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["pageToken"][0], "123abc")
 
@@ -2181,7 +2181,7 @@ class Next(unittest.TestCase):
         drive = build("drive", "v3", http=self.http)
         request = drive.changes().list(pageToken="startPageToken")
         next_request = drive.changes().list_next(request, {"nextPageToken": "123abc"})
-        parsed = list(urllib.parse.urlparse(next_request.uri))
+        parsed = urllib.parse.urlparse(next_request.uri)
         q = urllib.parse.parse_qs(parsed.query)
         self.assertEqual(q["pageToken"][0], "123abc")
 
