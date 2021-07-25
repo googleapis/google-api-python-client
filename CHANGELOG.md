@@ -1,5 +1,12 @@
 # Changelog
 
+### [2.14.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.14.0...v2.14.1) (2021-07-25)
+
+
+### Bug Fixes
+
+* drop six dependency ([#1452](https://www.github.com/googleapis/google-api-python-client/issues/1452)) ([9f7b410](https://www.github.com/googleapis/google-api-python-client/commit/9f7b4109b370e89c29db6c58c6bd2e09002c8d42))
+
 ## [2.14.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.13.0...v2.14.0) (2021-07-20)
 
 
