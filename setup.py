@@ -51,7 +51,7 @@ readme_filename = os.path.join(package_root, "README.md")
 with io.open(readme_filename, encoding="utf-8") as readme_file:
     readme = readme_file.read()
 
-version = "2.14.0"
+version = "2.14.1"
 
 setup(
     name="google-api-python-client",
