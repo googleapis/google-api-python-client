@@ -771,12 +771,6 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/redis_v1beta1.html)
 
 
-## remotebuildexecution
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/remotebuildexecution_v1.html)
-* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/remotebuildexecution_v1alpha.html)
-* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/remotebuildexecution_v2.html)
-
-
 ## reseller
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/reseller_v1.html)
 
@@ -961,7 +955,6 @@
 
 ## verifiedaccess
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/verifiedaccess_v1.html)
-* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/verifiedaccess_v2.html)
 
 
 ## videointelligence
