@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.15.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.14.1...v2.15.0) (2021-07-27)
+
+
+### Features
+
+* **alertcenter:** update the api https://github.com/googleapis/google-api-python-client/commit/70810a52c85c6d0d6f00d7afb41c8608261eaebc ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **chat:** update the api https://github.com/googleapis/google-api-python-client/commit/a577cd0b71951176bbf849c1f7f139127205da54 ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **cloudbuild:** update the api https://github.com/googleapis/google-api-python-client/commit/9066056a8b106d441fb7686fe84359484d0d58bc ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **content:** update the api https://github.com/googleapis/google-api-python-client/commit/b123349da33c11c0172a8efb3fadef685a30e6e1 ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **displayvideo:** update the api https://github.com/googleapis/google-api-python-client/commit/c525d726ee6cffdd4bc7afd69080d5e52bae83a0 ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **dns:** update the api https://github.com/googleapis/google-api-python-client/commit/13436ccd2b835fda5cb86952ac4ea991ee8651d8 ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **eventarc:** update the api https://github.com/googleapis/google-api-python-client/commit/6be3394a64a5eb509f68ef779680fd36837708ee ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **file:** update the api https://github.com/googleapis/google-api-python-client/commit/817a0e636771445a988ef479bd52740f754b901a ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **monitoring:** update the api https://github.com/googleapis/google-api-python-client/commit/bd32149f308467f0f659119587afc77dcec65b14 ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **people:** update the api https://github.com/googleapis/google-api-python-client/commit/aa6b47df40c5289f33aef6fb6aa007df2d038e20 ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **retail:** update the api https://github.com/googleapis/google-api-python-client/commit/d39f06e2d77034bc837604a41dd52c577f158bf2 ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **securitycenter:** update the api https://github.com/googleapis/google-api-python-client/commit/999fab5178208639c9eef289f9f441052ed832fc ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **speech:** update the api https://github.com/googleapis/google-api-python-client/commit/3b2c0fa62b2a0c86bba1e97f1b18f93250dbd551 ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+* **sqladmin:** update the api https://github.com/googleapis/google-api-python-client/commit/cef24d829ab5be71563a2b668b8f6cf5dda2c8e4 ([a36e3b1](https://www.github.com/googleapis/google-api-python-client/commit/a36e3b130d609dfdc5b3ac0a70ff1b014c4bc75f))
+
+
+### Documentation
+
+* update license to be Apache-2.0 compliant ([#1461](https://www.github.com/googleapis/google-api-python-client/issues/1461)) ([882844c](https://www.github.com/googleapis/google-api-python-client/commit/882844c7b6a15493d0fb8693cd5e9159e3a12535))
+
 ### [2.14.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.14.0...v2.14.1) (2021-07-25)
 
 
