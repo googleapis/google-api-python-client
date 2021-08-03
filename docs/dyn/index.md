@@ -666,6 +666,11 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/networksecurity_v1beta1.html)
 
 
+## networkservices
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkservices_v1.html)
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkservices_v1beta1.html)
+
+
 ## notebooks
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/notebooks_v1.html)
 
@@ -713,6 +718,11 @@
 
 ## playcustomapp
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/playcustomapp_v1.html)
+
+
+## policyanalyzer
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/policyanalyzer_v1.html)
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/policyanalyzer_v1beta1.html)
 
 
 ## policysimulator
