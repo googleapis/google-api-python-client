@@ -288,6 +288,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/compute_v1.html)
 
 
+## contactcenterinsights
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/contactcenterinsights_v1.html)
+
+
 ## container
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/container_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/container_v1beta1.html)
@@ -798,7 +802,6 @@
 ## run
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/run_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/run_v1alpha1.html)
-* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/run_v1beta1.html)
 
 
 ## runtimeconfig
