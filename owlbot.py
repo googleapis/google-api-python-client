@@ -15,6 +15,7 @@
 import synthtool as s
 from synthtool import gcp
 
+from synthtool.languages import python
 
 common = gcp.CommonTemplates()
 
@@ -32,3 +33,9 @@ s.move(templated_files / '.github')
 
 # Move scripts folder needed for samples CI
 s.move(templated_files / 'scripts')
+
+# ----------------------------------------------------------------------------
+# Samples templates
+# ----------------------------------------------------------------------------
+
+python.py_samples(skip_readmes=True)
