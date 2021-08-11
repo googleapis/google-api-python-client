@@ -29,3 +29,6 @@ s.move(templated_files / '.kokoro', excludes=['**/docs/*', 'publish-docs.sh'])
 
 # Also move issue templates
 s.move(templated_files / '.github')
+
+# Move scripts folder needed for samples CI
+s.move(templated_files / 'scripts')
