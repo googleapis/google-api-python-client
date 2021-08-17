@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.17.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.16.0...v2.17.0) (2021-08-17)
+
+
+### Features
+
+* **apigee:** update the api https://github.com/googleapis/google-api-python-client/commit/41ae79b3554ffc9f1622e44757751009eeed76f8 ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **bigqueryreservation:** update the api https://github.com/googleapis/google-api-python-client/commit/b0483aba20b17580b400283fb0073f07715bf254 ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **chat:** update the api https://github.com/googleapis/google-api-python-client/commit/270312294f1cf89041825b0f31bfcf872fda9854 ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **cloudbuild:** update the api https://github.com/googleapis/google-api-python-client/commit/30c122278e75a99b5b2a6ed330f317015134a23d ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **cloudscheduler:** update the api https://github.com/googleapis/google-api-python-client/commit/0405b1db79fe87305be25ba4f9389e94490040a7 ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **contactcenterinsights:** update the api https://github.com/googleapis/google-api-python-client/commit/3abcf5334053f5612fd79163f2c433e5793ee782 ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **dialogflow:** update the api https://github.com/googleapis/google-api-python-client/commit/c4935840495b1487d4be47b63f6c416113b9413f ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **displayvideo:** update the api https://github.com/googleapis/google-api-python-client/commit/21f81c824089d0060dbd624f9755eea554464af2 ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **monitoring:** update the api https://github.com/googleapis/google-api-python-client/commit/d997b2c0d13203ac29b55c19858ef375380a5b7b ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **networkconnectivity:** update the api https://github.com/googleapis/google-api-python-client/commit/68588ad4744aa3c7a3a0afa12a1566f54ab3be94 ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **notebooks:** update the api https://github.com/googleapis/google-api-python-client/commit/b975c34568f62bbf19f67f4731fe091aeeda8a75 ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **retail:** update the api https://github.com/googleapis/google-api-python-client/commit/c2bcb7081a4f656b9e136ea38637cf262b60f387 ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **servicenetworking:** update the api https://github.com/googleapis/google-api-python-client/commit/3bdc7b9d0854918ef65ccb4a3798d2f3f3b19d70 ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+* **sts:** update the api https://github.com/googleapis/google-api-python-client/commit/a8ebc2bef5d0ff6c449d65fcc9c0554c1f388985 ([cdf480e](https://www.github.com/googleapis/google-api-python-client/commit/cdf480e8145d58600a5224efc68ba2ace973ef62))
+
 ## [2.16.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.15.0...v2.16.0) (2021-08-10)
 
 
