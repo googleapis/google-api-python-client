@@ -13,7 +13,7 @@ To summarize here: when contributing, please:
 * Fork this repository and use github pull requests for all submissions
 * Follow
   `Contributor Code of Conduct
-  <https://github.com/googleapis/google-api-python-client/blob/master/CODE_OF_CONDUCT.md>`__
+  <https://github.com/googleapis/google-api-python-client/blob/main/CODE_OF_CONDUCT.md>`__
   and `Community Guidelines <https://opensource.google/conduct/>`__
 * Follow `Google Python Style Guide <https://google.github.io/styleguide/pyguide.html>`__
   and `this commit authoring style <http://chris.beams.io/posts/git-commit/#seven-rules>`__
