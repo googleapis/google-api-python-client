@@ -4,7 +4,7 @@
 
 This is the [Google API Python client library](https://cloud.google.com/apis/docs/client-libraries-explained#google_api_client_libraries)
 for Google's discovery based APIs. To get started, please see the
-[docs folder](https://github.com/googleapis/google-api-python-client/blob/master/docs/README.md).
+[docs folder](https://github.com/googleapis/google-api-python-client/blob/main/docs/README.md).
 
 This library is considered complete and is in maintenance mode. This means
 that we will address critical bugs and security issues but will not add any
@@ -30,12 +30,12 @@ from the client library directly. New versions of this library are released week
 As a result of caching the discovery documents, the size of this package is at least 
 50 MB larger compared to the previous version. 
 
-Please see the [Migration Guide](https://github.com/googleapis/google-api-python-client/blob/master/UPGRADING.md)
+Please see the [Migration Guide](https://github.com/googleapis/google-api-python-client/blob/main/UPGRADING.md)
 for more information.
 
 ## Documentation
 
-See the [docs folder](https://github.com/googleapis/google-api-python-client/blob/master/docs/README.md) for more detailed instructions and additional documentation.
+See the [docs folder](https://github.com/googleapis/google-api-python-client/blob/main/docs/README.md) for more detailed instructions and additional documentation.
 
 ## Other Google API libraries
 
@@ -115,6 +115,6 @@ For development you will also need the following libraries:
 
 ## Contributing
 
-Please see our [Contribution Guide](https://github.com/googleapis/google-api-python-client/blob/master/CONTRIBUTING.rst).
+Please see our [Contribution Guide](https://github.com/googleapis/google-api-python-client/blob/main/CONTRIBUTING.rst).
 In particular, we love pull requests - but please make sure to sign
 the contributor license agreement.

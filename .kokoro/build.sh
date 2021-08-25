@@ -41,7 +41,7 @@ python3 -m pip install --upgrade --quiet nox
 python3 -m nox --version
 
 # If this is a continuous build, send the test log to the FlakyBot.
-# See https://github.com/googleapis/repo-automation-bots/tree/master/packages/flakybot.
+# See https://github.com/googleapis/repo-automation-bots/tree/main/packages/flakybot.
 if [[ $KOKORO_BUILD_ARTIFACTS_SUBDIR = *"continuous"* ]]; then
   cleanup() {
     chmod +x $KOKORO_GFILE_DIR/linux_amd64/flakybot
