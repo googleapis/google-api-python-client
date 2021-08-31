@@ -645,6 +645,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessaccountmanagement_v1.html)
 
 
+## mybusinessbusinessinformation
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessbusinessinformation_v1.html)
+
+
 ## mybusinesslodging
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinesslodging_v1.html)
 
@@ -657,6 +661,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessplaceactions_v1.html)
 
 
+## mybusinessverifications
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessverifications_v1.html)
+
+
 ## networkconnectivity
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkconnectivity_v1alpha1.html)
 
@@ -667,6 +675,7 @@
 
 
 ## networksecurity
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/networksecurity_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/networksecurity_v1beta1.html)
 
 
