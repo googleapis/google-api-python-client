@@ -39,5 +39,3 @@ s.move(templated_files / 'scripts')
 # ----------------------------------------------------------------------------
 
 python.py_samples(skip_readmes=True)
-
-# Remove the replacements below once https://github.com/googleapis/synthtool/pull/1188 is merged
