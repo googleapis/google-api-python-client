@@ -1,5 +1,12 @@
 # Changelog
 
+### [2.19.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.19.0...v2.19.1) (2021-09-02)
+
+
+### Bug Fixes
+
+* remove repeated calls to self._get_reason ([#1513](https://www.github.com/googleapis/google-api-python-client/issues/1513)) ([d5cf4e0](https://www.github.com/googleapis/google-api-python-client/commit/d5cf4e0b1537eeafdb96ae831bbdffc5f1c6a94c))
+
 ## [2.19.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.18.0...v2.19.0) (2021-08-31)
 
 
