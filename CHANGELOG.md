@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.21.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.20.0...v2.21.0) (2021-09-14)
+
+
+### Features
+
+* **apigee:** update the api https://github.com/googleapis/google-api-python-client/commit/0e4fed7f1e08a616cbc81243c24391bc20ce5edb ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **bigquery:** update the api https://github.com/googleapis/google-api-python-client/commit/04e112ce89d6ddb3aeaae889c2de36070d6c2814 ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **bigtableadmin:** update the api https://github.com/googleapis/google-api-python-client/commit/6b77931c3c9aba59d5b326c570a2080252c8beb1 ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **cloudprofiler:** update the api https://github.com/googleapis/google-api-python-client/commit/3009ee3c238ae1fa51c529e9f187ec26693138a4 ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **container:** update the api https://github.com/googleapis/google-api-python-client/commit/e5d01ecee51da0c7a2543b833a1395a94c27bef6 ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **dataproc:** update the api https://github.com/googleapis/google-api-python-client/commit/fec73562a93b5a532bce6c91f0d30ec4fbd54ddb ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **displayvideo:** update the api https://github.com/googleapis/google-api-python-client/commit/22caa4f2f8ecb0f0ad6cfac547f9deb76fdcbebb ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **documentai:** update the api https://github.com/googleapis/google-api-python-client/commit/444836b9afe8d3eb8d52a1431652bfda1ad3288b ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **healthcare:** update the api https://github.com/googleapis/google-api-python-client/commit/2f3173aa4b4d154c909eea853a0c4c306834e0ab ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **ideahub:** update the api https://github.com/googleapis/google-api-python-client/commit/8ebf9d2bd419561d5eacb78823aa1fc519fe2710 ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **memcache:** update the api https://github.com/googleapis/google-api-python-client/commit/393dce7a3e584ad6be58c832ec826fe3b44e353b ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **mybusinesslodging:** update the api https://github.com/googleapis/google-api-python-client/commit/c51a0d15e634c2ab1c7762533f33d59f10b01875 ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **speech:** update the api https://github.com/googleapis/google-api-python-client/commit/bf6e86f6ee8c3985e1ce6f0475ef4f8685b52060 ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **streetviewpublish:** update the api https://github.com/googleapis/google-api-python-client/commit/c8cf30cd67f5588d7cbe60631e42f0a49ea6c307 ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+* **youtube:** update the api https://github.com/googleapis/google-api-python-client/commit/855cbfea1f6d46af07c4b80ab26fc30ca46370b7 ([e5e87b1](https://www.github.com/googleapis/google-api-python-client/commit/e5e87b1ca5fb6e81f6d83d970c3e4f683ecdcdea))
+
 ## [2.20.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.19.1...v2.20.0) (2021-09-07)
 
 
