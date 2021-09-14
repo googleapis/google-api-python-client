@@ -336,7 +336,6 @@
 
 ## dataproc
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataproc_v1.html)
-* [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/dataproc_v1beta2.html)
 
 
 ## datastore
