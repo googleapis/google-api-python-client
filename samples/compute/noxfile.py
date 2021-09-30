@@ -98,6 +98,10 @@ INSTALL_LIBRARY_FROM_SOURCE = os.environ.get("INSTALL_LIBRARY_FROM_SOURCE", Fals
     "True",
     "true",
 )
+
+# Error if a python version is missing
+nox.options.error_on_missing_interpreters = True
+
 #
 # Style Checks
 #
