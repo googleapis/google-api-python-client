@@ -15,12 +15,6 @@
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/accesscontextmanager_v1beta.html)
 
 
-## adexchangebuyer
-* [v1.2](http://googleapis.github.io/google-api-python-client/docs/dyn/adexchangebuyer_v1_2.html)
-* [v1.3](http://googleapis.github.io/google-api-python-client/docs/dyn/adexchangebuyer_v1_3.html)
-* [v1.4](http://googleapis.github.io/google-api-python-client/docs/dyn/adexchangebuyer_v1_4.html)
-
-
 ## adexchangebuyer2
 * [v2beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/adexchangebuyer2_v2beta1.html)
 
@@ -286,6 +280,10 @@
 * [alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/compute_alpha.html)
 * [beta](http://googleapis.github.io/google-api-python-client/docs/dyn/compute_beta.html)
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/compute_v1.html)
+
+
+## connectors
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/connectors_v1.html)
 
 
 ## contactcenterinsights
@@ -666,6 +664,7 @@
 
 
 ## networkconnectivity
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkconnectivity_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkconnectivity_v1alpha1.html)
 
 
