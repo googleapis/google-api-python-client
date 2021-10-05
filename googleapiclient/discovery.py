@@ -44,6 +44,7 @@ import uritemplate
 import google.api_core.client_options
 from google.auth.transport import mtls
 from google.auth.exceptions import MutualTLSChannelError
+from google.oauth2 import service_account
 
 try:
     import google_auth_httplib2
@@ -188,6 +189,7 @@ def build(
     adc_key_path=None,
     num_retries=1,
     static_discovery=None,
+    always_use_jwt_access=True,
 ):
     """Construct a Resource for interacting with an API.
 
@@ -246,6 +248,9 @@ def build(
       on the value of `discoveryServiceUrl`. `static_discovery` will default to
       `True` when `discoveryServiceUrl` is also not provided, otherwise it will
       default to `False`.
+    always_use_jwt_access: Boolean, whether always use self signed JWT for service
+      account credentials. This only applies to
+      google.oauth2.service_account.Credentials.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -301,6 +306,7 @@ def build(
                 client_options=client_options,
                 adc_cert_path=adc_cert_path,
                 adc_key_path=adc_key_path,
+                always_use_jwt_access=always_use_jwt_access,
             )
             break  # exit if a service was created
         except HttpError as e:
@@ -441,6 +447,7 @@ def build_from_document(
     client_options=None,
     adc_cert_path=None,
     adc_key_path=None,
+    always_use_jwt_access=True,
 ):
     """Create a Resource for interacting with an API.
 
@@ -490,6 +497,9 @@ def build_from_document(
       `true` in order to use this field, otherwise this field doesn't nothing.
       More details on the environment variables are here:
       https://google.aip.dev/auth/4114
+    always_use_jwt_access: Boolean, whether always use self signed JWT for service
+      account credentials. This only applies to
+      google.oauth2.service_account.Credentials.
 
   Returns:
     A Resource object with methods for interacting with the service.
@@ -530,6 +540,7 @@ def build_from_document(
 
     # If an API Endpoint is provided on client options, use that as the base URL
     base = urllib.parse.urljoin(service["rootUrl"], service["servicePath"])
+    audience_for_self_signed_jwt = base
     if client_options.api_endpoint:
         base = client_options.api_endpoint
 
@@ -571,6 +582,17 @@ def build_from_document(
             # If the user provided scopes via client_options don't override them
             if not client_options.scopes:
                 credentials = _auth.with_scopes(credentials, scopes)
+
+        # For google-auth service account credentials, enable self signed JWT if
+        # always_use_jwt_access is true.
+        if (
+            credentials
+            and isinstance(credentials, service_account.Credentials)
+            and always_use_jwt_access
+            and hasattr(service_account.Credentials, "with_always_use_jwt_access")
+        ):
+            credentials = credentials.with_always_use_jwt_access(always_use_jwt_access)
+            credentials._create_self_signed_jwt(audience_for_self_signed_jwt)
 
         # If credentials are provided, create an authorized http instance;
         # otherwise, skip authentication.
