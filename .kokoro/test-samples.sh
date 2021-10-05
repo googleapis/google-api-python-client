@@ -24,8 +24,6 @@ set -eo pipefail
 # Enables `**` to include files nested inside sub-folders
 shopt -s globstar
 
-cd github/google-api-python-client
-
 # Run periodic samples tests at latest release
 if [[ $KOKORO_BUILD_ARTIFACTS_SUBDIR = *"periodic"* ]]; then
     # preserving the test runner implementation.
