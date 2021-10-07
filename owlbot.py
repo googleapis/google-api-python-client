@@ -27,6 +27,7 @@ templated_files = common.py_library()
 # Copy kokoro configs.
 # Docs are excluded as repo docs cannot currently be generated using sphinx.
 s.move(templated_files / '.kokoro', excludes=['**/docs/*', 'publish-docs.sh'])
+s.move(templated_files / '.trampolinerc')  # config file for trampoline_v2
 
 # Also move issue templates
 s.move(templated_files / '.github')
