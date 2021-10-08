@@ -685,6 +685,33 @@ class DiscoveryFromDocument(unittest.TestCase):
             "credentials.json", scopes=None, quota_project_id=None
         )
 
+    def test_self_signed_jwt_enabled(self):
+        service_account_file_path = os.path.join(DATA_DIR, "service_account.json")
+        creds = google.oauth2.service_account.Credentials.from_service_account_file(service_account_file_path)
+
+        discovery = read_datafile("logging.json")
+
+        with mock.patch("google.oauth2.service_account.Credentials._create_self_signed_jwt") as _create_self_signed_jwt:
+            build_from_document(
+                discovery,
+                credentials=creds,
+            )
+            _create_self_signed_jwt.assert_called_with("https://logging.googleapis.com/")
+
+    def test_self_signed_jwt_disabled(self):
+        service_account_file_path = os.path.join(DATA_DIR, "service_account.json")
+        creds = google.oauth2.service_account.Credentials.from_service_account_file(service_account_file_path)
+
+        discovery = read_datafile("logging.json")
+
+        with mock.patch("google.oauth2.service_account.Credentials._create_self_signed_jwt") as _create_self_signed_jwt:
+            build_from_document(
+                discovery,
+                credentials=creds,
+                always_use_jwt_access=False,
+            )
+            _create_self_signed_jwt.assert_not_called()
+
 
 REGULAR_ENDPOINT = "https://www.googleapis.com/plus/v1/"
 MTLS_ENDPOINT = "https://www.mtls.googleapis.com/plus/v1/"
