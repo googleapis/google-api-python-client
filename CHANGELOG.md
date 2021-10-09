@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.25.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.24.0...v2.25.0) (2021-10-09)
+
+
+### Features
+
+* enable self signed jwt for service account credentials ([#1553](https://www.github.com/googleapis/google-api-python-client/issues/1553)) ([1fb3c8e](https://www.github.com/googleapis/google-api-python-client/commit/1fb3c8ec61295adc876fa449e92fe5d682f33cbd))
+
 ## [2.24.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.23.0...v2.24.0) (2021-10-05)
 
 
