@@ -695,6 +695,7 @@ class DiscoveryFromDocument(unittest.TestCase):
             build_from_document(
                 discovery,
                 credentials=creds,
+                always_use_jwt_access=True,
             )
             _create_self_signed_jwt.assert_called_with("https://logging.googleapis.com/")
 
@@ -708,7 +709,6 @@ class DiscoveryFromDocument(unittest.TestCase):
             build_from_document(
                 discovery,
                 credentials=creds,
-                always_use_jwt_access=False,
             )
             _create_self_signed_jwt.assert_not_called()
 

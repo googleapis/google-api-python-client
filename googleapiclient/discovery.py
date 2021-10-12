@@ -189,7 +189,7 @@ def build(
     adc_key_path=None,
     num_retries=1,
     static_discovery=None,
-    always_use_jwt_access=True,
+    always_use_jwt_access=False,
 ):
     """Construct a Resource for interacting with an API.
 
@@ -447,7 +447,7 @@ def build_from_document(
     client_options=None,
     adc_cert_path=None,
     adc_key_path=None,
-    always_use_jwt_access=True,
+    always_use_jwt_access=False,
 ):
     """Create a Resource for interacting with an API.
 
