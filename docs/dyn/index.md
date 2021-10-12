@@ -112,6 +112,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/assuredworkloads_v1.html)
 
 
+## authorizedbuyersmarketplace
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1.html)
+
+
 ## baremetalsolution
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1.html)
 
@@ -259,6 +263,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudshell_v1.html)
 
 
+## cloudsupport
+* [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudsupport_v2beta.html)
+
+
 ## cloudtasks
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudtasks_v2.html)
 * [v2beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudtasks_v2beta2.html)
@@ -402,7 +410,6 @@
 
 
 ## doubleclickbidmanager
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/doubleclickbidmanager_v1.html)
 * [v1.1](http://googleapis.github.io/google-api-python-client/docs/dyn/doubleclickbidmanager_v1_1.html)
 
 
