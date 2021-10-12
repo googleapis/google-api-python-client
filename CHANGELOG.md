@@ -1,5 +1,12 @@
 # Changelog
 
+### [2.26.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.26.0...v2.26.1) (2021-10-12)
+
+
+### Bug Fixes
+
+* disable self signed jwt ([#1566](https://www.github.com/googleapis/google-api-python-client/issues/1566)) ([623a71e](https://www.github.com/googleapis/google-api-python-client/commit/623a71e73d33b8474eea20e800c01d0f80dc8b81))
+
 ## [2.26.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.25.0...v2.26.0) (2021-10-12)
 
 
