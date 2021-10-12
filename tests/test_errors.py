@@ -21,7 +21,7 @@ from __future__ import absolute_import
 __author__ = "afshar@google.com (Ali Afshar)"
 
 
-import unittest2 as unittest
+import unittest
 import httplib2
 
 
