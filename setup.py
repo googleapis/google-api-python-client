@@ -42,7 +42,7 @@ install_requires = [
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-api-core>=1.21.0,<3.0.0dev",
-    "uritemplate>=3.0.0,<4dev",
+    "uritemplate>=3.0.0,<5",
 ]
 
 package_root = os.path.abspath(os.path.dirname(__file__))
@@ -74,6 +74,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
