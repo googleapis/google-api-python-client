@@ -27,7 +27,6 @@ test_dependencies = [
     "pytest-cov",
     "webtest",
     "coverage",
-    "unittest2",
     "mock",
 ]
 
