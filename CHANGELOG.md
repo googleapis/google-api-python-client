@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.27.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.26.1...v2.27.0) (2021-10-19)
+
+
+### Features
+
+* **androidpublisher:** update the api https://github.com/googleapis/google-api-python-client/commit/cdbabdfbdaeed465b667852cef415fdfa7d1024a ([f4773f6](https://www.github.com/googleapis/google-api-python-client/commit/f4773f6f0c26b43ce0013c24db1847a3ea3f8899))
+* **firebase:** update the api https://github.com/googleapis/google-api-python-client/commit/dcab2830e6a0cf09999149e0d0d84d3a8f3d26aa ([f4773f6](https://www.github.com/googleapis/google-api-python-client/commit/f4773f6f0c26b43ce0013c24db1847a3ea3f8899))
+* **localservices:** update the api https://github.com/googleapis/google-api-python-client/commit/24da1cc0aff78ef70988e6287e5e55fee20ba8ee ([f4773f6](https://www.github.com/googleapis/google-api-python-client/commit/f4773f6f0c26b43ce0013c24db1847a3ea3f8899))
+* **networkmanagement:** update the api https://github.com/googleapis/google-api-python-client/commit/d0e5a726e9cb4098527bd60fe6818b7c307a865b ([f4773f6](https://www.github.com/googleapis/google-api-python-client/commit/f4773f6f0c26b43ce0013c24db1847a3ea3f8899))
+* **realtimebidding:** update the api https://github.com/googleapis/google-api-python-client/commit/716ded31624c382be7ecf55ec2de87560b7592ef ([f4773f6](https://www.github.com/googleapis/google-api-python-client/commit/f4773f6f0c26b43ce0013c24db1847a3ea3f8899))
+* **retail:** update the api https://github.com/googleapis/google-api-python-client/commit/2aa456adabc7c81cea0061d8538473e3b8980d66 ([f4773f6](https://www.github.com/googleapis/google-api-python-client/commit/f4773f6f0c26b43ce0013c24db1847a3ea3f8899))
+
 ### [2.26.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.26.0...v2.26.1) (2021-10-12)
 
 
