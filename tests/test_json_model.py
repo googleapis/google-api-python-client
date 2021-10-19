@@ -22,6 +22,7 @@ from __future__ import absolute_import
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
+import io
 import httplib2
 import json
 import pkg_resources
@@ -297,6 +298,15 @@ class Model(unittest.TestCase):
         content = CSV_TEXT_MOCK
         content = model.response(resp, content)
         self.assertEqual(content, CSV_TEXT_MOCK)
+
+    def test_no_data_wrapper_deserialize_raise_type_error(self):
+        buffer = io.StringIO()
+        buffer.write('String buffer')
+        model = JsonModel(data_wrapper=False)
+        resp = httplib2.Response({"status": "500"})
+        resp.reason = "The JSON object must be str, bytes or bytearray, not StringIO"
+        content = buffer
+        self.assertRaises(TypeError, model.response, (resp, content))
 
     def test_data_wrapper_deserialize(self):
         model = JsonModel(data_wrapper=True)
