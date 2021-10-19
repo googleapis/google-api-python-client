@@ -280,11 +280,12 @@ class JsonModel(BaseModel):
             pass
         try:
             body = json.loads(content)
-            if self._data_wrapper and isinstance(body, dict) and "data" in body:
-                body = body["data"]
         except json.decoder.JSONDecodeError:
             if isinstance(content, str):
                 body = content
+        else:
+            if self._data_wrapper and isinstance(body, dict) and "data" in body:
+                body = body["data"]
         return body
 
     @property

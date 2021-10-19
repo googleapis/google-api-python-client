@@ -35,6 +35,7 @@ from googleapiclient.errors import HttpError
 from googleapiclient.model import JsonModel
 
 _LIBRARY_VERSION = pkg_resources.get_distribution("google-api-python-client").version
+CSV_TEXT_MOCK = 'column1,column2,column3\nstring1,1.2,string2'
 
 
 class Model(unittest.TestCase):
@@ -293,9 +294,9 @@ class Model(unittest.TestCase):
         model = JsonModel(data_wrapper=False)
         resp = httplib2.Response({"status": "200"})
         resp.reason = "OK"
-        content = 'column1,column2,column3\nstring1,1.2,string2'
+        content = CSV_TEXT_MOCK
         content = model.response(resp, content)
-        self.assertEqual(content, 'column1,column2,column3\nstring1,1.2,string2')
+        self.assertEqual(content, CSV_TEXT_MOCK)
 
     def test_data_wrapper_deserialize(self):
         model = JsonModel(data_wrapper=True)
