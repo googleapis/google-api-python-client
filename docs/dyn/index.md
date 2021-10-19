@@ -304,6 +304,7 @@
 
 
 ## containeranalysis
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/containeranalysis_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/containeranalysis_v1alpha1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/containeranalysis_v1beta1.html)
 
@@ -731,10 +732,6 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/people_v1.html)
 
 
-## playablelocations
-* [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/playablelocations_v3.html)
-
-
 ## playcustomapp
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/playcustomapp_v1.html)
 
@@ -977,12 +974,12 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/vault_v1.html)
 
 
-## vectortile
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/vectortile_v1.html)
-
-
 ## verifiedaccess
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/verifiedaccess_v1.html)
+
+
+## versionhistory
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/versionhistory_v1.html)
 
 
 ## videointelligence
@@ -997,6 +994,11 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/vision_v1.html)
 * [v1p1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/vision_v1p1beta1.html)
 * [v1p2beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/vision_v1p2beta1.html)
+
+
+## vmmigration
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/vmmigration_v1.html)
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/vmmigration_v1alpha1.html)
 
 
 ## webfonts
