@@ -273,13 +273,18 @@ class JsonModel(BaseModel):
         return json.dumps(body_value)
 
     def deserialize(self, content):
+        body = {}
         try:
             content = content.decode("utf-8")
         except AttributeError:
             pass
-        body = json.loads(content)
-        if self._data_wrapper and isinstance(body, dict) and "data" in body:
-            body = body["data"]
+        try:
+            body = json.loads(content)
+            if self._data_wrapper and isinstance(body, dict) and "data" in body:
+                body = body["data"]
+        except json.decoder.JSONDecodeError:
+            if isinstance(content, str):
+                body = content
         return body
 
     @property

@@ -31,7 +31,6 @@ import urllib
 
 import googleapiclient.model
 
-
 from googleapiclient.errors import HttpError
 from googleapiclient.model import JsonModel
 
@@ -289,6 +288,14 @@ class Model(unittest.TestCase):
         content = '{"data": "is good"}'
         content = model.response(resp, content)
         self.assertEqual(content, {"data": "is good"})
+
+    def test_no_data_wrapper_deserialize_text_format(self):
+        model = JsonModel(data_wrapper=False)
+        resp = httplib2.Response({"status": "200"})
+        resp.reason = "OK"
+        content = 'column1,column2,column3\nstring1,1.2,string2'
+        content = model.response(resp, content)
+        self.assertEqual(content, 'column1,column2,column3\nstring1,1.2,string2')
 
     def test_data_wrapper_deserialize(self):
         model = JsonModel(data_wrapper=True)
