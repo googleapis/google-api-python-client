@@ -19,7 +19,8 @@ from googleapiclient import discovery
 def build_request(http, *args, **kwargs):
   new_http = google_auth_httplib2.AuthorizedHttp(credentials, http=httplib2.Http())
   return googleapiclient.http.HttpRequest(new_http, *args, **kwargs)
-service = discovery.build('api_name', 'api_version', requestBuilder=build_request)
+authorized_http = google_auth_httplib2.AuthorizedHttp(credentials, http=httplib2.Http())
+service = discovery.build('api_name', 'api_version', requestBuilder=build_request, http=authorized_http)
 
 # Pass in a new Http() manually for every request
 service = discovery.build('api_name', 'api_version')
