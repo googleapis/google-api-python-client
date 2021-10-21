@@ -306,7 +306,8 @@ class Model(unittest.TestCase):
         resp = httplib2.Response({"status": "500"})
         resp.reason = "The JSON object must be str, bytes or bytearray, not StringIO"
         content = buffer
-        self.assertRaises(TypeError, model.response, (resp, content))
+        with self.assertRaises(TypeError):
+            model.response(resp, content)
 
     def test_data_wrapper_deserialize(self):
         model = JsonModel(data_wrapper=True)
