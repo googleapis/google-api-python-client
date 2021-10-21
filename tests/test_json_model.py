@@ -22,6 +22,7 @@ from __future__ import absolute_import
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
+import io
 import httplib2
 import json
 import pkg_resources
@@ -31,11 +32,11 @@ import urllib
 
 import googleapiclient.model
 
-
 from googleapiclient.errors import HttpError
 from googleapiclient.model import JsonModel
 
 _LIBRARY_VERSION = pkg_resources.get_distribution("google-api-python-client").version
+CSV_TEXT_MOCK = 'column1,column2,column3\nstring1,1.2,string2'
 
 
 class Model(unittest.TestCase):
@@ -289,6 +290,24 @@ class Model(unittest.TestCase):
         content = '{"data": "is good"}'
         content = model.response(resp, content)
         self.assertEqual(content, {"data": "is good"})
+
+    def test_no_data_wrapper_deserialize_text_format(self):
+        model = JsonModel(data_wrapper=False)
+        resp = httplib2.Response({"status": "200"})
+        resp.reason = "OK"
+        content = CSV_TEXT_MOCK
+        content = model.response(resp, content)
+        self.assertEqual(content, CSV_TEXT_MOCK)
+
+    def test_no_data_wrapper_deserialize_raise_type_error(self):
+        buffer = io.StringIO()
+        buffer.write('String buffer')
+        model = JsonModel(data_wrapper=False)
+        resp = httplib2.Response({"status": "500"})
+        resp.reason = "The JSON object must be str, bytes or bytearray, not StringIO"
+        content = buffer
+        with self.assertRaises(TypeError):
+            model.response(resp, content)
 
     def test_data_wrapper_deserialize(self):
         model = JsonModel(data_wrapper=True)

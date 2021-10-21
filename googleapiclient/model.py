@@ -277,9 +277,13 @@ class JsonModel(BaseModel):
             content = content.decode("utf-8")
         except AttributeError:
             pass
-        body = json.loads(content)
-        if self._data_wrapper and isinstance(body, dict) and "data" in body:
-            body = body["data"]
+        try:
+            body = json.loads(content)
+        except json.decoder.JSONDecodeError:
+            body = content
+        else:
+            if self._data_wrapper and "data" in body:
+                body = body["data"]
         return body
 
     @property
