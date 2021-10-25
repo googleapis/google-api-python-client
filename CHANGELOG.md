@@ -1,5 +1,17 @@
 # Changelog
 
+### [2.27.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.27.0...v2.27.1) (2021-10-25)
+
+
+### Bug Fixes
+
+* manage JSONDecodeError exception ([#1574](https://www.github.com/googleapis/google-api-python-client/issues/1574)) ([7d63027](https://www.github.com/googleapis/google-api-python-client/commit/7d630270758459225f7169a03e9a6973b9e5ad82))
+
+
+### Documentation
+
+* update thread_safety.md ([#1568](https://www.github.com/googleapis/google-api-python-client/issues/1568)) ([0b400f9](https://www.github.com/googleapis/google-api-python-client/commit/0b400f97be45808ade211ca8291b2e1d9476bde1))
+
 ## [2.27.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.26.1...v2.27.0) (2021-10-19)
 
 
