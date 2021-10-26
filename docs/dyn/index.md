@@ -341,6 +341,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/datamigration_v1beta1.html)
 
 
+## datapipelines
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datapipelines_v1.html)
+
+
 ## dataproc
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataproc_v1.html)
 
@@ -349,6 +353,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datastore_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/datastore_v1beta1.html)
 * [v1beta3](http://googleapis.github.io/google-api-python-client/docs/dyn/datastore_v1beta3.html)
+
+
+## datastream
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/datastream_v1alpha1.html)
 
 
 ## deploymentmanager
@@ -402,6 +410,7 @@
 
 
 ## domains
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/domains_v1.html)
 * [v1alpha2](http://googleapis.github.io/google-api-python-client/docs/dyn/domains_v1alpha2.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/domains_v1beta1.html)
 
@@ -954,6 +963,7 @@
 ## tpu
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/tpu_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/tpu_v1alpha1.html)
+* [v2alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/tpu_v2alpha1.html)
 
 
 ## trafficdirector
