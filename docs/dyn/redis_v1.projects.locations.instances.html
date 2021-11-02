@@ -128,19 +128,19 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # A Google Cloud Redis instance. next id = 37
-  &quot;alternativeLocationId&quot;: &quot;A String&quot;, # Optional. Only applicable to STANDARD_HA tier which protects the instance against zonal failures by provisioning it across two zones. If provided, it must be a different zone from the one provided in location_id.
+{ # A Google Cloud Redis instance. next id = 38
+  &quot;alternativeLocationId&quot;: &quot;A String&quot;, # Optional. If specified, at least one node will be provisioned in this zone in addition to the zone specified in location_id. Only applicable to standard tier. If provided, it must be a different zone from the one provided in [location_id]. Additional nodes beyond the first 2 will be placed in zones selected by the service.
   &quot;authEnabled&quot;: True or False, # Optional. Indicates whether OSS Redis AUTH is enabled for the instance. If set to &quot;true&quot; AUTH is enabled on the instance. Default value is &quot;false&quot; meaning AUTH is disabled.
   &quot;authorizedNetwork&quot;: &quot;A String&quot;, # Optional. The full name of the Google Compute Engine [network](https://cloud.google.com/vpc/docs/vpc) to which the instance is connected. If left unspecified, the `default` network will be used.
   &quot;connectMode&quot;: &quot;A String&quot;, # Optional. The network connect mode of the Redis instance. If not provided, the connect mode defaults to DIRECT_PEERING.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time the instance was created.
-  &quot;currentLocationId&quot;: &quot;A String&quot;, # Output only. The current zone where the Redis endpoint is placed. For Basic Tier instances, this will always be the same as the location_id provided by the user at creation time. For Standard Tier instances, this can be either location_id or alternative_location_id and can change after a failover event.
+  &quot;currentLocationId&quot;: &quot;A String&quot;, # Output only. The current zone where the Redis primary node is located. In basic tier, this will always be the same as [location_id]. In standard tier, this can be the zone of any node in the instance.
   &quot;displayName&quot;: &quot;A String&quot;, # An arbitrary and optional user-provided name for the instance.
   &quot;host&quot;: &quot;A String&quot;, # Output only. Hostname or IP address of the exposed Redis endpoint used by clients to connect to the service.
   &quot;labels&quot;: { # Resource labels to represent user provided metadata
     &quot;a_key&quot;: &quot;A String&quot;,
   },
-  &quot;locationId&quot;: &quot;A String&quot;, # Optional. The zone where the instance will be provisioned. If not provided, the service will choose a zone from the specified region for the instance. For standard tier, instances will be created across two zones for protection against zonal failures. If [alternative_location_id] is also provided, it must be different from [location_id].
+  &quot;locationId&quot;: &quot;A String&quot;, # Optional. The zone where the instance will be provisioned. If not provided, the service will choose a zone from the specified region for the instance. For standard tier, additional nodes will be added across multiple zones for protection against zonal failures. If specified, at least one node will be provisioned in this zone.
   &quot;maintenancePolicy&quot;: { # Maintenance policy for an instance. # Optional. The maintenance policy for the instance. If not provided, maintenance events can be performed at any time.
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the policy was created.
     &quot;description&quot;: &quot;A String&quot;, # Optional. Description of what this policy is for. Create/Update methods return INVALID_ARGUMENT if the length is greater than 512.
@@ -168,10 +168,16 @@ Args:
   &quot;name&quot;: &quot;A String&quot;, # Required. Unique name of the resource in this scope including project and location using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` Note: Redis instances are managed and addressed at regional level so location_id here refers to a GCP region; however, users may choose which specific zone (or collection of zones for cross-zone instances) an instance should be provisioned in. Refer to location_id and alternative_location_id fields for more details.
   &quot;nodes&quot;: [ # Output only. Info per node.
     { # Node specific properties.
-      &quot;id&quot;: &quot;A String&quot;, # Output only. Output Only. Node identifying string. e.g. &#x27;node-0&#x27;, &#x27;node-1&#x27;
-      &quot;zone&quot;: &quot;A String&quot;, # Output only. Output Only. Location of the node.
+      &quot;id&quot;: &quot;A String&quot;, # Output only. Node identifying string. e.g. &#x27;node-0&#x27;, &#x27;node-1&#x27;
+      &quot;zone&quot;: &quot;A String&quot;, # Output only. Location of the node.
     },
   ],
+  &quot;persistenceConfig&quot;: { # Configuration of the persistence functionality. # Optional. Persistence configuration parameters
+    &quot;persistenceMode&quot;: &quot;A String&quot;, # Optional. Controls whether Persistence features are enabled. If not provided, the existing value will be used.
+    &quot;rdbNextSnapshotTime&quot;: &quot;A String&quot;, # Output only. The next time that a snapshot attempt is scheduled to occur.
+    &quot;rdbSnapshotPeriod&quot;: &quot;A String&quot;, # Optional. Period between RDB snapshots. Snapshots will be attempted every period starting from the provided snapshot start time. For example, a start time of 01/01/2033 06:45 and SIX_HOURS snapshot period will do nothing until 01/01/2033, and then trigger snapshots every day at 06:45, 12:45, 18:45, and 00:45 the next day, and so on. If not provided, TWENTY_FOUR_HOURS will be used as default.
+    &quot;rdbSnapshotStartTime&quot;: &quot;A String&quot;, # Optional. Date and time that the first snapshot was/will be attempted, and to which future snapshots will be aligned. If not provided, the current time will be used.
+  },
   &quot;persistenceIamIdentity&quot;: &quot;A String&quot;, # Output only. Cloud IAM identity used by import / export operations to transfer data to/from Cloud Storage. Format is &quot;serviceAccount:&quot;. The value may change over time for a given instance so should be checked before each import/export operation.
   &quot;port&quot;: 42, # Output only. The port number of the exposed Redis endpoint.
   &quot;readEndpoint&quot;: &quot;A String&quot;, # Output only. Hostname or IP address of the exposed readonly Redis endpoint. Standard tier only. Targets all healthy replica nodes in instance. Replication is asynchronous and replica nodes will exhibit some lag behind the primary. Write requests must target &#x27;host&#x27;.
@@ -181,8 +187,8 @@ Args:
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;redisVersion&quot;: &quot;A String&quot;, # Optional. The version of Redis software. If not provided, latest supported version will be used. Currently, the supported values are: * `REDIS_3_2` for Redis 3.2 compatibility * `REDIS_4_0` for Redis 4.0 compatibility (default) * `REDIS_5_0` for Redis 5.0 compatibility * `REDIS_6_X` for Redis 6.x compatibility
-  &quot;replicaCount&quot;: 42, # Optional. The number of replica nodes. Valid range for standard tier is [1-5] and defaults to 1. Valid value for basic tier is 0 and defaults to 0.
-  &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional. For DIRECT_PEERING mode, the CIDR range of internal addresses that are reserved for this instance. Range must be unique and non-overlapping with existing subnets in an authorized network. For PRIVATE_SERVICE_ACCESS mode, the name of one allocated IP address ranges associated with this private service access connection. If not provided, the service will choose an unused /29 block, for example, 10.0.0.0/29 or 192.168.0.0/29.
+  &quot;replicaCount&quot;: 42, # Optional. The number of replica nodes. Valid range for standard tier is [1-5] and defaults to 2. Valid value for basic tier is 0 and defaults to 0.
+  &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional. For DIRECT_PEERING mode, the CIDR range of internal addresses that are reserved for this instance. Range must be unique and non-overlapping with existing subnets in an authorized network. For PRIVATE_SERVICE_ACCESS mode, the name of one allocated IP address ranges associated with this private service access connection. If not provided, the service will choose an unused /29 block, for example, 10.0.0.0/29 or 192.168.0.0/29. For READ_REPLICAS_ENABLED the default block size is /28.
   &quot;serverCaCerts&quot;: [ # Output only. List of server CA certificates for the instance.
     { # TlsCertificate Resource
       &quot;cert&quot;: &quot;A String&quot;, # PEM representation.
@@ -365,19 +371,19 @@ Args:
 Returns:
   An object of the form:
 
-    { # A Google Cloud Redis instance. next id = 37
-  &quot;alternativeLocationId&quot;: &quot;A String&quot;, # Optional. Only applicable to STANDARD_HA tier which protects the instance against zonal failures by provisioning it across two zones. If provided, it must be a different zone from the one provided in location_id.
+    { # A Google Cloud Redis instance. next id = 38
+  &quot;alternativeLocationId&quot;: &quot;A String&quot;, # Optional. If specified, at least one node will be provisioned in this zone in addition to the zone specified in location_id. Only applicable to standard tier. If provided, it must be a different zone from the one provided in [location_id]. Additional nodes beyond the first 2 will be placed in zones selected by the service.
   &quot;authEnabled&quot;: True or False, # Optional. Indicates whether OSS Redis AUTH is enabled for the instance. If set to &quot;true&quot; AUTH is enabled on the instance. Default value is &quot;false&quot; meaning AUTH is disabled.
   &quot;authorizedNetwork&quot;: &quot;A String&quot;, # Optional. The full name of the Google Compute Engine [network](https://cloud.google.com/vpc/docs/vpc) to which the instance is connected. If left unspecified, the `default` network will be used.
   &quot;connectMode&quot;: &quot;A String&quot;, # Optional. The network connect mode of the Redis instance. If not provided, the connect mode defaults to DIRECT_PEERING.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time the instance was created.
-  &quot;currentLocationId&quot;: &quot;A String&quot;, # Output only. The current zone where the Redis endpoint is placed. For Basic Tier instances, this will always be the same as the location_id provided by the user at creation time. For Standard Tier instances, this can be either location_id or alternative_location_id and can change after a failover event.
+  &quot;currentLocationId&quot;: &quot;A String&quot;, # Output only. The current zone where the Redis primary node is located. In basic tier, this will always be the same as [location_id]. In standard tier, this can be the zone of any node in the instance.
   &quot;displayName&quot;: &quot;A String&quot;, # An arbitrary and optional user-provided name for the instance.
   &quot;host&quot;: &quot;A String&quot;, # Output only. Hostname or IP address of the exposed Redis endpoint used by clients to connect to the service.
   &quot;labels&quot;: { # Resource labels to represent user provided metadata
     &quot;a_key&quot;: &quot;A String&quot;,
   },
-  &quot;locationId&quot;: &quot;A String&quot;, # Optional. The zone where the instance will be provisioned. If not provided, the service will choose a zone from the specified region for the instance. For standard tier, instances will be created across two zones for protection against zonal failures. If [alternative_location_id] is also provided, it must be different from [location_id].
+  &quot;locationId&quot;: &quot;A String&quot;, # Optional. The zone where the instance will be provisioned. If not provided, the service will choose a zone from the specified region for the instance. For standard tier, additional nodes will be added across multiple zones for protection against zonal failures. If specified, at least one node will be provisioned in this zone.
   &quot;maintenancePolicy&quot;: { # Maintenance policy for an instance. # Optional. The maintenance policy for the instance. If not provided, maintenance events can be performed at any time.
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the policy was created.
     &quot;description&quot;: &quot;A String&quot;, # Optional. Description of what this policy is for. Create/Update methods return INVALID_ARGUMENT if the length is greater than 512.
@@ -405,10 +411,16 @@ Returns:
   &quot;name&quot;: &quot;A String&quot;, # Required. Unique name of the resource in this scope including project and location using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` Note: Redis instances are managed and addressed at regional level so location_id here refers to a GCP region; however, users may choose which specific zone (or collection of zones for cross-zone instances) an instance should be provisioned in. Refer to location_id and alternative_location_id fields for more details.
   &quot;nodes&quot;: [ # Output only. Info per node.
     { # Node specific properties.
-      &quot;id&quot;: &quot;A String&quot;, # Output only. Output Only. Node identifying string. e.g. &#x27;node-0&#x27;, &#x27;node-1&#x27;
-      &quot;zone&quot;: &quot;A String&quot;, # Output only. Output Only. Location of the node.
+      &quot;id&quot;: &quot;A String&quot;, # Output only. Node identifying string. e.g. &#x27;node-0&#x27;, &#x27;node-1&#x27;
+      &quot;zone&quot;: &quot;A String&quot;, # Output only. Location of the node.
     },
   ],
+  &quot;persistenceConfig&quot;: { # Configuration of the persistence functionality. # Optional. Persistence configuration parameters
+    &quot;persistenceMode&quot;: &quot;A String&quot;, # Optional. Controls whether Persistence features are enabled. If not provided, the existing value will be used.
+    &quot;rdbNextSnapshotTime&quot;: &quot;A String&quot;, # Output only. The next time that a snapshot attempt is scheduled to occur.
+    &quot;rdbSnapshotPeriod&quot;: &quot;A String&quot;, # Optional. Period between RDB snapshots. Snapshots will be attempted every period starting from the provided snapshot start time. For example, a start time of 01/01/2033 06:45 and SIX_HOURS snapshot period will do nothing until 01/01/2033, and then trigger snapshots every day at 06:45, 12:45, 18:45, and 00:45 the next day, and so on. If not provided, TWENTY_FOUR_HOURS will be used as default.
+    &quot;rdbSnapshotStartTime&quot;: &quot;A String&quot;, # Optional. Date and time that the first snapshot was/will be attempted, and to which future snapshots will be aligned. If not provided, the current time will be used.
+  },
   &quot;persistenceIamIdentity&quot;: &quot;A String&quot;, # Output only. Cloud IAM identity used by import / export operations to transfer data to/from Cloud Storage. Format is &quot;serviceAccount:&quot;. The value may change over time for a given instance so should be checked before each import/export operation.
   &quot;port&quot;: 42, # Output only. The port number of the exposed Redis endpoint.
   &quot;readEndpoint&quot;: &quot;A String&quot;, # Output only. Hostname or IP address of the exposed readonly Redis endpoint. Standard tier only. Targets all healthy replica nodes in instance. Replication is asynchronous and replica nodes will exhibit some lag behind the primary. Write requests must target &#x27;host&#x27;.
@@ -418,8 +430,8 @@ Returns:
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;redisVersion&quot;: &quot;A String&quot;, # Optional. The version of Redis software. If not provided, latest supported version will be used. Currently, the supported values are: * `REDIS_3_2` for Redis 3.2 compatibility * `REDIS_4_0` for Redis 4.0 compatibility (default) * `REDIS_5_0` for Redis 5.0 compatibility * `REDIS_6_X` for Redis 6.x compatibility
-  &quot;replicaCount&quot;: 42, # Optional. The number of replica nodes. Valid range for standard tier is [1-5] and defaults to 1. Valid value for basic tier is 0 and defaults to 0.
-  &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional. For DIRECT_PEERING mode, the CIDR range of internal addresses that are reserved for this instance. Range must be unique and non-overlapping with existing subnets in an authorized network. For PRIVATE_SERVICE_ACCESS mode, the name of one allocated IP address ranges associated with this private service access connection. If not provided, the service will choose an unused /29 block, for example, 10.0.0.0/29 or 192.168.0.0/29.
+  &quot;replicaCount&quot;: 42, # Optional. The number of replica nodes. Valid range for standard tier is [1-5] and defaults to 2. Valid value for basic tier is 0 and defaults to 0.
+  &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional. For DIRECT_PEERING mode, the CIDR range of internal addresses that are reserved for this instance. Range must be unique and non-overlapping with existing subnets in an authorized network. For PRIVATE_SERVICE_ACCESS mode, the name of one allocated IP address ranges associated with this private service access connection. If not provided, the service will choose an unused /29 block, for example, 10.0.0.0/29 or 192.168.0.0/29. For READ_REPLICAS_ENABLED the default block size is /28.
   &quot;serverCaCerts&quot;: [ # Output only. List of server CA certificates for the instance.
     { # TlsCertificate Resource
       &quot;cert&quot;: &quot;A String&quot;, # PEM representation.
@@ -519,19 +531,19 @@ Returns:
 
     { # Response for ListInstances.
   &quot;instances&quot;: [ # A list of Redis instances in the project in the specified location, or across all locations. If the `location_id` in the parent field of the request is &quot;-&quot;, all regions available to the project are queried, and the results aggregated. If in such an aggregated query a location is unavailable, a placeholder Redis entry is included in the response with the `name` field set to a value of the form `projects/{project_id}/locations/{location_id}/instances/`- and the `status` field set to ERROR and `status_message` field set to &quot;location not available for ListInstances&quot;.
-    { # A Google Cloud Redis instance. next id = 37
-      &quot;alternativeLocationId&quot;: &quot;A String&quot;, # Optional. Only applicable to STANDARD_HA tier which protects the instance against zonal failures by provisioning it across two zones. If provided, it must be a different zone from the one provided in location_id.
+    { # A Google Cloud Redis instance. next id = 38
+      &quot;alternativeLocationId&quot;: &quot;A String&quot;, # Optional. If specified, at least one node will be provisioned in this zone in addition to the zone specified in location_id. Only applicable to standard tier. If provided, it must be a different zone from the one provided in [location_id]. Additional nodes beyond the first 2 will be placed in zones selected by the service.
       &quot;authEnabled&quot;: True or False, # Optional. Indicates whether OSS Redis AUTH is enabled for the instance. If set to &quot;true&quot; AUTH is enabled on the instance. Default value is &quot;false&quot; meaning AUTH is disabled.
       &quot;authorizedNetwork&quot;: &quot;A String&quot;, # Optional. The full name of the Google Compute Engine [network](https://cloud.google.com/vpc/docs/vpc) to which the instance is connected. If left unspecified, the `default` network will be used.
       &quot;connectMode&quot;: &quot;A String&quot;, # Optional. The network connect mode of the Redis instance. If not provided, the connect mode defaults to DIRECT_PEERING.
       &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time the instance was created.
-      &quot;currentLocationId&quot;: &quot;A String&quot;, # Output only. The current zone where the Redis endpoint is placed. For Basic Tier instances, this will always be the same as the location_id provided by the user at creation time. For Standard Tier instances, this can be either location_id or alternative_location_id and can change after a failover event.
+      &quot;currentLocationId&quot;: &quot;A String&quot;, # Output only. The current zone where the Redis primary node is located. In basic tier, this will always be the same as [location_id]. In standard tier, this can be the zone of any node in the instance.
       &quot;displayName&quot;: &quot;A String&quot;, # An arbitrary and optional user-provided name for the instance.
       &quot;host&quot;: &quot;A String&quot;, # Output only. Hostname or IP address of the exposed Redis endpoint used by clients to connect to the service.
       &quot;labels&quot;: { # Resource labels to represent user provided metadata
         &quot;a_key&quot;: &quot;A String&quot;,
       },
-      &quot;locationId&quot;: &quot;A String&quot;, # Optional. The zone where the instance will be provisioned. If not provided, the service will choose a zone from the specified region for the instance. For standard tier, instances will be created across two zones for protection against zonal failures. If [alternative_location_id] is also provided, it must be different from [location_id].
+      &quot;locationId&quot;: &quot;A String&quot;, # Optional. The zone where the instance will be provisioned. If not provided, the service will choose a zone from the specified region for the instance. For standard tier, additional nodes will be added across multiple zones for protection against zonal failures. If specified, at least one node will be provisioned in this zone.
       &quot;maintenancePolicy&quot;: { # Maintenance policy for an instance. # Optional. The maintenance policy for the instance. If not provided, maintenance events can be performed at any time.
         &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the policy was created.
         &quot;description&quot;: &quot;A String&quot;, # Optional. Description of what this policy is for. Create/Update methods return INVALID_ARGUMENT if the length is greater than 512.
@@ -559,10 +571,16 @@ Returns:
       &quot;name&quot;: &quot;A String&quot;, # Required. Unique name of the resource in this scope including project and location using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` Note: Redis instances are managed and addressed at regional level so location_id here refers to a GCP region; however, users may choose which specific zone (or collection of zones for cross-zone instances) an instance should be provisioned in. Refer to location_id and alternative_location_id fields for more details.
       &quot;nodes&quot;: [ # Output only. Info per node.
         { # Node specific properties.
-          &quot;id&quot;: &quot;A String&quot;, # Output only. Output Only. Node identifying string. e.g. &#x27;node-0&#x27;, &#x27;node-1&#x27;
-          &quot;zone&quot;: &quot;A String&quot;, # Output only. Output Only. Location of the node.
+          &quot;id&quot;: &quot;A String&quot;, # Output only. Node identifying string. e.g. &#x27;node-0&#x27;, &#x27;node-1&#x27;
+          &quot;zone&quot;: &quot;A String&quot;, # Output only. Location of the node.
         },
       ],
+      &quot;persistenceConfig&quot;: { # Configuration of the persistence functionality. # Optional. Persistence configuration parameters
+        &quot;persistenceMode&quot;: &quot;A String&quot;, # Optional. Controls whether Persistence features are enabled. If not provided, the existing value will be used.
+        &quot;rdbNextSnapshotTime&quot;: &quot;A String&quot;, # Output only. The next time that a snapshot attempt is scheduled to occur.
+        &quot;rdbSnapshotPeriod&quot;: &quot;A String&quot;, # Optional. Period between RDB snapshots. Snapshots will be attempted every period starting from the provided snapshot start time. For example, a start time of 01/01/2033 06:45 and SIX_HOURS snapshot period will do nothing until 01/01/2033, and then trigger snapshots every day at 06:45, 12:45, 18:45, and 00:45 the next day, and so on. If not provided, TWENTY_FOUR_HOURS will be used as default.
+        &quot;rdbSnapshotStartTime&quot;: &quot;A String&quot;, # Optional. Date and time that the first snapshot was/will be attempted, and to which future snapshots will be aligned. If not provided, the current time will be used.
+      },
       &quot;persistenceIamIdentity&quot;: &quot;A String&quot;, # Output only. Cloud IAM identity used by import / export operations to transfer data to/from Cloud Storage. Format is &quot;serviceAccount:&quot;. The value may change over time for a given instance so should be checked before each import/export operation.
       &quot;port&quot;: 42, # Output only. The port number of the exposed Redis endpoint.
       &quot;readEndpoint&quot;: &quot;A String&quot;, # Output only. Hostname or IP address of the exposed readonly Redis endpoint. Standard tier only. Targets all healthy replica nodes in instance. Replication is asynchronous and replica nodes will exhibit some lag behind the primary. Write requests must target &#x27;host&#x27;.
@@ -572,8 +590,8 @@ Returns:
         &quot;a_key&quot;: &quot;A String&quot;,
       },
       &quot;redisVersion&quot;: &quot;A String&quot;, # Optional. The version of Redis software. If not provided, latest supported version will be used. Currently, the supported values are: * `REDIS_3_2` for Redis 3.2 compatibility * `REDIS_4_0` for Redis 4.0 compatibility (default) * `REDIS_5_0` for Redis 5.0 compatibility * `REDIS_6_X` for Redis 6.x compatibility
-      &quot;replicaCount&quot;: 42, # Optional. The number of replica nodes. Valid range for standard tier is [1-5] and defaults to 1. Valid value for basic tier is 0 and defaults to 0.
-      &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional. For DIRECT_PEERING mode, the CIDR range of internal addresses that are reserved for this instance. Range must be unique and non-overlapping with existing subnets in an authorized network. For PRIVATE_SERVICE_ACCESS mode, the name of one allocated IP address ranges associated with this private service access connection. If not provided, the service will choose an unused /29 block, for example, 10.0.0.0/29 or 192.168.0.0/29.
+      &quot;replicaCount&quot;: 42, # Optional. The number of replica nodes. Valid range for standard tier is [1-5] and defaults to 2. Valid value for basic tier is 0 and defaults to 0.
+      &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional. For DIRECT_PEERING mode, the CIDR range of internal addresses that are reserved for this instance. Range must be unique and non-overlapping with existing subnets in an authorized network. For PRIVATE_SERVICE_ACCESS mode, the name of one allocated IP address ranges associated with this private service access connection. If not provided, the service will choose an unused /29 block, for example, 10.0.0.0/29 or 192.168.0.0/29. For READ_REPLICAS_ENABLED the default block size is /28.
       &quot;serverCaCerts&quot;: [ # Output only. List of server CA certificates for the instance.
         { # TlsCertificate Resource
           &quot;cert&quot;: &quot;A String&quot;, # PEM representation.
@@ -619,19 +637,19 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # A Google Cloud Redis instance. next id = 37
-  &quot;alternativeLocationId&quot;: &quot;A String&quot;, # Optional. Only applicable to STANDARD_HA tier which protects the instance against zonal failures by provisioning it across two zones. If provided, it must be a different zone from the one provided in location_id.
+{ # A Google Cloud Redis instance. next id = 38
+  &quot;alternativeLocationId&quot;: &quot;A String&quot;, # Optional. If specified, at least one node will be provisioned in this zone in addition to the zone specified in location_id. Only applicable to standard tier. If provided, it must be a different zone from the one provided in [location_id]. Additional nodes beyond the first 2 will be placed in zones selected by the service.
   &quot;authEnabled&quot;: True or False, # Optional. Indicates whether OSS Redis AUTH is enabled for the instance. If set to &quot;true&quot; AUTH is enabled on the instance. Default value is &quot;false&quot; meaning AUTH is disabled.
   &quot;authorizedNetwork&quot;: &quot;A String&quot;, # Optional. The full name of the Google Compute Engine [network](https://cloud.google.com/vpc/docs/vpc) to which the instance is connected. If left unspecified, the `default` network will be used.
   &quot;connectMode&quot;: &quot;A String&quot;, # Optional. The network connect mode of the Redis instance. If not provided, the connect mode defaults to DIRECT_PEERING.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time the instance was created.
-  &quot;currentLocationId&quot;: &quot;A String&quot;, # Output only. The current zone where the Redis endpoint is placed. For Basic Tier instances, this will always be the same as the location_id provided by the user at creation time. For Standard Tier instances, this can be either location_id or alternative_location_id and can change after a failover event.
+  &quot;currentLocationId&quot;: &quot;A String&quot;, # Output only. The current zone where the Redis primary node is located. In basic tier, this will always be the same as [location_id]. In standard tier, this can be the zone of any node in the instance.
   &quot;displayName&quot;: &quot;A String&quot;, # An arbitrary and optional user-provided name for the instance.
   &quot;host&quot;: &quot;A String&quot;, # Output only. Hostname or IP address of the exposed Redis endpoint used by clients to connect to the service.
   &quot;labels&quot;: { # Resource labels to represent user provided metadata
     &quot;a_key&quot;: &quot;A String&quot;,
   },
-  &quot;locationId&quot;: &quot;A String&quot;, # Optional. The zone where the instance will be provisioned. If not provided, the service will choose a zone from the specified region for the instance. For standard tier, instances will be created across two zones for protection against zonal failures. If [alternative_location_id] is also provided, it must be different from [location_id].
+  &quot;locationId&quot;: &quot;A String&quot;, # Optional. The zone where the instance will be provisioned. If not provided, the service will choose a zone from the specified region for the instance. For standard tier, additional nodes will be added across multiple zones for protection against zonal failures. If specified, at least one node will be provisioned in this zone.
   &quot;maintenancePolicy&quot;: { # Maintenance policy for an instance. # Optional. The maintenance policy for the instance. If not provided, maintenance events can be performed at any time.
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the policy was created.
     &quot;description&quot;: &quot;A String&quot;, # Optional. Description of what this policy is for. Create/Update methods return INVALID_ARGUMENT if the length is greater than 512.
@@ -659,10 +677,16 @@ Args:
   &quot;name&quot;: &quot;A String&quot;, # Required. Unique name of the resource in this scope including project and location using the form: `projects/{project_id}/locations/{location_id}/instances/{instance_id}` Note: Redis instances are managed and addressed at regional level so location_id here refers to a GCP region; however, users may choose which specific zone (or collection of zones for cross-zone instances) an instance should be provisioned in. Refer to location_id and alternative_location_id fields for more details.
   &quot;nodes&quot;: [ # Output only. Info per node.
     { # Node specific properties.
-      &quot;id&quot;: &quot;A String&quot;, # Output only. Output Only. Node identifying string. e.g. &#x27;node-0&#x27;, &#x27;node-1&#x27;
-      &quot;zone&quot;: &quot;A String&quot;, # Output only. Output Only. Location of the node.
+      &quot;id&quot;: &quot;A String&quot;, # Output only. Node identifying string. e.g. &#x27;node-0&#x27;, &#x27;node-1&#x27;
+      &quot;zone&quot;: &quot;A String&quot;, # Output only. Location of the node.
     },
   ],
+  &quot;persistenceConfig&quot;: { # Configuration of the persistence functionality. # Optional. Persistence configuration parameters
+    &quot;persistenceMode&quot;: &quot;A String&quot;, # Optional. Controls whether Persistence features are enabled. If not provided, the existing value will be used.
+    &quot;rdbNextSnapshotTime&quot;: &quot;A String&quot;, # Output only. The next time that a snapshot attempt is scheduled to occur.
+    &quot;rdbSnapshotPeriod&quot;: &quot;A String&quot;, # Optional. Period between RDB snapshots. Snapshots will be attempted every period starting from the provided snapshot start time. For example, a start time of 01/01/2033 06:45 and SIX_HOURS snapshot period will do nothing until 01/01/2033, and then trigger snapshots every day at 06:45, 12:45, 18:45, and 00:45 the next day, and so on. If not provided, TWENTY_FOUR_HOURS will be used as default.
+    &quot;rdbSnapshotStartTime&quot;: &quot;A String&quot;, # Optional. Date and time that the first snapshot was/will be attempted, and to which future snapshots will be aligned. If not provided, the current time will be used.
+  },
   &quot;persistenceIamIdentity&quot;: &quot;A String&quot;, # Output only. Cloud IAM identity used by import / export operations to transfer data to/from Cloud Storage. Format is &quot;serviceAccount:&quot;. The value may change over time for a given instance so should be checked before each import/export operation.
   &quot;port&quot;: 42, # Output only. The port number of the exposed Redis endpoint.
   &quot;readEndpoint&quot;: &quot;A String&quot;, # Output only. Hostname or IP address of the exposed readonly Redis endpoint. Standard tier only. Targets all healthy replica nodes in instance. Replication is asynchronous and replica nodes will exhibit some lag behind the primary. Write requests must target &#x27;host&#x27;.
@@ -672,8 +696,8 @@ Args:
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;redisVersion&quot;: &quot;A String&quot;, # Optional. The version of Redis software. If not provided, latest supported version will be used. Currently, the supported values are: * `REDIS_3_2` for Redis 3.2 compatibility * `REDIS_4_0` for Redis 4.0 compatibility (default) * `REDIS_5_0` for Redis 5.0 compatibility * `REDIS_6_X` for Redis 6.x compatibility
-  &quot;replicaCount&quot;: 42, # Optional. The number of replica nodes. Valid range for standard tier is [1-5] and defaults to 1. Valid value for basic tier is 0 and defaults to 0.
-  &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional. For DIRECT_PEERING mode, the CIDR range of internal addresses that are reserved for this instance. Range must be unique and non-overlapping with existing subnets in an authorized network. For PRIVATE_SERVICE_ACCESS mode, the name of one allocated IP address ranges associated with this private service access connection. If not provided, the service will choose an unused /29 block, for example, 10.0.0.0/29 or 192.168.0.0/29.
+  &quot;replicaCount&quot;: 42, # Optional. The number of replica nodes. Valid range for standard tier is [1-5] and defaults to 2. Valid value for basic tier is 0 and defaults to 0.
+  &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional. For DIRECT_PEERING mode, the CIDR range of internal addresses that are reserved for this instance. Range must be unique and non-overlapping with existing subnets in an authorized network. For PRIVATE_SERVICE_ACCESS mode, the name of one allocated IP address ranges associated with this private service access connection. If not provided, the service will choose an unused /29 block, for example, 10.0.0.0/29 or 192.168.0.0/29. For READ_REPLICAS_ENABLED the default block size is /28.
   &quot;serverCaCerts&quot;: [ # Output only. List of server CA certificates for the instance.
     { # TlsCertificate Resource
       &quot;cert&quot;: &quot;A String&quot;, # PEM representation.
@@ -689,7 +713,7 @@ Args:
   &quot;transitEncryptionMode&quot;: &quot;A String&quot;, # Optional. The TLS mode of the Redis instance. If not provided, TLS is disabled for the instance.
 }
 
-  updateMask: string, Required. Mask of fields to update. At least one path must be supplied in this field. The elements of the repeated paths field may only include these fields from Instance: * `displayName` * `labels` * `memorySizeGb` * `redisConfig`
+  updateMask: string, Required. Mask of fields to update. At least one path must be supplied in this field. The elements of the repeated paths field may only include these fields from Instance: * `displayName` * `labels` * `memorySizeGb` * `redisConfig` * `replica_count`
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
