@@ -733,7 +733,7 @@ class MediaIoBaseDownload(object):
         headers = self._headers.copy()
         headers["range"] = "bytes=%d-%d" % (
             self._progress,
-            self._progress + self._chunksize,
+            self._progress + self._chunksize - 1,
         )
         http = self._request.http
 

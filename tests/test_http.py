@@ -488,6 +488,23 @@ class TestMediaIoBaseDownload(unittest.TestCase):
         self.assertEqual(5, download._progress)
         self.assertEqual(5, download._total_size)
 
+    def test_media_io_base_download_range_request_header(self):
+        self.request.http = HttpMockSequence(
+            [
+                (
+                    {"status": "200", "content-range": "0-2/5"},
+                    "echo_request_headers_as_json",
+                ),
+            ]
+        )
+
+        download = MediaIoBaseDownload(fd=self.fd, request=self.request, chunksize=3)
+
+        status, done = download.next_chunk()
+        result = json.loads(self.fd.getvalue().decode("utf-8"))
+
+        self.assertEqual(result.get("range"), "bytes=0-2")
+
     def test_media_io_base_download_custom_request_headers(self):
         self.request.http = HttpMockSequence(
             [
