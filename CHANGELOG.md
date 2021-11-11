@@ -1,5 +1,12 @@
 # Changelog
 
+### [2.30.1](https://www.github.com/googleapis/google-api-python-client/compare/v2.30.0...v2.30.1) (2021-11-11)
+
+
+### Bug Fixes
+
+* MediaIoBaseDownload range header off-by-one ([#1595](https://www.github.com/googleapis/google-api-python-client/issues/1595)) ([4b73b2e](https://www.github.com/googleapis/google-api-python-client/commit/4b73b2e9d53e63404c8800f2a2b3f1ee86680815))
+
 ## [2.30.0](https://www.github.com/googleapis/google-api-python-client/compare/v2.29.0...v2.30.0) (2021-11-09)
 
 
