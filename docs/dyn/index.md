@@ -356,6 +356,7 @@
 
 
 ## datastream
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datastream_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/datastream_v1alpha1.html)
 
 
@@ -1013,10 +1014,6 @@
 
 ## webfonts
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/webfonts_v1.html)
-
-
-## webmasters
-* [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/webmasters_v3.html)
 
 
 ## webrisk
