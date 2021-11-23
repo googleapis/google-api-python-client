@@ -217,6 +217,10 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/clouddebugger_v2.html)
 
 
+## clouddeploy
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/clouddeploy_v1.html)
+
+
 ## clouderrorreporting
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/clouderrorreporting_v1beta1.html)
 
