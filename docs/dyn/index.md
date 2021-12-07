@@ -35,7 +35,6 @@
 
 
 ## adsense
-* [v1.4](http://googleapis.github.io/google-api-python-client/docs/dyn/adsense_v1_4.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/adsense_v2.html)
 
 
