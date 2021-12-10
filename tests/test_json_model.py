@@ -25,17 +25,17 @@ __author__ = "jcgregorio@google.com (Joe Gregorio)"
 import io
 import httplib2
 import json
-import pkg_resources
 import platform
 import unittest
 import urllib
 
 import googleapiclient.model
 
+from googleapiclient import version as googleapiclient_version
 from googleapiclient.errors import HttpError
 from googleapiclient.model import JsonModel
 
-_LIBRARY_VERSION = pkg_resources.get_distribution("google-api-python-client").version
+_LIBRARY_VERSION = googleapiclient_version.__version__
 CSV_TEXT_MOCK = 'column1,column2,column3\nstring1,1.2,string2'
 
 
