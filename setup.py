@@ -42,7 +42,7 @@ install_requires = [
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-api-core>=1.21.0,<3.0.0dev",
-    "uritemplate>=3.0.0,<5",
+    "uritemplate>=3.0.1,<5",
 ]
 
 package_root = os.path.abspath(os.path.dirname(__file__))
