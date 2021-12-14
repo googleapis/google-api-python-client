@@ -587,6 +587,10 @@
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/identitytoolkit_v3.html)
 
 
+## ids
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/ids_v1.html)
+
+
 ## indexing
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/indexing_v3.html)
 
@@ -975,6 +979,7 @@
 
 
 ## transcoder
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/transcoder_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/transcoder_v1beta1.html)
 
 
