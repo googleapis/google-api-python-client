@@ -115,12 +115,12 @@ Args:
   &quot;description&quot;: &quot;A String&quot;, # A description provided by the user for the job. Its max length is 1024 bytes when Unicode-encoded.
   &quot;lastModificationTime&quot;: &quot;A String&quot;, # Output only. The time that the transfer job was last modified.
   &quot;latestOperationName&quot;: &quot;A String&quot;, # The name of the most recently started TransferOperation of this JobConfig. Present if a TransferOperation has been created for this JobConfig.
-  &quot;loggingConfig&quot;: { # Logging configuration. # Logging configuration.
-    &quot;enableOnpremGcsTransferLogs&quot;: True or False, # Enables the Cloud Storage transfer logs for this transfer. This is only supported for transfer jobs with PosixFilesystem sources. The default is that logs are not generated for this transfer.
-    &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+  &quot;loggingConfig&quot;: { # Specifies the logging behavior for transfer operations. For cloud-to-cloud transfers, logs are sent to Cloud Logging. See [Read transfer logs](https://cloud.google.com/storage-transfer/docs/read-transfer-logs) for details. For transfers to or from a POSIX file system, logs are stored in the Cloud Storage bucket that is the source or sink of the transfer. See [Managing Transfer for on-premises jobs] (https://cloud.google.com/storage-transfer/docs/managing-on-prem-jobs#viewing-logs) for details. # Logging configuration.
+    &quot;enableOnpremGcsTransferLogs&quot;: True or False, # For transfers with a PosixFilesystem source, this option enables the Cloud Storage transfer logs for this transfer.
+    &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
       &quot;A String&quot;,
     ],
-    &quot;logActions&quot;: [ # Actions to be logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+    &quot;logActions&quot;: [ # Specifies the actions to be logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
       &quot;A String&quot;,
     ],
   },
@@ -171,7 +171,7 @@ Args:
     },
     &quot;azureBlobStorageDataSource&quot;: { # An AzureBlobStorageData resource can be a data source, but not a data sink. An AzureBlobStorageData resource represents one Azure container. The storage account determines the [Azure endpoint](https://docs.microsoft.com/en-us/azure/storage/common/storage-create-storage-account#storage-account-endpoints). In an AzureBlobStorageData resource, a blobs&#x27;s name is the [Azure Blob Storage blob&#x27;s key name](https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#blob-names). # An Azure Blob Storage data source.
       &quot;azureCredentials&quot;: { # Azure credentials For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials). # Required. Input only. Credentials used to authenticate API requests to Azure. For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials).
-        &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). *Note:*Copying data from Azure Data Lake Storage (ADLS) Gen 2 is in [Preview](/products/#product-launch-stages). During Preview, if you are copying data from ADLS Gen 2, you must use an account SAS. For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
+        &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
       },
       &quot;container&quot;: &quot;A String&quot;, # Required. The container to transfer from the Azure Storage account.
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;.
@@ -182,6 +182,10 @@ Args:
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
     },
     &quot;gcsDataSource&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # A Cloud Storage data source.
+      &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
+      &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
+    },
+    &quot;gcsIntermediateDataLocation&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # Cloud Storage intermediate data location.
       &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
     },
@@ -214,6 +218,12 @@ Args:
     &quot;transferOptions&quot;: { # TransferOptions define the actions to be performed on objects in a transfer. # If the option delete_objects_unique_in_sink is `true` and time-based object conditions such as &#x27;last modification time&#x27; are specified, the request fails with an INVALID_ARGUMENT error.
       &quot;deleteObjectsFromSourceAfterTransfer&quot;: True or False, # Whether objects should be deleted from the source after they are transferred to the sink. **Note:** This option and delete_objects_unique_in_sink are mutually exclusive.
       &quot;deleteObjectsUniqueInSink&quot;: True or False, # Whether objects that exist only in the sink should be deleted. **Note:** This option and delete_objects_from_source_after_transfer are mutually exclusive.
+      &quot;metadataOptions&quot;: { # Specifies the metadata options for running a transfer. # Represents the selected metadata options for a transfer job.
+        &quot;gid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s GID attribute should be handled by the transfer. If unspecified, the default behavior is the same as GID_SKIP when the source is a POSIX file system.
+        &quot;mode&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s mode attribute should be handled by the transfer. If unspecified, the default behavior is the same as MODE_SKIP when the source is a POSIX file system.
+        &quot;symlink&quot;: &quot;A String&quot;, # Specifies how symlinks should be handled by the transfer. If unspecified, the default behavior is the same as SYMLINK_SKIP when the source is a POSIX file system.
+        &quot;uid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s UID attribute should be handled by the transfer. If unspecified, the default behavior is the same as UID_SKIP when the source is a POSIX file system.
+      },
       &quot;overwriteObjectsAlreadyExistingInSink&quot;: True or False, # When to overwrite objects that already exist in the sink. The default is that only objects that are different from the source are ovewritten. If true, all objects in the sink whose name matches an object in the source are overwritten with the source object.
     },
   },
@@ -233,12 +243,12 @@ Returns:
   &quot;description&quot;: &quot;A String&quot;, # A description provided by the user for the job. Its max length is 1024 bytes when Unicode-encoded.
   &quot;lastModificationTime&quot;: &quot;A String&quot;, # Output only. The time that the transfer job was last modified.
   &quot;latestOperationName&quot;: &quot;A String&quot;, # The name of the most recently started TransferOperation of this JobConfig. Present if a TransferOperation has been created for this JobConfig.
-  &quot;loggingConfig&quot;: { # Logging configuration. # Logging configuration.
-    &quot;enableOnpremGcsTransferLogs&quot;: True or False, # Enables the Cloud Storage transfer logs for this transfer. This is only supported for transfer jobs with PosixFilesystem sources. The default is that logs are not generated for this transfer.
-    &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+  &quot;loggingConfig&quot;: { # Specifies the logging behavior for transfer operations. For cloud-to-cloud transfers, logs are sent to Cloud Logging. See [Read transfer logs](https://cloud.google.com/storage-transfer/docs/read-transfer-logs) for details. For transfers to or from a POSIX file system, logs are stored in the Cloud Storage bucket that is the source or sink of the transfer. See [Managing Transfer for on-premises jobs] (https://cloud.google.com/storage-transfer/docs/managing-on-prem-jobs#viewing-logs) for details. # Logging configuration.
+    &quot;enableOnpremGcsTransferLogs&quot;: True or False, # For transfers with a PosixFilesystem source, this option enables the Cloud Storage transfer logs for this transfer.
+    &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
       &quot;A String&quot;,
     ],
-    &quot;logActions&quot;: [ # Actions to be logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+    &quot;logActions&quot;: [ # Specifies the actions to be logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
       &quot;A String&quot;,
     ],
   },
@@ -289,7 +299,7 @@ Returns:
     },
     &quot;azureBlobStorageDataSource&quot;: { # An AzureBlobStorageData resource can be a data source, but not a data sink. An AzureBlobStorageData resource represents one Azure container. The storage account determines the [Azure endpoint](https://docs.microsoft.com/en-us/azure/storage/common/storage-create-storage-account#storage-account-endpoints). In an AzureBlobStorageData resource, a blobs&#x27;s name is the [Azure Blob Storage blob&#x27;s key name](https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#blob-names). # An Azure Blob Storage data source.
       &quot;azureCredentials&quot;: { # Azure credentials For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials). # Required. Input only. Credentials used to authenticate API requests to Azure. For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials).
-        &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). *Note:*Copying data from Azure Data Lake Storage (ADLS) Gen 2 is in [Preview](/products/#product-launch-stages). During Preview, if you are copying data from ADLS Gen 2, you must use an account SAS. For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
+        &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
       },
       &quot;container&quot;: &quot;A String&quot;, # Required. The container to transfer from the Azure Storage account.
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;.
@@ -300,6 +310,10 @@ Returns:
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
     },
     &quot;gcsDataSource&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # A Cloud Storage data source.
+      &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
+      &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
+    },
+    &quot;gcsIntermediateDataLocation&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # Cloud Storage intermediate data location.
       &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
     },
@@ -332,6 +346,12 @@ Returns:
     &quot;transferOptions&quot;: { # TransferOptions define the actions to be performed on objects in a transfer. # If the option delete_objects_unique_in_sink is `true` and time-based object conditions such as &#x27;last modification time&#x27; are specified, the request fails with an INVALID_ARGUMENT error.
       &quot;deleteObjectsFromSourceAfterTransfer&quot;: True or False, # Whether objects should be deleted from the source after they are transferred to the sink. **Note:** This option and delete_objects_unique_in_sink are mutually exclusive.
       &quot;deleteObjectsUniqueInSink&quot;: True or False, # Whether objects that exist only in the sink should be deleted. **Note:** This option and delete_objects_from_source_after_transfer are mutually exclusive.
+      &quot;metadataOptions&quot;: { # Specifies the metadata options for running a transfer. # Represents the selected metadata options for a transfer job.
+        &quot;gid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s GID attribute should be handled by the transfer. If unspecified, the default behavior is the same as GID_SKIP when the source is a POSIX file system.
+        &quot;mode&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s mode attribute should be handled by the transfer. If unspecified, the default behavior is the same as MODE_SKIP when the source is a POSIX file system.
+        &quot;symlink&quot;: &quot;A String&quot;, # Specifies how symlinks should be handled by the transfer. If unspecified, the default behavior is the same as SYMLINK_SKIP when the source is a POSIX file system.
+        &quot;uid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s UID attribute should be handled by the transfer. If unspecified, the default behavior is the same as UID_SKIP when the source is a POSIX file system.
+      },
       &quot;overwriteObjectsAlreadyExistingInSink&quot;: True or False, # When to overwrite objects that already exist in the sink. The default is that only objects that are different from the source are ovewritten. If true, all objects in the sink whose name matches an object in the source are overwritten with the source object.
     },
   },
@@ -359,12 +379,12 @@ Returns:
   &quot;description&quot;: &quot;A String&quot;, # A description provided by the user for the job. Its max length is 1024 bytes when Unicode-encoded.
   &quot;lastModificationTime&quot;: &quot;A String&quot;, # Output only. The time that the transfer job was last modified.
   &quot;latestOperationName&quot;: &quot;A String&quot;, # The name of the most recently started TransferOperation of this JobConfig. Present if a TransferOperation has been created for this JobConfig.
-  &quot;loggingConfig&quot;: { # Logging configuration. # Logging configuration.
-    &quot;enableOnpremGcsTransferLogs&quot;: True or False, # Enables the Cloud Storage transfer logs for this transfer. This is only supported for transfer jobs with PosixFilesystem sources. The default is that logs are not generated for this transfer.
-    &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+  &quot;loggingConfig&quot;: { # Specifies the logging behavior for transfer operations. For cloud-to-cloud transfers, logs are sent to Cloud Logging. See [Read transfer logs](https://cloud.google.com/storage-transfer/docs/read-transfer-logs) for details. For transfers to or from a POSIX file system, logs are stored in the Cloud Storage bucket that is the source or sink of the transfer. See [Managing Transfer for on-premises jobs] (https://cloud.google.com/storage-transfer/docs/managing-on-prem-jobs#viewing-logs) for details. # Logging configuration.
+    &quot;enableOnpremGcsTransferLogs&quot;: True or False, # For transfers with a PosixFilesystem source, this option enables the Cloud Storage transfer logs for this transfer.
+    &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
       &quot;A String&quot;,
     ],
-    &quot;logActions&quot;: [ # Actions to be logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+    &quot;logActions&quot;: [ # Specifies the actions to be logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
       &quot;A String&quot;,
     ],
   },
@@ -415,7 +435,7 @@ Returns:
     },
     &quot;azureBlobStorageDataSource&quot;: { # An AzureBlobStorageData resource can be a data source, but not a data sink. An AzureBlobStorageData resource represents one Azure container. The storage account determines the [Azure endpoint](https://docs.microsoft.com/en-us/azure/storage/common/storage-create-storage-account#storage-account-endpoints). In an AzureBlobStorageData resource, a blobs&#x27;s name is the [Azure Blob Storage blob&#x27;s key name](https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#blob-names). # An Azure Blob Storage data source.
       &quot;azureCredentials&quot;: { # Azure credentials For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials). # Required. Input only. Credentials used to authenticate API requests to Azure. For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials).
-        &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). *Note:*Copying data from Azure Data Lake Storage (ADLS) Gen 2 is in [Preview](/products/#product-launch-stages). During Preview, if you are copying data from ADLS Gen 2, you must use an account SAS. For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
+        &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
       },
       &quot;container&quot;: &quot;A String&quot;, # Required. The container to transfer from the Azure Storage account.
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;.
@@ -426,6 +446,10 @@ Returns:
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
     },
     &quot;gcsDataSource&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # A Cloud Storage data source.
+      &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
+      &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
+    },
+    &quot;gcsIntermediateDataLocation&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # Cloud Storage intermediate data location.
       &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
     },
@@ -458,6 +482,12 @@ Returns:
     &quot;transferOptions&quot;: { # TransferOptions define the actions to be performed on objects in a transfer. # If the option delete_objects_unique_in_sink is `true` and time-based object conditions such as &#x27;last modification time&#x27; are specified, the request fails with an INVALID_ARGUMENT error.
       &quot;deleteObjectsFromSourceAfterTransfer&quot;: True or False, # Whether objects should be deleted from the source after they are transferred to the sink. **Note:** This option and delete_objects_unique_in_sink are mutually exclusive.
       &quot;deleteObjectsUniqueInSink&quot;: True or False, # Whether objects that exist only in the sink should be deleted. **Note:** This option and delete_objects_from_source_after_transfer are mutually exclusive.
+      &quot;metadataOptions&quot;: { # Specifies the metadata options for running a transfer. # Represents the selected metadata options for a transfer job.
+        &quot;gid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s GID attribute should be handled by the transfer. If unspecified, the default behavior is the same as GID_SKIP when the source is a POSIX file system.
+        &quot;mode&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s mode attribute should be handled by the transfer. If unspecified, the default behavior is the same as MODE_SKIP when the source is a POSIX file system.
+        &quot;symlink&quot;: &quot;A String&quot;, # Specifies how symlinks should be handled by the transfer. If unspecified, the default behavior is the same as SYMLINK_SKIP when the source is a POSIX file system.
+        &quot;uid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s UID attribute should be handled by the transfer. If unspecified, the default behavior is the same as UID_SKIP when the source is a POSIX file system.
+      },
       &quot;overwriteObjectsAlreadyExistingInSink&quot;: True or False, # When to overwrite objects that already exist in the sink. The default is that only objects that are different from the source are ovewritten. If true, all objects in the sink whose name matches an object in the source are overwritten with the source object.
     },
   },
@@ -489,12 +519,12 @@ Returns:
       &quot;description&quot;: &quot;A String&quot;, # A description provided by the user for the job. Its max length is 1024 bytes when Unicode-encoded.
       &quot;lastModificationTime&quot;: &quot;A String&quot;, # Output only. The time that the transfer job was last modified.
       &quot;latestOperationName&quot;: &quot;A String&quot;, # The name of the most recently started TransferOperation of this JobConfig. Present if a TransferOperation has been created for this JobConfig.
-      &quot;loggingConfig&quot;: { # Logging configuration. # Logging configuration.
-        &quot;enableOnpremGcsTransferLogs&quot;: True or False, # Enables the Cloud Storage transfer logs for this transfer. This is only supported for transfer jobs with PosixFilesystem sources. The default is that logs are not generated for this transfer.
-        &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+      &quot;loggingConfig&quot;: { # Specifies the logging behavior for transfer operations. For cloud-to-cloud transfers, logs are sent to Cloud Logging. See [Read transfer logs](https://cloud.google.com/storage-transfer/docs/read-transfer-logs) for details. For transfers to or from a POSIX file system, logs are stored in the Cloud Storage bucket that is the source or sink of the transfer. See [Managing Transfer for on-premises jobs] (https://cloud.google.com/storage-transfer/docs/managing-on-prem-jobs#viewing-logs) for details. # Logging configuration.
+        &quot;enableOnpremGcsTransferLogs&quot;: True or False, # For transfers with a PosixFilesystem source, this option enables the Cloud Storage transfer logs for this transfer.
+        &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
           &quot;A String&quot;,
         ],
-        &quot;logActions&quot;: [ # Actions to be logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+        &quot;logActions&quot;: [ # Specifies the actions to be logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
           &quot;A String&quot;,
         ],
       },
@@ -545,7 +575,7 @@ Returns:
         },
         &quot;azureBlobStorageDataSource&quot;: { # An AzureBlobStorageData resource can be a data source, but not a data sink. An AzureBlobStorageData resource represents one Azure container. The storage account determines the [Azure endpoint](https://docs.microsoft.com/en-us/azure/storage/common/storage-create-storage-account#storage-account-endpoints). In an AzureBlobStorageData resource, a blobs&#x27;s name is the [Azure Blob Storage blob&#x27;s key name](https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#blob-names). # An Azure Blob Storage data source.
           &quot;azureCredentials&quot;: { # Azure credentials For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials). # Required. Input only. Credentials used to authenticate API requests to Azure. For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials).
-            &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). *Note:*Copying data from Azure Data Lake Storage (ADLS) Gen 2 is in [Preview](/products/#product-launch-stages). During Preview, if you are copying data from ADLS Gen 2, you must use an account SAS. For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
+            &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
           },
           &quot;container&quot;: &quot;A String&quot;, # Required. The container to transfer from the Azure Storage account.
           &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;.
@@ -556,6 +586,10 @@ Returns:
           &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
         },
         &quot;gcsDataSource&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # A Cloud Storage data source.
+          &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
+          &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
+        },
+        &quot;gcsIntermediateDataLocation&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # Cloud Storage intermediate data location.
           &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
           &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
         },
@@ -588,6 +622,12 @@ Returns:
         &quot;transferOptions&quot;: { # TransferOptions define the actions to be performed on objects in a transfer. # If the option delete_objects_unique_in_sink is `true` and time-based object conditions such as &#x27;last modification time&#x27; are specified, the request fails with an INVALID_ARGUMENT error.
           &quot;deleteObjectsFromSourceAfterTransfer&quot;: True or False, # Whether objects should be deleted from the source after they are transferred to the sink. **Note:** This option and delete_objects_unique_in_sink are mutually exclusive.
           &quot;deleteObjectsUniqueInSink&quot;: True or False, # Whether objects that exist only in the sink should be deleted. **Note:** This option and delete_objects_from_source_after_transfer are mutually exclusive.
+          &quot;metadataOptions&quot;: { # Specifies the metadata options for running a transfer. # Represents the selected metadata options for a transfer job.
+            &quot;gid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s GID attribute should be handled by the transfer. If unspecified, the default behavior is the same as GID_SKIP when the source is a POSIX file system.
+            &quot;mode&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s mode attribute should be handled by the transfer. If unspecified, the default behavior is the same as MODE_SKIP when the source is a POSIX file system.
+            &quot;symlink&quot;: &quot;A String&quot;, # Specifies how symlinks should be handled by the transfer. If unspecified, the default behavior is the same as SYMLINK_SKIP when the source is a POSIX file system.
+            &quot;uid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s UID attribute should be handled by the transfer. If unspecified, the default behavior is the same as UID_SKIP when the source is a POSIX file system.
+          },
           &quot;overwriteObjectsAlreadyExistingInSink&quot;: True or False, # When to overwrite objects that already exist in the sink. The default is that only objects that are different from the source are ovewritten. If true, all objects in the sink whose name matches an object in the source are overwritten with the source object.
         },
       },
@@ -621,18 +661,18 @@ Args:
 
 { # Request passed to UpdateTransferJob.
   &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the Google Cloud project that owns the job.
-  &quot;transferJob&quot;: { # This resource represents the configuration of a transfer job that runs periodically. # Required. The job to update. `transferJob` is expected to specify only four fields: description, transfer_spec, notification_config, and status. An `UpdateTransferJobRequest` that specifies other fields are rejected with the error INVALID_ARGUMENT. Updating a job status to DELETED requires `storagetransfer.jobs.delete` permissions.
+  &quot;transferJob&quot;: { # This resource represents the configuration of a transfer job that runs periodically. # Required. The job to update. `transferJob` is expected to specify one or more of five fields: description, transfer_spec, notification_config, [logging_config[TransferJob.logging_config], and status. An `UpdateTransferJobRequest` that specifies other fields are rejected with the error INVALID_ARGUMENT. Updating a job status to DELETED requires `storagetransfer.jobs.delete` permissions.
     &quot;creationTime&quot;: &quot;A String&quot;, # Output only. The time that the transfer job was created.
     &quot;deletionTime&quot;: &quot;A String&quot;, # Output only. The time that the transfer job was deleted.
     &quot;description&quot;: &quot;A String&quot;, # A description provided by the user for the job. Its max length is 1024 bytes when Unicode-encoded.
     &quot;lastModificationTime&quot;: &quot;A String&quot;, # Output only. The time that the transfer job was last modified.
     &quot;latestOperationName&quot;: &quot;A String&quot;, # The name of the most recently started TransferOperation of this JobConfig. Present if a TransferOperation has been created for this JobConfig.
-    &quot;loggingConfig&quot;: { # Logging configuration. # Logging configuration.
-      &quot;enableOnpremGcsTransferLogs&quot;: True or False, # Enables the Cloud Storage transfer logs for this transfer. This is only supported for transfer jobs with PosixFilesystem sources. The default is that logs are not generated for this transfer.
-      &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+    &quot;loggingConfig&quot;: { # Specifies the logging behavior for transfer operations. For cloud-to-cloud transfers, logs are sent to Cloud Logging. See [Read transfer logs](https://cloud.google.com/storage-transfer/docs/read-transfer-logs) for details. For transfers to or from a POSIX file system, logs are stored in the Cloud Storage bucket that is the source or sink of the transfer. See [Managing Transfer for on-premises jobs] (https://cloud.google.com/storage-transfer/docs/managing-on-prem-jobs#viewing-logs) for details. # Logging configuration.
+      &quot;enableOnpremGcsTransferLogs&quot;: True or False, # For transfers with a PosixFilesystem source, this option enables the Cloud Storage transfer logs for this transfer.
+      &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
         &quot;A String&quot;,
       ],
-      &quot;logActions&quot;: [ # Actions to be logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+      &quot;logActions&quot;: [ # Specifies the actions to be logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
         &quot;A String&quot;,
       ],
     },
@@ -683,7 +723,7 @@ Args:
       },
       &quot;azureBlobStorageDataSource&quot;: { # An AzureBlobStorageData resource can be a data source, but not a data sink. An AzureBlobStorageData resource represents one Azure container. The storage account determines the [Azure endpoint](https://docs.microsoft.com/en-us/azure/storage/common/storage-create-storage-account#storage-account-endpoints). In an AzureBlobStorageData resource, a blobs&#x27;s name is the [Azure Blob Storage blob&#x27;s key name](https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#blob-names). # An Azure Blob Storage data source.
         &quot;azureCredentials&quot;: { # Azure credentials For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials). # Required. Input only. Credentials used to authenticate API requests to Azure. For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials).
-          &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). *Note:*Copying data from Azure Data Lake Storage (ADLS) Gen 2 is in [Preview](/products/#product-launch-stages). During Preview, if you are copying data from ADLS Gen 2, you must use an account SAS. For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
+          &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
         },
         &quot;container&quot;: &quot;A String&quot;, # Required. The container to transfer from the Azure Storage account.
         &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;.
@@ -694,6 +734,10 @@ Args:
         &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
       },
       &quot;gcsDataSource&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # A Cloud Storage data source.
+        &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
+        &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
+      },
+      &quot;gcsIntermediateDataLocation&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # Cloud Storage intermediate data location.
         &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
         &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
       },
@@ -726,11 +770,17 @@ Args:
       &quot;transferOptions&quot;: { # TransferOptions define the actions to be performed on objects in a transfer. # If the option delete_objects_unique_in_sink is `true` and time-based object conditions such as &#x27;last modification time&#x27; are specified, the request fails with an INVALID_ARGUMENT error.
         &quot;deleteObjectsFromSourceAfterTransfer&quot;: True or False, # Whether objects should be deleted from the source after they are transferred to the sink. **Note:** This option and delete_objects_unique_in_sink are mutually exclusive.
         &quot;deleteObjectsUniqueInSink&quot;: True or False, # Whether objects that exist only in the sink should be deleted. **Note:** This option and delete_objects_from_source_after_transfer are mutually exclusive.
+        &quot;metadataOptions&quot;: { # Specifies the metadata options for running a transfer. # Represents the selected metadata options for a transfer job.
+          &quot;gid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s GID attribute should be handled by the transfer. If unspecified, the default behavior is the same as GID_SKIP when the source is a POSIX file system.
+          &quot;mode&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s mode attribute should be handled by the transfer. If unspecified, the default behavior is the same as MODE_SKIP when the source is a POSIX file system.
+          &quot;symlink&quot;: &quot;A String&quot;, # Specifies how symlinks should be handled by the transfer. If unspecified, the default behavior is the same as SYMLINK_SKIP when the source is a POSIX file system.
+          &quot;uid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s UID attribute should be handled by the transfer. If unspecified, the default behavior is the same as UID_SKIP when the source is a POSIX file system.
+        },
         &quot;overwriteObjectsAlreadyExistingInSink&quot;: True or False, # When to overwrite objects that already exist in the sink. The default is that only objects that are different from the source are ovewritten. If true, all objects in the sink whose name matches an object in the source are overwritten with the source object.
       },
     },
   },
-  &quot;updateTransferJobFieldMask&quot;: &quot;A String&quot;, # The field mask of the fields in `transferJob` that are to be updated in this request. Fields in `transferJob` that can be updated are: description, transfer_spec, notification_config, and status. To update the `transfer_spec` of the job, a complete transfer specification must be provided. An incomplete specification missing any required fields is rejected with the error INVALID_ARGUMENT.
+  &quot;updateTransferJobFieldMask&quot;: &quot;A String&quot;, # The field mask of the fields in `transferJob` that are to be updated in this request. Fields in `transferJob` that can be updated are: description, transfer_spec, notification_config, logging_config, and status. To update the `transfer_spec` of the job, a complete transfer specification must be provided. An incomplete specification missing any required fields is rejected with the error INVALID_ARGUMENT.
 }
 
   x__xgafv: string, V1 error format.
@@ -747,12 +797,12 @@ Returns:
   &quot;description&quot;: &quot;A String&quot;, # A description provided by the user for the job. Its max length is 1024 bytes when Unicode-encoded.
   &quot;lastModificationTime&quot;: &quot;A String&quot;, # Output only. The time that the transfer job was last modified.
   &quot;latestOperationName&quot;: &quot;A String&quot;, # The name of the most recently started TransferOperation of this JobConfig. Present if a TransferOperation has been created for this JobConfig.
-  &quot;loggingConfig&quot;: { # Logging configuration. # Logging configuration.
-    &quot;enableOnpremGcsTransferLogs&quot;: True or False, # Enables the Cloud Storage transfer logs for this transfer. This is only supported for transfer jobs with PosixFilesystem sources. The default is that logs are not generated for this transfer.
-    &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+  &quot;loggingConfig&quot;: { # Specifies the logging behavior for transfer operations. For cloud-to-cloud transfers, logs are sent to Cloud Logging. See [Read transfer logs](https://cloud.google.com/storage-transfer/docs/read-transfer-logs) for details. For transfers to or from a POSIX file system, logs are stored in the Cloud Storage bucket that is the source or sink of the transfer. See [Managing Transfer for on-premises jobs] (https://cloud.google.com/storage-transfer/docs/managing-on-prem-jobs#viewing-logs) for details. # Logging configuration.
+    &quot;enableOnpremGcsTransferLogs&quot;: True or False, # For transfers with a PosixFilesystem source, this option enables the Cloud Storage transfer logs for this transfer.
+    &quot;logActionStates&quot;: [ # States in which `log_actions` are logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
       &quot;A String&quot;,
     ],
-    &quot;logActions&quot;: [ # Actions to be logged. If empty, no logs are generated. This is not yet supported for transfers with PosixFilesystem data sources.
+    &quot;logActions&quot;: [ # Specifies the actions to be logged. If empty, no logs are generated. Not supported for transfers with PosixFilesystem data sources; use enable_onprem_gcs_transfer_logs instead.
       &quot;A String&quot;,
     ],
   },
@@ -803,7 +853,7 @@ Returns:
     },
     &quot;azureBlobStorageDataSource&quot;: { # An AzureBlobStorageData resource can be a data source, but not a data sink. An AzureBlobStorageData resource represents one Azure container. The storage account determines the [Azure endpoint](https://docs.microsoft.com/en-us/azure/storage/common/storage-create-storage-account#storage-account-endpoints). In an AzureBlobStorageData resource, a blobs&#x27;s name is the [Azure Blob Storage blob&#x27;s key name](https://docs.microsoft.com/en-us/rest/api/storageservices/naming-and-referencing-containers--blobs--and-metadata#blob-names). # An Azure Blob Storage data source.
       &quot;azureCredentials&quot;: { # Azure credentials For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials). # Required. Input only. Credentials used to authenticate API requests to Azure. For information on our data retention policy for user credentials, see [User credentials](/storage-transfer/docs/data-retention#user-credentials).
-        &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). *Note:*Copying data from Azure Data Lake Storage (ADLS) Gen 2 is in [Preview](/products/#product-launch-stages). During Preview, if you are copying data from ADLS Gen 2, you must use an account SAS. For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
+        &quot;sasToken&quot;: &quot;A String&quot;, # Required. Azure shared access signature (SAS). For more information about SAS, see [Grant limited access to Azure Storage resources using shared access signatures (SAS)](https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview).
       },
       &quot;container&quot;: &quot;A String&quot;, # Required. The container to transfer from the Azure Storage account.
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;.
@@ -814,6 +864,10 @@ Returns:
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
     },
     &quot;gcsDataSource&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # A Cloud Storage data source.
+      &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
+      &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
+    },
+    &quot;gcsIntermediateDataLocation&quot;: { # In a GcsData resource, an object&#x27;s name is the Cloud Storage object&#x27;s name and its &quot;last modification time&quot; refers to the object&#x27;s `updated` property of Cloud Storage objects, which changes when the content or the metadata of the object is updated. # Cloud Storage intermediate data location.
       &quot;bucketName&quot;: &quot;A String&quot;, # Required. Cloud Storage bucket name. Must meet [Bucket Name Requirements](/storage/docs/naming#requirements).
       &quot;path&quot;: &quot;A String&quot;, # Root path to transfer objects. Must be an empty string or full path name that ends with a &#x27;/&#x27;. This field is treated as an object prefix. As such, it should generally not begin with a &#x27;/&#x27;. The root path value must meet [Object Name Requirements](/storage/docs/naming#objectnames).
     },
@@ -846,6 +900,12 @@ Returns:
     &quot;transferOptions&quot;: { # TransferOptions define the actions to be performed on objects in a transfer. # If the option delete_objects_unique_in_sink is `true` and time-based object conditions such as &#x27;last modification time&#x27; are specified, the request fails with an INVALID_ARGUMENT error.
       &quot;deleteObjectsFromSourceAfterTransfer&quot;: True or False, # Whether objects should be deleted from the source after they are transferred to the sink. **Note:** This option and delete_objects_unique_in_sink are mutually exclusive.
       &quot;deleteObjectsUniqueInSink&quot;: True or False, # Whether objects that exist only in the sink should be deleted. **Note:** This option and delete_objects_from_source_after_transfer are mutually exclusive.
+      &quot;metadataOptions&quot;: { # Specifies the metadata options for running a transfer. # Represents the selected metadata options for a transfer job.
+        &quot;gid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s GID attribute should be handled by the transfer. If unspecified, the default behavior is the same as GID_SKIP when the source is a POSIX file system.
+        &quot;mode&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s mode attribute should be handled by the transfer. If unspecified, the default behavior is the same as MODE_SKIP when the source is a POSIX file system.
+        &quot;symlink&quot;: &quot;A String&quot;, # Specifies how symlinks should be handled by the transfer. If unspecified, the default behavior is the same as SYMLINK_SKIP when the source is a POSIX file system.
+        &quot;uid&quot;: &quot;A String&quot;, # Specifies how each file&#x27;s UID attribute should be handled by the transfer. If unspecified, the default behavior is the same as UID_SKIP when the source is a POSIX file system.
+      },
       &quot;overwriteObjectsAlreadyExistingInSink&quot;: True or False, # When to overwrite objects that already exist in the sink. The default is that only objects that are different from the source are ovewritten. If true, all objects in the sink whose name matches an object in the source are overwritten with the source object.
     },
   },
