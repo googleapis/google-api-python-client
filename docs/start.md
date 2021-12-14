@@ -149,5 +149,5 @@ Use the [APIs Explorer](https://developers.google.com/apis-explorer/) to browse 
 
 ## Library reference documentation
 
-[Core library documentation](http://googleapis.github.io/google-api-python-client/docs/epy/index.html).
-and [Library reference documentation by API](dyn/index.md). is available.
+[Core library documentation](http://googleapis.github.io/google-api-python-client/docs/epy/index.html)
+and [Library reference documentation by API](dyn/index.md) are available.
