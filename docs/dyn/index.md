@@ -684,6 +684,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessplaceactions_v1.html)
 
 
+## mybusinessqanda
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessqanda_v1.html)
+
+
 ## mybusinessverifications
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessverifications_v1.html)
 
