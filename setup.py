@@ -42,7 +42,7 @@ install_requires = [
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-api-core>=1.21.0,<3.0.0dev",
-    "uritemplate>=3.0.0,<5",
+    "uritemplate>=3.0.1,<5",
 ]
 
 package_root = os.path.abspath(os.path.dirname(__file__))
@@ -51,7 +51,12 @@ readme_filename = os.path.join(package_root, "README.md")
 with io.open(readme_filename, encoding="utf-8") as readme_file:
     readme = readme_file.read()
 
-version = "2.32.0"
+package_root = os.path.abspath(os.path.dirname(__file__))
+
+version = {}
+with open(os.path.join(package_root, "googleapiclient/version.py")) as fp:
+    exec(fp.read(), version)
+version = version["__version__"]
 
 setup(
     name="google-api-python-client",

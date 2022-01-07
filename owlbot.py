@@ -35,6 +35,9 @@ s.move(templated_files / '.github', excludes=['CODEOWNERS'])
 # Move scripts folder needed for samples CI
 s.move(templated_files / 'scripts')
 
+# Copy CONTRIBUTING.rst
+s.move(templated_files / 'CONTRIBUTING.rst')
+
 # ----------------------------------------------------------------------------
 # Samples templates
 # ----------------------------------------------------------------------------

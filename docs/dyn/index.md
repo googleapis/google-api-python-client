@@ -35,7 +35,6 @@
 
 
 ## adsense
-* [v1.4](http://googleapis.github.io/google-api-python-client/docs/dyn/adsense_v1_4.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/adsense_v2.html)
 
 
@@ -588,6 +587,10 @@
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/identitytoolkit_v3.html)
 
 
+## ids
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/ids_v1.html)
+
+
 ## indexing
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/indexing_v3.html)
 
@@ -679,6 +682,10 @@
 
 ## mybusinessplaceactions
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessplaceactions_v1.html)
+
+
+## mybusinessqanda
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessqanda_v1.html)
 
 
 ## mybusinessverifications
@@ -976,6 +983,7 @@
 
 
 ## transcoder
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/transcoder_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/transcoder_v1beta1.html)
 
 
