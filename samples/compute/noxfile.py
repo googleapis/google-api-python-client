@@ -14,6 +14,7 @@
 
 from __future__ import print_function
 
+import glob
 import os
 from pathlib import Path
 import sys
@@ -184,37 +185,44 @@ PYTEST_COMMON_ARGS = ["--junitxml=sponge_log.xml"]
 def _session_tests(
     session: nox.sessions.Session, post_install: Callable = None
 ) -> None:
-    if TEST_CONFIG["pip_version_override"]:
-        pip_version = TEST_CONFIG["pip_version_override"]
-        session.install(f"pip=={pip_version}")
-    """Runs py.test for a particular project."""
-    if os.path.exists("requirements.txt"):
-        if os.path.exists("constraints.txt"):
-            session.install("-r", "requirements.txt", "-c", "constraints.txt")
-        else:
-            session.install("-r", "requirements.txt")
+    # check for presence of tests
+    test_list = glob.glob("*_test.py") + glob.glob("test_*.py")
+    if len(test_list) == 0:
+        print("No tests found, skipping directory.")
+    else:
+        if TEST_CONFIG["pip_version_override"]:
+            pip_version = TEST_CONFIG["pip_version_override"]
+            session.install(f"pip=={pip_version}")
+        """Runs py.test for a particular project."""
+        if os.path.exists("requirements.txt"):
+            if os.path.exists("constraints.txt"):
+                session.install("-r", "requirements.txt", "-c", "constraints.txt")
+            else:
+                session.install("-r", "requirements.txt")
 
-    if os.path.exists("requirements-test.txt"):
-        if os.path.exists("constraints-test.txt"):
-            session.install("-r", "requirements-test.txt", "-c", "constraints-test.txt")
-        else:
-            session.install("-r", "requirements-test.txt")
+        if os.path.exists("requirements-test.txt"):
+            if os.path.exists("constraints-test.txt"):
+                session.install(
+                    "-r", "requirements-test.txt", "-c", "constraints-test.txt"
+                )
+            else:
+                session.install("-r", "requirements-test.txt")
 
-    if INSTALL_LIBRARY_FROM_SOURCE:
-        session.install("-e", _get_repo_root())
+        if INSTALL_LIBRARY_FROM_SOURCE:
+            session.install("-e", _get_repo_root())
 
-    if post_install:
-        post_install(session)
+        if post_install:
+            post_install(session)
 
-    session.run(
-        "pytest",
-        *(PYTEST_COMMON_ARGS + session.posargs),
-        # Pytest will return 5 when no tests are collected. This can happen
-        # on travis where slow and flaky tests are excluded.
-        # See http://doc.pytest.org/en/latest/_modules/_pytest/main.html
-        success_codes=[0, 5],
-        env=get_pytest_env_vars(),
-    )
+        session.run(
+            "pytest",
+            *(PYTEST_COMMON_ARGS + session.posargs),
+            # Pytest will return 5 when no tests are collected. This can happen
+            # on travis where slow and flaky tests are excluded.
+            # See http://doc.pytest.org/en/latest/_modules/_pytest/main.html
+            success_codes=[0, 5],
+            env=get_pytest_env_vars(),
+        )
 
 
 @nox.session(python=ALL_VERSIONS)
