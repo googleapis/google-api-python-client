@@ -36,9 +36,11 @@ packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
 
 install_requires = [
     "httplib2>=0.15.0,<1dev",
-    "google-auth>=1.16.0",
+    "google-auth>=1.16.0, <2dev; python_version<'3'",
+    "google-auth>=1.16.0, <3dev; python_version>='3'",
     "google-auth-httplib2>=0.0.3",
-    "google-api-core>=1.21.0,<2dev",
+    "google-api-core>=1.21.0, <2dev; python_version<'3'",
+    "google-api-core>=1.21.0, <3dev; python_version>='3'",
     # rsa version 4.5 is the last version that is compatible with Python 2.7
     "rsa==4.5;python_version<'3'",
     "six>=1.13.0,<2dev",
