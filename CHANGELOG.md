@@ -1,5 +1,11 @@
 # Changelog
 
+### [1.12.9](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.8...v1.12.9) (2022-01-11)
+
+### Bug Fixes
+
+* allow google-api-core 2.x for python 3 users ([#1649](https://www.github.com/googleapis/google-api-python-client/issues/1649))
+
 ### [1.12.8](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.7...v1.12.8) (2020-11-18)
 
 
