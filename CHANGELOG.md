@@ -1,5 +1,8 @@
 # Changelog
 
+### [1.12.10](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.9...v1.12.10) (2022-01-13)
+
+
 ### [1.12.9](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.8...v1.12.9) (2022-01-11)
 
 ### Bug Fixes
