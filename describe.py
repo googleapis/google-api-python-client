@@ -402,13 +402,25 @@ def document_api(name, version, uri):
             FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
         )
     )
-    discovery = json.loads(content)
 
-    version = safe_version(version)
+    if response.status == 200:
+        discovery = json.loads(content)
 
-    document_collection_recursive(
-        service, "{}_{}.".format(name, version), discovery, discovery
-    )
+        version = safe_version(version)
+
+        document_collection_recursive(
+            service, "{}_{}.".format(name, version), discovery, discovery
+        )
+    elif resp.status == 404:
+        print(
+            "Warning: {} {} not found. HTTP Code: {}".format(name, version, resp.status)
+        )
+    else:
+        print(
+            "Warning: {} {} could not be built. HTTP Code: {}".format(
+                name, version, resp.status
+            )
+        )
 
 
 def document_api_from_discovery_document(uri):
