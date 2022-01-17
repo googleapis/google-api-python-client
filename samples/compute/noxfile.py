@@ -16,8 +16,8 @@ from __future__ import print_function
 
 import glob
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 import nox
