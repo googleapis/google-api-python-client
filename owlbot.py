@@ -30,7 +30,7 @@ s.move(templated_files / '.kokoro', excludes=['**/docs/*', 'publish-docs.sh'])
 s.move(templated_files / '.trampolinerc')  # config file for trampoline_v2
 
 # Also move issue templates
-s.move(templated_files / '.github', excludes=['CODEOWNERS'])
+s.move(templated_files / '.github', excludes=['CODEOWNERS', 'workflows'])
 
 # Move scripts folder needed for samples CI
 s.move(templated_files / 'scripts')
