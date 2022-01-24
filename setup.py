@@ -54,6 +54,12 @@ with io.open(readme_filename, encoding="utf-8") as readme_file:
     readme = readme_file.read()
 
 version = "1.12.10"
+package_root = os.path.abspath(os.path.dirname(__file__))
+
+version = {}
+with open(os.path.join(package_root, "googleapiclient/version.py")) as fp:
+    exec(fp.read(), version)
+version = version["__version__"]
 
 setup(
     name="google-api-python-client",
