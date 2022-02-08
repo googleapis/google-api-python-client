@@ -7730,7 +7730,7 @@
       }
     }
   },
-  "revision": "20220120",
+  "revision": "20220203",
   "rootUrl": "https://displayvideo.googleapis.com/",
   "schemas": {
     "ActivateManualTriggerRequest": {
@@ -8682,16 +8682,16 @@
       "type": "object"
     },
     "AudienceGroupAssignedTargetingOptionDetails": {
-      "description": "Assigned audience group targeting option details. This will be populated in the details field of an AssignedTargetingOption when targeting_type is `TARGETING_TYPE_AUDIENCE_GROUP`. The relation between each group is UNION, except for excluded_first_and_third_party_audience_group and excluded_google_audience_group, of which COMPLEMENT is UNION'ed with other groups.",
+      "description": "Assigned audience group targeting option details. This will be populated in the details field of an AssignedTargetingOption when targeting_type is `TARGETING_TYPE_AUDIENCE_GROUP`. The relation between each group is UNION, except for excluded_first_and_third_party_audience_group and excluded_google_audience_group, of which COMPLEMENT is used as an INTERSECTION with other groups.",
       "id": "AudienceGroupAssignedTargetingOptionDetails",
       "properties": {
         "excludedFirstAndThirdPartyAudienceGroup": {
           "$ref": "FirstAndThirdPartyAudienceGroup",
-          "description": "The first and third party audience ids and recencies of the excluded first and third party audience group. Used for negative targeting. Its COMPLEMENT is used to UNION other audience groups."
+          "description": "The first and third party audience ids and recencies of the excluded first and third party audience group. Used for negative targeting. The COMPLEMENT of the UNION of this group and other excluded audience groups is used as an INTERSECTION to any positive audience targeting. All items are logically \u2018OR\u2019 of each other."
         },
         "excludedGoogleAudienceGroup": {
           "$ref": "GoogleAudienceGroup",
-          "description": "The Google audience ids of the excluded Google audience group. Used for negative targeting. It's COMPLEMENT is used to UNION other audience groups. Only contains Affinity, In-market and Installed-apps type Google audiences. All items are logically \u2018OR\u2019 of each other."
+          "description": "The Google audience ids of the excluded Google audience group. Used for negative targeting. The COMPLEMENT of the UNION of this group and other excluded audience groups is used as an INTERSECTION to any positive audience targeting. Only contains Affinity, In-market and Installed-apps type Google audiences. All items are logically \u2018OR\u2019 of each other."
         },
         "includedCombinedAudienceGroup": {
           "$ref": "CombinedAudienceGroup",
@@ -9901,33 +9901,33 @@
       "id": "ContactInfo",
       "properties": {
         "countryCode": {
-          "description": "Country code of the member.",
+          "description": "Country code of the member. Must also be set with the following fields: * hashed_first_name * hashed_last_name * zip_codes",
           "type": "string"
         },
         "hashedEmails": {
-          "description": "A list of SHA256 hashed email of the member.",
+          "description": "A list of SHA256 hashed email of the member. Before hashing, remove all whitespace and make sure the string is all lowercase.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "hashedFirstName": {
-          "description": "SHA256 hashed first name of the member.",
+          "description": "SHA256 hashed first name of the member. Before hashing, remove all whitespace and make sure the string is all lowercase. Must also be set with the following fields: * country_code * hashed_last_name * zip_codes",
           "type": "string"
         },
         "hashedLastName": {
-          "description": "SHA256 hashed last name of the member.",
+          "description": "SHA256 hashed last name of the member. Before hashing, remove all whitespace and make sure the string is all lowercase. Must also be set with the following fields: * country_code * hashed_first_name * zip_codes",
           "type": "string"
         },
         "hashedPhoneNumbers": {
-          "description": "A list of SHA256 hashed phone numbers of the member.",
+          "description": "A list of SHA256 hashed phone numbers of the member. Before hashing, all phone numbers must be formatted using the [E.164 format](//en.wikipedia.org/wiki/E.164) and include the country calling code.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "zipCodes": {
-          "description": "A list of zip codes of the member.",
+          "description": "A list of zip codes of the member. Must also be set with the following fields: * country_code * hashed_first_name * hashed_last_name",
           "items": {
             "type": "string"
           },
@@ -10950,7 +10950,7 @@
       "type": "object"
     },
     "Date": {
-      "description": "Represents a whole or partial calendar date, such as a birthday. The time of day and time zone are either specified elsewhere or are insignificant. The date is relative to the Gregorian Calendar. This can represent one of the following: * A full date, with non-zero year, month, and day values * A month and day value, with a zero year, such as an anniversary * A year on its own, with zero month and day values * A year and month value, with a zero day, such as a credit card expiration date Related types are google.type.TimeOfDay and `google.protobuf.Timestamp`.",
+      "description": "Represents a whole or partial calendar date, such as a birthday. The time of day and time zone are either specified elsewhere or are insignificant. The date is relative to the Gregorian Calendar. This can represent one of the following: * A full date, with non-zero year, month, and day values * A month and day, with a zero year (e.g., an anniversary) * A year on its own, with a zero month and a zero day * A year and month, with a zero day (e.g., a credit card expiration date) Related types: * google.type.TimeOfDay * google.type.DateTime * google.protobuf.Timestamp",
       "id": "Date",
       "properties": {
         "day": {
@@ -12297,6 +12297,10 @@
           "readOnly": true,
           "type": "string"
         },
+        "appId": {
+          "description": "The app_id matches with the type of the mobile_device_ids being uploaded. Only applicable to audience_type `CUSTOMER_MATCH_DEVICE_ID`",
+          "type": "string"
+        },
         "audienceSource": {
           "description": "Output only. The source of the audience.",
           "enum": [
@@ -12345,6 +12349,10 @@
             "Subtype of third party audience type."
           ],
           "type": "string"
+        },
+        "contactInfoList": {
+          "$ref": "ContactInfoList",
+          "description": "Input only. A list of contact information to define the initial audience members. Only applicable to audience_type `CUSTOMER_MATCH_CONTACT_INFO`"
         },
         "description": {
           "description": "The user-provided description of the audience. Only applicable to first party audiences.",
@@ -12405,9 +12413,13 @@
           "type": "string"
         },
         "membershipDurationDays": {
-          "description": "The duration in days that an entry remains in the audience after the qualifying event. If the audience has no expiration, the value of this field should be set 10000. Otherwise, the set value must be greater than 0 and less than or equal to 540. Only applicable to first party audiences. This field is required for the following audience_type: * `CUSTOMER_MATCH_CONTACT_INFO` * `CUSTOMER_MATCH_DEVICE_ID`",
+          "description": "The duration in days that an entry remains in the audience after the qualifying event. If the audience has no expiration, set the value of this field to 10000. Otherwise, the set value must be greater than 0 and less than or equal to 540. Only applicable to first party audiences. This field is required if one of the following audience_type is used: * `CUSTOMER_MATCH_CONTACT_INFO` * `CUSTOMER_MATCH_DEVICE_ID`",
           "format": "int64",
           "type": "string"
+        },
+        "mobileDeviceIdList": {
+          "$ref": "MobileDeviceIdList",
+          "description": "Input only. A list of mobile device IDs to define the initial audience members. Only applicable to audience_type `CUSTOMER_MATCH_DEVICE_ID`"
         },
         "name": {
           "description": "Output only. The resource name of the first and third party audience.",
