@@ -137,7 +137,6 @@
 
 
 ## bigtableadmin
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigtableadmin_v1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/bigtableadmin_v2.html)
 
 
@@ -162,6 +161,10 @@
 
 ## calendar
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/calendar_v3.html)
+
+
+## certificatemanager
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/certificatemanager_v1.html)
 
 
 ## chat
@@ -537,6 +540,7 @@
 * [v1alpha2](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v1alpha2.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v1beta.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v1beta1.html)
+* [v2alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v2alpha.html)
 
 
 ## gmail
@@ -755,6 +759,10 @@
 
 ## playcustomapp
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/playcustomapp_v1.html)
+
+
+## playintegrity
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/playintegrity_v1.html)
 
 
 ## policyanalyzer
@@ -985,7 +993,6 @@
 
 ## transcoder
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/transcoder_v1.html)
-* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/transcoder_v1beta1.html)
 
 
 ## translate
