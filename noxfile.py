@@ -23,7 +23,7 @@ test_dependencies = [
     "mox",
     "parameterized",
     "pyopenssl",
-    "pytest",
+    "pytest<7.0.0",
     "pytest-cov",
     "webtest",
     "coverage",
