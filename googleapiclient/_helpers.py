@@ -42,7 +42,7 @@ def positional(max_positional_args):
     This decorator makes it easy to support Python 3 style keyword-only
     parameters. For example, in Python 3 it is possible to write::
 
-        def fn(pos1, *, kwonly1=None, kwonly1=None):
+        def fn(pos1, *, kwonly1=None, kwonly2=None):
             ...
 
     All named parameters after ``*`` must be a keyword::
@@ -94,7 +94,7 @@ def positional(max_positional_args):
 
     Args:
         max_positional_arguments: Maximum number of positional arguments. All
-                                  parameters after the this index must be
+                                  parameters after this index must be
                                   keyword only.
 
     Returns:
@@ -102,7 +102,7 @@ def positional(max_positional_args):
         from being used as positional parameters.
 
     Raises:
-        TypeError: if a key-word only argument is provided as a positional
+        TypeError: if a keyword-only argument is provided as a positional
                    parameter, but only if
                    _helpers.positional_parameters_enforcement is set to
                    POSITIONAL_EXCEPTION.

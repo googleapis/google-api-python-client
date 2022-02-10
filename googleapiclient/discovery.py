@@ -328,7 +328,7 @@ def build(
 
 def _discovery_service_uri_options(discoveryServiceUrl, version):
     """
-    Returns Discovery URIs to be used for attemnting to build the API Resource.
+    Returns Discovery URIs to be used for attempting to build the API Resource.
 
   Args:
     discoveryServiceUrl:
