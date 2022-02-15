@@ -1743,7 +1743,7 @@
       }
     }
   },
-  "revision": "20220104",
+  "revision": "20220205",
   "rootUrl": "https://notebooks.googleapis.com/",
   "schemas": {
     "AcceleratorConfig": {
@@ -1966,6 +1966,13 @@
       "description": "The definition of an Event for a managed / semi-managed notebook instance.",
       "id": "Event",
       "properties": {
+        "details": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. Event details. This field is used to pass event information.",
+          "type": "object"
+        },
         "reportTime": {
           "description": "Event report time.",
           "format": "google-datetime",
@@ -1975,11 +1982,15 @@
           "description": "Event type.",
           "enum": [
             "EVENT_TYPE_UNSPECIFIED",
-            "IDLE"
+            "IDLE",
+            "HEARTBEAT",
+            "HEALTH"
           ],
           "enumDescriptions": [
             "Event is not specified.",
-            "The instance / runtime is idle"
+            "The instance / runtime is idle",
+            "The instance / runtime is available. This event indicates that instance / runtime underlying compute is operational.",
+            "The instance / runtime health is available. This event indicates that instance / runtime health information."
           ],
           "type": "string"
         }
@@ -2259,6 +2270,11 @@
         "createTime": {
           "description": "Output only. Instance creation time.",
           "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "creator": {
+          "description": "Output only. Email address of entity that sent original CreateInstance request.",
           "readOnly": true,
           "type": "string"
         },
@@ -2993,13 +3009,13 @@
       "type": "object"
     },
     "ResetInstanceRequest": {
-      "description": "Request for reseting a notebook instance",
+      "description": "Request for resetting a notebook instance",
       "id": "ResetInstanceRequest",
       "properties": {},
       "type": "object"
     },
     "ResetRuntimeRequest": {
-      "description": "Request for reseting a Managed Notebook Runtime.",
+      "description": "Request for resetting a Managed Notebook Runtime.",
       "id": "ResetRuntimeRequest",
       "properties": {},
       "type": "object"
@@ -3034,12 +3050,16 @@
           "enum": [
             "HEALTH_STATE_UNSPECIFIED",
             "HEALTHY",
-            "UNHEALTHY"
+            "UNHEALTHY",
+            "AGENT_NOT_INSTALLED",
+            "AGENT_NOT_RUNNING"
           ],
           "enumDescriptions": [
             "The runtime substate is unknown.",
             "The runtime is known to be in an healthy state (for example, critical daemons are running) Applies to ACTIVE state.",
-            "The runtime is known to be in an unhealthy state (for example, critical daemons are not running) Applies to ACTIVE state."
+            "The runtime is known to be in an unhealthy state (for example, critical daemons are not running) Applies to ACTIVE state.",
+            "The runtime has not installed health monitoring agent. Applies to ACTIVE state.",
+            "The runtime health monitoring agent is not running. Applies to ACTIVE state."
           ],
           "readOnly": true,
           "type": "string"
@@ -3150,11 +3170,13 @@
           "description": "The type of access mode this instance.",
           "enum": [
             "RUNTIME_ACCESS_TYPE_UNSPECIFIED",
-            "SINGLE_USER"
+            "SINGLE_USER",
+            "SERVICE_ACCOUNT"
           ],
           "enumDescriptions": [
             "Unspecified access.",
-            "Single user login."
+            "Single user login.",
+            "Service Account mode. In Service Account mode, Runtime creator will specify a SA that exists in the consumer project. Using Runtime Service Account field. Users accessing the Runtime need ActAs (Service Account User) permission."
           ],
           "type": "string"
         },
@@ -3216,7 +3238,7 @@
       "type": "object"
     },
     "RuntimeSoftwareConfig": {
-      "description": "Specifies the selection and configuration of software inside the runtime. The properties to set on runtime. Properties keys are specified in `key:value` format, for example: * `idle_shutdown: true` * `idle_shutdown_timeout: 180` * `report-system-health: true`",
+      "description": "Specifies the selection and configuration of software inside the runtime. The properties to set on runtime. Properties keys are specified in `key:value` format, for example: * `idle_shutdown: true` * `idle_shutdown_timeout: 180` * `enable_health_monitoring: true`",
       "id": "RuntimeSoftwareConfig",
       "properties": {
         "customGpuDriverPath": {
@@ -3240,6 +3262,13 @@
           "description": "Install Nvidia Driver automatically.",
           "type": "boolean"
         },
+        "kernels": {
+          "description": "Optional. Use a list of container images to use as Kernels in the notebook instance.",
+          "items": {
+            "$ref": "ContainerImage"
+          },
+          "type": "array"
+        },
         "notebookUpgradeSchedule": {
           "description": "Cron expression in UTC timezone, used to schedule instance auto upgrade. Please follow the [cron format](https://en.wikipedia.org/wiki/Cron).",
           "type": "string"
@@ -3247,6 +3276,11 @@
         "postStartupScript": {
           "description": "Path to a Bash script that automatically runs after a notebook instance fully boots up. The path must be a URL or Cloud Storage path (`gs://path-to-file/file-name`).",
           "type": "string"
+        },
+        "upgradeable": {
+          "description": "Output only. Bool indicating whether an newer image is available in an image family.",
+          "readOnly": true,
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -3784,7 +3818,7 @@
           "description": "Optional. The Compute Engine accelerator configuration for this runtime."
         },
         "containerImages": {
-          "description": "Optional. Use a list of container images to start the notebook instance.",
+          "description": "Optional. Use a list of container images to use as Kernels in the notebook instance.",
           "items": {
             "$ref": "ContainerImage"
           },
@@ -3844,6 +3878,10 @@
             "VIRTIO",
             "GVNIC"
           ],
+          "type": "string"
+        },
+        "reservedIpRange": {
+          "description": "Optional. Reserved IP Range name is used for VPC Peering. The subnetwork allocation will use the range *name* if it's assigned. Example: managed-notebooks-range-c PEERING_RANGE_NAME_3=managed-notebooks-range-c gcloud compute addresses create $PEERING_RANGE_NAME_3 \\ --global \\ --prefix-length=24 \\ --description=\"Google Cloud Managed Notebooks Range 24 c\" \\ --network=$NETWORK \\ --addresses=192.168.0.0 \\ --purpose=VPC_PEERING Field value will be: `managed-notebooks-range-c`",
           "type": "string"
         },
         "shieldedInstanceConfig": {
