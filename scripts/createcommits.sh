@@ -28,14 +28,13 @@ do
         if [ $name = "index" ]; then
             git add '../docs/dyn/index.md'
             commitmsg='chore: update docs/dyn/index.md'
-        else
+        elif [[ -f "$API_SUMMARY_PATH" ]]; then
             git add '../googleapiclient/discovery_cache/documents/'$name'.*.json'
             git add '../docs/dyn/'$name'_*.html'
-            if [[ -f "$API_SUMMARY_PATH" ]]; then
-                commitmsg=`cat $API_SUMMARY_PATH`
-            else
-                commitmsg='chore('$name'): update the api'
-            fi
+            commitmsg=`cat $API_SUMMARY_PATH`
+        else
+            # Do nothing. The files will be included in a bulk commit at the end
+            continue
         fi
         git commit -m "$commitmsg"
         git rev-parse HEAD>temp/$name'.sha'
@@ -43,10 +42,10 @@ do
     fi
 done < temp/changed_files
 
-# Add untracked files
+# Add untracked files and files with minor updates
 git add "../googleapiclient/discovery_cache/documents/*.json"
 git add "../docs/dyn/*.html"
-commitmsg='chore(docs): Add new discovery artifacts and reference documents'
+commitmsg='chore(docs): Add new discovery artifacts and artifacts with minor updates'
 git commit -m "$commitmsg"
 
 exit 0
