@@ -28,14 +28,14 @@ do
         if [ $name = "index" ]; then
             git add '../docs/dyn/index.md'
             commitmsg='chore: update docs/dyn/index.md'
-        else
+        elif [[ -f "$API_SUMMARY_PATH" ]]; then
             git add '../googleapiclient/discovery_cache/documents/'$name'.*.json'
             git add '../docs/dyn/'$name'_*.html'
-            if [[ -f "$API_SUMMARY_PATH" ]]; then
-                commitmsg=`cat $API_SUMMARY_PATH`
-            else
-                commitmsg='chore('$name'): update the api'
-            fi
+            commitmsg=`cat $API_SUMMARY_PATH`
+        else
+            # Unstage the files. They will be included in a bulk commit at the end
+            git reset '../googleapiclient/discovery_cache/documents/'$name'.*.json'
+            git reset '../docs/dyn/'$name'_*.html'
         fi
         git commit -m "$commitmsg"
         git rev-parse HEAD>temp/$name'.sha'
