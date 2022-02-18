@@ -43,10 +43,10 @@ do
     fi
 done < temp/changed_files
 
-# Add untracked files
+# Add untracked files and files with minor updates
 git add "../googleapiclient/discovery_cache/documents/*.json"
 git add "../docs/dyn/*.html"
-commitmsg='chore(docs): Add new discovery artifacts and reference documents'
+commitmsg='chore(docs): Add new discovery artifacts and artifacts with minor updates'
 git commit -m "$commitmsg"
 
 exit 0
