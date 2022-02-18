@@ -33,9 +33,8 @@ do
             git add '../docs/dyn/'$name'_*.html'
             commitmsg=`cat $API_SUMMARY_PATH`
         else
-            # Unstage the files. They will be included in a bulk commit at the end
-            git reset '../googleapiclient/discovery_cache/documents/'$name'.*.json'
-            git reset '../docs/dyn/'$name'_*.html'
+            # Do nothing. The files will be included in a bulk commit at the end
+            continue
         fi
         git commit -m "$commitmsg"
         git rev-parse HEAD>temp/$name'.sha'
