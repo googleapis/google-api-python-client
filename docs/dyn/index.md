@@ -117,6 +117,7 @@
 
 ## baremetalsolution
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v2.html)
 
 
 ## bigquery
@@ -229,6 +230,8 @@
 
 ## cloudfunctions
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudfunctions_v1.html)
+* [v2alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudfunctions_v2alpha.html)
+* [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudfunctions_v2beta.html)
 
 
 ## cloudidentity
@@ -351,6 +354,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datapipelines_v1.html)
 
 
+## dataplex
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataplex_v1.html)
+
+
 ## dataproc
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataproc_v1.html)
 
@@ -404,6 +411,7 @@
 ## dns
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dns_v1.html)
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/dns_v1beta2.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/dns_v2.html)
 
 
 ## docs
@@ -670,6 +678,10 @@
 
 ## mybusinessaccountmanagement
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessaccountmanagement_v1.html)
+
+
+## mybusinessbusinesscalls
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessbusinesscalls_v1.html)
 
 
 ## mybusinessbusinessinformation
