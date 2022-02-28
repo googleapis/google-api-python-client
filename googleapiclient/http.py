@@ -661,37 +661,32 @@ class MediaInMemoryUpload(MediaIoBaseUpload):
 
 
 class MediaIoBaseDownload(object):
-    """ "Download media resources.
+    """Download media resources.
 
     Note that the Python file object is compatible with io.Base and can be used
     with this class also.
 
-
     Example:
-      request = farms.animals().get_media(id='cow')
-      fh = io.FileIO('cow.png', mode='wb')
-      downloader = MediaIoBaseDownload(fh, request, chunksize=1024*1024)
+        request = farms.animals().get_media(id='cow')
+        downloader = MediaIoBaseDownload(request, chunksize=1024*1024)
 
-      done = False
-      while done is False:
-        status, done = downloader.next_chunk()
-        if status:
-          print "Download %d%%." % int(status.progress() * 100)
-      print "Download Complete!"
+        for chunk, status, done in downloader.next_chunk():
+            with open('cow.png', 'ab') as cow_file:
+                cow_file.write(chunk)
+            print("Download %d%%." % int(status.progress() * 100))
+
+        print("Download Complete!")
     """
 
-    @util.positional(3)
-    def __init__(self, fd, request, chunksize=DEFAULT_CHUNK_SIZE):
+    @util.positional(2)
+    def __init__(self, request, chunksize=DEFAULT_CHUNK_SIZE):
         """Constructor.
 
         Args:
-          fd: io.Base or file object, The stream in which to write the downloaded
-            bytes.
           request: googleapiclient.http.HttpRequest, the media request to perform in
             chunks.
           chunksize: int, File will be downloaded in chunks of this many bytes.
         """
-        self._fd = fd
         self._request = request
         self._uri = request.uri
         self._chunksize = chunksize
@@ -722,7 +717,7 @@ class MediaIoBaseDownload(object):
                 request only once.
 
         Returns:
-          (status, done): (MediaDownloadProgress, boolean)
+          (chunk, status, done): (bytes, MediaDownloadProgress, boolean)
              The value of 'done' will be True when the media has been fully
              downloaded or the total size of the media is unknown.
 
@@ -730,53 +725,61 @@ class MediaIoBaseDownload(object):
           googleapiclient.errors.HttpError if the response was not a 2xx.
           httplib2.HttpLib2Error if a transport error has occurred.
         """
-        headers = self._headers.copy()
-        headers["range"] = "bytes=%d-%d" % (
-            self._progress,
-            self._progress + self._chunksize - 1,
-        )
-        http = self._request.http
+        while self._done is False:
+            headers = self._headers.copy()
+            headers["range"] = "bytes=%d-%d" % (
+                self._progress,
+                self._progress + self._chunksize - 1,
+            )
+            http = self._request.http
 
-        resp, content = _retry_request(
-            http,
-            num_retries,
-            "media download",
-            self._sleep,
-            self._rand,
-            self._uri,
-            "GET",
-            headers=headers,
-        )
+            resp, chunk = _retry_request(
+                http,
+                num_retries,
+                "media download",
+                self._sleep,
+                self._rand,
+                self._uri,
+                "GET",
+                headers=headers,
+            )
 
-        if resp.status in [200, 206]:
-            if "content-location" in resp and resp["content-location"] != self._uri:
-                self._uri = resp["content-location"]
-            self._progress += len(content)
-            self._fd.write(content)
+            if resp.status in [200, 206]:
+                if "content-location" in resp and resp["content-location"] != self._uri:
+                    self._uri = resp["content-location"]
+                self._progress += len(chunk)
 
-            if "content-range" in resp:
+                if "content-range" in resp:
+                    content_range = resp["content-range"]
+                    length = content_range.rsplit("/", 1)[1]
+                    self._total_size = int(length)
+                elif "content-length" in resp:
+                    self._total_size = int(resp["content-length"])
+
+                if self._total_size is None or self._progress == self._total_size:
+                    self._done = True
+                yield (
+                    chunk,
+                    MediaDownloadProgress(self._progress, self._total_size),
+                    self._done
+                )
+            elif resp.status == 416:
+                # 416 is Range Not Satisfiable
+                # This typically occurs with a zero byte file
                 content_range = resp["content-range"]
                 length = content_range.rsplit("/", 1)[1]
                 self._total_size = int(length)
-            elif "content-length" in resp:
-                self._total_size = int(resp["content-length"])
-
-            if self._total_size is None or self._progress == self._total_size:
-                self._done = True
-            return MediaDownloadProgress(self._progress, self._total_size), self._done
-        elif resp.status == 416:
-            # 416 is Range Not Satisfiable
-            # This typically occurs with a zero byte file
-            content_range = resp["content-range"]
-            length = content_range.rsplit("/", 1)[1]
-            self._total_size = int(length)
-            if self._total_size == 0:
-                self._done = True
-                return (
-                    MediaDownloadProgress(self._progress, self._total_size),
-                    self._done,
-                )
-        raise HttpError(resp, content, uri=self._uri)
+                if self._total_size == 0:
+                    self._done = True
+                    yield (
+                        chunk,
+                        MediaDownloadProgress(self._progress, self._total_size),
+                        self._done,
+                    )
+                else:
+                    raise HttpError(resp, content, uri=self._uri)
+            else:
+                raise HttpError(resp, content, uri=self._uri)
 
 
 class _StreamSlice(object):
