@@ -11,7 +11,7 @@ activities = service.activities()
 request = activities.list(userId='someUserId', collection='public')
 
 while request is not None:
-  activities_doc = request.execute(http=http)
+  activities_doc = request.execute()
 
   # Do something with the activities
 
