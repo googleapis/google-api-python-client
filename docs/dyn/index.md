@@ -521,6 +521,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/fitness_v1.html)
 
 
+## forms
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/forms_v1.html)
+
+
 ## games
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/games_v1.html)
 
@@ -771,6 +775,11 @@
 
 ## playcustomapp
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/playcustomapp_v1.html)
+
+
+## playdeveloperreporting
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/playdeveloperreporting_v1alpha1.html)
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/playdeveloperreporting_v1beta1.html)
 
 
 ## playintegrity
