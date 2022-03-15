@@ -1,5 +1,13 @@
 # Changelog
 
+
+### [1.12.11](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.11...v1.12.10) (2022-01-31)
+
+### Bug Fixes
+
+* use version.py instead of pkg_resources ([#1677](https://www.github.com/googleapis/google-api-python-client/issues/1677))
+
+
 ### [1.12.10](https://www.github.com/googleapis/google-api-python-client/compare/v1.12.9...v1.12.10) (2022-01-13)
 
 
