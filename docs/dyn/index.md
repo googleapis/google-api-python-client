@@ -58,6 +58,10 @@
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/analyticsdata_v1beta.html)
 
 
+## analyticshub
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/analyticshub_v1beta1.html)
+
+
 ## analyticsreporting
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/analyticsreporting_v4.html)
 
@@ -542,6 +546,10 @@
 
 ## genomics
 * [v2alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/genomics_v2alpha1.html)
+
+
+## gkebackup
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/gkebackup_v1.html)
 
 
 ## gkehub
