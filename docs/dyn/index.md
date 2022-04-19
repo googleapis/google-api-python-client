@@ -589,6 +589,7 @@
 
 ## iam
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/iam_v1.html)
+* [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/iam_v2beta.html)
 
 
 ## iamcredentials
