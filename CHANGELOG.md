@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.46.0](https://github.com/googleapis/google-api-python-client/compare/v2.45.0...v2.46.0) (2022-04-26)
+
+
+### Features
+
+* **baremetalsolution:** update the api https://github.com/googleapis/google-api-python-client/commit/dfaeb43d3e1896a011d611651695f6b7fbf2e2c5 ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **bigqueryreservation:** update the api https://github.com/googleapis/google-api-python-client/commit/1a85de3a726b840c06d2b55e36d1352881342fd3 ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **chat:** update the api https://github.com/googleapis/google-api-python-client/commit/94044225b078ecf5f378d3add86cb3f4afec5b9a ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **cloudchannel:** update the api https://github.com/googleapis/google-api-python-client/commit/3db2f5c1c873e0def3c85b7ee46386774fefd73e ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **cloudsearch:** update the api https://github.com/googleapis/google-api-python-client/commit/56a38b080d29039dff8d6c756a21d9704e7c7aaf ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **compute:** update the api https://github.com/googleapis/google-api-python-client/commit/c05cb3357a67eefe80038b1aa3e4dfc8ccb7ab6f ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **doubleclicksearch:** update the api https://github.com/googleapis/google-api-python-client/commit/96507843666e6600538166f86df62220f16d4eaa ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **drive:** update the api https://github.com/googleapis/google-api-python-client/commit/52acfadcfd9007aaf26245d3c14a5530ff6d3a3e ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **managedidentities:** update the api https://github.com/googleapis/google-api-python-client/commit/ce1faebaebbc8329fd5ab7e2883bde621f0603a9 ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **networkservices:** update the api https://github.com/googleapis/google-api-python-client/commit/ada585788f0f29d47b12a89a0d23b62508703fea ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **ondemandscanning:** update the api https://github.com/googleapis/google-api-python-client/commit/883bf741abb0ab73f14d23f0d578994f9c2b4f00 ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **prod_tt_sasportal:** update the api https://github.com/googleapis/google-api-python-client/commit/e5391040e9b1f4389b1944c7bb37a09d49e57244 ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **retail:** update the api https://github.com/googleapis/google-api-python-client/commit/009f7d672bf413989dba7a5e21edd6b38d6c2d91 ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **run:** update the api https://github.com/googleapis/google-api-python-client/commit/d05adee3f771d4d1b1f7b9a75599e4285ab900a4 ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+* **securitycenter:** update the api https://github.com/googleapis/google-api-python-client/commit/dafa308bd12826dc67ef0b08f5563f54a2f8e847 ([fba18bf](https://github.com/googleapis/google-api-python-client/commit/fba18bfa6c1cecf14b46a3df07dddf6c9960e1f0))
+
 ## [2.45.0](https://github.com/googleapis/google-api-python-client/compare/v2.44.0...v2.45.0) (2022-04-19)
 
 
