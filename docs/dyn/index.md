@@ -121,6 +121,7 @@
 
 ## baremetalsolution
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1.html)
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1alpha1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v2.html)
 
 
@@ -234,6 +235,7 @@
 
 ## cloudfunctions
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudfunctions_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudfunctions_v2.html)
 * [v2alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudfunctions_v2alpha.html)
 * [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudfunctions_v2beta.html)
 
@@ -484,6 +486,7 @@
 
 
 ## firebaseappcheck
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseappcheck_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseappcheck_v1beta.html)
 
 
@@ -1035,6 +1038,7 @@
 
 ## verifiedaccess
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/verifiedaccess_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/verifiedaccess_v2.html)
 
 
 ## versionhistory
