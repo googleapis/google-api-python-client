@@ -23,7 +23,6 @@ from __future__ import absolute_import
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
 import copy
-import httplib2
 import http.client as http_client
 import io
 import json
@@ -35,6 +34,8 @@ import socket
 import time
 import urllib
 import uuid
+
+import httplib2
 
 # TODO(issue 221): Remove this conditional import jibbajabba.
 try:
@@ -49,17 +50,17 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.nonmultipart import MIMENonMultipart
 from email.parser import FeedParser
 
-from googleapiclient import _helpers as util
-
 from googleapiclient import _auth
-from googleapiclient.errors import BatchError
-from googleapiclient.errors import HttpError
-from googleapiclient.errors import InvalidChunkSizeError
-from googleapiclient.errors import ResumableUploadError
-from googleapiclient.errors import UnexpectedBodyError
-from googleapiclient.errors import UnexpectedMethodError
+from googleapiclient import _helpers as util
+from googleapiclient.errors import (
+    BatchError,
+    HttpError,
+    InvalidChunkSizeError,
+    ResumableUploadError,
+    UnexpectedBodyError,
+    UnexpectedMethodError,
+)
 from googleapiclient.model import JsonModel
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -172,7 +173,7 @@ def _retry_request(
     for retry_num in range(num_retries + 1):
         if retry_num > 0:
             # Sleep before retrying.
-            sleep_time = rand() * 2 ** retry_num
+            sleep_time = rand() * 2**retry_num
             LOGGER.warning(
                 "Sleeping %.2f seconds before retry %d of %d for %s: %s %s, after %s",
                 sleep_time,
@@ -1073,7 +1074,7 @@ class HttpRequest(object):
 
         for retry_num in range(num_retries + 1):
             if retry_num > 0:
-                self._sleep(self._rand() * 2 ** retry_num)
+                self._sleep(self._rand() * 2**retry_num)
                 LOGGER.warning(
                     "Retry #%d for media upload: %s %s, following status: %d"
                     % (retry_num, self.method, self.uri, resp.status)

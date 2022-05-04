@@ -34,31 +34,29 @@ def init(
 ):
     """A common initialization routine for samples.
 
-  Many of the sample applications do the same initialization, which has now
-  been consolidated into this function. This function uses common idioms found
-  in almost all the samples, i.e. for an API with name 'apiname', the
-  credentials are stored in a file named apiname.dat, and the
-  client_secrets.json file is stored in the same directory as the application
-  main file.
+    Many of the sample applications do the same initialization, which has now
+    been consolidated into this function. This function uses common idioms found
+    in almost all the samples, i.e. for an API with name 'apiname', the
+    credentials are stored in a file named apiname.dat, and the
+    client_secrets.json file is stored in the same directory as the application
+    main file.
 
-  Args:
-    argv: list of string, the command-line parameters of the application.
-    name: string, name of the API.
-    version: string, version of the API.
-    doc: string, description of the application. Usually set to __doc__.
-    file: string, filename of the application. Usually set to __file__.
-    parents: list of argparse.ArgumentParser, additional command-line flags.
-    scope: string, The OAuth scope used.
-    discovery_filename: string, name of local discovery file (JSON). Use when discovery doc not available via URL.
+    Args:
+      argv: list of string, the command-line parameters of the application.
+      name: string, name of the API.
+      version: string, version of the API.
+      doc: string, description of the application. Usually set to __doc__.
+      file: string, filename of the application. Usually set to __file__.
+      parents: list of argparse.ArgumentParser, additional command-line flags.
+      scope: string, The OAuth scope used.
+      discovery_filename: string, name of local discovery file (JSON). Use when discovery doc not available via URL.
 
-  Returns:
-    A tuple of (service, flags), where service is the service object and flags
-    is the parsed command-line flags.
-  """
+    Returns:
+      A tuple of (service, flags), where service is the service object and flags
+      is the parsed command-line flags.
+    """
     try:
-        from oauth2client import client
-        from oauth2client import file
-        from oauth2client import tools
+        from oauth2client import client, file, tools
     except ImportError:
         raise ImportError(
             "googleapiclient.sample_tools requires oauth2client. Please install oauth2client and try again."

@@ -13,11 +13,11 @@
 # limitations under the License.
 
 import unittest
-import mock
 
 import google.auth.credentials
 import google_auth_httplib2
 import httplib2
+import mock
 import oauth2client.client
 
 from googleapiclient import _auth
@@ -89,7 +89,9 @@ class TestAuthWithGoogleAuth(unittest.TestCase):
 
         self.assertNotEqual(credentials, returned)
         self.assertEqual(returned, credentials.with_scopes.return_value)
-        credentials.with_scopes.assert_called_once_with(mock.sentinel.scopes, default_scopes=None)
+        credentials.with_scopes.assert_called_once_with(
+            mock.sentinel.scopes, default_scopes=None
+        )
 
     def test_authorized_http(self):
         credentials = mock.Mock(spec=google.auth.credentials.Credentials)

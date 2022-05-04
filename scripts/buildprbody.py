@@ -13,11 +13,11 @@
 # limitations under the License.
 
 from enum import IntEnum
-import numpy as np
-import pandas as pd
 import pathlib
 
 from changesummary import ChangeType
+import numpy as np
+import pandas as pd
 
 SCRIPTS_DIR = pathlib.Path(__file__).parent.resolve()
 CHANGE_SUMMARY_DIR = SCRIPTS_DIR / "temp"
@@ -48,7 +48,9 @@ class BuildPrBody:
         sha = None
         api_link = ""
 
-        file_path = pathlib.Path(self._change_summary_directory) / "{0}.sha".format(name)
+        file_path = pathlib.Path(self._change_summary_directory) / "{0}.sha".format(
+            name
+        )
         if file_path.is_file():
             with open(file_path, "r") as f:
                 sha = f.readline().rstrip()

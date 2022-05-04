@@ -13,12 +13,22 @@
 # limitations under the License.
 
 import os
-import nox
 import shutil
+
+import nox
 
 BLACK_VERSION = "black==22.3.0"
 ISORT_VERSION = "isort==5.10.1"
-BLACK_PATHS = ["apiclient", "googleapiclient", "scripts", "tests", "describe.py", "noxfile.py", "owlbot.py", "setup.py"]
+BLACK_PATHS = [
+    "apiclient",
+    "googleapiclient",
+    "scripts",
+    "tests",
+    "describe.py",
+    "noxfile.py",
+    "owlbot.py",
+    "setup.py",
+]
 
 test_dependencies = [
     "django>=2.0.0",
@@ -48,6 +58,7 @@ def lint(session):
         "--statistics",
     )
 
+
 @nox.session(python="3.8")
 def format(session):
     """
@@ -66,6 +77,7 @@ def format(session):
         "black",
         *BLACK_PATHS,
     )
+
 
 @nox.session(python=["3.6", "3.7", "3.8", "3.9", "3.10"])
 @nox.parametrize(

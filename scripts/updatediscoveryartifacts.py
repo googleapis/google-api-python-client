@@ -18,9 +18,9 @@ import shutil
 import subprocess
 import tempfile
 
-import describe
 import changesummary
 
+import describe
 
 SCRIPTS_DIR = pathlib.Path(__file__).parent.resolve()
 DISCOVERY_DOC_DIR = (

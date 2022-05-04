@@ -23,20 +23,20 @@ from __future__ import absolute_import
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
 import io
-import httplib2
 import json
 import platform
 import unittest
 import urllib
 
-import googleapiclient.model
+import httplib2
 
 from googleapiclient import version as googleapiclient_version
 from googleapiclient.errors import HttpError
+import googleapiclient.model
 from googleapiclient.model import JsonModel
 
 _LIBRARY_VERSION = googleapiclient_version.__version__
-CSV_TEXT_MOCK = 'column1,column2,column3\nstring1,1.2,string2'
+CSV_TEXT_MOCK = "column1,column2,column3\nstring1,1.2,string2"
 
 
 class Model(unittest.TestCase):
@@ -116,7 +116,7 @@ class Model(unittest.TestCase):
         path_params = {}
         query_params = {
             "foo": 1,
-            "bar": u"\N{COMET}",
+            "bar": "\N{COMET}",
             "baz": ["fe", "fi", "fo", "fum"],  # Repeated parameters
             "qux": [],
         }
@@ -131,7 +131,7 @@ class Model(unittest.TestCase):
 
         query_dict = urllib.parse.parse_qs(query[1:])
         self.assertEqual(query_dict["foo"], ["1"])
-        self.assertEqual(query_dict["bar"], [u"\N{COMET}"])
+        self.assertEqual(query_dict["bar"], ["\N{COMET}"])
         self.assertEqual(query_dict["baz"], ["fe", "fi", "fo", "fum"])
         self.assertTrue("qux" not in query_dict)
         self.assertEqual(body, "{}")
@@ -301,7 +301,7 @@ class Model(unittest.TestCase):
 
     def test_no_data_wrapper_deserialize_raise_type_error(self):
         buffer = io.StringIO()
-        buffer.write('String buffer')
+        buffer.write("String buffer")
         model = JsonModel(data_wrapper=False)
         resp = httplib2.Response({"status": "500"})
         resp.reason = "The JSON object must be str, bytes or bytearray, not StringIO"
