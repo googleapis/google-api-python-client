@@ -14,7 +14,7 @@
 
 import synthtool as s
 from synthtool import gcp
-
+from pathlib import Path
 from synthtool.languages import python
 
 common = gcp.CommonTemplates()
@@ -43,3 +43,7 @@ s.move(templated_files / 'CONTRIBUTING.rst')
 # ----------------------------------------------------------------------------
 
 python.py_samples(skip_readmes=True)
+
+for noxfile in Path(".").glob("**/noxfile.py"):
+    s.shell.run(["nox", "-s", "format"], cwd=noxfile.parent, hide_output=False)
+

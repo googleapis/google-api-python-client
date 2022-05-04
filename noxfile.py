@@ -16,6 +16,10 @@ import os
 import nox
 import shutil
 
+BLACK_VERSION = "black==22.3.0"
+ISORT_VERSION = "isort==5.10.1"
+BLACK_PATHS = ["apiclient", "googleapiclient", "scripts", "tests", "describe.py", "noxfile.py", "owlbot.py", "setup.py"]
+
 test_dependencies = [
     "django>=2.0.0",
     "google-auth",
@@ -44,6 +48,24 @@ def lint(session):
         "--statistics",
     )
 
+@nox.session(python="3.8")
+def format(session):
+    """
+    Run isort to sort imports. Then run black
+    to format code to uniform standard.
+    """
+    session.install(BLACK_VERSION, ISORT_VERSION)
+    # Use the --fss option to sort imports using strict alphabetical order.
+    # See https://pycqa.github.io/isort/docs/configuration/options.html#force-sort-within-sections
+    session.run(
+        "isort",
+        "--fss",
+        *BLACK_PATHS,
+    )
+    session.run(
+        "black",
+        *BLACK_PATHS,
+    )
 
 @nox.session(python=["3.6", "3.7", "3.8", "3.9", "3.10"])
 @nox.parametrize(
