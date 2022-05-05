@@ -19,7 +19,6 @@ import inspect
 import logging
 import urllib
 
-
 logger = logging.getLogger(__name__)
 
 POSITIONAL_WARNING = "WARNING"

@@ -6,8 +6,7 @@ __author__ = "jcgregorio@google.com (Joe Gregorio)"
 import datetime
 import unittest
 
-from googleapiclient import channel
-from googleapiclient import errors
+from googleapiclient import channel, errors
 
 
 class TestChannel(unittest.TestCase):

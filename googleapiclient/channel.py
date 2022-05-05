@@ -74,9 +74,8 @@ from __future__ import absolute_import
 import datetime
 import uuid
 
-from googleapiclient import errors
 from googleapiclient import _helpers as util
-
+from googleapiclient import errors
 
 # The unix time epoch starts at midnight 1970.
 EPOCH = datetime.datetime.utcfromtimestamp(0)
@@ -111,28 +110,28 @@ def _upper_header_keys(headers):
 class Notification(object):
     """A Notification from a Channel.
 
-  Notifications are not usually constructed directly, but are returned
-  from functions like notification_from_headers().
+    Notifications are not usually constructed directly, but are returned
+    from functions like notification_from_headers().
 
-  Attributes:
-    message_number: int, The unique id number of this notification.
-    state: str, The state of the resource being monitored.
-    uri: str, The address of the resource being monitored.
-    resource_id: str, The unique identifier of the version of the resource at
-      this event.
-  """
+    Attributes:
+      message_number: int, The unique id number of this notification.
+      state: str, The state of the resource being monitored.
+      uri: str, The address of the resource being monitored.
+      resource_id: str, The unique identifier of the version of the resource at
+        this event.
+    """
 
     @util.positional(5)
     def __init__(self, message_number, state, resource_uri, resource_id):
         """Notification constructor.
 
-    Args:
-      message_number: int, The unique id number of this notification.
-      state: str, The state of the resource being monitored. Can be one
-        of "exists", "not_exists", or "sync".
-      resource_uri: str, The address of the resource being monitored.
-      resource_id: str, The identifier of the watched resource.
-    """
+        Args:
+          message_number: int, The unique id number of this notification.
+          state: str, The state of the resource being monitored. Can be one
+            of "exists", "not_exists", or "sync".
+          resource_uri: str, The address of the resource being monitored.
+          resource_id: str, The identifier of the watched resource.
+        """
         self.message_number = message_number
         self.state = state
         self.resource_uri = resource_uri
@@ -142,26 +141,26 @@ class Notification(object):
 class Channel(object):
     """A Channel for notifications.
 
-  Usually not constructed directly, instead it is returned from helper
-  functions like new_webhook_channel().
+    Usually not constructed directly, instead it is returned from helper
+    functions like new_webhook_channel().
 
-  Attributes:
-    type: str, The type of delivery mechanism used by this channel. For
-      example, 'web_hook'.
-    id: str, A UUID for the channel.
-    token: str, An arbitrary string associated with the channel that
-      is delivered to the target address with each event delivered
-      over this channel.
-    address: str, The address of the receiving entity where events are
-      delivered. Specific to the channel type.
-    expiration: int, The time, in milliseconds from the epoch, when this
-      channel will expire.
-    params: dict, A dictionary of string to string, with additional parameters
-      controlling delivery channel behavior.
-    resource_id: str, An opaque id that identifies the resource that is
-      being watched. Stable across different API versions.
-    resource_uri: str, The canonicalized ID of the watched resource.
-  """
+    Attributes:
+      type: str, The type of delivery mechanism used by this channel. For
+        example, 'web_hook'.
+      id: str, A UUID for the channel.
+      token: str, An arbitrary string associated with the channel that
+        is delivered to the target address with each event delivered
+        over this channel.
+      address: str, The address of the receiving entity where events are
+        delivered. Specific to the channel type.
+      expiration: int, The time, in milliseconds from the epoch, when this
+        channel will expire.
+      params: dict, A dictionary of string to string, with additional parameters
+        controlling delivery channel behavior.
+      resource_id: str, An opaque id that identifies the resource that is
+        being watched. Stable across different API versions.
+      resource_uri: str, The canonicalized ID of the watched resource.
+    """
 
     @util.positional(5)
     def __init__(
@@ -177,27 +176,27 @@ class Channel(object):
     ):
         """Create a new Channel.
 
-    In user code, this Channel constructor will not typically be called
-    manually since there are functions for creating channels for each specific
-    type with a more customized set of arguments to pass.
+        In user code, this Channel constructor will not typically be called
+        manually since there are functions for creating channels for each specific
+        type with a more customized set of arguments to pass.
 
-    Args:
-      type: str, The type of delivery mechanism used by this channel. For
-        example, 'web_hook'.
-      id: str, A UUID for the channel.
-      token: str, An arbitrary string associated with the channel that
-        is delivered to the target address with each event delivered
-        over this channel.
-      address: str,  The address of the receiving entity where events are
-        delivered. Specific to the channel type.
-      expiration: int, The time, in milliseconds from the epoch, when this
-        channel will expire.
-      params: dict, A dictionary of string to string, with additional parameters
-        controlling delivery channel behavior.
-      resource_id: str, An opaque id that identifies the resource that is
-        being watched. Stable across different API versions.
-      resource_uri: str, The canonicalized ID of the watched resource.
-    """
+        Args:
+          type: str, The type of delivery mechanism used by this channel. For
+            example, 'web_hook'.
+          id: str, A UUID for the channel.
+          token: str, An arbitrary string associated with the channel that
+            is delivered to the target address with each event delivered
+            over this channel.
+          address: str,  The address of the receiving entity where events are
+            delivered. Specific to the channel type.
+          expiration: int, The time, in milliseconds from the epoch, when this
+            channel will expire.
+          params: dict, A dictionary of string to string, with additional parameters
+            controlling delivery channel behavior.
+          resource_id: str, An opaque id that identifies the resource that is
+            being watched. Stable across different API versions.
+          resource_uri: str, The canonicalized ID of the watched resource.
+        """
         self.type = type
         self.id = id
         self.token = token
@@ -210,12 +209,12 @@ class Channel(object):
     def body(self):
         """Build a body from the Channel.
 
-    Constructs a dictionary that's appropriate for passing into watch()
-    methods as the value of body argument.
+        Constructs a dictionary that's appropriate for passing into watch()
+        methods as the value of body argument.
 
-    Returns:
-      A dictionary representation of the channel.
-    """
+        Returns:
+          A dictionary representation of the channel.
+        """
         result = {
             "id": self.id,
             "token": self.token,
@@ -236,13 +235,13 @@ class Channel(object):
     def update(self, resp):
         """Update a channel with information from the response of watch().
 
-    When a request is sent to watch() a resource, the response returned
-    from the watch() request is a dictionary with updated channel information,
-    such as the resource_id, which is needed when stopping a subscription.
+        When a request is sent to watch() a resource, the response returned
+        from the watch() request is a dictionary with updated channel information,
+        such as the resource_id, which is needed when stopping a subscription.
 
-    Args:
-      resp: dict, The response from a watch() method.
-    """
+        Args:
+          resp: dict, The response from a watch() method.
+        """
         for json_name, param_name in CHANNEL_PARAMS.items():
             value = resp.get(json_name)
             if value is not None:
@@ -251,20 +250,20 @@ class Channel(object):
 
 def notification_from_headers(channel, headers):
     """Parse a notification from the webhook request headers, validate
-    the notification, and return a Notification object.
+      the notification, and return a Notification object.
 
-  Args:
-    channel: Channel, The channel that the notification is associated with.
-    headers: dict, A dictionary like object that contains the request headers
-      from the webhook HTTP request.
+    Args:
+      channel: Channel, The channel that the notification is associated with.
+      headers: dict, A dictionary like object that contains the request headers
+        from the webhook HTTP request.
 
-  Returns:
-    A Notification object.
+    Returns:
+      A Notification object.
 
-  Raises:
-    errors.InvalidNotificationError if the notification is invalid.
-    ValueError if the X-GOOG-MESSAGE-NUMBER can't be converted to an int.
-  """
+    Raises:
+      errors.InvalidNotificationError if the notification is invalid.
+      ValueError if the X-GOOG-MESSAGE-NUMBER can't be converted to an int.
+    """
     headers = _upper_header_keys(headers)
     channel_id = headers[X_GOOG_CHANNEL_ID]
     if channel.id != channel_id:

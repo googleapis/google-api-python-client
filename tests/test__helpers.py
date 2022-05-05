@@ -18,6 +18,7 @@ import unittest
 import urllib
 
 import mock
+
 from googleapiclient import _helpers
 
 
