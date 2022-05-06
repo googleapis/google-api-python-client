@@ -307,7 +307,6 @@ def document_collection(resource, path, root_discovery, discovery, css=CSS):
     """
     collections = []
     methods = []
-    path.split(".")[-2]
     html = [
         "<html><body>",
         css,
