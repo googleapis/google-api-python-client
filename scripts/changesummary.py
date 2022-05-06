@@ -207,8 +207,7 @@ class ChangeSummary:
         # children keys have been added.
         all_added = (
             parent_added_agg[
-                (parent_added_agg["Proportion"] == 1)
-                & parent_added_agg["Added"]
+                (parent_added_agg["Proportion"] == 1) & parent_added_agg["Added"]
             ][["Parent", "NumLevels"]]
             .sort_values("NumLevels", ascending=True)
             .Parent.to_list()
@@ -219,8 +218,7 @@ class ChangeSummary:
         # children keys have been deleted.
         all_deleted = (
             parent_deleted_agg[
-                (parent_deleted_agg["Proportion"] == 1)
-                & parent_deleted_agg["Deleted"]
+                (parent_deleted_agg["Proportion"] == 1) & parent_deleted_agg["Deleted"]
             ][["Parent", "NumLevels"]]
             .sort_values("NumLevels", ascending=True)
             .Parent.to_list()
