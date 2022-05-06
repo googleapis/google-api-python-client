@@ -208,7 +208,7 @@ class ChangeSummary:
         all_added = (
             parent_added_agg[
                 (parent_added_agg["Proportion"] == 1)
-                & (parent_added_agg["Added"] == True)
+                & parent_added_agg["Added"]
             ][["Parent", "NumLevels"]]
             .sort_values("NumLevels", ascending=True)
             .Parent.to_list()
@@ -220,7 +220,7 @@ class ChangeSummary:
         all_deleted = (
             parent_deleted_agg[
                 (parent_deleted_agg["Proportion"] == 1)
-                & (parent_deleted_agg["Deleted"] == True)
+                & parent_deleted_agg["Deleted"]
             ][["Parent", "NumLevels"]]
             .sort_values("NumLevels", ascending=True)
             .Parent.to_list()
