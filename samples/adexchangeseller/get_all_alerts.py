@@ -22,7 +22,6 @@ from __future__ import print_function
 
 __author__ = 'sgomes@google.com (Sérgio Gomes)'
 
-import argparse
 import sys
 
 from googleapiclient import sample_tools

@@ -27,7 +27,6 @@ import json
 import logging
 import os
 import tempfile
-import threading
 
 try:
     from oauth2client.contrib.locked_file import LockedFile

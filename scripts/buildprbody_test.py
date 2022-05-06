@@ -17,11 +17,9 @@
 __author__ = "partheniou@google.com (Anthonios Partheniou)"
 
 import pathlib
-import shutil
 import unittest
 
 from buildprbody import BuildPrBody
-from changesummary import ChangeType
 
 SCRIPTS_DIR = pathlib.Path(__file__).parent.resolve()
 CHANGE_SUMMARY_DIR = SCRIPTS_DIR / "test_resources" / "buildprbody_resources"

@@ -44,7 +44,6 @@ from __future__ import print_function
 
 __author__ = 'api.nickm@gmail.com (Nick Mihailovski)'
 
-import argparse
 import sys
 
 from googleapiclient.errors import HttpError
