@@ -25,6 +25,7 @@ BLACK_PATHS = [
     "scripts",
     "tests",
     "describe.py",
+    "expandsymlinks.py",
     "noxfile.py",
     "owlbot.py",
     "setup.py",
