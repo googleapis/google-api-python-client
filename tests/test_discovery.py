@@ -595,7 +595,7 @@ class DiscoveryFromDocument(unittest.TestCase):
 
     def test_building_with_context_manager(self):
         discovery = read_datafile("plus.json")
-        with mock.patch("httplib2.Http") as http:
+        with mock.patch("httplib2.Http"):
             with build_from_document(
                 discovery,
                 base="https://www.googleapis.com/",
@@ -603,7 +603,7 @@ class DiscoveryFromDocument(unittest.TestCase):
             ) as plus:
                 self.assertIsNotNone(plus)
                 self.assertTrue(hasattr(plus, "activities"))
-            http.close.assert_called_once()
+            plus._http.http.close.assert_called_once()
 
     def test_resource_close(self):
         discovery = read_datafile("plus.json")
