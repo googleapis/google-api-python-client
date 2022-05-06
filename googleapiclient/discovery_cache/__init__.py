@@ -37,6 +37,7 @@ def autodetect():
     if "APPENGINE_RUNTIME" in os.environ:
         try:
             from . import appengine_memcache
+
             return appengine_memcache.cache
         except Exception:
             pass
