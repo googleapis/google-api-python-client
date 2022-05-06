@@ -427,8 +427,8 @@ def _retrieve_discovery_doc(
         pass
 
     try:
-        service = json.loads(content)
-    except ValueError as e:
+        json.loads(content)
+    except ValueError:
         logger.error("Failed to parse as JSON: " + content)
         raise InvalidJsonError()
     if cache_discovery and cache:
