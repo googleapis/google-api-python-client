@@ -36,14 +36,10 @@ call Google APIs can be found here:
 __author__ = "marccohen@google.com (Marc Cohen)"
 
 import httplib2
-import logging
-import os
-import pickle
 import re
 
 from google.appengine.api import memcache
 from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 from oauth2client.contrib.appengine import AppAssertionCredentials
 

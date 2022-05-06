@@ -26,9 +26,7 @@ __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
 
 import httplib2
-import logging
 import os
-import pickle
 
 from googleapiclient import discovery
 from oauth2client import client
