@@ -1,6 +1,5 @@
 """Retain apiclient as an alias for googleapiclient."""
 
-import googleapiclient
 from googleapiclient import channel, discovery, errors, http, mimeparse, model
 
 try:
