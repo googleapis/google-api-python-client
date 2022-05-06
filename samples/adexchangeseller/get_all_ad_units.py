@@ -22,7 +22,7 @@ Tags: adunits.list
 """
 from __future__ import print_function
 
-__author__ = 'sgomes@google.com (Sérgio Gomes)'
+__author__ = "sgomes@google.com (Sérgio Gomes)"
 
 import argparse
 import sys
@@ -32,37 +32,52 @@ from oauth2client import client
 
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
-argparser.add_argument('ad_client_id',
-    help='The ID of the ad client for which to generate a report')
+argparser.add_argument(
+    "ad_client_id", help="The ID of the ad client for which to generate a report"
+)
 
 MAX_PAGE_SIZE = 50
 
 
 def main(argv):
-  # Authenticate and construct service.
-  service, flags = sample_tools.init(
-      argv, 'adexchangeseller', 'v1.1', __doc__, __file__, parents=[argparser],
-      scope='https://www.googleapis.com/auth/adexchange.seller.readonly')
+    # Authenticate and construct service.
+    service, flags = sample_tools.init(
+        argv,
+        "adexchangeseller",
+        "v1.1",
+        __doc__,
+        __file__,
+        parents=[argparser],
+        scope="https://www.googleapis.com/auth/adexchange.seller.readonly",
+    )
 
-  ad_client_id = flags.ad_client_id
+    ad_client_id = flags.ad_client_id
 
-  try:
-    # Retrieve ad unit list in pages and display data as we receive it.
-    request = service.adunits().list(adClientId=ad_client_id,
-        maxResults=MAX_PAGE_SIZE)
+    try:
+        # Retrieve ad unit list in pages and display data as we receive it.
+        request = service.adunits().list(
+            adClientId=ad_client_id, maxResults=MAX_PAGE_SIZE
+        )
 
-    while request is not None:
-      result = request.execute()
-      ad_units = result['items']
-      for ad_unit in ad_units:
-        print(('Ad unit with code "%s", name "%s" and status "%s" was found. ' %
-               (ad_unit['code'], ad_unit['name'], ad_unit['status'])))
+        while request is not None:
+            result = request.execute()
+            ad_units = result["items"]
+            for ad_unit in ad_units:
+                print(
+                    (
+                        'Ad unit with code "%s", name "%s" and status "%s" was found. '
+                        % (ad_unit["code"], ad_unit["name"], ad_unit["status"])
+                    )
+                )
 
-      request = service.adunits().list_next(request, result)
+            request = service.adunits().list_next(request, result)
 
-  except client.AccessTokenRefreshError:
-    print ('The credentials have been revoked or expired, please re-run the '
-           'application to re-authorize')
+    except client.AccessTokenRefreshError:
+        print(
+            "The credentials have been revoked or expired, please re-run the "
+            "application to re-authorize"
+        )
 
-if __name__ == '__main__':
-  main(sys.argv)
+
+if __name__ == "__main__":
+    main(sys.argv)
