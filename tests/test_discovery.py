@@ -243,7 +243,7 @@ class Utilities(unittest.TestCase):
         dummy_schema = {"Request": {"properties": {}}}
         method_desc = {"request": {"$ref": "Request"}}
 
-        parameters = _fix_up_parameters(method_desc, {}, "POST", dummy_schema)
+        _fix_up_parameters(method_desc, {}, "POST", dummy_schema)
 
     def _base_fix_up_method_description_test(
         self,
@@ -440,14 +440,14 @@ class Utilities(unittest.TestCase):
 class Discovery(unittest.TestCase):
     def test_discovery_http_is_closed(self):
         http = HttpMock(datafile("malformed.json"), {"status": "200"})
-        service = build("plus", "v1", credentials=mock.sentinel.credentials)
+        build("plus", "v1", credentials=mock.sentinel.credentials)
         http.close.assert_called_once()
 
 
 class DiscoveryErrors(unittest.TestCase):
     def test_tests_should_be_run_with_strict_positional_enforcement(self):
         try:
-            plus = build("plus", "v1", None, static_discovery=False)
+            build("plus", "v1", None, static_discovery=False)
             self.fail("should have raised a TypeError exception over missing http=.")
         except TypeError:
             pass
@@ -455,7 +455,7 @@ class DiscoveryErrors(unittest.TestCase):
     def test_failed_to_parse_discovery_json(self):
         self.http = HttpMock(datafile("malformed.json"), {"status": "200"})
         try:
-            plus = build(
+            build(
                 "plus",
                 "v1",
                 http=self.http,
@@ -474,7 +474,7 @@ class DiscoveryErrors(unittest.TestCase):
             ]
         )
         with self.assertRaises(UnknownApiNameOrVersion):
-            plus = build("plus", "v1", http=http, cache_discovery=False)
+            build("plus", "v1", http=http, cache_discovery=False)
 
     def test_credentials_and_http_mutually_exclusive(self):
         http = HttpMock(datafile("plus.json"), {"status": "200"})
@@ -603,7 +603,7 @@ class DiscoveryFromDocument(unittest.TestCase):
             ) as plus:
                 self.assertIsNotNone(plus)
                 self.assertTrue(hasattr(plus, "activities"))
-            plus._http.http.close.assert_called_once()
+            http.close.assert_called_once()
 
     def test_resource_close(self):
         discovery = read_datafile("plus.json")
@@ -668,7 +668,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         discovery = read_datafile("plus.json")
 
         with mock.patch("googleapiclient._auth.default_credentials") as default:
-            plus = build_from_document(
+            build_from_document(
                 discovery,
                 client_options={"scopes": ["1", "2"]},
             )
@@ -679,7 +679,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         discovery = read_datafile("plus.json")
 
         with mock.patch("googleapiclient._auth.default_credentials") as default:
-            plus = build_from_document(
+            build_from_document(
                 discovery,
                 client_options=google.api_core.client_options.ClientOptions(
                     quota_project_id="my-project"
@@ -692,7 +692,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         discovery = read_datafile("plus.json")
 
         with mock.patch("googleapiclient._auth.credentials_from_file") as default:
-            plus = build_from_document(
+            build_from_document(
                 discovery,
                 client_options=google.api_core.client_options.ClientOptions(
                     credentials_file="credentials.json"
@@ -977,7 +977,7 @@ class DiscoveryFromHttp(unittest.TestCase):
             http = HttpMockSequence(
                 [({"status": "400"}, read_datafile("zoo.json", "rb"))]
             )
-            zoo = build(
+            build(
                 "zoo",
                 "v1",
                 http=http,
@@ -995,7 +995,7 @@ class DiscoveryFromHttp(unittest.TestCase):
             http = HttpMockSequence(
                 [({"status": "400"}, read_datafile("zoo.json", "rb"))]
             )
-            zoo = build(
+            build(
                 "zoo",
                 "v1",
                 http=http,
@@ -1013,7 +1013,7 @@ class DiscoveryFromHttp(unittest.TestCase):
             http = HttpMockSequence(
                 [({"status": "400"}, read_datafile("zoo.json", "rb"))]
             )
-            zoo = build(
+            build(
                 "zoo",
                 "v1",
                 http=http,
@@ -1232,7 +1232,7 @@ class DiscoveryFromAppEngineCache(unittest.TestCase):
 
             self.mocked_api.memcache.get.return_value = None
 
-            plus = build("plus", "v1", http=self.http, static_discovery=False)
+            build("plus", "v1", http=self.http, static_discovery=False)
 
             # memcache.get is called once
             url = "https://www.googleapis.com/discovery/v1/apis/plus/v1/rest"
@@ -1253,7 +1253,7 @@ class DiscoveryFromAppEngineCache(unittest.TestCase):
             # (Otherwise it should through an error)
             self.http = HttpMock(None, {"status": "200"})
 
-            plus = build("plus", "v1", http=self.http, static_discovery=False)
+            build("plus", "v1", http=self.http, static_discovery=False)
 
             # memcache.get is called twice
             self.mocked_api.memcache.get.assert_has_calls(
@@ -1312,7 +1312,7 @@ class DiscoveryFromFileCache(unittest.TestCase):
         ):
             self.http = HttpMock(datafile("plus.json"), {"status": "200"})
 
-            plus = build("plus", "v1", http=self.http, static_discovery=False)
+            build("plus", "v1", http=self.http, static_discovery=False)
 
             # cache.get is called once
             url = "https://www.googleapis.com/discovery/v1/apis/plus/v1/rest"
@@ -1329,7 +1329,7 @@ class DiscoveryFromFileCache(unittest.TestCase):
             # (Otherwise it should through an error)
             self.http = HttpMock(None, {"status": "200"})
 
-            plus = build("plus", "v1", http=self.http, static_discovery=False)
+            build("plus", "v1", http=self.http, static_discovery=False)
 
             # cache.get is called twice
             cache.get.assert_has_calls([mock.call(url), mock.call(url)])
@@ -1951,7 +1951,7 @@ class Discovery(unittest.TestCase):
         )
 
         try:
-            body = request.execute(http=http)
+            request.execute(http=http)
         except HttpError as e:
             self.assertEqual(b"01234", e.content)
 
