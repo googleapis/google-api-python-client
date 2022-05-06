@@ -40,7 +40,6 @@ import urllib
 import google.api_core.exceptions
 import google.auth.credentials
 from google.auth.exceptions import MutualTLSChannelError
-from google.auth.transport import mtls
 import google_auth_httplib2
 import httplib2
 import mock
@@ -79,7 +78,6 @@ from googleapiclient.errors import (
     UnknownFileType,
 )
 from googleapiclient.http import (
-    BatchHttpRequest,
     HttpMock,
     HttpMockSequence,
     MediaFileUpload,

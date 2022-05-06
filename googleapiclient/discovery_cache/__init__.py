@@ -16,7 +16,6 @@
 
 from __future__ import absolute_import
 
-import datetime
 import logging
 import os
 
@@ -37,8 +36,6 @@ def autodetect():
     """
     if "APPENGINE_RUNTIME" in os.environ:
         try:
-            from google.appengine.api import memcache
-
             from . import appengine_memcache
 
             return appengine_memcache.cache
