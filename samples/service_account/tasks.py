@@ -27,7 +27,7 @@ Usage:
   $ python tasks.py
 """
 
-__author__ = 'jcgregorio@google.com (Joe Gregorio)'
+__author__ = "jcgregorio@google.com (Joe Gregorio)"
 
 import httplib2
 import pprint
@@ -36,26 +36,28 @@ import sys
 from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 
+
 def main(argv):
-  # Load the json format key that you downloaded from the Google API
-  # Console when you created your service account. For p12 keys, use the
-  # from_p12_keyfile method of ServiceAccountCredentials and specify the 
-  # service account email address, p12 keyfile, and scopes.
-  credentials = ServiceAccountCredentials.from_json_keyfile_name(
-      'service-account-abcdef123456.json',
-      scopes='https://www.googleapis.com/auth/tasks')
+    # Load the json format key that you downloaded from the Google API
+    # Console when you created your service account. For p12 keys, use the
+    # from_p12_keyfile method of ServiceAccountCredentials and specify the
+    # service account email address, p12 keyfile, and scopes.
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(
+        "service-account-abcdef123456.json",
+        scopes="https://www.googleapis.com/auth/tasks",
+    )
 
-  # Create an httplib2.Http object to handle our HTTP requests and authorize
-  # it with the Credentials.
-  http = httplib2.Http()
-  http = credentials.authorize(http)
+    # Create an httplib2.Http object to handle our HTTP requests and authorize
+    # it with the Credentials.
+    http = httplib2.Http()
+    http = credentials.authorize(http)
 
-  service = build("tasks", "v1", http=http)
+    service = build("tasks", "v1", http=http)
 
-  # List all the tasklists for the account.
-  lists = service.tasklists().list().execute(http=http)
-  pprint.pprint(lists)
+    # List all the tasklists for the account.
+    lists = service.tasklists().list().execute(http=http)
+    pprint.pprint(lists)
 
 
-if __name__ == '__main__':
-  main(sys.argv)
+if __name__ == "__main__":
+    main(sys.argv)

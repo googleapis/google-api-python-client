@@ -21,7 +21,7 @@ Tags: savedreports.list
 """
 from __future__ import print_function
 
-__author__ = 'sgomes@google.com (Sérgio Gomes)'
+__author__ = "sgomes@google.com (Sérgio Gomes)"
 
 import sys
 
@@ -32,27 +32,40 @@ MAX_PAGE_SIZE = 50
 
 
 def main(argv):
-  # Authenticate and construct service.
-  service, flags = sample_tools.init(
-      argv, 'adexchangeseller', 'v1.1', __doc__, __file__, parents=[],
-      scope='https://www.googleapis.com/auth/adexchange.seller.readonly')
+    # Authenticate and construct service.
+    service, flags = sample_tools.init(
+        argv,
+        "adexchangeseller",
+        "v1.1",
+        __doc__,
+        __file__,
+        parents=[],
+        scope="https://www.googleapis.com/auth/adexchange.seller.readonly",
+    )
 
-  try:
-    # Retrieve ad client list in pages and display data as we receive it.
-    request = service.reports().saved().list(maxResults=MAX_PAGE_SIZE)
+    try:
+        # Retrieve ad client list in pages and display data as we receive it.
+        request = service.reports().saved().list(maxResults=MAX_PAGE_SIZE)
 
-    while request is not None:
-      result = request.execute()
-      saved_reports = result['items']
-      for saved_report in saved_reports:
-        print(('Saved report with ID "%s" and name "%s" was found.'
-               % (saved_report['id'], saved_report['name'])))
+        while request is not None:
+            result = request.execute()
+            saved_reports = result["items"]
+            for saved_report in saved_reports:
+                print(
+                    (
+                        'Saved report with ID "%s" and name "%s" was found.'
+                        % (saved_report["id"], saved_report["name"])
+                    )
+                )
 
-      request = service.reports().saved().list_next(request, result)
+            request = service.reports().saved().list_next(request, result)
 
-  except client.AccessTokenRefreshError:
-    print ('The credentials have been revoked or expired, please re-run the '
-           'application to re-authorize')
+    except client.AccessTokenRefreshError:
+        print(
+            "The credentials have been revoked or expired, please re-run the "
+            "application to re-authorize"
+        )
 
-if __name__ == '__main__':
-  main(sys.argv)
+
+if __name__ == "__main__":
+    main(sys.argv)
