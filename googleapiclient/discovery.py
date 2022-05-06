@@ -698,10 +698,7 @@ def _cast(value, schema_type):
       A string representation of 'value' based on the schema_type.
     """
     if schema_type == "string":
-        if type(value) == type("") or type(value) == type(""):
-            return value
-        else:
-            return str(value)
+        return str(value)
     elif schema_type == "integer":
         return str(int(value))
     elif schema_type == "number":
@@ -709,10 +706,7 @@ def _cast(value, schema_type):
     elif schema_type == "boolean":
         return str(bool(value)).lower()
     else:
-        if type(value) == type("") or type(value) == type(""):
-            return value
-        else:
-            return str(value)
+        return str(value)
 
 
 def _media_size_to_long(maxSize):
@@ -1075,7 +1069,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         for key, value in kwargs.items():
             to_type = parameters.param_types.get(key, "string")
             # For repeated parameters we cast each member of the list.
-            if key in parameters.repeated_params and type(value) == type([]):
+            if key in parameters.repeated_params and isinstance(value, list):
                 cast_value = [_cast(x, to_type) for x in value]
             else:
                 cast_value = _cast(value, to_type)
