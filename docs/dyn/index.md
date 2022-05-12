@@ -91,6 +91,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/apigee_v1.html)
 
 
+## apigeeregistry
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/apigeeregistry_v1.html)
+
+
 ## apikeys
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/apikeys_v2.html)
 
@@ -121,8 +125,11 @@
 
 ## baremetalsolution
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1.html)
-* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1alpha1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v2.html)
+
+
+## beyondcorp
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/beyondcorp_v1alpha.html)
 
 
 ## bigquery
@@ -415,7 +422,6 @@
 ## dns
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dns_v1.html)
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/dns_v1beta2.html)
-* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/dns_v2.html)
 
 
 ## docs
