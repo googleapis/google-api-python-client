@@ -332,7 +332,6 @@
 
 
 ## content
-* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/content_v2.html)
 * [v2.1](http://googleapis.github.io/google-api-python-client/docs/dyn/content_v2_1.html)
 
 
