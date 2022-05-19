@@ -22,11 +22,10 @@ __author__ = "afshar@google.com (Ali Afshar)"
 
 
 import unittest
+
 import httplib2
 
-
 from googleapiclient.errors import HttpError
-
 
 JSON_ERROR_CONTENT = b"""
 {
@@ -96,7 +95,10 @@ class Error(unittest.TestCase):
             b"{", {"status": "400", "content-type": "application/json"}, reason="Failed"
         )
         error = HttpError(resp, content)
-        self.assertEqual(str(error), '<HttpError 400 when requesting None returned "Failed". Details: "{">')
+        self.assertEqual(
+            str(error),
+            '<HttpError 400 when requesting None returned "Failed". Details: "{">',
+        )
 
     def test_with_uri(self):
         """Test handling of passing in the request uri."""
@@ -125,13 +127,19 @@ class Error(unittest.TestCase):
         """Test handling of non-JSON bodies"""
         resp, content = fake_response(b"Invalid request", {"status": "400"})
         error = HttpError(resp, content)
-        self.assertEqual(str(error), '<HttpError 400 when requesting None returned "Ok". Details: "Invalid request">')
+        self.assertEqual(
+            str(error),
+            '<HttpError 400 when requesting None returned "Ok". Details: "Invalid request">',
+        )
 
     def test_missing_reason(self):
         """Test an empty dict with a missing resp.reason."""
         resp, content = fake_response(b"}NOT OK", {"status": "400"}, reason=None)
         error = HttpError(resp, content)
-        self.assertEqual(str(error), '<HttpError 400 when requesting None returned "". Details: "}NOT OK">')
+        self.assertEqual(
+            str(error),
+            '<HttpError 400 when requesting None returned "". Details: "}NOT OK">',
+        )
 
     def test_error_detail_for_missing_message_in_error(self):
         """Test handling of data with missing 'details' or 'detail' element."""
@@ -142,5 +150,9 @@ class Error(unittest.TestCase):
         )
         error = HttpError(resp, content)
         expected_error_details = "[{'domain': 'global', 'reason': 'required', 'message': 'country is required', 'locationType': 'parameter', 'location': 'country'}]"
-        self.assertEqual(str(error), '<HttpError 400 when requesting None returned "country is required". Details: "%s">' % expected_error_details)
+        self.assertEqual(
+            str(error),
+            '<HttpError 400 when requesting None returned "country is required". Details: "%s">'
+            % expected_error_details,
+        )
         self.assertEqual(str(error.error_details), expected_error_details)

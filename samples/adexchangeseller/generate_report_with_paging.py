@@ -26,7 +26,7 @@ Tags: reports.generate
 """
 from __future__ import print_function
 
-__author__ = 'sgomes@google.com (Sérgio Gomes)'
+__author__ = "sgomes@google.com (Sérgio Gomes)"
 
 import argparse
 import sys
@@ -40,61 +40,84 @@ ROW_LIMIT = 5000
 
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
-argparser.add_argument('ad_client_id',
-    help='The ID of the ad client for which to generate a report')
+argparser.add_argument(
+    "ad_client_id", help="The ID of the ad client for which to generate a report"
+)
 
 
 def main(argv):
-  # Authenticate and construct service.
-  service, flags = sample_tools.init(
-      argv, 'adexchangeseller', 'v1.1', __doc__, __file__, parents=[argparser],
-      scope='https://www.googleapis.com/auth/adexchange.seller.readonly')
+    # Authenticate and construct service.
+    service, flags = sample_tools.init(
+        argv,
+        "adexchangeseller",
+        "v1.1",
+        __doc__,
+        __file__,
+        parents=[argparser],
+        scope="https://www.googleapis.com/auth/adexchange.seller.readonly",
+    )
 
-  ad_client_id = flags.ad_client_id
+    ad_client_id = flags.ad_client_id
 
-  try:
-    # Retrieve report in pages and display data as we receive it.
-    start_index = 0
-    rows_to_obtain = MAX_PAGE_SIZE
-    while True:
-      result = service.reports().generate(
-          startDate='2011-01-01', endDate='2011-08-31',
-          filter=['AD_CLIENT_ID==' + ad_client_id],
-          metric=['PAGE_VIEWS', 'AD_REQUESTS', 'AD_REQUESTS_COVERAGE',
-                  'CLICKS', 'AD_REQUESTS_CTR', 'COST_PER_CLICK',
-                  'AD_REQUESTS_RPM', 'EARNINGS'],
-          dimension=['DATE'],
-          sort=['+DATE'],
-          startIndex=start_index,
-          maxResults=rows_to_obtain).execute()
+    try:
+        # Retrieve report in pages and display data as we receive it.
+        start_index = 0
+        rows_to_obtain = MAX_PAGE_SIZE
+        while True:
+            result = (
+                service.reports()
+                .generate(
+                    startDate="2011-01-01",
+                    endDate="2011-08-31",
+                    filter=["AD_CLIENT_ID==" + ad_client_id],
+                    metric=[
+                        "PAGE_VIEWS",
+                        "AD_REQUESTS",
+                        "AD_REQUESTS_COVERAGE",
+                        "CLICKS",
+                        "AD_REQUESTS_CTR",
+                        "COST_PER_CLICK",
+                        "AD_REQUESTS_RPM",
+                        "EARNINGS",
+                    ],
+                    dimension=["DATE"],
+                    sort=["+DATE"],
+                    startIndex=start_index,
+                    maxResults=rows_to_obtain,
+                )
+                .execute()
+            )
 
-      # If this is the first page, display the headers.
-      if start_index == 0:
-        for header in result['headers']:
-          print('%25s' % header['name'], end=' ')
-        print()
+            # If this is the first page, display the headers.
+            if start_index == 0:
+                for header in result["headers"]:
+                    print("%25s" % header["name"], end=" ")
+                print()
 
-      # Display results for this page.
-      for row in result['rows']:
-        for column in row:
-          print('%25s' % column, end=' ')
-        print()
+            # Display results for this page.
+            for row in result["rows"]:
+                for column in row:
+                    print("%25s" % column, end=" ")
+                print()
 
-      start_index += len(result['rows'])
+            start_index += len(result["rows"])
 
-      # Check to see if we're going to go above the limit and get as many
-      # results as we can.
-      if start_index + MAX_PAGE_SIZE > ROW_LIMIT:
-        rows_to_obtain = ROW_LIMIT - start_index
-        if rows_to_obtain <= 0:
-          break
+            # Check to see if we're going to go above the limit and get as many
+            # results as we can.
+            if start_index + MAX_PAGE_SIZE > ROW_LIMIT:
+                rows_to_obtain = ROW_LIMIT - start_index
+                if rows_to_obtain <= 0:
+                    break
 
-      if (start_index >= int(result['totalMatchedRows'])):
-        break
+            if start_index >= int(result["totalMatchedRows"]):
+                break
 
-  except client.AccessTokenRefreshError:
-    print ('The credentials have been revoked or expired, please re-run the '
-           'application to re-authorize')
+    except client.AccessTokenRefreshError:
+        print(
+            "The credentials have been revoked or expired, please re-run the "
+            "application to re-authorize"
+        )
 
-if __name__ == '__main__':
-  main(sys.argv)
+
+if __name__ == "__main__":
+    main(sys.argv)

@@ -32,12 +32,10 @@ import re
 import string
 import sys
 
-from googleapiclient.discovery import DISCOVERY_URI
-from googleapiclient.discovery import build
-from googleapiclient.discovery import build_from_document
-from googleapiclient.http import build_http
-
 import uritemplate
+
+from googleapiclient.discovery import DISCOVERY_URI, build_from_document
+from googleapiclient.http import build_http
 
 DISCOVERY_DOC_DIR = (
     pathlib.Path(__file__).parent.resolve()

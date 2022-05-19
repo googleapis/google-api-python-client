@@ -20,9 +20,8 @@ Tags: metadata.dimensions.list
 """
 from __future__ import print_function
 
-__author__ = 'sgomes@google.com (Sérgio Gomes)'
+__author__ = "sgomes@google.com (Sérgio Gomes)"
 
-import argparse
 import sys
 
 from googleapiclient import sample_tools
@@ -30,27 +29,43 @@ from oauth2client import client
 
 
 def main(argv):
-  # Authenticate and construct service.
-  service, flags = sample_tools.init(
-      argv, 'adexchangeseller', 'v1.1', __doc__, __file__, parents=[],
-      scope='https://www.googleapis.com/auth/adexchange.seller.readonly')
+    # Authenticate and construct service.
+    service, flags = sample_tools.init(
+        argv,
+        "adexchangeseller",
+        "v1.1",
+        __doc__,
+        __file__,
+        parents=[],
+        scope="https://www.googleapis.com/auth/adexchange.seller.readonly",
+    )
 
-  try:
-    # Retrieve metrics list in pages and display data as we receive it.
-    request = service.metadata().dimensions().list()
+    try:
+        # Retrieve metrics list in pages and display data as we receive it.
+        request = service.metadata().dimensions().list()
 
-    if request is not None:
-      result = request.execute()
-      if 'items' in result:
-        dimensions = result['items']
-        for dimension in dimensions:
-          print(('Dimension id "%s" for product(s): [%s] was found. '
-                 % (dimension['id'], ', '.join(dimension['supportedProducts']))))
-      else:
-        print('No dimensions found!')
-  except client.AccessTokenRefreshError:
-    print ('The credentials have been revoked or expired, please re-run the '
-           'application to re-authorize')
+        if request is not None:
+            result = request.execute()
+            if "items" in result:
+                dimensions = result["items"]
+                for dimension in dimensions:
+                    print(
+                        (
+                            'Dimension id "%s" for product(s): [%s] was found. '
+                            % (
+                                dimension["id"],
+                                ", ".join(dimension["supportedProducts"]),
+                            )
+                        )
+                    )
+            else:
+                print("No dimensions found!")
+    except client.AccessTokenRefreshError:
+        print(
+            "The credentials have been revoked or expired, please re-run the "
+            "application to re-authorize"
+        )
 
-if __name__ == '__main__':
-  main(sys.argv)
+
+if __name__ == "__main__":
+    main(sys.argv)

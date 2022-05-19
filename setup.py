@@ -27,6 +27,7 @@ if sys.version_info < (3, 6):
 
 import io
 import os
+
 from setuptools import setup
 
 packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
@@ -63,7 +64,7 @@ setup(
     version=version,
     description="Google API Client Library for Python",
     long_description=readme,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     author="Google LLC",
     author_email="googleapis-packages@google.com",
     url="https://github.com/googleapis/google-api-python-client/",

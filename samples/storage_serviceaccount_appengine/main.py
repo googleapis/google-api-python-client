@@ -33,65 +33,68 @@ call Google APIs can be found here:
 <http://code.google.com/appengine/docs/python/appidentity/overview.html>
 """
 
-__author__ = 'marccohen@google.com (Marc Cohen)'
+__author__ = "marccohen@google.com (Marc Cohen)"
 
 import httplib2
-import logging
-import os
-import pickle
 import re
 
 from google.appengine.api import memcache
 from google.appengine.ext import webapp
-from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 from oauth2client.contrib.appengine import AppAssertionCredentials
 
 # Constants for the XSL stylesheet and the Google Cloud Storage URI.
-XSL = '\n<?xml-stylesheet href="/listing.xsl" type="text/xsl"?>\n';
-URI = 'http://commondatastorage.googleapis.com'
+XSL = '\n<?xml-stylesheet href="/listing.xsl" type="text/xsl"?>\n'
+URI = "http://commondatastorage.googleapis.com"
 
 # Obtain service account credentials and authorize HTTP connection.
 credentials = AppAssertionCredentials(
-    scope='https://www.googleapis.com/auth/devstorage.read_write')
+    scope="https://www.googleapis.com/auth/devstorage.read_write"
+)
 http = credentials.authorize(httplib2.Http(memcache))
 
 
 class MainHandler(webapp.RequestHandler):
-
-  def get(self):
-    try:
-      # Derive desired bucket name from path after domain name.
-      bucket = self.request.path
-      if bucket[-1] == '/':
-        # Trim final slash, if necessary.
-        bucket = bucket[:-1]
-      # Send HTTP request to Google Cloud Storage to obtain bucket listing.
-      resp, content = http.request(URI + bucket, "GET")
-      if resp.status != 200:
-        # If error getting bucket listing, raise exception.
-        err = 'Error: ' + str(resp.status) + ', bucket: ' + bucket + \
-              ', response: ' + str(content)
-        raise Exception(err)
-      # Edit returned bucket listing XML to insert a reference to our style
-      # sheet for nice formatting and send results to client.
-      content = re.sub('(<ListBucketResult)', XSL + '\\1', content)
-      self.response.headers['Content-Type'] = 'text/xml'
-      self.response.out.write(content)
-    except Exception as e:
-      self.response.headers['Content-Type'] = 'text/plain'
-      self.response.set_status(404)
-      self.response.out.write(str(e))
+    def get(self):
+        try:
+            # Derive desired bucket name from path after domain name.
+            bucket = self.request.path
+            if bucket[-1] == "/":
+                # Trim final slash, if necessary.
+                bucket = bucket[:-1]
+            # Send HTTP request to Google Cloud Storage to obtain bucket listing.
+            resp, content = http.request(URI + bucket, "GET")
+            if resp.status != 200:
+                # If error getting bucket listing, raise exception.
+                err = (
+                    "Error: "
+                    + str(resp.status)
+                    + ", bucket: "
+                    + bucket
+                    + ", response: "
+                    + str(content)
+                )
+                raise Exception(err)
+            # Edit returned bucket listing XML to insert a reference to our style
+            # sheet for nice formatting and send results to client.
+            content = re.sub("(<ListBucketResult)", XSL + "\\1", content)
+            self.response.headers["Content-Type"] = "text/xml"
+            self.response.out.write(content)
+        except Exception as e:
+            self.response.headers["Content-Type"] = "text/plain"
+            self.response.set_status(404)
+            self.response.out.write(str(e))
 
 
 def main():
-  application = webapp.WSGIApplication(
-      [
-       ('.*', MainHandler),
-      ],
-      debug=True)
-  run_wsgi_app(application)
+    application = webapp.WSGIApplication(
+        [
+            (".*", MainHandler),
+        ],
+        debug=True,
+    )
+    run_wsgi_app(application)
 
 
-if __name__ == '__main__':
-  main()
+if __name__ == "__main__":
+    main()
