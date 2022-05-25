@@ -22,6 +22,7 @@ Contents:
                           from a list of candidates.
 """
 from __future__ import absolute_import
+
 from functools import reduce
 
 __version__ = "0.1.3"
@@ -40,7 +41,7 @@ def parse_mime_type(mime_type):
     into:
 
        ('application', 'xhtml', {'q', '0.5'})
-       """
+    """
     parts = mime_type.split(";")
     params = dict(
         [tuple([s.strip() for s in param.split("=", 1)]) for param in parts[1:]]

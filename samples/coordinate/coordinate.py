@@ -37,7 +37,7 @@ To get detailed log output run:
 """
 from __future__ import print_function
 
-__author__ = 'zachn@google.com (Zach Newell)'
+__author__ = "zachn@google.com (Zach Newell)"
 
 import argparse
 import pprint
@@ -50,54 +50,74 @@ from googleapiclient.discovery import http
 
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
-argparser.add_argument('teamId', help='Coordinate Team ID')
+argparser.add_argument("teamId", help="Coordinate Team ID")
 
 
 def main(argv):
-  # Authenticate and construct service.
-  service, flags = sample_tools.init(
-      argv, 'coordinate', 'v1', __doc__, __file__, parents=[argparser],
-      scope='https://www.googleapis.com/auth/coordinate')
+    # Authenticate and construct service.
+    service, flags = sample_tools.init(
+        argv,
+        "coordinate",
+        "v1",
+        __doc__,
+        __file__,
+        parents=[argparser],
+        scope="https://www.googleapis.com/auth/coordinate",
+    )
 
-  service = build('coordinate', 'v1', http=http)
+    service = build("coordinate", "v1", http=http)
 
-  try:
-    # List all the jobs for a team
-    jobs_result = service.jobs().list(teamId=flags.teamId).execute(http=http)
+    try:
+        # List all the jobs for a team
+        jobs_result = service.jobs().list(teamId=flags.teamId).execute(http=http)
 
-    print('List of Jobs:')
-    pprint.pprint(jobs_result)
+        print("List of Jobs:")
+        pprint.pprint(jobs_result)
 
-    # Multiline note
-    note = """
+        # Multiline note
+        note = """
     These are notes...
     on different lines
     """
 
-    # Insert a job and store the results
-    insert_result = service.jobs().insert(body='',
-      title='Google Campus',
-      teamId=flags.teamId,
-      address='1600 Amphitheatre Parkway Mountain View, CA 94043',
-      lat='37.422120',
-      lng='122.084429',
-      assignee=None,
-      note=note).execute()
+        # Insert a job and store the results
+        insert_result = (
+            service.jobs()
+            .insert(
+                body="",
+                title="Google Campus",
+                teamId=flags.teamId,
+                address="1600 Amphitheatre Parkway Mountain View, CA 94043",
+                lat="37.422120",
+                lng="122.084429",
+                assignee=None,
+                note=note,
+            )
+            .execute()
+        )
 
-    pprint.pprint(insert_result)
+        pprint.pprint(insert_result)
 
-    # Close the job
-    update_result = service.jobs().update(body='',
-      teamId=flags.teamId,
-      jobId=insert_result['id'],
-      progress='COMPLETED').execute()
+        # Close the job
+        update_result = (
+            service.jobs()
+            .update(
+                body="",
+                teamId=flags.teamId,
+                jobId=insert_result["id"],
+                progress="COMPLETED",
+            )
+            .execute()
+        )
 
-    pprint.pprint(update_result)
+        pprint.pprint(update_result)
 
-  except client.AccessTokenRefreshError as e:
-    print ('The credentials have been revoked or expired, please re-run'
-      'the application to re-authorize')
+    except client.AccessTokenRefreshError as e:
+        print(
+            "The credentials have been revoked or expired, please re-run"
+            "the application to re-authorize"
+        )
 
 
-if __name__ == '__main__':
-  main(sys.argv)
+if __name__ == "__main__":
+    main(sys.argv)

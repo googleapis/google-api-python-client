@@ -23,6 +23,7 @@ from __future__ import absolute_import
 __author__ = "mmcdonald@google.com (Matt McDonald)"
 
 import unittest
+
 import httplib2
 
 from googleapiclient.model import ProtocolBufferModel

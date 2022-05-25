@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+
 import synthtool as s
 from synthtool import gcp
-
 from synthtool.languages import python
 
 common = gcp.CommonTemplates()
@@ -26,20 +27,26 @@ templated_files = common.py_library()
 
 # Copy kokoro configs.
 # Docs are excluded as repo docs cannot currently be generated using sphinx.
-s.move(templated_files / '.kokoro', excludes=['**/docs/*', 'publish-docs.sh'])
-s.move(templated_files / '.trampolinerc')  # config file for trampoline_v2
+s.move(templated_files / ".kokoro", excludes=["**/docs/*", "publish-docs.sh"])
+s.move(templated_files / ".trampolinerc")  # config file for trampoline_v2
 
 # Also move issue templates
-s.move(templated_files / '.github', excludes=['CODEOWNERS', 'workflows'])
+s.move(
+    templated_files / ".github",
+    excludes=["CODEOWNERS", "workflows", "auto-approve.yml"],
+)
 
 # Move scripts folder needed for samples CI
-s.move(templated_files / 'scripts')
+s.move(templated_files / "scripts")
 
 # Copy CONTRIBUTING.rst
-s.move(templated_files / 'CONTRIBUTING.rst')
+s.move(templated_files / "CONTRIBUTING.rst")
 
 # ----------------------------------------------------------------------------
 # Samples templates
 # ----------------------------------------------------------------------------
 
 python.py_samples(skip_readmes=True)
+
+for noxfile in Path(".").glob("**/noxfile.py"):
+    s.shell.run(["nox", "-s", "format"], cwd=noxfile.parent, hide_output=False)

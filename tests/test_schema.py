@@ -23,7 +23,6 @@ import unittest
 
 from googleapiclient.schema import Schemas
 
-
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 

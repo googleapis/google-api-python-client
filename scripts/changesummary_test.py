@@ -20,11 +20,8 @@ import pathlib
 import shutil
 import unittest
 
+from changesummary import ChangeSummary, ChangeType, DirectoryDoesNotExist
 import pandas as pd
-
-from changesummary import ChangeSummary
-from changesummary import ChangeType
-from changesummary import DirectoryDoesNotExist
 
 SCRIPTS_DIR = pathlib.Path(__file__).parent.resolve()
 NEW_ARTIFACTS_DIR = SCRIPTS_DIR / "test_resources" / "new_artifacts_dir"
@@ -193,7 +190,9 @@ class TestChangeSummary(unittest.TestCase):
         # Confirm that key "schemas.ProjectReference.newkey" exists for bigquery
         self.assertEqual(
             result[
-                (result["Name"] == "bigquery") & (result["Added"]) & (result["Count"] == 1)
+                (result["Name"] == "bigquery")
+                & (result["Added"])
+                & (result["Count"] == 1)
             ]["Key"].iloc[0],
             "schemas.ProjectReference.newkey",
         )

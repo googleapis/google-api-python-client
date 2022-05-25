@@ -46,59 +46,59 @@ def _abstract():
 class Model(object):
     """Model base class.
 
-  All Model classes should implement this interface.
-  The Model serializes and de-serializes between a wire
-  format such as JSON and a Python object representation.
-  """
+    All Model classes should implement this interface.
+    The Model serializes and de-serializes between a wire
+    format such as JSON and a Python object representation.
+    """
 
     def request(self, headers, path_params, query_params, body_value):
         """Updates outgoing requests with a serialized body.
 
-    Args:
-      headers: dict, request headers
-      path_params: dict, parameters that appear in the request path
-      query_params: dict, parameters that appear in the query
-      body_value: object, the request body as a Python object, which must be
-                  serializable.
-    Returns:
-      A tuple of (headers, path_params, query, body)
+        Args:
+          headers: dict, request headers
+          path_params: dict, parameters that appear in the request path
+          query_params: dict, parameters that appear in the query
+          body_value: object, the request body as a Python object, which must be
+                      serializable.
+        Returns:
+          A tuple of (headers, path_params, query, body)
 
-      headers: dict, request headers
-      path_params: dict, parameters that appear in the request path
-      query: string, query part of the request URI
-      body: string, the body serialized in the desired wire format.
-    """
+          headers: dict, request headers
+          path_params: dict, parameters that appear in the request path
+          query: string, query part of the request URI
+          body: string, the body serialized in the desired wire format.
+        """
         _abstract()
 
     def response(self, resp, content):
         """Convert the response wire format into a Python object.
 
-    Args:
-      resp: httplib2.Response, the HTTP response headers and status
-      content: string, the body of the HTTP response
+        Args:
+          resp: httplib2.Response, the HTTP response headers and status
+          content: string, the body of the HTTP response
 
-    Returns:
-      The body de-serialized as a Python object.
+        Returns:
+          The body de-serialized as a Python object.
 
-    Raises:
-      googleapiclient.errors.HttpError if a non 2xx response is received.
-    """
+        Raises:
+          googleapiclient.errors.HttpError if a non 2xx response is received.
+        """
         _abstract()
 
 
 class BaseModel(Model):
     """Base model class.
 
-  Subclasses should provide implementations for the "serialize" and
-  "deserialize" methods, as well as values for the following class attributes.
+    Subclasses should provide implementations for the "serialize" and
+    "deserialize" methods, as well as values for the following class attributes.
 
-  Attributes:
-    accept: The value to use for the HTTP Accept header.
-    content_type: The value to use for the HTTP Content-type header.
-    no_content_response: The value to return when deserializing a 204 "No
-        Content" response.
-    alt_param: The value to supply as the "alt" query parameter for requests.
-  """
+    Attributes:
+      accept: The value to use for the HTTP Accept header.
+      content_type: The value to use for the HTTP Content-type header.
+      no_content_response: The value to return when deserializing a 204 "No
+          Content" response.
+      alt_param: The value to supply as the "alt" query parameter for requests.
+    """
 
     accept = None
     content_type = None
@@ -124,20 +124,20 @@ class BaseModel(Model):
     def request(self, headers, path_params, query_params, body_value):
         """Updates outgoing requests with a serialized body.
 
-    Args:
-      headers: dict, request headers
-      path_params: dict, parameters that appear in the request path
-      query_params: dict, parameters that appear in the query
-      body_value: object, the request body as a Python object, which must be
-                  serializable by json.
-    Returns:
-      A tuple of (headers, path_params, query, body)
+        Args:
+          headers: dict, request headers
+          path_params: dict, parameters that appear in the request path
+          query_params: dict, parameters that appear in the query
+          body_value: object, the request body as a Python object, which must be
+                      serializable by json.
+        Returns:
+          A tuple of (headers, path_params, query, body)
 
-      headers: dict, request headers
-      path_params: dict, parameters that appear in the request path
-      query: string, query part of the request URI
-      body: string, the body serialized as JSON
-    """
+          headers: dict, request headers
+          path_params: dict, parameters that appear in the request path
+          query: string, query part of the request URI
+          body: string, the body serialized as JSON
+        """
         query = self._build_query(query_params)
         headers["accept"] = self.accept
         headers["accept-encoding"] = "gzip, deflate"
@@ -164,12 +164,12 @@ class BaseModel(Model):
     def _build_query(self, params):
         """Builds a query string.
 
-    Args:
-      params: dict, the query parameters
+        Args:
+          params: dict, the query parameters
 
-    Returns:
-      The query parameters properly encoded into an HTTP URI query string.
-    """
+        Returns:
+          The query parameters properly encoded into an HTTP URI query string.
+        """
         if self.alt_param is not None:
             params.update({"alt": self.alt_param})
         astuples = []
@@ -197,16 +197,16 @@ class BaseModel(Model):
     def response(self, resp, content):
         """Convert the response wire format into a Python object.
 
-    Args:
-      resp: httplib2.Response, the HTTP response headers and status
-      content: string, the body of the HTTP response
+        Args:
+          resp: httplib2.Response, the HTTP response headers and status
+          content: string, the body of the HTTP response
 
-    Returns:
-      The body de-serialized as a Python object.
+        Returns:
+          The body de-serialized as a Python object.
 
-    Raises:
-      googleapiclient.errors.HttpError if a non 2xx response is received.
-    """
+        Raises:
+          googleapiclient.errors.HttpError if a non 2xx response is received.
+        """
         self._log_response(resp, content)
         # Error handling is TBD, for example, do we retry
         # for some operation/error combinations?
@@ -223,33 +223,33 @@ class BaseModel(Model):
     def serialize(self, body_value):
         """Perform the actual Python object serialization.
 
-    Args:
-      body_value: object, the request body as a Python object.
+        Args:
+          body_value: object, the request body as a Python object.
 
-    Returns:
-      string, the body in serialized form.
-    """
+        Returns:
+          string, the body in serialized form.
+        """
         _abstract()
 
     def deserialize(self, content):
         """Perform the actual deserialization from response string to Python
-    object.
+        object.
 
-    Args:
-      content: string, the body of the HTTP response
+        Args:
+          content: string, the body of the HTTP response
 
-    Returns:
-      The body de-serialized as a Python object.
-    """
+        Returns:
+          The body de-serialized as a Python object.
+        """
         _abstract()
 
 
 class JsonModel(BaseModel):
     """Model class for JSON.
 
-  Serializes and de-serializes between JSON and the Python
-  object representation of HTTP request and response bodies.
-  """
+    Serializes and de-serializes between JSON and the Python
+    object representation of HTTP request and response bodies.
+    """
 
     accept = "application/json"
     content_type = "application/json"
@@ -258,9 +258,9 @@ class JsonModel(BaseModel):
     def __init__(self, data_wrapper=False):
         """Construct a JsonModel.
 
-    Args:
-      data_wrapper: boolean, wrap requests and responses in a data wrapper
-    """
+        Args:
+          data_wrapper: boolean, wrap requests and responses in a data wrapper
+        """
         self._data_wrapper = data_wrapper
 
     def serialize(self, body_value):
@@ -294,10 +294,10 @@ class JsonModel(BaseModel):
 class RawModel(JsonModel):
     """Model class for requests that don't return JSON.
 
-  Serializes and de-serializes between JSON and the Python
-  object representation of HTTP request, and returns the raw bytes
-  of the response body.
-  """
+    Serializes and de-serializes between JSON and the Python
+    object representation of HTTP request, and returns the raw bytes
+    of the response body.
+    """
 
     accept = "*/*"
     content_type = "application/json"
@@ -314,10 +314,10 @@ class RawModel(JsonModel):
 class MediaModel(JsonModel):
     """Model class for requests that return Media.
 
-  Serializes and de-serializes between JSON and the Python
-  object representation of HTTP request, and returns the raw bytes
-  of the response body.
-  """
+    Serializes and de-serializes between JSON and the Python
+    object representation of HTTP request, and returns the raw bytes
+    of the response body.
+    """
 
     accept = "*/*"
     content_type = "application/json"
@@ -334,9 +334,9 @@ class MediaModel(JsonModel):
 class ProtocolBufferModel(BaseModel):
     """Model class for protocol buffers.
 
-  Serializes and de-serializes the binary protocol buffer sent in the HTTP
-  request and response bodies.
-  """
+    Serializes and de-serializes the binary protocol buffer sent in the HTTP
+    request and response bodies.
+    """
 
     accept = "application/x-protobuf"
     content_type = "application/x-protobuf"
@@ -345,13 +345,13 @@ class ProtocolBufferModel(BaseModel):
     def __init__(self, protocol_buffer):
         """Constructs a ProtocolBufferModel.
 
-    The serialized protocol buffer returned in an HTTP response will be
-    de-serialized using the given protocol buffer class.
+        The serialized protocol buffer returned in an HTTP response will be
+        de-serialized using the given protocol buffer class.
 
-    Args:
-      protocol_buffer: The protocol buffer class used to de-serialize a
-      response from the API.
-    """
+        Args:
+          protocol_buffer: The protocol buffer class used to de-serialize a
+          response from the API.
+        """
         self._protocol_buffer = protocol_buffer
 
     def serialize(self, body_value):
@@ -368,24 +368,24 @@ class ProtocolBufferModel(BaseModel):
 def makepatch(original, modified):
     """Create a patch object.
 
-  Some methods support PATCH, an efficient way to send updates to a resource.
-  This method allows the easy construction of patch bodies by looking at the
-  differences between a resource before and after it was modified.
+    Some methods support PATCH, an efficient way to send updates to a resource.
+    This method allows the easy construction of patch bodies by looking at the
+    differences between a resource before and after it was modified.
 
-  Args:
-    original: object, the original deserialized resource
-    modified: object, the modified deserialized resource
-  Returns:
-    An object that contains only the changes from original to modified, in a
-    form suitable to pass to a PATCH method.
+    Args:
+      original: object, the original deserialized resource
+      modified: object, the modified deserialized resource
+    Returns:
+      An object that contains only the changes from original to modified, in a
+      form suitable to pass to a PATCH method.
 
-  Example usage:
-    item = service.activities().get(postid=postid, userid=userid).execute()
-    original = copy.deepcopy(item)
-    item['object']['content'] = 'This is updated.'
-    service.activities.patch(postid=postid, userid=userid,
-      body=makepatch(original, item)).execute()
-  """
+    Example usage:
+      item = service.activities().get(postid=postid, userid=userid).execute()
+      original = copy.deepcopy(item)
+      item['object']['content'] = 'This is updated.'
+      service.activities.patch(postid=postid, userid=userid,
+        body=makepatch(original, item)).execute()
+    """
     patch = {}
     for key, original_value in original.items():
         modified_value = modified.get(key, None)

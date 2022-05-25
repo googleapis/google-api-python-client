@@ -23,7 +23,6 @@ import unittest
 import mock
 
 from googleapiclient.discovery_cache import DISCOVERY_DOC_MAX_AGE
-from googleapiclient.discovery_cache.base import Cache
 
 try:
     from googleapiclient.discovery_cache.file_cache import Cache as FileCache

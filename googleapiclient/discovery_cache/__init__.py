@@ -17,25 +17,25 @@
 from __future__ import absolute_import
 
 import logging
-import datetime
 import os
 
 LOGGER = logging.getLogger(__name__)
 
 DISCOVERY_DOC_MAX_AGE = 60 * 60 * 24  # 1 day
-DISCOVERY_DOC_DIR = os.path.join(os.path.dirname(
-            os.path.realpath(__file__)), 'documents')
+DISCOVERY_DOC_DIR = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "documents"
+)
+
 
 def autodetect():
     """Detects an appropriate cache module and returns it.
 
-  Returns:
-    googleapiclient.discovery_cache.base.Cache, a cache object which
-    is auto detected, or None if no cache object is available.
-  """
-    if 'APPENGINE_RUNTIME' in os.environ:
+    Returns:
+      googleapiclient.discovery_cache.base.Cache, a cache object which
+      is auto detected, or None if no cache object is available.
+    """
+    if "APPENGINE_RUNTIME" in os.environ:
         try:
-            from google.appengine.api import memcache
             from . import appengine_memcache
 
             return appengine_memcache.cache
@@ -46,9 +46,11 @@ def autodetect():
 
         return file_cache.cache
     except Exception:
-        LOGGER.info("file_cache is only supported with oauth2client<4.0.0",
-            exc_info=False)
+        LOGGER.info(
+            "file_cache is only supported with oauth2client<4.0.0", exc_info=False
+        )
         return None
+
 
 def get_static_doc(serviceName, version):
     """Retrieves the discovery document from the directory defined in
@@ -67,11 +69,10 @@ def get_static_doc(serviceName, version):
     doc_name = "{}.{}.json".format(serviceName, version)
 
     try:
-        with open(os.path.join(DISCOVERY_DOC_DIR, doc_name), 'r') as f:
+        with open(os.path.join(DISCOVERY_DOC_DIR, doc_name), "r") as f:
             content = f.read()
     except FileNotFoundError:
         # File does not exist. Nothing to do here.
         pass
 
     return content
-

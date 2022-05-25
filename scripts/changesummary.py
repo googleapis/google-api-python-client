@@ -15,9 +15,10 @@
 from enum import IntEnum
 import json
 from multiprocessing import Pool
-import pandas as pd
 import pathlib
+
 import numpy as np
+import pandas as pd
 
 BRANCH_ARTIFACTS_DIR = (
     pathlib.Path(__file__).parent.resolve()

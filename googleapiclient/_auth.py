@@ -41,17 +41,22 @@ except ImportError:  # pragma: NO COVER
 def credentials_from_file(filename, scopes=None, quota_project_id=None):
     """Returns credentials loaded from a file."""
     if HAS_GOOGLE_AUTH:
-        credentials, _ = google.auth.load_credentials_from_file(filename, scopes=scopes, quota_project_id=quota_project_id)
+        credentials, _ = google.auth.load_credentials_from_file(
+            filename, scopes=scopes, quota_project_id=quota_project_id
+        )
         return credentials
     else:
         raise EnvironmentError(
-        "client_options.credentials_file is only supported in google-auth.")
+            "client_options.credentials_file is only supported in google-auth."
+        )
 
 
 def default_credentials(scopes=None, quota_project_id=None):
     """Returns Application Default Credentials."""
     if HAS_GOOGLE_AUTH:
-        credentials, _ = google.auth.default(scopes=scopes, quota_project_id=quota_project_id)
+        credentials, _ = google.auth.default(
+            scopes=scopes, quota_project_id=quota_project_id
+        )
         return credentials
     elif HAS_OAUTH2CLIENT:
         if scopes is not None or quota_project_id is not None:

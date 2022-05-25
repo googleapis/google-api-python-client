@@ -18,41 +18,36 @@
 """Copy files from source to dest expanding symlinks along the way.
 """
 
-from shutil import copytree
-
 import argparse
+from shutil import copytree
 import sys
 
-
 # Ignore these files and directories when copying over files into the snapshot.
-IGNORE = set(['.hg', 'httplib2', 'oauth2', 'simplejson', 'static'])
+IGNORE = set([".hg", "httplib2", "oauth2", "simplejson", "static"])
 
 # In addition to the above files also ignore these files and directories when
 # copying over samples into the snapshot.
-IGNORE_IN_SAMPLES = set(['googleapiclient', 'oauth2client', 'uritemplate'])
+IGNORE_IN_SAMPLES = set(["googleapiclient", "oauth2client", "uritemplate"])
 
 parser = argparse.ArgumentParser(description=__doc__)
 
-parser.add_argument('--source', default='.',
-                    help='Directory name to copy from.')
+parser.add_argument("--source", default=".", help="Directory name to copy from.")
 
-parser.add_argument('--dest', default='snapshot',
-                    help='Directory name to copy to.')
+parser.add_argument("--dest", default="snapshot", help="Directory name to copy to.")
 
 
 def _ignore(path, names):
-  retval = set()
-  if path != '.':
-    retval = retval.union(IGNORE_IN_SAMPLES.intersection(names))
-  retval = retval.union(IGNORE.intersection(names))
-  return retval
+    retval = set()
+    if path != ".":
+        retval = retval.union(IGNORE_IN_SAMPLES.intersection(names))
+    retval = retval.union(IGNORE.intersection(names))
+    return retval
 
 
 def main():
-  copytree(FLAGS.source, FLAGS.dest, symlinks=True,
-            ignore=_ignore)
+    copytree(FLAGS.source, FLAGS.dest, symlinks=True, ignore=_ignore)
 
 
-if __name__ == '__main__':
-  FLAGS = parser.parse_args(sys.argv[1:])
-  main()
+if __name__ == "__main__":
+    FLAGS = parser.parse_args(sys.argv[1:])
+    main()
