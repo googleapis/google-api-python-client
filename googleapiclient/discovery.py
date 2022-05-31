@@ -113,7 +113,7 @@ MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE = {
 }
 _PAGE_TOKEN_NAMES = ("pageToken", "nextPageToken")
 
-# Parameters controlling mTLS behavior. See https://google.aip.dev/auth/4114.
+# Parameters controlling mTLS behavior. See https://google.aip.dev/auth/4114#environment-variables.
 GOOGLE_API_USE_CLIENT_CERTIFICATE = "GOOGLE_API_USE_CLIENT_CERTIFICATE"
 GOOGLE_API_USE_MTLS_ENDPOINT = "GOOGLE_API_USE_MTLS_ENDPOINT"
 
@@ -226,21 +226,21 @@ def build(
         cert, `GOOGLE_API_USE_CLIENT_CERTIFICATE` environment variable must be
         set to `true`.
         More details on the environment variables are here:
-        https://google.aip.dev/auth/4114
+        https://google.aip.dev/auth/4110#environment-variables
       adc_cert_path: str, client certificate file path to save the application
         default client certificate for mTLS. This field is required if you want to
         use the default client certificate. `GOOGLE_API_USE_CLIENT_CERTIFICATE`
         environment variable must be set to `true` in order to use this field,
         otherwise this field doesn't nothing.
         More details on the environment variables are here:
-        https://google.aip.dev/auth/4114
+        https://google.aip.dev/auth/4110#environment-variables
       adc_key_path: str, client encrypted private key file path to save the
         application default client encrypted private key for mTLS. This field is
         required if you want to use the default client certificate.
         `GOOGLE_API_USE_CLIENT_CERTIFICATE` environment variable must be set to
         `true` in order to use this field, otherwise this field doesn't nothing.
         More details on the environment variables are here:
-        https://google.aip.dev/auth/4114
+        https://google.aip.dev/auth/4110#environment-variables
       num_retries: Integer, number of times to retry discovery with
         randomized exponential backoff in case of intermittent/connection issues.
       static_discovery: Boolean, whether or not to use the static discovery docs
@@ -484,21 +484,21 @@ def build_from_document(
         cert, `GOOGLE_API_USE_CLIENT_CERTIFICATE` environment variable must be
         set to `true`.
         More details on the environment variables are here:
-        https://google.aip.dev/auth/4114
+        https://google.aip.dev/auth/4110#environment-variables
       adc_cert_path: str, client certificate file path to save the application
         default client certificate for mTLS. This field is required if you want to
         use the default client certificate. `GOOGLE_API_USE_CLIENT_CERTIFICATE`
         environment variable must be set to `true` in order to use this field,
         otherwise this field doesn't nothing.
         More details on the environment variables are here:
-        https://google.aip.dev/auth/4114
+        https://google.aip.dev/auth/4110#environment-variables
       adc_key_path: str, client encrypted private key file path to save the
         application default client encrypted private key for mTLS. This field is
         required if you want to use the default client certificate.
         `GOOGLE_API_USE_CLIENT_CERTIFICATE` environment variable must be set to
         `true` in order to use this field, otherwise this field doesn't nothing.
         More details on the environment variables are here:
-        https://google.aip.dev/auth/4114
+        https://google.aip.dev/auth/4110#environment-variables
       always_use_jwt_access: Boolean, whether always use self signed JWT for service
         account credentials. This only applies to
         google.oauth2.service_account.Credentials.
