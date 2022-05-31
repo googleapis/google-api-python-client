@@ -172,6 +172,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/books_v1.html)
 
 
+## businessprofileperformance
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/businessprofileperformance_v1.html)
+
+
 ## calendar
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/calendar_v3.html)
 
