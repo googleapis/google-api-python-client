@@ -449,6 +449,7 @@
 
 ## doubleclickbidmanager
 * [v1.1](http://googleapis.github.io/google-api-python-client/docs/dyn/doubleclickbidmanager_v1_1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/doubleclickbidmanager_v2.html)
 
 
 ## doubleclicksearch
