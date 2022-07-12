@@ -214,7 +214,6 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1beta1.html)
 * [v1p1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1p1beta1.html)
-* [v1p4beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1p4beta1.html)
 * [v1p5beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1p5beta1.html)
 * [v1p7beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1p7beta1.html)
 
