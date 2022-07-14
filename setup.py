@@ -21,8 +21,8 @@ from __future__ import print_function
 
 import sys
 
-if sys.version_info < (3, 6):
-    print("google-api-python-client requires python3 version >= 3.6.", file=sys.stderr)
+if sys.version_info < (3, 7):
+    print("google-api-python-client requires python3 version >= 3.7.", file=sys.stderr)
     sys.exit(1)
 
 import io
