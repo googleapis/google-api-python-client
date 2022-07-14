@@ -33,7 +33,7 @@ export PYTHONUNBUFFERED=1
 env | grep KOKORO
 
 # Install nox
-python3.6 -m pip install --upgrade --quiet nox
+python3.9 -m pip install --upgrade --quiet nox
 
 # Use secrets acessor service account to get secrets
 if [[ -f "${KOKORO_GFILE_DIR}/secrets_viewer_service_account.json" ]]; then
@@ -76,7 +76,7 @@ for file in samples/**/requirements.txt; do
     echo "------------------------------------------------------------"
 
     # Use nox to execute the tests for the project.
-    python3.6 -m nox -s "$RUN_TESTS_SESSION"
+    python3.9 -m nox -s "$RUN_TESTS_SESSION"
     EXIT=$?
 
     # If this is a periodic build, send the test log to the FlakyBot.
