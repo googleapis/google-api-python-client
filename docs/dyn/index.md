@@ -125,10 +125,12 @@
 
 ## baremetalsolution
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1.html)
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1alpha1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v2.html)
 
 
 ## beyondcorp
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/beyondcorp_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/beyondcorp_v1alpha.html)
 
 
@@ -212,7 +214,6 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1beta1.html)
 * [v1p1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1p1beta1.html)
-* [v1p4beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1p4beta1.html)
 * [v1p5beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1p5beta1.html)
 * [v1p7beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudasset_v1p7beta1.html)
 

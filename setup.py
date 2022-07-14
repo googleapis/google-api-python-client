@@ -21,8 +21,8 @@ from __future__ import print_function
 
 import sys
 
-if sys.version_info < (3, 6):
-    print("google-api-python-client requires python3 version >= 3.6.", file=sys.stderr)
+if sys.version_info < (3, 7):
+    print("google-api-python-client requires python3 version >= 3.7.", file=sys.stderr)
     sys.exit(1)
 
 import io
@@ -37,7 +37,7 @@ install_requires = [
     # NOTE: Maintainers, please do not require google-auth>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
-    "google-auth>=1.16.0,<3.0.0dev",
+    "google-auth>=1.19.0,<3.0.0dev",
     "google-auth-httplib2>=0.1.0",
     # NOTE: Maintainers, please do not require google-api-core>=2.x.x
     # Until this issue is closed
@@ -69,14 +69,13 @@ setup(
     author_email="googleapis-packages@google.com",
     url="https://github.com/googleapis/google-api-python-client/",
     install_requires=install_requires,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     packages=packages,
     package_data={"googleapiclient": ["discovery_cache/documents/*.json"]},
     license="Apache 2.0",
     keywords="google api client",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

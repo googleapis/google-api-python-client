@@ -121,8 +121,11 @@ Args:
   &quot;autoscaling&quot;: { # NodePoolAutoscaling contains information required by cluster autoscaler to adjust the size of the node pool to the current cluster usage. # Required. Autoscaling configuration for the node pool.
     &quot;autoprovisioned&quot;: True or False, # Can this node pool be deleted automatically.
     &quot;enabled&quot;: True or False, # Is autoscaling enabled for this node pool.
+    &quot;locationPolicy&quot;: &quot;A String&quot;, # Location policy used when scaling up a nodepool.
     &quot;maxNodeCount&quot;: 42, # Maximum number of nodes for one location in the NodePool. Must be &gt;= min_node_count. There has to be enough quota to scale up the cluster.
     &quot;minNodeCount&quot;: 42, # Minimum number of nodes for one location in the NodePool. Must be &gt;= 1 and &lt;= max_node_count.
+    &quot;totalMaxNodeCount&quot;: 42, # Maximum number of nodes in the node pool. Must be greater than total_min_node_count. There has to be enough quota to scale up the cluster. The total_*_node_count fields are mutually exclusive with the *_node_count fields.
+    &quot;totalMinNodeCount&quot;: 42, # Minimum number of nodes in the node pool. Must be greater than 1 less than total_max_node_count. The total_*_node_count fields are mutually exclusive with the *_node_count fields.
   },
   &quot;clusterId&quot;: &quot;A String&quot;, # Deprecated. The name of the cluster to upgrade. This field has been deprecated and replaced by the name field.
   &quot;name&quot;: &quot;A String&quot;, # The name (project, location, cluster, node pool) of the node pool to set autoscaler settings. Specified in the format `projects/*/locations/*/clusters/*/nodePools/*`.
@@ -214,8 +217,11 @@ Args:
     &quot;autoscaling&quot;: { # NodePoolAutoscaling contains information required by cluster autoscaler to adjust the size of the node pool to the current cluster usage. # Autoscaler configuration for this NodePool. Autoscaler is enabled only if a valid configuration is present.
       &quot;autoprovisioned&quot;: True or False, # Can this node pool be deleted automatically.
       &quot;enabled&quot;: True or False, # Is autoscaling enabled for this node pool.
+      &quot;locationPolicy&quot;: &quot;A String&quot;, # Location policy used when scaling up a nodepool.
       &quot;maxNodeCount&quot;: 42, # Maximum number of nodes for one location in the NodePool. Must be &gt;= min_node_count. There has to be enough quota to scale up the cluster.
       &quot;minNodeCount&quot;: 42, # Minimum number of nodes for one location in the NodePool. Must be &gt;= 1 and &lt;= max_node_count.
+      &quot;totalMaxNodeCount&quot;: 42, # Maximum number of nodes in the node pool. Must be greater than total_min_node_count. There has to be enough quota to scale up the cluster. The total_*_node_count fields are mutually exclusive with the *_node_count fields.
+      &quot;totalMinNodeCount&quot;: 42, # Minimum number of nodes in the node pool. Must be greater than 1 less than total_max_node_count. The total_*_node_count fields are mutually exclusive with the *_node_count fields.
     },
     &quot;conditions&quot;: [ # Which conditions caused the current node pool state.
       { # StatusCondition describes why a cluster or a node pool has a certain status (e.g., ERROR or DEGRADED).
@@ -308,7 +314,7 @@ Args:
       },
     },
     &quot;initialNodeCount&quot;: 42, # The initial node count for the pool. You must ensure that your Compute Engine [resource quota](https://cloud.google.com/compute/quotas) is sufficient for this number of instances. You must also have available firewall and routes quota.
-    &quot;instanceGroupUrls&quot;: [ # [Output only] The resource URLs of the [managed instance groups](https://cloud.google.com/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with this node pool.
+    &quot;instanceGroupUrls&quot;: [ # [Output only] The resource URLs of the [managed instance groups](https://cloud.google.com/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with this node pool. During the node pool blue-green upgrade operation, the URLs contain both blue and green resources.
       &quot;A String&quot;,
     ],
     &quot;locations&quot;: [ # The list of Google Compute Engine [zones](https://cloud.google.com/compute/docs/zones#available) in which the NodePool&#x27;s nodes should be located. If this value is unspecified during node pool creation, the [Cluster.Locations](https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.clusters#Cluster.FIELDS.locations) value will be used, instead. Warning: changing node pool locations will result in nodes being added and/or removed.
@@ -338,9 +344,31 @@ Args:
     &quot;selfLink&quot;: &quot;A String&quot;, # [Output only] Server-defined URL for the resource.
     &quot;status&quot;: &quot;A String&quot;, # [Output only] The status of the nodes in this pool instance.
     &quot;statusMessage&quot;: &quot;A String&quot;, # [Output only] Deprecated. Use conditions instead. Additional information about the current status of this node pool instance, if available.
-    &quot;upgradeSettings&quot;: { # These upgrade settings control the level of parallelism and the level of disruption caused by an upgrade. maxUnavailable controls the number of nodes that can be simultaneously unavailable. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). Note: upgrades inevitably introduce some disruption since workloads need to be moved from old nodes to new, upgraded ones. Even if maxUnavailable=0, this holds true. (Disruption stays within the limits of PodDisruptionBudget, if it is configured.) Consider a hypothetical node pool with 5 nodes having maxSurge=2, maxUnavailable=1. This means the upgrade process upgrades 3 nodes simultaneously. It creates 2 additional (upgraded) nodes, then it brings down 3 old (not yet upgraded) nodes at the same time. This ensures that there are always at least 4 nodes available. # Upgrade settings control disruption and speed of the upgrade.
+    &quot;updateInfo&quot;: { # UpdateInfo contains resource (instance groups, etc), status and other intermediate information relevant to a node pool upgrade. # Output only. [Output only] Update info contains relevant information during a node pool update.
+      &quot;blueGreenInfo&quot;: { # Information relevant to blue-green upgrade. # Information of a blue-green upgrade.
+        &quot;blueInstanceGroupUrls&quot;: [ # The resource URLs of the [managed instance groups] (/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with blue pool.
+          &quot;A String&quot;,
+        ],
+        &quot;bluePoolDeletionStartTime&quot;: &quot;A String&quot;, # Time to start deleting blue pool to complete blue-green upgrade, in [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) text format.
+        &quot;greenInstanceGroupUrls&quot;: [ # The resource URLs of the [managed instance groups] (/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with green pool.
+          &quot;A String&quot;,
+        ],
+        &quot;greenPoolVersion&quot;: &quot;A String&quot;, # Version of green pool.
+        &quot;phase&quot;: &quot;A String&quot;, # Current blue-green upgrade phase.
+      },
+    },
+    &quot;upgradeSettings&quot;: { # These upgrade settings control the level of parallelism and the level of disruption caused by an upgrade. maxUnavailable controls the number of nodes that can be simultaneously unavailable. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). Note: upgrades inevitably introduce some disruption since workloads need to be moved from old nodes to new, upgraded ones. Even if maxUnavailable=0, this holds true. (Disruption stays within the limits of PodDisruptionBudget, if it is configured.) Consider a hypothetical node pool with 5 nodes having maxSurge=2, maxUnavailable=1. This means the upgrade process upgrades 3 nodes simultaneously. It creates 2 additional (upgraded) nodes, then it brings down 3 old (not yet upgraded) nodes at the same time. This ensures that there are always at least 4 nodes available. These upgrade settings configure the upgrade strategy for the node pool. Use strategy to switch between the strategies applied to the node pool. If the strategy is ROLLING, use max_surge and max_unavailable to control the level of parallelism and the level of disruption caused by upgrade. 1. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. 2. maxUnavailable controls the number of nodes that can be simultaneously unavailable. 3. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). If the strategy is BLUE_GREEN, use blue_green_settings to configure the blue-green upgrade related settings. 1. standard_rollout_policy is the default policy. The policy is used to control the way blue pool gets drained. The draining is executed in the batch mode. The batch size could be specified as either percentage of the node pool size or the number of nodes. batch_soak_duration is the soak time after each batch gets drained. 2. node_pool_soak_duration is the soak time after all blue nodes are drained. After this period, the blue pool nodes will be deleted. # Upgrade settings control disruption and speed of the upgrade.
+      &quot;blueGreenSettings&quot;: { # Settings for blue-green upgrade. # Settings for blue-green upgrade strategy.
+        &quot;nodePoolSoakDuration&quot;: &quot;A String&quot;, # Time needed after draining entire blue pool. After this period, blue pool will be cleaned up.
+        &quot;standardRolloutPolicy&quot;: { # Standard rollout policy is the default policy for blue-green. # Standard policy for the blue-green upgrade.
+          &quot;batchNodeCount&quot;: 42, # Number of blue nodes to drain in a batch.
+          &quot;batchPercentage&quot;: 3.14, # Percentage of the bool pool nodes to drain in a batch. The range of this field should be (0.0, 1.0].
+          &quot;batchSoakDuration&quot;: &quot;A String&quot;, # Soak time after each batch gets drained. Default to zero.
+        },
+      },
       &quot;maxSurge&quot;: 42, # The maximum number of nodes that can be created beyond the current size of the node pool during the upgrade process.
       &quot;maxUnavailable&quot;: 42, # The maximum number of nodes that can be simultaneously unavailable during the upgrade process. A node is considered available if its status is Ready.
+      &quot;strategy&quot;: &quot;A String&quot;, # Update strategy of the node pool.
     },
     &quot;version&quot;: &quot;A String&quot;, # The version of the Kubernetes of this node.
   },
@@ -503,8 +531,11 @@ Returns:
   &quot;autoscaling&quot;: { # NodePoolAutoscaling contains information required by cluster autoscaler to adjust the size of the node pool to the current cluster usage. # Autoscaler configuration for this NodePool. Autoscaler is enabled only if a valid configuration is present.
     &quot;autoprovisioned&quot;: True or False, # Can this node pool be deleted automatically.
     &quot;enabled&quot;: True or False, # Is autoscaling enabled for this node pool.
+    &quot;locationPolicy&quot;: &quot;A String&quot;, # Location policy used when scaling up a nodepool.
     &quot;maxNodeCount&quot;: 42, # Maximum number of nodes for one location in the NodePool. Must be &gt;= min_node_count. There has to be enough quota to scale up the cluster.
     &quot;minNodeCount&quot;: 42, # Minimum number of nodes for one location in the NodePool. Must be &gt;= 1 and &lt;= max_node_count.
+    &quot;totalMaxNodeCount&quot;: 42, # Maximum number of nodes in the node pool. Must be greater than total_min_node_count. There has to be enough quota to scale up the cluster. The total_*_node_count fields are mutually exclusive with the *_node_count fields.
+    &quot;totalMinNodeCount&quot;: 42, # Minimum number of nodes in the node pool. Must be greater than 1 less than total_max_node_count. The total_*_node_count fields are mutually exclusive with the *_node_count fields.
   },
   &quot;conditions&quot;: [ # Which conditions caused the current node pool state.
     { # StatusCondition describes why a cluster or a node pool has a certain status (e.g., ERROR or DEGRADED).
@@ -597,7 +628,7 @@ Returns:
     },
   },
   &quot;initialNodeCount&quot;: 42, # The initial node count for the pool. You must ensure that your Compute Engine [resource quota](https://cloud.google.com/compute/quotas) is sufficient for this number of instances. You must also have available firewall and routes quota.
-  &quot;instanceGroupUrls&quot;: [ # [Output only] The resource URLs of the [managed instance groups](https://cloud.google.com/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with this node pool.
+  &quot;instanceGroupUrls&quot;: [ # [Output only] The resource URLs of the [managed instance groups](https://cloud.google.com/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with this node pool. During the node pool blue-green upgrade operation, the URLs contain both blue and green resources.
     &quot;A String&quot;,
   ],
   &quot;locations&quot;: [ # The list of Google Compute Engine [zones](https://cloud.google.com/compute/docs/zones#available) in which the NodePool&#x27;s nodes should be located. If this value is unspecified during node pool creation, the [Cluster.Locations](https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.clusters#Cluster.FIELDS.locations) value will be used, instead. Warning: changing node pool locations will result in nodes being added and/or removed.
@@ -627,9 +658,31 @@ Returns:
   &quot;selfLink&quot;: &quot;A String&quot;, # [Output only] Server-defined URL for the resource.
   &quot;status&quot;: &quot;A String&quot;, # [Output only] The status of the nodes in this pool instance.
   &quot;statusMessage&quot;: &quot;A String&quot;, # [Output only] Deprecated. Use conditions instead. Additional information about the current status of this node pool instance, if available.
-  &quot;upgradeSettings&quot;: { # These upgrade settings control the level of parallelism and the level of disruption caused by an upgrade. maxUnavailable controls the number of nodes that can be simultaneously unavailable. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). Note: upgrades inevitably introduce some disruption since workloads need to be moved from old nodes to new, upgraded ones. Even if maxUnavailable=0, this holds true. (Disruption stays within the limits of PodDisruptionBudget, if it is configured.) Consider a hypothetical node pool with 5 nodes having maxSurge=2, maxUnavailable=1. This means the upgrade process upgrades 3 nodes simultaneously. It creates 2 additional (upgraded) nodes, then it brings down 3 old (not yet upgraded) nodes at the same time. This ensures that there are always at least 4 nodes available. # Upgrade settings control disruption and speed of the upgrade.
+  &quot;updateInfo&quot;: { # UpdateInfo contains resource (instance groups, etc), status and other intermediate information relevant to a node pool upgrade. # Output only. [Output only] Update info contains relevant information during a node pool update.
+    &quot;blueGreenInfo&quot;: { # Information relevant to blue-green upgrade. # Information of a blue-green upgrade.
+      &quot;blueInstanceGroupUrls&quot;: [ # The resource URLs of the [managed instance groups] (/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with blue pool.
+        &quot;A String&quot;,
+      ],
+      &quot;bluePoolDeletionStartTime&quot;: &quot;A String&quot;, # Time to start deleting blue pool to complete blue-green upgrade, in [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) text format.
+      &quot;greenInstanceGroupUrls&quot;: [ # The resource URLs of the [managed instance groups] (/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with green pool.
+        &quot;A String&quot;,
+      ],
+      &quot;greenPoolVersion&quot;: &quot;A String&quot;, # Version of green pool.
+      &quot;phase&quot;: &quot;A String&quot;, # Current blue-green upgrade phase.
+    },
+  },
+  &quot;upgradeSettings&quot;: { # These upgrade settings control the level of parallelism and the level of disruption caused by an upgrade. maxUnavailable controls the number of nodes that can be simultaneously unavailable. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). Note: upgrades inevitably introduce some disruption since workloads need to be moved from old nodes to new, upgraded ones. Even if maxUnavailable=0, this holds true. (Disruption stays within the limits of PodDisruptionBudget, if it is configured.) Consider a hypothetical node pool with 5 nodes having maxSurge=2, maxUnavailable=1. This means the upgrade process upgrades 3 nodes simultaneously. It creates 2 additional (upgraded) nodes, then it brings down 3 old (not yet upgraded) nodes at the same time. This ensures that there are always at least 4 nodes available. These upgrade settings configure the upgrade strategy for the node pool. Use strategy to switch between the strategies applied to the node pool. If the strategy is ROLLING, use max_surge and max_unavailable to control the level of parallelism and the level of disruption caused by upgrade. 1. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. 2. maxUnavailable controls the number of nodes that can be simultaneously unavailable. 3. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). If the strategy is BLUE_GREEN, use blue_green_settings to configure the blue-green upgrade related settings. 1. standard_rollout_policy is the default policy. The policy is used to control the way blue pool gets drained. The draining is executed in the batch mode. The batch size could be specified as either percentage of the node pool size or the number of nodes. batch_soak_duration is the soak time after each batch gets drained. 2. node_pool_soak_duration is the soak time after all blue nodes are drained. After this period, the blue pool nodes will be deleted. # Upgrade settings control disruption and speed of the upgrade.
+    &quot;blueGreenSettings&quot;: { # Settings for blue-green upgrade. # Settings for blue-green upgrade strategy.
+      &quot;nodePoolSoakDuration&quot;: &quot;A String&quot;, # Time needed after draining entire blue pool. After this period, blue pool will be cleaned up.
+      &quot;standardRolloutPolicy&quot;: { # Standard rollout policy is the default policy for blue-green. # Standard policy for the blue-green upgrade.
+        &quot;batchNodeCount&quot;: 42, # Number of blue nodes to drain in a batch.
+        &quot;batchPercentage&quot;: 3.14, # Percentage of the bool pool nodes to drain in a batch. The range of this field should be (0.0, 1.0].
+        &quot;batchSoakDuration&quot;: &quot;A String&quot;, # Soak time after each batch gets drained. Default to zero.
+      },
+    },
     &quot;maxSurge&quot;: 42, # The maximum number of nodes that can be created beyond the current size of the node pool during the upgrade process.
     &quot;maxUnavailable&quot;: 42, # The maximum number of nodes that can be simultaneously unavailable during the upgrade process. A node is considered available if its status is Ready.
+    &quot;strategy&quot;: &quot;A String&quot;, # Update strategy of the node pool.
   },
   &quot;version&quot;: &quot;A String&quot;, # The version of the Kubernetes of this node.
 }</pre>
@@ -658,8 +711,11 @@ Returns:
       &quot;autoscaling&quot;: { # NodePoolAutoscaling contains information required by cluster autoscaler to adjust the size of the node pool to the current cluster usage. # Autoscaler configuration for this NodePool. Autoscaler is enabled only if a valid configuration is present.
         &quot;autoprovisioned&quot;: True or False, # Can this node pool be deleted automatically.
         &quot;enabled&quot;: True or False, # Is autoscaling enabled for this node pool.
+        &quot;locationPolicy&quot;: &quot;A String&quot;, # Location policy used when scaling up a nodepool.
         &quot;maxNodeCount&quot;: 42, # Maximum number of nodes for one location in the NodePool. Must be &gt;= min_node_count. There has to be enough quota to scale up the cluster.
         &quot;minNodeCount&quot;: 42, # Minimum number of nodes for one location in the NodePool. Must be &gt;= 1 and &lt;= max_node_count.
+        &quot;totalMaxNodeCount&quot;: 42, # Maximum number of nodes in the node pool. Must be greater than total_min_node_count. There has to be enough quota to scale up the cluster. The total_*_node_count fields are mutually exclusive with the *_node_count fields.
+        &quot;totalMinNodeCount&quot;: 42, # Minimum number of nodes in the node pool. Must be greater than 1 less than total_max_node_count. The total_*_node_count fields are mutually exclusive with the *_node_count fields.
       },
       &quot;conditions&quot;: [ # Which conditions caused the current node pool state.
         { # StatusCondition describes why a cluster or a node pool has a certain status (e.g., ERROR or DEGRADED).
@@ -752,7 +808,7 @@ Returns:
         },
       },
       &quot;initialNodeCount&quot;: 42, # The initial node count for the pool. You must ensure that your Compute Engine [resource quota](https://cloud.google.com/compute/quotas) is sufficient for this number of instances. You must also have available firewall and routes quota.
-      &quot;instanceGroupUrls&quot;: [ # [Output only] The resource URLs of the [managed instance groups](https://cloud.google.com/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with this node pool.
+      &quot;instanceGroupUrls&quot;: [ # [Output only] The resource URLs of the [managed instance groups](https://cloud.google.com/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with this node pool. During the node pool blue-green upgrade operation, the URLs contain both blue and green resources.
         &quot;A String&quot;,
       ],
       &quot;locations&quot;: [ # The list of Google Compute Engine [zones](https://cloud.google.com/compute/docs/zones#available) in which the NodePool&#x27;s nodes should be located. If this value is unspecified during node pool creation, the [Cluster.Locations](https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.clusters#Cluster.FIELDS.locations) value will be used, instead. Warning: changing node pool locations will result in nodes being added and/or removed.
@@ -782,9 +838,31 @@ Returns:
       &quot;selfLink&quot;: &quot;A String&quot;, # [Output only] Server-defined URL for the resource.
       &quot;status&quot;: &quot;A String&quot;, # [Output only] The status of the nodes in this pool instance.
       &quot;statusMessage&quot;: &quot;A String&quot;, # [Output only] Deprecated. Use conditions instead. Additional information about the current status of this node pool instance, if available.
-      &quot;upgradeSettings&quot;: { # These upgrade settings control the level of parallelism and the level of disruption caused by an upgrade. maxUnavailable controls the number of nodes that can be simultaneously unavailable. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). Note: upgrades inevitably introduce some disruption since workloads need to be moved from old nodes to new, upgraded ones. Even if maxUnavailable=0, this holds true. (Disruption stays within the limits of PodDisruptionBudget, if it is configured.) Consider a hypothetical node pool with 5 nodes having maxSurge=2, maxUnavailable=1. This means the upgrade process upgrades 3 nodes simultaneously. It creates 2 additional (upgraded) nodes, then it brings down 3 old (not yet upgraded) nodes at the same time. This ensures that there are always at least 4 nodes available. # Upgrade settings control disruption and speed of the upgrade.
+      &quot;updateInfo&quot;: { # UpdateInfo contains resource (instance groups, etc), status and other intermediate information relevant to a node pool upgrade. # Output only. [Output only] Update info contains relevant information during a node pool update.
+        &quot;blueGreenInfo&quot;: { # Information relevant to blue-green upgrade. # Information of a blue-green upgrade.
+          &quot;blueInstanceGroupUrls&quot;: [ # The resource URLs of the [managed instance groups] (/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with blue pool.
+            &quot;A String&quot;,
+          ],
+          &quot;bluePoolDeletionStartTime&quot;: &quot;A String&quot;, # Time to start deleting blue pool to complete blue-green upgrade, in [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) text format.
+          &quot;greenInstanceGroupUrls&quot;: [ # The resource URLs of the [managed instance groups] (/compute/docs/instance-groups/creating-groups-of-managed-instances) associated with green pool.
+            &quot;A String&quot;,
+          ],
+          &quot;greenPoolVersion&quot;: &quot;A String&quot;, # Version of green pool.
+          &quot;phase&quot;: &quot;A String&quot;, # Current blue-green upgrade phase.
+        },
+      },
+      &quot;upgradeSettings&quot;: { # These upgrade settings control the level of parallelism and the level of disruption caused by an upgrade. maxUnavailable controls the number of nodes that can be simultaneously unavailable. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). Note: upgrades inevitably introduce some disruption since workloads need to be moved from old nodes to new, upgraded ones. Even if maxUnavailable=0, this holds true. (Disruption stays within the limits of PodDisruptionBudget, if it is configured.) Consider a hypothetical node pool with 5 nodes having maxSurge=2, maxUnavailable=1. This means the upgrade process upgrades 3 nodes simultaneously. It creates 2 additional (upgraded) nodes, then it brings down 3 old (not yet upgraded) nodes at the same time. This ensures that there are always at least 4 nodes available. These upgrade settings configure the upgrade strategy for the node pool. Use strategy to switch between the strategies applied to the node pool. If the strategy is ROLLING, use max_surge and max_unavailable to control the level of parallelism and the level of disruption caused by upgrade. 1. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. 2. maxUnavailable controls the number of nodes that can be simultaneously unavailable. 3. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). If the strategy is BLUE_GREEN, use blue_green_settings to configure the blue-green upgrade related settings. 1. standard_rollout_policy is the default policy. The policy is used to control the way blue pool gets drained. The draining is executed in the batch mode. The batch size could be specified as either percentage of the node pool size or the number of nodes. batch_soak_duration is the soak time after each batch gets drained. 2. node_pool_soak_duration is the soak time after all blue nodes are drained. After this period, the blue pool nodes will be deleted. # Upgrade settings control disruption and speed of the upgrade.
+        &quot;blueGreenSettings&quot;: { # Settings for blue-green upgrade. # Settings for blue-green upgrade strategy.
+          &quot;nodePoolSoakDuration&quot;: &quot;A String&quot;, # Time needed after draining entire blue pool. After this period, blue pool will be cleaned up.
+          &quot;standardRolloutPolicy&quot;: { # Standard rollout policy is the default policy for blue-green. # Standard policy for the blue-green upgrade.
+            &quot;batchNodeCount&quot;: 42, # Number of blue nodes to drain in a batch.
+            &quot;batchPercentage&quot;: 3.14, # Percentage of the bool pool nodes to drain in a batch. The range of this field should be (0.0, 1.0].
+            &quot;batchSoakDuration&quot;: &quot;A String&quot;, # Soak time after each batch gets drained. Default to zero.
+          },
+        },
         &quot;maxSurge&quot;: 42, # The maximum number of nodes that can be created beyond the current size of the node pool during the upgrade process.
         &quot;maxUnavailable&quot;: 42, # The maximum number of nodes that can be simultaneously unavailable during the upgrade process. A node is considered available if its status is Ready.
+        &quot;strategy&quot;: &quot;A String&quot;, # Update strategy of the node pool.
       },
       &quot;version&quot;: &quot;A String&quot;, # The version of the Kubernetes of this node.
     },
@@ -809,6 +887,7 @@ Args:
   &quot;name&quot;: &quot;A String&quot;, # The name (project, location, cluster, node pool id) of the node poll to rollback upgrade. Specified in the format `projects/*/locations/*/clusters/*/nodePools/*`.
   &quot;nodePoolId&quot;: &quot;A String&quot;, # Deprecated. The name of the node pool to rollback. This field has been deprecated and replaced by the name field.
   &quot;projectId&quot;: &quot;A String&quot;, # Deprecated. The Google Developers Console [project ID or project number](https://cloud.google.com/resource-manager/docs/creating-managing-projects). This field has been deprecated and replaced by the name field.
+  &quot;respectPdb&quot;: True or False, # Option for rollback to ignore the PodDisruptionBudget. Default value is false.
   &quot;zone&quot;: &quot;A String&quot;, # Deprecated. The name of the Google Compute Engine [zone](https://cloud.google.com/compute/docs/zones#available) in which the cluster resides. This field has been deprecated and replaced by the name field.
 }
 
@@ -1088,6 +1167,14 @@ Args:
     &quot;A String&quot;,
   ],
   &quot;name&quot;: &quot;A String&quot;, # The name (project, location, cluster, node pool) of the node pool to update. Specified in the format `projects/*/locations/*/clusters/*/nodePools/*`.
+  &quot;nodeNetworkConfig&quot;: { # Parameters for node pool-level network config. # Node network config.
+    &quot;createPodRange&quot;: True or False, # Input only. Whether to create a new range for pod IPs in this node pool. Defaults are provided for `pod_range` and `pod_ipv4_cidr_block` if they are not specified. If neither `create_pod_range` or `pod_range` are specified, the cluster-level default (`ip_allocation_policy.cluster_ipv4_cidr_block`) is used. Only applicable if `ip_allocation_policy.use_ip_aliases` is true. This field cannot be changed after the node pool has been created.
+    &quot;networkPerformanceConfig&quot;: { # Configuration of all network bandwidth tiers # Network bandwidth tier configuration.
+      &quot;totalEgressBandwidthTier&quot;: &quot;A String&quot;, # Specifies the total network bandwidth tier for the NodePool.
+    },
+    &quot;podIpv4CidrBlock&quot;: &quot;A String&quot;, # The IP address range for pod IPs in this node pool. Only applicable if `create_pod_range` is true. Set to blank to have a range chosen with the default size. Set to /netmask (e.g. `/14`) to have a range chosen with a specific netmask. Set to a [CIDR](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing) notation (e.g. `10.96.0.0/14`) to pick a specific range to use. Only applicable if `ip_allocation_policy.use_ip_aliases` is true. This field cannot be changed after the node pool has been created.
+    &quot;podRange&quot;: &quot;A String&quot;, # The ID of the secondary range for pod IPs. If `create_pod_range` is true, this ID is used for the new range. If `create_pod_range` is false, uses an existing secondary range with this ID. Only applicable if `ip_allocation_policy.use_ip_aliases` is true. This field cannot be changed after the node pool has been created.
+  },
   &quot;nodePoolId&quot;: &quot;A String&quot;, # Deprecated. The name of the node pool to upgrade. This field has been deprecated and replaced by the name field.
   &quot;nodeVersion&quot;: &quot;A String&quot;, # Required. The Kubernetes version to change the nodes to (typically an upgrade). Users may specify either explicit versions offered by Kubernetes Engine or version aliases, which have the following behavior: - &quot;latest&quot;: picks the highest valid Kubernetes version - &quot;1.X&quot;: picks the highest valid patch+gke.N patch in the 1.X version - &quot;1.X.Y&quot;: picks the highest valid gke.N patch in the 1.X.Y version - &quot;1.X.Y-gke.N&quot;: picks an explicit Kubernetes version - &quot;-&quot;: picks the Kubernetes master version
   &quot;projectId&quot;: &quot;A String&quot;, # Deprecated. The Google Developers Console [project ID or project number](https://cloud.google.com/resource-manager/docs/creating-managing-projects). This field has been deprecated and replaced by the name field.
@@ -1105,9 +1192,18 @@ Args:
       },
     ],
   },
-  &quot;upgradeSettings&quot;: { # These upgrade settings control the level of parallelism and the level of disruption caused by an upgrade. maxUnavailable controls the number of nodes that can be simultaneously unavailable. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). Note: upgrades inevitably introduce some disruption since workloads need to be moved from old nodes to new, upgraded ones. Even if maxUnavailable=0, this holds true. (Disruption stays within the limits of PodDisruptionBudget, if it is configured.) Consider a hypothetical node pool with 5 nodes having maxSurge=2, maxUnavailable=1. This means the upgrade process upgrades 3 nodes simultaneously. It creates 2 additional (upgraded) nodes, then it brings down 3 old (not yet upgraded) nodes at the same time. This ensures that there are always at least 4 nodes available. # Upgrade settings control disruption and speed of the upgrade.
+  &quot;upgradeSettings&quot;: { # These upgrade settings control the level of parallelism and the level of disruption caused by an upgrade. maxUnavailable controls the number of nodes that can be simultaneously unavailable. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). Note: upgrades inevitably introduce some disruption since workloads need to be moved from old nodes to new, upgraded ones. Even if maxUnavailable=0, this holds true. (Disruption stays within the limits of PodDisruptionBudget, if it is configured.) Consider a hypothetical node pool with 5 nodes having maxSurge=2, maxUnavailable=1. This means the upgrade process upgrades 3 nodes simultaneously. It creates 2 additional (upgraded) nodes, then it brings down 3 old (not yet upgraded) nodes at the same time. This ensures that there are always at least 4 nodes available. These upgrade settings configure the upgrade strategy for the node pool. Use strategy to switch between the strategies applied to the node pool. If the strategy is ROLLING, use max_surge and max_unavailable to control the level of parallelism and the level of disruption caused by upgrade. 1. maxSurge controls the number of additional nodes that can be added to the node pool temporarily for the time of the upgrade to increase the number of available nodes. 2. maxUnavailable controls the number of nodes that can be simultaneously unavailable. 3. (maxUnavailable + maxSurge) determines the level of parallelism (how many nodes are being upgraded at the same time). If the strategy is BLUE_GREEN, use blue_green_settings to configure the blue-green upgrade related settings. 1. standard_rollout_policy is the default policy. The policy is used to control the way blue pool gets drained. The draining is executed in the batch mode. The batch size could be specified as either percentage of the node pool size or the number of nodes. batch_soak_duration is the soak time after each batch gets drained. 2. node_pool_soak_duration is the soak time after all blue nodes are drained. After this period, the blue pool nodes will be deleted. # Upgrade settings control disruption and speed of the upgrade.
+    &quot;blueGreenSettings&quot;: { # Settings for blue-green upgrade. # Settings for blue-green upgrade strategy.
+      &quot;nodePoolSoakDuration&quot;: &quot;A String&quot;, # Time needed after draining entire blue pool. After this period, blue pool will be cleaned up.
+      &quot;standardRolloutPolicy&quot;: { # Standard rollout policy is the default policy for blue-green. # Standard policy for the blue-green upgrade.
+        &quot;batchNodeCount&quot;: 42, # Number of blue nodes to drain in a batch.
+        &quot;batchPercentage&quot;: 3.14, # Percentage of the bool pool nodes to drain in a batch. The range of this field should be (0.0, 1.0].
+        &quot;batchSoakDuration&quot;: &quot;A String&quot;, # Soak time after each batch gets drained. Default to zero.
+      },
+    },
     &quot;maxSurge&quot;: 42, # The maximum number of nodes that can be created beyond the current size of the node pool during the upgrade process.
     &quot;maxUnavailable&quot;: 42, # The maximum number of nodes that can be simultaneously unavailable during the upgrade process. A node is considered available if its status is Ready.
+    &quot;strategy&quot;: &quot;A String&quot;, # Update strategy of the node pool.
   },
   &quot;workloadMetadataConfig&quot;: { # WorkloadMetadataConfig defines the metadata configuration to expose to workloads on the node pool. # The desired workload metadata config for the node pool.
     &quot;mode&quot;: &quot;A String&quot;, # Mode is the configuration for how to expose metadata to workloads running on the node pool.
