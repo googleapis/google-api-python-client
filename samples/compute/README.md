@@ -52,7 +52,7 @@ Application default credentials are provided in Google API Client Libraries auto
 You just have to build and initialize the API:
 
 ```python
-import googleapiclient
+import googleapiclient.discovery
 compute = googleapiclient.discovery.build('compute', 'v1')
 ```
 
