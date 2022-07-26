@@ -467,6 +467,10 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/driveactivity_v2.html)
 
 
+## drivelabels
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/drivelabels_v2.html)
+
+
 ## essentialcontacts
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/essentialcontacts_v1.html)
 
