@@ -67,7 +67,7 @@ You need to provide the project ID and the zone for which you want to list insta
 ```python
 def list_instances(compute, project, zone):
     result = compute.instances().list(project=project, zone=zone).execute()
-    return result['items'] if 'items' in result else None
+    return result.get('items')
 ```
 
 ## Adding an instance

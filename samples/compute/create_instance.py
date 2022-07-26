@@ -32,7 +32,7 @@ import googleapiclient.discovery
 # [START compute_apiary_list_instances]
 def list_instances(compute, project, zone):
     result = compute.instances().list(project=project, zone=zone).execute()
-    return result["items"] if "items" in result else None
+    return result.get("items")
 
 
 # [END compute_apiary_list_instances]
