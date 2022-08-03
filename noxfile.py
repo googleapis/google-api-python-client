@@ -42,7 +42,6 @@ test_dependencies = [
     "pytest-cov",
     "webtest",
     "coverage",
-    "mock",
 ]
 
 
