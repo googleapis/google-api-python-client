@@ -15,7 +15,7 @@
 """File based cache for the discovery document.
 
 The cache is stored in a single file so that multiple processes can
-share the same cache. It locks the file whenever accesing to the
+share the same cache. It locks the file whenever accessing to the
 file. When the cache content is corrupted, it will be initialized with
 an empty cache.
 """
