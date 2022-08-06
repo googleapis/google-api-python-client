@@ -43,7 +43,7 @@ def create_instance(compute, project, zone, name, bucket):
     # Get the latest Debian Jessie image.
     image_response = (
         compute.images()
-        .getFromFamily(project="debian-cloud", family="debian-9")
+        .getFromFamily(project="debian-cloud", family="debian-11")
         .execute()
     )
     source_disk_image = image_response["selfLink"]
