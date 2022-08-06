@@ -35,6 +35,7 @@ import pickle
 import re
 import sys
 import unittest
+from unittest import mock
 import urllib
 
 import google.api_core.exceptions
@@ -42,7 +43,6 @@ import google.auth.credentials
 from google.auth.exceptions import MutualTLSChannelError
 import google_auth_httplib2
 import httplib2
-import mock
 from oauth2client import GOOGLE_TOKEN_URI
 from oauth2client.client import GoogleCredentials, OAuth2Credentials
 from parameterized import parameterized
