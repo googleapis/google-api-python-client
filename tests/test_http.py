@@ -34,10 +34,10 @@ import socket
 import ssl
 import time
 import unittest
+from unittest import mock
 import urllib
 
 import httplib2
-import mock
 from oauth2client.client import Credentials
 
 from googleapiclient.discovery import build
