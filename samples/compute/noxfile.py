@@ -291,7 +291,7 @@ def _get_repo_root() -> Optional[str]:
     raise Exception("Unable to detect repository root.")
 
 
-GENERATED_READMES = sorted(Path(".").rglob("*.rst.in"))
+GENERATED_READMES = sorted([x for x in Path(".").rglob("*.rst.in")])
 
 
 @nox.session
