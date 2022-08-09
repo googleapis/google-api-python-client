@@ -319,6 +319,7 @@
 
 ## connectors
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/connectors_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/connectors_v2.html)
 
 
 ## contactcenterinsights
@@ -469,6 +470,7 @@
 
 ## drivelabels
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/drivelabels_v2.html)
+* [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/drivelabels_v2beta.html)
 
 
 ## essentialcontacts
@@ -819,6 +821,7 @@
 
 ## policysimulator
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/policysimulator_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/policysimulator_v1alpha.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/policysimulator_v1beta1.html)
 
 
