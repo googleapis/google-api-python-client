@@ -52,7 +52,7 @@ Application default credentials are provided in Google API Client Libraries auto
 You just have to build and initialize the API:
 
 ```python
-import googleapiclient
+import googleapiclient.discovery
 compute = googleapiclient.discovery.build('compute', 'v1')
 ```
 
@@ -67,7 +67,7 @@ You need to provide the project ID and the zone for which you want to list insta
 ```python
 def list_instances(compute, project, zone):
     result = compute.instances().list(project=project, zone=zone).execute()
-    return result['items'] if 'items' in result else None
+    return result.get('items')
 ```
 
 ## Adding an instance
