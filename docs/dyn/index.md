@@ -984,7 +984,6 @@
 ## speech
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/speech_v1.html)
 * [v1p1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/speech_v1p1beta1.html)
-* [v2beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/speech_v2beta1.html)
 
 
 ## sqladmin
