@@ -13,11 +13,11 @@
 # limitations under the License.
 
 import unittest
+from unittest import mock
 
 import google.auth.credentials
 import google_auth_httplib2
 import httplib2
-import mock
 import oauth2client.client
 
 from googleapiclient import _auth

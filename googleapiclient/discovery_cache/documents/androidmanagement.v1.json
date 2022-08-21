@@ -609,7 +609,7 @@
         "enrollmentTokens": {
           "methods": {
             "create": {
-              "description": "Creates an enrollment token for a given enterprise.",
+              "description": "Creates an enrollment token for a given enterprise. It's up to the caller's responsibility to manage the lifecycle of newly created tokens and deleting them when they're not intended to be used anymore. Once an enrollment token has been created, it's not possible to retrieve the token's content anymore using AM API. It is recommended for EMMs to securely store the token if it's intended to be reused.",
               "flatPath": "v1/enterprises/{enterprisesId}/enrollmentTokens",
               "httpMethod": "POST",
               "id": "androidmanagement.enterprises.enrollmentTokens.create",
@@ -656,6 +656,67 @@
               "path": "v1/{+name}",
               "response": {
                 "$ref": "Empty"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/androidmanagement"
+              ]
+            },
+            "get": {
+              "description": "Gets an active, unexpired enrollment token. Only a partial view of EnrollmentToken is returned: all the fields but name and expiration_timestamp are empty. This method is meant to help manage active enrollment tokens lifecycle. For security reasons, it's recommended to delete active enrollment tokens as soon as they're not intended to be used anymore.",
+              "flatPath": "v1/enterprises/{enterprisesId}/enrollmentTokens/{enrollmentTokensId}",
+              "httpMethod": "GET",
+              "id": "androidmanagement.enterprises.enrollmentTokens.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the enrollment token in the form enterprises/{enterpriseId}/enrollmentTokens/{enrollmentTokenId}.",
+                  "location": "path",
+                  "pattern": "^enterprises/[^/]+/enrollmentTokens/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1/{+name}",
+              "response": {
+                "$ref": "EnrollmentToken"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/androidmanagement"
+              ]
+            },
+            "list": {
+              "description": "Lists active, unexpired enrollment tokens for a given enterprise. The list items contain only a partial view of EnrollmentToken: all the fields but name and expiration_timestamp are empty. This method is meant to help manage active enrollment tokens lifecycle. For security reasons, it's recommended to delete active enrollment tokens as soon as they're not intended to be used anymore.",
+              "flatPath": "v1/enterprises/{enterprisesId}/enrollmentTokens",
+              "httpMethod": "GET",
+              "id": "androidmanagement.enterprises.enrollmentTokens.list",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "pageSize": {
+                  "description": "The requested page size. The service may return fewer than this value. If unspecified, at most 10 items will be returned. The maximum value is 100; values above 100 will be coerced to 100.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "pageToken": {
+                  "description": "A token identifying a page of results returned by the server.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "parent": {
+                  "description": "Required. The name of the enterprise in the form enterprises/{enterpriseId}.",
+                  "location": "path",
+                  "pattern": "^enterprises/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1/{+parent}/enrollmentTokens",
+              "response": {
+                "$ref": "ListEnrollmentTokensResponse"
               },
               "scopes": [
                 "https://www.googleapis.com/auth/androidmanagement"
@@ -1004,9 +1065,26 @@
       }
     }
   },
-  "revision": "20220517",
+  "revision": "20220801",
   "rootUrl": "https://androidmanagement.googleapis.com/",
   "schemas": {
+    "AdbShellCommandEvent": {
+      "description": "A shell command was issued over ADB via \u201cadb shell command\u201d.",
+      "id": "AdbShellCommandEvent",
+      "properties": {
+        "shellCmd": {
+          "description": "Shell command that was issued over ADB via \"adb shell command\". Redacted to empty string on organization-owned managed profile devices.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AdbShellInteractiveEvent": {
+      "description": "An ADB interactive shell was opened via \u201cadb shell\u201d. Intentionally empty.",
+      "id": "AdbShellInteractiveEvent",
+      "properties": {},
+      "type": "object"
+    },
     "AdvancedSecurityOverrides": {
       "description": "Security policies set to secure values by default. To maintain the security posture of a device, we don't recommend overriding any of the default values.",
       "id": "AdvancedSecurityOverrides",
@@ -1102,6 +1180,58 @@
           "description": "The minimum desired Android Framework API level. If the device doesn't meet the minimum requirement, this condition is satisfied. Must be greater than zero.",
           "format": "int32",
           "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "AppProcessInfo": {
+      "description": "Information about a process. It contains process name, start time, app Uid, app Pid, seinfo tag, hash of the base APK.",
+      "id": "AppProcessInfo",
+      "properties": {
+        "apkSha256Hash": {
+          "description": "SHA-256 hash of the base APK, in hexadecimal format.",
+          "type": "string"
+        },
+        "packageNames": {
+          "description": "Package names of all packages that are associated with the particular user ID. In most cases, this will be a single package name, the package that has been assigned that user ID. If multiple application share a UID then all packages sharing UID will be included.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "pid": {
+          "description": "Process ID.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "processName": {
+          "description": "Process name.",
+          "type": "string"
+        },
+        "seinfo": {
+          "description": "SELinux policy info.",
+          "type": "string"
+        },
+        "startTime": {
+          "description": "Process start time.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "uid": {
+          "description": "UID of the package.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "AppProcessStartEvent": {
+      "description": "An app process was started. This is available device-wide on fully managed devices and within the work profile on organization-owned devices with a work profile.",
+      "id": "AppProcessStartEvent",
+      "properties": {
+        "processInfo": {
+          "$ref": "AppProcessInfo",
+          "description": "Information about a process."
         }
       },
       "type": "object"
@@ -1453,7 +1583,9 @@
               "BLOCK_UNINSTALL",
               "PERMISSION_GRANT",
               "PACKAGE_ACCESS",
-              "ENABLE_SYSTEM_APP"
+              "ENABLE_SYSTEM_APP",
+              "NETWORK_ACTIVITY_LOGS",
+              "SECURITY_LOGS"
             ],
             "enumDescriptions": [
               "No delegation scope specified.",
@@ -1462,7 +1594,9 @@
               "Grants access to blocking uninstallation.",
               "Grants access to permission policy and permission grant state.",
               "Grants access to package access state.",
-              "Grants access for enabling system apps."
+              "Grants access for enabling system apps.",
+              "Grants access to network activity logs. Allows the delegated application to call setNetworkLoggingEnabled (https://developer.android.com/reference/android/app/admin/DevicePolicyManager#setNetworkLoggingEnabled%28android.content.ComponentName,%20boolean%29), isNetworkLoggingEnabled (https://developer.android.com/reference/android/app/admin/DevicePolicyManager#isNetworkLoggingEnabled%28android.content.ComponentName%29) and retrieveNetworkLogs (https://developer.android.com/reference/android/app/admin/DevicePolicyManager#retrieveNetworkLogs%28android.content.ComponentName,%20long%29) methods. This scope can be delegated to at most one application. Supported for fully managed devices on Android 10 and above. Supported for a work profile on Android 12 and above. When delegation is supported and set, NETWORK_ACTIVITY_LOGS is ignored.",
+              "Grants access to security logs. Allows the delegated application to call setSecurityLoggingEnabled (https://developer.android.com/reference/android/app/admin/DevicePolicyManager#setSecurityLoggingEnabled%28android.content.ComponentName,%20boolean%29), isSecurityLoggingEnabled (https://developer.android.com/reference/android/app/admin/DevicePolicyManager#isSecurityLoggingEnabled%28android.content.ComponentName%29), retrieveSecurityLogs (https://developer.android.com/reference/android/app/admin/DevicePolicyManager#retrieveSecurityLogs%28android.content.ComponentName%29) and retrievePreRebootSecurityLogs (https://developer.android.com/reference/android/app/admin/DevicePolicyManager#retrievePreRebootSecurityLogs%28android.content.ComponentName%29) methods. This scope can be delegated to at most one application. Supported for fully managed devices and company-owned devices with a work profile on Android 12 and above. When delegation is supported and set, SECURITY_LOGS is ignored."
             ],
             "type": "string"
           },
@@ -1627,6 +1761,33 @@
       },
       "type": "object"
     },
+    "BatchUsageLogEvents": {
+      "description": "Batched event logs of events from the device.",
+      "id": "BatchUsageLogEvents",
+      "properties": {
+        "device": {
+          "description": "The name of the device in the form \u2018enterprises/{enterpriseId}/devices/{deviceId}\u2019",
+          "type": "string"
+        },
+        "retrievalTime": {
+          "description": "The device timestamp when the batch of events were collected from the device.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "usageLogEvents": {
+          "description": "The list of UsageLogEvent that were reported by the device, sorted chronologically by the event time.",
+          "items": {
+            "$ref": "UsageLogEvent"
+          },
+          "type": "array"
+        },
+        "user": {
+          "description": "The resource name of the user that owns this device in the form \u2018enterprises/{enterpriseId}/users/{userId}\u2019.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "BlockAction": {
       "description": "An action to block access to apps and data on a fully managed device or in a work profile. This action also triggers a device or work profile to displays a user-facing notification with information (where possible) on how to correct the compliance issue. Note: wipeAction must also be specified.",
       "id": "BlockAction",
@@ -1648,6 +1809,57 @@
             "Block action is only applied to apps in the work profile. Apps in the personal profile are unaffected.",
             "Block action is applied to the entire device, including apps in the personal profile."
           ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CertAuthorityInstalledEvent": {
+      "description": "A new root certificate was installed into the system's trusted credential storage. This is available device-wide on fully managed devices and within the work profile on organization-owned devices with a work profile.",
+      "id": "CertAuthorityInstalledEvent",
+      "properties": {
+        "certificate": {
+          "description": "Subject of the certificate.",
+          "type": "string"
+        },
+        "success": {
+          "description": "Whether the installation event succeeded.",
+          "type": "boolean"
+        },
+        "userId": {
+          "description": "The user in which the certificate install event happened. Only available for devices running Android 11 and above.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "CertAuthorityRemovedEvent": {
+      "description": "A root certificate was removed from the system's trusted credential storage. This is available device-wide on fully managed devices and within the work profile on organization-owned devices with a work profile.",
+      "id": "CertAuthorityRemovedEvent",
+      "properties": {
+        "certificate": {
+          "description": "Subject of the certificate.",
+          "type": "string"
+        },
+        "success": {
+          "description": "Whether the removal succeeded.",
+          "type": "boolean"
+        },
+        "userId": {
+          "description": "The user in which the certificate removal event occurred. Only available for devices running Android 11 and above.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "CertValidationFailureEvent": {
+      "description": "An X.509v3 certificate failed to validate, currently this validation is performed on the Wi-FI access point and failure may be due to a mismatch upon server certificate validation. However it may in the future include other validation events of an X.509v3 certificate.",
+      "id": "CertValidationFailureEvent",
+      "properties": {
+        "failureReason": {
+          "description": "The reason why certification validation failed.",
           "type": "string"
         }
       },
@@ -1675,10 +1887,47 @@
       },
       "type": "object"
     },
+    "ClearAppsDataParams": {
+      "description": "Parameters associated with the CLEAR_APP_DATA command to clear the data of specified apps from the device.",
+      "id": "ClearAppsDataParams",
+      "properties": {
+        "packageNames": {
+          "description": "The package names of the apps whose data will be cleared when the command is executed.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ClearAppsDataStatus": {
+      "description": "Status of the CLEAR_APP_DATA command to clear the data of specified apps from the device.",
+      "id": "ClearAppsDataStatus",
+      "properties": {
+        "results": {
+          "additionalProperties": {
+            "$ref": "PerAppResult"
+          },
+          "description": "The per-app results, a mapping from package names to the respective clearing result.",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "Command": {
       "description": "A command.",
       "id": "Command",
       "properties": {
+        "clearAppsDataParams": {
+          "$ref": "ClearAppsDataParams",
+          "description": "Parameters for the CLEAR_APP_DATA command to clear the data of specified apps from the device. See ClearAppsDataParams. If this is set, then it is suggested that type should not be set. In this case, the server automatically sets it to CLEAR_APP_DATA. It is also acceptable to explicitly set type to CLEAR_APP_DATA."
+        },
+        "clearAppsDataStatus": {
+          "$ref": "ClearAppsDataStatus",
+          "description": "Output only. Status of the CLEAR_APP_DATA command to clear the data of specified apps from the device. See ClearAppsDataStatus.",
+          "readOnly": true
+        },
         "createTime": {
           "description": "The timestamp at which the command was created. The timestamp is automatically generated by the server.",
           "format": "google-datetime",
@@ -1739,14 +1988,16 @@
             "LOCK",
             "RESET_PASSWORD",
             "REBOOT",
-            "RELINQUISH_OWNERSHIP"
+            "RELINQUISH_OWNERSHIP",
+            "CLEAR_APP_DATA"
           ],
           "enumDescriptions": [
             "This value is disallowed.",
             "Lock the device, as if the lock screen timeout had expired.",
             "Reset the user's password.",
             "Reboot the device. Only supported on fully managed devices running Android 7.0 (API level 24) or higher.",
-            "Removes the work profile and all policies from a company-owned Android 8.0+ device, relinquishing the device for personal use. Apps and data associated with the personal profile(s) are preserved. The device will be deleted from the server after it acknowledges the command."
+            "Removes the work profile and all policies from a company-owned Android 8.0+ device, relinquishing the device for personal use. Apps and data associated with the personal profile(s) are preserved. The device will be deleted from the server after it acknowledges the command.",
+            "Clears the application data of specified apps. This is supported on Android 9 and above. Note that an application can store data outside of its application data, for example in external storage or in a user dictionary. See also clear_apps_data_params."
           ],
           "type": "string"
         },
@@ -1800,6 +2051,26 @@
             "type": "string"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ConnectEvent": {
+      "description": "A TCP connect event was initiated through the standard network stack.",
+      "id": "ConnectEvent",
+      "properties": {
+        "destinationIpAddress": {
+          "description": "The destination IP address of the connect call.",
+          "type": "string"
+        },
+        "destinationPort": {
+          "description": "The destination port of the connect call.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "packageName": {
+          "description": "The package name of the UID that performed the connect call.",
+          "type": "string"
         }
       },
       "type": "object"
@@ -1908,6 +2179,17 @@
             "Default. Allows work profile contacts to appear in personal profile contact searches and incoming calls"
           ],
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CryptoSelfTestCompletedEvent": {
+      "description": "Validates whether Android\u2019s built-in cryptographic library (BoringSSL) is valid. Should always succeed on device boot, if it fails, the device should be considered untrusted.",
+      "id": "CryptoSelfTestCompletedEvent",
+      "properties": {
+        "success": {
+          "description": "Whether the test succeeded.",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -2269,6 +2551,33 @@
       },
       "type": "object"
     },
+    "DnsEvent": {
+      "description": "A DNS lookup event was initiated through the standard network stack.",
+      "id": "DnsEvent",
+      "properties": {
+        "hostname": {
+          "description": "The hostname that was looked up.",
+          "type": "string"
+        },
+        "ipAddresses": {
+          "description": "The (possibly truncated) list of the IP addresses returned for DNS lookup (max 10 IPv4 or IPv6 addresses).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "packageName": {
+          "description": "The package name of the UID that performed the DNS lookup.",
+          "type": "string"
+        },
+        "totalIpAddressesReturned": {
+          "description": "The number of IP addresses returned from the DNS lookup event. May be higher than the amount of ip_addresses if there were too many addresses to log.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "Empty": {
       "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); } ",
       "id": "Empty",
@@ -2298,7 +2607,7 @@
           "type": "string"
         },
         "duration": {
-          "description": "The length of time the enrollment token is valid, ranging from 1 minute to 90 days. If not specified, the default duration is 1 hour.",
+          "description": "The length of time the enrollment token is valid, ranging from 1 minute to Durations.MAX_VALUE (https://developers.google.com/protocol-buffers/docs/reference/java/com/google/protobuf/util/Durations.html#MAX_VALUE), approximately 10,000 years. If not specified, the default duration is 1 hour. Please note that if requested duration causes the resulting expiration_timestamp to exceed Timestamps.MAX_VALUE (https://developers.google.com/protocol-buffers/docs/reference/java/com/google/protobuf/util/Timestamps.html#MAX_VALUE), then expiration_timestamp is coerced to Timestamps.MAX_VALUE.",
           "format": "google-duration",
           "type": "string"
         },
@@ -2435,6 +2744,28 @@
         },
         "url": {
           "description": "The absolute URL to the data, which must use either the http or https scheme. Android Device Policy doesn't provide any credentials in the GET request, so the URL must be publicly accessible. Including a long, random component in the URL may be used to prevent attackers from discovering the URL.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FilePulledEvent": {
+      "description": "A file was downloaded from the device.",
+      "id": "FilePulledEvent",
+      "properties": {
+        "filePath": {
+          "description": "The path of the file being pulled.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FilePushedEvent": {
+      "description": "A file was uploaded onto the device.",
+      "id": "FilePushedEvent",
+      "properties": {
+        "filePath": {
+          "description": "The path of the file being pushed.",
           "type": "string"
         }
       },
@@ -2621,6 +2952,82 @@
       "properties": {},
       "type": "object"
     },
+    "KeyDestructionEvent": {
+      "description": "A cryptographic key including user installed, admin installed and system maintained private key is removed from the device either by the user or management. This is available device-wide on fully managed devices and within the work profile on organization-owned devices with a work profile.",
+      "id": "KeyDestructionEvent",
+      "properties": {
+        "applicationUid": {
+          "description": "UID of the application which owns the key.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "keyAlias": {
+          "description": "Alias of the key.",
+          "type": "string"
+        },
+        "success": {
+          "description": "Whether the operation was successful.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "KeyGeneratedEvent": {
+      "description": "A cryptographic key including user installed, admin installed and system maintained private key is installed on the device either by the user or management.This is available device-wide on fully managed devices and within the work profile on organization-owned devices with a work profile.",
+      "id": "KeyGeneratedEvent",
+      "properties": {
+        "applicationUid": {
+          "description": "UID of the application which generated the key.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "keyAlias": {
+          "description": "Alias of the key.",
+          "type": "string"
+        },
+        "success": {
+          "description": "Whether the operation was successful.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "KeyImportEvent": {
+      "description": "A cryptographic key including user installed, admin installed and system maintained private key is imported on the device either by the user or management. This is available device-wide on fully managed devices and within the work profile on organization-owned devices with a work profile.",
+      "id": "KeyImportEvent",
+      "properties": {
+        "applicationUid": {
+          "description": "UID of the application which imported the key",
+          "format": "int32",
+          "type": "integer"
+        },
+        "keyAlias": {
+          "description": "Alias of the key.",
+          "type": "string"
+        },
+        "success": {
+          "description": "Whether the operation was successful.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "KeyIntegrityViolationEvent": {
+      "description": "A cryptographic key including user installed, admin installed and system maintained private key is determined to be corrupted due to storage corruption, hardware failure or some OS issue. This is available device-wide on fully managed devices and within the work profile on organization-owned devices with a work profile.",
+      "id": "KeyIntegrityViolationEvent",
+      "properties": {
+        "applicationUid": {
+          "description": "UID of the application which owns the key",
+          "format": "int32",
+          "type": "integer"
+        },
+        "keyAlias": {
+          "description": "Alias of the key.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "KeyedAppState": {
       "description": "Keyed app state reported by the app.",
       "id": "KeyedAppState",
@@ -2662,6 +3069,33 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "KeyguardDismissAuthAttemptEvent": {
+      "description": "An attempt was made to unlock the device.",
+      "id": "KeyguardDismissAuthAttemptEvent",
+      "properties": {
+        "strongAuthMethodUsed": {
+          "description": "Whether a strong form of authentication (password, PIN, or pattern) was used to unlock device.",
+          "type": "boolean"
+        },
+        "success": {
+          "description": "Whether the unlock attempt was successful.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "KeyguardDismissedEvent": {
+      "description": "The keyguard was dismissed. Intentionally empty.",
+      "id": "KeyguardDismissedEvent",
+      "properties": {},
+      "type": "object"
+    },
+    "KeyguardSecuredEvent": {
+      "description": "The device was locked either by user or timeout. Intentionally empty.",
+      "id": "KeyguardSecuredEvent",
+      "properties": {},
       "type": "object"
     },
     "KioskCustomization": {
@@ -2774,6 +3208,24 @@
       },
       "type": "object"
     },
+    "ListEnrollmentTokensResponse": {
+      "description": "Response to a request to list enrollment tokens for a given enterprise.",
+      "id": "ListEnrollmentTokensResponse",
+      "properties": {
+        "enrollmentTokens": {
+          "description": "The list of enrollment tokens.",
+          "items": {
+            "$ref": "EnrollmentToken"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "If there are more results, a token to retrieve next page of results.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "ListEnterprisesResponse": {
       "description": "Response to a request to list enterprises.",
       "id": "ListEnterprisesResponse",
@@ -2844,6 +3296,24 @@
           "type": "array"
         }
       },
+      "type": "object"
+    },
+    "LogBufferSizeCriticalEvent": {
+      "description": "The usageLog buffer on the device has reached 90% of its capacity, therefore older events may be dropped. Intentionally empty.",
+      "id": "LogBufferSizeCriticalEvent",
+      "properties": {},
+      "type": "object"
+    },
+    "LoggingStartedEvent": {
+      "description": "usageLog policy has been enabled. Intentionally empty.",
+      "id": "LoggingStartedEvent",
+      "properties": {},
+      "type": "object"
+    },
+    "LoggingStoppedEvent": {
+      "description": "usageLog policy has been disabled. Intentionally empty.",
+      "id": "LoggingStoppedEvent",
+      "properties": {},
       "type": "object"
     },
     "ManagedConfigurationTemplate": {
@@ -2937,6 +3407,36 @@
         },
         "value": {
           "description": "The machine-readable value of the entry, which should be used in the configuration. Not localized.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "MediaMountEvent": {
+      "description": "Removable media was mounted.",
+      "id": "MediaMountEvent",
+      "properties": {
+        "mountPoint": {
+          "description": "Mount point.",
+          "type": "string"
+        },
+        "volumeLabel": {
+          "description": "Volume label. Redacted to empty string on organization-owned managed profile devices.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "MediaUnmountEvent": {
+      "description": "Removable media was unmounted.",
+      "id": "MediaUnmountEvent",
+      "properties": {
+        "mountPoint": {
+          "description": "Mount point.",
+          "type": "string"
+        },
+        "volumeLabel": {
+          "description": "Volume label. Redacted to empty string on organization-owned managed profile devices.",
           "type": "string"
         }
       },
@@ -3105,6 +3605,30 @@
         "settingName": {
           "description": "The name of the policy setting. This is the JSON field name of a top-level Policy field.",
           "type": "string"
+        },
+        "specificNonComplianceContext": {
+          "$ref": "SpecificNonComplianceContext",
+          "description": "Additional context for specific_non_compliance_reason."
+        },
+        "specificNonComplianceReason": {
+          "description": "The policy-specific reason the device is not in compliance with the setting.",
+          "enum": [
+            "SPECIFIC_NON_COMPLIANCE_REASON_UNSPECIFIED",
+            "PASSWORD_POLICIES_USER_CREDENTIALS_CONFIRMATION_REQUIRED",
+            "PASSWORD_POLICIES_PASSWORD_EXPIRED",
+            "PASSWORD_POLICIES_PASSWORD_NOT_SUFFICIENT",
+            "ONC_WIFI_INVALID_VALUE",
+            "ONC_WIFI_API_LEVEL"
+          ],
+          "enumDescriptions": [
+            "Specific non-compliance reason is not specified. Fields in specific_non_compliance_context are not set.",
+            "User needs to confirm credentials by entering the screen lock. Fields in specific_non_compliance_context are not set. nonComplianceReason is set to USER_ACTION.",
+            "The device or profile password has expired. passwordPoliciesContext is set. nonComplianceReason is set to USER_ACTION.",
+            "The device password does not satisfy password requirements. passwordPoliciesContext is set. nonComplianceReason is set to USER_ACTION.",
+            "There is an incorrect value in ONC Wi-Fi configuration. fieldPath specifies which field value is incorrect. oncWifiContext is set. nonComplianceReason is set to INVALID_VALUE.",
+            "The ONC Wi-Fi setting is not supported in the API level of the Android version running on the device. fieldPath specifies which field value is not supported. oncWifiContext is set. nonComplianceReason is set to API_LEVEL."
+          ],
+          "type": "string"
         }
       },
       "type": "object"
@@ -3172,6 +3696,17 @@
       },
       "type": "object"
     },
+    "OncWifiContext": {
+      "description": "Additional context for non-compliance related to Wi-Fi configuration.",
+      "id": "OncWifiContext",
+      "properties": {
+        "wifiGuid": {
+          "description": "The GUID of non-compliant Wi-Fi configuration.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "Operation": {
       "description": "This resource represents a long-running operation that is the result of a network API call.",
       "id": "Operation",
@@ -3207,6 +3742,51 @@
       },
       "type": "object"
     },
+    "OsShutdownEvent": {
+      "description": "Device was shutdown. Intentionally empty.",
+      "id": "OsShutdownEvent",
+      "properties": {},
+      "type": "object"
+    },
+    "OsStartupEvent": {
+      "description": "Device was started.",
+      "id": "OsStartupEvent",
+      "properties": {
+        "verifiedBootState": {
+          "description": "Verified Boot state.",
+          "enum": [
+            "VERIFIED_BOOT_STATE_UNSPECIFIED",
+            "GREEN",
+            "YELLOW",
+            "ORANGE"
+          ],
+          "enumDescriptions": [
+            "Unknown value.",
+            "Indicates that there is a full chain of trust extending from the bootloader to verified partitions including the bootloader, boot partition, and all verified partitions.",
+            "Indicates that the boot partition has been verified using the embedded certificate and the signature is valid.",
+            "Indicates that the device may be freely modified. Device integrity is left to the user to verify out-of-band."
+          ],
+          "type": "string"
+        },
+        "verityMode": {
+          "description": "dm-verity mode.",
+          "enum": [
+            "DM_VERITY_MODE_UNSPECIFIED",
+            "ENFORCING",
+            "IO_ERROR",
+            "DISABLED"
+          ],
+          "enumDescriptions": [
+            "Unknown value.",
+            "Indicates that the device will be restarted when corruption is detected.",
+            "Indicates that an I/O error will be returned for an attempt to read corrupted data blocks (also known as eio boot state).",
+            "Indicates that dm-verity is disabled on device."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "PackageNameList": {
       "description": "A list of package names.",
       "id": "PackageNameList",
@@ -3217,6 +3797,27 @@
             "type": "string"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PasswordPoliciesContext": {
+      "description": "Additional context for non-compliance related to password policies.",
+      "id": "PasswordPoliciesContext",
+      "properties": {
+        "passwordPolicyScope": {
+          "description": "The scope of non-compliant password.",
+          "enum": [
+            "SCOPE_UNSPECIFIED",
+            "SCOPE_DEVICE",
+            "SCOPE_PROFILE"
+          ],
+          "enumDescriptions": [
+            "The scope is unspecified. The password requirements are applied to the work profile for work profile devices and the whole device for fully managed or dedicated devices.",
+            "The password requirements are only applied to the device.",
+            "The password requirements are only applied to the work profile."
+          ],
+          "type": "string"
         }
       },
       "type": "object"
@@ -3330,6 +3931,45 @@
             "Unspecified. Defaults to USE_DEFAULT_DEVICE_TIMEOUT.",
             "The timeout period is set to the device\u2019s default.",
             "The timeout period is set to 24 hours."
+          ],
+          "type": "string"
+        },
+        "unifiedLockSettings": {
+          "description": "Controls whether a unified lock is allowed for the device and the work profile, on devices running Android 9 and above with a work profile. This can be set only if password_scope is set to SCOPE_PROFILE, the policy will be rejected otherwise. If user has not set a separate work lock and this field is set to REQUIRE_SEPARATE_WORK_LOCK, a NonComplianceDetail is reported with nonComplianceReason set to USER_ACTION.",
+          "enum": [
+            "UNIFIED_LOCK_SETTINGS_UNSPECIFIED",
+            "ALLOW_UNIFIED_WORK_AND_PERSONAL_LOCK",
+            "REQUIRE_SEPARATE_WORK_LOCK"
+          ],
+          "enumDescriptions": [
+            "Unspecified. Defaults to ALLOW_UNIFIED_WORK_AND_PERSONAL_LOCK.",
+            "A common lock for the device and the work profile is allowed.",
+            "A separate lock for the work profile is required."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PerAppResult": {
+      "description": "The result of an attempt to clear the data of a single app.",
+      "id": "PerAppResult",
+      "properties": {
+        "clearingResult": {
+          "description": "The result of an attempt to clear the data of a single app.",
+          "enum": [
+            "CLEARING_RESULT_UNSPECIFIED",
+            "SUCCESS",
+            "APP_NOT_FOUND",
+            "APP_PROTECTED",
+            "API_LEVEL"
+          ],
+          "enumDescriptions": [
+            "Unspecified result.",
+            "This app\u2019s data was successfully cleared.",
+            "This app\u2019s data could not be cleared because the app was not found.",
+            "This app\u2019s data could not be cleared because the app is protected. For example, this may apply to apps critical to the functioning of the device, such as Google Play Store.",
+            "This app\u2019s data could not be cleared because the device API level does not support this command."
           ],
           "type": "string"
         }
@@ -3840,7 +4480,7 @@
         },
         "passwordRequirements": {
           "$ref": "PasswordRequirements",
-          "description": "Password requirements. The field password_requirements.require_password_unlock must not be set. DEPRECATED - Use passwordPolicies.Note:Complexity-based values of PasswordQuality, that is, COMPLEXITY_LOW, COMPLEXITY_MEDIUM, and COMPLEXITY_HIGH, cannot be used here."
+          "description": "Password requirements. The field password_requirements.require_password_unlock must not be set. DEPRECATED - Use passwordPolicies.Note:Complexity-based values of PasswordQuality, that is, COMPLEXITY_LOW, COMPLEXITY_MEDIUM, and COMPLEXITY_HIGH, cannot be used here. unified_lock_settings cannot be used here."
         },
         "permissionGrants": {
           "description": "Explicit permission or group grants or denials for all apps. These values override the default_permission_policy.",
@@ -4146,6 +4786,27 @@
       },
       "type": "object"
     },
+    "RemoteLockEvent": {
+      "description": "The device or profile has been remotely locked via the LOCK command.",
+      "id": "RemoteLockEvent",
+      "properties": {
+        "adminPackageName": {
+          "description": "Package name of the admin app requesting the change.",
+          "type": "string"
+        },
+        "adminUserId": {
+          "description": "User ID of the admin app from the which the change was requested.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "targetUserId": {
+          "description": "User ID in which the change was requested in.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
     "SecurityPosture": {
       "description": "The security posture of the device, as determined by the current device state and the policies applied.",
       "id": "SecurityPosture",
@@ -4292,6 +4953,21 @@
         "systemUpdateInfo": {
           "$ref": "SystemUpdateInfo",
           "description": "Information about a potential pending system update."
+        }
+      },
+      "type": "object"
+    },
+    "SpecificNonComplianceContext": {
+      "description": "Additional context for SpecificNonComplianceReason.",
+      "id": "SpecificNonComplianceContext",
+      "properties": {
+        "oncWifiContext": {
+          "$ref": "OncWifiContext",
+          "description": "Additional context for non-compliance related to Wi-Fi configuration. See ONC_WIFI_INVALID_VALUE and ONC_WIFI_API_LEVEL"
+        },
+        "passwordPoliciesContext": {
+          "$ref": "PasswordPoliciesContext",
+          "description": "Additional context for non-compliance related to password policies. See PASSWORD_POLICIES_PASSWORD_EXPIRED and PASSWORD_POLICIES_PASSWORD_NOT_SUFFICIENT."
         }
       },
       "type": "object"
@@ -4488,8 +5164,8 @@
             ],
             "enumDescriptions": [
               "This value is not used.",
-              "Enable logging of on-device security events, like when the device password is incorrectly entered or removable storage is mounted. See event for a complete description of the logged security events. Supported for fully managed devices on Android 7.0 and above. Supported for company-owned devices with a work profile on Android 12 and above, on which only security events from the work profile are logged.",
-              "Enable logging of on-device network events, like DNS lookups and TCP connections. See event for a complete description of the logged network events. Supported for fully managed devices on Android 8 and above. Supported for company-owned devices with a work profile on Android 12 and above, on which only network events from the work profile are logged."
+              "Enable logging of on-device security events, like when the device password is incorrectly entered or removable storage is mounted. See UsageLogEvent for a complete description of the logged security events. Supported for fully managed devices on Android 7 and above. Supported for company-owned devices with a work profile on Android 12 and above, on which only security events from the work profile are logged. Can be overridden by the application delegated scope SECURITY_LOGS",
+              "Enable logging of on-device network events, like DNS lookups and TCP connections. See UsageLogEvent for a complete description of the logged network events. Supported for fully managed devices on Android 8 and above. Supported for company-owned devices with a work profile on Android 12 and above, on which only network events from the work profile are logged. Can be overridden by the application delegated scope NETWORK_ACTIVITY_LOGS"
             ],
             "type": "string"
           },
@@ -4505,12 +5181,201 @@
             ],
             "enumDescriptions": [
               "This value is not used.",
-              "Enable logging of on-device security events, like when the device password is incorrectly entered or removable storage is mounted. See event for a complete description of the logged security events. Supported for fully managed devices on Android 7.0 and above. Supported for company-owned devices with a work profile on Android 12 and above, on which only security events from the work profile are logged.",
-              "Enable logging of on-device network events, like DNS lookups and TCP connections. See event for a complete description of the logged network events. Supported for fully managed devices on Android 8 and above. Supported for company-owned devices with a work profile on Android 12 and above, on which only network events from the work profile are logged."
+              "Enable logging of on-device security events, like when the device password is incorrectly entered or removable storage is mounted. See UsageLogEvent for a complete description of the logged security events. Supported for fully managed devices on Android 7 and above. Supported for company-owned devices with a work profile on Android 12 and above, on which only security events from the work profile are logged. Can be overridden by the application delegated scope SECURITY_LOGS",
+              "Enable logging of on-device network events, like DNS lookups and TCP connections. See UsageLogEvent for a complete description of the logged network events. Supported for fully managed devices on Android 8 and above. Supported for company-owned devices with a work profile on Android 12 and above, on which only network events from the work profile are logged. Can be overridden by the application delegated scope NETWORK_ACTIVITY_LOGS"
             ],
             "type": "string"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "UsageLogEvent": {
+      "description": "An event logged on the device.",
+      "id": "UsageLogEvent",
+      "properties": {
+        "adbShellCommandEvent": {
+          "$ref": "AdbShellCommandEvent",
+          "description": "A shell command was issued over ADB via \u201cadb shell command\u201d. Part of SECURITY_LOGS."
+        },
+        "adbShellInteractiveEvent": {
+          "$ref": "AdbShellInteractiveEvent",
+          "description": "An ADB interactive shell was opened via \u201cadb shell\u201d. Part of SECURITY_LOGS."
+        },
+        "appProcessStartEvent": {
+          "$ref": "AppProcessStartEvent",
+          "description": "An app process was started. Part of SECURITY_LOGS."
+        },
+        "certAuthorityInstalledEvent": {
+          "$ref": "CertAuthorityInstalledEvent",
+          "description": "A new root certificate was installed into the system's trusted credential storage. Part of SECURITY_LOGS."
+        },
+        "certAuthorityRemovedEvent": {
+          "$ref": "CertAuthorityRemovedEvent",
+          "description": "A root certificate was removed from the system's trusted credential storage. Part of SECURITY_LOGS."
+        },
+        "certValidationFailureEvent": {
+          "$ref": "CertValidationFailureEvent",
+          "description": "An X.509v3 certificate failed to validate, currently this validation is performed on the Wi-FI access point and failure may be due to a mismatch upon server certificate validation. However it may in the future include other validation events of an X.509v3 certificate. Part of SECURITY_LOGS."
+        },
+        "connectEvent": {
+          "$ref": "ConnectEvent",
+          "description": "A TCP connect event was initiated through the standard network stack. Part of NETWORK_ACTIVITY_LOGS."
+        },
+        "cryptoSelfTestCompletedEvent": {
+          "$ref": "CryptoSelfTestCompletedEvent",
+          "description": "Validates whether Android\u2019s built-in cryptographic library (BoringSSL) is valid. Should always succeed on device boot, if it fails, the device should be considered untrusted. Part of SECURITY_LOGS."
+        },
+        "dnsEvent": {
+          "$ref": "DnsEvent",
+          "description": "A DNS lookup event was initiated through the standard network stack. Part of NETWORK_ACTIVITY_LOGS."
+        },
+        "eventId": {
+          "description": "Unique id of the event.",
+          "format": "int64",
+          "type": "string"
+        },
+        "eventTime": {
+          "description": "Device timestamp when the event was logged.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "eventType": {
+          "description": "The particular usage log event type that was reported on the device. Use this to determine which event field to access.",
+          "enum": [
+            "EVENT_TYPE_UNSPECIFIED",
+            "ADB_SHELL_COMMAND",
+            "ADB_SHELL_INTERACTIVE",
+            "APP_PROCESS_START",
+            "KEYGUARD_DISMISSED",
+            "KEYGUARD_DISMISS_AUTH_ATTEMPT",
+            "KEYGUARD_SECURED",
+            "FILE_PULLED",
+            "FILE_PUSHED",
+            "CERT_AUTHORITY_INSTALLED",
+            "CERT_AUTHORITY_REMOVED",
+            "CERT_VALIDATION_FAILURE",
+            "CRYPTO_SELF_TEST_COMPLETED",
+            "KEY_DESTRUCTION",
+            "KEY_GENERATED",
+            "KEY_IMPORT",
+            "KEY_INTEGRITY_VIOLATION",
+            "LOGGING_STARTED",
+            "LOGGING_STOPPED",
+            "LOG_BUFFER_SIZE_CRITICAL",
+            "MEDIA_MOUNT",
+            "MEDIA_UNMOUNT",
+            "OS_SHUTDOWN",
+            "OS_STARTUP",
+            "REMOTE_LOCK",
+            "WIPE_FAILURE",
+            "CONNECT",
+            "DNS"
+          ],
+          "enumDescriptions": [
+            "This value is not used",
+            "Indicates adb_shell_command_event has been set.",
+            "Indicates adb_shell_interactive_event has been set.",
+            "Indicates app_process_start_event has been set.",
+            "Indicates keyguard_dismissed_event has been set.",
+            "Indicates keyguard_dismiss_auth_attempt_event has been set.",
+            "Indicates keyguard_secured_event has been set.",
+            "Indicates file_pulled_event has been set.",
+            "Indicates file_pushed_event has been set.",
+            "Indicates cert_authority_installed_event has been set.",
+            "Indicates cert_authority_removed_event has been set.",
+            "Indicates cert_validation_failure_event has been set.",
+            "Indicates crypto_self_test_completed_event has been set.",
+            "Indicates key_destruction_event has been set.",
+            "Indicates key_generated_event has been set.",
+            "Indicates key_import_event has been set.",
+            "Indicates key_integrity_violation_event has been set.",
+            "Indicates logging_started_event has been set.",
+            "Indicates logging_stopped_event has been set.",
+            "Indicates log_buffer_size_critical_event has been set.",
+            "Indicates media_mount_event has been set.",
+            "Indicates media_unmount_event has been set.",
+            "Indicates os_shutdown_event has been set.",
+            "Indicates os_startup_event has been set.",
+            "Indicates remote_lock_event has been set.",
+            "Indicates wipe_failure_event has been set.",
+            "Indicates connect_event has been set.",
+            "Indicates dns_event has been set."
+          ],
+          "type": "string"
+        },
+        "filePulledEvent": {
+          "$ref": "FilePulledEvent",
+          "description": "A file was downloaded from the device. Part of SECURITY_LOGS."
+        },
+        "filePushedEvent": {
+          "$ref": "FilePushedEvent",
+          "description": "A file was uploaded onto the device. Part of SECURITY_LOGS."
+        },
+        "keyDestructionEvent": {
+          "$ref": "KeyDestructionEvent",
+          "description": "A cryptographic key including user installed, admin installed and system maintained private key is removed from the device either by the user or management. Part of SECURITY_LOGS."
+        },
+        "keyGeneratedEvent": {
+          "$ref": "KeyGeneratedEvent",
+          "description": "A cryptographic key including user installed, admin installed and system maintained private key is installed on the device either by the user or management. Part of SECURITY_LOGS."
+        },
+        "keyImportEvent": {
+          "$ref": "KeyImportEvent",
+          "description": "A cryptographic key including user installed, admin installed and system maintained private key is imported on the device either by the user or management. Part of SECURITY_LOGS."
+        },
+        "keyIntegrityViolationEvent": {
+          "$ref": "KeyIntegrityViolationEvent",
+          "description": "A cryptographic key including user installed, admin installed and system maintained private key is determined to be corrupted due to storage corruption, hardware failure or some OS issue. Part of SECURITY_LOGS."
+        },
+        "keyguardDismissAuthAttemptEvent": {
+          "$ref": "KeyguardDismissAuthAttemptEvent",
+          "description": "An attempt was made to unlock the device. Part of SECURITY_LOGS."
+        },
+        "keyguardDismissedEvent": {
+          "$ref": "KeyguardDismissedEvent",
+          "description": "The keyguard was dismissed. Part of SECURITY_LOGS."
+        },
+        "keyguardSecuredEvent": {
+          "$ref": "KeyguardSecuredEvent",
+          "description": "The device was locked either by user or timeout. Part of SECURITY_LOGS."
+        },
+        "logBufferSizeCriticalEvent": {
+          "$ref": "LogBufferSizeCriticalEvent",
+          "description": "The audit log buffer has reached 90% of its capacity, therefore older events may be dropped. Part of SECURITY_LOGS."
+        },
+        "loggingStartedEvent": {
+          "$ref": "LoggingStartedEvent",
+          "description": "usageLog policy has been enabled. Part of SECURITY_LOGS."
+        },
+        "loggingStoppedEvent": {
+          "$ref": "LoggingStoppedEvent",
+          "description": "usageLog policy has been disabled. Part of SECURITY_LOGS."
+        },
+        "mediaMountEvent": {
+          "$ref": "MediaMountEvent",
+          "description": "Removable media was mounted. Part of SECURITY_LOGS."
+        },
+        "mediaUnmountEvent": {
+          "$ref": "MediaUnmountEvent",
+          "description": "Removable media was unmounted. Part of SECURITY_LOGS."
+        },
+        "osShutdownEvent": {
+          "$ref": "OsShutdownEvent",
+          "description": "Device was shutdown. Part of SECURITY_LOGS."
+        },
+        "osStartupEvent": {
+          "$ref": "OsStartupEvent",
+          "description": "Device was started. Part of SECURITY_LOGS."
+        },
+        "remoteLockEvent": {
+          "$ref": "RemoteLockEvent",
+          "description": "The device or profile has been remotely locked via the LOCK command. Part of SECURITY_LOGS."
+        },
+        "wipeFailureEvent": {
+          "$ref": "WipeFailureEvent",
+          "description": "The work profile or company-owned device failed to wipe when requested. This could be user initiated or admin initiated e.g. delete was received. Part of SECURITY_LOGS."
         }
       },
       "type": "object"
@@ -4675,6 +5540,12 @@
           "type": "integer"
         }
       },
+      "type": "object"
+    },
+    "WipeFailureEvent": {
+      "description": "The work profile or company-owned device failed to wipe when requested. This could be user initiated or admin initiated e.g. delete was received. Intentionally empty.",
+      "id": "WipeFailureEvent",
+      "properties": {},
       "type": "object"
     }
   },
