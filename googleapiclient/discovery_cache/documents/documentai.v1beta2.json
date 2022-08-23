@@ -292,7 +292,7 @@
       }
     }
   },
-  "revision": "20220808",
+  "revision": "20220815",
   "rootUrl": "https://documentai.googleapis.com/",
   "schemas": {
     "GoogleCloudDocumentaiUiv1beta3BatchDeleteDocumentsMetadata": {
@@ -308,6 +308,11 @@
             "$ref": "GoogleCloudDocumentaiUiv1beta3BatchDeleteDocumentsMetadataIndividualBatchDeleteStatus"
           },
           "type": "array"
+        },
+        "totalDocumentCount": {
+          "description": "Total number of documents deleting from dataset.",
+          "format": "int32",
+          "type": "integer"
         }
       },
       "type": "object"
@@ -322,7 +327,7 @@
         },
         "status": {
           "$ref": "GoogleRpcStatus",
-          "description": "The status of deleting the document."
+          "description": "The status of deleting the document in storage."
         }
       },
       "type": "object"
@@ -635,6 +640,13 @@
           "$ref": "GoogleCloudDocumentaiUiv1beta3CommonOperationMetadata",
           "description": "The basic metadata of the long running operation."
         },
+        "importConfigValidationResults": {
+          "description": "Validation statuses of the batch documents import config.",
+          "items": {
+            "$ref": "GoogleCloudDocumentaiUiv1beta3ImportDocumentsMetadataImportConfigValidationResult"
+          },
+          "type": "array"
+        },
         "individualImportStatuses": {
           "description": "The list of response details of each document.",
           "items": {
@@ -646,6 +658,21 @@
           "description": "Total number of the documents that are qualified for importing.",
           "format": "int32",
           "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleCloudDocumentaiUiv1beta3ImportDocumentsMetadataImportConfigValidationResult": {
+      "description": "The validation status of each import config. Status is ok if the configuration is valid and the specified documents are valid for importing. Otherwise status will be set as errors.",
+      "id": "GoogleCloudDocumentaiUiv1beta3ImportDocumentsMetadataImportConfigValidationResult",
+      "properties": {
+        "inputGcsSource": {
+          "description": "The source Cloud Storage URI specified in the import config.",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "GoogleRpcStatus",
+          "description": "The validation status of import config."
         }
       },
       "type": "object"
@@ -683,12 +710,80 @@
           "$ref": "GoogleCloudDocumentaiUiv1beta3CommonOperationMetadata",
           "description": "The basic metadata of the long running operation."
         },
+        "datasetResyncStatuses": {
+          "description": "The list of dataset resync statuses. Not checked when `dataset_documents` is specified in ResyncRequest.",
+          "items": {
+            "$ref": "GoogleCloudDocumentaiUiv1beta3ResyncDatasetMetadataDatasetResyncStatus"
+          },
+          "type": "array"
+        },
+        "individualDocumentResyncStatuses": {
+          "description": "The list of document resync statuses. The same document could have multiple `individual_document_resync_statuses` if it has multiple inconsistencies.",
+          "items": {
+            "$ref": "GoogleCloudDocumentaiUiv1beta3ResyncDatasetMetadataIndividualDocumentResyncStatus"
+          },
+          "type": "array"
+        },
         "newlyAddedDocuments": {
           "description": "Returns the newly added document Cloud Storage prefix if the documents are founded in Cloud Storage while not in Document Service storage.",
           "items": {
             "$ref": "GoogleCloudDocumentaiUiv1beta3ResyncDatasetMetadataUpdatedDocument"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleCloudDocumentaiUiv1beta3ResyncDatasetMetadataDatasetResyncStatus": {
+      "description": "Resync status against inconsistency types on the dataset level.",
+      "id": "GoogleCloudDocumentaiUiv1beta3ResyncDatasetMetadataDatasetResyncStatus",
+      "properties": {
+        "datasetInconsistencyType": {
+          "description": "The type of the inconsistency of the dataset.",
+          "enum": [
+            "DATASET_INCONSISTENCY_TYPE_UNSPECIFIED",
+            "DATASET_INCONSISTENCY_TYPE_NO_STORAGE_MARKER"
+          ],
+          "enumDescriptions": [
+            "Default value.",
+            "The marker file under the dataset folder is not found."
+          ],
+          "type": "string"
+        },
+        "status": {
+          "$ref": "GoogleRpcStatus",
+          "description": "The status of resyncing the dataset with regards to the detected inconsistency. Empty if `validate_only` is true in the request."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleCloudDocumentaiUiv1beta3ResyncDatasetMetadataIndividualDocumentResyncStatus": {
+      "description": "Resync status for each document per inconsistency type.",
+      "id": "GoogleCloudDocumentaiUiv1beta3ResyncDatasetMetadataIndividualDocumentResyncStatus",
+      "properties": {
+        "documentId": {
+          "$ref": "GoogleCloudDocumentaiUiv1beta3DocumentId",
+          "description": "The document identifier."
+        },
+        "documentInconsistencyType": {
+          "description": "The type of document inconsistency.",
+          "enum": [
+            "DOCUMENT_INCONSISTENCY_TYPE_UNSPECIFIED",
+            "DOCUMENT_INCONSISTENCY_TYPE_INVALID_DOCPROTO",
+            "DOCUMENT_INCONSISTENCY_TYPE_MISMATCHED_METADATA",
+            "DOCUMENT_INCONSISTENCY_TYPE_NO_PAGE_IMAGE"
+          ],
+          "enumDescriptions": [
+            "Default value.",
+            "The document proto is invalid.",
+            "Indexed docproto metadata is mismatched.",
+            "The page image or thumbnails are missing."
+          ],
+          "type": "string"
+        },
+        "status": {
+          "$ref": "GoogleRpcStatus",
+          "description": "The status of resyncing the document with regards to the detected inconsistency. Empty if `validate_only` is true in the request."
         }
       },
       "type": "object"
@@ -1386,10 +1481,6 @@
         "mentionText": {
           "description": "Optional. Text value in the document e.g. `1600 Amphitheatre Pkwy`. If the entity is not present in the document, this field will be empty.",
           "type": "string"
-        },
-        "nonPresent": {
-          "description": "Optional. This attribute indicates that the processing didn't actually identify this entity, but a confidence score was assigned that represent the potential that this could be a false negative. A non-present entity should have an empty mention_text and text_anchor.",
-          "type": "boolean"
         },
         "normalizedValue": {
           "$ref": "GoogleCloudDocumentaiV1beta1DocumentEntityNormalizedValue",
@@ -2649,10 +2740,6 @@
         "mentionText": {
           "description": "Optional. Text value in the document e.g. `1600 Amphitheatre Pkwy`. If the entity is not present in the document, this field will be empty.",
           "type": "string"
-        },
-        "nonPresent": {
-          "description": "Optional. This attribute indicates that the processing didn't actually identify this entity, but a confidence score was assigned that represent the potential that this could be a false negative. A non-present entity should have an empty mention_text and text_anchor.",
-          "type": "boolean"
         },
         "normalizedValue": {
           "$ref": "GoogleCloudDocumentaiV1beta2DocumentEntityNormalizedValue",
