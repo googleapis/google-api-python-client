@@ -42,6 +42,9 @@ s.move(templated_files / "scripts")
 # Copy CONTRIBUTING.rst
 s.move(templated_files / "CONTRIBUTING.rst")
 
+# Copy configuration file for renovate
+s.move(templated_files / "renovate.json")
+
 # ----------------------------------------------------------------------------
 # Samples templates
 # ----------------------------------------------------------------------------
