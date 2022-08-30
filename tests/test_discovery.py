@@ -1205,7 +1205,7 @@ class DiscoveryRetryFromHttp(unittest.TestCase):
 class DiscoveryFromAppEngineCache(unittest.TestCase):
     def setUp(self):
         self.old_environ = os.environ.copy()
-        os.environ["APPENGINE_RUNTIME"] = "python27"
+        os.environ["GAE_ENV"] = "standard"
 
     def tearDown(self):
         os.environ = self.old_environ
