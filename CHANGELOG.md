@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.59.1](https://github.com/googleapis/google-api-python-client/compare/v2.59.0...v2.59.1) (2022-08-31)
+
+
+### Documentation
+
+* **samples:** Replace APPENGINE_RUNTIME with GAE_ENV ([#1893](https://github.com/googleapis/google-api-python-client/issues/1893)) ([af3160d](https://github.com/googleapis/google-api-python-client/commit/af3160d1d722a679071328cff7c0ecbd3af6fab5))
+
 ## [2.59.0](https://github.com/googleapis/google-api-python-client/compare/v2.58.0...v2.59.0) (2022-08-30)
 
 
