@@ -16,7 +16,7 @@
 set -eo pipefail
 
 # Start the releasetool reporter
-python3 -m pip install --require-hashes -r .kokoro/requirements.txt
+python3 -m pip install --require-hashes -r github/google-api-python-client/.kokoro/requirements.txt
 python3 -m releasetool publish-reporter-script > /tmp/publisher-script; source /tmp/publisher-script
 
 # Disable buffering, so that the logs stream through.
