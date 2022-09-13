@@ -1770,7 +1770,7 @@
       }
     }
   },
-  "revision": "20220825",
+  "revision": "20220908",
   "rootUrl": "https://retail.googleapis.com/",
   "schemas": {
     "GoogleApiHttpBody": {
@@ -2147,7 +2147,7 @@
           "type": "string"
         },
         "inUse": {
-          "description": "Output only. Indicates whether this attribute has been used by any products. `True` if at least one Product is using this attribute in Product.attributes. Otherwise, this field is `False`. CatalogAttribute can be pre-loaded by using CatalogService.AddCatalogAttribute, CatalogService.ImportCatalogAttributes, or CatalogService.UpdateAttributesConfig APIs. This field is `False` for pre-loaded CatalogAttributes. Only pre-loaded CatalogAttributes that are neither in use by products nor predefined can be deleted. CatalogAttributes that are either in use by products or are predefined cannot be deleted; however, their configuration properties will reset to default values upon removal request. After catalog changes, it takes about 10 minutes for this field to update.",
+          "description": "Output only. Indicates whether this attribute has been used by any products. `True` if at least one Product is using this attribute in Product.attributes. Otherwise, this field is `False`. CatalogAttribute can be pre-loaded by using CatalogService.AddCatalogAttribute, CatalogService.ImportCatalogAttributes, or CatalogService.UpdateAttributesConfig APIs. This field is `False` for pre-loaded CatalogAttributes. Only pre-loaded catalog attributes that are neither in use by products nor predefined can be deleted. Catalog attributes that are either in use by products or are predefined attributes cannot be deleted; however, their configuration properties will reset to default values upon removal request. After catalog changes, it takes about 10 minutes for this field to update.",
           "readOnly": true,
           "type": "boolean"
         },
@@ -3071,7 +3071,7 @@
           "type": "integer"
         },
         "availableTime": {
-          "description": "The timestamp when this Product becomes available for SearchService.Search.",
+          "description": "The timestamp when this Product becomes available for SearchService.Search. Note that this is only applicable to Type.PRIMARY and Type.COLLECTION, and ignored for Type.VARIANT.",
           "format": "google-datetime",
           "type": "string"
         },
@@ -3112,7 +3112,7 @@
           "type": "string"
         },
         "expireTime": {
-          "description": "The timestamp when this product becomes unavailable for SearchService.Search. If it is set, the Product is not available for SearchService.Search after expire_time. However, the product can still be retrieved by ProductService.GetProduct and ProductService.ListProducts. expire_time must be later than available_time and publish_time, otherwise an INVALID_ARGUMENT error is thrown. Corresponding properties: Google Merchant Center property [expiration_date](https://support.google.com/merchants/answer/6324499).",
+          "description": "The timestamp when this product becomes unavailable for SearchService.Search. Note that this is only applicable to Type.PRIMARY and Type.COLLECTION, and ignored for Type.VARIANT. In general, we suggest the users to delete the stale products explicitly, instead of using this field to determine staleness. If it is set, the Product is not available for SearchService.Search after expire_time. However, the product can still be retrieved by ProductService.GetProduct and ProductService.ListProducts. expire_time must be later than available_time and publish_time, otherwise an INVALID_ARGUMENT error is thrown. Corresponding properties: Google Merchant Center property [expiration_date](https://support.google.com/merchants/answer/6324499).",
           "format": "google-datetime",
           "type": "string"
         },
@@ -3143,7 +3143,7 @@
           "type": "string"
         },
         "localInventories": {
-          "description": "Output only. A list of local inventories specific to different places. This is only available for users who have Retail Search enabled, and it can be managed by AddLocalInventories and RemoveLocalInventories APIs.",
+          "description": "Output only. A list of local inventories specific to different places. This is only available for users who have Retail Search enabled, and it can be managed by ProductService.AddLocalInventories and ProductService.RemoveLocalInventories APIs.",
           "items": {
             "$ref": "GoogleCloudRetailV2LocalInventory"
           },
@@ -3216,7 +3216,7 @@
           "type": "string"
         },
         "ttl": {
-          "description": "Input only. The TTL (time to live) of the product. If it is set, it must be a non-negative value, and expire_time is set as current timestamp plus ttl. The derived expire_time is returned in the output and ttl is left blank when retrieving the Product. If it is set, the product is not available for SearchService.Search after current timestamp plus ttl. However, the product can still be retrieved by ProductService.GetProduct and ProductService.ListProducts.",
+          "description": "Input only. The TTL (time to live) of the product. Note that this is only applicable to Type.PRIMARY and Type.COLLECTION, and ignored for Type.VARIANT. In general, we suggest the users to delete the stale products explicitly, instead of using this field to determine staleness. If it is set, it must be a non-negative value, and expire_time is set as current timestamp plus ttl. The derived expire_time is returned in the output and ttl is left blank when retrieving the Product. If it is set, the product is not available for SearchService.Search after current timestamp plus ttl. However, the product can still be retrieved by ProductService.GetProduct and ProductService.ListProducts.",
           "format": "google-duration",
           "type": "string"
         },
@@ -5265,6 +5265,17 @@
       },
       "type": "object"
     },
+    "GoogleCloudRetailV2betaCreateModelMetadata": {
+      "description": "Metadata associated with a create operation.",
+      "id": "GoogleCloudRetailV2betaCreateModelMetadata",
+      "properties": {
+        "model": {
+          "description": "The resource name of the model that this create applies to. Format: `projects/{project_number}/locations/{location_id}/catalogs/{catalog_id}/models/{model_id}`",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "GoogleCloudRetailV2betaExportErrorsConfig": {
       "description": "Configuration of destination for Export related errors.",
       "id": "GoogleCloudRetailV2betaExportErrorsConfig",
@@ -5437,6 +5448,150 @@
       },
       "type": "object"
     },
+    "GoogleCloudRetailV2betaModel": {
+      "description": "Metadata that describes the training and serving parameters of a Model. A Model can be associated with a ServingConfig and then queried through the Predict API.",
+      "id": "GoogleCloudRetailV2betaModel",
+      "properties": {
+        "createTime": {
+          "description": "Output only. Timestamp the Recommendation Model was created at.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "dataState": {
+          "description": "Output only. The state of data requirements for this model: `DATA_OK` and `DATA_ERROR`. Recommendation model cannot be trained if the data is in `DATA_ERROR` state. Recommendation model can have `DATA_ERROR` state even if serving state is `ACTIVE`: models were trained successfully before, but cannot be refreshed because model no longer has sufficient data for training.",
+          "enum": [
+            "DATA_STATE_UNSPECIFIED",
+            "DATA_OK",
+            "DATA_ERROR"
+          ],
+          "enumDescriptions": [
+            "Unspecified default value, should never be explicitly set.",
+            "The model has sufficient training data.",
+            "The model does not have sufficient training data. Error messages can be queried via Stackdriver."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "displayName": {
+          "description": "Required. The display name of the model. Should be human readable, used to display Recommendation Models in the Retail Cloud Console Dashboard. UTF-8 encoded string with limit of 1024 characters.",
+          "type": "string"
+        },
+        "filteringOption": {
+          "description": "Optional. If `RECOMMENDATIONS_FILTERING_ENABLED`, recommendation filtering by attributes is enabled for the model.",
+          "enum": [
+            "RECOMMENDATIONS_FILTERING_OPTION_UNSPECIFIED",
+            "RECOMMENDATIONS_FILTERING_DISABLED",
+            "RECOMMENDATIONS_FILTERING_ENABLED"
+          ],
+          "enumDescriptions": [
+            "Value used when unset. In this case, server behavior defaults to RECOMMENDATIONS_FILTERING_DISABLED.",
+            "Recommendation filtering is disabled.",
+            "Recommendation filtering is enabled."
+          ],
+          "type": "string"
+        },
+        "lastTuneTime": {
+          "description": "Output only. The timestamp when the latest successful tune finished.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "name": {
+          "description": "Required. The fully qualified resource name of the model. Format: `projects/{project_number}/locations/{location_id}/catalogs/{catalog_id}/models/{model_id}` catalog_id has char limit of 50. recommendation_model_id has char limit of 40.",
+          "type": "string"
+        },
+        "optimizationObjective": {
+          "description": "Optional. The optimization objective e.g. `cvr`. Currently supported values: `ctr`, `cvr`, `revenue-per-order`. If not specified, we choose default based on model type. Default depends on type of recommendation: `recommended-for-you` => `ctr` `others-you-may-like` => `ctr` `frequently-bought-together` => `revenue_per_order` This field together with optimization_objective describe model metadata to use to control model training and serving. See https://cloud.google.com/retail/docs/models for more details on what the model metadata control and which combination of parameters are valid. For invalid combinations of parameters (e.g. type = `frequently-bought-together` and optimization_objective = `ctr`), you receive an error 400 if you try to create/update a recommendation with this set of knobs.",
+          "type": "string"
+        },
+        "periodicTuningState": {
+          "description": "Optional. The state of periodic tuning. The period we use is 3 months - to do a one-off tune earlier use the `TuneModel` method. Default value is `PERIODIC_TUNING_ENABLED`.",
+          "enum": [
+            "PERIODIC_TUNING_STATE_UNSPECIFIED",
+            "PERIODIC_TUNING_DISABLED",
+            "ALL_TUNING_DISABLED",
+            "PERIODIC_TUNING_ENABLED"
+          ],
+          "enumDescriptions": [
+            "Unspecified default value, should never be explicitly set.",
+            "The model has periodic tuning disabled. Tuning can be reenabled by calling the `EnableModelPeriodicTuning` method or by calling the `TuneModel` method.",
+            "The model cannot be tuned with periodic tuning OR the `TuneModel` method. Hide the options in customer UI and reject any requests through the backend self serve API.",
+            "The model has periodic tuning enabled. Tuning can be disabled by calling the `DisableModelPeriodicTuning` method."
+          ],
+          "type": "string"
+        },
+        "servingConfigLists": {
+          "description": "Output only. The list of valid serving configs associated with the PageOptimizationConfig.",
+          "items": {
+            "$ref": "GoogleCloudRetailV2betaModelServingConfigList"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "servingState": {
+          "description": "Output only. The serving state of the model: `ACTIVE`, `NOT_ACTIVE`.",
+          "enum": [
+            "SERVING_STATE_UNSPECIFIED",
+            "INACTIVE",
+            "ACTIVE",
+            "TUNED"
+          ],
+          "enumDescriptions": [
+            "Unspecified serving state.",
+            "The model is not serving.",
+            "The model is serving and can be queried.",
+            "The model is trained on tuned hyperparameters and can be queried."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "trainingState": {
+          "description": "Optional. The training state that the model is in (e.g. `TRAINING` or `PAUSED`). Since part of the cost of running the service is frequency of training - this can be used to determine when to train model in order to control cost. If not specified: the default value for `CreateModel` method is `TRAINING`. The default value for `UpdateModel` method is to keep the state the same as before.",
+          "enum": [
+            "TRAINING_STATE_UNSPECIFIED",
+            "PAUSED",
+            "TRAINING"
+          ],
+          "enumDescriptions": [
+            "Unspecified training state.",
+            "The model training is paused.",
+            "The model is training."
+          ],
+          "type": "string"
+        },
+        "tuningOperation": {
+          "description": "Output only. The tune operation associated with the model. Can be used to determine if there is an ongoing tune for this recommendation. Empty field implies no tune is goig on.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "type": {
+          "description": "Required. The type of model e.g. `home-page`. Currently supported values: `recommended-for-you`, `others-you-may-like`, `frequently-bought-together`, `page-optimization`, `similar-items`, `buy-it-again`, and `recently-viewed`(readonly value). This field together with optimization_objective describe model metadata to use to control model training and serving. See https://cloud.google.com/retail/docs/models for more details on what the model metadata control and which combination of parameters are valid. For invalid combinations of parameters (e.g. type = `frequently-bought-together` and optimization_objective = `ctr`), you receive an error 400 if you try to create/update a recommendation with this set of knobs.",
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Output only. Timestamp the Recommendation Model was last updated. E.g. if a Recommendation Model was paused - this would be the time the pause was initiated.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleCloudRetailV2betaModelServingConfigList": {
+      "description": "Represents an ordered combination of valid serving configs, which can be used for `PAGE_OPTIMIZATION` recommendations.",
+      "id": "GoogleCloudRetailV2betaModelServingConfigList",
+      "properties": {
+        "servingConfigIds": {
+          "description": "Optional. A set of valid serving configs that may be used for `PAGE_OPTIMIZATION`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "GoogleCloudRetailV2betaOutputResult": {
       "description": "Output result.",
       "id": "GoogleCloudRetailV2betaOutputResult",
@@ -5520,6 +5675,23 @@
     "GoogleCloudRetailV2betaSetInventoryResponse": {
       "description": "Response of the SetInventoryRequest. Currently empty because there is no meaningful response populated from the ProductService.SetInventory method.",
       "id": "GoogleCloudRetailV2betaSetInventoryResponse",
+      "properties": {},
+      "type": "object"
+    },
+    "GoogleCloudRetailV2betaTuneModelMetadata": {
+      "description": "Metadata associated with a tune operation.",
+      "id": "GoogleCloudRetailV2betaTuneModelMetadata",
+      "properties": {
+        "model": {
+          "description": "The resource name of the model that this tune applies to. Format: `projects/{project_number}/locations/{location_id}/catalogs/{catalog_id}/models/{model_id}`",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleCloudRetailV2betaTuneModelResponse": {
+      "description": "Response associated with a tune operation.",
+      "id": "GoogleCloudRetailV2betaTuneModelResponse",
       "properties": {},
       "type": "object"
     },
