@@ -207,8 +207,10 @@ def _session_tests(
     session: nox.sessions.Session, post_install: Callable = None
 ) -> None:
     # check for presence of tests
-    test_list = glob.glob("*_test.py") + glob.glob("test_*.py")
-    test_list.extend(glob.glob("tests"))
+    test_list = glob.glob("**/*_test.py", recursive=True) + glob.glob(
+        "**/test_*.py", recursive=True
+    )
+    test_list.extend(glob.glob("**/tests", recursive=True))
 
     if len(test_list) == 0:
         print("No tests found, skipping directory.")
