@@ -59,6 +59,7 @@
 
 
 ## analyticshub
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/analyticshub_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/analyticshub_v1beta1.html)
 
 
@@ -117,6 +118,7 @@
 
 ## assuredworkloads
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/assuredworkloads_v1.html)
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/assuredworkloads_v1beta1.html)
 
 
 ## authorizedbuyersmarketplace
@@ -220,6 +222,7 @@
 
 ## cloudbilling
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbilling_v1.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbilling_v1beta.html)
 
 
 ## cloudbuild
@@ -419,6 +422,7 @@
 
 ## displayvideo
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v2.html)
 
 
 ## dlp
@@ -639,6 +643,10 @@
 
 ## indexing
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/indexing_v3.html)
+
+
+## integrations
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/integrations_v1alpha.html)
 
 
 ## jobs
