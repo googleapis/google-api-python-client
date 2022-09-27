@@ -157,6 +157,69 @@ Args:
         },
         &quot;writeDisposition&quot;: &quot;A String&quot;, # Determines if existing data in the destination dataset is overwritten, appended to, or not written if the tables contain data. If a write_disposition is specified, the `force` parameter is ignored.
       },
+      &quot;deidentifiedStoreDestination&quot;: { # Contains configuration for streaming de-identified FHIR export. # The destination FHIR store for de-identified resources. After this field is added, all subsequent creates/updates/patches to the source store will be de-identified using the provided configuration and applied to the destination store. Importing resources to the source store will not trigger the streaming. If the source store already contains resources when this option is enabled, those resources will not be copied to the destination store unless they are subsequently updated. This may result in invalid references in the destination store. Before adding this config, you must grant the healthcare.fhirResources.update permission on the destination store to your project&#x27;s **Cloud Healthcare Service Agent** [service account](https://cloud.google.com/healthcare/docs/how-tos/permissions-healthcare-api-gcp-products#the_cloud_healthcare_service_agent). The destination store must set enable_update_create to true. The destination store must have disable_referential_integrity set to true. If a resource cannot be de-identified, errors will be logged to Cloud Logging (see [Viewing error logs in Cloud Logging](https://cloud.google.com/healthcare/docs/how-tos/logging)).
+        &quot;config&quot;: { # Configures de-id options specific to different types of content. Each submessage customizes the handling of an https://tools.ietf.org/html/rfc6838 media type or subtype. Configs are applied in a nested manner at runtime. # The configuration to use when de-identifying resources that are added to this store.
+          &quot;dicom&quot;: { # Specifies the parameters needed for de-identification of DICOM stores. # Configures de-id of application/DICOM content.
+            &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
+            &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
+              &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;removeList&quot;: { # List of tags to be filtered. # List of tags to remove. Keep all other tags.
+              &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched. The Cloud Healthcare API regenerates these UIDs by default based on the DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly to an individual out of context, given access to the original images, or to a database of the original images containing the UIDs, it would be possible to recover the individual&#x27;s identity.&quot; http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
+          },
+          &quot;fhir&quot;: { # Specifies how to handle de-identification of a FHIR store. # Configures de-id of application/FHIR content.
+            &quot;defaultKeepExtensions&quot;: True or False, # The behaviour for handling FHIR extensions that aren&#x27;t otherwise specified for de-identification. If true, all extensions are preserved during de-identification by default. If false or unspecified, all extensions are removed during de-identification by default.
+            &quot;fieldMetadataList&quot;: [ # Specifies FHIR paths to match and how to transform them. Any field that is not matched by a FieldMetadata is passed through to the output dataset unmodified. All extensions will be processed according to `default_keep_extensions`.
+              { # Specifies FHIR paths to match, and how to handle de-identification of matching fields.
+                &quot;action&quot;: &quot;A String&quot;, # Deidentify action for one field.
+                &quot;paths&quot;: [ # List of paths to FHIR fields to be redacted. Each path is a period-separated list where each component is either a field name or FHIR type name, for example: Patient, HumanName. For &quot;choice&quot; types (those defined in the FHIR spec with the form: field[x]) we use two separate components. For example, &quot;deceasedAge.unit&quot; is matched by &quot;Deceased.Age.unit&quot;. Supported types are: AdministrativeGenderCode, Base64Binary, Boolean, Code, Date, DateTime, Decimal, HumanName, Id, Instant, Integer, LanguageCode, Markdown, Oid, PositiveInt, String, UnsignedInt, Uri, Uuid, Xhtml.
+                  &quot;A String&quot;,
+                ],
+              },
+            ],
+          },
+          &quot;image&quot;: { # Specifies how to handle de-identification of image pixels. # Configures de-identification of image pixels wherever they are found in the source_dataset.
+            &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
+          },
+          &quot;text&quot;: { # Configures de-identification of text wherever it is found in the source_dataset.
+            &quot;transformations&quot;: [ # The transformations to apply to the detected data.
+              { # A transformation to apply to text that is identified as a specific info_type.
+                &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
+                  &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
+                },
+                &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. Uses SHA-256. Outputs a base64-encoded representation of the hashed output (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`). # Config for crypto hash.
+                  &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this key. A default key is generated for each Deidentify operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                  &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                    &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                    &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                  },
+                },
+                &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is consistent for a given patient and crypto key combination. # Config for date shift.
+                  &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this key and the patient ID. A default key is generated for each de-identification operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                  &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                    &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                    &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                  },
+                },
+                &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the transformation applies to any info_type.
+                  &quot;A String&quot;,
+                ],
+                &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot; # Config for text redaction.
+                },
+                &quot;replaceWithInfoTypeConfig&quot;: { # When using the INSPECT_AND_TRANSFORM action, each match is replaced with the name of the info_type. For example, &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The TRANSFORM action is equivalent to redacting. # Config for replace with InfoType.
+                },
+              },
+            ],
+          },
+        },
+        &quot;store&quot;: &quot;A String&quot;, # The full resource name of a Cloud Healthcare FHIR store, for example, `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
+      },
       &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;). See https://www.hl7.org/fhir/valueset-resource-types.html for a list of all FHIR resource types. The server treats an empty list as an intent to stream all the supported resource types in this FHIR store.
         &quot;A String&quot;,
       ],
@@ -206,6 +269,69 @@ Returns:
           &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type. Schema type is required.
         },
         &quot;writeDisposition&quot;: &quot;A String&quot;, # Determines if existing data in the destination dataset is overwritten, appended to, or not written if the tables contain data. If a write_disposition is specified, the `force` parameter is ignored.
+      },
+      &quot;deidentifiedStoreDestination&quot;: { # Contains configuration for streaming de-identified FHIR export. # The destination FHIR store for de-identified resources. After this field is added, all subsequent creates/updates/patches to the source store will be de-identified using the provided configuration and applied to the destination store. Importing resources to the source store will not trigger the streaming. If the source store already contains resources when this option is enabled, those resources will not be copied to the destination store unless they are subsequently updated. This may result in invalid references in the destination store. Before adding this config, you must grant the healthcare.fhirResources.update permission on the destination store to your project&#x27;s **Cloud Healthcare Service Agent** [service account](https://cloud.google.com/healthcare/docs/how-tos/permissions-healthcare-api-gcp-products#the_cloud_healthcare_service_agent). The destination store must set enable_update_create to true. The destination store must have disable_referential_integrity set to true. If a resource cannot be de-identified, errors will be logged to Cloud Logging (see [Viewing error logs in Cloud Logging](https://cloud.google.com/healthcare/docs/how-tos/logging)).
+        &quot;config&quot;: { # Configures de-id options specific to different types of content. Each submessage customizes the handling of an https://tools.ietf.org/html/rfc6838 media type or subtype. Configs are applied in a nested manner at runtime. # The configuration to use when de-identifying resources that are added to this store.
+          &quot;dicom&quot;: { # Specifies the parameters needed for de-identification of DICOM stores. # Configures de-id of application/DICOM content.
+            &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
+            &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
+              &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;removeList&quot;: { # List of tags to be filtered. # List of tags to remove. Keep all other tags.
+              &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched. The Cloud Healthcare API regenerates these UIDs by default based on the DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly to an individual out of context, given access to the original images, or to a database of the original images containing the UIDs, it would be possible to recover the individual&#x27;s identity.&quot; http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
+          },
+          &quot;fhir&quot;: { # Specifies how to handle de-identification of a FHIR store. # Configures de-id of application/FHIR content.
+            &quot;defaultKeepExtensions&quot;: True or False, # The behaviour for handling FHIR extensions that aren&#x27;t otherwise specified for de-identification. If true, all extensions are preserved during de-identification by default. If false or unspecified, all extensions are removed during de-identification by default.
+            &quot;fieldMetadataList&quot;: [ # Specifies FHIR paths to match and how to transform them. Any field that is not matched by a FieldMetadata is passed through to the output dataset unmodified. All extensions will be processed according to `default_keep_extensions`.
+              { # Specifies FHIR paths to match, and how to handle de-identification of matching fields.
+                &quot;action&quot;: &quot;A String&quot;, # Deidentify action for one field.
+                &quot;paths&quot;: [ # List of paths to FHIR fields to be redacted. Each path is a period-separated list where each component is either a field name or FHIR type name, for example: Patient, HumanName. For &quot;choice&quot; types (those defined in the FHIR spec with the form: field[x]) we use two separate components. For example, &quot;deceasedAge.unit&quot; is matched by &quot;Deceased.Age.unit&quot;. Supported types are: AdministrativeGenderCode, Base64Binary, Boolean, Code, Date, DateTime, Decimal, HumanName, Id, Instant, Integer, LanguageCode, Markdown, Oid, PositiveInt, String, UnsignedInt, Uri, Uuid, Xhtml.
+                  &quot;A String&quot;,
+                ],
+              },
+            ],
+          },
+          &quot;image&quot;: { # Specifies how to handle de-identification of image pixels. # Configures de-identification of image pixels wherever they are found in the source_dataset.
+            &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
+          },
+          &quot;text&quot;: { # Configures de-identification of text wherever it is found in the source_dataset.
+            &quot;transformations&quot;: [ # The transformations to apply to the detected data.
+              { # A transformation to apply to text that is identified as a specific info_type.
+                &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
+                  &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
+                },
+                &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. Uses SHA-256. Outputs a base64-encoded representation of the hashed output (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`). # Config for crypto hash.
+                  &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this key. A default key is generated for each Deidentify operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                  &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                    &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                    &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                  },
+                },
+                &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is consistent for a given patient and crypto key combination. # Config for date shift.
+                  &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this key and the patient ID. A default key is generated for each de-identification operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                  &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                    &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                    &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                  },
+                },
+                &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the transformation applies to any info_type.
+                  &quot;A String&quot;,
+                ],
+                &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot; # Config for text redaction.
+                },
+                &quot;replaceWithInfoTypeConfig&quot;: { # When using the INSPECT_AND_TRANSFORM action, each match is replaced with the name of the info_type. For example, &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The TRANSFORM action is equivalent to redacting. # Config for replace with InfoType.
+                },
+              },
+            ],
+          },
+        },
+        &quot;store&quot;: &quot;A String&quot;, # The full resource name of a Cloud Healthcare FHIR store, for example, `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
       },
       &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;). See https://www.hl7.org/fhir/valueset-resource-types.html for a list of all FHIR resource types. The server treats an empty list as an intent to stream all the supported resource types in this FHIR store.
         &quot;A String&quot;,
@@ -272,9 +398,17 @@ Args:
           },
           &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. Uses SHA-256. Outputs a base64-encoded representation of the hashed output (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`). # Config for crypto hash.
             &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this key. A default key is generated for each Deidentify operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+            &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+              &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+              &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+            },
           },
           &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is consistent for a given patient and crypto key combination. # Config for date shift.
             &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this key and the patient ID. A default key is generated for each de-identification operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+            &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+              &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+              &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+            },
           },
           &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the transformation applies to any info_type.
             &quot;A String&quot;,
@@ -296,6 +430,7 @@ Args:
       ],
     },
   },
+  &quot;skipModifiedResources&quot;: True or False, # If true, skips resources that are created or modified after the de-identify operation is created.
 }
 
   x__xgafv: string, V1 error format.
@@ -438,6 +573,69 @@ Returns:
         },
         &quot;writeDisposition&quot;: &quot;A String&quot;, # Determines if existing data in the destination dataset is overwritten, appended to, or not written if the tables contain data. If a write_disposition is specified, the `force` parameter is ignored.
       },
+      &quot;deidentifiedStoreDestination&quot;: { # Contains configuration for streaming de-identified FHIR export. # The destination FHIR store for de-identified resources. After this field is added, all subsequent creates/updates/patches to the source store will be de-identified using the provided configuration and applied to the destination store. Importing resources to the source store will not trigger the streaming. If the source store already contains resources when this option is enabled, those resources will not be copied to the destination store unless they are subsequently updated. This may result in invalid references in the destination store. Before adding this config, you must grant the healthcare.fhirResources.update permission on the destination store to your project&#x27;s **Cloud Healthcare Service Agent** [service account](https://cloud.google.com/healthcare/docs/how-tos/permissions-healthcare-api-gcp-products#the_cloud_healthcare_service_agent). The destination store must set enable_update_create to true. The destination store must have disable_referential_integrity set to true. If a resource cannot be de-identified, errors will be logged to Cloud Logging (see [Viewing error logs in Cloud Logging](https://cloud.google.com/healthcare/docs/how-tos/logging)).
+        &quot;config&quot;: { # Configures de-id options specific to different types of content. Each submessage customizes the handling of an https://tools.ietf.org/html/rfc6838 media type or subtype. Configs are applied in a nested manner at runtime. # The configuration to use when de-identifying resources that are added to this store.
+          &quot;dicom&quot;: { # Specifies the parameters needed for de-identification of DICOM stores. # Configures de-id of application/DICOM content.
+            &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
+            &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
+              &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;removeList&quot;: { # List of tags to be filtered. # List of tags to remove. Keep all other tags.
+              &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched. The Cloud Healthcare API regenerates these UIDs by default based on the DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly to an individual out of context, given access to the original images, or to a database of the original images containing the UIDs, it would be possible to recover the individual&#x27;s identity.&quot; http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
+          },
+          &quot;fhir&quot;: { # Specifies how to handle de-identification of a FHIR store. # Configures de-id of application/FHIR content.
+            &quot;defaultKeepExtensions&quot;: True or False, # The behaviour for handling FHIR extensions that aren&#x27;t otherwise specified for de-identification. If true, all extensions are preserved during de-identification by default. If false or unspecified, all extensions are removed during de-identification by default.
+            &quot;fieldMetadataList&quot;: [ # Specifies FHIR paths to match and how to transform them. Any field that is not matched by a FieldMetadata is passed through to the output dataset unmodified. All extensions will be processed according to `default_keep_extensions`.
+              { # Specifies FHIR paths to match, and how to handle de-identification of matching fields.
+                &quot;action&quot;: &quot;A String&quot;, # Deidentify action for one field.
+                &quot;paths&quot;: [ # List of paths to FHIR fields to be redacted. Each path is a period-separated list where each component is either a field name or FHIR type name, for example: Patient, HumanName. For &quot;choice&quot; types (those defined in the FHIR spec with the form: field[x]) we use two separate components. For example, &quot;deceasedAge.unit&quot; is matched by &quot;Deceased.Age.unit&quot;. Supported types are: AdministrativeGenderCode, Base64Binary, Boolean, Code, Date, DateTime, Decimal, HumanName, Id, Instant, Integer, LanguageCode, Markdown, Oid, PositiveInt, String, UnsignedInt, Uri, Uuid, Xhtml.
+                  &quot;A String&quot;,
+                ],
+              },
+            ],
+          },
+          &quot;image&quot;: { # Specifies how to handle de-identification of image pixels. # Configures de-identification of image pixels wherever they are found in the source_dataset.
+            &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
+          },
+          &quot;text&quot;: { # Configures de-identification of text wherever it is found in the source_dataset.
+            &quot;transformations&quot;: [ # The transformations to apply to the detected data.
+              { # A transformation to apply to text that is identified as a specific info_type.
+                &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
+                  &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
+                },
+                &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. Uses SHA-256. Outputs a base64-encoded representation of the hashed output (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`). # Config for crypto hash.
+                  &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this key. A default key is generated for each Deidentify operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                  &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                    &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                    &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                  },
+                },
+                &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is consistent for a given patient and crypto key combination. # Config for date shift.
+                  &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this key and the patient ID. A default key is generated for each de-identification operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                  &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                    &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                    &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                  },
+                },
+                &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the transformation applies to any info_type.
+                  &quot;A String&quot;,
+                ],
+                &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot; # Config for text redaction.
+                },
+                &quot;replaceWithInfoTypeConfig&quot;: { # When using the INSPECT_AND_TRANSFORM action, each match is replaced with the name of the info_type. For example, &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The TRANSFORM action is equivalent to redacting. # Config for replace with InfoType.
+                },
+              },
+            ],
+          },
+        },
+        &quot;store&quot;: &quot;A String&quot;, # The full resource name of a Cloud Healthcare FHIR store, for example, `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
+      },
       &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;). See https://www.hl7.org/fhir/valueset-resource-types.html for a list of all FHIR resource types. The server treats an empty list as an intent to stream all the supported resource types in this FHIR store.
         &quot;A String&quot;,
       ],
@@ -493,7 +691,7 @@ Returns:
         &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error reporting, e.g. a file name and a position in the file.
         &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.
       },
-      &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a Google service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `serviceAccount:{projectid}.svc.id.goog[{namespace}/{kubernetes-sa}]`: An identifier for a [Kubernetes service account](https://cloud.google.com/kubernetes-engine/docs/how-to/kubernetes-service-accounts). For example, `my-project.svc.id.goog[my-namespace/my-kubernetes-sa]`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`.
+      &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. Does not include identities that come from external identity providers (IdPs) through identity federation. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a Google service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `serviceAccount:{projectid}.svc.id.goog[{namespace}/{kubernetes-sa}]`: An identifier for a [Kubernetes service account](https://cloud.google.com/kubernetes-engine/docs/how-to/kubernetes-service-accounts). For example, `my-project.svc.id.goog[my-namespace/my-kubernetes-sa]`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`.
         &quot;A String&quot;,
       ],
       &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to the list of `members`, or principals. For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
@@ -592,6 +790,69 @@ Returns:
             },
             &quot;writeDisposition&quot;: &quot;A String&quot;, # Determines if existing data in the destination dataset is overwritten, appended to, or not written if the tables contain data. If a write_disposition is specified, the `force` parameter is ignored.
           },
+          &quot;deidentifiedStoreDestination&quot;: { # Contains configuration for streaming de-identified FHIR export. # The destination FHIR store for de-identified resources. After this field is added, all subsequent creates/updates/patches to the source store will be de-identified using the provided configuration and applied to the destination store. Importing resources to the source store will not trigger the streaming. If the source store already contains resources when this option is enabled, those resources will not be copied to the destination store unless they are subsequently updated. This may result in invalid references in the destination store. Before adding this config, you must grant the healthcare.fhirResources.update permission on the destination store to your project&#x27;s **Cloud Healthcare Service Agent** [service account](https://cloud.google.com/healthcare/docs/how-tos/permissions-healthcare-api-gcp-products#the_cloud_healthcare_service_agent). The destination store must set enable_update_create to true. The destination store must have disable_referential_integrity set to true. If a resource cannot be de-identified, errors will be logged to Cloud Logging (see [Viewing error logs in Cloud Logging](https://cloud.google.com/healthcare/docs/how-tos/logging)).
+            &quot;config&quot;: { # Configures de-id options specific to different types of content. Each submessage customizes the handling of an https://tools.ietf.org/html/rfc6838 media type or subtype. Configs are applied in a nested manner at runtime. # The configuration to use when de-identifying resources that are added to this store.
+              &quot;dicom&quot;: { # Specifies the parameters needed for de-identification of DICOM stores. # Configures de-id of application/DICOM content.
+                &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
+                &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
+                  &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                    &quot;A String&quot;,
+                  ],
+                },
+                &quot;removeList&quot;: { # List of tags to be filtered. # List of tags to remove. Keep all other tags.
+                  &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                    &quot;A String&quot;,
+                  ],
+                },
+                &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched. The Cloud Healthcare API regenerates these UIDs by default based on the DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly to an individual out of context, given access to the original images, or to a database of the original images containing the UIDs, it would be possible to recover the individual&#x27;s identity.&quot; http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
+              },
+              &quot;fhir&quot;: { # Specifies how to handle de-identification of a FHIR store. # Configures de-id of application/FHIR content.
+                &quot;defaultKeepExtensions&quot;: True or False, # The behaviour for handling FHIR extensions that aren&#x27;t otherwise specified for de-identification. If true, all extensions are preserved during de-identification by default. If false or unspecified, all extensions are removed during de-identification by default.
+                &quot;fieldMetadataList&quot;: [ # Specifies FHIR paths to match and how to transform them. Any field that is not matched by a FieldMetadata is passed through to the output dataset unmodified. All extensions will be processed according to `default_keep_extensions`.
+                  { # Specifies FHIR paths to match, and how to handle de-identification of matching fields.
+                    &quot;action&quot;: &quot;A String&quot;, # Deidentify action for one field.
+                    &quot;paths&quot;: [ # List of paths to FHIR fields to be redacted. Each path is a period-separated list where each component is either a field name or FHIR type name, for example: Patient, HumanName. For &quot;choice&quot; types (those defined in the FHIR spec with the form: field[x]) we use two separate components. For example, &quot;deceasedAge.unit&quot; is matched by &quot;Deceased.Age.unit&quot;. Supported types are: AdministrativeGenderCode, Base64Binary, Boolean, Code, Date, DateTime, Decimal, HumanName, Id, Instant, Integer, LanguageCode, Markdown, Oid, PositiveInt, String, UnsignedInt, Uri, Uuid, Xhtml.
+                      &quot;A String&quot;,
+                    ],
+                  },
+                ],
+              },
+              &quot;image&quot;: { # Specifies how to handle de-identification of image pixels. # Configures de-identification of image pixels wherever they are found in the source_dataset.
+                &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
+              },
+              &quot;text&quot;: { # Configures de-identification of text wherever it is found in the source_dataset.
+                &quot;transformations&quot;: [ # The transformations to apply to the detected data.
+                  { # A transformation to apply to text that is identified as a specific info_type.
+                    &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
+                      &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
+                    },
+                    &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. Uses SHA-256. Outputs a base64-encoded representation of the hashed output (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`). # Config for crypto hash.
+                      &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this key. A default key is generated for each Deidentify operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                      &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                        &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                        &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                      },
+                    },
+                    &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is consistent for a given patient and crypto key combination. # Config for date shift.
+                      &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this key and the patient ID. A default key is generated for each de-identification operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                      &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                        &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                        &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                      },
+                    },
+                    &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the transformation applies to any info_type.
+                      &quot;A String&quot;,
+                    ],
+                    &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot; # Config for text redaction.
+                    },
+                    &quot;replaceWithInfoTypeConfig&quot;: { # When using the INSPECT_AND_TRANSFORM action, each match is replaced with the name of the info_type. For example, &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The TRANSFORM action is equivalent to redacting. # Config for replace with InfoType.
+                    },
+                  },
+                ],
+              },
+            },
+            &quot;store&quot;: &quot;A String&quot;, # The full resource name of a Cloud Healthcare FHIR store, for example, `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
+          },
           &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;). See https://www.hl7.org/fhir/valueset-resource-types.html for a list of all FHIR resource types. The server treats an empty list as an intent to stream all the supported resource types in this FHIR store.
             &quot;A String&quot;,
           ],
@@ -660,6 +921,69 @@ Args:
         },
         &quot;writeDisposition&quot;: &quot;A String&quot;, # Determines if existing data in the destination dataset is overwritten, appended to, or not written if the tables contain data. If a write_disposition is specified, the `force` parameter is ignored.
       },
+      &quot;deidentifiedStoreDestination&quot;: { # Contains configuration for streaming de-identified FHIR export. # The destination FHIR store for de-identified resources. After this field is added, all subsequent creates/updates/patches to the source store will be de-identified using the provided configuration and applied to the destination store. Importing resources to the source store will not trigger the streaming. If the source store already contains resources when this option is enabled, those resources will not be copied to the destination store unless they are subsequently updated. This may result in invalid references in the destination store. Before adding this config, you must grant the healthcare.fhirResources.update permission on the destination store to your project&#x27;s **Cloud Healthcare Service Agent** [service account](https://cloud.google.com/healthcare/docs/how-tos/permissions-healthcare-api-gcp-products#the_cloud_healthcare_service_agent). The destination store must set enable_update_create to true. The destination store must have disable_referential_integrity set to true. If a resource cannot be de-identified, errors will be logged to Cloud Logging (see [Viewing error logs in Cloud Logging](https://cloud.google.com/healthcare/docs/how-tos/logging)).
+        &quot;config&quot;: { # Configures de-id options specific to different types of content. Each submessage customizes the handling of an https://tools.ietf.org/html/rfc6838 media type or subtype. Configs are applied in a nested manner at runtime. # The configuration to use when de-identifying resources that are added to this store.
+          &quot;dicom&quot;: { # Specifies the parameters needed for de-identification of DICOM stores. # Configures de-id of application/DICOM content.
+            &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
+            &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
+              &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;removeList&quot;: { # List of tags to be filtered. # List of tags to remove. Keep all other tags.
+              &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched. The Cloud Healthcare API regenerates these UIDs by default based on the DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly to an individual out of context, given access to the original images, or to a database of the original images containing the UIDs, it would be possible to recover the individual&#x27;s identity.&quot; http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
+          },
+          &quot;fhir&quot;: { # Specifies how to handle de-identification of a FHIR store. # Configures de-id of application/FHIR content.
+            &quot;defaultKeepExtensions&quot;: True or False, # The behaviour for handling FHIR extensions that aren&#x27;t otherwise specified for de-identification. If true, all extensions are preserved during de-identification by default. If false or unspecified, all extensions are removed during de-identification by default.
+            &quot;fieldMetadataList&quot;: [ # Specifies FHIR paths to match and how to transform them. Any field that is not matched by a FieldMetadata is passed through to the output dataset unmodified. All extensions will be processed according to `default_keep_extensions`.
+              { # Specifies FHIR paths to match, and how to handle de-identification of matching fields.
+                &quot;action&quot;: &quot;A String&quot;, # Deidentify action for one field.
+                &quot;paths&quot;: [ # List of paths to FHIR fields to be redacted. Each path is a period-separated list where each component is either a field name or FHIR type name, for example: Patient, HumanName. For &quot;choice&quot; types (those defined in the FHIR spec with the form: field[x]) we use two separate components. For example, &quot;deceasedAge.unit&quot; is matched by &quot;Deceased.Age.unit&quot;. Supported types are: AdministrativeGenderCode, Base64Binary, Boolean, Code, Date, DateTime, Decimal, HumanName, Id, Instant, Integer, LanguageCode, Markdown, Oid, PositiveInt, String, UnsignedInt, Uri, Uuid, Xhtml.
+                  &quot;A String&quot;,
+                ],
+              },
+            ],
+          },
+          &quot;image&quot;: { # Specifies how to handle de-identification of image pixels. # Configures de-identification of image pixels wherever they are found in the source_dataset.
+            &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
+          },
+          &quot;text&quot;: { # Configures de-identification of text wherever it is found in the source_dataset.
+            &quot;transformations&quot;: [ # The transformations to apply to the detected data.
+              { # A transformation to apply to text that is identified as a specific info_type.
+                &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
+                  &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
+                },
+                &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. Uses SHA-256. Outputs a base64-encoded representation of the hashed output (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`). # Config for crypto hash.
+                  &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this key. A default key is generated for each Deidentify operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                  &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                    &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                    &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                  },
+                },
+                &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is consistent for a given patient and crypto key combination. # Config for date shift.
+                  &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this key and the patient ID. A default key is generated for each de-identification operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                  &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                    &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                    &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                  },
+                },
+                &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the transformation applies to any info_type.
+                  &quot;A String&quot;,
+                ],
+                &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot; # Config for text redaction.
+                },
+                &quot;replaceWithInfoTypeConfig&quot;: { # When using the INSPECT_AND_TRANSFORM action, each match is replaced with the name of the info_type. For example, &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The TRANSFORM action is equivalent to redacting. # Config for replace with InfoType.
+                },
+              },
+            ],
+          },
+        },
+        &quot;store&quot;: &quot;A String&quot;, # The full resource name of a Cloud Healthcare FHIR store, for example, `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
+      },
       &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;). See https://www.hl7.org/fhir/valueset-resource-types.html for a list of all FHIR resource types. The server treats an empty list as an intent to stream all the supported resource types in this FHIR store.
         &quot;A String&quot;,
       ],
@@ -709,6 +1033,69 @@ Returns:
           &quot;schemaType&quot;: &quot;A String&quot;, # Specifies the output schema type. Schema type is required.
         },
         &quot;writeDisposition&quot;: &quot;A String&quot;, # Determines if existing data in the destination dataset is overwritten, appended to, or not written if the tables contain data. If a write_disposition is specified, the `force` parameter is ignored.
+      },
+      &quot;deidentifiedStoreDestination&quot;: { # Contains configuration for streaming de-identified FHIR export. # The destination FHIR store for de-identified resources. After this field is added, all subsequent creates/updates/patches to the source store will be de-identified using the provided configuration and applied to the destination store. Importing resources to the source store will not trigger the streaming. If the source store already contains resources when this option is enabled, those resources will not be copied to the destination store unless they are subsequently updated. This may result in invalid references in the destination store. Before adding this config, you must grant the healthcare.fhirResources.update permission on the destination store to your project&#x27;s **Cloud Healthcare Service Agent** [service account](https://cloud.google.com/healthcare/docs/how-tos/permissions-healthcare-api-gcp-products#the_cloud_healthcare_service_agent). The destination store must set enable_update_create to true. The destination store must have disable_referential_integrity set to true. If a resource cannot be de-identified, errors will be logged to Cloud Logging (see [Viewing error logs in Cloud Logging](https://cloud.google.com/healthcare/docs/how-tos/logging)).
+        &quot;config&quot;: { # Configures de-id options specific to different types of content. Each submessage customizes the handling of an https://tools.ietf.org/html/rfc6838 media type or subtype. Configs are applied in a nested manner at runtime. # The configuration to use when de-identifying resources that are added to this store.
+          &quot;dicom&quot;: { # Specifies the parameters needed for de-identification of DICOM stores. # Configures de-id of application/DICOM content.
+            &quot;filterProfile&quot;: &quot;A String&quot;, # Tag filtering profile that determines which tags to keep/remove.
+            &quot;keepList&quot;: { # List of tags to be filtered. # List of tags to keep. Remove all other tags.
+              &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;removeList&quot;: { # List of tags to be filtered. # List of tags to remove. Keep all other tags.
+              &quot;tags&quot;: [ # Tags to be filtered. Tags must be DICOM Data Elements, File Meta Elements, or Directory Structuring Elements, as defined at: http://dicom.nema.org/medical/dicom/current/output/html/part06.html#table_6-1,. They may be provided by &quot;Keyword&quot; or &quot;Tag&quot;. For example &quot;PatientID&quot;, &quot;00100010&quot;.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;skipIdRedaction&quot;: True or False, # If true, skip replacing StudyInstanceUID, SeriesInstanceUID, SOPInstanceUID, and MediaStorageSOPInstanceUID and leave them untouched. The Cloud Healthcare API regenerates these UIDs by default based on the DICOM Standard&#x27;s reasoning: &quot;Whilst these UIDs cannot be mapped directly to an individual out of context, given access to the original images, or to a database of the original images containing the UIDs, it would be possible to recover the individual&#x27;s identity.&quot; http://dicom.nema.org/medical/dicom/current/output/chtml/part15/sect_E.3.9.html
+          },
+          &quot;fhir&quot;: { # Specifies how to handle de-identification of a FHIR store. # Configures de-id of application/FHIR content.
+            &quot;defaultKeepExtensions&quot;: True or False, # The behaviour for handling FHIR extensions that aren&#x27;t otherwise specified for de-identification. If true, all extensions are preserved during de-identification by default. If false or unspecified, all extensions are removed during de-identification by default.
+            &quot;fieldMetadataList&quot;: [ # Specifies FHIR paths to match and how to transform them. Any field that is not matched by a FieldMetadata is passed through to the output dataset unmodified. All extensions will be processed according to `default_keep_extensions`.
+              { # Specifies FHIR paths to match, and how to handle de-identification of matching fields.
+                &quot;action&quot;: &quot;A String&quot;, # Deidentify action for one field.
+                &quot;paths&quot;: [ # List of paths to FHIR fields to be redacted. Each path is a period-separated list where each component is either a field name or FHIR type name, for example: Patient, HumanName. For &quot;choice&quot; types (those defined in the FHIR spec with the form: field[x]) we use two separate components. For example, &quot;deceasedAge.unit&quot; is matched by &quot;Deceased.Age.unit&quot;. Supported types are: AdministrativeGenderCode, Base64Binary, Boolean, Code, Date, DateTime, Decimal, HumanName, Id, Instant, Integer, LanguageCode, Markdown, Oid, PositiveInt, String, UnsignedInt, Uri, Uuid, Xhtml.
+                  &quot;A String&quot;,
+                ],
+              },
+            ],
+          },
+          &quot;image&quot;: { # Specifies how to handle de-identification of image pixels. # Configures de-identification of image pixels wherever they are found in the source_dataset.
+            &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
+          },
+          &quot;text&quot;: { # Configures de-identification of text wherever it is found in the source_dataset.
+            &quot;transformations&quot;: [ # The transformations to apply to the detected data.
+              { # A transformation to apply to text that is identified as a specific info_type.
+                &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
+                  &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
+                },
+                &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. Uses SHA-256. Outputs a base64-encoded representation of the hashed output (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`). # Config for crypto hash.
+                  &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this key. A default key is generated for each Deidentify operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                  &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                    &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                    &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                  },
+                },
+                &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is consistent for a given patient and crypto key combination. # Config for date shift.
+                  &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the shift to be computed based on this key and the patient ID. A default key is generated for each de-identification operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+                  &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+                    &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+                    &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+                  },
+                },
+                &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the transformation applies to any info_type.
+                  &quot;A String&quot;,
+                ],
+                &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot; # Config for text redaction.
+                },
+                &quot;replaceWithInfoTypeConfig&quot;: { # When using the INSPECT_AND_TRANSFORM action, each match is replaced with the name of the info_type. For example, &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The TRANSFORM action is equivalent to redacting. # Config for replace with InfoType.
+                },
+              },
+            ],
+          },
+        },
+        &quot;store&quot;: &quot;A String&quot;, # The full resource name of a Cloud Healthcare FHIR store, for example, `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.
       },
       &quot;resourceTypes&quot;: [ # Supply a FHIR resource type (such as &quot;Patient&quot; or &quot;Observation&quot;). See https://www.hl7.org/fhir/valueset-resource-types.html for a list of all FHIR resource types. The server treats an empty list as an intent to stream all the supported resource types in this FHIR store.
         &quot;A String&quot;,
@@ -760,7 +1147,7 @@ Args:
           &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error reporting, e.g. a file name and a position in the file.
           &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.
         },
-        &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a Google service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `serviceAccount:{projectid}.svc.id.goog[{namespace}/{kubernetes-sa}]`: An identifier for a [Kubernetes service account](https://cloud.google.com/kubernetes-engine/docs/how-to/kubernetes-service-accounts). For example, `my-project.svc.id.goog[my-namespace/my-kubernetes-sa]`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`.
+        &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. Does not include identities that come from external identity providers (IdPs) through identity federation. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a Google service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `serviceAccount:{projectid}.svc.id.goog[{namespace}/{kubernetes-sa}]`: An identifier for a [Kubernetes service account](https://cloud.google.com/kubernetes-engine/docs/how-to/kubernetes-service-accounts). For example, `my-project.svc.id.goog[my-namespace/my-kubernetes-sa]`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`.
           &quot;A String&quot;,
         ],
         &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to the list of `members`, or principals. For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
@@ -802,7 +1189,7 @@ Returns:
         &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error reporting, e.g. a file name and a position in the file.
         &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.
       },
-      &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a Google service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `serviceAccount:{projectid}.svc.id.goog[{namespace}/{kubernetes-sa}]`: An identifier for a [Kubernetes service account](https://cloud.google.com/kubernetes-engine/docs/how-to/kubernetes-service-accounts). For example, `my-project.svc.id.goog[my-namespace/my-kubernetes-sa]`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`.
+      &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. Does not include identities that come from external identity providers (IdPs) through identity federation. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a Google service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `serviceAccount:{projectid}.svc.id.goog[{namespace}/{kubernetes-sa}]`: An identifier for a [Kubernetes service account](https://cloud.google.com/kubernetes-engine/docs/how-to/kubernetes-service-accounts). For example, `my-project.svc.id.goog[my-namespace/my-kubernetes-sa]`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`.
         &quot;A String&quot;,
       ],
       &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to the list of `members`, or principals. For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
