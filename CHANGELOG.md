@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.64.0](https://github.com/googleapis/google-api-python-client/compare/v2.63.0...v2.64.0) (2022-10-04)
+
+
+### Features
+
+* **analyticsadmin:** update the api https://togithub.com/googleapis/google-api-python-client/commit/efb691ee5e2fd19dcd8ce99b02b04dc8bd4b7df5 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **assuredworkloads:** update the api https://togithub.com/googleapis/google-api-python-client/commit/6c5991727e9d02381db21f857646e778cf54e0d4 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **beyondcorp:** update the api https://togithub.com/googleapis/google-api-python-client/commit/1bbd2aa828e53f9939afd0d8119d62c89228ec6a ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **bigquery:** update the api https://togithub.com/googleapis/google-api-python-client/commit/2ee419bab63b4a5984cab0636037cd3dcc1dd89e ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **certificatemanager:** update the api https://togithub.com/googleapis/google-api-python-client/commit/2fe105a191156da096820c0f2a0cbd725227e553 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **chromemanagement:** update the api https://togithub.com/googleapis/google-api-python-client/commit/ec3508a2f33e3b1965f3977b8f32c9be90363b97 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **chromepolicy:** update the api https://togithub.com/googleapis/google-api-python-client/commit/f2478699397d683731136325d64d038abb8c0de6 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **cloudasset:** update the api https://togithub.com/googleapis/google-api-python-client/commit/a40c120368e20ae5956d688006afe2597988aced ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **cloudidentity:** update the api https://togithub.com/googleapis/google-api-python-client/commit/8358d459d15087669fc9ecc691a4dca7b637df38 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **cloudsearch:** update the api https://togithub.com/googleapis/google-api-python-client/commit/fc29ead2fdfb4273cdc00cb7bd3f09dd50e37f51 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **cloudtasks:** update the api https://togithub.com/googleapis/google-api-python-client/commit/016214975099347cdc4870ce8e6d9b14bd2e7bd3 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **compute:** update the api https://togithub.com/googleapis/google-api-python-client/commit/703edfa4d3c78cbc184b190cc28214b0beb04f75 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **containeranalysis:** update the api https://togithub.com/googleapis/google-api-python-client/commit/404f0c97171a8ea968d7c04f350161729c5ea51b ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **dataflow:** update the api https://togithub.com/googleapis/google-api-python-client/commit/ff764b43fb1460be84361acd97d777524273902c ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **documentai:** update the api https://togithub.com/googleapis/google-api-python-client/commit/3c5cb8204cddde3e98a5d1f715f20c042088acfc ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **driveactivity:** update the api https://togithub.com/googleapis/google-api-python-client/commit/8be6614b72b681a129d4e63973ab825a88a5a860 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **firebasestorage:** update the api https://togithub.com/googleapis/google-api-python-client/commit/b4bda575312e64f6c3d007932533abdca1ef0210 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **monitoring:** update the api https://togithub.com/googleapis/google-api-python-client/commit/68d24a114ed9d8fdb71288d9e9699896a8c7e5a4 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **paymentsresellersubscription:** update the api https://togithub.com/googleapis/google-api-python-client/commit/3c1010ec174189184667846a5be38ebc491f7bd6 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **playintegrity:** update the api https://togithub.com/googleapis/google-api-python-client/commit/909483c18603a4ff6fb8f698cfdaea6dd180f098 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **recommender:** update the api https://togithub.com/googleapis/google-api-python-client/commit/359dea09eb0bed801549b18ce00829962d96da36 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **retail:** update the api https://togithub.com/googleapis/google-api-python-client/commit/fe492fe48af35dc21ce26029dac44a2606faf336 ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+* **spanner:** update the api https://togithub.com/googleapis/google-api-python-client/commit/edc7eae706f45c562b01159f0bb6fa7338a27aba ([3bf7830](https://github.com/googleapis/google-api-python-client/commit/3bf7830e2f81bda9fb6e297e4f4a63d9ae47a1b6))
+
 ## [2.63.0](https://github.com/googleapis/google-api-python-client/compare/v2.62.0...v2.63.0) (2022-09-27)
 
 
