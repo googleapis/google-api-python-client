@@ -344,6 +344,10 @@
 * [v2.1](http://googleapis.github.io/google-api-python-client/docs/dyn/content_v2_1.html)
 
 
+## contentwarehouse
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/contentwarehouse_v1.html)
+
+
 ## customsearch
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/customsearch_v1.html)
 
