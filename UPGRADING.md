@@ -30,7 +30,7 @@ are included in the library. Users of private APIs should set the
 retrieve the service definition from the internet. As of version 2.1.0,
 for backwards compatibility with version 1.x, if `static_discovery` is not
 specified, the default value for `static_discovery` will be `True` when
-the `discoveryServiceUrl` argument of `discovery.build()` is provided.
+the `discoveryServiceUrl` argument of `discovery.build()` is not provided.
 
 If you experience issues or have questions, please file an [issue](https://github.com/googleapis/google-api-python-client/issues).
 
