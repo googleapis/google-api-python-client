@@ -1,62 +1,120 @@
-# GitHub Community Discussions
+# Google API Client
 
-In this repository, you will find categories for various product areas. Feel free to share feedback, discuss topics with other community members, or ask questions.
+[![PyPI version](https://badge.fury.io/py/google-api-python-client.svg)](https://badge.fury.io/py/google-api-python-client)
 
-## Product Feedback
+This is the [Google API Python client library](https://cloud.google.com/apis/docs/client-libraries-explained#google_api_client_libraries)
+for Google's discovery based APIs. To get started, please see the
+[docs folder](https://github.com/googleapis/google-api-python-client/blob/main/docs/README.md).
 
-| **Feedback Category** | **About the Product** 	|
-|---	|---	|
-| 👍  [Accessibility](https://github.com/orgs/community/discussions/categories/accessibility) 	| [About Accessibility](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-personal-account-settings/managing-accessibility-settings#about-accessibility-settings) |
-| 🚢  [Actions and Packages](https://github.com/orgs/community/discussions/categories/actions-and-packages) 	| [GitHub Actions](https://github.com/features/actions) and [GitHub Packages](https://github.com/features/packages) |
-| 🔁  [API and Webhooks](https://github.com/orgs/community/discussions/categories/api-and-webhooks) 	| [GitHub API](https://docs.github.com/en/rest) and [GitHub Webhooks](https://docs.github.com/en/developers/webhooks-and-events/webhooks/about-webhook) |
-| 🔎  [Code Search & Navigation](https://github.com/orgs/community/discussions/categories/code-search-and-navigation) 	| [Code Search & Navigation](https://cs.github.com/about) 	|
-| 💻  [Codespaces](https://github.com/orgs/community/discussions/categories/codespaces) 	| [GitHub Codespaces](https://github.com/features/codespaces) 	|
-| 👩‍✈️  [Copilot](https://github.com/orgs/community/discussions/categories/copilot)   	| [GitHub Copilot](https://copilot.github.com/) (Technical Preview) 	|
-| 🤖  [Code Security](https://github.com/orgs/community/discussions/categories/code-security) 	| [GitHub Code Security](https://github.com/features/security) 	|
-| 🗣️  [Discussions](https://github.com/orgs/community/discussions/categories/discussions)  	| [GitHub Discussions](https://docs.github.com/en/discussions) 	|
-| 🌐  [Feed](https://github.com/orgs/community/discussions/categories/feed)  	| [GitHub Feed](https://github.blog/2022-03-22-improving-your-github-feed/) 	|
-| 🎒  [GitHub Education](https://github.com/orgs/community/discussions/categories/github-education)  	| [GitHub Education](https://education.github.com/) 	|
-| 🐙  [Issues](https://github.com/orgs/community/discussions/categories/issues) 	| [GitHub Issues](https://github.com/features/issues) 	|
-| ⭐  [Lists](https://github.com/orgs/community/discussions/categories/lists) 	| [GitHub Lists](https://docs.github.com/en/get-started/exploring-projects-on-github/saving-repositories-with-stars#organizing-starred-repositories-with-lists) (Public Beta) 	|
-| 📱  [Mobile](https://github.com/orgs/community/discussions/categories/mobile) 	| [GitHub Mobile](https://github.com/mobile) 	|
-|🗒️ [Pages](https://github.com/orgs/community/discussions/categories/pages)    | [GitHub Pages](https://docs.github.com/en/pages)  |
-|📶  [Polls](https://github.com/orgs/community/discussions/categories/polls)  	| [GitHub Polls](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-profile/customizing-your-profile/about-your-profile) 	|
-|  🖼️  [Profile](https://github.com/orgs/community/discussions/categories/profile)  	| [GitHub Profile](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-profile/customizing-your-profile/about-your-profile) 	|
-| ✔️  [Pull Requests](https://github.com/orgs/community/discussions/categories/pull-requests) 	| [GitHub Pull Requests](https://docs.github.com/en/github/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests) 	|
-| 🗳️ [Repositories](https://github.com/orgs/community/discussions/categories/repositories)  	| [GitHub Repositories](https://docs.github.com/en/repositories) 	|
-|  💖  [Sponsors](https://github.com/orgs/community/discussions/categories/sponsors) 	| [GitHub Sponsors](https://github.com/sponsors) 	|
-| :octocat:  [General Feedback](https://github.com/orgs/community/discussions/categories/general) 	| [GitHub Docs](https://docs.github.com/en) |
+This library is considered complete and is in maintenance mode. This means
+that we will address critical bugs and security issues but will not add any
+new features.
 
-These discussions are where you can share suggestions for how the products should be improved and discuss those improvements with the community, including members of the GitHub product team. Check out [Making suggestions](#making-suggestions) to learn how to provide feedback.
+This library is officially supported by Google.  However, the maintainers of
+this repository recommend using [Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
+where possible, for new code development. For more information, please visit
+[Client Libraries Explained](https://cloud.google.com/apis/docs/client-libraries-explained).
 
-## Discussions Categories
+## Version 2.0 Release
+The 2.0 release of `google-api-python-client` includes a substantial reliability 
+improvement, compared with 1.x, as discovery documents are now cached in the library 
+rather than fetched dynamically. It is highly recommended to upgrade from v1.x to v2.x.
 
-You will also find previous Discourse Community Forum categories that have since been updated in GitHub Discussions categories below:
+Only python 3.7 and newer is supported. If you are not able to upgrade python, then
+please continue to use version 1.x as we will continue supporting python 2.7+ in
+[v1](https://github.com/googleapis/google-api-python-client/tree/v1).
 
-| **Discourse Category** | **New Discussions Category** 	|
-|---	|---	|
-| GitHub Help 	| New to GitHub |
-| Code to Cloud 	| Actions and Packages |
-| GitHub Ecosystem 	| APIs and Integrations 	|
-| Uncategorized 	| General 	|
+Discovery documents will no longer be retrieved dynamically when
+you call `discovery.build()`. The discovery documents will instead be retrieved
+from the client library directly. New versions of this library are released weekly.
+As a result of caching the discovery documents, the size of this package is at least 
+50 MB larger compared to the previous version. 
 
-When creating a new post, make sure to choose the predetermined category that best fits your topic. This will ensure that conversations are indexed by their corresponding product or feature, to help community members quickly find answers to their questions.
+Please see the [Migration Guide](https://github.com/googleapis/google-api-python-client/blob/main/UPGRADING.md)
+for more information.
 
-This repository works in conjunction with the [GitHub public product roadmap](https://github.com/github/roadmap), which is where you can learn about what features we're working on, and when they'll be available. Accordingly, the Issues feature of this repository has been disabled. Discussion categories have been established for specific features listed above, as well as a general category for other topics. Additional categories may be added in the future. In the meantime, topics outside of the listed categories above, will be transferred into the General category. Please review the [CODE OF CONDUCT](https://docs.github.com/en/site-policy/github-terms/github-community-forum-code-of-conduct) before participating in discussions.
+## Documentation
 
-## Making suggestions
+See the [docs folder](https://github.com/googleapis/google-api-python-client/blob/main/docs/README.md) for more detailed instructions and additional documentation.
 
-We encourage you to [open a discussion](https://github.com/orgs/community/discussions) if you have suggestions for how we can improve our products. You don't need to have a solution to the problem you are facing to kick off a discussion. We hope to foster productive and collaborative conversations, so please check out [how to give good feedback](https://github.com/community/discussions/1) for guidance on how to kick off a successful discussion.
+## Other Google API libraries
 
-Prior to creating a new discussion, please take a look at previous discussions to see if someone else has already shared your suggestion(s). If you find a similar discussion, reply with additional details or upvote the discussion to signal your support rather than creating a new one.
+The maintainers of this repository recommend using
+[Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
+where possible, for new code development due to the following reasons:
 
-### From a suggestion to a shipped feature
+With [Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python):
+- There is a separate client library for each API, so you can choose
+which client libraries to download. Whereas, `google-api-python-client` is a
+single client library for all APIs. As a result, the total package size for
+`google-api-python-client` exceeds 50MB.
+- There are stricter controls for breaking changes to the underlying APIs
+as each client library is focused on a specific API.
+- There are more features in these Cloud Client Libraries as each library is
+focused on a specific API, and in some cases, the libraries are owned by team
+who specialized in that API.
+- Developers will benefit from intellisense.
 
-Once you kick off a discussion, the GitHub product team will evaluate the feedback but will not be able to respond to every submission. From there, we will work with you, and the entire community, to ensure we understand the current capabilities GitHub doesn’t have and explore the space for potential solutions to your problem statement:
+For more information, please visit
+[Client Libraries Explained](https://cloud.google.com/apis/docs/client-libraries-explained).
 
-- If the product team determines that we are going to prioritize a feature to solve the problem you've identified, we may open an issue and track its development in the [public roadmap](https://github.com/github/roadmap).
-- If the product team determines that we will not be working to solve the problem you have identified, we may comment on the discussion describing our reasoning so our decisions can remain transparent.
+Although there are many benefits to moving to
+[Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
+the maintainers want to emphasize that `google-api-python-client` will continue
+to be supported.
 
-## Disclaimer
+For Google Ads API, we recommend using [Google Ads API Client Library for Python](https://github.com/googleads/google-ads-python/).
 
-Any statement in this repository that is not purely historical is considered a forward-looking statement. Forward-looking statements included in this repository are based on information available to GitHub as of the date they are made, and GitHub assumes no obligation to update any forward-looking statements. The forward-looking comments in the public feedback discussions do not represent a commitment, guarantee, obligation or promise to deliver any product or feature, or to deliver any product and feature by any particular date, and are intended to outline the general development plans. Customers should not rely on these public feedback discussions to make any purchasing decision.
+For Google Firebase Admin API, we recommend using [Firebase Admin Python SDK](https://github.com/firebase/firebase-admin-python).
+
+## Installation
+
+Install this library in a [virtualenv](https://virtualenv.pypa.io/en/latest/) using pip. virtualenv is a tool to
+create isolated Python environments. The basic problem it addresses is one of
+dependencies and versions, and indirectly permissions.
+
+With virtualenv, it's possible to install this library without needing system
+install permissions, and without clashing with the installed system
+dependencies.
+
+### Mac/Linux
+
+```
+pip3 install virtualenv
+virtualenv <your-env>
+source <your-env>/bin/activate
+<your-env>/bin/pip install google-api-python-client
+```
+
+### Windows
+
+```
+pip install virtualenv
+virtualenv <your-env>
+<your-env>\Scripts\activate
+<your-env>\Scripts\pip.exe install google-api-python-client
+```
+
+## Supported Python Versions
+
+Python 3.7, 3.8, 3.9 and 3.10 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions.
+
+## Unsupported Python Versions
+
+Python < 3.7
+
+## Third Party Libraries and Dependencies
+
+The following libraries will be installed when you install the client library:
+* [httplib2](https://github.com/httplib2/httplib2)
+* [uritemplate](https://github.com/sigmavirus24/uritemplate)
+
+For development you will also need the following libraries:
+* [WebTest](http://webtest.pythonpaste.org/en/latest/index.html)
+* [pyopenssl](https://pypi.python.org/pypi/pyOpenSSL)
+
+## Contributing
+
+Please see our [Contribution Guide](https://github.com/googleapis/google-api-python-client/blob/main/CONTRIBUTING.rst).
+In particular, we love pull requests - but please make sure to sign
+the contributor license agreement.
