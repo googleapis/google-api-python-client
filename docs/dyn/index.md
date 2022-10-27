@@ -131,10 +131,6 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v2.html)
 
 
-## batch
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/batch_v1.html)
-
-
 ## beyondcorp
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/beyondcorp_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/beyondcorp_v1alpha.html)
