@@ -154,7 +154,6 @@
 
 ## bigqueryreservation
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigqueryreservation_v1.html)
-* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigqueryreservation_v1beta1.html)
 
 
 ## bigtableadmin
@@ -1050,6 +1049,7 @@
 ## tpu
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/tpu_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/tpu_v1alpha1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/tpu_v2.html)
 * [v2alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/tpu_v2alpha1.html)
 
 
@@ -1065,6 +1065,10 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/translate_v2.html)
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/translate_v3.html)
 * [v3beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/translate_v3beta1.html)
+
+
+## travelimpactmodel
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/travelimpactmodel_v1.html)
 
 
 ## vault
