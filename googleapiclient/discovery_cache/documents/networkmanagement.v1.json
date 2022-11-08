@@ -591,7 +591,7 @@
       }
     }
   },
-  "revision": "20220922",
+  "revision": "20221025",
   "rootUrl": "https://networkmanagement.googleapis.com/",
   "schemas": {
     "AbortInfo": {
@@ -616,7 +616,9 @@
             "MISMATCHED_SOURCE_NETWORK",
             "DESTINATION_ENDPOINT_NOT_FOUND",
             "MISMATCHED_DESTINATION_NETWORK",
-            "UNSUPPORTED"
+            "UNSUPPORTED",
+            "MISMATCHED_IP_VERSION",
+            "GKE_KONNECTIVITY_PROXY_UNSUPPORTED"
           ],
           "enumDescriptions": [
             "Cause is unspecified.",
@@ -634,7 +636,9 @@
             "Aborted because the source network does not match the source endpoint.",
             "Aborted because the destination endpoint could not be found.",
             "Aborted because the destination network does not match the destination endpoint.",
-            "Aborted because the test scenario is not supported."
+            "Aborted because the test scenario is not supported.",
+            "Aborted because the source and destination resources have no common IP version.",
+            "Aborted because the connection between the control plane and the node of the source cluster is initiated by the node and managed by the Konnectivity proxy."
           ],
           "type": "string"
         },
@@ -885,9 +889,9 @@
             "Target is a Google API.",
             "Target is a Google Kubernetes Engine cluster master.",
             "Target is a Cloud SQL instance.",
-            "Target is a published service using [Private Service Connect](https://cloud.google.com/vpc/docs/configure-private-service-connect-services).",
-            "Target is all Google APIs using [Private Service Connect](https://cloud.google.com/vpc/docs/configure-private-service-connect-apis).",
-            "Target is VPC-SC using [Private Service Connect](https://cloud.google.com/vpc/docs/configure-private-service-connect-apis)."
+            "Target is a published service that uses [Private Service Connect](https://cloud.google.com/vpc/docs/configure-private-service-connect-services).",
+            "Target is all Google APIs that use [Private Service Connect](https://cloud.google.com/vpc/docs/configure-private-service-connect-apis).",
+            "Target is a VPC-SC that uses [Private Service Connect](https://cloud.google.com/vpc/docs/configure-private-service-connect-apis)."
           ],
           "type": "string"
         }
@@ -913,9 +917,12 @@
             "NO_EXTERNAL_ADDRESS",
             "UNKNOWN_INTERNAL_ADDRESS",
             "FORWARDING_RULE_MISMATCH",
+            "FORWARDING_RULE_REGION_MISMATCH",
             "FORWARDING_RULE_NO_INSTANCES",
             "FIREWALL_BLOCKING_LOAD_BALANCER_BACKEND_HEALTH_CHECK",
             "INSTANCE_NOT_RUNNING",
+            "GKE_CLUSTER_NOT_RUNNING",
+            "CLOUD_SQL_INSTANCE_NOT_RUNNING",
             "TRAFFIC_TYPE_BLOCKED",
             "GKE_MASTER_UNAUTHORIZED_ACCESS",
             "CLOUD_SQL_INSTANCE_UNAUTHORIZED_ACCESS",
@@ -923,6 +930,12 @@
             "DROPPED_INSIDE_CLOUD_SQL_SERVICE",
             "GOOGLE_MANAGED_SERVICE_NO_PEERING",
             "CLOUD_SQL_INSTANCE_NO_IP_ADDRESS",
+            "GKE_CONTROL_PLANE_REGION_MISMATCH",
+            "PUBLIC_GKE_CONTROL_PLANE_TO_PRIVATE_DESTINATION",
+            "GKE_CONTROL_PLANE_NO_ROUTE",
+            "CLOUD_SQL_INSTANCE_NOT_CONFIGURED_FOR_EXTERNAL_TRAFFIC",
+            "PUBLIC_CLOUD_SQL_INSTANCE_TO_PRIVATE_DESTINATION",
+            "CLOUD_SQL_INSTANCE_NO_ROUTE",
             "CLOUD_FUNCTION_NOT_ACTIVE",
             "VPC_CONNECTOR_NOT_SET",
             "VPC_CONNECTOR_NOT_RUNNING",
@@ -941,9 +954,12 @@
             "Instance with only an internal IP address tries to access external hosts, but Cloud NAT is not enabled in the subnet, unless special configurations on a VM allow this connection.",
             "Destination internal address cannot be resolved to a known target. If this is a shared VPC scenario, verify if the service project ID is provided as test input. Otherwise, verify if the IP address is being used in the project.",
             "Forwarding rule's protocol and ports do not match the packet header.",
+            "Packet could be dropped because it was sent from a different region to a regional forwarding without global access.",
             "Forwarding rule does not have backends configured.",
             "Firewalls block the health check probes to the backends and cause the backends to be unavailable for traffic from the load balancer. For more details, see [Health check firewall rules](https://cloud.google.com/load-balancing/docs/health-checks#firewall_rules).",
             "Packet is sent from or to a Compute Engine instance that is not in a running state.",
+            "Packet sent from or to a GKE cluster that is not in running state.",
+            "Packet sent from or to a Cloud SQL instance that is not in running state.",
             "The type of traffic is blocked and the user cannot configure a firewall rule to enable it. See [Always blocked traffic](https://cloud.google.com/vpc/docs/firewalls#blockedtraffic) for more details.",
             "Access to Google Kubernetes Engine cluster master's endpoint is not authorized. See [Access to the cluster endpoints](https://cloud.google.com/kubernetes-engine/docs/how-to/private-clusters#access_to_the_cluster_endpoints) for more details.",
             "Access to the Cloud SQL instance endpoint is not authorized. See [Authorizing with authorized networks](https://cloud.google.com/sql/docs/mysql/authorize-networks) for more details.",
@@ -951,10 +967,16 @@
             "Packet was dropped inside Cloud SQL Service.",
             "Packet was dropped because there is no peering between the originating network and the Google Managed Services Network.",
             "Packet was dropped because the Cloud SQL instance has neither a private nor a public IP address.",
+            "Packet was dropped because a GKE cluster private endpoint is unreachable from a region different from the cluster's region.",
+            "Packet sent from a public GKE cluster control plane to a private IP address.",
+            "Packet was dropped because there is no route from a GKE cluster control plane to a destination network.",
+            "Packet sent from a Cloud SQL instance to an external IP address is not allowed. The Cloud SQL instance is not configured to send packets to external IP addresses.",
+            "Packet sent from a Cloud SQL instance with only a public IP address to a private IP address.",
+            "Packet was dropped because there is no route from a Cloud SQL instance to a destination network.",
             "Packet could be dropped because the Cloud Function is not in an active status.",
             "Packet could be dropped because no VPC connector is set.",
             "Packet could be dropped because the VPC connector is not in a running state.",
-            "Privte Service Connect (PSC) connection is not in accepted state."
+            "The Private Service Connect endpoint is in a project that is not approved to connect to the service."
           ],
           "type": "string"
         },
@@ -1172,7 +1194,8 @@
             "INTERCONNECT",
             "GKE_MASTER",
             "IMPORTED_CUSTOM_ROUTE_NEXT_HOP",
-            "CLOUD_SQL_INSTANCE"
+            "CLOUD_SQL_INSTANCE",
+            "ANOTHER_PROJECT"
           ],
           "enumDescriptions": [
             "Target not specified.",
@@ -1181,7 +1204,8 @@
             "Forwarded to a Cloud Interconnect connection.",
             "Forwarded to a Google Kubernetes Engine Container cluster master.",
             "Forwarded to the next hop of a custom route imported from a peering VPC.",
-            "Forwarded to a Cloud SQL instance."
+            "Forwarded to a Cloud SQL instance.",
+            "Forwarded to a VPC network in another project."
           ],
           "type": "string"
         }
