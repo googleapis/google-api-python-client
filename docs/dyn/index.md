@@ -427,6 +427,11 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/discovery_v1.html)
 
 
+## discoveryengine
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/discoveryengine_v1alpha.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/discoveryengine_v1beta.html)
+
+
 ## displayvideo
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v2.html)
