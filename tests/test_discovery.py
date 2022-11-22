@@ -58,6 +58,7 @@ from googleapiclient.discovery import (
     V1_DISCOVERY_URI,
     V2_DISCOVERY_URI,
     ResourceMethodParameters,
+    _fix_up_media_path_base_url,
     _fix_up_media_upload,
     _fix_up_method_description,
     _fix_up_parameters,
@@ -373,6 +374,18 @@ class Utilities(unittest.TestCase):
         self.assertEqual(
             result, (path_url, http_method, method_id, accept, max_size, media_path_url)
         )
+
+    def test_fix_up_media_path_base_url_same_netloc(self):
+        result = _fix_up_media_path_base_url(
+            "https://www.googleapis.com/upload/foo",
+            "https://www.googleapis.com/upload/bar")
+        self.assertEqual(result, "https://www.googleapis.com/upload/foo")
+ 
+    def test_fix_up_media_path_base_url_different_netloc(self):
+        result = _fix_up_media_path_base_url(
+            "https://www.googleapis.com/upload/foo",
+            "https://www.example.com/upload/bar")
+        self.assertEqual(result, "https://www.example.com/upload/foo")
 
     def test_urljoin(self):
         # We want to exhaustively test various URL combinations.
