@@ -18,7 +18,7 @@ import glob
 import os
 from pathlib import Path
 import sys
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, Optional
 
 import nox
 
@@ -108,22 +108,6 @@ nox.options.error_on_missing_interpreters = True
 #
 
 
-def _determine_local_import_names(start_dir: str) -> List[str]:
-    """Determines all import names that should be considered "local".
-
-    This is used when running the linter to insure that import order is
-    properly checked.
-    """
-    file_ext_pairs = [os.path.splitext(path) for path in os.listdir(start_dir)]
-    return [
-        basename
-        for basename, extension in file_ext_pairs
-        if extension == ".py"
-        or os.path.isdir(os.path.join(start_dir, basename))
-        and basename not in ("__pycache__")
-    ]
-
-
 # Linting with flake8.
 #
 # We ignore the following rules:
@@ -138,7 +122,6 @@ FLAKE8_COMMON_ARGS = [
     "--show-source",
     "--builtin=gettext",
     "--max-complexity=20",
-    "--import-order-style=google",
     "--exclude=.nox,.cache,env,lib,generated_pb2,*_pb2.py,*_pb2_grpc.py",
     "--ignore=E121,E123,E126,E203,E226,E24,E266,E501,E704,W503,W504,I202",
     "--max-line-length=88",
@@ -148,14 +131,11 @@ FLAKE8_COMMON_ARGS = [
 @nox.session
 def lint(session: nox.sessions.Session) -> None:
     if not TEST_CONFIG["enforce_type_hints"]:
-        session.install("flake8", "flake8-import-order")
+        session.install("flake8")
     else:
-        session.install("flake8", "flake8-import-order", "flake8-annotations")
+        session.install("flake8", "flake8-annotations")
 
-    local_names = _determine_local_import_names(".")
     args = FLAKE8_COMMON_ARGS + [
-        "--application-import-names",
-        ",".join(local_names),
         ".",
     ]
     session.run("flake8", *args)
