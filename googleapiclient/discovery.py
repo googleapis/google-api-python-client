@@ -886,6 +886,7 @@ def _fix_up_method_description(method_desc, root_desc, schema):
 
     return path_url, http_method, method_id, accept, max_size, media_path_url
 
+
 def _fix_up_media_path_base_url(media_path_url, base_url):
     """
     Update the media upload base url if its netloc doesn't match base url netloc.
@@ -899,13 +900,15 @@ def _fix_up_media_path_base_url(media_path_url, base_url):
 
     Returns:
       String; the absolute URI for media upload.
-   """
+    """
     parsed_media_url = urllib.parse.urlparse(media_path_url)
     parsed_base_url = urllib.parse.urlparse(base_url)
-    if (parsed_media_url.netloc == parsed_base_url.netloc):
+    if parsed_media_url.netloc == parsed_base_url.netloc:
         return media_path_url
     return urllib.parse.urlunparse(
-        parsed_media_url._replace(netloc=parsed_base_url.netloc))
+        parsed_media_url._replace(netloc=parsed_base_url.netloc)
+    )
+
 
 def _urljoin(base, url):
     """Custom urljoin replacement supporting : before / in url."""

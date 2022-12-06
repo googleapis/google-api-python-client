@@ -378,13 +378,15 @@ class Utilities(unittest.TestCase):
     def test_fix_up_media_path_base_url_same_netloc(self):
         result = _fix_up_media_path_base_url(
             "https://www.googleapis.com/upload/foo",
-            "https://www.googleapis.com/upload/bar")
+            "https://www.googleapis.com/upload/bar",
+        )
         self.assertEqual(result, "https://www.googleapis.com/upload/foo")
- 
+
     def test_fix_up_media_path_base_url_different_netloc(self):
         result = _fix_up_media_path_base_url(
             "https://www.googleapis.com/upload/foo",
-            "https://www.example.com/upload/bar")
+            "https://www.example.com/upload/bar",
+        )
         self.assertEqual(result, "https://www.example.com/upload/foo")
 
     def test_urljoin(self):
