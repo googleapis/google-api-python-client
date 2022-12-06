@@ -23,7 +23,9 @@ common = gcp.CommonTemplates()
 # ----------------------------------------------------------------------------
 # Add templated files
 # ----------------------------------------------------------------------------
-templated_files = common.py_library()
+templated_files = common.py_library(
+    unit_test_python_versions=["3.7", "3.8", "3.9", "3.10", "3.11"],
+)
 
 # Copy kokoro configs.
 # Docs are excluded as repo docs cannot currently be generated using sphinx.
