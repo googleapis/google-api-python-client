@@ -640,7 +640,6 @@
 
 
 ## ideahub
-* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/ideahub_v1alpha.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/ideahub_v1beta.html)
 
 
@@ -1132,6 +1131,10 @@
 ## workflows
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/workflows_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/workflows_v1beta.html)
+
+
+## workloadmanager
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/workloadmanager_v1.html)
 
 
 ## youtube
