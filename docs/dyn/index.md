@@ -1137,6 +1137,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/workloadmanager_v1.html)
 
 
+## workstations
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/workstations_v1beta.html)
+
+
 ## youtube
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/youtube_v3.html)
 
