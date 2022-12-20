@@ -365,6 +365,10 @@
 * [v1b3](http://googleapis.github.io/google-api-python-client/docs/dyn/dataflow_v1b3.html)
 
 
+## dataform
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataform_v1beta1.html)
+
+
 ## datafusion
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datafusion_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/datafusion_v1beta1.html)
@@ -658,6 +662,7 @@
 
 
 ## integrations
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/integrations_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/integrations_v1alpha.html)
 
 
