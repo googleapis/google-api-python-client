@@ -18,7 +18,13 @@ from unittest import mock
 import google.auth.credentials
 import google_auth_httplib2
 import httplib2
-import oauth2client.client
+
+try:
+    import oauth2client.client
+
+    HAS_OAUTH2CLIENT = True
+except ImportError:
+    HAS_OAUTH2CLIENT = False
 
 from googleapiclient import _auth
 
@@ -105,6 +111,7 @@ class TestAuthWithGoogleAuth(unittest.TestCase):
         self.assertGreater(authorized_http.http.timeout, 0)
 
 
+@unittest.skipIf(not HAS_OAUTH2CLIENT, "oauth2client unavailable.")
 class TestAuthWithOAuth2Client(unittest.TestCase):
     def setUp(self):
         _auth.HAS_GOOGLE_AUTH = False

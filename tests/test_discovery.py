@@ -43,10 +43,16 @@ import google.auth.credentials
 from google.auth.exceptions import MutualTLSChannelError
 import google_auth_httplib2
 import httplib2
-from oauth2client import GOOGLE_TOKEN_URI
-from oauth2client.client import GoogleCredentials, OAuth2Credentials
 from parameterized import parameterized
 import uritemplate
+
+try:
+    from oauth2client import GOOGLE_TOKEN_URI
+    from oauth2client.client import GoogleCredentials, OAuth2Credentials
+
+    HAS_OAUTH2CLIENT = True
+except ImportError:
+    HAS_OAUTH2CLIENT = False
 
 from googleapiclient import _helpers as util
 from googleapiclient.discovery import (
@@ -1513,6 +1519,7 @@ class Discovery(unittest.TestCase):
         self.assertTrue(getattr(plus, "activities"))
         self.assertTrue(getattr(plus, "people"))
 
+    @unittest.skipIf(not HAS_OAUTH2CLIENT, "oauth2client unavailable.")
     def test_oauth2client_credentials(self):
         credentials = mock.Mock(spec=GoogleCredentials)
         credentials.create_scoped_required.return_value = False
@@ -2198,6 +2205,7 @@ class Discovery(unittest.TestCase):
             user_agent,
         )
 
+    @unittest.skipIf(not HAS_OAUTH2CLIENT, "oauth2client unavailable.")
     def test_pickle_with_credentials(self):
         credentials = self._dummy_token()
         http = self._dummy_zoo_request()
