@@ -84,6 +84,7 @@ def format(session):
 @nox.parametrize(
     "oauth2client",
     [
+        None,
         "oauth2client<2dev",
         "oauth2client>=2,<=3dev",
         "oauth2client>=3,<=4dev",
@@ -96,7 +97,8 @@ def unit(session, oauth2client):
     shutil.rmtree("build", ignore_errors=True)
 
     session.install(*test_dependencies)
-    session.install(oauth2client)
+    if oauth2client is not None:
+        session.install(oauth2client)
 
     # Create and install wheels
     session.run("python3", "setup.py", "bdist_wheel")
