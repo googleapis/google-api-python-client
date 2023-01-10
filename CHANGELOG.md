@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.72.0](https://github.com/googleapis/google-api-python-client/compare/v2.71.0...v2.72.0) (2023-01-10)
+
+
+### Features
+
+* **admin:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/f1139720b73c1ac9f840fb047a832d2a24a9de1e ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **baremetalsolution:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/32e6abbf80e0f20c9de5afbce7a36354ac86566b ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **blogger:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/9874c4a0d2813eea4e01d1bb179180a32b319520 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **chat:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/89266cd86905b84159869a27abfa52f3678127bc ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **chromemanagement:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/7dbad7dfe181cf00498525bc639c83bb2c26b2f1 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **chromepolicy:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/bba0a3b2f6c9ba480824ca7a5b0d524e1d8ced60 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **cloudidentity:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/ed8c25e19dcfe727343dd585e45bb14b4a827576 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **container:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/32269217419037596f5e44e801387183a5455fe5 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **contentwarehouse:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/8d85891c425e85f34d25b605079364998af2721e ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **datacatalog:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/a1778cbac5fb8d8bd4c7c1fd4f223909dd1557fa ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **dataflow:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/d41a6484a236399a74d5f092142534b871856b58 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **datapipelines:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/8b0a8c50339e4f995e34fd3a6d8af3d27b4ffa87 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **dataplex:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/677a1001d5fc8bb587d4a38562720e82d12b5804 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **dialogflow:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/b1ec06774cea4050a42b1c9bf79f50f9fa971e3c ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **displayvideo:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/8054c4fcb3adfb3f94ca0db636dbcd43491ed68b ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **file:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/057157a5c1b490330b99e168a6941fd175d96037 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **integrations:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/1a962ac3acb34b2ccca3fe9efa9548e343ac76d8 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **playintegrity:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/5ff792d937be384ad65cb2d40628a0255521e642 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **prod_tt_sasportal:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/13e911de2a94834f91cc96bfa755dc16d961b8c1 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **run:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/9c22354060eaa98f58eb63c4a9bdb05d79cb3c8c ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **sasportal:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/044e97c5d5a781ca06eb6efa86c400aee9120a0c ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+* **texttospeech:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/2ea91bd43d7243f2ea89450fab32770d93cc0f91 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+
+
+### Bug Fixes
+
+* **bigquery:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/11e4350aa1de3105d1ab7c9f28038860714b1d37 ([e5e34bd](https://github.com/googleapis/google-api-python-client/commit/e5e34bd79d8fc11c3a7d0b4c2d2ec862268609fc))
+
 ## [2.71.0](https://github.com/googleapis/google-api-python-client/compare/v2.70.0...v2.71.0) (2022-12-20)
 
 
