@@ -127,8 +127,6 @@
 
 
 ## baremetalsolution
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1.html)
-* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v1alpha1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v2.html)
 
 
@@ -327,6 +325,10 @@
 ## connectors
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/connectors_v1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/connectors_v2.html)
+
+
+## contactcenteraiplatform
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/contactcenteraiplatform_v1alpha1.html)
 
 
 ## contactcenterinsights
@@ -662,7 +664,6 @@
 
 
 ## integrations
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/integrations_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/integrations_v1alpha.html)
 
 
