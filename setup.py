@@ -20,45 +20,47 @@ are not already installed.
 from __future__ import print_function
 
 import sys
+import io
+import os
+from setuptools import find_packages, setup
 
 if sys.version_info < (3, 7):
     print("google-api-python-client requires python3 version >= 3.7.", file=sys.stderr)
     sys.exit(1)
 
-import io
-import os
+# Additional package data to include in the distribution
+package_data = {
+    "googleapiclient": [
+        "discovery_cache/documents/*.json",
+        "discovery_cache/schemas/*.json"
+    ]
+}
 
-from setuptools import setup
-
-packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
-
+# Additional dependencies to include in the distribution
 install_requires = [
     "httplib2>=0.15.0,<1dev",
-    # NOTE: Maintainers, please do not require google-auth>=2.x.x
-    # Until this issue is closed
-    # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-auth>=1.19.0,<3.0.0dev",
     "google-auth-httplib2>=0.1.0",
-    # NOTE: Maintainers, please do not require google-api-core>=2.x.x
-    # Until this issue is closed
-    # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-api-core >= 1.31.5, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
     "uritemplate>=3.0.1,<5",
+    "pandas>=1.1.0" # Additional dependency
 ]
 
+# Root directory of the package
 package_root = os.path.abspath(os.path.dirname(__file__))
 
+# Read the README.md file for the long description
 readme_filename = os.path.join(package_root, "README.md")
 with io.open(readme_filename, encoding="utf-8") as readme_file:
     readme = readme_file.read()
 
-package_root = os.path.abspath(os.path.dirname(__file__))
-
+# Get the version of the package
 version = {}
 with open(os.path.join(package_root, "googleapiclient/version.py")) as fp:
     exec(fp.read(), version)
 version = version["__version__"]
 
+# Run the setup function
 setup(
     name="google-api-python-client",
     version=version,
@@ -70,8 +72,8 @@ setup(
     url="https://github.com/googleapis/google-api-python-client/",
     install_requires=install_requires,
     python_requires=">=3.7",
-    packages=packages,
-    package_data={"googleapiclient": ["discovery_cache/documents/*.json"]},
+    packages=find_packages(exclude=["tests*"]),
+    package_data=package_data,
     license="Apache 2.0",
     keywords="google api client",
     classifiers=[
@@ -84,7 +86,18 @@ setup(
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
-        "Operating System :: OS Independent",
-        "Topic :: Internet :: WWW/HTTP",
-    ],
+"Operating System :: OS Independent",
+"Topic :: Internet :: WWW/HTTP",
+],
+# Additional functionality
+# Scripts to include in the distribution
+scripts=["scripts/googleapiclient_cli.py"],
+# Additional data files to include in the distribution
+data_files=[("config", ["config/googleapiclient.cfg"])],
+# Additional entry points for command line scripts
+entry_points={
+"console_scripts": [
+"googleapiclient_cli = googleapiclient.scripts.googleapiclient_cli:main"
+]
+}
 )
