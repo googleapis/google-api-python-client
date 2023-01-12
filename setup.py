@@ -19,9 +19,10 @@ are not already installed.
 """
 from __future__ import print_function
 
-import sys
 import io
 import os
+import sys
+
 from setuptools import find_packages, setup
 
 if sys.version_info < (3, 7):
@@ -32,7 +33,7 @@ if sys.version_info < (3, 7):
 package_data = {
     "googleapiclient": [
         "discovery_cache/documents/*.json",
-        "discovery_cache/schemas/*.json"
+        "discovery_cache/schemas/*.json",
     ]
 }
 
@@ -43,7 +44,7 @@ install_requires = [
     "google-auth-httplib2>=0.1.0",
     "google-api-core >= 1.31.5, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
     "uritemplate>=3.0.1,<5",
-    "pandas>=1.1.0" # Additional dependency
+    "pandas>=1.1.0",  # Additional dependency
 ]
 
 # Root directory of the package
@@ -86,18 +87,18 @@ setup(
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
-"Operating System :: OS Independent",
-"Topic :: Internet :: WWW/HTTP",
-],
-# Additional functionality
-# Scripts to include in the distribution
-scripts=["scripts/googleapiclient_cli.py"],
-# Additional data files to include in the distribution
-data_files=[("config", ["config/googleapiclient.cfg"])],
-# Additional entry points for command line scripts
-entry_points={
-"console_scripts": [
-"googleapiclient_cli = googleapiclient.scripts.googleapiclient_cli:main"
-]
-}
+        "Operating System :: OS Independent",
+        "Topic :: Internet :: WWW/HTTP",
+    ],
+    # Additional functionality
+    # Scripts to include in the distribution
+    scripts=["scripts/googleapiclient_cli.py"],
+    # Additional data files to include in the distribution
+    data_files=[("config", ["config/googleapiclient.cfg"])],
+    # Additional entry points for command line scripts
+    entry_points={
+        "console_scripts": [
+            "googleapiclient_cli = googleapiclient.scripts.googleapiclient_cli:main"
+        ]
+    },
 )
