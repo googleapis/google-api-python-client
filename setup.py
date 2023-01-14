@@ -76,7 +76,7 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     package_data=package_data,
     license="Apache 2.0",
-    keywords="google api client",
+    keywords="google api client","googleapiclient_cli"
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
