@@ -681,6 +681,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/kgsearch_v1.html)
 
 
+## kmsinventory
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/kmsinventory_v1.html)
+
+
 ## language
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/language_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/language_v1beta1.html)
