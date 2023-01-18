@@ -43,10 +43,16 @@ import google.auth.credentials
 from google.auth.exceptions import MutualTLSChannelError
 import google_auth_httplib2
 import httplib2
-from oauth2client import GOOGLE_TOKEN_URI
-from oauth2client.client import GoogleCredentials, OAuth2Credentials
 from parameterized import parameterized
 import uritemplate
+
+try:
+    from oauth2client import GOOGLE_TOKEN_URI
+    from oauth2client.client import GoogleCredentials, OAuth2Credentials
+
+    HAS_OAUTH2CLIENT = True
+except ImportError:
+    HAS_OAUTH2CLIENT = False
 
 from googleapiclient import _helpers as util
 from googleapiclient.discovery import (
@@ -58,6 +64,7 @@ from googleapiclient.discovery import (
     V1_DISCOVERY_URI,
     V2_DISCOVERY_URI,
     ResourceMethodParameters,
+    _fix_up_media_path_base_url,
     _fix_up_media_upload,
     _fix_up_method_description,
     _fix_up_parameters,
@@ -373,6 +380,20 @@ class Utilities(unittest.TestCase):
         self.assertEqual(
             result, (path_url, http_method, method_id, accept, max_size, media_path_url)
         )
+
+    def test_fix_up_media_path_base_url_same_netloc(self):
+        result = _fix_up_media_path_base_url(
+            "https://www.googleapis.com/upload/foo",
+            "https://www.googleapis.com/upload/bar",
+        )
+        self.assertEqual(result, "https://www.googleapis.com/upload/foo")
+
+    def test_fix_up_media_path_base_url_different_netloc(self):
+        result = _fix_up_media_path_base_url(
+            "https://www.googleapis.com/upload/foo",
+            "https://www.example.com/upload/bar",
+        )
+        self.assertEqual(result, "https://www.example.com/upload/foo")
 
     def test_urljoin(self):
         # We want to exhaustively test various URL combinations.
@@ -1205,7 +1226,7 @@ class DiscoveryRetryFromHttp(unittest.TestCase):
 class DiscoveryFromAppEngineCache(unittest.TestCase):
     def setUp(self):
         self.old_environ = os.environ.copy()
-        os.environ["APPENGINE_RUNTIME"] = "python27"
+        os.environ["GAE_ENV"] = "standard"
 
     def tearDown(self):
         os.environ = self.old_environ
@@ -1498,6 +1519,7 @@ class Discovery(unittest.TestCase):
         self.assertTrue(getattr(plus, "activities"))
         self.assertTrue(getattr(plus, "people"))
 
+    @unittest.skipIf(not HAS_OAUTH2CLIENT, "oauth2client unavailable.")
     def test_oauth2client_credentials(self):
         credentials = mock.Mock(spec=GoogleCredentials)
         credentials.create_scoped_required.return_value = False
@@ -2183,6 +2205,7 @@ class Discovery(unittest.TestCase):
             user_agent,
         )
 
+    @unittest.skipIf(not HAS_OAUTH2CLIENT, "oauth2client unavailable.")
     def test_pickle_with_credentials(self):
         credentials = self._dummy_token()
         http = self._dummy_zoo_request()

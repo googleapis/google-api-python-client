@@ -218,6 +218,11 @@
                   "location": "query",
                   "type": "string"
                 },
+                "name": {
+                  "description": "Optional. The job name. Optional.",
+                  "location": "query",
+                  "type": "string"
+                },
                 "pageSize": {
                   "description": "If there are many jobs, limit response to at most this many. The actual number of jobs returned will be the lesser of max_responses and an unspecified server-defined limit.",
                   "format": "int32",
@@ -450,6 +455,11 @@
                 },
                 "location": {
                   "description": "The [regional endpoint] (https://cloud.google.com/dataflow/docs/concepts/regional-endpoints) that contains this job.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "Optional. The job name. Optional.",
                   "location": "query",
                   "type": "string"
                 },
@@ -1156,6 +1166,11 @@
                       "description": "The [regional endpoint] (https://cloud.google.com/dataflow/docs/concepts/regional-endpoints) that contains this job.",
                       "location": "path",
                       "required": true,
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Optional. The job name. Optional.",
+                      "location": "query",
                       "type": "string"
                     },
                     "pageSize": {
@@ -2225,7 +2240,7 @@
       }
     }
   },
-  "revision": "20220806",
+  "revision": "20230106",
   "rootUrl": "https://dataflow.googleapis.com/",
   "schemas": {
     "ApproximateProgress": {
@@ -3347,6 +3362,10 @@
         },
         "dumpHeapOnOom": {
           "description": "If true, when processing time is spent almost entirely on garbage collection (GC), saves a heap dump before ending the thread or process. If false, ends the thread or process without saving a heap dump. Does not save a heap dump when the Java Virtual Machine (JVM) has an out of memory error during processing. The location of the heap file is either echoed back to the user, or the user is given the opportunity to download the heap file.",
+          "type": "boolean"
+        },
+        "enableLauncherVmSerialPortLogging": {
+          "description": "If true serial port logging will be enabled for the launcher VM.",
           "type": "boolean"
         },
         "enableStreamingEngine": {
@@ -4724,7 +4743,9 @@
             "GCS_READ_FOLDER",
             "GCS_WRITE_FOLDER",
             "PUBSUB_TOPIC",
-            "PUBSUB_SUBSCRIPTION"
+            "PUBSUB_SUBSCRIPTION",
+            "BIGQUERY_TABLE",
+            "JAVASCRIPT_UDF_FILE"
           ],
           "enumDescriptions": [
             "Default input type.",
@@ -4736,7 +4757,9 @@
             "The parameter specifies a Cloud Storage folder path to read from.",
             "The parameter specifies a Cloud Storage folder to write to.",
             "The parameter specifies a Pub/Sub Topic.",
-            "The parameter specifies a Pub/Sub Subscription."
+            "The parameter specifies a Pub/Sub Subscription.",
+            "The parameter specifies a BigQuery table.",
+            "The parameter specifies a JavaScript UDF in Cloud Storage."
           ],
           "type": "string"
         },
@@ -4816,6 +4839,10 @@
             "$ref": "TransformSummary"
           },
           "type": "array"
+        },
+        "stepNamesHash": {
+          "description": "A hash value of the submitted pipeline portable graph step names if exists.",
+          "type": "string"
         }
       },
       "type": "object"
@@ -6009,7 +6036,7 @@
       "type": "object"
     },
     "Step": {
-      "description": "Defines a particular step within a Cloud Dataflow job. A job consists of multiple steps, each of which performs some specific operation as part of the overall job. Data is typically passed from one step to another as part of the job. Here's an example of a sequence of steps which together implement a Map-Reduce job: * Read a collection of data from some source, parsing the collection's elements. * Validate the elements. * Apply a user-defined function to map each element to some value and extract an element-specific key value. * Group elements with the same key into a single element with that key, transforming a multiply-keyed collection into a uniquely-keyed collection. * Write the elements out to some data sink. Note that the Cloud Dataflow service may be used to run many different types of jobs, not just Map-Reduce.",
+      "description": "Defines a particular step within a Cloud Dataflow job. A job consists of multiple steps, each of which performs some specific operation as part of the overall job. Data is typically passed from one step to another as part of the job. **Note:** The properties of this object are not stable and might change. Here's an example of a sequence of steps which together implement a Map-Reduce job: * Read a collection of data from some source, parsing the collection's elements. * Validate the elements. * Apply a user-defined function to map each element to some value and extract an element-specific key value. * Group elements with the same key into a single element with that key, transforming a multiply-keyed collection into a uniquely-keyed collection. * Write the elements out to some data sink. Note that the Cloud Dataflow service may be used to run many different types of jobs, not just Map-Reduce.",
       "id": "Step",
       "properties": {
         "kind": {
@@ -6027,6 +6054,21 @@
           },
           "description": "Named properties associated with the step. Each kind of predefined step has its own required set of properties. Must be provided on Create. Only retrieved with JOB_VIEW_ALL.",
           "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "Straggler": {
+      "description": "Information for a straggler.",
+      "id": "Straggler",
+      "properties": {
+        "batchStraggler": {
+          "$ref": "StragglerInfo",
+          "description": "Batch straggler identification and debugging information."
+        },
+        "streamingStraggler": {
+          "$ref": "StreamingStragglerInfo",
+          "description": "Streaming straggler identification and debugging information."
         }
       },
       "type": "object"
@@ -6065,6 +6107,13 @@
       "description": "Summarized straggler identification details.",
       "id": "StragglerSummary",
       "properties": {
+        "recentStragglers": {
+          "description": "The most recent stragglers.",
+          "items": {
+            "$ref": "Straggler"
+          },
+          "type": "array"
+        },
         "stragglerCauseCount": {
           "additionalProperties": {
             "format": "int64",
@@ -6300,6 +6349,37 @@
       "properties": {
         "streamId": {
           "description": "Identifies the particular stream within the streaming Dataflow job.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "StreamingStragglerInfo": {
+      "description": "Information useful for streaming straggler identification and debugging.",
+      "id": "StreamingStragglerInfo",
+      "properties": {
+        "dataWatermarkLag": {
+          "description": "The event-time watermark lag at the time of the straggler detection.",
+          "format": "google-duration",
+          "type": "string"
+        },
+        "endTime": {
+          "description": "End time of this straggler.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "startTime": {
+          "description": "Start time of this straggler.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "systemWatermarkLag": {
+          "description": "The system watermark lag at the time of the straggler detection.",
+          "format": "google-duration",
+          "type": "string"
+        },
+        "workerName": {
+          "description": "Name of the worker where the straggler was detected.",
           "type": "string"
         }
       },
@@ -6982,6 +7062,10 @@
         "workerShutdownNotice": {
           "$ref": "WorkerShutdownNotice",
           "description": "Shutdown notice by workers."
+        },
+        "workerThreadScalingReport": {
+          "$ref": "WorkerThreadScalingReport",
+          "description": "Thread scaling information reported by workers."
         }
       },
       "type": "object"
@@ -7020,6 +7104,10 @@
         "workerShutdownNoticeResponse": {
           "$ref": "WorkerShutdownNoticeResponse",
           "description": "Service's response to shutdown notice (currently empty)."
+        },
+        "workerThreadScalingReportResponse": {
+          "$ref": "WorkerThreadScalingReportResponse",
+          "description": "Service's thread scaling recommendation for workers."
         }
       },
       "type": "object"
@@ -7218,6 +7306,30 @@
       "description": "Service-side response to WorkerMessage issuing shutdown notice.",
       "id": "WorkerShutdownNoticeResponse",
       "properties": {},
+      "type": "object"
+    },
+    "WorkerThreadScalingReport": {
+      "description": "Contains information about the thread scaling information of a worker.",
+      "id": "WorkerThreadScalingReport",
+      "properties": {
+        "currentThreadCount": {
+          "description": "Current number of active threads in a worker.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "WorkerThreadScalingReportResponse": {
+      "description": "Contains the thread scaling recommendation for a worker from the backend.",
+      "id": "WorkerThreadScalingReportResponse",
+      "properties": {
+        "recommendedThreadCount": {
+          "description": "Recommended number of threads for a worker.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
       "type": "object"
     },
     "WriteInstruction": {

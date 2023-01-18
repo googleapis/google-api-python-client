@@ -168,7 +168,7 @@ Returns:
               &quot;metadatas&quot;: { # Additional structured details about this error. Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in length. When identifying the current value of an exceeded limit, the units should be contained in the key, not the value. For example, rather than {&quot;instanceLimit&quot;: &quot;100/request&quot;}, should be returned as, {&quot;instanceLimitPerRequest&quot;: &quot;100&quot;}, if the client exceeds the number of instances that can be created in a single (batch) request.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match /[A-Z0-9_]+/.
+              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match a regular expression of `A-Z+[A-Z0-9]`, which represents UPPER_SNAKE_CASE.
             },
             &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. For example, if a quota check failed with an error indicating the calling project hasn&#x27;t enabled the accessed service, this can contain a URL pointing directly to the right place in the developer console to flip the bit.
               &quot;links&quot;: [ # URL(s) pointing to additional information on handling the current error.
@@ -179,8 +179,16 @@ Returns:
               ],
             },
             &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user which can be attached to an RPC error.
-              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at http://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
+              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at https://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
+            },
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+              &quot;dimensions&quot;: { # The map holding related quota dimensions.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;limit&quot;: 3.14, # Current effective quota limit. The limit&#x27;s unit depends on the quota type or metric.
+              &quot;limitName&quot;: &quot;A String&quot;, # The name of the quota limit.
+              &quot;metricName&quot;: &quot;A String&quot;, # The Compute Engine quota metric name.
             },
           },
         ],
@@ -270,6 +278,40 @@ Args:
     },
     &quot;versionedExpr&quot;: &quot;A String&quot;, # Preconfigured versioned expression. If this field is specified, config must also be specified. Available preconfigured expressions along with their requirements are: SRC_IPS_V1 - must specify the corresponding src_ip_range field in config.
   },
+  &quot;preconfiguredWafConfig&quot;: { # Preconfigured WAF configuration to be applied for the rule. If the rule does not evaluate preconfigured WAF rules, i.e., if evaluatePreconfiguredWaf() is not used, this field will have no effect.
+    &quot;exclusions&quot;: [ # A list of exclusions to apply during preconfigured WAF evaluation.
+      {
+        &quot;requestCookiesToExclude&quot;: [ # A list of request cookie names whose value will be excluded from inspection during preconfigured WAF evaluation.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;requestHeadersToExclude&quot;: [ # A list of request header names whose value will be excluded from inspection during preconfigured WAF evaluation.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;requestQueryParamsToExclude&quot;: [ # A list of request query parameter names whose value will be excluded from inspection during preconfigured WAF evaluation. Note that the parameter can be in the query string or in the POST body.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;requestUrisToExclude&quot;: [ # A list of request URIs from the request line to be excluded from inspection during preconfigured WAF evaluation. When specifying this field, the query or fragment part should be excluded.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;targetRuleIds&quot;: [ # A list of target rule IDs under the WAF rule set to apply the preconfigured WAF exclusion. If omitted, it refers to all the rule IDs under the WAF rule set.
+          &quot;A String&quot;,
+        ],
+        &quot;targetRuleSet&quot;: &quot;A String&quot;, # Target WAF rule set to apply the preconfigured WAF exclusion.
+      },
+    ],
+  },
   &quot;preview&quot;: True or False, # If set to true, the specified action is not enforced.
   &quot;priority&quot;: 42, # An integer indicating the priority of a rule in the list. The priority must be a positive value between 0 and 2147483647. Rules are evaluated from highest to lowest priority where 0 is the highest priority and 2147483647 is the lowest priority.
   &quot;rateLimitOptions&quot;: { # Must be specified if the action is &quot;rate_based_ban&quot; or &quot;throttle&quot;. Cannot be specified for any other actions.
@@ -279,7 +321,13 @@ Args:
       &quot;intervalSec&quot;: 42, # Interval over which the threshold is computed.
     },
     &quot;conformAction&quot;: &quot;A String&quot;, # Action to take for requests that are under the configured rate limit threshold. Valid option is &quot;allow&quot; only.
-    &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if this field &#x27;enforce_on_key&#x27; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL.
+    &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKey&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+    &quot;enforceOnKeyConfigs&quot;: [ # If specified, any combination of values of enforce_on_key_type/enforce_on_key_name is treated as the key on which ratelimit threshold/action is enforced. You can specify up to 3 enforce_on_key_configs. If enforce_on_key_configs is specified, enforce_on_key must not be specified.
+      {
+        &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
+        &quot;enforceOnKeyType&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKeyConfigs&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+      },
+    ],
     &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
     &quot;exceedAction&quot;: &quot;A String&quot;, # Action to take for requests that are above the configured rate limit threshold, to either deny with a specified HTTP response code, or redirect to a different endpoint. Valid options are &quot;deny(status)&quot;, where valid values for status are 403, 404, 429, and 502, and &quot;redirect&quot; where the redirect parameters come from exceedRedirectOptions below.
     &quot;exceedRedirectOptions&quot;: { # Parameters defining the redirect action that is used as the exceed action. Cannot be specified if the exceed action is not redirect.
@@ -330,7 +378,7 @@ Returns:
               &quot;metadatas&quot;: { # Additional structured details about this error. Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in length. When identifying the current value of an exceeded limit, the units should be contained in the key, not the value. For example, rather than {&quot;instanceLimit&quot;: &quot;100/request&quot;}, should be returned as, {&quot;instanceLimitPerRequest&quot;: &quot;100&quot;}, if the client exceeds the number of instances that can be created in a single (batch) request.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match /[A-Z0-9_]+/.
+              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match a regular expression of `A-Z+[A-Z0-9]`, which represents UPPER_SNAKE_CASE.
             },
             &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. For example, if a quota check failed with an error indicating the calling project hasn&#x27;t enabled the accessed service, this can contain a URL pointing directly to the right place in the developer console to flip the bit.
               &quot;links&quot;: [ # URL(s) pointing to additional information on handling the current error.
@@ -341,8 +389,16 @@ Returns:
               ],
             },
             &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user which can be attached to an RPC error.
-              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at http://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
+              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at https://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
+            },
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+              &quot;dimensions&quot;: { # The map holding related quota dimensions.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;limit&quot;: 3.14, # Current effective quota limit. The limit&#x27;s unit depends on the quota type or metric.
+              &quot;limitName&quot;: &quot;A String&quot;, # The name of the quota limit.
+              &quot;metricName&quot;: &quot;A String&quot;, # The Compute Engine quota metric name.
             },
           },
         ],
@@ -421,7 +477,7 @@ Returns:
               &quot;metadatas&quot;: { # Additional structured details about this error. Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in length. When identifying the current value of an exceeded limit, the units should be contained in the key, not the value. For example, rather than {&quot;instanceLimit&quot;: &quot;100/request&quot;}, should be returned as, {&quot;instanceLimitPerRequest&quot;: &quot;100&quot;}, if the client exceeds the number of instances that can be created in a single (batch) request.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match /[A-Z0-9_]+/.
+              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match a regular expression of `A-Z+[A-Z0-9]`, which represents UPPER_SNAKE_CASE.
             },
             &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. For example, if a quota check failed with an error indicating the calling project hasn&#x27;t enabled the accessed service, this can contain a URL pointing directly to the right place in the developer console to flip the bit.
               &quot;links&quot;: [ # URL(s) pointing to additional information on handling the current error.
@@ -432,8 +488,16 @@ Returns:
               ],
             },
             &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user which can be attached to an RPC error.
-              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at http://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
+              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at https://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
+            },
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+              &quot;dimensions&quot;: { # The map holding related quota dimensions.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;limit&quot;: 3.14, # Current effective quota limit. The limit&#x27;s unit depends on the quota type or metric.
+              &quot;limitName&quot;: &quot;A String&quot;, # The name of the quota limit.
+              &quot;metricName&quot;: &quot;A String&quot;, # The Compute Engine quota metric name.
             },
           },
         ],
@@ -506,7 +570,7 @@ Returns:
               &quot;metadatas&quot;: { # Additional structured details about this error. Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in length. When identifying the current value of an exceeded limit, the units should be contained in the key, not the value. For example, rather than {&quot;instanceLimit&quot;: &quot;100/request&quot;}, should be returned as, {&quot;instanceLimitPerRequest&quot;: &quot;100&quot;}, if the client exceeds the number of instances that can be created in a single (batch) request.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match /[A-Z0-9_]+/.
+              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match a regular expression of `A-Z+[A-Z0-9]`, which represents UPPER_SNAKE_CASE.
             },
             &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. For example, if a quota check failed with an error indicating the calling project hasn&#x27;t enabled the accessed service, this can contain a URL pointing directly to the right place in the developer console to flip the bit.
               &quot;links&quot;: [ # URL(s) pointing to additional information on handling the current error.
@@ -517,8 +581,16 @@ Returns:
               ],
             },
             &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user which can be attached to an RPC error.
-              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at http://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
+              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at https://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
+            },
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+              &quot;dimensions&quot;: { # The map holding related quota dimensions.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;limit&quot;: 3.14, # Current effective quota limit. The limit&#x27;s unit depends on the quota type or metric.
+              &quot;limitName&quot;: &quot;A String&quot;, # The name of the quota limit.
+              &quot;metricName&quot;: &quot;A String&quot;, # The Compute Engine quota metric name.
             },
           },
         ],
@@ -624,7 +696,7 @@ Returns:
   },
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] URL of the region where the regional security policy resides. This field is not applicable to global security policies.
   &quot;ruleTupleCount&quot;: 42, # [Output Only] Total count of all security policy rule tuples. A security policy can not exceed a set number of tuples.
-  &quot;rules&quot;: [ # A list of rules that belong to this policy. There must always be a default rule (rule with priority 2147483647 and match &quot;*&quot;). If no rules are provided when creating a security policy, a default rule with action &quot;allow&quot; will be added.
+  &quot;rules&quot;: [ # A list of rules that belong to this policy. There must always be a default rule which is a rule with priority 2147483647 and match all condition (for the match condition this means match &quot;*&quot; for srcIpRanges and for the networkMatch condition every field must be either match &quot;*&quot; or not set). If no rules are provided when creating a security policy, a default rule with action &quot;allow&quot; will be added.
     { # Represents a rule that describes one or more match conditions along with the action to be taken when traffic matches this condition (allow or deny).
       &quot;action&quot;: &quot;A String&quot;, # The Action to perform when the rule is matched. The following are the valid actions: - allow: allow access to target. - deny(): deny access to target, returns the HTTP response code specified (valid values are 403, 404, and 502). - rate_based_ban: limit client traffic to the configured threshold and ban the client if the traffic exceeds the threshold. Configure parameters for this action in RateLimitOptions. Requires rate_limit_options to be set. - redirect: redirect to a different target. This can either be an internal reCAPTCHA redirect, or an external URL-based redirect via a 302 response. Parameters for this action can be configured via redirectOptions. - throttle: limit client traffic to the configured threshold. Configure parameters for this action in rateLimitOptions. Requires rate_limit_options to be set for this.
       &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -664,6 +736,40 @@ Returns:
         },
         &quot;versionedExpr&quot;: &quot;A String&quot;, # Preconfigured versioned expression. If this field is specified, config must also be specified. Available preconfigured expressions along with their requirements are: SRC_IPS_V1 - must specify the corresponding src_ip_range field in config.
       },
+      &quot;preconfiguredWafConfig&quot;: { # Preconfigured WAF configuration to be applied for the rule. If the rule does not evaluate preconfigured WAF rules, i.e., if evaluatePreconfiguredWaf() is not used, this field will have no effect.
+        &quot;exclusions&quot;: [ # A list of exclusions to apply during preconfigured WAF evaluation.
+          {
+            &quot;requestCookiesToExclude&quot;: [ # A list of request cookie names whose value will be excluded from inspection during preconfigured WAF evaluation.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;requestHeadersToExclude&quot;: [ # A list of request header names whose value will be excluded from inspection during preconfigured WAF evaluation.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;requestQueryParamsToExclude&quot;: [ # A list of request query parameter names whose value will be excluded from inspection during preconfigured WAF evaluation. Note that the parameter can be in the query string or in the POST body.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;requestUrisToExclude&quot;: [ # A list of request URIs from the request line to be excluded from inspection during preconfigured WAF evaluation. When specifying this field, the query or fragment part should be excluded.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;targetRuleIds&quot;: [ # A list of target rule IDs under the WAF rule set to apply the preconfigured WAF exclusion. If omitted, it refers to all the rule IDs under the WAF rule set.
+              &quot;A String&quot;,
+            ],
+            &quot;targetRuleSet&quot;: &quot;A String&quot;, # Target WAF rule set to apply the preconfigured WAF exclusion.
+          },
+        ],
+      },
       &quot;preview&quot;: True or False, # If set to true, the specified action is not enforced.
       &quot;priority&quot;: 42, # An integer indicating the priority of a rule in the list. The priority must be a positive value between 0 and 2147483647. Rules are evaluated from highest to lowest priority where 0 is the highest priority and 2147483647 is the lowest priority.
       &quot;rateLimitOptions&quot;: { # Must be specified if the action is &quot;rate_based_ban&quot; or &quot;throttle&quot;. Cannot be specified for any other actions.
@@ -673,7 +779,13 @@ Returns:
           &quot;intervalSec&quot;: 42, # Interval over which the threshold is computed.
         },
         &quot;conformAction&quot;: &quot;A String&quot;, # Action to take for requests that are under the configured rate limit threshold. Valid option is &quot;allow&quot; only.
-        &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if this field &#x27;enforce_on_key&#x27; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL.
+        &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKey&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+        &quot;enforceOnKeyConfigs&quot;: [ # If specified, any combination of values of enforce_on_key_type/enforce_on_key_name is treated as the key on which ratelimit threshold/action is enforced. You can specify up to 3 enforce_on_key_configs. If enforce_on_key_configs is specified, enforce_on_key must not be specified.
+          {
+            &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
+            &quot;enforceOnKeyType&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKeyConfigs&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+          },
+        ],
         &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
         &quot;exceedAction&quot;: &quot;A String&quot;, # Action to take for requests that are above the configured rate limit threshold, to either deny with a specified HTTP response code, or redirect to a different endpoint. Valid options are &quot;deny(status)&quot;, where valid values for status are 403, 404, 429, and 502, and &quot;redirect&quot; where the redirect parameters come from exceedRedirectOptions below.
         &quot;exceedRedirectOptions&quot;: { # Parameters defining the redirect action that is used as the exceed action. Cannot be specified if the exceed action is not redirect.
@@ -782,6 +894,40 @@ Returns:
     },
     &quot;versionedExpr&quot;: &quot;A String&quot;, # Preconfigured versioned expression. If this field is specified, config must also be specified. Available preconfigured expressions along with their requirements are: SRC_IPS_V1 - must specify the corresponding src_ip_range field in config.
   },
+  &quot;preconfiguredWafConfig&quot;: { # Preconfigured WAF configuration to be applied for the rule. If the rule does not evaluate preconfigured WAF rules, i.e., if evaluatePreconfiguredWaf() is not used, this field will have no effect.
+    &quot;exclusions&quot;: [ # A list of exclusions to apply during preconfigured WAF evaluation.
+      {
+        &quot;requestCookiesToExclude&quot;: [ # A list of request cookie names whose value will be excluded from inspection during preconfigured WAF evaluation.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;requestHeadersToExclude&quot;: [ # A list of request header names whose value will be excluded from inspection during preconfigured WAF evaluation.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;requestQueryParamsToExclude&quot;: [ # A list of request query parameter names whose value will be excluded from inspection during preconfigured WAF evaluation. Note that the parameter can be in the query string or in the POST body.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;requestUrisToExclude&quot;: [ # A list of request URIs from the request line to be excluded from inspection during preconfigured WAF evaluation. When specifying this field, the query or fragment part should be excluded.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;targetRuleIds&quot;: [ # A list of target rule IDs under the WAF rule set to apply the preconfigured WAF exclusion. If omitted, it refers to all the rule IDs under the WAF rule set.
+          &quot;A String&quot;,
+        ],
+        &quot;targetRuleSet&quot;: &quot;A String&quot;, # Target WAF rule set to apply the preconfigured WAF exclusion.
+      },
+    ],
+  },
   &quot;preview&quot;: True or False, # If set to true, the specified action is not enforced.
   &quot;priority&quot;: 42, # An integer indicating the priority of a rule in the list. The priority must be a positive value between 0 and 2147483647. Rules are evaluated from highest to lowest priority where 0 is the highest priority and 2147483647 is the lowest priority.
   &quot;rateLimitOptions&quot;: { # Must be specified if the action is &quot;rate_based_ban&quot; or &quot;throttle&quot;. Cannot be specified for any other actions.
@@ -791,7 +937,13 @@ Returns:
       &quot;intervalSec&quot;: 42, # Interval over which the threshold is computed.
     },
     &quot;conformAction&quot;: &quot;A String&quot;, # Action to take for requests that are under the configured rate limit threshold. Valid option is &quot;allow&quot; only.
-    &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if this field &#x27;enforce_on_key&#x27; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL.
+    &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKey&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+    &quot;enforceOnKeyConfigs&quot;: [ # If specified, any combination of values of enforce_on_key_type/enforce_on_key_name is treated as the key on which ratelimit threshold/action is enforced. You can specify up to 3 enforce_on_key_configs. If enforce_on_key_configs is specified, enforce_on_key must not be specified.
+      {
+        &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
+        &quot;enforceOnKeyType&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKeyConfigs&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+      },
+    ],
     &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
     &quot;exceedAction&quot;: &quot;A String&quot;, # Action to take for requests that are above the configured rate limit threshold, to either deny with a specified HTTP response code, or redirect to a different endpoint. Valid options are &quot;deny(status)&quot;, where valid values for status are 403, 404, 429, and 502, and &quot;redirect&quot; where the redirect parameters come from exceedRedirectOptions below.
     &quot;exceedRedirectOptions&quot;: { # Parameters defining the redirect action that is used as the exceed action. Cannot be specified if the exceed action is not redirect.
@@ -876,7 +1028,7 @@ Args:
   },
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] URL of the region where the regional security policy resides. This field is not applicable to global security policies.
   &quot;ruleTupleCount&quot;: 42, # [Output Only] Total count of all security policy rule tuples. A security policy can not exceed a set number of tuples.
-  &quot;rules&quot;: [ # A list of rules that belong to this policy. There must always be a default rule (rule with priority 2147483647 and match &quot;*&quot;). If no rules are provided when creating a security policy, a default rule with action &quot;allow&quot; will be added.
+  &quot;rules&quot;: [ # A list of rules that belong to this policy. There must always be a default rule which is a rule with priority 2147483647 and match all condition (for the match condition this means match &quot;*&quot; for srcIpRanges and for the networkMatch condition every field must be either match &quot;*&quot; or not set). If no rules are provided when creating a security policy, a default rule with action &quot;allow&quot; will be added.
     { # Represents a rule that describes one or more match conditions along with the action to be taken when traffic matches this condition (allow or deny).
       &quot;action&quot;: &quot;A String&quot;, # The Action to perform when the rule is matched. The following are the valid actions: - allow: allow access to target. - deny(): deny access to target, returns the HTTP response code specified (valid values are 403, 404, and 502). - rate_based_ban: limit client traffic to the configured threshold and ban the client if the traffic exceeds the threshold. Configure parameters for this action in RateLimitOptions. Requires rate_limit_options to be set. - redirect: redirect to a different target. This can either be an internal reCAPTCHA redirect, or an external URL-based redirect via a 302 response. Parameters for this action can be configured via redirectOptions. - throttle: limit client traffic to the configured threshold. Configure parameters for this action in rateLimitOptions. Requires rate_limit_options to be set for this.
       &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -916,6 +1068,40 @@ Args:
         },
         &quot;versionedExpr&quot;: &quot;A String&quot;, # Preconfigured versioned expression. If this field is specified, config must also be specified. Available preconfigured expressions along with their requirements are: SRC_IPS_V1 - must specify the corresponding src_ip_range field in config.
       },
+      &quot;preconfiguredWafConfig&quot;: { # Preconfigured WAF configuration to be applied for the rule. If the rule does not evaluate preconfigured WAF rules, i.e., if evaluatePreconfiguredWaf() is not used, this field will have no effect.
+        &quot;exclusions&quot;: [ # A list of exclusions to apply during preconfigured WAF evaluation.
+          {
+            &quot;requestCookiesToExclude&quot;: [ # A list of request cookie names whose value will be excluded from inspection during preconfigured WAF evaluation.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;requestHeadersToExclude&quot;: [ # A list of request header names whose value will be excluded from inspection during preconfigured WAF evaluation.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;requestQueryParamsToExclude&quot;: [ # A list of request query parameter names whose value will be excluded from inspection during preconfigured WAF evaluation. Note that the parameter can be in the query string or in the POST body.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;requestUrisToExclude&quot;: [ # A list of request URIs from the request line to be excluded from inspection during preconfigured WAF evaluation. When specifying this field, the query or fragment part should be excluded.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;targetRuleIds&quot;: [ # A list of target rule IDs under the WAF rule set to apply the preconfigured WAF exclusion. If omitted, it refers to all the rule IDs under the WAF rule set.
+              &quot;A String&quot;,
+            ],
+            &quot;targetRuleSet&quot;: &quot;A String&quot;, # Target WAF rule set to apply the preconfigured WAF exclusion.
+          },
+        ],
+      },
       &quot;preview&quot;: True or False, # If set to true, the specified action is not enforced.
       &quot;priority&quot;: 42, # An integer indicating the priority of a rule in the list. The priority must be a positive value between 0 and 2147483647. Rules are evaluated from highest to lowest priority where 0 is the highest priority and 2147483647 is the lowest priority.
       &quot;rateLimitOptions&quot;: { # Must be specified if the action is &quot;rate_based_ban&quot; or &quot;throttle&quot;. Cannot be specified for any other actions.
@@ -925,7 +1111,13 @@ Args:
           &quot;intervalSec&quot;: 42, # Interval over which the threshold is computed.
         },
         &quot;conformAction&quot;: &quot;A String&quot;, # Action to take for requests that are under the configured rate limit threshold. Valid option is &quot;allow&quot; only.
-        &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if this field &#x27;enforce_on_key&#x27; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL.
+        &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKey&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+        &quot;enforceOnKeyConfigs&quot;: [ # If specified, any combination of values of enforce_on_key_type/enforce_on_key_name is treated as the key on which ratelimit threshold/action is enforced. You can specify up to 3 enforce_on_key_configs. If enforce_on_key_configs is specified, enforce_on_key must not be specified.
+          {
+            &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
+            &quot;enforceOnKeyType&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKeyConfigs&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+          },
+        ],
         &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
         &quot;exceedAction&quot;: &quot;A String&quot;, # Action to take for requests that are above the configured rate limit threshold, to either deny with a specified HTTP response code, or redirect to a different endpoint. Valid options are &quot;deny(status)&quot;, where valid values for status are 403, 404, 429, and 502, and &quot;redirect&quot; where the redirect parameters come from exceedRedirectOptions below.
         &quot;exceedRedirectOptions&quot;: { # Parameters defining the redirect action that is used as the exceed action. Cannot be specified if the exceed action is not redirect.
@@ -982,7 +1174,7 @@ Returns:
               &quot;metadatas&quot;: { # Additional structured details about this error. Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in length. When identifying the current value of an exceeded limit, the units should be contained in the key, not the value. For example, rather than {&quot;instanceLimit&quot;: &quot;100/request&quot;}, should be returned as, {&quot;instanceLimitPerRequest&quot;: &quot;100&quot;}, if the client exceeds the number of instances that can be created in a single (batch) request.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match /[A-Z0-9_]+/.
+              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match a regular expression of `A-Z+[A-Z0-9]`, which represents UPPER_SNAKE_CASE.
             },
             &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. For example, if a quota check failed with an error indicating the calling project hasn&#x27;t enabled the accessed service, this can contain a URL pointing directly to the right place in the developer console to flip the bit.
               &quot;links&quot;: [ # URL(s) pointing to additional information on handling the current error.
@@ -993,8 +1185,16 @@ Returns:
               ],
             },
             &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user which can be attached to an RPC error.
-              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at http://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
+              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at https://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
+            },
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+              &quot;dimensions&quot;: { # The map holding related quota dimensions.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;limit&quot;: 3.14, # Current effective quota limit. The limit&#x27;s unit depends on the quota type or metric.
+              &quot;limitName&quot;: &quot;A String&quot;, # The name of the quota limit.
+              &quot;metricName&quot;: &quot;A String&quot;, # The Compute Engine quota metric name.
             },
           },
         ],
@@ -1108,7 +1308,7 @@ Returns:
       },
       &quot;region&quot;: &quot;A String&quot;, # [Output Only] URL of the region where the regional security policy resides. This field is not applicable to global security policies.
       &quot;ruleTupleCount&quot;: 42, # [Output Only] Total count of all security policy rule tuples. A security policy can not exceed a set number of tuples.
-      &quot;rules&quot;: [ # A list of rules that belong to this policy. There must always be a default rule (rule with priority 2147483647 and match &quot;*&quot;). If no rules are provided when creating a security policy, a default rule with action &quot;allow&quot; will be added.
+      &quot;rules&quot;: [ # A list of rules that belong to this policy. There must always be a default rule which is a rule with priority 2147483647 and match all condition (for the match condition this means match &quot;*&quot; for srcIpRanges and for the networkMatch condition every field must be either match &quot;*&quot; or not set). If no rules are provided when creating a security policy, a default rule with action &quot;allow&quot; will be added.
         { # Represents a rule that describes one or more match conditions along with the action to be taken when traffic matches this condition (allow or deny).
           &quot;action&quot;: &quot;A String&quot;, # The Action to perform when the rule is matched. The following are the valid actions: - allow: allow access to target. - deny(): deny access to target, returns the HTTP response code specified (valid values are 403, 404, and 502). - rate_based_ban: limit client traffic to the configured threshold and ban the client if the traffic exceeds the threshold. Configure parameters for this action in RateLimitOptions. Requires rate_limit_options to be set. - redirect: redirect to a different target. This can either be an internal reCAPTCHA redirect, or an external URL-based redirect via a 302 response. Parameters for this action can be configured via redirectOptions. - throttle: limit client traffic to the configured threshold. Configure parameters for this action in rateLimitOptions. Requires rate_limit_options to be set for this.
           &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -1148,6 +1348,40 @@ Returns:
             },
             &quot;versionedExpr&quot;: &quot;A String&quot;, # Preconfigured versioned expression. If this field is specified, config must also be specified. Available preconfigured expressions along with their requirements are: SRC_IPS_V1 - must specify the corresponding src_ip_range field in config.
           },
+          &quot;preconfiguredWafConfig&quot;: { # Preconfigured WAF configuration to be applied for the rule. If the rule does not evaluate preconfigured WAF rules, i.e., if evaluatePreconfiguredWaf() is not used, this field will have no effect.
+            &quot;exclusions&quot;: [ # A list of exclusions to apply during preconfigured WAF evaluation.
+              {
+                &quot;requestCookiesToExclude&quot;: [ # A list of request cookie names whose value will be excluded from inspection during preconfigured WAF evaluation.
+                  {
+                    &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                    &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+                  },
+                ],
+                &quot;requestHeadersToExclude&quot;: [ # A list of request header names whose value will be excluded from inspection during preconfigured WAF evaluation.
+                  {
+                    &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                    &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+                  },
+                ],
+                &quot;requestQueryParamsToExclude&quot;: [ # A list of request query parameter names whose value will be excluded from inspection during preconfigured WAF evaluation. Note that the parameter can be in the query string or in the POST body.
+                  {
+                    &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                    &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+                  },
+                ],
+                &quot;requestUrisToExclude&quot;: [ # A list of request URIs from the request line to be excluded from inspection during preconfigured WAF evaluation. When specifying this field, the query or fragment part should be excluded.
+                  {
+                    &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                    &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+                  },
+                ],
+                &quot;targetRuleIds&quot;: [ # A list of target rule IDs under the WAF rule set to apply the preconfigured WAF exclusion. If omitted, it refers to all the rule IDs under the WAF rule set.
+                  &quot;A String&quot;,
+                ],
+                &quot;targetRuleSet&quot;: &quot;A String&quot;, # Target WAF rule set to apply the preconfigured WAF exclusion.
+              },
+            ],
+          },
           &quot;preview&quot;: True or False, # If set to true, the specified action is not enforced.
           &quot;priority&quot;: 42, # An integer indicating the priority of a rule in the list. The priority must be a positive value between 0 and 2147483647. Rules are evaluated from highest to lowest priority where 0 is the highest priority and 2147483647 is the lowest priority.
           &quot;rateLimitOptions&quot;: { # Must be specified if the action is &quot;rate_based_ban&quot; or &quot;throttle&quot;. Cannot be specified for any other actions.
@@ -1157,7 +1391,13 @@ Returns:
               &quot;intervalSec&quot;: 42, # Interval over which the threshold is computed.
             },
             &quot;conformAction&quot;: &quot;A String&quot;, # Action to take for requests that are under the configured rate limit threshold. Valid option is &quot;allow&quot; only.
-            &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if this field &#x27;enforce_on_key&#x27; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL.
+            &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKey&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+            &quot;enforceOnKeyConfigs&quot;: [ # If specified, any combination of values of enforce_on_key_type/enforce_on_key_name is treated as the key on which ratelimit threshold/action is enforced. You can specify up to 3 enforce_on_key_configs. If enforce_on_key_configs is specified, enforce_on_key must not be specified.
+              {
+                &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
+                &quot;enforceOnKeyType&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKeyConfigs&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+              },
+            ],
             &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
             &quot;exceedAction&quot;: &quot;A String&quot;, # Action to take for requests that are above the configured rate limit threshold, to either deny with a specified HTTP response code, or redirect to a different endpoint. Valid options are &quot;deny(status)&quot;, where valid values for status are 403, 404, 429, and 502, and &quot;redirect&quot; where the redirect parameters come from exceedRedirectOptions below.
             &quot;exceedRedirectOptions&quot;: { # Parameters defining the redirect action that is used as the exceed action. Cannot be specified if the exceed action is not redirect.
@@ -1276,7 +1516,7 @@ Returns:
               &quot;metadatas&quot;: { # Additional structured details about this error. Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in length. When identifying the current value of an exceeded limit, the units should be contained in the key, not the value. For example, rather than {&quot;instanceLimit&quot;: &quot;100/request&quot;}, should be returned as, {&quot;instanceLimitPerRequest&quot;: &quot;100&quot;}, if the client exceeds the number of instances that can be created in a single (batch) request.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match /[A-Z0-9_]+/.
+              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match a regular expression of `A-Z+[A-Z0-9]`, which represents UPPER_SNAKE_CASE.
             },
             &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. For example, if a quota check failed with an error indicating the calling project hasn&#x27;t enabled the accessed service, this can contain a URL pointing directly to the right place in the developer console to flip the bit.
               &quot;links&quot;: [ # URL(s) pointing to additional information on handling the current error.
@@ -1287,8 +1527,16 @@ Returns:
               ],
             },
             &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user which can be attached to an RPC error.
-              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at http://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
+              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at https://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
+            },
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+              &quot;dimensions&quot;: { # The map holding related quota dimensions.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;limit&quot;: 3.14, # Current effective quota limit. The limit&#x27;s unit depends on the quota type or metric.
+              &quot;limitName&quot;: &quot;A String&quot;, # The name of the quota limit.
+              &quot;metricName&quot;: &quot;A String&quot;, # The Compute Engine quota metric name.
             },
           },
         ],
@@ -1389,7 +1637,7 @@ Args:
   },
   &quot;region&quot;: &quot;A String&quot;, # [Output Only] URL of the region where the regional security policy resides. This field is not applicable to global security policies.
   &quot;ruleTupleCount&quot;: 42, # [Output Only] Total count of all security policy rule tuples. A security policy can not exceed a set number of tuples.
-  &quot;rules&quot;: [ # A list of rules that belong to this policy. There must always be a default rule (rule with priority 2147483647 and match &quot;*&quot;). If no rules are provided when creating a security policy, a default rule with action &quot;allow&quot; will be added.
+  &quot;rules&quot;: [ # A list of rules that belong to this policy. There must always be a default rule which is a rule with priority 2147483647 and match all condition (for the match condition this means match &quot;*&quot; for srcIpRanges and for the networkMatch condition every field must be either match &quot;*&quot; or not set). If no rules are provided when creating a security policy, a default rule with action &quot;allow&quot; will be added.
     { # Represents a rule that describes one or more match conditions along with the action to be taken when traffic matches this condition (allow or deny).
       &quot;action&quot;: &quot;A String&quot;, # The Action to perform when the rule is matched. The following are the valid actions: - allow: allow access to target. - deny(): deny access to target, returns the HTTP response code specified (valid values are 403, 404, and 502). - rate_based_ban: limit client traffic to the configured threshold and ban the client if the traffic exceeds the threshold. Configure parameters for this action in RateLimitOptions. Requires rate_limit_options to be set. - redirect: redirect to a different target. This can either be an internal reCAPTCHA redirect, or an external URL-based redirect via a 302 response. Parameters for this action can be configured via redirectOptions. - throttle: limit client traffic to the configured threshold. Configure parameters for this action in rateLimitOptions. Requires rate_limit_options to be set for this.
       &quot;description&quot;: &quot;A String&quot;, # An optional description of this resource. Provide this property when you create the resource.
@@ -1429,6 +1677,40 @@ Args:
         },
         &quot;versionedExpr&quot;: &quot;A String&quot;, # Preconfigured versioned expression. If this field is specified, config must also be specified. Available preconfigured expressions along with their requirements are: SRC_IPS_V1 - must specify the corresponding src_ip_range field in config.
       },
+      &quot;preconfiguredWafConfig&quot;: { # Preconfigured WAF configuration to be applied for the rule. If the rule does not evaluate preconfigured WAF rules, i.e., if evaluatePreconfiguredWaf() is not used, this field will have no effect.
+        &quot;exclusions&quot;: [ # A list of exclusions to apply during preconfigured WAF evaluation.
+          {
+            &quot;requestCookiesToExclude&quot;: [ # A list of request cookie names whose value will be excluded from inspection during preconfigured WAF evaluation.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;requestHeadersToExclude&quot;: [ # A list of request header names whose value will be excluded from inspection during preconfigured WAF evaluation.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;requestQueryParamsToExclude&quot;: [ # A list of request query parameter names whose value will be excluded from inspection during preconfigured WAF evaluation. Note that the parameter can be in the query string or in the POST body.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;requestUrisToExclude&quot;: [ # A list of request URIs from the request line to be excluded from inspection during preconfigured WAF evaluation. When specifying this field, the query or fragment part should be excluded.
+              {
+                &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+                &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+              },
+            ],
+            &quot;targetRuleIds&quot;: [ # A list of target rule IDs under the WAF rule set to apply the preconfigured WAF exclusion. If omitted, it refers to all the rule IDs under the WAF rule set.
+              &quot;A String&quot;,
+            ],
+            &quot;targetRuleSet&quot;: &quot;A String&quot;, # Target WAF rule set to apply the preconfigured WAF exclusion.
+          },
+        ],
+      },
       &quot;preview&quot;: True or False, # If set to true, the specified action is not enforced.
       &quot;priority&quot;: 42, # An integer indicating the priority of a rule in the list. The priority must be a positive value between 0 and 2147483647. Rules are evaluated from highest to lowest priority where 0 is the highest priority and 2147483647 is the lowest priority.
       &quot;rateLimitOptions&quot;: { # Must be specified if the action is &quot;rate_based_ban&quot; or &quot;throttle&quot;. Cannot be specified for any other actions.
@@ -1438,7 +1720,13 @@ Args:
           &quot;intervalSec&quot;: 42, # Interval over which the threshold is computed.
         },
         &quot;conformAction&quot;: &quot;A String&quot;, # Action to take for requests that are under the configured rate limit threshold. Valid option is &quot;allow&quot; only.
-        &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if this field &#x27;enforce_on_key&#x27; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL.
+        &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKey&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+        &quot;enforceOnKeyConfigs&quot;: [ # If specified, any combination of values of enforce_on_key_type/enforce_on_key_name is treated as the key on which ratelimit threshold/action is enforced. You can specify up to 3 enforce_on_key_configs. If enforce_on_key_configs is specified, enforce_on_key must not be specified.
+          {
+            &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
+            &quot;enforceOnKeyType&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKeyConfigs&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+          },
+        ],
         &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
         &quot;exceedAction&quot;: &quot;A String&quot;, # Action to take for requests that are above the configured rate limit threshold, to either deny with a specified HTTP response code, or redirect to a different endpoint. Valid options are &quot;deny(status)&quot;, where valid values for status are 403, 404, 429, and 502, and &quot;redirect&quot; where the redirect parameters come from exceedRedirectOptions below.
         &quot;exceedRedirectOptions&quot;: { # Parameters defining the redirect action that is used as the exceed action. Cannot be specified if the exceed action is not redirect.
@@ -1494,7 +1782,7 @@ Returns:
               &quot;metadatas&quot;: { # Additional structured details about this error. Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in length. When identifying the current value of an exceeded limit, the units should be contained in the key, not the value. For example, rather than {&quot;instanceLimit&quot;: &quot;100/request&quot;}, should be returned as, {&quot;instanceLimitPerRequest&quot;: &quot;100&quot;}, if the client exceeds the number of instances that can be created in a single (batch) request.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match /[A-Z0-9_]+/.
+              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match a regular expression of `A-Z+[A-Z0-9]`, which represents UPPER_SNAKE_CASE.
             },
             &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. For example, if a quota check failed with an error indicating the calling project hasn&#x27;t enabled the accessed service, this can contain a URL pointing directly to the right place in the developer console to flip the bit.
               &quot;links&quot;: [ # URL(s) pointing to additional information on handling the current error.
@@ -1505,8 +1793,16 @@ Returns:
               ],
             },
             &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user which can be attached to an RPC error.
-              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at http://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
+              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at https://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
+            },
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+              &quot;dimensions&quot;: { # The map holding related quota dimensions.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;limit&quot;: 3.14, # Current effective quota limit. The limit&#x27;s unit depends on the quota type or metric.
+              &quot;limitName&quot;: &quot;A String&quot;, # The name of the quota limit.
+              &quot;metricName&quot;: &quot;A String&quot;, # The Compute Engine quota metric name.
             },
           },
         ],
@@ -1596,6 +1892,40 @@ Args:
     },
     &quot;versionedExpr&quot;: &quot;A String&quot;, # Preconfigured versioned expression. If this field is specified, config must also be specified. Available preconfigured expressions along with their requirements are: SRC_IPS_V1 - must specify the corresponding src_ip_range field in config.
   },
+  &quot;preconfiguredWafConfig&quot;: { # Preconfigured WAF configuration to be applied for the rule. If the rule does not evaluate preconfigured WAF rules, i.e., if evaluatePreconfiguredWaf() is not used, this field will have no effect.
+    &quot;exclusions&quot;: [ # A list of exclusions to apply during preconfigured WAF evaluation.
+      {
+        &quot;requestCookiesToExclude&quot;: [ # A list of request cookie names whose value will be excluded from inspection during preconfigured WAF evaluation.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;requestHeadersToExclude&quot;: [ # A list of request header names whose value will be excluded from inspection during preconfigured WAF evaluation.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;requestQueryParamsToExclude&quot;: [ # A list of request query parameter names whose value will be excluded from inspection during preconfigured WAF evaluation. Note that the parameter can be in the query string or in the POST body.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;requestUrisToExclude&quot;: [ # A list of request URIs from the request line to be excluded from inspection during preconfigured WAF evaluation. When specifying this field, the query or fragment part should be excluded.
+          {
+            &quot;op&quot;: &quot;A String&quot;, # The match operator for the field.
+            &quot;val&quot;: &quot;A String&quot;, # The value of the field.
+          },
+        ],
+        &quot;targetRuleIds&quot;: [ # A list of target rule IDs under the WAF rule set to apply the preconfigured WAF exclusion. If omitted, it refers to all the rule IDs under the WAF rule set.
+          &quot;A String&quot;,
+        ],
+        &quot;targetRuleSet&quot;: &quot;A String&quot;, # Target WAF rule set to apply the preconfigured WAF exclusion.
+      },
+    ],
+  },
   &quot;preview&quot;: True or False, # If set to true, the specified action is not enforced.
   &quot;priority&quot;: 42, # An integer indicating the priority of a rule in the list. The priority must be a positive value between 0 and 2147483647. Rules are evaluated from highest to lowest priority where 0 is the highest priority and 2147483647 is the lowest priority.
   &quot;rateLimitOptions&quot;: { # Must be specified if the action is &quot;rate_based_ban&quot; or &quot;throttle&quot;. Cannot be specified for any other actions.
@@ -1605,7 +1935,13 @@ Args:
       &quot;intervalSec&quot;: 42, # Interval over which the threshold is computed.
     },
     &quot;conformAction&quot;: &quot;A String&quot;, # Action to take for requests that are under the configured rate limit threshold. Valid option is &quot;allow&quot; only.
-    &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if this field &#x27;enforce_on_key&#x27; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforce_on_key_name&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL.
+    &quot;enforceOnKey&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKey&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+    &quot;enforceOnKeyConfigs&quot;: [ # If specified, any combination of values of enforce_on_key_type/enforce_on_key_name is treated as the key on which ratelimit threshold/action is enforced. You can specify up to 3 enforce_on_key_configs. If enforce_on_key_configs is specified, enforce_on_key must not be specified.
+      {
+        &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
+        &quot;enforceOnKeyType&quot;: &quot;A String&quot;, # Determines the key to enforce the rate_limit_threshold on. Possible values are: - ALL: A single rate limit threshold is applied to all the requests matching this rule. This is the default value if &quot;enforceOnKeyConfigs&quot; is not configured. - IP: The source IP address of the request is the key. Each IP has this limit enforced separately. - HTTP_HEADER: The value of the HTTP header whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the header value. If no such header is present in the request, the key type defaults to ALL. - XFF_IP: The first IP address (i.e. the originating client IP address) specified in the list of IPs under X-Forwarded-For HTTP header. If no such header is present or the value is not a valid IP, the key defaults to the source IP address of the request i.e. key type IP. - HTTP_COOKIE: The value of the HTTP cookie whose name is configured under &quot;enforceOnKeyName&quot;. The key value is truncated to the first 128 bytes of the cookie value. If no such cookie is present in the request, the key type defaults to ALL. - HTTP_PATH: The URL path of the HTTP request. The key value is truncated to the first 128 bytes. - SNI: Server name indication in the TLS session of the HTTPS request. The key value is truncated to the first 128 bytes. The key type defaults to ALL on a HTTP session. - REGION_CODE: The country/region from which the request originates.
+      },
+    ],
     &quot;enforceOnKeyName&quot;: &quot;A String&quot;, # Rate limit key name applicable only for the following key types: HTTP_HEADER -- Name of the HTTP header whose value is taken as the key value. HTTP_COOKIE -- Name of the HTTP cookie whose value is taken as the key value.
     &quot;exceedAction&quot;: &quot;A String&quot;, # Action to take for requests that are above the configured rate limit threshold, to either deny with a specified HTTP response code, or redirect to a different endpoint. Valid options are &quot;deny(status)&quot;, where valid values for status are 403, 404, 429, and 502, and &quot;redirect&quot; where the redirect parameters come from exceedRedirectOptions below.
     &quot;exceedRedirectOptions&quot;: { # Parameters defining the redirect action that is used as the exceed action. Cannot be specified if the exceed action is not redirect.
@@ -1657,7 +1993,7 @@ Returns:
               &quot;metadatas&quot;: { # Additional structured details about this error. Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in length. When identifying the current value of an exceeded limit, the units should be contained in the key, not the value. For example, rather than {&quot;instanceLimit&quot;: &quot;100/request&quot;}, should be returned as, {&quot;instanceLimitPerRequest&quot;: &quot;100&quot;}, if the client exceeds the number of instances that can be created in a single (batch) request.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match /[A-Z0-9_]+/.
+              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match a regular expression of `A-Z+[A-Z0-9]`, which represents UPPER_SNAKE_CASE.
             },
             &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. For example, if a quota check failed with an error indicating the calling project hasn&#x27;t enabled the accessed service, this can contain a URL pointing directly to the right place in the developer console to flip the bit.
               &quot;links&quot;: [ # URL(s) pointing to additional information on handling the current error.
@@ -1668,8 +2004,16 @@ Returns:
               ],
             },
             &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user which can be attached to an RPC error.
-              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at http://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
+              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at https://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
+            },
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+              &quot;dimensions&quot;: { # The map holding related quota dimensions.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;limit&quot;: 3.14, # Current effective quota limit. The limit&#x27;s unit depends on the quota type or metric.
+              &quot;limitName&quot;: &quot;A String&quot;, # The name of the quota limit.
+              &quot;metricName&quot;: &quot;A String&quot;, # The Compute Engine quota metric name.
             },
           },
         ],
@@ -1743,7 +2087,7 @@ Returns:
               &quot;metadatas&quot;: { # Additional structured details about this error. Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in length. When identifying the current value of an exceeded limit, the units should be contained in the key, not the value. For example, rather than {&quot;instanceLimit&quot;: &quot;100/request&quot;}, should be returned as, {&quot;instanceLimitPerRequest&quot;: &quot;100&quot;}, if the client exceeds the number of instances that can be created in a single (batch) request.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match /[A-Z0-9_]+/.
+              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match a regular expression of `A-Z+[A-Z0-9]`, which represents UPPER_SNAKE_CASE.
             },
             &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. For example, if a quota check failed with an error indicating the calling project hasn&#x27;t enabled the accessed service, this can contain a URL pointing directly to the right place in the developer console to flip the bit.
               &quot;links&quot;: [ # URL(s) pointing to additional information on handling the current error.
@@ -1754,8 +2098,16 @@ Returns:
               ],
             },
             &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user which can be attached to an RPC error.
-              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at http://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
+              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at https://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
+            },
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+              &quot;dimensions&quot;: { # The map holding related quota dimensions.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;limit&quot;: 3.14, # Current effective quota limit. The limit&#x27;s unit depends on the quota type or metric.
+              &quot;limitName&quot;: &quot;A String&quot;, # The name of the quota limit.
+              &quot;metricName&quot;: &quot;A String&quot;, # The Compute Engine quota metric name.
             },
           },
         ],
@@ -1829,7 +2181,7 @@ Returns:
               &quot;metadatas&quot;: { # Additional structured details about this error. Keys should match /[a-zA-Z0-9-_]/ and be limited to 64 characters in length. When identifying the current value of an exceeded limit, the units should be contained in the key, not the value. For example, rather than {&quot;instanceLimit&quot;: &quot;100/request&quot;}, should be returned as, {&quot;instanceLimitPerRequest&quot;: &quot;100&quot;}, if the client exceeds the number of instances that can be created in a single (batch) request.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
-              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match /[A-Z0-9_]+/.
+              &quot;reason&quot;: &quot;A String&quot;, # The reason of the error. This is a constant value that identifies the proximate cause of the error. Error reasons are unique within a particular domain of errors. This should be at most 63 characters and match a regular expression of `A-Z+[A-Z0-9]`, which represents UPPER_SNAKE_CASE.
             },
             &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. For example, if a quota check failed with an error indicating the calling project hasn&#x27;t enabled the accessed service, this can contain a URL pointing directly to the right place in the developer console to flip the bit.
               &quot;links&quot;: [ # URL(s) pointing to additional information on handling the current error.
@@ -1840,8 +2192,16 @@ Returns:
               ],
             },
             &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user which can be attached to an RPC error.
-              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at http://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
+              &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at https://www.rfc-editor.org/rfc/bcp/bcp47.txt. Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
+            },
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+              &quot;dimensions&quot;: { # The map holding related quota dimensions.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;limit&quot;: 3.14, # Current effective quota limit. The limit&#x27;s unit depends on the quota type or metric.
+              &quot;limitName&quot;: &quot;A String&quot;, # The name of the quota limit.
+              &quot;metricName&quot;: &quot;A String&quot;, # The Compute Engine quota metric name.
             },
           },
         ],

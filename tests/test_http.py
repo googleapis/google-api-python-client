@@ -38,7 +38,6 @@ from unittest import mock
 import urllib
 
 import httplib2
-from oauth2client.client import Credentials
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import BatchError, HttpError, InvalidChunkSizeError
@@ -60,7 +59,7 @@ from googleapiclient.http import (
 from googleapiclient.model import JsonModel
 
 
-class MockCredentials(Credentials):
+class MockCredentials:
     """Mock class for all Credentials objects."""
 
     def __init__(self, bearer_token, expired=False):
