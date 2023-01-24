@@ -42,6 +42,10 @@
 * [v4.1](http://googleapis.github.io/google-api-python-client/docs/dyn/adsensehost_v4_1.html)
 
 
+## advisorynotifications
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/advisorynotifications_v1.html)
+
+
 ## alertcenter
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/alertcenter_v1beta1.html)
 
@@ -645,10 +649,6 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/iap_v1beta1.html)
 
 
-## ideahub
-* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/ideahub_v1beta.html)
-
-
 ## identitytoolkit
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/identitytoolkit_v1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/identitytoolkit_v2.html)
@@ -687,7 +687,6 @@
 
 ## language
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/language_v1.html)
-* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/language_v1beta1.html)
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/language_v1beta2.html)
 
 
@@ -943,6 +942,10 @@
 
 ## script
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/script_v1.html)
+
+
+## searchads360
+* [v0](http://googleapis.github.io/google-api-python-client/docs/dyn/searchads360_v0.html)
 
 
 ## searchconsole
