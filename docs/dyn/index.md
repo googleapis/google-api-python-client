@@ -233,9 +233,6 @@
 
 ## cloudbuild
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbuild_v1.html)
-* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbuild_v1alpha1.html)
-* [v1alpha2](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbuild_v1alpha2.html)
-* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbuild_v1beta1.html)
 
 
 ## cloudchannel
@@ -637,6 +634,7 @@
 
 ## iam
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/iam_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/iam_v2.html)
 * [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/iam_v2beta.html)
 
 
