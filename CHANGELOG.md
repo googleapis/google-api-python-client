@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.76.0](https://github.com/googleapis/google-api-python-client/compare/v2.75.0...v2.76.0) (2023-02-01)
+
+
+### Features
+
+* **analyticsadmin:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/9d6b0eb036568dd7226df7262897d5cac356f435 ([81b544a](https://github.com/googleapis/google-api-python-client/commit/81b544a235f78508d9426a8d91bc88998249586d))
+* **container:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/d8efd0e431f6d3ef278df9b478e9a781c25715f0 ([81b544a](https://github.com/googleapis/google-api-python-client/commit/81b544a235f78508d9426a8d91bc88998249586d))
+* **datacatalog:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/813a30102dba42af276913a3ba258e4307b8e8dc ([81b544a](https://github.com/googleapis/google-api-python-client/commit/81b544a235f78508d9426a8d91bc88998249586d))
+* **identitytoolkit:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/add703cfa40f0ff9f75017f2dd900fe4e3128f5a ([81b544a](https://github.com/googleapis/google-api-python-client/commit/81b544a235f78508d9426a8d91bc88998249586d))
+* **integrations:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/b54743612561a4290b4d5b8b3794bd19233d42d3 ([81b544a](https://github.com/googleapis/google-api-python-client/commit/81b544a235f78508d9426a8d91bc88998249586d))
+* **monitoring:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/43e09ec77bb05fcfdae5fa1397ffc676b9dac711 ([81b544a](https://github.com/googleapis/google-api-python-client/commit/81b544a235f78508d9426a8d91bc88998249586d))
+* **recaptchaenterprise:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/1fb028c8369918a1297e52fb7e00bdf3cc20fb40 ([81b544a](https://github.com/googleapis/google-api-python-client/commit/81b544a235f78508d9426a8d91bc88998249586d))
+
 ## [2.75.0](https://github.com/googleapis/google-api-python-client/compare/v2.74.0...v2.75.0) (2023-01-31)
 
 
