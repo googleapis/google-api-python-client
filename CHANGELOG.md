@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.79.0](https://github.com/googleapis/google-api-python-client/compare/v2.78.0...v2.79.0) (2023-02-21)
+
+
+### Features
+
+* **alertcenter:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/547eb4a4f6b5577fcb6c80638cc9e93cced35089 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **androidenterprise:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/a5c14741ad7ca5b5f53dc4b4fcdab070132639b8 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **baremetalsolution:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/1cca20e7cce92036d67e528123414f669ebd942a ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **batch:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/12b1c85fc3280dbbb23c4db396c64dd3601a303d ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **chat:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/bc983e9dd1e8dbc8ec910bbe36321afb81cf33cd ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **chromemanagement:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/b204e0fa6f03e35f70774067a52026d38bb90549 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **cloudsearch:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/a57ae6337ea0612594b88badfb354b73d68f6a73 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **compute:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/41d899c6514dbb5cf1a9c1358ac777fa19bbf8ae ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **content:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/b2704a04c366aedcd1c665f6f34db47bc81e178f ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **drive:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/c189a81e8116af6ae96c26a82cbe0662c2f540a2 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **healthcare:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/58ad8a45dcc3b7cd97f2f30c03a0ff9e0bdf1a83 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **logging:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/f365cf32684e625b772e60d45ea1dd188983ac25 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **monitoring:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/48090571c1e8a2cb3831a9540363db8051284440 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **networksecurity:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/aa9721a9179ece2acf74ca2067d48b11a2acce01 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **ondemandscanning:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/f247a051529550f3e55aeb456276bafe327517e8 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **paymentsresellersubscription:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/a01ba7b18fb69f14d04e5c4ea67a47945a4b40b7 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **privateca:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/5f5a1d83c419e0c3d9aac0746681a384dfc1af69 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **redis:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/edc5f1f9ca6f56cfd945621414c369bff840ee4e ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **safebrowsing:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/940222c83f916b3b90bbacf4436bbf97a949f852 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **serviceconsumermanagement:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/ba5bd7229c287f2b0636d1128f057334ca8ec4b9 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **servicecontrol:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/6c85d3c5e895805aa9b2e5a73d4d812c449b5388 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **servicenetworking:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/df40666a943166ca27603fb5c14e9b67c711c709 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+* **serviceusage:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/64cbf8291c51625042a94d6195dfa81e8da63ea7 ([f183bc9](https://github.com/googleapis/google-api-python-client/commit/f183bc9439ca3b0b42de85d670e2c89014263e62))
+
 ## [2.78.0](https://github.com/googleapis/google-api-python-client/compare/v2.77.0...v2.78.0) (2023-02-14)
 
 
