@@ -385,6 +385,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/datalabeling_v1beta1.html)
 
 
+## datalineage
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datalineage_v1.html)
+
+
 ## datamigration
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datamigration_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/datamigration_v1beta1.html)
@@ -800,6 +804,7 @@
 
 ## notebooks
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/notebooks_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/notebooks_v2.html)
 
 
 ## oauth2
@@ -860,7 +865,7 @@
 ## policysimulator
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/policysimulator_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/policysimulator_v1alpha.html)
-* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/policysimulator_v1beta1.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/policysimulator_v1beta.html)
 
 
 ## policytroubleshooter
