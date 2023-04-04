@@ -540,6 +540,10 @@
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseappcheck_v1beta.html)
 
 
+## firebaseappdistribution
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseappdistribution_v1.html)
+
+
 ## firebasedatabase
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedatabase_v1beta.html)
 
