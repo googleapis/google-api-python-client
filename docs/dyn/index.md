@@ -267,10 +267,6 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudidentity_v1beta1.html)
 
 
-## cloudiot
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudiot_v1.html)
-
-
 ## cloudkms
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudkms_v1.html)
 
