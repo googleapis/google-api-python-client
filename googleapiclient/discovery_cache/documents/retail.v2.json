@@ -120,11 +120,6 @@
                     "catalog"
                   ],
                   "parameters": {
-                    "banner": {
-                      "description": "The banner context for completion suggestions.",
-                      "location": "query",
-                      "type": "string"
-                    },
                     "catalog": {
                       "description": "Required. Catalog for which the completion is performed. Full resource name of catalog, such as `projects/*/locations/global/catalogs/default_catalog`.",
                       "location": "path",
@@ -139,6 +134,11 @@
                     },
                     "deviceType": {
                       "description": "The device type context for completion suggestions. We recommend that you leave this field empty. It can apply different suggestions on different device types, e.g. `DESKTOP`, `MOBILE`. If it is empty, the suggestions are across all device types. Supported formats: * `UNKNOWN_DEVICE_TYPE` * `DESKTOP` * `MOBILE` * A customized string starts with `OTHER_`, e.g. `OTHER_IPHONE`.",
+                      "location": "query",
+                      "type": "string"
+                    },
+                    "entity": {
+                      "description": "The entity for customers that may run multiple different entities, domains, sites or regions, for example, `Google US`, `Google Ads`, `Waymo`, `google.com`, `youtube.com`, etc. If this is set, it should be exactly matched with UserEvent.entity to get per-entity autocomplete results.",
                       "location": "query",
                       "type": "string"
                     },
@@ -2031,7 +2031,7 @@
       }
     }
   },
-  "revision": "20230330",
+  "revision": "20230413",
   "rootUrl": "https://retail.googleapis.com/",
   "schemas": {
     "GoogleApiHttpBody": {
@@ -2814,7 +2814,7 @@
       "description": "Metadata for active A/B testing Experiments.",
       "id": "GoogleCloudRetailV2ExperimentInfo",
       "properties": {
-        "experimentName": {
+        "experiment": {
           "description": "The fully qualified resource name of the experiment that provides the serving config under test, should an active experiment exist. For example: `projects/*/locations/global/catalogs/default_catalog/experiments/experiment_id`",
           "type": "string"
         },
@@ -4260,10 +4260,6 @@
       "description": "Request message for SearchService.Search method.",
       "id": "GoogleCloudRetailV2SearchRequest",
       "properties": {
-        "banner": {
-          "description": "Represents the banner in request, for projects that combine banners. For example: a retailer can sell products under different banners like retailer-main, retailer-baby, retailer-meds, etc. under one project.",
-          "type": "string"
-        },
         "boostSpec": {
           "$ref": "GoogleCloudRetailV2SearchRequestBoostSpec",
           "description": "Boost specification to boost certain products. See more details at this [user guide](https://cloud.google.com/retail/docs/boosting). Notice that if both ServingConfig.boost_control_ids and SearchRequest.boost_spec are set, the boost conditions from both places are evaluated. If a search request matches multiple boost conditions, the final boost score is equal to the sum of the boost scores from all matched boost conditions."
@@ -4280,8 +4276,12 @@
           "$ref": "GoogleCloudRetailV2SearchRequestDynamicFacetSpec",
           "description": "Deprecated. Refer to https://cloud.google.com/retail/docs/configs#dynamic to enable dynamic facets. Do not set this field. The specification for dynamically generated facets. Notice that only textual facets can be dynamically generated."
         },
+        "entity": {
+          "description": "The entity for customers that may run multiple different entities, domains, sites or regions, for example, `Google US`, `Google Ads`, `Waymo`, `google.com`, `youtube.com`, etc. If this is set, it should be exactly matched with UserEvent.entity to get search results boosted by entity.",
+          "type": "string"
+        },
         "facetSpecs": {
-          "description": "Facet specifications for faceted search. If empty, no facets are returned. A maximum of 100 values are allowed. Otherwise, an INVALID_ARGUMENT error is returned.",
+          "description": "Facet specifications for faceted search. If empty, no facets are returned. A maximum of 200 values are allowed. Otherwise, an INVALID_ARGUMENT error is returned.",
           "items": {
             "$ref": "GoogleCloudRetailV2SearchRequestFacetSpec"
           },
@@ -4308,7 +4308,7 @@
           "type": "string"
         },
         "pageCategories": {
-          "description": "The categories associated with a category page. Required for category navigation queries to achieve good search quality. The format should be the same as UserEvent.page_categories; To represent full path of category, use '>' sign to separate different hierarchies. If '>' is part of the category name, replace it with other character(s). Category pages include special pages such as sales or promotions. For instance, a special sale page may have the category hierarchy: \"pageCategories\" : [\"Sales > 2017 Black Friday Deals\"].",
+          "description": "The categories associated with a category page. Must be set for category navigation queries to achieve good search quality. The format should be the same as UserEvent.page_categories; To represent full path of category, use '>' sign to separate different hierarchies. If '>' is part of the category name, replace it with other character(s). Category pages include special pages such as sales or promotions. For instance, a special sale page may have the category hierarchy: \"pageCategories\" : [\"Sales > 2017 Black Friday Deals\"].",
           "items": {
             "type": "string"
           },
@@ -4469,7 +4469,7 @@
           "type": "array"
         },
         "intervals": {
-          "description": "For all numerical facet keys that appear in the list of products from the catalog, the percentiles 0, 10, 30, 50, 70, 90 and 100 are computed from their distribution weekly. If the model assigns a high score to a numerical facet key and its intervals are not specified in the search request, these percentiles will become the bounds for its intervals and will be returned in the response. If the facet key intervals are specified in the request, then the specified intervals will be returned instead.",
+          "description": "Set only if values should be bucketized into intervals. Must be set for facets with numerical values. Must not be set for facet with text values. Maximum number of intervals is 40. For all numerical facet keys that appear in the list of products from the catalog, the percentiles 0, 10, 30, 50, 70, 90 and 100 are computed from their distribution weekly. If the model assigns a high score to a numerical facet key and its intervals are not specified in the search request, these percentiles will become the bounds for its intervals and will be returned in the response. If the facet key intervals are specified in the request, then the specified intervals will be returned instead.",
           "items": {
             "$ref": "GoogleCloudRetailV2Interval"
           },
@@ -4979,10 +4979,6 @@
           "description": "Highly recommended for user events that are the result of PredictionService.Predict. This field enables accurate attribution of recommendation model performance. The value must be a valid PredictResponse.attribution_token for user events that are the result of PredictionService.Predict. The value must be a valid SearchResponse.attribution_token for user events that are the result of SearchService.Search. This token enables us to accurately attribute page view or purchase back to the event and the particular predict response containing this clicked/purchased product. If user clicks on product K in the recommendation results, pass PredictResponse.attribution_token as a URL parameter to product K's page. When recording events on product K's page, log the PredictResponse.attribution_token to this field.",
           "type": "string"
         },
-        "banner": {
-          "description": "Represents the banner of the user event, for projects that combine banners. For example: retailer can have events from multiple banners like retailer-main, retailer-baby, retailer-meds, etc. under one project.",
-          "type": "string"
-        },
         "cartId": {
           "description": "The ID or name of the associated shopping cart. This ID is used to associate multiple items added or present in the cart before purchase. This can only be set for `add-to-cart`, `purchase-complete`, or `shopping-cart-page-view` events.",
           "type": "string"
@@ -4990,6 +4986,10 @@
         "completionDetail": {
           "$ref": "GoogleCloudRetailV2CompletionDetail",
           "description": "The main auto-completion details related to the event. This field should be set for `search` event when autocomplete function is enabled and the user clicks a suggestion for search."
+        },
+        "entity": {
+          "description": "The entity for customers that may run multiple different entities, domains, sites or regions, for example, `Google US`, `Google Ads`, `Waymo`, `google.com`, `youtube.com`, etc. It is recommended to set this field to get better per-entity search, completion and prediction results.",
+          "type": "string"
         },
         "eventTime": {
           "description": "Only required for UserEventService.ImportUserEvents method. Timestamp of when the user event happened.",
@@ -5397,7 +5397,7 @@
       "type": "object"
     },
     "GoogleCloudRetailV2alphaMerchantCenterAccountLink": {
-      "description": "Represents a link between a Merchant Center account and a branch. Once a link is established, products from the linked merchant center account will be streamed to the linked branch. LINT.IfChange(MerchantCenterAccountLink)",
+      "description": "Represents a link between a Merchant Center account and a branch. Once a link is established, products from the linked merchant center account will be streamed to the linked branch.",
       "id": "GoogleCloudRetailV2alphaMerchantCenterAccountLink",
       "properties": {
         "branchId": {
@@ -5435,7 +5435,7 @@
           "type": "string"
         },
         "projectId": {
-          "description": "Output only. GCP project ID.",
+          "description": "Output only. Google Cloud project ID.",
           "readOnly": true,
           "type": "string"
         },
@@ -6133,7 +6133,7 @@
       "type": "object"
     },
     "GoogleCloudRetailV2betaMerchantCenterAccountLink": {
-      "description": "Represents a link between a Merchant Center account and a branch. Once a link is established, products from the linked merchant center account will be streamed to the linked branch. LINT.IfChange(MerchantCenterAccountLink)",
+      "description": "Represents a link between a Merchant Center account and a branch. Once a link is established, products from the linked merchant center account will be streamed to the linked branch.",
       "id": "GoogleCloudRetailV2betaMerchantCenterAccountLink",
       "properties": {
         "branchId": {
@@ -6171,7 +6171,7 @@
           "type": "string"
         },
         "projectId": {
-          "description": "Output only. GCP project ID.",
+          "description": "Output only. Google Cloud project ID.",
           "readOnly": true,
           "type": "string"
         },
