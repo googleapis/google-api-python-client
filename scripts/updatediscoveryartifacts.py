@@ -20,7 +20,7 @@ import tempfile
 
 import changesummary
 
-import scripts.describe_apis as describe_apis
+import describe_apis
 
 SCRIPTS_DIR = pathlib.Path(__file__).parent.resolve()
 DISCOVERY_DOC_DIR = (
