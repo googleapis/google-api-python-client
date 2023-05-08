@@ -24,7 +24,6 @@ BLACK_PATHS = [
     "googleapiclient",
     "scripts",
     "tests",
-    "describe.py",
     "expandsymlinks.py",
     "noxfile.py",
     "owlbot.py",
