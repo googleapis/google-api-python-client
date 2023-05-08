@@ -39,6 +39,7 @@ from googleapiclient.http import build_http
 
 DISCOVERY_DOC_DIR = (
     pathlib.Path(__file__).parent.resolve()
+    / ".."
     / "googleapiclient"
     / "discovery_cache"
     / "documents"
@@ -134,7 +135,7 @@ METHOD_LINK = """<p class="toc_element">
   <code><a href="#$name">$name($params)</a></code></p>
 <p class="firstline">$firstline</p>"""
 
-BASE = pathlib.Path(__file__).parent.resolve() / "docs" / "dyn"
+BASE = pathlib.Path(__file__).parent.resolve() / ".." / "docs" / "dyn"
 
 DIRECTORY_URI = "https://www.googleapis.com/discovery/v1/apis"
 
