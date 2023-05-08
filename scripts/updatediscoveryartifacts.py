@@ -19,7 +19,6 @@ import subprocess
 import tempfile
 
 import changesummary
-
 import describe
 
 SCRIPTS_DIR = pathlib.Path(__file__).parent.resolve()
