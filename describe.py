@@ -536,7 +536,7 @@ def generate_all_api_documents(
                 )
             markdown.append("\n")
 
-        with open(BASE / "index.md", "w") as f:
+        with open(doc_destination_dir / "index.md", "w") as f:
             markdown = "\n".join(markdown)
             f.write(markdown)
 
