@@ -361,7 +361,7 @@ def document_collection_recursive(
     root_discovery,
     discovery,
     doc_destination_dir,
-    artifact_destination_dir,
+    artifact_destination_dir=DISCOVERY_DOC_DIR,
 ):
     html = document_collection(resource, path, root_discovery, discovery)
 
@@ -389,7 +389,7 @@ def document_collection_recursive(
             )
 
 
-def document_api(name, version, uri, doc_destination_dir, artifact_destination_dir):
+def document_api(name, version, uri, doc_destination_dir, artifact_destination_dir=DISCOVERY_DOC_DIR):
     """Document the given API.
 
     Args:
@@ -458,7 +458,7 @@ def document_api(name, version, uri, doc_destination_dir, artifact_destination_d
 
 
 def document_api_from_discovery_document(
-    discovery_url, doc_destination_dir, artifact_destination_dir
+    discovery_url, doc_destination_dir, artifact_destination_dir=DISCOVERY_DOC_DIR
 ):
     """Document the given API.
 
@@ -548,11 +548,9 @@ if __name__ == "__main__":
         document_api_from_discovery_document(
             discovery_url=FLAGS.discovery_uri,
             doc_destination_dir=FLAGS.dest,
-            artifact_destination_dir=FLAGS.artifact_dest,
         )
     else:
         generate_all_api_documents(
             directory_uri=FLAGS.directory_uri,
             doc_destination_dir=FLAGS.dest,
-            artifact_destination_dir=FLAGS.artifact_dest,
         )
