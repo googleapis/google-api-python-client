@@ -24,6 +24,7 @@ BLACK_PATHS = [
     "googleapiclient",
     "scripts",
     "tests",
+    "describe.py",
     "expandsymlinks.py",
     "noxfile.py",
     "owlbot.py",
@@ -137,7 +138,7 @@ def scripts(session):
         "--cov=scripts",
         "--cov-config=.coveragerc",
         "--cov-report=",
-        "--cov-fail-under=59",
+        "--cov-fail-under=91",
         "scripts",
         *session.posargs,
     )
