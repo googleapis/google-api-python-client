@@ -110,7 +110,7 @@ The following libraries will be installed when you install the client library:
 * [uritemplate](https://github.com/sigmavirus24/uritemplate)
 
 For development you will also need the following libraries:
-* [WebTest](http://webtest.pythonpaste.org/en/latest/index.html)
+* [WebTest](https://pypi.org/project/WebTest/)
 * [pyopenssl](https://pypi.python.org/pypi/pyOpenSSL)
 
 ## Contributing
