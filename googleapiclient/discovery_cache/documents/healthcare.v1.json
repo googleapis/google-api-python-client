@@ -4078,7 +4078,7 @@
       }
     }
   },
-  "revision": "20230323",
+  "revision": "20230510",
   "rootUrl": "https://healthcare.googleapis.com/",
   "schemas": {
     "ActivateConsentRequest": {
@@ -4142,7 +4142,7 @@
           "type": "array"
         },
         "entityMentions": {
-          "description": "entity_mentions contains all the annotated medical entities that were mentioned in the provided document.",
+          "description": "The `entity_mentions` field contains all the annotated medical entities that were mentioned in the provided document.",
           "items": {
             "$ref": "EntityMention"
           },
@@ -4653,6 +4653,10 @@
         "text": {
           "$ref": "TextConfig",
           "description": "Configures de-identification of text wherever it is found in the source_dataset."
+        },
+        "useRegionalDataProcessing": {
+          "description": "Ensures in-flight data remains in the region of origin during de-identification. Using this option results in a significant reduction of throughput, and is not compatible with `LOCATION` or `ORGANIZATION_NAME` infoTypes. `LOCATION` must be excluded within `TextConfig`, and must also be excluded within `ImageConfig` if image redaction is required.",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -5107,6 +5111,25 @@
       },
       "type": "object"
     },
+    "FhirNotificationConfig": {
+      "description": "Contains the configuration for FHIR notifications.",
+      "id": "FhirNotificationConfig",
+      "properties": {
+        "pubsubTopic": {
+          "description": "The [Pub/Sub](https://cloud.google.com/pubsub/docs/) topic that notifications of changes are published on. Supplied by the client. The notification is a `PubsubMessage` with the following fields: * `PubsubMessage.Data` contains the resource name. * `PubsubMessage.MessageId` is the ID of this notification. It is guaranteed to be unique within the topic. * `PubsubMessage.PublishTime` is the time when the message was published. Note that notifications are only sent if the topic is non-empty. [Topic names](https://cloud.google.com/pubsub/docs/overview#names) must be scoped to a project. The Cloud Healthcare API service account, service-@gcp-sa-healthcare.iam.gserviceaccount.com, must have publisher permissions on the given Pub/Sub topic. Not having adequate permissions causes the calls that send notifications to fail (https://cloud.google.com/healthcare-api/docs/permissions-healthcare-api-gcp-products#dicom_fhir_and_hl7v2_store_cloud_pubsub_permissions). If a notification can't be published to Pub/Sub, errors are logged to Cloud Logging. For more information, see [Viewing error logs in Cloud Logging](https://cloud.google.com/healthcare-api/docs/how-tos/logging).",
+          "type": "string"
+        },
+        "sendFullResource": {
+          "description": "Whether to send full FHIR resource to this Pub/Sub topic.",
+          "type": "boolean"
+        },
+        "sendPreviousResourceOnDelete": {
+          "description": "Whether to send full FHIR resource to this Pub/Sub topic for deleting FHIR resource. Note that setting this to true does not guarantee that all previous resources will be sent in the format of full FHIR resource. When a resource change is too large or during heavy traffic, only the resource name will be sent. Clients should always check the \"payloadType\" label from a Pub/Sub message to determine whether it needs to fetch the full previous resource as a separate operation.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "FhirStore": {
       "description": "Represents a FHIR store.",
       "id": "FhirStore",
@@ -5154,7 +5177,14 @@
         },
         "notificationConfig": {
           "$ref": "NotificationConfig",
-          "description": "If non-empty, publish all resource modifications of this FHIR store to this destination. The Pub/Sub message attributes contain a map with a string describing the action that has triggered the notification. For example, \"action\":\"CreateResource\"."
+          "description": "Deprecated. Use `notification_configs` instead. If non-empty, publish all resource modifications of this FHIR store to this destination. The Pub/Sub message attributes contain a map with a string describing the action that has triggered the notification. For example, \"action\":\"CreateResource\"."
+        },
+        "notificationConfigs": {
+          "description": "Specifies where and whether to send notifications upon changes to a FHIR store.",
+          "items": {
+            "$ref": "FhirNotificationConfig"
+          },
+          "type": "array"
         },
         "streamConfigs": {
           "description": "A list of streaming configs that configure the destinations of streaming export for every resource mutation in this FHIR store. Each store is allowed to have up to 10 streaming configs. After a new config is added, the next resource mutation is streamed to the new location in addition to the existing ones. When a location is removed from the list, the server stops streaming to that location. Before adding a new config, you must add the required [`bigquery.dataEditor`](https://cloud.google.com/bigquery/docs/access-control#bigquery.dataEditor) role to your project's **Cloud Healthcare Service Agent** [service account](https://cloud.google.com/iam/docs/service-accounts). Some lag (typically on the order of dozens of seconds) is expected before the results show up in the streaming destination.",
@@ -6048,7 +6078,7 @@
       "type": "object"
     },
     "Location": {
-      "description": "A resource that represents Google Cloud Platform location.",
+      "description": "A resource that represents a Google Cloud location.",
       "id": "Location",
       "properties": {
         "displayName": {
@@ -6465,8 +6495,8 @@
           ],
           "enumDescriptions": [
             "No schema type specified. This type is unsupported.",
-            "Analytics schema defined by the FHIR community. See https://github.com/FHIR/sql-on-fhir/blob/master/sql-on-fhir.md. BigQuery only allows a maximum of 10,000 columns per table. Due to this limitation, the server will not generate schemas for fields of type `Resource`, which can hold any resource type. The affected fields are `Parameters.parameter.resource`, `Bundle.entry.resource`, and `Bundle.entry.response.outcome`.",
-            "Analytics V2, similar to schema defined by the FHIR community, with added support for extensions with one or more occurrences and contained resources in stringified JSON. Analytics V2 uses more space in the destination table than Analytics V1."
+            "Analytics schema defined by the FHIR community. See https://github.com/FHIR/sql-on-fhir/blob/master/sql-on-fhir.md. BigQuery only allows a maximum of 10,000 columns per table. Due to this limitation, the server will not generate schemas for fields of type `Resource`, which can hold any resource type. The affected fields are `Parameters.parameter.resource`, `Bundle.entry.resource`, and `Bundle.entry.response.outcome`. Analytics schema does not gracefully handle extensions with one or more occurrences, anaytics schema also does not handle contained resource.",
+            "Analytics V2, similar to schema defined by the FHIR community, with added support for extensions with one or more occurrences and contained resources in stringified JSON. Analytics V2 uses more space in the destination table than Analytics V1. It is generally recommended to use Analytics V2 over Analytics."
           ],
           "type": "string"
         }
@@ -6766,6 +6796,20 @@
     "TextConfig": {
       "id": "TextConfig",
       "properties": {
+        "additionalTransformations": {
+          "description": "Transformations to apply to the detected data, overridden by `exclude_info_types`.",
+          "items": {
+            "$ref": "InfoTypeTransformation"
+          },
+          "type": "array"
+        },
+        "excludeInfoTypes": {
+          "description": "InfoTypes to skip transforming, overriding `additional_transformations`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "transformations": {
           "description": "The transformations to apply to the detected data. Deprecated. Use `additional_transformations` instead.",
           "items": {
