@@ -356,7 +356,12 @@ def document_collection(resource, path, root_discovery, discovery, css=CSS):
 
 
 def document_collection_recursive(
-    resource, path, root_discovery, discovery, doc_destination_dir, artifact_destination_dir
+    resource,
+    path,
+    root_discovery,
+    discovery,
+    doc_destination_dir,
+    artifact_destination_dir,
 ):
     html = document_collection(resource, path, root_discovery, discovery)
 
@@ -452,7 +457,9 @@ def document_api(name, version, uri, doc_destination_dir, artifact_destination_d
     )
 
 
-def document_api_from_discovery_document(discovery_url, doc_destination_dir, artifact_destination_dir):
+def document_api_from_discovery_document(
+    discovery_url, doc_destination_dir, artifact_destination_dir
+):
     """Document the given API.
 
     Args:
@@ -481,7 +488,11 @@ def document_api_from_discovery_document(discovery_url, doc_destination_dir, art
     )
 
 
-def generate_all_api_documents(directory_uri=DIRECTORY_URI, doc_destination_dir=BASE, artifact_destination_dir=DISCOVERY_DOC_DIR):
+def generate_all_api_documents(
+    directory_uri=DIRECTORY_URI,
+    doc_destination_dir=BASE,
+    artifact_destination_dir=DISCOVERY_DOC_DIR,
+):
     """Retrieve discovery artifacts and fetch reference documentations
     for all apis listed in the public discovery directory.
     args:
@@ -489,7 +500,7 @@ def generate_all_api_documents(directory_uri=DIRECTORY_URI, doc_destination_dir=
         doc_destination_dir (str): relative path where the reference
             documentation should be saved.
         artifact_destination_dir (str): relative path where the discovery
-            artifacts should be saved.        
+            artifacts should be saved.
     """
     api_directory = collections.defaultdict(list)
     http = build_http()
@@ -535,9 +546,13 @@ if __name__ == "__main__":
     FLAGS = parser.parse_args(sys.argv[1:])
     if FLAGS.discovery_uri:
         document_api_from_discovery_document(
-            discovery_url=FLAGS.discovery_uri, doc_destination_dir=FLAGS.dest, artifact_destination_dir=FLAGS.artifact_dest
+            discovery_url=FLAGS.discovery_uri,
+            doc_destination_dir=FLAGS.dest,
+            artifact_destination_dir=FLAGS.artifact_dest,
         )
     else:
         generate_all_api_documents(
-            directory_uri=FLAGS.directory_uri, doc_destination_dir=FLAGS.dest, artifact_destination_dir=FLAGS.artifact_dest
+            directory_uri=FLAGS.directory_uri,
+            doc_destination_dir=FLAGS.dest,
+            artifact_destination_dir=FLAGS.artifact_dest,
         )
