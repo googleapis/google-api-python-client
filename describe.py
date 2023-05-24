@@ -400,8 +400,8 @@ def document_api(
         uri (str): URI of the API's discovery document
         doc_destination_dir (str): relative path where the reference
             documentation should be saved.
-        artifact_destination_dir (str): relative path where the reference
-            documentation should be saved.
+        artifact_destination_dir (str): relative path where the discovery
+            artifacts should be saved.
     """
     http = build_http()
     resp, content = http.request(
@@ -468,8 +468,8 @@ def document_api_from_discovery_document(
       discovery_url (str): URI of discovery document.
       doc_destination_dir (str): relative path where the reference
           documentation should be saved.
-      artifact_destination_dir (str): relative path where the reference
-          documentation should be saved.
+      artifact_destination_dir (str): relative path where the discovery
+          artifacts should be saved.
     """
     http = build_http()
     response, content = http.request(discovery_url)
