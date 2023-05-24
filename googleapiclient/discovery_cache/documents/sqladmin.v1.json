@@ -428,7 +428,7 @@
           ]
         },
         "insert": {
-          "description": "Inserts a resource containing information about a database inside a Cloud SQL instance.",
+          "description": "Inserts a resource containing information about a database inside a Cloud SQL instance. **Note:** You can't modify the default character set and collation.",
           "flatPath": "v1/projects/{project}/instances/{instance}/databases",
           "httpMethod": "POST",
           "id": "sql.databases.insert",
@@ -2023,7 +2023,7 @@
       }
     }
   },
-  "revision": "20230405",
+  "revision": "20230518",
   "rootUrl": "https://sqladmin.googleapis.com/",
   "schemas": {
     "AclEntry": {
@@ -2377,6 +2377,10 @@
           "description": "Timestamp, if specified, identifies the time to which the source instance is cloned.",
           "format": "google-datetime",
           "type": "string"
+        },
+        "preferredZone": {
+          "description": "(Point-in-time recovery for PostgreSQL only) Clone to an instance in the specified zone. If no zone is specified, clone to the same zone as the source instance.",
+          "type": "string"
         }
       },
       "type": "object"
@@ -2419,6 +2423,7 @@
             "POSTGRES_12",
             "POSTGRES_13",
             "POSTGRES_14",
+            "POSTGRES_15",
             "MYSQL_8_0",
             "MYSQL_8_0_18",
             "MYSQL_8_0_26",
@@ -2453,6 +2458,7 @@
             "The database version is PostgreSQL 12.",
             "The database version is PostgreSQL 13.",
             "The database version is PostgreSQL 14.",
+            "The database version is PostgreSQL 15.",
             "The database version is MySQL 8.",
             "The database major version is MySQL 8.0 and the minor version is 18.",
             "The database major version is MySQL 8.0 and the minor version is 26.",
@@ -2618,6 +2624,7 @@
             "POSTGRES_12",
             "POSTGRES_13",
             "POSTGRES_14",
+            "POSTGRES_15",
             "MYSQL_8_0",
             "MYSQL_8_0_18",
             "MYSQL_8_0_26",
@@ -2652,6 +2659,7 @@
             "The database version is PostgreSQL 12.",
             "The database version is PostgreSQL 13.",
             "The database version is PostgreSQL 14.",
+            "The database version is PostgreSQL 15.",
             "The database version is MySQL 8.",
             "The database major version is MySQL 8.0 and the minor version is 18.",
             "The database major version is MySQL 8.0 and the minor version is 26.",
@@ -3004,6 +3012,28 @@
         "bakExportOptions": {
           "description": "Options for exporting BAK files (SQL Server-only)",
           "properties": {
+            "bakType": {
+              "description": "Type of this bak file will be export, FULL or DIFF, SQL Server only",
+              "enum": [
+                "BAK_TYPE_UNSPECIFIED",
+                "FULL",
+                "DIFF"
+              ],
+              "enumDescriptions": [
+                "default type to meet enum requirement, will be set to FULL if not set",
+                "Full backup.",
+                "Differential backup."
+              ],
+              "type": "string"
+            },
+            "copyOnly": {
+              "description": "Whether or not the export will be exeucted with COPY_ONLY, SQL Server only deprecated as the behavior should default to copy_only = true use differential_base instead",
+              "type": "boolean"
+            },
+            "differentialBase": {
+              "description": "Whether or not the backup can be use as differential base only non copy only backup can be served as differential base",
+              "type": "boolean"
+            },
             "stripeCount": {
               "description": "Option for specifying how many stripes to use for the export. If blank, and the value of the striped field is true, the number of stripes is automatically chosen.",
               "format": "int32",
@@ -3162,6 +3192,7 @@
               "POSTGRES_12",
               "POSTGRES_13",
               "POSTGRES_14",
+              "POSTGRES_15",
               "MYSQL_8_0",
               "MYSQL_8_0_18",
               "MYSQL_8_0_26",
@@ -3196,6 +3227,7 @@
               "The database version is PostgreSQL 12.",
               "The database version is PostgreSQL 13.",
               "The database version is PostgreSQL 14.",
+              "The database version is PostgreSQL 15.",
               "The database version is MySQL 8.",
               "The database major version is MySQL 8.0 and the minor version is 18.",
               "The database major version is MySQL 8.0 and the minor version is 26.",
@@ -3332,6 +3364,20 @@
         "bakImportOptions": {
           "description": "Import parameters specific to SQL Server .BAK files",
           "properties": {
+            "bakType": {
+              "description": "Type of the bak content, FULL or DIFF",
+              "enum": [
+                "BAK_TYPE_UNSPECIFIED",
+                "FULL",
+                "DIFF"
+              ],
+              "enumDescriptions": [
+                "default type to meet enum requirement, will be set to FULL if not set",
+                "Full backup.",
+                "Differential backup."
+              ],
+              "type": "string"
+            },
             "encryptionOptions": {
               "properties": {
                 "certPath": {
@@ -3348,6 +3394,14 @@
                 }
               },
               "type": "object"
+            },
+            "noRecovery": {
+              "description": "Whether or not the backup importing will restore database with NORECOVERY option Applies only to Cloud SQL for SQL Server.",
+              "type": "boolean"
+            },
+            "recoveryOnly": {
+              "description": "Whether or not the backup importing request will just bring database online without downloading Bak content only one of \"no_recovery\" and \"recovery_only\" can be true otherwise error will return. Applies only to Cloud SQL for SQL Server.",
+              "type": "boolean"
             },
             "striped": {
               "description": "Whether or not the backup set being restored is striped. Applies only to Cloud SQL for SQL Server.",
@@ -4533,7 +4587,8 @@
             "BINLOG_RETENTION_SETTING",
             "UNSUPPORTED_STORAGE_ENGINE",
             "LIMITED_SUPPORT_TABLES",
-            "EXISTING_DATA_IN_REPLICA"
+            "EXISTING_DATA_IN_REPLICA",
+            "MISSING_OPTIONAL_PRIVILEGES"
           ],
           "enumDescriptions": [
             "",
@@ -4541,7 +4596,7 @@
             "",
             "",
             "",
-            "",
+            "The replication user is missing privileges that are required.",
             "Unsupported migration type.",
             "No pglogical extension installed on databases, applicable for postgres.",
             "pglogical node already exists on databases, applicable for postgres.",
@@ -4550,7 +4605,7 @@
             "The value of parameter max_replication_slots is not sufficient.",
             "The value of parameter max_wal_senders is not sufficient.",
             "The value of parameter max_worker_processes is not sufficient.",
-            "Extensions installed are either not supported or having unsupported versions",
+            "Extensions installed are either not supported or having unsupported versions.",
             "The value of parameter rds.logical_replication is not set to 1.",
             "The primary instance logging setup doesn't allow EM sync.",
             "The primary instance database parameter setup doesn't allow EM sync.",
@@ -4558,13 +4613,14 @@
             "SQL Server Agent is not running.",
             "The table definition is not support due to missing primary key or replica identity, applicable for postgres.",
             "The customer has a definer that will break EM setup.",
-            "SQL Server @@SERVERNAME does not match actual host name",
+            "SQL Server @@SERVERNAME does not match actual host name.",
             "The primary instance has been setup and will fail the setup.",
             "The primary instance has unsupported binary log format.",
             "The primary instance's binary log retention setting.",
             "The primary instance has tables with unsupported storage engine.",
-            "Source has tables with limited support eg: PostgreSQL tables without primary keys",
-            "The replica instance contains existing data."
+            "Source has tables with limited support eg: PostgreSQL tables without primary keys.",
+            "The replica instance contains existing data.",
+            "The replication user is missing privileges that are optional."
           ],
           "type": "string"
         }
@@ -4577,6 +4633,10 @@
       "properties": {
         "kind": {
           "description": "This is always `sql#getDiskShrinkConfig`.",
+          "type": "string"
+        },
+        "message": {
+          "description": "Additional message to customers.",
           "type": "string"
         },
         "minimalTargetSizeGb": {

@@ -222,6 +222,37 @@ Args:
       &quot;textRedactionMode&quot;: &quot;A String&quot;, # Determines how to redact text from image.
     },
     &quot;text&quot;: { # Configures de-identification of text wherever it is found in the source_dataset.
+      &quot;additionalTransformations&quot;: [ # Transformations to apply to the detected data, overridden by `exclude_info_types`.
+        { # A transformation to apply to text that is identified as a specific info_type.
+          &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
+            &quot;maskingCharacter&quot;: &quot;A String&quot;, # Character to mask the sensitive values. If not supplied, defaults to &quot;*&quot;.
+          },
+          &quot;cryptoHashConfig&quot;: { # Pseudonymization method that generates surrogates via cryptographic hashing. Uses SHA-256. Outputs a base64-encoded representation of the hashed output (for example, `L7k0BHmF1ha5U3NfGykjro4xWi1MPVQPjhMAZbSV9mM=`). # Config for crypto hash.
+            &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. Causes the hash to be computed based on this key. A default key is generated for each Deidentify operation and is used when neither `crypto_key` nor `kms_wrapped` is specified. Must not be set if `kms_wrapped` is set.
+            &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. Must not be set if `crypto_key` is set.
+              &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+              &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+            },
+          },
+          &quot;dateShiftConfig&quot;: { # Shift a date forward or backward in time by a random amount which is consistent for a given patient and crypto key combination. # Config for date shift.
+            &quot;cryptoKey&quot;: &quot;A String&quot;, # An AES 128/192/256 bit key. The date shift is computed based on this key and the patient ID. If the patient ID is empty for a DICOM resource, the date shift is computed based on this key and the study instance UID. If `crypto_key` is not set, then `kms_wrapped` is used to calculate the date shift. If neither is set, a default key is generated for each de-identify operation. Must not be set if `kms_wrapped` is set.
+            &quot;kmsWrapped&quot;: { # Include to use an existing data crypto key wrapped by KMS. The wrapped key must be a 128-, 192-, or 256-bit key. The key must grant the Cloud IAM permission `cloudkms.cryptoKeyVersions.useToDecrypt` to the project&#x27;s Cloud Healthcare Service Agent service account. For more information, see [Creating a wrapped key] (https://cloud.google.com/dlp/docs/create-wrapped-key). # KMS wrapped key. If `kms_wrapped` is not set, then `crypto_key` is used to calculate the date shift. If neither is set, a default key is generated for each de-identify operation. Must not be set if `crypto_key` is set.
+              &quot;cryptoKey&quot;: &quot;A String&quot;, # Required. The resource name of the KMS CryptoKey to use for unwrapping. For example, `projects/{project_id}/locations/{location_id}/keyRings/{keyring}/cryptoKeys/{key}`.
+              &quot;wrappedKey&quot;: &quot;A String&quot;, # Required. The wrapped data crypto key.
+            },
+          },
+          &quot;infoTypes&quot;: [ # InfoTypes to apply this transformation to. If this is not specified, the transformation applies to any info_type.
+            &quot;A String&quot;,
+          ],
+          &quot;redactConfig&quot;: { # Define how to redact sensitive values. Default behaviour is erase. For example, &quot;My name is Jane.&quot; becomes &quot;My name is .&quot; # Config for text redaction.
+          },
+          &quot;replaceWithInfoTypeConfig&quot;: { # When using the INSPECT_AND_TRANSFORM action, each match is replaced with the name of the info_type. For example, &quot;My name is Jane&quot; becomes &quot;My name is [PERSON_NAME].&quot; The TRANSFORM action is equivalent to redacting. # Config for replace with InfoType.
+          },
+        },
+      ],
+      &quot;excludeInfoTypes&quot;: [ # InfoTypes to skip transforming, overriding `additional_transformations`.
+        &quot;A String&quot;,
+      ],
       &quot;transformations&quot;: [ # The transformations to apply to the detected data. Deprecated. Use `additional_transformations` instead.
         { # A transformation to apply to text that is identified as a specific info_type.
           &quot;characterMaskConfig&quot;: { # Mask a string by replacing its characters with a fixed character. # Config for character mask.
@@ -251,6 +282,7 @@ Args:
         },
       ],
     },
+    &quot;useRegionalDataProcessing&quot;: True or False, # Ensures in-flight data remains in the region of origin during de-identification. Using this option results in a significant reduction of throughput, and is not compatible with `LOCATION` or `ORGANIZATION_NAME` infoTypes. `LOCATION` must be excluded within `TextConfig`, and must also be excluded within `ImageConfig` if image redaction is required.
   },
   &quot;destinationDataset&quot;: &quot;A String&quot;, # The name of the dataset resource to create and write the redacted data to. * The destination dataset must not exist. * The destination dataset must be in the same location as the source dataset. De-identifying data across multiple locations is not supported.
   &quot;gcsConfigUri&quot;: &quot;A String&quot;, # Cloud Storage location to read the JSON cloud.healthcare.deidentify.DeidentifyConfig from, overriding the default config. Must be of the form `gs://{bucket_id}/path/to/object`. The Cloud Storage location must grant the Cloud IAM role `roles/storage.objectViewer` to the project&#x27;s Cloud Healthcare Service Agent service account. Only one of `config` and `gcs_config_uri` can be specified.

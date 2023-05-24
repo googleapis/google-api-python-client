@@ -614,6 +614,10 @@
 * [v2alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v2alpha.html)
 
 
+## gkeonprem
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/gkeonprem_v1.html)
+
+
 ## gmail
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/gmail_v1.html)
 
@@ -887,6 +891,7 @@
 
 
 ## publicca
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/publicca_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/publicca_v1alpha1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/publicca_v1beta1.html)
 

@@ -152,10 +152,10 @@ Args:
     &quot;command&quot;: [ # If set, overrides the default ENTRYPOINT specified by the image.
       &quot;A String&quot;,
     ],
-    &quot;env&quot;: { # Environment variables passed to the container.
+    &quot;env&quot;: { # Environment variables passed to the container&#x27;s entrypoint.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
-    &quot;image&quot;: &quot;A String&quot;, # Docker image defining the container. This image must be accessible by the config&#x27;s service account.
+    &quot;image&quot;: &quot;A String&quot;, # Docker image defining the container. This image must be accessible by the service account specified in the workstation configuration.
     &quot;runAsUser&quot;: 42, # If set, overrides the USER specified in the image with the given uid.
     &quot;workingDir&quot;: &quot;A String&quot;, # If set, overrides the default DIR specified by the image.
   },
@@ -164,21 +164,28 @@ Args:
   &quot;deleteTime&quot;: &quot;A String&quot;, # Output only. Time when this resource was soft-deleted.
   &quot;displayName&quot;: &quot;A String&quot;, # Human-readable name for this resource.
   &quot;enableAuditAgent&quot;: True or False, # Whether to enable linux auditd logging on the workstation. When enabled, a service account must also be specified that has logging.buckets.write permission on the project. Operating system audit logging is distinct from [Cloud Audit Logs](https://cloud.google.com/workstations/docs/audit-logging).
-  &quot;encryptionKey&quot;: { # A customer-managed encryption key for the Compute Engine resources of this workstation configuration. # Immutable. Encrypts resources of this workstation configuration using a customer-managed encryption key. If specified, the boot disk of the Compute Engine instance and the persistent disk are encrypted using this encryption key. If this field is not set, the disks are encrypted using a generated key. Customer-managed encryption keys do not protect disk metadata. If the customer-managed encryption key is rotated, when the workstation instance is stopped, the system attempts to recreate the persistent disk with the new version of the key. Be sure to keep older versions of the key until the persistent disk is recreated. Otherwise, data on the persistent disk will be lost. If the encryption key is revoked, the workstation session will automatically be stopped within 7 hours. Immutable after workstation config is created.
-    &quot;kmsKey&quot;: &quot;A String&quot;, # Immutable. The name of the Google Cloud KMS encryption key. For example, `projects/PROJECT_ID/locations/REGION/keyRings/KEY_RING/cryptoKeys/KEY_NAME`.
+  &quot;encryptionKey&quot;: { # A customer-managed encryption key for the Compute Engine resources of this workstation configuration. # Immutable. Encrypts resources of this workstation configuration using a customer-managed encryption key. If specified, the boot disk of the Compute Engine instance and the persistent disk are encrypted using this encryption key. If this field is not set, the disks are encrypted using a generated key. Customer-managed encryption keys do not protect disk metadata. If the customer-managed encryption key is rotated, when the workstation instance is stopped, the system attempts to recreate the persistent disk with the new version of the key. Be sure to keep older versions of the key until the persistent disk is recreated. Otherwise, data on the persistent disk will be lost. If the encryption key is revoked, the workstation session will automatically be stopped within 7 hours. Immutable after the workstation configuration is created.
+    &quot;kmsKey&quot;: &quot;A String&quot;, # Immutable. The name of the Google Cloud KMS encryption key. For example, `projects/PROJECT_ID/locations/REGION/keyRings/KEY_RING/cryptoKeys/KEY_NAME`. The key must be in the same region as the workstation configuration.
     &quot;kmsKeyServiceAccount&quot;: &quot;A String&quot;, # Immutable. The service account to use with the specified KMS key. We recommend that you use a separate service account and follow KMS best practices. For more information, see [Separation of duties](https://cloud.google.com/kms/docs/separation-of-duties) and `gcloud kms keys add-iam-policy-binding` [`--member`](https://cloud.google.com/sdk/gcloud/reference/kms/keys/add-iam-policy-binding#--member).
   },
-  &quot;etag&quot;: &quot;A String&quot;, # Checksum computed by the server. May be sent on update and delete requests to ensure that the client has an up-to-date value before proceeding.
+  &quot;etag&quot;: &quot;A String&quot;, # Checksum computed by the server. May be sent on update and delete requests to make sure that the client has an up-to-date value before proceeding.
   &quot;host&quot;: { # Runtime host for a workstation. # Runtime host for the workstation.
     &quot;gceInstance&quot;: { # A runtime using a Compute Engine instance. # Specifies a Compute Engine instance as the host.
+      &quot;accelerators&quot;: [ # A list of the type and count of accelerator cards attached to the instance.
+        { # An accelerator card attached to the instance.
+          &quot;count&quot;: 42, # Number of accelerator cards exposed to the instance.
+          &quot;type&quot;: &quot;A String&quot;, # Type of accelerator resource to attach to the instance, for example, &quot;nvidia-tesla-p100&quot;.
+        },
+      ],
       &quot;bootDiskSizeGb&quot;: 42, # Size of the boot disk in GB. Defaults to 50.
       &quot;confidentialInstanceConfig&quot;: { # A set of Compute Engine Confidential VM instance options. # A set of Compute Engine Confidential VM instance options.
         &quot;enableConfidentialCompute&quot;: True or False, # Whether the instance has confidential compute enabled.
       },
       &quot;disablePublicIpAddresses&quot;: True or False, # Whether instances have no public IP address.
       &quot;machineType&quot;: &quot;A String&quot;, # The name of a Compute Engine machine type.
-      &quot;poolSize&quot;: 42, # Number of instances to pool for faster workstation starup.
-      &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the service account that will be used on VM instances used to support this config. If not set, VMs will run with a Google-managed service account. This service account must have permission to pull the specified container image, otherwise the image must be publicly accessible.
+      &quot;poolSize&quot;: 42, # Number of instances to pool for faster workstation startup.
+      &quot;pooledInstances&quot;: 42, # Output only. Number of instances currently available in the pool for faster workstation startup.
+      &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the service account used on VM instances used to support this configuration. If not set, VMs run with a Google-managed service account. This service account must have permission to pull the specified container image; otherwise, the image must be publicly accessible.
       &quot;shieldedInstanceConfig&quot;: { # A set of Compute Engine Shielded instance options. # A set of Compute Engine Shielded instance options.
         &quot;enableIntegrityMonitoring&quot;: True or False, # Whether the instance has integrity monitoring enabled.
         &quot;enableSecureBoot&quot;: True or False, # Whether the instance has Secure Boot enabled.
@@ -206,6 +213,12 @@ Args:
       &quot;mountPath&quot;: &quot;A String&quot;, # Location of this directory in the running workstation.
     },
   ],
+  &quot;readinessChecks&quot;: [ # Readiness checks to perform when starting a workstation using this workstation configuration. Mark a workstation as running only after all specified readiness checks return 200 status codes.
+    { # A readiness check to be performed on a workstation.
+      &quot;path&quot;: &quot;A String&quot;, # Path to which the request should be sent.
+      &quot;port&quot;: 42, # Port to which the request should be sent.
+    },
+  ],
   &quot;reconciling&quot;: True or False, # Output only. Indicates whether this resource is currently being updated to match its intended state.
   &quot;runningTimeout&quot;: &quot;A String&quot;, # How long to wait before automatically stopping a workstation after it started. A value of 0 indicates that workstations using this configuration should never time out. Must be greater than 0 and less than 24 hours if encryption_key is set. Defaults to 12 hours.
   &quot;uid&quot;: &quot;A String&quot;, # Output only. A system-assigned unique identified for this resource.
@@ -213,7 +226,7 @@ Args:
 }
 
   validateOnly: boolean, If set, validate the request and preview the review, but do not actually apply it.
-  workstationConfigId: string, Required. ID to use for the config.
+  workstationConfigId: string, Required. ID to use for the workstation configuration.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -248,9 +261,9 @@ Returns:
   <pre>Deletes the specified workstation configuration.
 
 Args:
-  name: string, Required. Name of the config to delete. (required)
-  etag: string, If set, the request will be rejected if the latest version of the config on the server does not have this etag.
-  force: boolean, If set, any Workstations in the config will also be deleted. Otherwise, the request will work only if the config has no workstations.
+  name: string, Required. Name of the workstation configuration to delete. (required)
+  etag: string, If set, the request is rejected if the latest version of the workstation configuration on the server does not have this ETag.
+  force: boolean, If set, any workstations in the workstation configuration are also deleted. Otherwise, the request works only if the workstation configuration has no workstations.
   validateOnly: boolean, If set, validate the request and preview the review, but do not actually apply it.
   x__xgafv: string, V1 error format.
     Allowed values
@@ -317,10 +330,10 @@ Returns:
     &quot;command&quot;: [ # If set, overrides the default ENTRYPOINT specified by the image.
       &quot;A String&quot;,
     ],
-    &quot;env&quot;: { # Environment variables passed to the container.
+    &quot;env&quot;: { # Environment variables passed to the container&#x27;s entrypoint.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
-    &quot;image&quot;: &quot;A String&quot;, # Docker image defining the container. This image must be accessible by the config&#x27;s service account.
+    &quot;image&quot;: &quot;A String&quot;, # Docker image defining the container. This image must be accessible by the service account specified in the workstation configuration.
     &quot;runAsUser&quot;: 42, # If set, overrides the USER specified in the image with the given uid.
     &quot;workingDir&quot;: &quot;A String&quot;, # If set, overrides the default DIR specified by the image.
   },
@@ -329,21 +342,28 @@ Returns:
   &quot;deleteTime&quot;: &quot;A String&quot;, # Output only. Time when this resource was soft-deleted.
   &quot;displayName&quot;: &quot;A String&quot;, # Human-readable name for this resource.
   &quot;enableAuditAgent&quot;: True or False, # Whether to enable linux auditd logging on the workstation. When enabled, a service account must also be specified that has logging.buckets.write permission on the project. Operating system audit logging is distinct from [Cloud Audit Logs](https://cloud.google.com/workstations/docs/audit-logging).
-  &quot;encryptionKey&quot;: { # A customer-managed encryption key for the Compute Engine resources of this workstation configuration. # Immutable. Encrypts resources of this workstation configuration using a customer-managed encryption key. If specified, the boot disk of the Compute Engine instance and the persistent disk are encrypted using this encryption key. If this field is not set, the disks are encrypted using a generated key. Customer-managed encryption keys do not protect disk metadata. If the customer-managed encryption key is rotated, when the workstation instance is stopped, the system attempts to recreate the persistent disk with the new version of the key. Be sure to keep older versions of the key until the persistent disk is recreated. Otherwise, data on the persistent disk will be lost. If the encryption key is revoked, the workstation session will automatically be stopped within 7 hours. Immutable after workstation config is created.
-    &quot;kmsKey&quot;: &quot;A String&quot;, # Immutable. The name of the Google Cloud KMS encryption key. For example, `projects/PROJECT_ID/locations/REGION/keyRings/KEY_RING/cryptoKeys/KEY_NAME`.
+  &quot;encryptionKey&quot;: { # A customer-managed encryption key for the Compute Engine resources of this workstation configuration. # Immutable. Encrypts resources of this workstation configuration using a customer-managed encryption key. If specified, the boot disk of the Compute Engine instance and the persistent disk are encrypted using this encryption key. If this field is not set, the disks are encrypted using a generated key. Customer-managed encryption keys do not protect disk metadata. If the customer-managed encryption key is rotated, when the workstation instance is stopped, the system attempts to recreate the persistent disk with the new version of the key. Be sure to keep older versions of the key until the persistent disk is recreated. Otherwise, data on the persistent disk will be lost. If the encryption key is revoked, the workstation session will automatically be stopped within 7 hours. Immutable after the workstation configuration is created.
+    &quot;kmsKey&quot;: &quot;A String&quot;, # Immutable. The name of the Google Cloud KMS encryption key. For example, `projects/PROJECT_ID/locations/REGION/keyRings/KEY_RING/cryptoKeys/KEY_NAME`. The key must be in the same region as the workstation configuration.
     &quot;kmsKeyServiceAccount&quot;: &quot;A String&quot;, # Immutable. The service account to use with the specified KMS key. We recommend that you use a separate service account and follow KMS best practices. For more information, see [Separation of duties](https://cloud.google.com/kms/docs/separation-of-duties) and `gcloud kms keys add-iam-policy-binding` [`--member`](https://cloud.google.com/sdk/gcloud/reference/kms/keys/add-iam-policy-binding#--member).
   },
-  &quot;etag&quot;: &quot;A String&quot;, # Checksum computed by the server. May be sent on update and delete requests to ensure that the client has an up-to-date value before proceeding.
+  &quot;etag&quot;: &quot;A String&quot;, # Checksum computed by the server. May be sent on update and delete requests to make sure that the client has an up-to-date value before proceeding.
   &quot;host&quot;: { # Runtime host for a workstation. # Runtime host for the workstation.
     &quot;gceInstance&quot;: { # A runtime using a Compute Engine instance. # Specifies a Compute Engine instance as the host.
+      &quot;accelerators&quot;: [ # A list of the type and count of accelerator cards attached to the instance.
+        { # An accelerator card attached to the instance.
+          &quot;count&quot;: 42, # Number of accelerator cards exposed to the instance.
+          &quot;type&quot;: &quot;A String&quot;, # Type of accelerator resource to attach to the instance, for example, &quot;nvidia-tesla-p100&quot;.
+        },
+      ],
       &quot;bootDiskSizeGb&quot;: 42, # Size of the boot disk in GB. Defaults to 50.
       &quot;confidentialInstanceConfig&quot;: { # A set of Compute Engine Confidential VM instance options. # A set of Compute Engine Confidential VM instance options.
         &quot;enableConfidentialCompute&quot;: True or False, # Whether the instance has confidential compute enabled.
       },
       &quot;disablePublicIpAddresses&quot;: True or False, # Whether instances have no public IP address.
       &quot;machineType&quot;: &quot;A String&quot;, # The name of a Compute Engine machine type.
-      &quot;poolSize&quot;: 42, # Number of instances to pool for faster workstation starup.
-      &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the service account that will be used on VM instances used to support this config. If not set, VMs will run with a Google-managed service account. This service account must have permission to pull the specified container image, otherwise the image must be publicly accessible.
+      &quot;poolSize&quot;: 42, # Number of instances to pool for faster workstation startup.
+      &quot;pooledInstances&quot;: 42, # Output only. Number of instances currently available in the pool for faster workstation startup.
+      &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the service account used on VM instances used to support this configuration. If not set, VMs run with a Google-managed service account. This service account must have permission to pull the specified container image; otherwise, the image must be publicly accessible.
       &quot;shieldedInstanceConfig&quot;: { # A set of Compute Engine Shielded instance options. # A set of Compute Engine Shielded instance options.
         &quot;enableIntegrityMonitoring&quot;: True or False, # Whether the instance has integrity monitoring enabled.
         &quot;enableSecureBoot&quot;: True or False, # Whether the instance has Secure Boot enabled.
@@ -369,6 +389,12 @@ Returns:
         &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Name of the snapshot to use as the source for the disk. If set, size_gb and fs_type must be empty.
       },
       &quot;mountPath&quot;: &quot;A String&quot;, # Location of this directory in the running workstation.
+    },
+  ],
+  &quot;readinessChecks&quot;: [ # Readiness checks to perform when starting a workstation using this workstation configuration. Mark a workstation as running only after all specified readiness checks return 200 status codes.
+    { # A readiness check to be performed on a workstation.
+      &quot;path&quot;: &quot;A String&quot;, # Path to which the request should be sent.
+      &quot;port&quot;: 42, # Port to which the request should be sent.
     },
   ],
   &quot;reconciling&quot;: True or False, # Output only. Indicates whether this resource is currently being updated to match its intended state.
@@ -470,10 +496,10 @@ Returns:
         &quot;command&quot;: [ # If set, overrides the default ENTRYPOINT specified by the image.
           &quot;A String&quot;,
         ],
-        &quot;env&quot;: { # Environment variables passed to the container.
+        &quot;env&quot;: { # Environment variables passed to the container&#x27;s entrypoint.
           &quot;a_key&quot;: &quot;A String&quot;,
         },
-        &quot;image&quot;: &quot;A String&quot;, # Docker image defining the container. This image must be accessible by the config&#x27;s service account.
+        &quot;image&quot;: &quot;A String&quot;, # Docker image defining the container. This image must be accessible by the service account specified in the workstation configuration.
         &quot;runAsUser&quot;: 42, # If set, overrides the USER specified in the image with the given uid.
         &quot;workingDir&quot;: &quot;A String&quot;, # If set, overrides the default DIR specified by the image.
       },
@@ -482,21 +508,28 @@ Returns:
       &quot;deleteTime&quot;: &quot;A String&quot;, # Output only. Time when this resource was soft-deleted.
       &quot;displayName&quot;: &quot;A String&quot;, # Human-readable name for this resource.
       &quot;enableAuditAgent&quot;: True or False, # Whether to enable linux auditd logging on the workstation. When enabled, a service account must also be specified that has logging.buckets.write permission on the project. Operating system audit logging is distinct from [Cloud Audit Logs](https://cloud.google.com/workstations/docs/audit-logging).
-      &quot;encryptionKey&quot;: { # A customer-managed encryption key for the Compute Engine resources of this workstation configuration. # Immutable. Encrypts resources of this workstation configuration using a customer-managed encryption key. If specified, the boot disk of the Compute Engine instance and the persistent disk are encrypted using this encryption key. If this field is not set, the disks are encrypted using a generated key. Customer-managed encryption keys do not protect disk metadata. If the customer-managed encryption key is rotated, when the workstation instance is stopped, the system attempts to recreate the persistent disk with the new version of the key. Be sure to keep older versions of the key until the persistent disk is recreated. Otherwise, data on the persistent disk will be lost. If the encryption key is revoked, the workstation session will automatically be stopped within 7 hours. Immutable after workstation config is created.
-        &quot;kmsKey&quot;: &quot;A String&quot;, # Immutable. The name of the Google Cloud KMS encryption key. For example, `projects/PROJECT_ID/locations/REGION/keyRings/KEY_RING/cryptoKeys/KEY_NAME`.
+      &quot;encryptionKey&quot;: { # A customer-managed encryption key for the Compute Engine resources of this workstation configuration. # Immutable. Encrypts resources of this workstation configuration using a customer-managed encryption key. If specified, the boot disk of the Compute Engine instance and the persistent disk are encrypted using this encryption key. If this field is not set, the disks are encrypted using a generated key. Customer-managed encryption keys do not protect disk metadata. If the customer-managed encryption key is rotated, when the workstation instance is stopped, the system attempts to recreate the persistent disk with the new version of the key. Be sure to keep older versions of the key until the persistent disk is recreated. Otherwise, data on the persistent disk will be lost. If the encryption key is revoked, the workstation session will automatically be stopped within 7 hours. Immutable after the workstation configuration is created.
+        &quot;kmsKey&quot;: &quot;A String&quot;, # Immutable. The name of the Google Cloud KMS encryption key. For example, `projects/PROJECT_ID/locations/REGION/keyRings/KEY_RING/cryptoKeys/KEY_NAME`. The key must be in the same region as the workstation configuration.
         &quot;kmsKeyServiceAccount&quot;: &quot;A String&quot;, # Immutable. The service account to use with the specified KMS key. We recommend that you use a separate service account and follow KMS best practices. For more information, see [Separation of duties](https://cloud.google.com/kms/docs/separation-of-duties) and `gcloud kms keys add-iam-policy-binding` [`--member`](https://cloud.google.com/sdk/gcloud/reference/kms/keys/add-iam-policy-binding#--member).
       },
-      &quot;etag&quot;: &quot;A String&quot;, # Checksum computed by the server. May be sent on update and delete requests to ensure that the client has an up-to-date value before proceeding.
+      &quot;etag&quot;: &quot;A String&quot;, # Checksum computed by the server. May be sent on update and delete requests to make sure that the client has an up-to-date value before proceeding.
       &quot;host&quot;: { # Runtime host for a workstation. # Runtime host for the workstation.
         &quot;gceInstance&quot;: { # A runtime using a Compute Engine instance. # Specifies a Compute Engine instance as the host.
+          &quot;accelerators&quot;: [ # A list of the type and count of accelerator cards attached to the instance.
+            { # An accelerator card attached to the instance.
+              &quot;count&quot;: 42, # Number of accelerator cards exposed to the instance.
+              &quot;type&quot;: &quot;A String&quot;, # Type of accelerator resource to attach to the instance, for example, &quot;nvidia-tesla-p100&quot;.
+            },
+          ],
           &quot;bootDiskSizeGb&quot;: 42, # Size of the boot disk in GB. Defaults to 50.
           &quot;confidentialInstanceConfig&quot;: { # A set of Compute Engine Confidential VM instance options. # A set of Compute Engine Confidential VM instance options.
             &quot;enableConfidentialCompute&quot;: True or False, # Whether the instance has confidential compute enabled.
           },
           &quot;disablePublicIpAddresses&quot;: True or False, # Whether instances have no public IP address.
           &quot;machineType&quot;: &quot;A String&quot;, # The name of a Compute Engine machine type.
-          &quot;poolSize&quot;: 42, # Number of instances to pool for faster workstation starup.
-          &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the service account that will be used on VM instances used to support this config. If not set, VMs will run with a Google-managed service account. This service account must have permission to pull the specified container image, otherwise the image must be publicly accessible.
+          &quot;poolSize&quot;: 42, # Number of instances to pool for faster workstation startup.
+          &quot;pooledInstances&quot;: 42, # Output only. Number of instances currently available in the pool for faster workstation startup.
+          &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the service account used on VM instances used to support this configuration. If not set, VMs run with a Google-managed service account. This service account must have permission to pull the specified container image; otherwise, the image must be publicly accessible.
           &quot;shieldedInstanceConfig&quot;: { # A set of Compute Engine Shielded instance options. # A set of Compute Engine Shielded instance options.
             &quot;enableIntegrityMonitoring&quot;: True or False, # Whether the instance has integrity monitoring enabled.
             &quot;enableSecureBoot&quot;: True or False, # Whether the instance has Secure Boot enabled.
@@ -522,6 +555,12 @@ Returns:
             &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Name of the snapshot to use as the source for the disk. If set, size_gb and fs_type must be empty.
           },
           &quot;mountPath&quot;: &quot;A String&quot;, # Location of this directory in the running workstation.
+        },
+      ],
+      &quot;readinessChecks&quot;: [ # Readiness checks to perform when starting a workstation using this workstation configuration. Mark a workstation as running only after all specified readiness checks return 200 status codes.
+        { # A readiness check to be performed on a workstation.
+          &quot;path&quot;: &quot;A String&quot;, # Path to which the request should be sent.
+          &quot;port&quot;: 42, # Port to which the request should be sent.
         },
       ],
       &quot;reconciling&quot;: True or False, # Output only. Indicates whether this resource is currently being updated to match its intended state.
@@ -577,10 +616,10 @@ Returns:
         &quot;command&quot;: [ # If set, overrides the default ENTRYPOINT specified by the image.
           &quot;A String&quot;,
         ],
-        &quot;env&quot;: { # Environment variables passed to the container.
+        &quot;env&quot;: { # Environment variables passed to the container&#x27;s entrypoint.
           &quot;a_key&quot;: &quot;A String&quot;,
         },
-        &quot;image&quot;: &quot;A String&quot;, # Docker image defining the container. This image must be accessible by the config&#x27;s service account.
+        &quot;image&quot;: &quot;A String&quot;, # Docker image defining the container. This image must be accessible by the service account specified in the workstation configuration.
         &quot;runAsUser&quot;: 42, # If set, overrides the USER specified in the image with the given uid.
         &quot;workingDir&quot;: &quot;A String&quot;, # If set, overrides the default DIR specified by the image.
       },
@@ -589,21 +628,28 @@ Returns:
       &quot;deleteTime&quot;: &quot;A String&quot;, # Output only. Time when this resource was soft-deleted.
       &quot;displayName&quot;: &quot;A String&quot;, # Human-readable name for this resource.
       &quot;enableAuditAgent&quot;: True or False, # Whether to enable linux auditd logging on the workstation. When enabled, a service account must also be specified that has logging.buckets.write permission on the project. Operating system audit logging is distinct from [Cloud Audit Logs](https://cloud.google.com/workstations/docs/audit-logging).
-      &quot;encryptionKey&quot;: { # A customer-managed encryption key for the Compute Engine resources of this workstation configuration. # Immutable. Encrypts resources of this workstation configuration using a customer-managed encryption key. If specified, the boot disk of the Compute Engine instance and the persistent disk are encrypted using this encryption key. If this field is not set, the disks are encrypted using a generated key. Customer-managed encryption keys do not protect disk metadata. If the customer-managed encryption key is rotated, when the workstation instance is stopped, the system attempts to recreate the persistent disk with the new version of the key. Be sure to keep older versions of the key until the persistent disk is recreated. Otherwise, data on the persistent disk will be lost. If the encryption key is revoked, the workstation session will automatically be stopped within 7 hours. Immutable after workstation config is created.
-        &quot;kmsKey&quot;: &quot;A String&quot;, # Immutable. The name of the Google Cloud KMS encryption key. For example, `projects/PROJECT_ID/locations/REGION/keyRings/KEY_RING/cryptoKeys/KEY_NAME`.
+      &quot;encryptionKey&quot;: { # A customer-managed encryption key for the Compute Engine resources of this workstation configuration. # Immutable. Encrypts resources of this workstation configuration using a customer-managed encryption key. If specified, the boot disk of the Compute Engine instance and the persistent disk are encrypted using this encryption key. If this field is not set, the disks are encrypted using a generated key. Customer-managed encryption keys do not protect disk metadata. If the customer-managed encryption key is rotated, when the workstation instance is stopped, the system attempts to recreate the persistent disk with the new version of the key. Be sure to keep older versions of the key until the persistent disk is recreated. Otherwise, data on the persistent disk will be lost. If the encryption key is revoked, the workstation session will automatically be stopped within 7 hours. Immutable after the workstation configuration is created.
+        &quot;kmsKey&quot;: &quot;A String&quot;, # Immutable. The name of the Google Cloud KMS encryption key. For example, `projects/PROJECT_ID/locations/REGION/keyRings/KEY_RING/cryptoKeys/KEY_NAME`. The key must be in the same region as the workstation configuration.
         &quot;kmsKeyServiceAccount&quot;: &quot;A String&quot;, # Immutable. The service account to use with the specified KMS key. We recommend that you use a separate service account and follow KMS best practices. For more information, see [Separation of duties](https://cloud.google.com/kms/docs/separation-of-duties) and `gcloud kms keys add-iam-policy-binding` [`--member`](https://cloud.google.com/sdk/gcloud/reference/kms/keys/add-iam-policy-binding#--member).
       },
-      &quot;etag&quot;: &quot;A String&quot;, # Checksum computed by the server. May be sent on update and delete requests to ensure that the client has an up-to-date value before proceeding.
+      &quot;etag&quot;: &quot;A String&quot;, # Checksum computed by the server. May be sent on update and delete requests to make sure that the client has an up-to-date value before proceeding.
       &quot;host&quot;: { # Runtime host for a workstation. # Runtime host for the workstation.
         &quot;gceInstance&quot;: { # A runtime using a Compute Engine instance. # Specifies a Compute Engine instance as the host.
+          &quot;accelerators&quot;: [ # A list of the type and count of accelerator cards attached to the instance.
+            { # An accelerator card attached to the instance.
+              &quot;count&quot;: 42, # Number of accelerator cards exposed to the instance.
+              &quot;type&quot;: &quot;A String&quot;, # Type of accelerator resource to attach to the instance, for example, &quot;nvidia-tesla-p100&quot;.
+            },
+          ],
           &quot;bootDiskSizeGb&quot;: 42, # Size of the boot disk in GB. Defaults to 50.
           &quot;confidentialInstanceConfig&quot;: { # A set of Compute Engine Confidential VM instance options. # A set of Compute Engine Confidential VM instance options.
             &quot;enableConfidentialCompute&quot;: True or False, # Whether the instance has confidential compute enabled.
           },
           &quot;disablePublicIpAddresses&quot;: True or False, # Whether instances have no public IP address.
           &quot;machineType&quot;: &quot;A String&quot;, # The name of a Compute Engine machine type.
-          &quot;poolSize&quot;: 42, # Number of instances to pool for faster workstation starup.
-          &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the service account that will be used on VM instances used to support this config. If not set, VMs will run with a Google-managed service account. This service account must have permission to pull the specified container image, otherwise the image must be publicly accessible.
+          &quot;poolSize&quot;: 42, # Number of instances to pool for faster workstation startup.
+          &quot;pooledInstances&quot;: 42, # Output only. Number of instances currently available in the pool for faster workstation startup.
+          &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the service account used on VM instances used to support this configuration. If not set, VMs run with a Google-managed service account. This service account must have permission to pull the specified container image; otherwise, the image must be publicly accessible.
           &quot;shieldedInstanceConfig&quot;: { # A set of Compute Engine Shielded instance options. # A set of Compute Engine Shielded instance options.
             &quot;enableIntegrityMonitoring&quot;: True or False, # Whether the instance has integrity monitoring enabled.
             &quot;enableSecureBoot&quot;: True or False, # Whether the instance has Secure Boot enabled.
@@ -629,6 +675,12 @@ Returns:
             &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Name of the snapshot to use as the source for the disk. If set, size_gb and fs_type must be empty.
           },
           &quot;mountPath&quot;: &quot;A String&quot;, # Location of this directory in the running workstation.
+        },
+      ],
+      &quot;readinessChecks&quot;: [ # Readiness checks to perform when starting a workstation using this workstation configuration. Mark a workstation as running only after all specified readiness checks return 200 status codes.
+        { # A readiness check to be performed on a workstation.
+          &quot;path&quot;: &quot;A String&quot;, # Path to which the request should be sent.
+          &quot;port&quot;: 42, # Port to which the request should be sent.
         },
       ],
       &quot;reconciling&quot;: True or False, # Output only. Indicates whether this resource is currently being updated to match its intended state.
@@ -699,10 +751,10 @@ Args:
     &quot;command&quot;: [ # If set, overrides the default ENTRYPOINT specified by the image.
       &quot;A String&quot;,
     ],
-    &quot;env&quot;: { # Environment variables passed to the container.
+    &quot;env&quot;: { # Environment variables passed to the container&#x27;s entrypoint.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
-    &quot;image&quot;: &quot;A String&quot;, # Docker image defining the container. This image must be accessible by the config&#x27;s service account.
+    &quot;image&quot;: &quot;A String&quot;, # Docker image defining the container. This image must be accessible by the service account specified in the workstation configuration.
     &quot;runAsUser&quot;: 42, # If set, overrides the USER specified in the image with the given uid.
     &quot;workingDir&quot;: &quot;A String&quot;, # If set, overrides the default DIR specified by the image.
   },
@@ -711,21 +763,28 @@ Args:
   &quot;deleteTime&quot;: &quot;A String&quot;, # Output only. Time when this resource was soft-deleted.
   &quot;displayName&quot;: &quot;A String&quot;, # Human-readable name for this resource.
   &quot;enableAuditAgent&quot;: True or False, # Whether to enable linux auditd logging on the workstation. When enabled, a service account must also be specified that has logging.buckets.write permission on the project. Operating system audit logging is distinct from [Cloud Audit Logs](https://cloud.google.com/workstations/docs/audit-logging).
-  &quot;encryptionKey&quot;: { # A customer-managed encryption key for the Compute Engine resources of this workstation configuration. # Immutable. Encrypts resources of this workstation configuration using a customer-managed encryption key. If specified, the boot disk of the Compute Engine instance and the persistent disk are encrypted using this encryption key. If this field is not set, the disks are encrypted using a generated key. Customer-managed encryption keys do not protect disk metadata. If the customer-managed encryption key is rotated, when the workstation instance is stopped, the system attempts to recreate the persistent disk with the new version of the key. Be sure to keep older versions of the key until the persistent disk is recreated. Otherwise, data on the persistent disk will be lost. If the encryption key is revoked, the workstation session will automatically be stopped within 7 hours. Immutable after workstation config is created.
-    &quot;kmsKey&quot;: &quot;A String&quot;, # Immutable. The name of the Google Cloud KMS encryption key. For example, `projects/PROJECT_ID/locations/REGION/keyRings/KEY_RING/cryptoKeys/KEY_NAME`.
+  &quot;encryptionKey&quot;: { # A customer-managed encryption key for the Compute Engine resources of this workstation configuration. # Immutable. Encrypts resources of this workstation configuration using a customer-managed encryption key. If specified, the boot disk of the Compute Engine instance and the persistent disk are encrypted using this encryption key. If this field is not set, the disks are encrypted using a generated key. Customer-managed encryption keys do not protect disk metadata. If the customer-managed encryption key is rotated, when the workstation instance is stopped, the system attempts to recreate the persistent disk with the new version of the key. Be sure to keep older versions of the key until the persistent disk is recreated. Otherwise, data on the persistent disk will be lost. If the encryption key is revoked, the workstation session will automatically be stopped within 7 hours. Immutable after the workstation configuration is created.
+    &quot;kmsKey&quot;: &quot;A String&quot;, # Immutable. The name of the Google Cloud KMS encryption key. For example, `projects/PROJECT_ID/locations/REGION/keyRings/KEY_RING/cryptoKeys/KEY_NAME`. The key must be in the same region as the workstation configuration.
     &quot;kmsKeyServiceAccount&quot;: &quot;A String&quot;, # Immutable. The service account to use with the specified KMS key. We recommend that you use a separate service account and follow KMS best practices. For more information, see [Separation of duties](https://cloud.google.com/kms/docs/separation-of-duties) and `gcloud kms keys add-iam-policy-binding` [`--member`](https://cloud.google.com/sdk/gcloud/reference/kms/keys/add-iam-policy-binding#--member).
   },
-  &quot;etag&quot;: &quot;A String&quot;, # Checksum computed by the server. May be sent on update and delete requests to ensure that the client has an up-to-date value before proceeding.
+  &quot;etag&quot;: &quot;A String&quot;, # Checksum computed by the server. May be sent on update and delete requests to make sure that the client has an up-to-date value before proceeding.
   &quot;host&quot;: { # Runtime host for a workstation. # Runtime host for the workstation.
     &quot;gceInstance&quot;: { # A runtime using a Compute Engine instance. # Specifies a Compute Engine instance as the host.
+      &quot;accelerators&quot;: [ # A list of the type and count of accelerator cards attached to the instance.
+        { # An accelerator card attached to the instance.
+          &quot;count&quot;: 42, # Number of accelerator cards exposed to the instance.
+          &quot;type&quot;: &quot;A String&quot;, # Type of accelerator resource to attach to the instance, for example, &quot;nvidia-tesla-p100&quot;.
+        },
+      ],
       &quot;bootDiskSizeGb&quot;: 42, # Size of the boot disk in GB. Defaults to 50.
       &quot;confidentialInstanceConfig&quot;: { # A set of Compute Engine Confidential VM instance options. # A set of Compute Engine Confidential VM instance options.
         &quot;enableConfidentialCompute&quot;: True or False, # Whether the instance has confidential compute enabled.
       },
       &quot;disablePublicIpAddresses&quot;: True or False, # Whether instances have no public IP address.
       &quot;machineType&quot;: &quot;A String&quot;, # The name of a Compute Engine machine type.
-      &quot;poolSize&quot;: 42, # Number of instances to pool for faster workstation starup.
-      &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the service account that will be used on VM instances used to support this config. If not set, VMs will run with a Google-managed service account. This service account must have permission to pull the specified container image, otherwise the image must be publicly accessible.
+      &quot;poolSize&quot;: 42, # Number of instances to pool for faster workstation startup.
+      &quot;pooledInstances&quot;: 42, # Output only. Number of instances currently available in the pool for faster workstation startup.
+      &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the service account used on VM instances used to support this configuration. If not set, VMs run with a Google-managed service account. This service account must have permission to pull the specified container image; otherwise, the image must be publicly accessible.
       &quot;shieldedInstanceConfig&quot;: { # A set of Compute Engine Shielded instance options. # A set of Compute Engine Shielded instance options.
         &quot;enableIntegrityMonitoring&quot;: True or False, # Whether the instance has integrity monitoring enabled.
         &quot;enableSecureBoot&quot;: True or False, # Whether the instance has Secure Boot enabled.
@@ -753,14 +812,20 @@ Args:
       &quot;mountPath&quot;: &quot;A String&quot;, # Location of this directory in the running workstation.
     },
   ],
+  &quot;readinessChecks&quot;: [ # Readiness checks to perform when starting a workstation using this workstation configuration. Mark a workstation as running only after all specified readiness checks return 200 status codes.
+    { # A readiness check to be performed on a workstation.
+      &quot;path&quot;: &quot;A String&quot;, # Path to which the request should be sent.
+      &quot;port&quot;: 42, # Port to which the request should be sent.
+    },
+  ],
   &quot;reconciling&quot;: True or False, # Output only. Indicates whether this resource is currently being updated to match its intended state.
   &quot;runningTimeout&quot;: &quot;A String&quot;, # How long to wait before automatically stopping a workstation after it started. A value of 0 indicates that workstations using this configuration should never time out. Must be greater than 0 and less than 24 hours if encryption_key is set. Defaults to 12 hours.
   &quot;uid&quot;: &quot;A String&quot;, # Output only. A system-assigned unique identified for this resource.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Time when this resource was most recently updated.
 }
 
-  allowMissing: boolean, If set, and the config is not found, a new config will be created. In this situation, update_mask is ignored.
-  updateMask: string, Required. Mask specifying which fields in the config should be updated.
+  allowMissing: boolean, If set and the workstation configuration is not found, a new workstation configuration will be created. In this situation, update_mask is ignored.
+  updateMask: string, Required. Mask specifying which fields in the workstation configuration should be updated.
   validateOnly: boolean, If set, validate the request and preview the review, but do not actually apply it.
   x__xgafv: string, V1 error format.
     Allowed values

@@ -339,7 +339,7 @@
       }
     }
   },
-  "revision": "20230410",
+  "revision": "20230517",
   "rootUrl": "https://ondemandscanning.googleapis.com/",
   "schemas": {
     "AliasContext": {
@@ -502,18 +502,6 @@
       },
       "type": "object"
     },
-    "Binary": {
-      "id": "Binary",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "version": {
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "BuildOccurrence": {
       "description": "Details of a build occurrence.",
       "id": "BuildOccurrence",
@@ -625,9 +613,11 @@
           "enum": [
             "ATTACK_COMPLEXITY_UNSPECIFIED",
             "ATTACK_COMPLEXITY_LOW",
-            "ATTACK_COMPLEXITY_HIGH"
+            "ATTACK_COMPLEXITY_HIGH",
+            "ATTACK_COMPLEXITY_MEDIUM"
           ],
           "enumDescriptions": [
+            "",
             "",
             "",
             ""
@@ -672,9 +662,13 @@
             "IMPACT_UNSPECIFIED",
             "IMPACT_HIGH",
             "IMPACT_LOW",
-            "IMPACT_NONE"
+            "IMPACT_NONE",
+            "IMPACT_PARTIAL",
+            "IMPACT_COMPLETE"
           ],
           "enumDescriptions": [
+            "",
+            "",
             "",
             "",
             "",
@@ -692,9 +686,13 @@
             "IMPACT_UNSPECIFIED",
             "IMPACT_HIGH",
             "IMPACT_LOW",
-            "IMPACT_NONE"
+            "IMPACT_NONE",
+            "IMPACT_PARTIAL",
+            "IMPACT_COMPLETE"
           ],
           "enumDescriptions": [
+            "",
+            "",
             "",
             "",
             "",
@@ -715,9 +713,13 @@
             "IMPACT_UNSPECIFIED",
             "IMPACT_HIGH",
             "IMPACT_LOW",
-            "IMPACT_NONE"
+            "IMPACT_NONE",
+            "IMPACT_PARTIAL",
+            "IMPACT_COMPLETE"
           ],
           "enumDescriptions": [
+            "",
+            "",
             "",
             "",
             "",
@@ -1642,7 +1644,8 @@
             "UPGRADE",
             "COMPLIANCE",
             "DSSE_ATTESTATION",
-            "VULNERABILITY_ASSESSMENT"
+            "VULNERABILITY_ASSESSMENT",
+            "SBOM_REFERENCE"
           ],
           "enumDescriptions": [
             "Default value. This value is unused.",
@@ -1656,7 +1659,8 @@
             "This represents an available package upgrade.",
             "This represents a Compliance Note",
             "This represents a DSSE attestation Note",
-            "This represents a Vulnerability Assessment."
+            "This represents a Vulnerability Assessment.",
+            "This represents an SBOM Reference."
           ],
           "type": "string"
         },
@@ -1679,6 +1683,10 @@
         "resourceUri": {
           "description": "Required. Immutable. A URI that represents the resource for which the occurrence applies. For example, `https://gcr.io/project/image@sha256:123abc` for a Docker image.",
           "type": "string"
+        },
+        "sbomReference": {
+          "$ref": "SBOMReferenceOccurrence",
+          "description": "Describes a specific SBOM reference occurrences."
         },
         "updateTime": {
           "description": "Output only. The time this occurrence was last updated.",
@@ -1738,8 +1746,8 @@
           "description": "The architecture of the package.",
           "type": "string"
         },
-        "binary": {
-          "$ref": "Binary",
+        "binaryVersion": {
+          "$ref": "PackageVersion",
           "description": "The binary package. This is significant when the source is different than the binary itself. Historically if they've differed, we've stored the name of the source and its version in the package/version fields, but we should also store the binary package info, as that's what's actually installed. See b/175908657#comment15."
         },
         "cpeUri": {
@@ -1808,6 +1816,10 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "sourceVersion": {
+          "$ref": "PackageVersion",
+          "description": "The source package. Similar to the above, this is significant when the source is different than the binary itself. Since the top-level package/version fields are based on an if/else, we need a separate field for both binary and source if we want to know definitively where the data is coming from."
         },
         "unused": {
           "type": "string"
@@ -1939,6 +1951,18 @@
       },
       "type": "object"
     },
+    "PackageVersion": {
+      "id": "PackageVersion",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "ProjectRepoId": {
       "description": "Selects a repo using a Google Cloud Platform project ID (e.g., winged-cargo-31) and a repo name within that project.",
       "id": "ProjectRepoId",
@@ -2056,6 +2080,80 @@
         },
         "uid": {
           "description": "A server-assigned, globally unique identifier.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SBOMReferenceOccurrence": {
+      "description": "The occurrence representing an SBOM reference as applied to a specific resource. The occurrence follows the DSSE specification. See https://github.com/secure-systems-lab/dsse/blob/master/envelope.md for more details.",
+      "id": "SBOMReferenceOccurrence",
+      "properties": {
+        "payload": {
+          "$ref": "SbomReferenceIntotoPayload",
+          "description": "The actual payload that contains the SBOM reference data."
+        },
+        "payloadType": {
+          "description": "The kind of payload that SbomReferenceIntotoPayload takes. Since it's in the intoto format, this value is expected to be 'application/vnd.in-toto+json'.",
+          "type": "string"
+        },
+        "signatures": {
+          "description": "The signatures over the payload.",
+          "items": {
+            "$ref": "EnvelopeSignature"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "SbomReferenceIntotoPayload": {
+      "description": "The actual payload that contains the SBOM Reference data. The payload follows the intoto statement specification. See https://github.com/in-toto/attestation/blob/main/spec/v1.0/statement.md for more details.",
+      "id": "SbomReferenceIntotoPayload",
+      "properties": {
+        "_type": {
+          "description": "Identifier for the schema of the Statement.",
+          "type": "string"
+        },
+        "predicate": {
+          "$ref": "SbomReferenceIntotoPredicate",
+          "description": "Additional parameters of the Predicate. Includes the actual data about the SBOM."
+        },
+        "predicateType": {
+          "description": "URI identifying the type of the Predicate.",
+          "type": "string"
+        },
+        "subject": {
+          "description": "Set of software artifacts that the attestation applies to. Each element represents a single software artifact.",
+          "items": {
+            "$ref": "Subject"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "SbomReferenceIntotoPredicate": {
+      "description": "A predicate which describes the SBOM being referenced.",
+      "id": "SbomReferenceIntotoPredicate",
+      "properties": {
+        "digest": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A map of algorithm to digest of the contents of the SBOM.",
+          "type": "object"
+        },
+        "location": {
+          "description": "The location of the SBOM.",
+          "type": "string"
+        },
+        "mimeType": {
+          "description": "The mime type of the SBOM.",
+          "type": "string"
+        },
+        "referrerId": {
+          "description": "The person or system referring this predicate to the consumer.",
           "type": "string"
         }
       },
