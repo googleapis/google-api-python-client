@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.88.0](https://github.com/googleapis/google-api-python-client/compare/v2.87.0...v2.88.0) (2023-05-30)
+
+
+### Features
+
+* **baremetalsolution:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/bf8e4ac20ae876fcf7ed5e126bdf726b62038b8b ([710f2ab](https://github.com/googleapis/google-api-python-client/commit/710f2abcf80e4a5fba3db19914a27f3d6d1c9c1a))
+* **beyondcorp:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/410ef8221bed348bf6e14501ef92f517afb6c737 ([710f2ab](https://github.com/googleapis/google-api-python-client/commit/710f2abcf80e4a5fba3db19914a27f3d6d1c9c1a))
+* **beyondcorp:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/a5e5892e5dc87d4b5b683fe541860b314d330344 ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **bigqueryreservation:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/d3b7f300fd53bd026b67fde7840a1793e50002d2 ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **cloudidentity:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/bf1b8221e957a972ac021203caebb9278bfcf853 ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **container:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/c7fbcc1368f2e0a67cec0df0cb8e1c4639990e07 ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **dataflow:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/fd19fd06cb5406aa016f40c2a67b1851e6b9fc7e ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **datastream:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/306c214298c9a9e66c7f15b46af1d5bacd9d370e ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **discoveryengine:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/1e5b551d61aaf945164347a40ace010aa4af7a83 ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **dlp:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/054b6503786c02e7fbd9717ea2a0a9d14a219ea5 ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **drive:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/ad82dc551c3c21696aa8aca49cff140c571a012b ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **firebaseappcheck:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/d500efb28614550500a909a82bdb71ee12a23596 ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **gkeonprem:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/e624d1b44631793617463cf2dc9a0b487ea1e6ac ([710f2ab](https://github.com/googleapis/google-api-python-client/commit/710f2abcf80e4a5fba3db19914a27f3d6d1c9c1a))
+* **integrations:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/a32107f98c072e31a461f29f7055a3bdb35d64ab ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **logging:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/ced02fd8070d75283c64b40997a4363efbcc140d ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+* **ondemandscanning:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/e72efccd79dd360e4d1dc55d2c1981b27040b35e ([1b2bc37](https://github.com/googleapis/google-api-python-client/commit/1b2bc370d458182cb393778ca0ecfbb47407bd9d))
+
 ## [2.87.0](https://github.com/googleapis/google-api-python-client/compare/v2.86.0...v2.87.0) (2023-05-24)
 
 
