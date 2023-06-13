@@ -937,6 +937,25 @@
     },
     "query": {
       "methods": {
+        "removeActivity": {
+          "description": "Provides functionality to remove logged activity for a user. Currently to be used only for dynamite 1p clients **Note:** This API requires a standard end user account to execute. A service account can't perform Remove Activity requests directly; to use a service account to perform queries, set up [Google Workspace domain-wide delegation of authority](https://developers.google.com/cloud-search/docs/guides/delegation/).",
+          "flatPath": "v1/query:removeActivity",
+          "httpMethod": "POST",
+          "id": "cloudsearch.query.removeActivity",
+          "parameterOrder": [],
+          "parameters": {},
+          "path": "v1/query:removeActivity",
+          "request": {
+            "$ref": "RemoveActivityRequest"
+          },
+          "response": {
+            "$ref": "RemoveActivityResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud_search",
+            "https://www.googleapis.com/auth/cloud_search.query"
+          ]
+        },
         "search": {
           "description": "The Cloud Search Query API provides the search method, which returns the most relevant results from a user query. The results can come from Google Workspace apps, such as Gmail or Google Drive, or they can come from data that you have indexed from a third party. **Note:** This API requires a standard end user account to execute. A service account can't perform Query API requests directly; to use a service account to perform queries, set up [Google Workspace domain-wide delegation of authority](https://developers.google.com/cloud-search/docs/guides/delegation/).",
           "flatPath": "v1/query/search",
@@ -2077,7 +2096,7 @@
       }
     }
   },
-  "revision": "20230510",
+  "revision": "20230524",
   "rootUrl": "https://cloudsearch.googleapis.com/",
   "schemas": {
     "AbuseReportingConfig": {
@@ -2860,7 +2879,7 @@
       "type": "object"
     },
     "AppsDynamiteSharedBackendUploadMetadata": {
-      "description": "Metadata used only in Dynamite backend for uploaded attachments.",
+      "description": "Metadata used only in Dynamite backend for uploaded attachments. NEXT ID: 20",
       "id": "AppsDynamiteSharedBackendUploadMetadata",
       "properties": {
         "blobPath": {
@@ -2949,7 +2968,7 @@
           "description": "Summary of a Data Loss Prevention (DLP) scan of the attachment. Attachments are evaluated in the backend when they are uploaded."
         },
         "experiment": {
-          "description": "The list of experiments this video is enabled for Next tag: 19",
+          "description": "The list of experiments this video is enabled for",
           "items": {
             "enum": [
               "UNKNOWN_EXPERIMENT",
@@ -2970,6 +2989,9 @@
         "isClientSideTranscodedVideo": {
           "description": "If the uploaded file is a video that has been transcoded on the client side",
           "type": "boolean"
+        },
+        "migratedFromHangoutsMetadata": {
+          "$ref": "AppsDynamiteSharedBackendUploadMetadataMigratedFromHangoutsMetadata"
         },
         "originalDimension": {
           "$ref": "AppsDynamiteSharedDimension",
@@ -3017,6 +3039,34 @@
             "",
             "The document violates Google's policy for executables and archives."
           ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AppsDynamiteSharedBackendUploadMetadataMigratedFromHangoutsMetadata": {
+      "description": "Metadata for attachments migrated from Hangouts",
+      "id": "AppsDynamiteSharedBackendUploadMetadataMigratedFromHangoutsMetadata",
+      "properties": {
+        "photoId": {
+          "$ref": "AppsDynamiteSharedBackendUploadMetadataMigratedFromHangoutsMetadataPhotoId"
+        },
+        "updateTimestampUsec": {
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AppsDynamiteSharedBackendUploadMetadataMigratedFromHangoutsMetadataPhotoId": {
+      "id": "AppsDynamiteSharedBackendUploadMetadataMigratedFromHangoutsMetadataPhotoId",
+      "properties": {
+        "photoId": {
+          "format": "int64",
+          "type": "string"
+        },
+        "userId": {
+          "format": "int64",
           "type": "string"
         }
       },
@@ -3711,7 +3761,7 @@
       "id": "AppsDynamiteSharedMessageSearchInfo",
       "properties": {
         "matchedSegmentsInTextBody": {
-          "description": "An example use case: clients can use this field to highlight matched segments in message text_body defined in http://google3/apps/dynamite/v1/frontend/api/message.proto;l=104;rcl=513400736.",
+          "description": "Current usage: - DescriptionType=KEYWORD_MATCH is populated in this field to return metadata for keyword matches, which clients can use to highlight matched segments in a message's text_body. - DescriptionType=SNIPPET can be used to return metadata describing how a message's text_body can be broken up to provide a snippet.",
           "items": {
             "$ref": "AppsDynamiteSharedTextSegmentsWithDescription"
           },
@@ -4062,11 +4112,13 @@
         "descriptionType": {
           "enum": [
             "DESCRIPTION_TYPE_UNSPECIFIED",
-            "KEYWORD_MATCH"
+            "KEYWORD_MATCH",
+            "SNIPPET"
           ],
           "enumDescriptions": [
             "",
-            "Indicates the text segments contain matched keywords. Client can highlight them in search results page."
+            "Indicates the text segments contain matched keywords. Client can highlight them in search results page.",
+            "Indicates the text segments represent parts of the snippeted text. Clients can display just these in SRP as shortened message. Multiple TextSegments with this DescriptionType are returned to denote disjointed snippets i.e. \"a long test message\" -> \"a ... message\""
           ],
           "type": "string"
         },
@@ -5875,6 +5927,20 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "uninstallCapability": {
+          "description": "Determine how uninstall is permitted for this app.",
+          "enum": [
+            "UNSPECIFIED_UNINSTALL_CAPABILITY",
+            "ALWAYS_ALLOWED",
+            "NEVER_ALLOWED"
+          ],
+          "enumDescriptions": [
+            "Defaults to ALWAYS_ALLOWED.",
+            "",
+            ""
+          ],
+          "type": "string"
         }
       },
       "type": "object"
@@ -6741,7 +6807,7 @@
       "type": "object"
     },
     "Color": {
-      "description": "Represents a color in the RGBA color space. This representation is designed for simplicity of conversion to/from color representations in various languages over compactness. For example, the fields of this representation can be trivially provided to the constructor of `java.awt.Color` in Java; it can also be trivially provided to UIColor's `+colorWithRed:green:blue:alpha` method in iOS; and, with just a little work, it can be easily formatted into a CSS `rgba()` string in JavaScript. This reference page doesn't carry information about the absolute color space that should be used to interpret the RGB value (e.g. sRGB, Adobe RGB, DCI-P3, BT.2020, etc.). By default, applications should assume the sRGB color space. When color equality needs to be decided, implementations, unless documented otherwise, treat two colors as equal if all their red, green, blue, and alpha values each differ by at most 1e-5. Example (Java): import com.google.type.Color; // ... public static java.awt.Color fromProto(Color protocolor) { float alpha = protocolor.hasAlpha() ? protocolor.getAlpha().getValue() : 1.0; return new java.awt.Color( protocolor.getRed(), protocolor.getGreen(), protocolor.getBlue(), alpha); } public static Color toProto(java.awt.Color color) { float red = (float) color.getRed(); float green = (float) color.getGreen(); float blue = (float) color.getBlue(); float denominator = 255.0; Color.Builder resultBuilder = Color .newBuilder() .setRed(red / denominator) .setGreen(green / denominator) .setBlue(blue / denominator); int alpha = color.getAlpha(); if (alpha != 255) { result.setAlpha( FloatValue .newBuilder() .setValue(((float) alpha) / denominator) .build()); } return resultBuilder.build(); } // ... Example (iOS / Obj-C): // ... static UIColor* fromProto(Color* protocolor) { float red = [protocolor red]; float green = [protocolor green]; float blue = [protocolor blue]; FloatValue* alpha_wrapper = [protocolor alpha]; float alpha = 1.0; if (alpha_wrapper != nil) { alpha = [alpha_wrapper value]; } return [UIColor colorWithRed:red green:green blue:blue alpha:alpha]; } static Color* toProto(UIColor* color) { CGFloat red, green, blue, alpha; if (![color getRed:&red green:&green blue:&blue alpha:&alpha]) { return nil; } Color* result = [[Color alloc] init]; [result setRed:red]; [result setGreen:green]; [result setBlue:blue]; if (alpha <= 0.9999) { [result setAlpha:floatWrapperWithValue(alpha)]; } [result autorelease]; return result; } // ... Example (JavaScript): // ... var protoToCssColor = function(rgb_color) { var redFrac = rgb_color.red || 0.0; var greenFrac = rgb_color.green || 0.0; var blueFrac = rgb_color.blue || 0.0; var red = Math.floor(redFrac * 255); var green = Math.floor(greenFrac * 255); var blue = Math.floor(blueFrac * 255); if (!('alpha' in rgb_color)) { return rgbToCssColor(red, green, blue); } var alphaFrac = rgb_color.alpha.value || 0.0; var rgbParams = [red, green, blue].join(','); return ['rgba(', rgbParams, ',', alphaFrac, ')'].join(''); }; var rgbToCssColor = function(red, green, blue) { var rgbNumber = new Number((red << 16) | (green << 8) | blue); var hexString = rgbNumber.toString(16); var missingZeros = 6 - hexString.length; var resultBuilder = ['#']; for (var i = 0; i < missingZeros; i++) { resultBuilder.push('0'); } resultBuilder.push(hexString); return resultBuilder.join(''); }; // ...",
+      "description": "Represents a color in the RGBA color space. This representation is designed for simplicity of conversion to and from color representations in various languages over compactness. For example, the fields of this representation can be trivially provided to the constructor of `java.awt.Color` in Java; it can also be trivially provided to UIColor's `+colorWithRed:green:blue:alpha` method in iOS; and, with just a little work, it can be easily formatted into a CSS `rgba()` string in JavaScript. This reference page does not have information about the absolute color space that should be used to interpret the RGB value\u2014for example, sRGB, Adobe RGB, DCI-P3, and BT.2020. By default, applications should assume the sRGB color space. When color equality needs to be decided, implementations, unless documented otherwise, treat two colors as equal if all their red, green, blue, and alpha values each differ by at most `1e-5`. Example (Java): import com.google.type.Color; // ... public static java.awt.Color fromProto(Color protocolor) { float alpha = protocolor.hasAlpha() ? protocolor.getAlpha().getValue() : 1.0; return new java.awt.Color( protocolor.getRed(), protocolor.getGreen(), protocolor.getBlue(), alpha); } public static Color toProto(java.awt.Color color) { float red = (float) color.getRed(); float green = (float) color.getGreen(); float blue = (float) color.getBlue(); float denominator = 255.0; Color.Builder resultBuilder = Color .newBuilder() .setRed(red / denominator) .setGreen(green / denominator) .setBlue(blue / denominator); int alpha = color.getAlpha(); if (alpha != 255) { result.setAlpha( FloatValue .newBuilder() .setValue(((float) alpha) / denominator) .build()); } return resultBuilder.build(); } // ... Example (iOS / Obj-C): // ... static UIColor* fromProto(Color* protocolor) { float red = [protocolor red]; float green = [protocolor green]; float blue = [protocolor blue]; FloatValue* alpha_wrapper = [protocolor alpha]; float alpha = 1.0; if (alpha_wrapper != nil) { alpha = [alpha_wrapper value]; } return [UIColor colorWithRed:red green:green blue:blue alpha:alpha]; } static Color* toProto(UIColor* color) { CGFloat red, green, blue, alpha; if (![color getRed:&red green:&green blue:&blue alpha:&alpha]) { return nil; } Color* result = [[Color alloc] init]; [result setRed:red]; [result setGreen:green]; [result setBlue:blue]; if (alpha <= 0.9999) { [result setAlpha:floatWrapperWithValue(alpha)]; } [result autorelease]; return result; } // ... Example (JavaScript): // ... var protoToCssColor = function(rgb_color) { var redFrac = rgb_color.red || 0.0; var greenFrac = rgb_color.green || 0.0; var blueFrac = rgb_color.blue || 0.0; var red = Math.floor(redFrac * 255); var green = Math.floor(greenFrac * 255); var blue = Math.floor(blueFrac * 255); if (!('alpha' in rgb_color)) { return rgbToCssColor(red, green, blue); } var alphaFrac = rgb_color.alpha.value || 0.0; var rgbParams = [red, green, blue].join(','); return ['rgba(', rgbParams, ',', alphaFrac, ')'].join(''); }; var rgbToCssColor = function(red, green, blue) { var rgbNumber = new Number((red << 16) | (green << 8) | blue); var hexString = rgbNumber.toString(16); var missingZeros = 6 - hexString.length; var resultBuilder = ['#']; for (var i = 0; i < missingZeros; i++) { resultBuilder.push('0'); } resultBuilder.push(hexString); return resultBuilder.join(''); }; // ...",
       "id": "Color",
       "properties": {
         "alpha": {
@@ -9838,7 +9904,7 @@
       "type": "object"
     },
     "GoogleChatV1ContextualAddOnMarkupCard": {
-      "description": "A card is a UI element that can contain UI widgets such as texts, images.",
+      "description": "A card is a UI element that can contain UI widgets such as text and images.",
       "id": "GoogleChatV1ContextualAddOnMarkupCard",
       "properties": {
         "cardActions": {
@@ -9885,7 +9951,7 @@
       "id": "GoogleChatV1ContextualAddOnMarkupCardCardHeader",
       "properties": {
         "imageStyle": {
-          "description": "The image's type (e.g. square border or circular border).",
+          "description": "The image's type (for example, square border or circular border).",
           "enum": [
             "IMAGE_STYLE_UNSPECIFIED",
             "IMAGE",
@@ -9907,22 +9973,22 @@
           "type": "string"
         },
         "title": {
-          "description": "The title must be specified. The header has a fixed height: if both a title and subtitle is specified, each will take up 1 line. If only the title is specified, it will take up both lines.",
+          "description": "The title must be specified. The header has a fixed height: if both a title and subtitle is specified, each takes up one line. If only the title is specified, it takes up both lines.",
           "type": "string"
         }
       },
       "type": "object"
     },
     "GoogleChatV1ContextualAddOnMarkupCardSection": {
-      "description": "A section contains a collection of widgets that are rendered (vertically) in the order that they are specified. Across all platforms, cards have a narrow fixed width, so there is currently no need for layout properties (e.g. float).",
+      "description": "A section contains a collection of widgets that are rendered (vertically) in the order that they are specified. Across all platforms, cards have a narrow fixed width, so there's currently no need for layout properties (for example, float).",
       "id": "GoogleChatV1ContextualAddOnMarkupCardSection",
       "properties": {
         "header": {
-          "description": "The header of the section. Formatted text is supported. For more information about formatting text, see Formatting text in Google Chat apps and Formatting text in Google Workspace Add-ons.",
+          "description": "The header of the section. Formatted text is supported. For more information about formatting text, see [Formatting text in Google Chat apps](https://developers.google.com/chat/api/guides/message-formats/cards#card_text_formatting) and [Formatting text in Google Workspace Add-ons](https://developers.google.com/apps-script/add-ons/concepts/widgets#text_formatting).",
           "type": "string"
         },
         "widgets": {
-          "description": "A section must contain at least 1 widget.",
+          "description": "A section must contain at least one widget.",
           "items": {
             "$ref": "GoogleChatV1WidgetMarkup"
           },
@@ -9932,7 +9998,7 @@
       "type": "object"
     },
     "GoogleChatV1WidgetMarkup": {
-      "description": "A widget is a UI element that presents texts, images, etc.",
+      "description": "A widget is a UI element that presents text and images.",
       "id": "GoogleChatV1WidgetMarkup",
       "properties": {
         "buttons": {
@@ -9963,21 +10029,21 @@
       "properties": {
         "imageButton": {
           "$ref": "GoogleChatV1WidgetMarkupImageButton",
-          "description": "A button with image and onclick action."
+          "description": "A button with image and `onclick` action."
         },
         "textButton": {
           "$ref": "GoogleChatV1WidgetMarkupTextButton",
-          "description": "A button with text and onclick action."
+          "description": "A button with text and `onclick` action."
         }
       },
       "type": "object"
     },
     "GoogleChatV1WidgetMarkupFormAction": {
-      "description": "A form action describes the behavior when the form is submitted. For example, an Apps Script can be invoked to handle the form.",
+      "description": "A form action describes the behavior when the form is submitted. For example, you can invoke Apps Script to handle the form.",
       "id": "GoogleChatV1WidgetMarkupFormAction",
       "properties": {
         "actionMethodName": {
-          "description": "The method name is used to identify which part of the form triggered the form submission. This information is echoed back to the Chat app as part of the card click event. The same method name can be used for several elements that trigger a common behavior if desired.",
+          "description": "The method name is used to identify which part of the form triggered the form submission. This information is echoed back to the Chat app as part of the card click event. You can use the same method name for several elements that trigger a common behavior.",
           "type": "string"
         },
         "parameters": {
@@ -9991,7 +10057,7 @@
       "type": "object"
     },
     "GoogleChatV1WidgetMarkupFormActionActionParameter": {
-      "description": "List of string parameters to supply when the action method is invoked. For example, consider three snooze buttons: snooze now, snooze 1 day, snooze next week. You might use action method = snooze(), passing the snooze type and snooze time in the list of string parameters.",
+      "description": "List of string parameters to supply when the action method is invoked. For example, consider three snooze buttons: snooze now, snooze one day, snooze next week. You might use `action method = snooze()`, passing the snooze type and snooze time in the list of string parameters.",
       "id": "GoogleChatV1WidgetMarkupFormActionActionParameter",
       "properties": {
         "key": {
@@ -10006,11 +10072,11 @@
       "type": "object"
     },
     "GoogleChatV1WidgetMarkupImage": {
-      "description": "An image that is specified by a URL and can have an onclick action.",
+      "description": "An image that's specified by a URL and can have an `onclick` action.",
       "id": "GoogleChatV1WidgetMarkupImage",
       "properties": {
         "aspectRatio": {
-          "description": "The aspect ratio of this image (width/height). This field allows clients to reserve the right height for the image while waiting for it to load. It's not meant to override the native aspect ratio of the image. If unset, the server fills it by prefetching the image.",
+          "description": "The aspect ratio of this image (width and height). This field lets you reserve the right height for the image while waiting for it to load. It's not meant to override the built-in aspect ratio of the image. If unset, the server fills it by prefetching the image.",
           "format": "double",
           "type": "number"
         },
@@ -10020,17 +10086,17 @@
         },
         "onClick": {
           "$ref": "GoogleChatV1WidgetMarkupOnClick",
-          "description": "The onclick action."
+          "description": "The `onclick` action."
         }
       },
       "type": "object"
     },
     "GoogleChatV1WidgetMarkupImageButton": {
-      "description": "An image button with an onclick action.",
+      "description": "An image button with an `onclick` action.",
       "id": "GoogleChatV1WidgetMarkupImageButton",
       "properties": {
         "icon": {
-          "description": "The icon specified by an enum that indices to an icon provided by Chat API.",
+          "description": "The icon specified by an `enum` that indices to an icon provided by Chat API.",
           "enum": [
             "ICON_UNSPECIFIED",
             "AIRPLANE",
@@ -10104,22 +10170,22 @@
           "type": "string"
         },
         "name": {
-          "description": "The name of this image_button which will be used for accessibility. Default value will be provided if developers don't specify.",
+          "description": "The name of this `image_button` that's used for accessibility. Default value is provided if this name isn't specified.",
           "type": "string"
         },
         "onClick": {
           "$ref": "GoogleChatV1WidgetMarkupOnClick",
-          "description": "The onclick action."
+          "description": "The `onclick` action."
         }
       },
       "type": "object"
     },
     "GoogleChatV1WidgetMarkupKeyValue": {
-      "description": "A UI element contains a key (label) and a value (content). And this element may also contain some actions such as onclick button.",
+      "description": "A UI element contains a key (label) and a value (content). This element can also contain some actions such as `onclick` button.",
       "id": "GoogleChatV1WidgetMarkupKeyValue",
       "properties": {
         "bottomLabel": {
-          "description": "The text of the bottom label. Formatted text supported. For more information about formatting text, see Formatting text in Google Chat apps and Formatting text in Google Workspace Add-ons.",
+          "description": "The text of the bottom label. Formatted text supported. For more information about formatting text, see [Formatting text in Google Chat apps](https://developers.google.com/chat/api/guides/message-formats/cards#card_text_formatting) and [Formatting text in Google Workspace Add-ons](https://developers.google.com/apps-script/add-ons/concepts/widgets#text_formatting).",
           "type": "string"
         },
         "button": {
@@ -10127,7 +10193,7 @@
           "description": "A button that can be clicked to trigger an action."
         },
         "content": {
-          "description": "The text of the content. Formatted text supported and always required. For more information about formatting text, see Formatting text in Google Chat apps and Formatting text in Google Workspace Add-ons.",
+          "description": "The text of the content. Formatted text supported and always required. For more information about formatting text, see [Formatting text in Google Chat apps](https://developers.google.com/chat/api/guides/message-formats/cards#card_text_formatting) and [Formatting text in Google Workspace Add-ons](https://developers.google.com/apps-script/add-ons/concepts/widgets#text_formatting).",
           "type": "string"
         },
         "contentMultiline": {
@@ -10135,7 +10201,7 @@
           "type": "boolean"
         },
         "icon": {
-          "description": "An enum value that will be replaced by the Chat API with the corresponding icon image.",
+          "description": "An enum value that's replaced by the Chat API with the corresponding icon image.",
           "enum": [
             "ICON_UNSPECIFIED",
             "AIRPLANE",
@@ -10210,26 +10276,26 @@
         },
         "onClick": {
           "$ref": "GoogleChatV1WidgetMarkupOnClick",
-          "description": "The onclick action. Only the top label, bottom label and content region are clickable."
+          "description": "The `onclick` action. Only the top label, bottom label, and content region are clickable."
         },
         "topLabel": {
-          "description": "The text of the top label. Formatted text supported. For more information about formatting text, see Formatting text in Google Chat apps and Formatting text in Google Workspace Add-ons.",
+          "description": "The text of the top label. Formatted text supported. For more information about formatting text, see [Formatting text in Google Chat apps](https://developers.google.com/chat/api/guides/message-formats/cards#card_text_formatting) and [Formatting text in Google Workspace Add-ons](https://developers.google.com/apps-script/add-ons/concepts/widgets#text_formatting).",
           "type": "string"
         }
       },
       "type": "object"
     },
     "GoogleChatV1WidgetMarkupOnClick": {
-      "description": "An onclick action (e.g. open a link).",
+      "description": "An `onclick` action (for example, open a link).",
       "id": "GoogleChatV1WidgetMarkupOnClick",
       "properties": {
         "action": {
           "$ref": "GoogleChatV1WidgetMarkupFormAction",
-          "description": "A form action will be triggered by this onclick if specified."
+          "description": "A form action is triggered by this `onclick` action if specified."
         },
         "openLink": {
           "$ref": "GoogleChatV1WidgetMarkupOpenLink",
-          "description": "This onclick triggers an open link action if specified."
+          "description": "This `onclick` action triggers an open link action if specified."
         }
       },
       "type": "object"
@@ -10246,12 +10312,12 @@
       "type": "object"
     },
     "GoogleChatV1WidgetMarkupTextButton": {
-      "description": "A button with text and onclick action.",
+      "description": "A button with text and `onclick` action.",
       "id": "GoogleChatV1WidgetMarkupTextButton",
       "properties": {
         "onClick": {
           "$ref": "GoogleChatV1WidgetMarkupOnClick",
-          "description": "The onclick action of the button."
+          "description": "The `onclick` action of the button."
         },
         "text": {
           "description": "The text of the button.",
@@ -10261,7 +10327,7 @@
       "type": "object"
     },
     "GoogleChatV1WidgetMarkupTextParagraph": {
-      "description": "A paragraph of text. Formatted text supported. For more information about formatting text, see Formatting text in Google Chat apps and Formatting text in Google Workspace Add-ons.",
+      "description": "A paragraph of text. Formatted text supported. For more information about formatting text, see [Formatting text in Google Chat apps](https://developers.google.com/chat/api/guides/message-formats/cards#card_text_formatting) and [Formatting text in Google Workspace Add-ons](https://developers.google.com/apps-script/add-ons/concepts/widgets#text_formatting).",
       "id": "GoogleChatV1WidgetMarkupTextParagraph",
       "properties": {
         "text": {
@@ -13033,8 +13099,8 @@
             "Non-member -> Can join. Multiple groups and users.",
             "Can join -> Member. One user.",
             "Non-member -> Member. Multiple users.",
-            "Can join -> Non-member. One group or user.",
-            "Member -> Can join. One user.",
+            "Member or can join -> Non-member. One group or user.",
+            "Before April 2023, a user transitioned from joined",
             "Bot added to the room.",
             "Bot removed from the room.",
             "This signifies the user is kicked because the user's OTR policy is conflicted with the room history settings. Joined -> Non-member. One user.",
@@ -14803,6 +14869,17 @@
       },
       "type": "object"
     },
+    "QueryActivity": {
+      "description": "Details about a user's query activity.",
+      "id": "QueryActivity",
+      "properties": {
+        "query": {
+          "description": "User input query to be logged/removed.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "QueryCountByStatus": {
       "id": "QueryCountByStatus",
       "properties": {
@@ -15345,6 +15422,27 @@
           "type": "array"
         }
       },
+      "type": "object"
+    },
+    "RemoveActivityRequest": {
+      "description": "Remove Logged Activity Request.",
+      "id": "RemoveActivityRequest",
+      "properties": {
+        "requestOptions": {
+          "$ref": "RequestOptions",
+          "description": "Request options, such as the search application and clientId."
+        },
+        "userActivity": {
+          "$ref": "UserActivity",
+          "description": "User Activity containing the data to be deleted."
+        }
+      },
+      "type": "object"
+    },
+    "RemoveActivityResponse": {
+      "description": "Remove Logged Activity Response. will return an empty response for now. Will be revisited in later phases.",
+      "id": "RemoveActivityResponse",
+      "properties": {},
       "type": "object"
     },
     "RenameEvent": {
@@ -16870,6 +16968,20 @@
         "suggestedQuery": {
           "description": "The suggested spelling of the query.",
           "type": "string"
+        },
+        "suggestionType": {
+          "description": "Suggestion triggered for the current query.",
+          "enum": [
+            "SUGGESTION_TYPE_UNSPECIFIED",
+            "NON_EMPTY_RESULTS_SPELL_SUGGESTION",
+            "ZERO_RESULTS_FULL_PAGE_REPLACEMENT"
+          ],
+          "enumDescriptions": [
+            "Default spell check type",
+            "Spell suggestion without any results changed. The results are still shown for the original query (which has non zero / results) with a suggestion for spelling that would have results.",
+            "Spell suggestion triggered when original query has no results. When the original query has no results, and spell suggestion has results we trigger results for the spell corrected query."
+          ],
+          "type": "string"
         }
       },
       "type": "object"
@@ -18078,6 +18190,10 @@
           "$ref": "AppsDynamiteSharedDlpMetricsMetadata",
           "description": "The metrics metadata of the Data Loss Prevention attachment scan."
         },
+        "internalOnlyComponentSearchInfo": {
+          "$ref": "AppsDynamiteSharedMessageComponentSearchInfo",
+          "description": "Message component search metadata for this upload_metadata (currently used for message highlighting and snippeting). For use by Search backend only; clients should get upload_metadata search info from Annotation.component_search_info. This field is necessary because backend Message keeps UploadMetadata in a separate field. Upon converting from backend message to frontend message, this field will be copied to Annotation.component_search_info while the corresponding UploadMetadata is converted into an Annotation."
+        },
         "latestVirusScanTimestamp": {
           "description": "The timestamp of the most recent virus scan completed (in microseconds).",
           "format": "int64",
@@ -18295,6 +18411,17 @@
             "Stubby failed. Clients should always retry ASAP"
           ],
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "UserActivity": {
+      "description": "User's single or bulk query activity. This can be a logging query or deletion query.",
+      "id": "UserActivity",
+      "properties": {
+        "queryActivity": {
+          "$ref": "QueryActivity",
+          "description": "Contains data which needs to be logged/removed."
         }
       },
       "type": "object"
