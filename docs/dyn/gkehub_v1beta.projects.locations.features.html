@@ -162,7 +162,7 @@ Args:
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;membershipSpecs&quot;: { # Optional. Membership-specific configuration for this Feature. If this Feature does not support any per-Membership configuration, this field may be unused. The keys indicate which Membership the configuration is for, in the form: `projects/{p}/locations/{l}/memberships/{m}` Where {p} is the project, {l} is a valid location and {m} is a valid Membership in this project at that location. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Membership is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
-    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership.
+    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership. NOTE: Please use snake case in your feature name.
       &quot;anthosobservability&quot;: { # **Anthosobservability**: Per-Membership Feature spec. # Anthos Observability-specific spec
         &quot;doNotOptimizeMetrics&quot;: True or False, # Use full of metrics rather than optimized metrics. See https://cloud.google.com/anthos/clusters/docs/on-prem/1.8/concepts/logging-and-monitoring#optimized_metrics_default_metrics
         &quot;enableStackdriverOnApplications&quot;: True or False, # Enable collecting and reporting metrics and logs from user apps.
@@ -176,9 +176,10 @@ Args:
         &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
           &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
         },
+        &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
         &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
           &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
           &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -190,8 +191,10 @@ Args:
             &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
           },
           &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+            &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
           },
+          &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
           &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -344,7 +347,7 @@ Args:
           },
           &quot;webhook&quot;: &quot;A String&quot;, # The state of the binauthz webhook.
         },
-        &quot;clusterName&quot;: &quot;A String&quot;, # The user-defined name for the cluster used by ClusterSelectors to group clusters together. This should match Membership&#x27;s membership_name, unless the user installed ACM on the cluster manually prior to enabling the ACM hub feature. Unique within a Anthos Config Management installation.
+        &quot;clusterName&quot;: &quot;A String&quot;, # This field is set to the `cluster_name` field of the Membership Spec if it is not empty. Otherwise, it is set to the cluster&#x27;s fleet membership name.
         &quot;configSyncState&quot;: { # State information for ConfigSync # Current sync status
           &quot;deploymentState&quot;: { # The state of ConfigSync&#x27;s deployment on a cluster # Information about the deployment of ConfigSync, including the version of the various Pods deployed
             &quot;admissionWebhook&quot;: &quot;A String&quot;, # Deployment state of admission-webhook
@@ -355,6 +358,11 @@ Args:
             &quot;rootReconciler&quot;: &quot;A String&quot;, # Deployment state of root-reconciler
             &quot;syncer&quot;: &quot;A String&quot;, # Deployment state of the syncer pod
           },
+          &quot;errors&quot;: [ # Errors pertaining to the installation of Config Sync.
+            { # Errors pertaining to the installation of Config Sync
+              &quot;errorMessage&quot;: &quot;A String&quot;, # A string representing the user facing error message
+            },
+          ],
           &quot;syncState&quot;: { # State indicating an ACM&#x27;s progress syncing configurations to a cluster # The state of ConfigSync&#x27;s process to sync configs to a cluster
             &quot;code&quot;: &quot;A String&quot;, # Sync status code
             &quot;errors&quot;: [ # A list of errors resulting from problematic configs. This list will be truncated after 100 errors, although it is unlikely for that many errors to simultaneously exist.
@@ -405,9 +413,10 @@ Args:
           &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
             &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
           },
+          &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
           &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
             &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
             &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -419,8 +428,10 @@ Args:
               &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
             },
             &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+              &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
             },
+            &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
             &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -761,7 +772,7 @@ Returns:
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;membershipSpecs&quot;: { # Optional. Membership-specific configuration for this Feature. If this Feature does not support any per-Membership configuration, this field may be unused. The keys indicate which Membership the configuration is for, in the form: `projects/{p}/locations/{l}/memberships/{m}` Where {p} is the project, {l} is a valid location and {m} is a valid Membership in this project at that location. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Membership is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
-    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership.
+    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership. NOTE: Please use snake case in your feature name.
       &quot;anthosobservability&quot;: { # **Anthosobservability**: Per-Membership Feature spec. # Anthos Observability-specific spec
         &quot;doNotOptimizeMetrics&quot;: True or False, # Use full of metrics rather than optimized metrics. See https://cloud.google.com/anthos/clusters/docs/on-prem/1.8/concepts/logging-and-monitoring#optimized_metrics_default_metrics
         &quot;enableStackdriverOnApplications&quot;: True or False, # Enable collecting and reporting metrics and logs from user apps.
@@ -775,9 +786,10 @@ Returns:
         &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
           &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
         },
+        &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
         &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
           &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
           &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -789,8 +801,10 @@ Returns:
             &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
           },
           &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+            &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
           },
+          &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
           &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -943,7 +957,7 @@ Returns:
           },
           &quot;webhook&quot;: &quot;A String&quot;, # The state of the binauthz webhook.
         },
-        &quot;clusterName&quot;: &quot;A String&quot;, # The user-defined name for the cluster used by ClusterSelectors to group clusters together. This should match Membership&#x27;s membership_name, unless the user installed ACM on the cluster manually prior to enabling the ACM hub feature. Unique within a Anthos Config Management installation.
+        &quot;clusterName&quot;: &quot;A String&quot;, # This field is set to the `cluster_name` field of the Membership Spec if it is not empty. Otherwise, it is set to the cluster&#x27;s fleet membership name.
         &quot;configSyncState&quot;: { # State information for ConfigSync # Current sync status
           &quot;deploymentState&quot;: { # The state of ConfigSync&#x27;s deployment on a cluster # Information about the deployment of ConfigSync, including the version of the various Pods deployed
             &quot;admissionWebhook&quot;: &quot;A String&quot;, # Deployment state of admission-webhook
@@ -954,6 +968,11 @@ Returns:
             &quot;rootReconciler&quot;: &quot;A String&quot;, # Deployment state of root-reconciler
             &quot;syncer&quot;: &quot;A String&quot;, # Deployment state of the syncer pod
           },
+          &quot;errors&quot;: [ # Errors pertaining to the installation of Config Sync.
+            { # Errors pertaining to the installation of Config Sync
+              &quot;errorMessage&quot;: &quot;A String&quot;, # A string representing the user facing error message
+            },
+          ],
           &quot;syncState&quot;: { # State indicating an ACM&#x27;s progress syncing configurations to a cluster # The state of ConfigSync&#x27;s process to sync configs to a cluster
             &quot;code&quot;: &quot;A String&quot;, # Sync status code
             &quot;errors&quot;: [ # A list of errors resulting from problematic configs. This list will be truncated after 100 errors, although it is unlikely for that many errors to simultaneously exist.
@@ -1004,9 +1023,10 @@ Returns:
           &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
             &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
           },
+          &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
           &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
             &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
             &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -1018,8 +1038,10 @@ Returns:
               &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
             },
             &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+              &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
             },
+            &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
             &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -1348,7 +1370,7 @@ Returns:
         &quot;a_key&quot;: &quot;A String&quot;,
       },
       &quot;membershipSpecs&quot;: { # Optional. Membership-specific configuration for this Feature. If this Feature does not support any per-Membership configuration, this field may be unused. The keys indicate which Membership the configuration is for, in the form: `projects/{p}/locations/{l}/memberships/{m}` Where {p} is the project, {l} is a valid location and {m} is a valid Membership in this project at that location. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Membership is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
-        &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership.
+        &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership. NOTE: Please use snake case in your feature name.
           &quot;anthosobservability&quot;: { # **Anthosobservability**: Per-Membership Feature spec. # Anthos Observability-specific spec
             &quot;doNotOptimizeMetrics&quot;: True or False, # Use full of metrics rather than optimized metrics. See https://cloud.google.com/anthos/clusters/docs/on-prem/1.8/concepts/logging-and-monitoring#optimized_metrics_default_metrics
             &quot;enableStackdriverOnApplications&quot;: True or False, # Enable collecting and reporting metrics and logs from user apps.
@@ -1362,9 +1384,10 @@ Returns:
             &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
               &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
             },
+            &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
             &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
               &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-              &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+              &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
               &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
                 &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
                 &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -1376,8 +1399,10 @@ Returns:
                 &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
               },
               &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-                &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+                &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+                &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
               },
+              &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
               &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
                 &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
                 &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -1530,7 +1555,7 @@ Returns:
               },
               &quot;webhook&quot;: &quot;A String&quot;, # The state of the binauthz webhook.
             },
-            &quot;clusterName&quot;: &quot;A String&quot;, # The user-defined name for the cluster used by ClusterSelectors to group clusters together. This should match Membership&#x27;s membership_name, unless the user installed ACM on the cluster manually prior to enabling the ACM hub feature. Unique within a Anthos Config Management installation.
+            &quot;clusterName&quot;: &quot;A String&quot;, # This field is set to the `cluster_name` field of the Membership Spec if it is not empty. Otherwise, it is set to the cluster&#x27;s fleet membership name.
             &quot;configSyncState&quot;: { # State information for ConfigSync # Current sync status
               &quot;deploymentState&quot;: { # The state of ConfigSync&#x27;s deployment on a cluster # Information about the deployment of ConfigSync, including the version of the various Pods deployed
                 &quot;admissionWebhook&quot;: &quot;A String&quot;, # Deployment state of admission-webhook
@@ -1541,6 +1566,11 @@ Returns:
                 &quot;rootReconciler&quot;: &quot;A String&quot;, # Deployment state of root-reconciler
                 &quot;syncer&quot;: &quot;A String&quot;, # Deployment state of the syncer pod
               },
+              &quot;errors&quot;: [ # Errors pertaining to the installation of Config Sync.
+                { # Errors pertaining to the installation of Config Sync
+                  &quot;errorMessage&quot;: &quot;A String&quot;, # A string representing the user facing error message
+                },
+              ],
               &quot;syncState&quot;: { # State indicating an ACM&#x27;s progress syncing configurations to a cluster # The state of ConfigSync&#x27;s process to sync configs to a cluster
                 &quot;code&quot;: &quot;A String&quot;, # Sync status code
                 &quot;errors&quot;: [ # A list of errors resulting from problematic configs. This list will be truncated after 100 errors, although it is unlikely for that many errors to simultaneously exist.
@@ -1591,9 +1621,10 @@ Returns:
               &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
                 &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
               },
+              &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
               &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
                 &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-                &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+                &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
                 &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
                   &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
                   &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -1605,8 +1636,10 @@ Returns:
                   &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
                 },
                 &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-                  &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+                  &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+                  &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
                 },
+                &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
                 &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
                   &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
                   &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -1891,7 +1924,7 @@ Args:
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;membershipSpecs&quot;: { # Optional. Membership-specific configuration for this Feature. If this Feature does not support any per-Membership configuration, this field may be unused. The keys indicate which Membership the configuration is for, in the form: `projects/{p}/locations/{l}/memberships/{m}` Where {p} is the project, {l} is a valid location and {m} is a valid Membership in this project at that location. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Membership is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
-    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership.
+    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership. NOTE: Please use snake case in your feature name.
       &quot;anthosobservability&quot;: { # **Anthosobservability**: Per-Membership Feature spec. # Anthos Observability-specific spec
         &quot;doNotOptimizeMetrics&quot;: True or False, # Use full of metrics rather than optimized metrics. See https://cloud.google.com/anthos/clusters/docs/on-prem/1.8/concepts/logging-and-monitoring#optimized_metrics_default_metrics
         &quot;enableStackdriverOnApplications&quot;: True or False, # Enable collecting and reporting metrics and logs from user apps.
@@ -1905,9 +1938,10 @@ Args:
         &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
           &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
         },
+        &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
         &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
           &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
           &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -1919,8 +1953,10 @@ Args:
             &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
           },
           &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+            &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
           },
+          &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
           &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -2073,7 +2109,7 @@ Args:
           },
           &quot;webhook&quot;: &quot;A String&quot;, # The state of the binauthz webhook.
         },
-        &quot;clusterName&quot;: &quot;A String&quot;, # The user-defined name for the cluster used by ClusterSelectors to group clusters together. This should match Membership&#x27;s membership_name, unless the user installed ACM on the cluster manually prior to enabling the ACM hub feature. Unique within a Anthos Config Management installation.
+        &quot;clusterName&quot;: &quot;A String&quot;, # This field is set to the `cluster_name` field of the Membership Spec if it is not empty. Otherwise, it is set to the cluster&#x27;s fleet membership name.
         &quot;configSyncState&quot;: { # State information for ConfigSync # Current sync status
           &quot;deploymentState&quot;: { # The state of ConfigSync&#x27;s deployment on a cluster # Information about the deployment of ConfigSync, including the version of the various Pods deployed
             &quot;admissionWebhook&quot;: &quot;A String&quot;, # Deployment state of admission-webhook
@@ -2084,6 +2120,11 @@ Args:
             &quot;rootReconciler&quot;: &quot;A String&quot;, # Deployment state of root-reconciler
             &quot;syncer&quot;: &quot;A String&quot;, # Deployment state of the syncer pod
           },
+          &quot;errors&quot;: [ # Errors pertaining to the installation of Config Sync.
+            { # Errors pertaining to the installation of Config Sync
+              &quot;errorMessage&quot;: &quot;A String&quot;, # A string representing the user facing error message
+            },
+          ],
           &quot;syncState&quot;: { # State indicating an ACM&#x27;s progress syncing configurations to a cluster # The state of ConfigSync&#x27;s process to sync configs to a cluster
             &quot;code&quot;: &quot;A String&quot;, # Sync status code
             &quot;errors&quot;: [ # A list of errors resulting from problematic configs. This list will be truncated after 100 errors, although it is unlikely for that many errors to simultaneously exist.
@@ -2134,9 +2175,10 @@ Args:
           &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
             &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
           },
+          &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
           &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
             &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
             &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -2148,8 +2190,10 @@ Args:
               &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
             },
             &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+              &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
             },
+            &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
             &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
