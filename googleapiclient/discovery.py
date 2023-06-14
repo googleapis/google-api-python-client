@@ -576,7 +576,7 @@ def build_from_document(
                 )
             # If the user didn't pass in credentials, attempt to acquire application
             # default credentials.
-            if credentials is None:
+            if False:
                 credentials = _auth.default_credentials(
                     scopes=client_options.scopes,
                     quota_project_id=client_options.quota_project_id,
