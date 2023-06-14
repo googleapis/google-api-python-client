@@ -1594,7 +1594,7 @@
       }
     }
   },
-  "revision": "20230518",
+  "revision": "20230606",
   "rootUrl": "https://gkehub.googleapis.com/",
   "schemas": {
     "AnthosObservabilityFeatureSpec": {
@@ -1832,7 +1832,7 @@
           "type": "boolean"
         },
         "enabled": {
-          "description": "Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.",
+          "description": "Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).",
           "type": "boolean"
         },
         "git": {
@@ -1842,6 +1842,10 @@
         "managed": {
           "$ref": "ConfigManagementManaged",
           "description": "Configuration for Managed Config Sync."
+        },
+        "metricsGcpServiceAccountEmail": {
+          "description": "The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.",
+          "type": "string"
         },
         "oci": {
           "$ref": "ConfigManagementOciConfig",
@@ -1977,6 +1981,17 @@
       },
       "type": "object"
     },
+    "ConfigManagementConfigSyncError": {
+      "description": "Errors pertaining to the installation of Config Sync",
+      "id": "ConfigManagementConfigSyncError",
+      "properties": {
+        "errorMessage": {
+          "description": "A string representing the user facing error message",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "ConfigManagementConfigSyncState": {
       "description": "State information for ConfigSync",
       "id": "ConfigManagementConfigSyncState",
@@ -1984,6 +1999,13 @@
         "deploymentState": {
           "$ref": "ConfigManagementConfigSyncDeploymentState",
           "description": "Information about the deployment of ConfigSync, including the version of the various Pods deployed"
+        },
+        "errors": {
+          "description": "Errors pertaining to the installation of Config Sync.",
+          "items": {
+            "$ref": "ConfigManagementConfigSyncError"
+          },
+          "type": "array"
         },
         "syncState": {
           "$ref": "ConfigManagementSyncState",
@@ -2272,7 +2294,11 @@
       "id": "ConfigManagementManaged",
       "properties": {
         "enabled": {
-          "description": "Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.",
+          "description": "Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.",
+          "type": "boolean"
+        },
+        "stopSyncing": {
+          "description": "Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.",
           "type": "boolean"
         }
       },
@@ -2285,6 +2311,10 @@
         "binauthz": {
           "$ref": "ConfigManagementBinauthzConfig",
           "description": "Binauthz conifguration for the cluster."
+        },
+        "cluster": {
+          "description": "The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster's fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster's fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.",
+          "type": "string"
         },
         "configSync": {
           "$ref": "ConfigManagementConfigSync",
@@ -2314,7 +2344,7 @@
           "description": "Binauthz status"
         },
         "clusterName": {
-          "description": "The user-defined name for the cluster used by ClusterSelectors to group clusters together. This should match Membership's membership_name, unless the user installed ACM on the cluster manually prior to enabling the ACM hub feature. Unique within a Anthos Config Management installation.",
+          "description": "This field is set to the `cluster_name` field of the Membership Spec if it is not empty. Otherwise, it is set to the cluster's fleet membership name.",
           "type": "string"
         },
         "configSyncState": {
@@ -3367,7 +3397,7 @@
       "type": "object"
     },
     "MembershipFeatureSpec": {
-      "description": "MembershipFeatureSpec contains configuration information for a single Membership.",
+      "description": "MembershipFeatureSpec contains configuration information for a single Membership. NOTE: Please use snake case in your feature name.",
       "id": "MembershipFeatureSpec",
       "properties": {
         "anthosobservability": {
