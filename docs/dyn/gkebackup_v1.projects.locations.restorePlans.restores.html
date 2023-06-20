@@ -142,6 +142,14 @@ Args:
     &quot;allNamespaces&quot;: True or False, # Restore all namespaced resources in the Backup if set to &quot;True&quot;. Specifying this field to &quot;False&quot; is an error.
     &quot;clusterResourceConflictPolicy&quot;: &quot;A String&quot;, # Defines the behavior for handling the situation where cluster-scoped resources being restored already exist in the target cluster. This MUST be set to a value other than CLUSTER_RESOURCE_CONFLICT_POLICY_UNSPECIFIED if cluster_resource_restore_scope is not empty.
     &quot;clusterResourceRestoreScope&quot;: { # Defines the scope of cluster-scoped resources to restore. Some group kinds are not reasonable choices for a restore, and will cause an error if selected here. Any scope selection that would restore &quot;all valid&quot; resources automatically excludes these group kinds. - gkebackup.gke.io/BackupJob - gkebackup.gke.io/RestoreJob - metrics.k8s.io/NodeMetrics - migration.k8s.io/StorageState - migration.k8s.io/StorageVersionMigration - Node - snapshot.storage.k8s.io/VolumeSnapshotContent - storage.k8s.io/CSINode Some group kinds are driven by restore configuration elsewhere, and will cause an error if selected here. - Namespace - PersistentVolume # Identifies the cluster-scoped resources to restore from the Backup. Not specifying it means NO cluster resource will be restored.
+      &quot;allGroupKinds&quot;: True or False, # If True, all valid cluster-scoped resources will be restored. Mutually exclusive to any other field in the message.
+      &quot;excludedGroupKinds&quot;: [ # A list of cluster-scoped resource group kinds to NOT restore from the backup. If specified, all valid cluster-scoped resources will be restored except for those specified in the list. Mutually exclusive to any other field in the message.
+        { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
+          &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
+          &quot;resourceKind&quot;: &quot;A String&quot;, # Kind of a Kubernetes resource, e.g. &quot;CustomResourceDefinition&quot;, &quot;StorageClass&quot;, etc.
+        },
+      ],
+      &quot;noGroupKinds&quot;: True or False, # If True, no cluster-scoped resources will be restored. This has the same restore scope as if the message is not defined. Mutually exclusive to any other field in the message.
       &quot;selectedGroupKinds&quot;: [ # A list of cluster-scoped resource group kinds to restore from the backup. If specified, only the selected resources will be restored. Mutually exclusive to any other field in the message.
         { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
           &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
@@ -149,7 +157,13 @@ Args:
         },
       ],
     },
+    &quot;excludedNamespaces&quot;: { # A list of Kubernetes Namespaces # A list of selected namespaces excluded from restoration. All namespaces except those in this list will be restored.
+      &quot;namespaces&quot;: [ # A list of Kubernetes Namespaces
+        &quot;A String&quot;,
+      ],
+    },
     &quot;namespacedResourceRestoreMode&quot;: &quot;A String&quot;, # Defines the behavior for handling the situation where sets of namespaced resources being restored already exist in the target cluster. This MUST be set to a value other than NAMESPACED_RESOURCE_RESTORE_MODE_UNSPECIFIED.
+    &quot;noNamespaces&quot;: True or False, # Do not restore any namespaced resources if set to &quot;True&quot;. Specifying this field to &quot;False&quot; is not allowed.
     &quot;selectedApplications&quot;: { # A list of namespaced Kubernetes resources. # A list of selected ProtectedApplications to restore. The listed ProtectedApplications and all the resources to which they refer will be restored.
       &quot;namespacedNames&quot;: [ # A list of namespaced Kubernetes resources.
         { # A reference to a namespaced resource in Kubernetes.
@@ -177,6 +191,31 @@ Args:
         &quot;targetNamespaces&quot;: [ # (Filtering parameter) Any resource subject to substitution must be contained within one of the listed Kubernetes Namespace in the Backup. If this field is not provided, no namespace filtering will be performed (all resources in all Namespaces, including all cluster-scoped resources, will be candidates for substitution). To mix cluster-scoped and namespaced resources in the same rule, use an empty string (&quot;&quot;) as one of the target namespaces.
           &quot;A String&quot;,
         ],
+      },
+    ],
+    &quot;transformationRules&quot;: [ # A list of transformation rules to be applied against Kubernetes resources as they are selected for restoration from a Backup. Rules are executed in order defined - this order matters, as changes made by a rule may impact the filtering logic of subsequent rules. An empty list means no transformation will occur.
+      { # A transformation rule to be applied against Kubernetes resources as they are selected for restoration from a Backup. A rule contains both filtering logic (which resources are subject to transform) and transformation logic.
+        &quot;description&quot;: &quot;A String&quot;, # The description is a user specified string description of the transformation rule.
+        &quot;fieldActions&quot;: [ # Required. A list of transformation rule actions to take against candidate resources. Actions are executed in order defined - this order matters, as they could potentially interfere with each other and the first operation could affect the outcome of the second operation.
+          { # TransformationRuleAction defines a TransformationRule action based on the JSON Patch RFC (https://www.rfc-editor.org/rfc/rfc6902)
+            &quot;fromPath&quot;: &quot;A String&quot;, # A string containing a JSON Pointer value that references the location in the target document to move the value from.
+            &quot;op&quot;: &quot;A String&quot;, # Required. op specifies the operation to perform.
+            &quot;path&quot;: &quot;A String&quot;, # A string containing a JSON-Pointer value that references a location within the target document where the operation is performed.
+            &quot;value&quot;: &quot;A String&quot;, # A string that specifies the desired value in string format to use for transformation.
+          },
+        ],
+        &quot;resourceFilter&quot;: { # ResourceFilter specifies matching criteria to limit the scope of a change to a specific set of kubernetes resources that are selected for restoration from a backup. # This field is used to specify a set of fields that should be used to determine which resources in backup should be acted upon by the supplied transformation rule actions, and this will ensure that only specific resources are affected by transformation rule actions.
+          &quot;groupKinds&quot;: [ # (Filtering parameter) Any resource subject to transformation must belong to one of the listed &quot;types&quot;. If this field is not provided, no type filtering will be performed (all resources of all types matching previous filtering parameters will be candidates for transformation).
+            { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
+              &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
+              &quot;resourceKind&quot;: &quot;A String&quot;, # Kind of a Kubernetes resource, e.g. &quot;CustomResourceDefinition&quot;, &quot;StorageClass&quot;, etc.
+            },
+          ],
+          &quot;jsonPath&quot;: &quot;A String&quot;, # This is a [JSONPath] (https://github.com/json-path/JsonPath/blob/master/README.md) expression that matches specific fields of candidate resources and it operates as a filtering parameter (resources that are not matched with this expression will not be candidates for transformation).
+          &quot;namespaces&quot;: [ # (Filtering parameter) Any resource subject to transformation must be contained within one of the listed Kubernetes Namespace in the Backup. If this field is not provided, no namespace filtering will be performed (all resources in all Namespaces, including all cluster-scoped resources, will be candidates for transformation). To mix cluster-scoped and namespaced resources in the same rule, use an empty string (&quot;&quot;) as one of the target namespaces.
+            &quot;A String&quot;,
+          ],
+        },
       },
     ],
     &quot;volumeDataRestorePolicy&quot;: &quot;A String&quot;, # Specifies the mechanism to be used to restore volume data. Default: VOLUME_DATA_RESTORE_POLICY_UNSPECIFIED (will be treated as NO_VOLUME_DATA_RESTORATION).
@@ -287,6 +326,14 @@ Returns:
     &quot;allNamespaces&quot;: True or False, # Restore all namespaced resources in the Backup if set to &quot;True&quot;. Specifying this field to &quot;False&quot; is an error.
     &quot;clusterResourceConflictPolicy&quot;: &quot;A String&quot;, # Defines the behavior for handling the situation where cluster-scoped resources being restored already exist in the target cluster. This MUST be set to a value other than CLUSTER_RESOURCE_CONFLICT_POLICY_UNSPECIFIED if cluster_resource_restore_scope is not empty.
     &quot;clusterResourceRestoreScope&quot;: { # Defines the scope of cluster-scoped resources to restore. Some group kinds are not reasonable choices for a restore, and will cause an error if selected here. Any scope selection that would restore &quot;all valid&quot; resources automatically excludes these group kinds. - gkebackup.gke.io/BackupJob - gkebackup.gke.io/RestoreJob - metrics.k8s.io/NodeMetrics - migration.k8s.io/StorageState - migration.k8s.io/StorageVersionMigration - Node - snapshot.storage.k8s.io/VolumeSnapshotContent - storage.k8s.io/CSINode Some group kinds are driven by restore configuration elsewhere, and will cause an error if selected here. - Namespace - PersistentVolume # Identifies the cluster-scoped resources to restore from the Backup. Not specifying it means NO cluster resource will be restored.
+      &quot;allGroupKinds&quot;: True or False, # If True, all valid cluster-scoped resources will be restored. Mutually exclusive to any other field in the message.
+      &quot;excludedGroupKinds&quot;: [ # A list of cluster-scoped resource group kinds to NOT restore from the backup. If specified, all valid cluster-scoped resources will be restored except for those specified in the list. Mutually exclusive to any other field in the message.
+        { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
+          &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
+          &quot;resourceKind&quot;: &quot;A String&quot;, # Kind of a Kubernetes resource, e.g. &quot;CustomResourceDefinition&quot;, &quot;StorageClass&quot;, etc.
+        },
+      ],
+      &quot;noGroupKinds&quot;: True or False, # If True, no cluster-scoped resources will be restored. This has the same restore scope as if the message is not defined. Mutually exclusive to any other field in the message.
       &quot;selectedGroupKinds&quot;: [ # A list of cluster-scoped resource group kinds to restore from the backup. If specified, only the selected resources will be restored. Mutually exclusive to any other field in the message.
         { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
           &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
@@ -294,7 +341,13 @@ Returns:
         },
       ],
     },
+    &quot;excludedNamespaces&quot;: { # A list of Kubernetes Namespaces # A list of selected namespaces excluded from restoration. All namespaces except those in this list will be restored.
+      &quot;namespaces&quot;: [ # A list of Kubernetes Namespaces
+        &quot;A String&quot;,
+      ],
+    },
     &quot;namespacedResourceRestoreMode&quot;: &quot;A String&quot;, # Defines the behavior for handling the situation where sets of namespaced resources being restored already exist in the target cluster. This MUST be set to a value other than NAMESPACED_RESOURCE_RESTORE_MODE_UNSPECIFIED.
+    &quot;noNamespaces&quot;: True or False, # Do not restore any namespaced resources if set to &quot;True&quot;. Specifying this field to &quot;False&quot; is not allowed.
     &quot;selectedApplications&quot;: { # A list of namespaced Kubernetes resources. # A list of selected ProtectedApplications to restore. The listed ProtectedApplications and all the resources to which they refer will be restored.
       &quot;namespacedNames&quot;: [ # A list of namespaced Kubernetes resources.
         { # A reference to a namespaced resource in Kubernetes.
@@ -322,6 +375,31 @@ Returns:
         &quot;targetNamespaces&quot;: [ # (Filtering parameter) Any resource subject to substitution must be contained within one of the listed Kubernetes Namespace in the Backup. If this field is not provided, no namespace filtering will be performed (all resources in all Namespaces, including all cluster-scoped resources, will be candidates for substitution). To mix cluster-scoped and namespaced resources in the same rule, use an empty string (&quot;&quot;) as one of the target namespaces.
           &quot;A String&quot;,
         ],
+      },
+    ],
+    &quot;transformationRules&quot;: [ # A list of transformation rules to be applied against Kubernetes resources as they are selected for restoration from a Backup. Rules are executed in order defined - this order matters, as changes made by a rule may impact the filtering logic of subsequent rules. An empty list means no transformation will occur.
+      { # A transformation rule to be applied against Kubernetes resources as they are selected for restoration from a Backup. A rule contains both filtering logic (which resources are subject to transform) and transformation logic.
+        &quot;description&quot;: &quot;A String&quot;, # The description is a user specified string description of the transformation rule.
+        &quot;fieldActions&quot;: [ # Required. A list of transformation rule actions to take against candidate resources. Actions are executed in order defined - this order matters, as they could potentially interfere with each other and the first operation could affect the outcome of the second operation.
+          { # TransformationRuleAction defines a TransformationRule action based on the JSON Patch RFC (https://www.rfc-editor.org/rfc/rfc6902)
+            &quot;fromPath&quot;: &quot;A String&quot;, # A string containing a JSON Pointer value that references the location in the target document to move the value from.
+            &quot;op&quot;: &quot;A String&quot;, # Required. op specifies the operation to perform.
+            &quot;path&quot;: &quot;A String&quot;, # A string containing a JSON-Pointer value that references a location within the target document where the operation is performed.
+            &quot;value&quot;: &quot;A String&quot;, # A string that specifies the desired value in string format to use for transformation.
+          },
+        ],
+        &quot;resourceFilter&quot;: { # ResourceFilter specifies matching criteria to limit the scope of a change to a specific set of kubernetes resources that are selected for restoration from a backup. # This field is used to specify a set of fields that should be used to determine which resources in backup should be acted upon by the supplied transformation rule actions, and this will ensure that only specific resources are affected by transformation rule actions.
+          &quot;groupKinds&quot;: [ # (Filtering parameter) Any resource subject to transformation must belong to one of the listed &quot;types&quot;. If this field is not provided, no type filtering will be performed (all resources of all types matching previous filtering parameters will be candidates for transformation).
+            { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
+              &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
+              &quot;resourceKind&quot;: &quot;A String&quot;, # Kind of a Kubernetes resource, e.g. &quot;CustomResourceDefinition&quot;, &quot;StorageClass&quot;, etc.
+            },
+          ],
+          &quot;jsonPath&quot;: &quot;A String&quot;, # This is a [JSONPath] (https://github.com/json-path/JsonPath/blob/master/README.md) expression that matches specific fields of candidate resources and it operates as a filtering parameter (resources that are not matched with this expression will not be candidates for transformation).
+          &quot;namespaces&quot;: [ # (Filtering parameter) Any resource subject to transformation must be contained within one of the listed Kubernetes Namespace in the Backup. If this field is not provided, no namespace filtering will be performed (all resources in all Namespaces, including all cluster-scoped resources, will be candidates for transformation). To mix cluster-scoped and namespaced resources in the same rule, use an empty string (&quot;&quot;) as one of the target namespaces.
+            &quot;A String&quot;,
+          ],
+        },
       },
     ],
     &quot;volumeDataRestorePolicy&quot;: &quot;A String&quot;, # Specifies the mechanism to be used to restore volume data. Default: VOLUME_DATA_RESTORE_POLICY_UNSPECIFIED (will be treated as NO_VOLUME_DATA_RESTORATION).
@@ -421,6 +499,14 @@ Returns:
         &quot;allNamespaces&quot;: True or False, # Restore all namespaced resources in the Backup if set to &quot;True&quot;. Specifying this field to &quot;False&quot; is an error.
         &quot;clusterResourceConflictPolicy&quot;: &quot;A String&quot;, # Defines the behavior for handling the situation where cluster-scoped resources being restored already exist in the target cluster. This MUST be set to a value other than CLUSTER_RESOURCE_CONFLICT_POLICY_UNSPECIFIED if cluster_resource_restore_scope is not empty.
         &quot;clusterResourceRestoreScope&quot;: { # Defines the scope of cluster-scoped resources to restore. Some group kinds are not reasonable choices for a restore, and will cause an error if selected here. Any scope selection that would restore &quot;all valid&quot; resources automatically excludes these group kinds. - gkebackup.gke.io/BackupJob - gkebackup.gke.io/RestoreJob - metrics.k8s.io/NodeMetrics - migration.k8s.io/StorageState - migration.k8s.io/StorageVersionMigration - Node - snapshot.storage.k8s.io/VolumeSnapshotContent - storage.k8s.io/CSINode Some group kinds are driven by restore configuration elsewhere, and will cause an error if selected here. - Namespace - PersistentVolume # Identifies the cluster-scoped resources to restore from the Backup. Not specifying it means NO cluster resource will be restored.
+          &quot;allGroupKinds&quot;: True or False, # If True, all valid cluster-scoped resources will be restored. Mutually exclusive to any other field in the message.
+          &quot;excludedGroupKinds&quot;: [ # A list of cluster-scoped resource group kinds to NOT restore from the backup. If specified, all valid cluster-scoped resources will be restored except for those specified in the list. Mutually exclusive to any other field in the message.
+            { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
+              &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
+              &quot;resourceKind&quot;: &quot;A String&quot;, # Kind of a Kubernetes resource, e.g. &quot;CustomResourceDefinition&quot;, &quot;StorageClass&quot;, etc.
+            },
+          ],
+          &quot;noGroupKinds&quot;: True or False, # If True, no cluster-scoped resources will be restored. This has the same restore scope as if the message is not defined. Mutually exclusive to any other field in the message.
           &quot;selectedGroupKinds&quot;: [ # A list of cluster-scoped resource group kinds to restore from the backup. If specified, only the selected resources will be restored. Mutually exclusive to any other field in the message.
             { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
               &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
@@ -428,7 +514,13 @@ Returns:
             },
           ],
         },
+        &quot;excludedNamespaces&quot;: { # A list of Kubernetes Namespaces # A list of selected namespaces excluded from restoration. All namespaces except those in this list will be restored.
+          &quot;namespaces&quot;: [ # A list of Kubernetes Namespaces
+            &quot;A String&quot;,
+          ],
+        },
         &quot;namespacedResourceRestoreMode&quot;: &quot;A String&quot;, # Defines the behavior for handling the situation where sets of namespaced resources being restored already exist in the target cluster. This MUST be set to a value other than NAMESPACED_RESOURCE_RESTORE_MODE_UNSPECIFIED.
+        &quot;noNamespaces&quot;: True or False, # Do not restore any namespaced resources if set to &quot;True&quot;. Specifying this field to &quot;False&quot; is not allowed.
         &quot;selectedApplications&quot;: { # A list of namespaced Kubernetes resources. # A list of selected ProtectedApplications to restore. The listed ProtectedApplications and all the resources to which they refer will be restored.
           &quot;namespacedNames&quot;: [ # A list of namespaced Kubernetes resources.
             { # A reference to a namespaced resource in Kubernetes.
@@ -456,6 +548,31 @@ Returns:
             &quot;targetNamespaces&quot;: [ # (Filtering parameter) Any resource subject to substitution must be contained within one of the listed Kubernetes Namespace in the Backup. If this field is not provided, no namespace filtering will be performed (all resources in all Namespaces, including all cluster-scoped resources, will be candidates for substitution). To mix cluster-scoped and namespaced resources in the same rule, use an empty string (&quot;&quot;) as one of the target namespaces.
               &quot;A String&quot;,
             ],
+          },
+        ],
+        &quot;transformationRules&quot;: [ # A list of transformation rules to be applied against Kubernetes resources as they are selected for restoration from a Backup. Rules are executed in order defined - this order matters, as changes made by a rule may impact the filtering logic of subsequent rules. An empty list means no transformation will occur.
+          { # A transformation rule to be applied against Kubernetes resources as they are selected for restoration from a Backup. A rule contains both filtering logic (which resources are subject to transform) and transformation logic.
+            &quot;description&quot;: &quot;A String&quot;, # The description is a user specified string description of the transformation rule.
+            &quot;fieldActions&quot;: [ # Required. A list of transformation rule actions to take against candidate resources. Actions are executed in order defined - this order matters, as they could potentially interfere with each other and the first operation could affect the outcome of the second operation.
+              { # TransformationRuleAction defines a TransformationRule action based on the JSON Patch RFC (https://www.rfc-editor.org/rfc/rfc6902)
+                &quot;fromPath&quot;: &quot;A String&quot;, # A string containing a JSON Pointer value that references the location in the target document to move the value from.
+                &quot;op&quot;: &quot;A String&quot;, # Required. op specifies the operation to perform.
+                &quot;path&quot;: &quot;A String&quot;, # A string containing a JSON-Pointer value that references a location within the target document where the operation is performed.
+                &quot;value&quot;: &quot;A String&quot;, # A string that specifies the desired value in string format to use for transformation.
+              },
+            ],
+            &quot;resourceFilter&quot;: { # ResourceFilter specifies matching criteria to limit the scope of a change to a specific set of kubernetes resources that are selected for restoration from a backup. # This field is used to specify a set of fields that should be used to determine which resources in backup should be acted upon by the supplied transformation rule actions, and this will ensure that only specific resources are affected by transformation rule actions.
+              &quot;groupKinds&quot;: [ # (Filtering parameter) Any resource subject to transformation must belong to one of the listed &quot;types&quot;. If this field is not provided, no type filtering will be performed (all resources of all types matching previous filtering parameters will be candidates for transformation).
+                { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
+                  &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
+                  &quot;resourceKind&quot;: &quot;A String&quot;, # Kind of a Kubernetes resource, e.g. &quot;CustomResourceDefinition&quot;, &quot;StorageClass&quot;, etc.
+                },
+              ],
+              &quot;jsonPath&quot;: &quot;A String&quot;, # This is a [JSONPath] (https://github.com/json-path/JsonPath/blob/master/README.md) expression that matches specific fields of candidate resources and it operates as a filtering parameter (resources that are not matched with this expression will not be candidates for transformation).
+              &quot;namespaces&quot;: [ # (Filtering parameter) Any resource subject to transformation must be contained within one of the listed Kubernetes Namespace in the Backup. If this field is not provided, no namespace filtering will be performed (all resources in all Namespaces, including all cluster-scoped resources, will be candidates for transformation). To mix cluster-scoped and namespaced resources in the same rule, use an empty string (&quot;&quot;) as one of the target namespaces.
+                &quot;A String&quot;,
+              ],
+            },
           },
         ],
         &quot;volumeDataRestorePolicy&quot;: &quot;A String&quot;, # Specifies the mechanism to be used to restore volume data. Default: VOLUME_DATA_RESTORE_POLICY_UNSPECIFIED (will be treated as NO_VOLUME_DATA_RESTORATION).
@@ -514,6 +631,14 @@ Args:
     &quot;allNamespaces&quot;: True or False, # Restore all namespaced resources in the Backup if set to &quot;True&quot;. Specifying this field to &quot;False&quot; is an error.
     &quot;clusterResourceConflictPolicy&quot;: &quot;A String&quot;, # Defines the behavior for handling the situation where cluster-scoped resources being restored already exist in the target cluster. This MUST be set to a value other than CLUSTER_RESOURCE_CONFLICT_POLICY_UNSPECIFIED if cluster_resource_restore_scope is not empty.
     &quot;clusterResourceRestoreScope&quot;: { # Defines the scope of cluster-scoped resources to restore. Some group kinds are not reasonable choices for a restore, and will cause an error if selected here. Any scope selection that would restore &quot;all valid&quot; resources automatically excludes these group kinds. - gkebackup.gke.io/BackupJob - gkebackup.gke.io/RestoreJob - metrics.k8s.io/NodeMetrics - migration.k8s.io/StorageState - migration.k8s.io/StorageVersionMigration - Node - snapshot.storage.k8s.io/VolumeSnapshotContent - storage.k8s.io/CSINode Some group kinds are driven by restore configuration elsewhere, and will cause an error if selected here. - Namespace - PersistentVolume # Identifies the cluster-scoped resources to restore from the Backup. Not specifying it means NO cluster resource will be restored.
+      &quot;allGroupKinds&quot;: True or False, # If True, all valid cluster-scoped resources will be restored. Mutually exclusive to any other field in the message.
+      &quot;excludedGroupKinds&quot;: [ # A list of cluster-scoped resource group kinds to NOT restore from the backup. If specified, all valid cluster-scoped resources will be restored except for those specified in the list. Mutually exclusive to any other field in the message.
+        { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
+          &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
+          &quot;resourceKind&quot;: &quot;A String&quot;, # Kind of a Kubernetes resource, e.g. &quot;CustomResourceDefinition&quot;, &quot;StorageClass&quot;, etc.
+        },
+      ],
+      &quot;noGroupKinds&quot;: True or False, # If True, no cluster-scoped resources will be restored. This has the same restore scope as if the message is not defined. Mutually exclusive to any other field in the message.
       &quot;selectedGroupKinds&quot;: [ # A list of cluster-scoped resource group kinds to restore from the backup. If specified, only the selected resources will be restored. Mutually exclusive to any other field in the message.
         { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
           &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
@@ -521,7 +646,13 @@ Args:
         },
       ],
     },
+    &quot;excludedNamespaces&quot;: { # A list of Kubernetes Namespaces # A list of selected namespaces excluded from restoration. All namespaces except those in this list will be restored.
+      &quot;namespaces&quot;: [ # A list of Kubernetes Namespaces
+        &quot;A String&quot;,
+      ],
+    },
     &quot;namespacedResourceRestoreMode&quot;: &quot;A String&quot;, # Defines the behavior for handling the situation where sets of namespaced resources being restored already exist in the target cluster. This MUST be set to a value other than NAMESPACED_RESOURCE_RESTORE_MODE_UNSPECIFIED.
+    &quot;noNamespaces&quot;: True or False, # Do not restore any namespaced resources if set to &quot;True&quot;. Specifying this field to &quot;False&quot; is not allowed.
     &quot;selectedApplications&quot;: { # A list of namespaced Kubernetes resources. # A list of selected ProtectedApplications to restore. The listed ProtectedApplications and all the resources to which they refer will be restored.
       &quot;namespacedNames&quot;: [ # A list of namespaced Kubernetes resources.
         { # A reference to a namespaced resource in Kubernetes.
@@ -549,6 +680,31 @@ Args:
         &quot;targetNamespaces&quot;: [ # (Filtering parameter) Any resource subject to substitution must be contained within one of the listed Kubernetes Namespace in the Backup. If this field is not provided, no namespace filtering will be performed (all resources in all Namespaces, including all cluster-scoped resources, will be candidates for substitution). To mix cluster-scoped and namespaced resources in the same rule, use an empty string (&quot;&quot;) as one of the target namespaces.
           &quot;A String&quot;,
         ],
+      },
+    ],
+    &quot;transformationRules&quot;: [ # A list of transformation rules to be applied against Kubernetes resources as they are selected for restoration from a Backup. Rules are executed in order defined - this order matters, as changes made by a rule may impact the filtering logic of subsequent rules. An empty list means no transformation will occur.
+      { # A transformation rule to be applied against Kubernetes resources as they are selected for restoration from a Backup. A rule contains both filtering logic (which resources are subject to transform) and transformation logic.
+        &quot;description&quot;: &quot;A String&quot;, # The description is a user specified string description of the transformation rule.
+        &quot;fieldActions&quot;: [ # Required. A list of transformation rule actions to take against candidate resources. Actions are executed in order defined - this order matters, as they could potentially interfere with each other and the first operation could affect the outcome of the second operation.
+          { # TransformationRuleAction defines a TransformationRule action based on the JSON Patch RFC (https://www.rfc-editor.org/rfc/rfc6902)
+            &quot;fromPath&quot;: &quot;A String&quot;, # A string containing a JSON Pointer value that references the location in the target document to move the value from.
+            &quot;op&quot;: &quot;A String&quot;, # Required. op specifies the operation to perform.
+            &quot;path&quot;: &quot;A String&quot;, # A string containing a JSON-Pointer value that references a location within the target document where the operation is performed.
+            &quot;value&quot;: &quot;A String&quot;, # A string that specifies the desired value in string format to use for transformation.
+          },
+        ],
+        &quot;resourceFilter&quot;: { # ResourceFilter specifies matching criteria to limit the scope of a change to a specific set of kubernetes resources that are selected for restoration from a backup. # This field is used to specify a set of fields that should be used to determine which resources in backup should be acted upon by the supplied transformation rule actions, and this will ensure that only specific resources are affected by transformation rule actions.
+          &quot;groupKinds&quot;: [ # (Filtering parameter) Any resource subject to transformation must belong to one of the listed &quot;types&quot;. If this field is not provided, no type filtering will be performed (all resources of all types matching previous filtering parameters will be candidates for transformation).
+            { # This is a direct map to the Kubernetes GroupKind type [GroupKind](https://godoc.org/k8s.io/apimachinery/pkg/runtime/schema#GroupKind) and is used for identifying specific &quot;types&quot; of resources to restore.
+              &quot;resourceGroup&quot;: &quot;A String&quot;, # API group string of a Kubernetes resource, e.g. &quot;apiextensions.k8s.io&quot;, &quot;storage.k8s.io&quot;, etc. Note: use empty string for core API group
+              &quot;resourceKind&quot;: &quot;A String&quot;, # Kind of a Kubernetes resource, e.g. &quot;CustomResourceDefinition&quot;, &quot;StorageClass&quot;, etc.
+            },
+          ],
+          &quot;jsonPath&quot;: &quot;A String&quot;, # This is a [JSONPath] (https://github.com/json-path/JsonPath/blob/master/README.md) expression that matches specific fields of candidate resources and it operates as a filtering parameter (resources that are not matched with this expression will not be candidates for transformation).
+          &quot;namespaces&quot;: [ # (Filtering parameter) Any resource subject to transformation must be contained within one of the listed Kubernetes Namespace in the Backup. If this field is not provided, no namespace filtering will be performed (all resources in all Namespaces, including all cluster-scoped resources, will be candidates for transformation). To mix cluster-scoped and namespaced resources in the same rule, use an empty string (&quot;&quot;) as one of the target namespaces.
+            &quot;A String&quot;,
+          ],
+        },
       },
     ],
     &quot;volumeDataRestorePolicy&quot;: &quot;A String&quot;, # Specifies the mechanism to be used to restore volume data. Default: VOLUME_DATA_RESTORE_POLICY_UNSPECIFIED (will be treated as NO_VOLUME_DATA_RESTORATION).
