@@ -162,7 +162,7 @@ Args:
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;membershipSpecs&quot;: { # Optional. Membership-specific configuration for this Feature. If this Feature does not support any per-Membership configuration, this field may be unused. The keys indicate which Membership the configuration is for, in the form: `projects/{p}/locations/{l}/memberships/{m}` Where {p} is the project, {l} is a valid location and {m} is a valid Membership in this project at that location. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Membership is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
-    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership.
+    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership. NOTE: Please use snake case in your feature name.
       &quot;anthosobservability&quot;: { # **Anthosobservability**: Per-Membership Feature spec. # Anthos Observability-specific spec
         &quot;doNotOptimizeMetrics&quot;: True or False, # Use full of metrics rather than optimized metrics. See https://cloud.google.com/anthos/clusters/docs/on-prem/1.8/concepts/logging-and-monitoring#optimized_metrics_default_metrics
         &quot;enableStackdriverOnApplications&quot;: True or False, # Enable collecting and reporting metrics and logs from user apps.
@@ -176,9 +176,10 @@ Args:
         &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
           &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
         },
+        &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
         &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
           &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
           &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -190,8 +191,10 @@ Args:
             &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
           },
           &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+            &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
           },
+          &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
           &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -222,6 +225,7 @@ Args:
           &quot;mutationEnabled&quot;: True or False, # Enable or disable mutation in policy controller. If true, mutation CRDs, webhook and controller deployment will be deployed to the cluster.
           &quot;referentialRulesEnabled&quot;: True or False, # Enables the ability to use Constraint Templates that reference to objects other than the object currently being evaluated.
           &quot;templateLibraryInstalled&quot;: True or False, # Installs the default template library along with Policy Controller.
+          &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Last time this membership spec was updated.
         },
         &quot;version&quot;: &quot;A String&quot;, # Version of ACM installed.
       },
@@ -341,6 +345,28 @@ Args:
           &quot;description&quot;: &quot;A String&quot;, # Description is populated if Code is Failed, explaining why it has failed.
         },
       },
+      &quot;clusterupgrade&quot;: { # Per-membership state for this feature. # ClusterUpgrade state.
+        &quot;ignored&quot;: { # IgnoredMembership represents a membership ignored by the feature. A membership can be ignored because it was manually upgraded to a newer version than RC default. # Whether this membership is ignored by the feature. For example, manually upgraded clusters can be ignored if they are newer than the default versions of its release channel.
+          &quot;ignoredTime&quot;: &quot;A String&quot;, # Time when the membership was first set to ignored.
+          &quot;reason&quot;: &quot;A String&quot;, # Reason why the membership is ignored.
+        },
+        &quot;scopes&quot;: [ # Fully qualified scope names that this clusters is bound to which also have rollout sequencing enabled.
+          &quot;A String&quot;,
+        ],
+        &quot;upgrades&quot;: [ # Actual upgrade state against desired.
+          { # ScopeGKEUpgradeState is a GKEUpgrade and its state per-membership.
+            &quot;status&quot;: { # UpgradeStatus provides status information for each upgrade. # Status of the upgrade.
+              &quot;code&quot;: &quot;A String&quot;, # Status code of the upgrade.
+              &quot;reason&quot;: &quot;A String&quot;, # Reason for this status.
+              &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the status was updated.
+            },
+            &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Which upgrade to track the state.
+              &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+              &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+            },
+          },
+        ],
+      },
       &quot;configmanagement&quot;: { # **Anthos Config Management**: State for a single cluster. # Config Management-specific state.
         &quot;binauthzState&quot;: { # State for Binauthz # Binauthz status
           &quot;version&quot;: { # The version of binauthz. # The version of binauthz that is installed.
@@ -348,7 +374,7 @@ Args:
           },
           &quot;webhook&quot;: &quot;A String&quot;, # The state of the binauthz webhook.
         },
-        &quot;clusterName&quot;: &quot;A String&quot;, # The user-defined name for the cluster used by ClusterSelectors to group clusters together. This should match Membership&#x27;s membership_name, unless the user installed ACM on the cluster manually prior to enabling the ACM hub feature. Unique within a Anthos Config Management installation.
+        &quot;clusterName&quot;: &quot;A String&quot;, # This field is set to the `cluster_name` field of the Membership Spec if it is not empty. Otherwise, it is set to the cluster&#x27;s fleet membership name.
         &quot;configSyncState&quot;: { # State information for ConfigSync # Current sync status
           &quot;deploymentState&quot;: { # The state of ConfigSync&#x27;s deployment on a cluster # Information about the deployment of ConfigSync, including the version of the various Pods deployed
             &quot;admissionWebhook&quot;: &quot;A String&quot;, # Deployment state of admission-webhook
@@ -359,6 +385,11 @@ Args:
             &quot;rootReconciler&quot;: &quot;A String&quot;, # Deployment state of root-reconciler
             &quot;syncer&quot;: &quot;A String&quot;, # Deployment state of the syncer pod
           },
+          &quot;errors&quot;: [ # Errors pertaining to the installation of Config Sync.
+            { # Errors pertaining to the installation of Config Sync
+              &quot;errorMessage&quot;: &quot;A String&quot;, # A string representing the user facing error message
+            },
+          ],
           &quot;syncState&quot;: { # State indicating an ACM&#x27;s progress syncing configurations to a cluster # The state of ConfigSync&#x27;s process to sync configs to a cluster
             &quot;code&quot;: &quot;A String&quot;, # Sync status code
             &quot;errors&quot;: [ # A list of errors resulting from problematic configs. This list will be truncated after 100 errors, although it is unlikely for that many errors to simultaneously exist.
@@ -409,9 +440,10 @@ Args:
           &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
             &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
           },
+          &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
           &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
             &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
             &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -423,8 +455,10 @@ Args:
               &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
             },
             &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+              &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
             },
+            &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
             &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -455,6 +489,7 @@ Args:
             &quot;mutationEnabled&quot;: True or False, # Enable or disable mutation in policy controller. If true, mutation CRDs, webhook and controller deployment will be deployed to the cluster.
             &quot;referentialRulesEnabled&quot;: True or False, # Enables the ability to use Constraint Templates that reference to objects other than the object currently being evaluated.
             &quot;templateLibraryInstalled&quot;: True or False, # Installs the default template library along with Policy Controller.
+            &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Last time this membership spec was updated.
           },
           &quot;version&quot;: &quot;A String&quot;, # Version of ACM installed.
         },
@@ -474,6 +509,7 @@ Args:
             &quot;gatekeeperMutation&quot;: &quot;A String&quot;, # Status of the pod serving the mutation webhook.
           },
           &quot;migration&quot;: { # State for the migration of PolicyController from ACM -&gt; PoCo Hub. # Record state of ACM -&gt; PoCo Hub migration for this feature.
+            &quot;copyTime&quot;: &quot;A String&quot;, # Last time this membership spec was copied to PoCo feature.
             &quot;stage&quot;: &quot;A String&quot;, # Stage of the migration.
           },
           &quot;version&quot;: { # The build version of Gatekeeper Policy Controller is using. # The version of Gatekeeper Policy Controller deployed.
@@ -546,6 +582,10 @@ Args:
               &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
             },
           },
+          &quot;referentialSyncConfigState&quot;: { # OnClusterState represents the state of a sub-component of Policy Controller. # The state of the referential data sync configuration. This could represent the state of either the syncSet object(s) or the config object, depending on the version of PoCo configured by the user.
+            &quot;details&quot;: &quot;A String&quot;, # Surface potential errors or information logs.
+            &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
+          },
           &quot;templateLibraryState&quot;: { # OnClusterState represents the state of a sub-component of Policy Controller. # The state of the template library
             &quot;details&quot;: &quot;A String&quot;, # Surface potential errors or information logs.
             &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
@@ -606,10 +646,66 @@ Args:
   },
   &quot;scopeSpecs&quot;: { # Optional. Scope-specific configuration for this Feature. If this Feature does not support any per-Scope configuration, this field may be unused. The keys indicate which Scope the configuration is for, in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Scope is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
     &quot;a_key&quot;: { # ScopeFeatureSpec contains feature specs for a fleet scope.
+      &quot;clusterupgrade&quot;: { # **ClusterUpgrade**: The configuration for the scope-level ClusterUpgrade feature. # Spec for the ClusterUpgrade feature at the scope level
+        &quot;gkeUpgradeOverrides&quot;: [ # Allow users to override some properties of each GKE upgrade.
+          { # Properties of a GKE upgrade that can be overridden by the user. For example, a user can skip soaking by overriding the soaking to 0.
+            &quot;postConditions&quot;: { # Post conditional checks after an upgrade has been applied on all eligible clusters. # Required. Post conditions to override for the specified upgrade (name + version). Required.
+              &quot;soaking&quot;: &quot;A String&quot;, # Required. Amount of time to &quot;soak&quot; after a rollout has been finished before marking it COMPLETE. Cannot exceed 30 days. Required.
+            },
+            &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Required. Which upgrade to override. Required.
+              &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+              &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+            },
+          },
+        ],
+        &quot;postConditions&quot;: { # Post conditional checks after an upgrade has been applied on all eligible clusters. # Required. Post conditions to evaluate to mark an upgrade COMPLETE. Required.
+          &quot;soaking&quot;: &quot;A String&quot;, # Required. Amount of time to &quot;soak&quot; after a rollout has been finished before marking it COMPLETE. Cannot exceed 30 days. Required.
+        },
+        &quot;upstreamScopes&quot;: [ # This scope consumes upgrades that have COMPLETE status code in the upstream scopes. See UpgradeStatus.Code for code definitions. The scope name should be in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project. This is defined as repeated for future proof reasons. Initial implementation will enforce at most one upstream scope.
+          &quot;A String&quot;,
+        ],
+      },
     },
   },
   &quot;scopeStates&quot;: { # Output only. Scope-specific Feature status. If this Feature does report any per-Scope status, this field may be unused. The keys indicate which Scope the state is for, in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project.
     &quot;a_key&quot;: { # ScopeFeatureState contains Scope-wide Feature status information.
+      &quot;clusterupgrade&quot;: { # **ClusterUpgrade**: The state for the scope-level ClusterUpgrade feature. # State for the ClusterUpgrade feature at the scope level
+        &quot;downstreamScopes&quot;: [ # This scopes whose upstream_scopes contain the current scope. The scope name should be in the form: `projects/{p}/locations/gloobal/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project.
+          &quot;A String&quot;,
+        ],
+        &quot;gkeState&quot;: { # GKEUpgradeFeatureState contains feature states for GKE clusters in the scope. # Feature state for GKE clusters.
+          &quot;conditions&quot;: [ # Current conditions of the feature.
+            { # GKEUpgradeFeatureCondition describes the condition of the feature for GKE clusters at a certain point of time.
+              &quot;reason&quot;: &quot;A String&quot;, # Reason why the feature is in this status.
+              &quot;status&quot;: &quot;A String&quot;, # Status of the condition, one of True, False, Unknown.
+              &quot;type&quot;: &quot;A String&quot;, # Type of the condition, for example, &quot;ready&quot;.
+              &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the condition was updated.
+            },
+          ],
+          &quot;state&quot;: [ # Scope-level upgrade state.
+            { # ScopeGKEUpgradeState is a GKEUpgrade and its state at the scope level.
+              &quot;stats&quot;: { # Number of GKE clusters in each status code.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;status&quot;: { # UpgradeStatus provides status information for each upgrade. # Status of the upgrade.
+                &quot;code&quot;: &quot;A String&quot;, # Status code of the upgrade.
+                &quot;reason&quot;: &quot;A String&quot;, # Reason for this status.
+                &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the status was updated.
+              },
+              &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Which upgrade to track the state.
+                &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+                &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+              },
+            },
+          ],
+        },
+        &quot;ignored&quot;: { # A list of memberships ignored by the feature. For example, manually upgraded clusters can be ignored if they are newer than the default versions of its release channel. The membership resource is in the format: `projects/{p}/locations/{l}/membership/{m}`.
+          &quot;a_key&quot;: { # IgnoredMembership represents a membership ignored by the feature. A membership can be ignored because it was manually upgraded to a newer version than RC default.
+            &quot;ignoredTime&quot;: &quot;A String&quot;, # Time when the membership was first set to ignored.
+            &quot;reason&quot;: &quot;A String&quot;, # Reason why the membership is ignored.
+          },
+        },
+      },
       &quot;state&quot;: { # FeatureState describes the high-level state of a Feature. It may be used to describe a Feature&#x27;s state at the environ-level, or per-membershop, depending on the context. # Output only. The &quot;running state&quot; of the Feature in this Scope.
         &quot;code&quot;: &quot;A String&quot;, # The high-level, machine-readable status of this Feature.
         &quot;description&quot;: &quot;A String&quot;, # A human-readable description of the current status.
@@ -817,7 +913,7 @@ Returns:
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;membershipSpecs&quot;: { # Optional. Membership-specific configuration for this Feature. If this Feature does not support any per-Membership configuration, this field may be unused. The keys indicate which Membership the configuration is for, in the form: `projects/{p}/locations/{l}/memberships/{m}` Where {p} is the project, {l} is a valid location and {m} is a valid Membership in this project at that location. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Membership is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
-    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership.
+    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership. NOTE: Please use snake case in your feature name.
       &quot;anthosobservability&quot;: { # **Anthosobservability**: Per-Membership Feature spec. # Anthos Observability-specific spec
         &quot;doNotOptimizeMetrics&quot;: True or False, # Use full of metrics rather than optimized metrics. See https://cloud.google.com/anthos/clusters/docs/on-prem/1.8/concepts/logging-and-monitoring#optimized_metrics_default_metrics
         &quot;enableStackdriverOnApplications&quot;: True or False, # Enable collecting and reporting metrics and logs from user apps.
@@ -831,9 +927,10 @@ Returns:
         &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
           &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
         },
+        &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
         &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
           &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
           &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -845,8 +942,10 @@ Returns:
             &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
           },
           &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+            &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
           },
+          &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
           &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -877,6 +976,7 @@ Returns:
           &quot;mutationEnabled&quot;: True or False, # Enable or disable mutation in policy controller. If true, mutation CRDs, webhook and controller deployment will be deployed to the cluster.
           &quot;referentialRulesEnabled&quot;: True or False, # Enables the ability to use Constraint Templates that reference to objects other than the object currently being evaluated.
           &quot;templateLibraryInstalled&quot;: True or False, # Installs the default template library along with Policy Controller.
+          &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Last time this membership spec was updated.
         },
         &quot;version&quot;: &quot;A String&quot;, # Version of ACM installed.
       },
@@ -996,6 +1096,28 @@ Returns:
           &quot;description&quot;: &quot;A String&quot;, # Description is populated if Code is Failed, explaining why it has failed.
         },
       },
+      &quot;clusterupgrade&quot;: { # Per-membership state for this feature. # ClusterUpgrade state.
+        &quot;ignored&quot;: { # IgnoredMembership represents a membership ignored by the feature. A membership can be ignored because it was manually upgraded to a newer version than RC default. # Whether this membership is ignored by the feature. For example, manually upgraded clusters can be ignored if they are newer than the default versions of its release channel.
+          &quot;ignoredTime&quot;: &quot;A String&quot;, # Time when the membership was first set to ignored.
+          &quot;reason&quot;: &quot;A String&quot;, # Reason why the membership is ignored.
+        },
+        &quot;scopes&quot;: [ # Fully qualified scope names that this clusters is bound to which also have rollout sequencing enabled.
+          &quot;A String&quot;,
+        ],
+        &quot;upgrades&quot;: [ # Actual upgrade state against desired.
+          { # ScopeGKEUpgradeState is a GKEUpgrade and its state per-membership.
+            &quot;status&quot;: { # UpgradeStatus provides status information for each upgrade. # Status of the upgrade.
+              &quot;code&quot;: &quot;A String&quot;, # Status code of the upgrade.
+              &quot;reason&quot;: &quot;A String&quot;, # Reason for this status.
+              &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the status was updated.
+            },
+            &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Which upgrade to track the state.
+              &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+              &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+            },
+          },
+        ],
+      },
       &quot;configmanagement&quot;: { # **Anthos Config Management**: State for a single cluster. # Config Management-specific state.
         &quot;binauthzState&quot;: { # State for Binauthz # Binauthz status
           &quot;version&quot;: { # The version of binauthz. # The version of binauthz that is installed.
@@ -1003,7 +1125,7 @@ Returns:
           },
           &quot;webhook&quot;: &quot;A String&quot;, # The state of the binauthz webhook.
         },
-        &quot;clusterName&quot;: &quot;A String&quot;, # The user-defined name for the cluster used by ClusterSelectors to group clusters together. This should match Membership&#x27;s membership_name, unless the user installed ACM on the cluster manually prior to enabling the ACM hub feature. Unique within a Anthos Config Management installation.
+        &quot;clusterName&quot;: &quot;A String&quot;, # This field is set to the `cluster_name` field of the Membership Spec if it is not empty. Otherwise, it is set to the cluster&#x27;s fleet membership name.
         &quot;configSyncState&quot;: { # State information for ConfigSync # Current sync status
           &quot;deploymentState&quot;: { # The state of ConfigSync&#x27;s deployment on a cluster # Information about the deployment of ConfigSync, including the version of the various Pods deployed
             &quot;admissionWebhook&quot;: &quot;A String&quot;, # Deployment state of admission-webhook
@@ -1014,6 +1136,11 @@ Returns:
             &quot;rootReconciler&quot;: &quot;A String&quot;, # Deployment state of root-reconciler
             &quot;syncer&quot;: &quot;A String&quot;, # Deployment state of the syncer pod
           },
+          &quot;errors&quot;: [ # Errors pertaining to the installation of Config Sync.
+            { # Errors pertaining to the installation of Config Sync
+              &quot;errorMessage&quot;: &quot;A String&quot;, # A string representing the user facing error message
+            },
+          ],
           &quot;syncState&quot;: { # State indicating an ACM&#x27;s progress syncing configurations to a cluster # The state of ConfigSync&#x27;s process to sync configs to a cluster
             &quot;code&quot;: &quot;A String&quot;, # Sync status code
             &quot;errors&quot;: [ # A list of errors resulting from problematic configs. This list will be truncated after 100 errors, although it is unlikely for that many errors to simultaneously exist.
@@ -1064,9 +1191,10 @@ Returns:
           &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
             &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
           },
+          &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
           &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
             &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
             &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -1078,8 +1206,10 @@ Returns:
               &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
             },
             &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+              &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
             },
+            &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
             &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -1110,6 +1240,7 @@ Returns:
             &quot;mutationEnabled&quot;: True or False, # Enable or disable mutation in policy controller. If true, mutation CRDs, webhook and controller deployment will be deployed to the cluster.
             &quot;referentialRulesEnabled&quot;: True or False, # Enables the ability to use Constraint Templates that reference to objects other than the object currently being evaluated.
             &quot;templateLibraryInstalled&quot;: True or False, # Installs the default template library along with Policy Controller.
+            &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Last time this membership spec was updated.
           },
           &quot;version&quot;: &quot;A String&quot;, # Version of ACM installed.
         },
@@ -1129,6 +1260,7 @@ Returns:
             &quot;gatekeeperMutation&quot;: &quot;A String&quot;, # Status of the pod serving the mutation webhook.
           },
           &quot;migration&quot;: { # State for the migration of PolicyController from ACM -&gt; PoCo Hub. # Record state of ACM -&gt; PoCo Hub migration for this feature.
+            &quot;copyTime&quot;: &quot;A String&quot;, # Last time this membership spec was copied to PoCo feature.
             &quot;stage&quot;: &quot;A String&quot;, # Stage of the migration.
           },
           &quot;version&quot;: { # The build version of Gatekeeper Policy Controller is using. # The version of Gatekeeper Policy Controller deployed.
@@ -1201,6 +1333,10 @@ Returns:
               &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
             },
           },
+          &quot;referentialSyncConfigState&quot;: { # OnClusterState represents the state of a sub-component of Policy Controller. # The state of the referential data sync configuration. This could represent the state of either the syncSet object(s) or the config object, depending on the version of PoCo configured by the user.
+            &quot;details&quot;: &quot;A String&quot;, # Surface potential errors or information logs.
+            &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
+          },
           &quot;templateLibraryState&quot;: { # OnClusterState represents the state of a sub-component of Policy Controller. # The state of the template library
             &quot;details&quot;: &quot;A String&quot;, # Surface potential errors or information logs.
             &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
@@ -1261,10 +1397,66 @@ Returns:
   },
   &quot;scopeSpecs&quot;: { # Optional. Scope-specific configuration for this Feature. If this Feature does not support any per-Scope configuration, this field may be unused. The keys indicate which Scope the configuration is for, in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Scope is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
     &quot;a_key&quot;: { # ScopeFeatureSpec contains feature specs for a fleet scope.
+      &quot;clusterupgrade&quot;: { # **ClusterUpgrade**: The configuration for the scope-level ClusterUpgrade feature. # Spec for the ClusterUpgrade feature at the scope level
+        &quot;gkeUpgradeOverrides&quot;: [ # Allow users to override some properties of each GKE upgrade.
+          { # Properties of a GKE upgrade that can be overridden by the user. For example, a user can skip soaking by overriding the soaking to 0.
+            &quot;postConditions&quot;: { # Post conditional checks after an upgrade has been applied on all eligible clusters. # Required. Post conditions to override for the specified upgrade (name + version). Required.
+              &quot;soaking&quot;: &quot;A String&quot;, # Required. Amount of time to &quot;soak&quot; after a rollout has been finished before marking it COMPLETE. Cannot exceed 30 days. Required.
+            },
+            &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Required. Which upgrade to override. Required.
+              &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+              &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+            },
+          },
+        ],
+        &quot;postConditions&quot;: { # Post conditional checks after an upgrade has been applied on all eligible clusters. # Required. Post conditions to evaluate to mark an upgrade COMPLETE. Required.
+          &quot;soaking&quot;: &quot;A String&quot;, # Required. Amount of time to &quot;soak&quot; after a rollout has been finished before marking it COMPLETE. Cannot exceed 30 days. Required.
+        },
+        &quot;upstreamScopes&quot;: [ # This scope consumes upgrades that have COMPLETE status code in the upstream scopes. See UpgradeStatus.Code for code definitions. The scope name should be in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project. This is defined as repeated for future proof reasons. Initial implementation will enforce at most one upstream scope.
+          &quot;A String&quot;,
+        ],
+      },
     },
   },
   &quot;scopeStates&quot;: { # Output only. Scope-specific Feature status. If this Feature does report any per-Scope status, this field may be unused. The keys indicate which Scope the state is for, in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project.
     &quot;a_key&quot;: { # ScopeFeatureState contains Scope-wide Feature status information.
+      &quot;clusterupgrade&quot;: { # **ClusterUpgrade**: The state for the scope-level ClusterUpgrade feature. # State for the ClusterUpgrade feature at the scope level
+        &quot;downstreamScopes&quot;: [ # This scopes whose upstream_scopes contain the current scope. The scope name should be in the form: `projects/{p}/locations/gloobal/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project.
+          &quot;A String&quot;,
+        ],
+        &quot;gkeState&quot;: { # GKEUpgradeFeatureState contains feature states for GKE clusters in the scope. # Feature state for GKE clusters.
+          &quot;conditions&quot;: [ # Current conditions of the feature.
+            { # GKEUpgradeFeatureCondition describes the condition of the feature for GKE clusters at a certain point of time.
+              &quot;reason&quot;: &quot;A String&quot;, # Reason why the feature is in this status.
+              &quot;status&quot;: &quot;A String&quot;, # Status of the condition, one of True, False, Unknown.
+              &quot;type&quot;: &quot;A String&quot;, # Type of the condition, for example, &quot;ready&quot;.
+              &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the condition was updated.
+            },
+          ],
+          &quot;state&quot;: [ # Scope-level upgrade state.
+            { # ScopeGKEUpgradeState is a GKEUpgrade and its state at the scope level.
+              &quot;stats&quot;: { # Number of GKE clusters in each status code.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;status&quot;: { # UpgradeStatus provides status information for each upgrade. # Status of the upgrade.
+                &quot;code&quot;: &quot;A String&quot;, # Status code of the upgrade.
+                &quot;reason&quot;: &quot;A String&quot;, # Reason for this status.
+                &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the status was updated.
+              },
+              &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Which upgrade to track the state.
+                &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+                &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+              },
+            },
+          ],
+        },
+        &quot;ignored&quot;: { # A list of memberships ignored by the feature. For example, manually upgraded clusters can be ignored if they are newer than the default versions of its release channel. The membership resource is in the format: `projects/{p}/locations/{l}/membership/{m}`.
+          &quot;a_key&quot;: { # IgnoredMembership represents a membership ignored by the feature. A membership can be ignored because it was manually upgraded to a newer version than RC default.
+            &quot;ignoredTime&quot;: &quot;A String&quot;, # Time when the membership was first set to ignored.
+            &quot;reason&quot;: &quot;A String&quot;, # Reason why the membership is ignored.
+          },
+        },
+      },
       &quot;state&quot;: { # FeatureState describes the high-level state of a Feature. It may be used to describe a Feature&#x27;s state at the environ-level, or per-membershop, depending on the context. # Output only. The &quot;running state&quot; of the Feature in this Scope.
         &quot;code&quot;: &quot;A String&quot;, # The high-level, machine-readable status of this Feature.
         &quot;description&quot;: &quot;A String&quot;, # A human-readable description of the current status.
@@ -1460,7 +1652,7 @@ Returns:
         &quot;a_key&quot;: &quot;A String&quot;,
       },
       &quot;membershipSpecs&quot;: { # Optional. Membership-specific configuration for this Feature. If this Feature does not support any per-Membership configuration, this field may be unused. The keys indicate which Membership the configuration is for, in the form: `projects/{p}/locations/{l}/memberships/{m}` Where {p} is the project, {l} is a valid location and {m} is a valid Membership in this project at that location. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Membership is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
-        &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership.
+        &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership. NOTE: Please use snake case in your feature name.
           &quot;anthosobservability&quot;: { # **Anthosobservability**: Per-Membership Feature spec. # Anthos Observability-specific spec
             &quot;doNotOptimizeMetrics&quot;: True or False, # Use full of metrics rather than optimized metrics. See https://cloud.google.com/anthos/clusters/docs/on-prem/1.8/concepts/logging-and-monitoring#optimized_metrics_default_metrics
             &quot;enableStackdriverOnApplications&quot;: True or False, # Enable collecting and reporting metrics and logs from user apps.
@@ -1474,9 +1666,10 @@ Returns:
             &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
               &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
             },
+            &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
             &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
               &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-              &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+              &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
               &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
                 &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
                 &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -1488,8 +1681,10 @@ Returns:
                 &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
               },
               &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-                &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+                &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+                &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
               },
+              &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
               &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
                 &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
                 &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -1520,6 +1715,7 @@ Returns:
               &quot;mutationEnabled&quot;: True or False, # Enable or disable mutation in policy controller. If true, mutation CRDs, webhook and controller deployment will be deployed to the cluster.
               &quot;referentialRulesEnabled&quot;: True or False, # Enables the ability to use Constraint Templates that reference to objects other than the object currently being evaluated.
               &quot;templateLibraryInstalled&quot;: True or False, # Installs the default template library along with Policy Controller.
+              &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Last time this membership spec was updated.
             },
             &quot;version&quot;: &quot;A String&quot;, # Version of ACM installed.
           },
@@ -1639,6 +1835,28 @@ Returns:
               &quot;description&quot;: &quot;A String&quot;, # Description is populated if Code is Failed, explaining why it has failed.
             },
           },
+          &quot;clusterupgrade&quot;: { # Per-membership state for this feature. # ClusterUpgrade state.
+            &quot;ignored&quot;: { # IgnoredMembership represents a membership ignored by the feature. A membership can be ignored because it was manually upgraded to a newer version than RC default. # Whether this membership is ignored by the feature. For example, manually upgraded clusters can be ignored if they are newer than the default versions of its release channel.
+              &quot;ignoredTime&quot;: &quot;A String&quot;, # Time when the membership was first set to ignored.
+              &quot;reason&quot;: &quot;A String&quot;, # Reason why the membership is ignored.
+            },
+            &quot;scopes&quot;: [ # Fully qualified scope names that this clusters is bound to which also have rollout sequencing enabled.
+              &quot;A String&quot;,
+            ],
+            &quot;upgrades&quot;: [ # Actual upgrade state against desired.
+              { # ScopeGKEUpgradeState is a GKEUpgrade and its state per-membership.
+                &quot;status&quot;: { # UpgradeStatus provides status information for each upgrade. # Status of the upgrade.
+                  &quot;code&quot;: &quot;A String&quot;, # Status code of the upgrade.
+                  &quot;reason&quot;: &quot;A String&quot;, # Reason for this status.
+                  &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the status was updated.
+                },
+                &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Which upgrade to track the state.
+                  &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+                  &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+                },
+              },
+            ],
+          },
           &quot;configmanagement&quot;: { # **Anthos Config Management**: State for a single cluster. # Config Management-specific state.
             &quot;binauthzState&quot;: { # State for Binauthz # Binauthz status
               &quot;version&quot;: { # The version of binauthz. # The version of binauthz that is installed.
@@ -1646,7 +1864,7 @@ Returns:
               },
               &quot;webhook&quot;: &quot;A String&quot;, # The state of the binauthz webhook.
             },
-            &quot;clusterName&quot;: &quot;A String&quot;, # The user-defined name for the cluster used by ClusterSelectors to group clusters together. This should match Membership&#x27;s membership_name, unless the user installed ACM on the cluster manually prior to enabling the ACM hub feature. Unique within a Anthos Config Management installation.
+            &quot;clusterName&quot;: &quot;A String&quot;, # This field is set to the `cluster_name` field of the Membership Spec if it is not empty. Otherwise, it is set to the cluster&#x27;s fleet membership name.
             &quot;configSyncState&quot;: { # State information for ConfigSync # Current sync status
               &quot;deploymentState&quot;: { # The state of ConfigSync&#x27;s deployment on a cluster # Information about the deployment of ConfigSync, including the version of the various Pods deployed
                 &quot;admissionWebhook&quot;: &quot;A String&quot;, # Deployment state of admission-webhook
@@ -1657,6 +1875,11 @@ Returns:
                 &quot;rootReconciler&quot;: &quot;A String&quot;, # Deployment state of root-reconciler
                 &quot;syncer&quot;: &quot;A String&quot;, # Deployment state of the syncer pod
               },
+              &quot;errors&quot;: [ # Errors pertaining to the installation of Config Sync.
+                { # Errors pertaining to the installation of Config Sync
+                  &quot;errorMessage&quot;: &quot;A String&quot;, # A string representing the user facing error message
+                },
+              ],
               &quot;syncState&quot;: { # State indicating an ACM&#x27;s progress syncing configurations to a cluster # The state of ConfigSync&#x27;s process to sync configs to a cluster
                 &quot;code&quot;: &quot;A String&quot;, # Sync status code
                 &quot;errors&quot;: [ # A list of errors resulting from problematic configs. This list will be truncated after 100 errors, although it is unlikely for that many errors to simultaneously exist.
@@ -1707,9 +1930,10 @@ Returns:
               &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
                 &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
               },
+              &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
               &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
                 &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-                &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+                &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
                 &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
                   &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
                   &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -1721,8 +1945,10 @@ Returns:
                   &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
                 },
                 &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-                  &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+                  &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+                  &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
                 },
+                &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
                 &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
                   &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
                   &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -1753,6 +1979,7 @@ Returns:
                 &quot;mutationEnabled&quot;: True or False, # Enable or disable mutation in policy controller. If true, mutation CRDs, webhook and controller deployment will be deployed to the cluster.
                 &quot;referentialRulesEnabled&quot;: True or False, # Enables the ability to use Constraint Templates that reference to objects other than the object currently being evaluated.
                 &quot;templateLibraryInstalled&quot;: True or False, # Installs the default template library along with Policy Controller.
+                &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Last time this membership spec was updated.
               },
               &quot;version&quot;: &quot;A String&quot;, # Version of ACM installed.
             },
@@ -1772,6 +1999,7 @@ Returns:
                 &quot;gatekeeperMutation&quot;: &quot;A String&quot;, # Status of the pod serving the mutation webhook.
               },
               &quot;migration&quot;: { # State for the migration of PolicyController from ACM -&gt; PoCo Hub. # Record state of ACM -&gt; PoCo Hub migration for this feature.
+                &quot;copyTime&quot;: &quot;A String&quot;, # Last time this membership spec was copied to PoCo feature.
                 &quot;stage&quot;: &quot;A String&quot;, # Stage of the migration.
               },
               &quot;version&quot;: { # The build version of Gatekeeper Policy Controller is using. # The version of Gatekeeper Policy Controller deployed.
@@ -1844,6 +2072,10 @@ Returns:
                   &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
                 },
               },
+              &quot;referentialSyncConfigState&quot;: { # OnClusterState represents the state of a sub-component of Policy Controller. # The state of the referential data sync configuration. This could represent the state of either the syncSet object(s) or the config object, depending on the version of PoCo configured by the user.
+                &quot;details&quot;: &quot;A String&quot;, # Surface potential errors or information logs.
+                &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
+              },
               &quot;templateLibraryState&quot;: { # OnClusterState represents the state of a sub-component of Policy Controller. # The state of the template library
                 &quot;details&quot;: &quot;A String&quot;, # Surface potential errors or information logs.
                 &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
@@ -1904,10 +2136,66 @@ Returns:
       },
       &quot;scopeSpecs&quot;: { # Optional. Scope-specific configuration for this Feature. If this Feature does not support any per-Scope configuration, this field may be unused. The keys indicate which Scope the configuration is for, in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Scope is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
         &quot;a_key&quot;: { # ScopeFeatureSpec contains feature specs for a fleet scope.
+          &quot;clusterupgrade&quot;: { # **ClusterUpgrade**: The configuration for the scope-level ClusterUpgrade feature. # Spec for the ClusterUpgrade feature at the scope level
+            &quot;gkeUpgradeOverrides&quot;: [ # Allow users to override some properties of each GKE upgrade.
+              { # Properties of a GKE upgrade that can be overridden by the user. For example, a user can skip soaking by overriding the soaking to 0.
+                &quot;postConditions&quot;: { # Post conditional checks after an upgrade has been applied on all eligible clusters. # Required. Post conditions to override for the specified upgrade (name + version). Required.
+                  &quot;soaking&quot;: &quot;A String&quot;, # Required. Amount of time to &quot;soak&quot; after a rollout has been finished before marking it COMPLETE. Cannot exceed 30 days. Required.
+                },
+                &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Required. Which upgrade to override. Required.
+                  &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+                  &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+                },
+              },
+            ],
+            &quot;postConditions&quot;: { # Post conditional checks after an upgrade has been applied on all eligible clusters. # Required. Post conditions to evaluate to mark an upgrade COMPLETE. Required.
+              &quot;soaking&quot;: &quot;A String&quot;, # Required. Amount of time to &quot;soak&quot; after a rollout has been finished before marking it COMPLETE. Cannot exceed 30 days. Required.
+            },
+            &quot;upstreamScopes&quot;: [ # This scope consumes upgrades that have COMPLETE status code in the upstream scopes. See UpgradeStatus.Code for code definitions. The scope name should be in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project. This is defined as repeated for future proof reasons. Initial implementation will enforce at most one upstream scope.
+              &quot;A String&quot;,
+            ],
+          },
         },
       },
       &quot;scopeStates&quot;: { # Output only. Scope-specific Feature status. If this Feature does report any per-Scope status, this field may be unused. The keys indicate which Scope the state is for, in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project.
         &quot;a_key&quot;: { # ScopeFeatureState contains Scope-wide Feature status information.
+          &quot;clusterupgrade&quot;: { # **ClusterUpgrade**: The state for the scope-level ClusterUpgrade feature. # State for the ClusterUpgrade feature at the scope level
+            &quot;downstreamScopes&quot;: [ # This scopes whose upstream_scopes contain the current scope. The scope name should be in the form: `projects/{p}/locations/gloobal/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project.
+              &quot;A String&quot;,
+            ],
+            &quot;gkeState&quot;: { # GKEUpgradeFeatureState contains feature states for GKE clusters in the scope. # Feature state for GKE clusters.
+              &quot;conditions&quot;: [ # Current conditions of the feature.
+                { # GKEUpgradeFeatureCondition describes the condition of the feature for GKE clusters at a certain point of time.
+                  &quot;reason&quot;: &quot;A String&quot;, # Reason why the feature is in this status.
+                  &quot;status&quot;: &quot;A String&quot;, # Status of the condition, one of True, False, Unknown.
+                  &quot;type&quot;: &quot;A String&quot;, # Type of the condition, for example, &quot;ready&quot;.
+                  &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the condition was updated.
+                },
+              ],
+              &quot;state&quot;: [ # Scope-level upgrade state.
+                { # ScopeGKEUpgradeState is a GKEUpgrade and its state at the scope level.
+                  &quot;stats&quot;: { # Number of GKE clusters in each status code.
+                    &quot;a_key&quot;: &quot;A String&quot;,
+                  },
+                  &quot;status&quot;: { # UpgradeStatus provides status information for each upgrade. # Status of the upgrade.
+                    &quot;code&quot;: &quot;A String&quot;, # Status code of the upgrade.
+                    &quot;reason&quot;: &quot;A String&quot;, # Reason for this status.
+                    &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the status was updated.
+                  },
+                  &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Which upgrade to track the state.
+                    &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+                    &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+                  },
+                },
+              ],
+            },
+            &quot;ignored&quot;: { # A list of memberships ignored by the feature. For example, manually upgraded clusters can be ignored if they are newer than the default versions of its release channel. The membership resource is in the format: `projects/{p}/locations/{l}/membership/{m}`.
+              &quot;a_key&quot;: { # IgnoredMembership represents a membership ignored by the feature. A membership can be ignored because it was manually upgraded to a newer version than RC default.
+                &quot;ignoredTime&quot;: &quot;A String&quot;, # Time when the membership was first set to ignored.
+                &quot;reason&quot;: &quot;A String&quot;, # Reason why the membership is ignored.
+              },
+            },
+          },
           &quot;state&quot;: { # FeatureState describes the high-level state of a Feature. It may be used to describe a Feature&#x27;s state at the environ-level, or per-membershop, depending on the context. # Output only. The &quot;running state&quot; of the Feature in this Scope.
             &quot;code&quot;: &quot;A String&quot;, # The high-level, machine-readable status of this Feature.
             &quot;description&quot;: &quot;A String&quot;, # A human-readable description of the current status.
@@ -2059,7 +2347,7 @@ Args:
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;membershipSpecs&quot;: { # Optional. Membership-specific configuration for this Feature. If this Feature does not support any per-Membership configuration, this field may be unused. The keys indicate which Membership the configuration is for, in the form: `projects/{p}/locations/{l}/memberships/{m}` Where {p} is the project, {l} is a valid location and {m} is a valid Membership in this project at that location. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Membership is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
-    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership.
+    &quot;a_key&quot;: { # MembershipFeatureSpec contains configuration information for a single Membership. NOTE: Please use snake case in your feature name.
       &quot;anthosobservability&quot;: { # **Anthosobservability**: Per-Membership Feature spec. # Anthos Observability-specific spec
         &quot;doNotOptimizeMetrics&quot;: True or False, # Use full of metrics rather than optimized metrics. See https://cloud.google.com/anthos/clusters/docs/on-prem/1.8/concepts/logging-and-monitoring#optimized_metrics_default_metrics
         &quot;enableStackdriverOnApplications&quot;: True or False, # Enable collecting and reporting metrics and logs from user apps.
@@ -2073,9 +2361,10 @@ Args:
         &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
           &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
         },
+        &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
         &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
           &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+          &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
           &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -2087,8 +2376,10 @@ Args:
             &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
           },
           &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+            &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+            &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
           },
+          &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
           &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
             &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
             &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -2119,6 +2410,7 @@ Args:
           &quot;mutationEnabled&quot;: True or False, # Enable or disable mutation in policy controller. If true, mutation CRDs, webhook and controller deployment will be deployed to the cluster.
           &quot;referentialRulesEnabled&quot;: True or False, # Enables the ability to use Constraint Templates that reference to objects other than the object currently being evaluated.
           &quot;templateLibraryInstalled&quot;: True or False, # Installs the default template library along with Policy Controller.
+          &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Last time this membership spec was updated.
         },
         &quot;version&quot;: &quot;A String&quot;, # Version of ACM installed.
       },
@@ -2238,6 +2530,28 @@ Args:
           &quot;description&quot;: &quot;A String&quot;, # Description is populated if Code is Failed, explaining why it has failed.
         },
       },
+      &quot;clusterupgrade&quot;: { # Per-membership state for this feature. # ClusterUpgrade state.
+        &quot;ignored&quot;: { # IgnoredMembership represents a membership ignored by the feature. A membership can be ignored because it was manually upgraded to a newer version than RC default. # Whether this membership is ignored by the feature. For example, manually upgraded clusters can be ignored if they are newer than the default versions of its release channel.
+          &quot;ignoredTime&quot;: &quot;A String&quot;, # Time when the membership was first set to ignored.
+          &quot;reason&quot;: &quot;A String&quot;, # Reason why the membership is ignored.
+        },
+        &quot;scopes&quot;: [ # Fully qualified scope names that this clusters is bound to which also have rollout sequencing enabled.
+          &quot;A String&quot;,
+        ],
+        &quot;upgrades&quot;: [ # Actual upgrade state against desired.
+          { # ScopeGKEUpgradeState is a GKEUpgrade and its state per-membership.
+            &quot;status&quot;: { # UpgradeStatus provides status information for each upgrade. # Status of the upgrade.
+              &quot;code&quot;: &quot;A String&quot;, # Status code of the upgrade.
+              &quot;reason&quot;: &quot;A String&quot;, # Reason for this status.
+              &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the status was updated.
+            },
+            &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Which upgrade to track the state.
+              &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+              &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+            },
+          },
+        ],
+      },
       &quot;configmanagement&quot;: { # **Anthos Config Management**: State for a single cluster. # Config Management-specific state.
         &quot;binauthzState&quot;: { # State for Binauthz # Binauthz status
           &quot;version&quot;: { # The version of binauthz. # The version of binauthz that is installed.
@@ -2245,7 +2559,7 @@ Args:
           },
           &quot;webhook&quot;: &quot;A String&quot;, # The state of the binauthz webhook.
         },
-        &quot;clusterName&quot;: &quot;A String&quot;, # The user-defined name for the cluster used by ClusterSelectors to group clusters together. This should match Membership&#x27;s membership_name, unless the user installed ACM on the cluster manually prior to enabling the ACM hub feature. Unique within a Anthos Config Management installation.
+        &quot;clusterName&quot;: &quot;A String&quot;, # This field is set to the `cluster_name` field of the Membership Spec if it is not empty. Otherwise, it is set to the cluster&#x27;s fleet membership name.
         &quot;configSyncState&quot;: { # State information for ConfigSync # Current sync status
           &quot;deploymentState&quot;: { # The state of ConfigSync&#x27;s deployment on a cluster # Information about the deployment of ConfigSync, including the version of the various Pods deployed
             &quot;admissionWebhook&quot;: &quot;A String&quot;, # Deployment state of admission-webhook
@@ -2256,6 +2570,11 @@ Args:
             &quot;rootReconciler&quot;: &quot;A String&quot;, # Deployment state of root-reconciler
             &quot;syncer&quot;: &quot;A String&quot;, # Deployment state of the syncer pod
           },
+          &quot;errors&quot;: [ # Errors pertaining to the installation of Config Sync.
+            { # Errors pertaining to the installation of Config Sync
+              &quot;errorMessage&quot;: &quot;A String&quot;, # A string representing the user facing error message
+            },
+          ],
           &quot;syncState&quot;: { # State indicating an ACM&#x27;s progress syncing configurations to a cluster # The state of ConfigSync&#x27;s process to sync configs to a cluster
             &quot;code&quot;: &quot;A String&quot;, # Sync status code
             &quot;errors&quot;: [ # A list of errors resulting from problematic configs. This list will be truncated after 100 errors, although it is unlikely for that many errors to simultaneously exist.
@@ -2306,9 +2625,10 @@ Args:
           &quot;binauthz&quot;: { # Configuration for Binauthz # Binauthz conifguration for the cluster.
             &quot;enabled&quot;: True or False, # Whether binauthz is enabled in this cluster.
           },
+          &quot;cluster&quot;: &quot;A String&quot;, # The user-specified cluster name used by Config Sync cluster-name-selector annotation or ClusterSelector, for applying configs to only a subset of clusters. Omit this field if the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector. Set this field if a name different from the cluster&#x27;s fleet membership name is used by Config Sync cluster-name-selector annotation or ClusterSelector.
           &quot;configSync&quot;: { # Configuration for Config Sync # Config Sync configuration for the cluster.
             &quot;allowVerticalScale&quot;: True or False, # Set to true to allow the vertical scaling. Defaults to false which disallows vertical scaling. This field is deprecated.
-            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. If omitted, ConfigSync resources will be managed depends on the presence of git field.
+            &quot;enabled&quot;: True or False, # Enables the installation of ConfigSync. If set to true, ConfigSync resources will be created and the other ConfigSync fields will be applied if exist. If set to false and Managed Config Sync is disabled, all other ConfigSync fields will be ignored, ConfigSync resources will be deleted. Setting this field to false while enabling Managed Config Sync is invalid. If omitted, ConfigSync resources will be managed if: * the git or oci field is present; or * Managed Config Sync is enabled (i.e., managed.enabled is true).
             &quot;git&quot;: { # Git repo configuration for a single cluster. # Git repo configuration for the cluster.
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;httpsProxy&quot;: &quot;A String&quot;, # URL for the HTTPS proxy to be used when communicating with the Git repo.
@@ -2320,8 +2640,10 @@ Args:
               &quot;syncWaitSecs&quot;: &quot;A String&quot;, # Period in seconds between consecutive syncs. Default: 15.
             },
             &quot;managed&quot;: { # Configuration for Managed Config Sync. # Configuration for Managed Config Sync.
-              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync.
+              &quot;enabled&quot;: True or False, # Set to true to enable Managed Config Sync. Defaults to false which disables Managed Config Sync. Setting this field to true when configSync.enabled is false is invalid.
+              &quot;stopSyncing&quot;: True or False, # Set to true to stop syncing configs for a single cluster. Default to false. If set to true, Managed Config Sync will not upgrade Config Sync.
             },
+            &quot;metricsGcpServiceAccountEmail&quot;: &quot;A String&quot;, # The Email of the GCP Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be binded to the GSA. This field is required when Managed Config Sync is enabled.
             &quot;oci&quot;: { # OCI repo configuration for a single cluster # OCI repo configuration for the cluster
               &quot;gcpServiceAccountEmail&quot;: &quot;A String&quot;, # The GCP Service Account Email used for auth when secret_type is gcpServiceAccount.
               &quot;policyDir&quot;: &quot;A String&quot;, # The absolute path of the directory that contains the local resources. Default: the root directory of the image.
@@ -2352,6 +2674,7 @@ Args:
             &quot;mutationEnabled&quot;: True or False, # Enable or disable mutation in policy controller. If true, mutation CRDs, webhook and controller deployment will be deployed to the cluster.
             &quot;referentialRulesEnabled&quot;: True or False, # Enables the ability to use Constraint Templates that reference to objects other than the object currently being evaluated.
             &quot;templateLibraryInstalled&quot;: True or False, # Installs the default template library along with Policy Controller.
+            &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Last time this membership spec was updated.
           },
           &quot;version&quot;: &quot;A String&quot;, # Version of ACM installed.
         },
@@ -2371,6 +2694,7 @@ Args:
             &quot;gatekeeperMutation&quot;: &quot;A String&quot;, # Status of the pod serving the mutation webhook.
           },
           &quot;migration&quot;: { # State for the migration of PolicyController from ACM -&gt; PoCo Hub. # Record state of ACM -&gt; PoCo Hub migration for this feature.
+            &quot;copyTime&quot;: &quot;A String&quot;, # Last time this membership spec was copied to PoCo feature.
             &quot;stage&quot;: &quot;A String&quot;, # Stage of the migration.
           },
           &quot;version&quot;: { # The build version of Gatekeeper Policy Controller is using. # The version of Gatekeeper Policy Controller deployed.
@@ -2443,6 +2767,10 @@ Args:
               &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
             },
           },
+          &quot;referentialSyncConfigState&quot;: { # OnClusterState represents the state of a sub-component of Policy Controller. # The state of the referential data sync configuration. This could represent the state of either the syncSet object(s) or the config object, depending on the version of PoCo configured by the user.
+            &quot;details&quot;: &quot;A String&quot;, # Surface potential errors or information logs.
+            &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
+          },
           &quot;templateLibraryState&quot;: { # OnClusterState represents the state of a sub-component of Policy Controller. # The state of the template library
             &quot;details&quot;: &quot;A String&quot;, # Surface potential errors or information logs.
             &quot;state&quot;: &quot;A String&quot;, # The lifecycle state of this component.
@@ -2503,10 +2831,66 @@ Args:
   },
   &quot;scopeSpecs&quot;: { # Optional. Scope-specific configuration for this Feature. If this Feature does not support any per-Scope configuration, this field may be unused. The keys indicate which Scope the configuration is for, in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project. {p} will always be returned as the project number, but the project ID is also accepted during input. If the same Scope is specified in the map twice (using the project ID form, and the project number form), exactly ONE of the entries will be saved, with no guarantees as to which. For this reason, it is recommended the same format be used for all entries when mutating a Feature.
     &quot;a_key&quot;: { # ScopeFeatureSpec contains feature specs for a fleet scope.
+      &quot;clusterupgrade&quot;: { # **ClusterUpgrade**: The configuration for the scope-level ClusterUpgrade feature. # Spec for the ClusterUpgrade feature at the scope level
+        &quot;gkeUpgradeOverrides&quot;: [ # Allow users to override some properties of each GKE upgrade.
+          { # Properties of a GKE upgrade that can be overridden by the user. For example, a user can skip soaking by overriding the soaking to 0.
+            &quot;postConditions&quot;: { # Post conditional checks after an upgrade has been applied on all eligible clusters. # Required. Post conditions to override for the specified upgrade (name + version). Required.
+              &quot;soaking&quot;: &quot;A String&quot;, # Required. Amount of time to &quot;soak&quot; after a rollout has been finished before marking it COMPLETE. Cannot exceed 30 days. Required.
+            },
+            &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Required. Which upgrade to override. Required.
+              &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+              &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+            },
+          },
+        ],
+        &quot;postConditions&quot;: { # Post conditional checks after an upgrade has been applied on all eligible clusters. # Required. Post conditions to evaluate to mark an upgrade COMPLETE. Required.
+          &quot;soaking&quot;: &quot;A String&quot;, # Required. Amount of time to &quot;soak&quot; after a rollout has been finished before marking it COMPLETE. Cannot exceed 30 days. Required.
+        },
+        &quot;upstreamScopes&quot;: [ # This scope consumes upgrades that have COMPLETE status code in the upstream scopes. See UpgradeStatus.Code for code definitions. The scope name should be in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project. This is defined as repeated for future proof reasons. Initial implementation will enforce at most one upstream scope.
+          &quot;A String&quot;,
+        ],
+      },
     },
   },
   &quot;scopeStates&quot;: { # Output only. Scope-specific Feature status. If this Feature does report any per-Scope status, this field may be unused. The keys indicate which Scope the state is for, in the form: `projects/{p}/locations/global/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project.
     &quot;a_key&quot;: { # ScopeFeatureState contains Scope-wide Feature status information.
+      &quot;clusterupgrade&quot;: { # **ClusterUpgrade**: The state for the scope-level ClusterUpgrade feature. # State for the ClusterUpgrade feature at the scope level
+        &quot;downstreamScopes&quot;: [ # This scopes whose upstream_scopes contain the current scope. The scope name should be in the form: `projects/{p}/locations/gloobal/scopes/{s}` Where {p} is the project, {s} is a valid Scope in this project. {p} WILL match the Feature&#x27;s project.
+          &quot;A String&quot;,
+        ],
+        &quot;gkeState&quot;: { # GKEUpgradeFeatureState contains feature states for GKE clusters in the scope. # Feature state for GKE clusters.
+          &quot;conditions&quot;: [ # Current conditions of the feature.
+            { # GKEUpgradeFeatureCondition describes the condition of the feature for GKE clusters at a certain point of time.
+              &quot;reason&quot;: &quot;A String&quot;, # Reason why the feature is in this status.
+              &quot;status&quot;: &quot;A String&quot;, # Status of the condition, one of True, False, Unknown.
+              &quot;type&quot;: &quot;A String&quot;, # Type of the condition, for example, &quot;ready&quot;.
+              &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the condition was updated.
+            },
+          ],
+          &quot;state&quot;: [ # Scope-level upgrade state.
+            { # ScopeGKEUpgradeState is a GKEUpgrade and its state at the scope level.
+              &quot;stats&quot;: { # Number of GKE clusters in each status code.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;status&quot;: { # UpgradeStatus provides status information for each upgrade. # Status of the upgrade.
+                &quot;code&quot;: &quot;A String&quot;, # Status code of the upgrade.
+                &quot;reason&quot;: &quot;A String&quot;, # Reason for this status.
+                &quot;updateTime&quot;: &quot;A String&quot;, # Last timestamp the status was updated.
+              },
+              &quot;upgrade&quot;: { # GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade. # Which upgrade to track the state.
+                &quot;name&quot;: &quot;A String&quot;, # Name of the upgrade, e.g., &quot;k8s_control_plane&quot;. It should be a valid upgrade name. It must not exceet 99 characters.
+                &quot;version&quot;: &quot;A String&quot;, # Version of the upgrade, e.g., &quot;1.22.1-gke.100&quot;. It should be a valid version. It must not exceet 99 characters.
+              },
+            },
+          ],
+        },
+        &quot;ignored&quot;: { # A list of memberships ignored by the feature. For example, manually upgraded clusters can be ignored if they are newer than the default versions of its release channel. The membership resource is in the format: `projects/{p}/locations/{l}/membership/{m}`.
+          &quot;a_key&quot;: { # IgnoredMembership represents a membership ignored by the feature. A membership can be ignored because it was manually upgraded to a newer version than RC default.
+            &quot;ignoredTime&quot;: &quot;A String&quot;, # Time when the membership was first set to ignored.
+            &quot;reason&quot;: &quot;A String&quot;, # Reason why the membership is ignored.
+          },
+        },
+      },
       &quot;state&quot;: { # FeatureState describes the high-level state of a Feature. It may be used to describe a Feature&#x27;s state at the environ-level, or per-membershop, depending on the context. # Output only. The &quot;running state&quot; of the Feature in this Scope.
         &quot;code&quot;: &quot;A String&quot;, # The high-level, machine-readable status of this Feature.
         &quot;description&quot;: &quot;A String&quot;, # A human-readable description of the current status.
