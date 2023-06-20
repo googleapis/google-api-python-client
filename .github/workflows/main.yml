@@ -20,6 +20,9 @@ on:
     # * is a special character in YAML so you have to quote this string
     # Run this Github Action every Tuesday at 7 AM UTC
     - cron:  '0 7 * * 2'
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -29,12 +32,20 @@ jobs:
     steps:
       - name: Get current date
         id: date
-        run: echo "::set-output name=current_date::$(date +'%Y-%m-%d')"
+        run: echo "::set-output name=current_date::$(date +'%Y-%m-%d-%HH%MM%SS')"
+
+      - name: Sync fork
+        run: gh repo sync $REPOSITORY -b $BRANCH_NAME
+        env:
+          GITHUB_TOKEN: ${{ secrets.YOSHI_CODE_BOT_TOKEN }}
 
       - name: Check out main branch
         uses: actions/checkout@v3
         with:
           ref: refs/heads/main
+          repository: 'yoshi-code-bot/google-api-python-client'
+          token: ${{secrets.YOSHI_CODE_BOT_TOKEN}}
+
 
       - name: Create branch
         run: |
@@ -68,7 +79,7 @@ jobs:
         working-directory: ./scripts
 
       - name: Push changes
-        run: git push -f --set-upstream origin update-discovery-artifacts-${{ steps.date.outputs.current_date }}
+        run: git push update-discovery-artifacts-${{ steps.date.outputs.current_date }}
 
       - name: Prepare summary for PR Body
         id: pr_body
