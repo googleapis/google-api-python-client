@@ -511,6 +511,11 @@
                       "location": "query",
                       "type": "string"
                     },
+                    "ignoreErrors": {
+                      "description": "If set to true, the unenrollment of a bare metal admin cluster resource will succeed even if errors occur during unenrollment. This parameter can be used when you want to unenroll admin cluster resource and the on-prem admin cluster is disconnected / unreachable. WARNING: Using this parameter when your admin cluster still exists may result in a deleted GCP admin cluster but existing resourcelink in on-prem admin cluster and membership.",
+                      "location": "query",
+                      "type": "boolean"
+                    },
                     "name": {
                       "description": "Required. Name of the bare metal admin cluster to be unenrolled. Format: \"projects/{project}/locations/{location}/bareMetalAdminClusters/{cluster}\"",
                       "location": "path",
@@ -1550,42 +1555,6 @@
                       "path": "v1/{+name}/operations",
                       "response": {
                         "$ref": "ListOperationsResponse"
-                      },
-                      "scopes": [
-                        "https://www.googleapis.com/auth/cloud-platform"
-                      ]
-                    }
-                  }
-                }
-              }
-            },
-            "bareMetalStandaloneClusters": {
-              "resources": {
-                "bareMetalStandaloneNodePools": {
-                  "methods": {
-                    "enroll": {
-                      "description": "Enrolls an existing bare metal standalone node pool to the Anthos On-Prem API within a given project and location. Through enrollment, an existing standalone node pool will become Anthos On-Prem API managed. The corresponding GCP resources will be created.",
-                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/bareMetalStandaloneClusters/{bareMetalStandaloneClustersId}/bareMetalStandaloneNodePools:enroll",
-                      "httpMethod": "POST",
-                      "id": "gkeonprem.projects.locations.bareMetalStandaloneClusters.bareMetalStandaloneNodePools.enroll",
-                      "parameterOrder": [
-                        "parent"
-                      ],
-                      "parameters": {
-                        "parent": {
-                          "description": "Required. The parent resource where this node pool will be created. projects/{project}/locations/{location}/bareMetalStandaloneClusters/{cluster}",
-                          "location": "path",
-                          "pattern": "^projects/[^/]+/locations/[^/]+/bareMetalStandaloneClusters/[^/]+$",
-                          "required": true,
-                          "type": "string"
-                        }
-                      },
-                      "path": "v1/{+parent}/bareMetalStandaloneNodePools:enroll",
-                      "request": {
-                        "$ref": "EnrollBareMetalStandaloneNodePoolRequest"
-                      },
-                      "response": {
-                        "$ref": "Operation"
                       },
                       "scopes": [
                         "https://www.googleapis.com/auth/cloud-platform"
@@ -3027,7 +2996,7 @@
       }
     }
   },
-  "revision": "20230517",
+  "revision": "20230607",
   "rootUrl": "https://gkeonprem.googleapis.com/",
   "schemas": {
     "Authorization": {
@@ -4147,6 +4116,10 @@
           "format": "google-datetime",
           "readOnly": true,
           "type": "string"
+        },
+        "upgradePolicy": {
+          "$ref": "BareMetalNodePoolUpgradePolicy",
+          "description": "The worker node pool upgrade policy."
         }
       },
       "type": "object"
@@ -4195,6 +4168,17 @@
       },
       "type": "object"
     },
+    "BareMetalNodePoolUpgradePolicy": {
+      "description": "BareMetalNodePoolUpgradePolicy defines the node pool upgrade policy.",
+      "id": "BareMetalNodePoolUpgradePolicy",
+      "properties": {
+        "parallelUpgradeConfig": {
+          "$ref": "BareMetalParallelUpgradeConfig",
+          "description": "The parallel upgrade settings for worker node pools."
+        }
+      },
+      "type": "object"
+    },
     "BareMetalOsEnvironmentConfig": {
       "description": "Specifies operating system settings for cluster provisioning.",
       "id": "BareMetalOsEnvironmentConfig",
@@ -4202,6 +4186,23 @@
         "packageRepoExcluded": {
           "description": "Whether the package repo should not be included when initializing bare metal machines.",
           "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "BareMetalParallelUpgradeConfig": {
+      "description": "BareMetalParallelUpgradeConfig defines the parallel upgrade settings for worker node pools.",
+      "id": "BareMetalParallelUpgradeConfig",
+      "properties": {
+        "concurrentNodes": {
+          "description": "Required. The maximum number of nodes that can be upgraded at once. Defaults to 1.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "minimumAvailableNodes": {
+          "description": "The minimum number of nodes that should be healthy and available during an upgrade. If set to the default value of 0, it is possible that none of the nodes will be available during an upgrade.",
+          "format": "int32",
+          "type": "integer"
         }
       },
       "type": "object"
@@ -4277,6 +4278,13 @@
       "description": "Contains information about a specific Anthos on bare metal version.",
       "id": "BareMetalVersionInfo",
       "properties": {
+        "dependencies": {
+          "description": "The list of upgrade dependencies for this version.",
+          "items": {
+            "$ref": "UpgradeDependency"
+          },
+          "type": "array"
+        },
         "hasDependencies": {
           "description": "If set, the cluster dependencies (e.g. the admin cluster, other user clusters managed by the same admin cluster, version skew policy, etc) must be upgraded before this version can be installed or upgraded to.",
           "type": "boolean"
@@ -4411,21 +4419,6 @@
       "id": "EnrollBareMetalNodePoolRequest",
       "properties": {
         "bareMetalNodePoolId": {
-          "description": "User provided OnePlatform identifier that is used as part of the resource name. This value must be up to 40 characters and follow RFC-1123 (https://tools.ietf.org/html/rfc1123) format.",
-          "type": "string"
-        },
-        "validateOnly": {
-          "description": "If set, only validate the request, but do not actually enroll the node pool.",
-          "type": "boolean"
-        }
-      },
-      "type": "object"
-    },
-    "EnrollBareMetalStandaloneNodePoolRequest": {
-      "description": "Message for enrolling an existing bare metal standalone node pool to the GKE on-prem API.",
-      "id": "EnrollBareMetalStandaloneNodePoolRequest",
-      "properties": {
-        "bareMetalStandaloneNodePoolId": {
           "description": "User provided OnePlatform identifier that is used as part of the resource name. This value must be up to 40 characters and follow RFC-1123 (https://tools.ietf.org/html/rfc1123) format.",
           "type": "string"
         },
@@ -5060,6 +5053,29 @@
             "type": "string"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "UpgradeDependency": {
+      "description": "UpgradeDependency represents a dependency when upgrading a resource.",
+      "id": "UpgradeDependency",
+      "properties": {
+        "currentVersion": {
+          "description": "Current version of the dependency e.g. 1.15.0.",
+          "type": "string"
+        },
+        "localName": {
+          "description": "Local name of the dependency.",
+          "type": "string"
+        },
+        "resourceName": {
+          "description": "Resource name of the dependency.",
+          "type": "string"
+        },
+        "targetVersion": {
+          "description": "Target version of the dependency e.g. 1.16.1. This is the version the dependency needs to be upgraded to before a resource can be upgraded.",
+          "type": "string"
         }
       },
       "type": "object"
