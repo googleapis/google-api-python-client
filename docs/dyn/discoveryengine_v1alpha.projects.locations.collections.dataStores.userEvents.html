@@ -84,6 +84,9 @@ h1, h2, h3 {
   <code><a href="#import_">import_(parent, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Bulk import of User events. Request processing might be synchronous. Events that already exist are skipped. Use this method for backfilling historical user events. Operation.response is of type ImportResponse. Note that it is possible for a subset of the items to be successfully inserted. Operation.metadata is of type ImportMetadata.</p>
 <p class="toc_element">
+  <code><a href="#purge">purge(parent, body=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Deletes permanently all user events specified by the filter provided. Depending on the number of events specified by the filter, this operation could take hours or days to complete. To test a filter, use the list command first.</p>
+<p class="toc_element">
   <code><a href="#write">write(parent, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Writes a single user event.</p>
 <h3>Method Details</h3>
@@ -130,7 +133,7 @@ Args:
     The object takes the form of:
 
 { # Request message for the ImportUserEvents request.
-  &quot;bigquerySource&quot;: { # BigQuery source import data from. # Required. BigQuery input source.
+  &quot;bigquerySource&quot;: { # BigQuery source import data from. # BigQuery input source.
     &quot;dataSchema&quot;: &quot;A String&quot;, # The schema to use when parsing the data from the source. Supported values for user event imports: * `user_event` (default): One UserEvent per row. Supported values for document imports: * `document` (default): One Document format per row. Each document must have a valid Document.id and one of Document.json_data or Document.struct_data. * `custom`: One custom data per row in arbitrary format that conforms the defined Schema of the data store. This can only be used by the GENERIC Data Store vertical.
     &quot;datasetId&quot;: &quot;A String&quot;, # Required. The BigQuery data set to copy the data from with a length limit of 1,024 characters.
     &quot;gcsStagingDir&quot;: &quot;A String&quot;, # Intermediate Cloud Storage directory used for the import with a length limit of 2,000 characters. Can be specified if one wants to have the BigQuery export to a specific Cloud Storage directory.
@@ -145,13 +148,13 @@ Args:
   &quot;errorConfig&quot;: { # Configuration of destination for Import related errors. # The desired location of errors incurred during the Import. Cannot be set for inline user event imports.
     &quot;gcsPrefix&quot;: &quot;A String&quot;, # Cloud Storage prefix for import errors. This must be an empty, existing Cloud Storage directory. Import errors will be written to sharded files in this directory, one per line, as a JSON-encoded `google.rpc.Status` message.
   },
-  &quot;gcsSource&quot;: { # Cloud Storage location for input content. # Required. Cloud Storage location for the input content.
-    &quot;dataSchema&quot;: &quot;A String&quot;, # The schema to use when parsing the data from the source. Supported values for document imports: * `document` (default): One JSON Document per line. Each document must have a valid Document.id. * `content`: Unstructured data (e.g. PDF, HTML). Each file matched by `input_uris` will become a document, with the ID set to the first 128 bits of SHA256(URI) encoded as a hex string. * `custom`: One custom data JSON per row in arbitrary format that conforms the defined Schema of the data store. This can only be used by the GENERIC Data Store vertical. Supported values for user even imports: * `user_event` (default): One JSON UserEvent per line.
+  &quot;gcsSource&quot;: { # Cloud Storage location for input content. # Cloud Storage location for the input content.
+    &quot;dataSchema&quot;: &quot;A String&quot;, # The schema to use when parsing the data from the source. Supported values for document imports: * `document` (default): One JSON Document per line. Each document must have a valid Document.id. * `content`: Unstructured data (e.g. PDF, HTML). Each file matched by `input_uris` will become a document, with the ID set to the first 128 bits of SHA256(URI) encoded as a hex string. * `custom`: One custom data JSON per row in arbitrary format that conforms the defined Schema of the data store. This can only be used by the GENERIC Data Store vertical. * `csv`: A CSV file with header conforming the defined Schema of the data store. Each entry after the header will be imported as a Document. This can only be used by the GENERIC Data Store vertical. Supported values for user even imports: * `user_event` (default): One JSON UserEvent per line.
     &quot;inputUris&quot;: [ # Required. Cloud Storage URIs to input files. URI can be up to 2000 characters long. URIs can match the full object path (for example, `gs://bucket/directory/object.json`) or a pattern matching one or more files, such as `gs://bucket/directory/*.json`. A request can contain at most 100 files (or 100,000 files if `data_schema` is `content`). Each file can be up to 2 GB (or 100 MB if `data_schema` is `content`).
       &quot;A String&quot;,
     ],
   },
-  &quot;inlineSource&quot;: { # The inline source for the input config for ImportUserEvents method. # Required. The Inline source for the input content for UserEvents.
+  &quot;inlineSource&quot;: { # The inline source for the input config for ImportUserEvents method. # The Inline source for the input content for UserEvents.
     &quot;userEvents&quot;: [ # Required. A list of user events to import. Recommended max of 10k items.
       { # UserEvent captures all metadata information Discovery Engine API needs to know about how end users interact with customers&#x27; website.
         &quot;attributes&quot;: { # Extra user event features to include in the recommendation model. These attributes must NOT contain data that needs to be parsed or processed further, e.g. JSON or other encodings. If you provide custom attributes for ingested user events, also include them in the user events that you associate with prediction requests. Custom attribute formatting must be consistent between imported events and events provided with prediction requests. This lets the Discovery Engine API use those custom attributes when training models and serving predictions, which helps improve recommendation quality. This field needs to pass all below criteria, otherwise an `INVALID_ARGUMENT` error is returned: * The key must be a UTF-8 encoded string with a length limit of 5,000 characters. * For text attributes, at most 400 values are allowed. Empty values are not allowed. Each value must be a UTF-8 encoded string with a length limit of 256 characters. * For number attributes, at most 400 values are allowed. For product recommendations, an example of extra user information is ` traffic_channel`, which is how a user arrives at the site. Users can arrive at the site by coming to the site directly, coming through Google search, or in other ways.
@@ -172,13 +175,13 @@ Args:
         &quot;directUserRequest&quot;: True or False, # Should set to true if the request is made directly from the end user, in which case the UserEvent.user_info.user_agent can be populated from the HTTP request. This flag should be set only if the API request is made directly from the end user such as a mobile app (and not if a gateway or a server is processing and pushing the user events). This should not be set when using the JavaScript tag in UserEventService.CollectUserEvent.
         &quot;documents&quot;: [ # List of Documents associated with this user event. This field is optional except for the following event types: * `view-item` * `add-to-cart` * `purchase` * `media-play` * `media-complete` In a `search` event, this field represents the documents returned to the end user on the current page (the end user may have not finished browsing the whole page yet). When a new page is returned to the end user, after pagination/filtering/ordering even for the same query, a new `search` event with different UserEvent.documents is desired.
           { # Detailed document information associated with a user event.
-            &quot;id&quot;: &quot;A String&quot;, # Required. The Document resource ID.
-            &quot;name&quot;: &quot;A String&quot;, # Required. The Document resource full name, of the form: `projects/{project_id}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}/branches/{branch_id}/documents/{document_id}`
+            &quot;id&quot;: &quot;A String&quot;, # The Document resource ID.
+            &quot;name&quot;: &quot;A String&quot;, # The Document resource full name, of the form: `projects/{project_id}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}/branches/{branch_id}/documents/{document_id}`
             &quot;promotionIds&quot;: [ # The promotion IDs associated with this Document. Currently, this field is restricted to at most one ID.
               &quot;A String&quot;,
             ],
             &quot;quantity&quot;: 42, # Quantity of the Document associated with the user event. Defaults to 1. For example, this field will be 2 if two quantities of the same Document are involved in a `add-to-cart` event. Required for events of the following event types: * `add-to-cart` * `purchase`
-            &quot;uri&quot;: &quot;A String&quot;, # Required. The Document url - only allowed for DataStores with content_config PUBLIC_WEBSITE.
+            &quot;uri&quot;: &quot;A String&quot;, # The Document url - only allowed for DataStores with content_config PUBLIC_WEBSITE.
           },
         ],
         &quot;eventTime&quot;: &quot;A String&quot;, # Only required for UserEventService.ImportUserEvents method. Timestamp of when the user event happened.
@@ -260,6 +263,49 @@ Returns:
 </div>
 
 <div class="method">
+    <code class="details" id="purge">purge(parent, body=None, x__xgafv=None)</code>
+  <pre>Deletes permanently all user events specified by the filter provided. Depending on the number of events specified by the filter, this operation could take hours or days to complete. To test a filter, use the list command first.
+
+Args:
+  parent: string, Required. The resource name of the catalog under which the events are created. The format is `projects/${projectId}/locations/global/collections/{$collectionId}/dataStores/${dataStoreId}` (required)
+  body: object, The request body.
+    The object takes the form of:
+
+{ # Request message for PurgeUserEvents method.
+  &quot;filter&quot;: &quot;A String&quot;, # Required. The filter string to specify the events to be deleted with a length limit of 5,000 characters. The eligible fields for filtering are: * `eventType`: Double quoted UserEvent.event_type string. * `eventTime`: in ISO 8601 &quot;zulu&quot; format. * `userPseudoId`: Double quoted string. Specifying this will delete all events associated with a visitor. * `userId`: Double quoted string. Specifying this will delete all events associated with a user. Examples: * Deleting all events in a time range: `eventTime &gt; &quot;2012-04-23T18:25:43.511Z&quot; eventTime &lt; &quot;2012-04-23T18:30:43.511Z&quot;` * Deleting specific eventType: `eventType = &quot;search&quot;` * Deleting all events for a specific visitor: `userPseudoId = &quot;visitor1024&quot;` * Deleting all events inside a DataStore: `*` The filtering fields are assumed to have an implicit AND.
+  &quot;force&quot;: True or False, # The `force` field is currently not supported. Purge user event requests will permanently delete all purgeable events. Once the development is complete: If `force` is set to false, the method will return the expected purge count without deleting any user events. This field will default to false if not included in the request.
+}
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # This resource represents a long-running operation that is the result of a network API call.
+  &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress. If `true`, the operation is completed, and either `error` or `response` is available.
+  &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). # The error result of the operation in case of failure or cancellation.
+    &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+    &quot;details&quot;: [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
+      {
+        &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+      },
+    ],
+    &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
+  },
+  &quot;metadata&quot;: { # Service-specific metadata associated with the operation. It typically contains progress information and common metadata such as create time. Some services might not provide such metadata. Any method that returns a long-running operation should document the metadata type, if any.
+    &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+  },
+  &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
+  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+    &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+  },
+}</pre>
+</div>
+
+<div class="method">
     <code class="details" id="write">write(parent, body=None, x__xgafv=None)</code>
   <pre>Writes a single user event.
 
@@ -287,13 +333,13 @@ Args:
   &quot;directUserRequest&quot;: True or False, # Should set to true if the request is made directly from the end user, in which case the UserEvent.user_info.user_agent can be populated from the HTTP request. This flag should be set only if the API request is made directly from the end user such as a mobile app (and not if a gateway or a server is processing and pushing the user events). This should not be set when using the JavaScript tag in UserEventService.CollectUserEvent.
   &quot;documents&quot;: [ # List of Documents associated with this user event. This field is optional except for the following event types: * `view-item` * `add-to-cart` * `purchase` * `media-play` * `media-complete` In a `search` event, this field represents the documents returned to the end user on the current page (the end user may have not finished browsing the whole page yet). When a new page is returned to the end user, after pagination/filtering/ordering even for the same query, a new `search` event with different UserEvent.documents is desired.
     { # Detailed document information associated with a user event.
-      &quot;id&quot;: &quot;A String&quot;, # Required. The Document resource ID.
-      &quot;name&quot;: &quot;A String&quot;, # Required. The Document resource full name, of the form: `projects/{project_id}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}/branches/{branch_id}/documents/{document_id}`
+      &quot;id&quot;: &quot;A String&quot;, # The Document resource ID.
+      &quot;name&quot;: &quot;A String&quot;, # The Document resource full name, of the form: `projects/{project_id}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}/branches/{branch_id}/documents/{document_id}`
       &quot;promotionIds&quot;: [ # The promotion IDs associated with this Document. Currently, this field is restricted to at most one ID.
         &quot;A String&quot;,
       ],
       &quot;quantity&quot;: 42, # Quantity of the Document associated with the user event. Defaults to 1. For example, this field will be 2 if two quantities of the same Document are involved in a `add-to-cart` event. Required for events of the following event types: * `add-to-cart` * `purchase`
-      &quot;uri&quot;: &quot;A String&quot;, # Required. The Document url - only allowed for DataStores with content_config PUBLIC_WEBSITE.
+      &quot;uri&quot;: &quot;A String&quot;, # The Document url - only allowed for DataStores with content_config PUBLIC_WEBSITE.
     },
   ],
   &quot;eventTime&quot;: &quot;A String&quot;, # Only required for UserEventService.ImportUserEvents method. Timestamp of when the user event happened.
@@ -369,13 +415,13 @@ Returns:
   &quot;directUserRequest&quot;: True or False, # Should set to true if the request is made directly from the end user, in which case the UserEvent.user_info.user_agent can be populated from the HTTP request. This flag should be set only if the API request is made directly from the end user such as a mobile app (and not if a gateway or a server is processing and pushing the user events). This should not be set when using the JavaScript tag in UserEventService.CollectUserEvent.
   &quot;documents&quot;: [ # List of Documents associated with this user event. This field is optional except for the following event types: * `view-item` * `add-to-cart` * `purchase` * `media-play` * `media-complete` In a `search` event, this field represents the documents returned to the end user on the current page (the end user may have not finished browsing the whole page yet). When a new page is returned to the end user, after pagination/filtering/ordering even for the same query, a new `search` event with different UserEvent.documents is desired.
     { # Detailed document information associated with a user event.
-      &quot;id&quot;: &quot;A String&quot;, # Required. The Document resource ID.
-      &quot;name&quot;: &quot;A String&quot;, # Required. The Document resource full name, of the form: `projects/{project_id}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}/branches/{branch_id}/documents/{document_id}`
+      &quot;id&quot;: &quot;A String&quot;, # The Document resource ID.
+      &quot;name&quot;: &quot;A String&quot;, # The Document resource full name, of the form: `projects/{project_id}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}/branches/{branch_id}/documents/{document_id}`
       &quot;promotionIds&quot;: [ # The promotion IDs associated with this Document. Currently, this field is restricted to at most one ID.
         &quot;A String&quot;,
       ],
       &quot;quantity&quot;: 42, # Quantity of the Document associated with the user event. Defaults to 1. For example, this field will be 2 if two quantities of the same Document are involved in a `add-to-cart` event. Required for events of the following event types: * `add-to-cart` * `purchase`
-      &quot;uri&quot;: &quot;A String&quot;, # Required. The Document url - only allowed for DataStores with content_config PUBLIC_WEBSITE.
+      &quot;uri&quot;: &quot;A String&quot;, # The Document url - only allowed for DataStores with content_config PUBLIC_WEBSITE.
     },
   ],
   &quot;eventTime&quot;: &quot;A String&quot;, # Only required for UserEventService.ImportUserEvents method. Timestamp of when the user event happened.
