@@ -177,6 +177,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/binaryauthorization_v1beta1.html)
 
 
+## blockchainnodeengine
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/blockchainnodeengine_v1.html)
+
+
 ## blogger
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/blogger_v2.html)
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/blogger_v3.html)
@@ -301,6 +305,7 @@
 
 
 ## cloudsupport
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudsupport_v2.html)
 * [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudsupport_v2beta.html)
 
 
