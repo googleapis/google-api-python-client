@@ -2098,7 +2098,7 @@
       }
     }
   },
-  "revision": "20230620",
+  "revision": "20230627",
   "rootUrl": "https://gkehub.googleapis.com/",
   "schemas": {
     "AnthosObservabilityFeatureSpec": {
@@ -3787,6 +3787,21 @@
       },
       "type": "object"
     },
+    "FleetObservabilityFeatureError": {
+      "description": "All error details of the fleet observability feature.",
+      "id": "FleetObservabilityFeatureError",
+      "properties": {
+        "code": {
+          "description": "The code of the error.",
+          "type": "string"
+        },
+        "description": {
+          "description": "A human-readable description of the current status.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "FleetObservabilityFeatureSpec": {
       "description": "**Fleet Observability**: The Hub-wide input for the FleetObservability feature.",
       "id": "FleetObservabilityFeatureSpec",
@@ -3801,7 +3816,70 @@
     "FleetObservabilityFeatureState": {
       "description": "**FleetObservability**: Hub-wide Feature for FleetObservability feature. state.",
       "id": "FleetObservabilityFeatureState",
-      "properties": {},
+      "properties": {
+        "logging": {
+          "$ref": "FleetObservabilityFleetObservabilityLoggingState",
+          "description": "The feature state of default logging."
+        },
+        "monitoring": {
+          "$ref": "FleetObservabilityFleetObservabilityMonitoringState",
+          "description": "The feature state of fleet monitoring."
+        }
+      },
+      "type": "object"
+    },
+    "FleetObservabilityFleetObservabilityBaseFeatureState": {
+      "description": "Base state for fleet observability feature.",
+      "id": "FleetObservabilityFleetObservabilityBaseFeatureState",
+      "properties": {
+        "code": {
+          "description": "The high-level, machine-readable status of this Feature.",
+          "enum": [
+            "CODE_UNSPECIFIED",
+            "OK",
+            "ERROR"
+          ],
+          "enumDescriptions": [
+            "Unknown or not set.",
+            "The Feature is operating normally.",
+            "The Feature is encountering errors in the reconciliation. The Feature may need intervention to return to normal operation. See the description and any associated Feature-specific details for more information."
+          ],
+          "type": "string"
+        },
+        "errors": {
+          "description": "Errors after reconciling the monitoring and logging feature if the code is not OK.",
+          "items": {
+            "$ref": "FleetObservabilityFeatureError"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "FleetObservabilityFleetObservabilityLoggingState": {
+      "description": "Feature state for logging feature.",
+      "id": "FleetObservabilityFleetObservabilityLoggingState",
+      "properties": {
+        "defaultLog": {
+          "$ref": "FleetObservabilityFleetObservabilityBaseFeatureState",
+          "description": "The base feature state of fleet default log."
+        },
+        "scopeLog": {
+          "$ref": "FleetObservabilityFleetObservabilityBaseFeatureState",
+          "description": "The base feature state of fleet scope log."
+        }
+      },
+      "type": "object"
+    },
+    "FleetObservabilityFleetObservabilityMonitoringState": {
+      "description": "Feature state for monitoring feature.",
+      "id": "FleetObservabilityFleetObservabilityMonitoringState",
+      "properties": {
+        "state": {
+          "$ref": "FleetObservabilityFleetObservabilityBaseFeatureState",
+          "description": "The base feature state of fleet monitoring feature."
+        }
+      },
       "type": "object"
     },
     "FleetObservabilityLoggingConfig": {
@@ -5069,23 +5147,11 @@
       "id": "PolicyControllerBundleInstallSpec",
       "properties": {
         "exemptedNamespaces": {
-          "description": "the set of namespaces to be exempted from the bundle",
+          "description": "The set of namespaces to be exempted from the bundle.",
           "items": {
             "type": "string"
           },
           "type": "array"
-        },
-        "management": {
-          "description": "Management specifies how the bundle will be managed by the controller.",
-          "enum": [
-            "MANAGEMENT_UNSPECIFIED",
-            "INSTALLED"
-          ],
-          "enumDescriptions": [
-            "No Management strategy has been specified.",
-            "The entity should be insistently reconciled by the Hub controller"
-          ],
-          "type": "string"
         }
       },
       "type": "object"
@@ -5153,10 +5219,6 @@
         "referentialRulesEnabled": {
           "description": "Enables the ability to use Constraint Templates that reference to objects other than the object currently being evaluated.",
           "type": "boolean"
-        },
-        "templateLibraryConfig": {
-          "$ref": "PolicyControllerTemplateLibraryConfig",
-          "description": "Configures the library templates to install along with Policy Controller."
         }
       },
       "type": "object"
@@ -5185,13 +5247,6 @@
             "$ref": "PolicyControllerOnClusterState"
           },
           "description": "Currently these include (also serving as map keys): 1. \"admission\" 2. \"audit\" 3. \"mutation\"",
-          "type": "object"
-        },
-        "contentStates": {
-          "additionalProperties": {
-            "$ref": "PolicyControllerOnClusterState"
-          },
-          "description": "The state of the template library and any bundles included in the chosen version of the manifest",
           "type": "object"
         },
         "policyContentState": {
@@ -5336,6 +5391,20 @@
           "$ref": "PolicyControllerResourceRequirements",
           "description": "Container resource requirements."
         },
+        "podAffinity": {
+          "description": "Pod affinity configuration.",
+          "enum": [
+            "AFFINITY_UNSPECIFIED",
+            "NO_AFFINITY",
+            "ANTI_AFFINITY"
+          ],
+          "enumDescriptions": [
+            "No affinity configuration has been specified.",
+            "Affinity configurations will be removed from the deployment.",
+            "Anti-affinity configuration will be applied to this deployment. Default for admissions deployment."
+          ],
+          "type": "string"
+        },
         "podAntiAffinity": {
           "description": "Pod anti-affinity enablement.",
           "type": "boolean"
@@ -5389,10 +5458,6 @@
       "description": "The config specifying which default library templates to install.",
       "id": "PolicyControllerTemplateLibraryConfig",
       "properties": {
-        "included": {
-          "description": "Whether the standard template library should be installed or not.",
-          "type": "boolean"
-        },
         "installation": {
           "description": "Configures the manner in which the template library is installed on the cluster.",
           "enum": [
