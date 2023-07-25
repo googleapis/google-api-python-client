@@ -746,6 +746,7 @@
 
 
 ## migrationcenter
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/migrationcenter_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/migrationcenter_v1alpha1.html)
 
 
@@ -846,6 +847,10 @@
 
 ## people
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/people_v1.html)
+
+
+## places
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/places_v1.html)
 
 
 ## playcustomapp
