@@ -2996,7 +2996,7 @@
       }
     }
   },
-  "revision": "20230620",
+  "revision": "20230717",
   "rootUrl": "https://gkeonprem.googleapis.com/",
   "schemas": {
     "Authorization": {
@@ -4195,7 +4195,7 @@
       "id": "BareMetalParallelUpgradeConfig",
       "properties": {
         "concurrentNodes": {
-          "description": "Required. The maximum number of nodes that can be upgraded at once. Defaults to 1.",
+          "description": "The maximum number of nodes that can be upgraded at once.",
           "format": "int32",
           "type": "integer"
         },
@@ -4733,6 +4733,63 @@
       },
       "type": "object"
     },
+    "Metric": {
+      "description": "Progress metric is (string, int|float|string) pair.",
+      "id": "Metric",
+      "properties": {
+        "doubleValue": {
+          "description": "For metrics with floating point value.",
+          "format": "double",
+          "type": "number"
+        },
+        "intValue": {
+          "description": "For metrics with integer value.",
+          "format": "int64",
+          "type": "string"
+        },
+        "metric": {
+          "description": "Required. The metric name.",
+          "enum": [
+            "METRIC_ID_UNSPECIFIED",
+            "NODES_TOTAL",
+            "NODES_DRAINING",
+            "NODES_UPGRADING",
+            "NODES_PENDING_UPGRADE",
+            "NODES_UPGRADED",
+            "NODES_FAILED",
+            "NODES_HEALTHY",
+            "NODES_RECONCILING",
+            "NODES_IN_MAINTENANCE",
+            "PREFLIGHTS_COMPLETED",
+            "PREFLIGHTS_RUNNING",
+            "PREFLIGHTS_FAILED",
+            "PREFLIGHTS_TOTAL"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "The total number of nodes being actuated.",
+            "The number of nodes draining.",
+            "The number of nodes actively upgrading.",
+            "The number of nodes to be upgraded.",
+            "The number of nodes upgraded.",
+            "The number of nodes to fail actuation.",
+            "The number of nodes healthy.",
+            "The number of nodes reconciling.",
+            "The number of nodes in maintenance mode.",
+            "The number of completed preflight checks.",
+            "The number of preflight checks running.",
+            "The number of preflight checks failed.",
+            "The total number of preflight checks."
+          ],
+          "type": "string"
+        },
+        "stringValue": {
+          "description": "For metrics with custom values (ratios, visual progress, etc.).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "NodeTaint": {
       "description": "NodeTaint applied to every Kubernetes node in a node pool. Kubernetes taints can be used together with tolerations to control how workloads are scheduled to your nodes. Node taints are permanent.",
       "id": "NodeTaint",
@@ -4825,6 +4882,11 @@
           "readOnly": true,
           "type": "string"
         },
+        "progress": {
+          "$ref": "OperationProgress",
+          "description": "Output only. Detailed progress information for the operation.",
+          "readOnly": true
+        },
         "requestedCancellation": {
           "description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have successfully been cancelled have [Operation.error] value with a [google.rpc.Status.code] of 1, corresponding to `Code.CANCELLED`.",
           "readOnly": true,
@@ -4847,20 +4909,99 @@
             "CREATE",
             "DELETE",
             "UPDATE",
-            "UPGRADE"
+            "UPGRADE",
+            "PLATFORM_UPGRADE"
           ],
           "enumDescriptions": [
             "Not set.",
             "The resource is being created.",
             "The resource is being deleted.",
             "The resource is being updated.",
-            "The resource is being upgraded."
+            "The resource is being upgraded.",
+            "The platform is being upgraded."
           ],
           "readOnly": true,
           "type": "string"
         },
         "verb": {
           "description": "Output only. Name of the verb executed by the operation.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "OperationProgress": {
+      "description": "Information about operation progress. LINT.IfChange",
+      "id": "OperationProgress",
+      "properties": {
+        "stages": {
+          "description": "The stages of the operation.",
+          "items": {
+            "$ref": "OperationStage"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "OperationStage": {
+      "description": "Information about a particular stage of an operation.",
+      "id": "OperationStage",
+      "properties": {
+        "endTime": {
+          "description": "Time the stage ended.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "metrics": {
+          "description": "Progress metric bundle.",
+          "items": {
+            "$ref": "Metric"
+          },
+          "type": "array"
+        },
+        "stage": {
+          "description": "The high-level stage of the operation.",
+          "enum": [
+            "STAGE_UNSPECIFIED",
+            "PREFLIGHT_CHECK",
+            "CONFIGURE",
+            "DEPLOY",
+            "HEALTH_CHECK",
+            "UPDATE"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "Preflight checks are running.",
+            "Resource is being configured.",
+            "Resource is being deployed.",
+            "Waiting for the resource to become healthy.",
+            "Resource is being updated."
+          ],
+          "type": "string"
+        },
+        "startTime": {
+          "description": "Time the stage started.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "state": {
+          "description": "Output only. State of the stage.",
+          "enum": [
+            "STATE_UNSPECIFIED",
+            "PENDING",
+            "RUNNING",
+            "SUCCEEDED",
+            "FAILED"
+          ],
+          "enumDescriptions": [
+            "Not set.",
+            "The stage is pending.",
+            "The stage is running",
+            "The stage has completed successfully.",
+            "The stage has failed."
+          ],
           "readOnly": true,
           "type": "string"
         }
@@ -5372,6 +5513,11 @@
           "description": "The number of mebibytes of memory for the control-plane node of the admin cluster.",
           "format": "int64",
           "type": "string"
+        },
+        "replicas": {
+          "description": "The number of control plane nodes for this VMware admin cluster. (default: 1 replica).",
+          "format": "int64",
+          "type": "string"
         }
       },
       "type": "object"
@@ -5395,6 +5541,17 @@
       },
       "type": "object"
     },
+    "VmwareAdminHAControlPlaneConfig": {
+      "description": "Specifies HA admin control plane config.",
+      "id": "VmwareAdminHAControlPlaneConfig",
+      "properties": {
+        "controlPlaneIpBlock": {
+          "$ref": "VmwareIpBlock",
+          "description": "Static IP addresses for the admin control plane nodes."
+        }
+      },
+      "type": "object"
+    },
     "VmwareAdminLoadBalancerConfig": {
       "description": "VmwareAdminLoadBalancerConfig contains load balancer configuration for VMware admin cluster.",
       "id": "VmwareAdminLoadBalancerConfig",
@@ -5410,6 +5567,11 @@
         "metalLbConfig": {
           "$ref": "VmwareAdminMetalLbConfig",
           "description": "MetalLB load balancers."
+        },
+        "seesawConfig": {
+          "$ref": "VmwareAdminSeesawConfig",
+          "description": "Output only. Configuration for Seesaw typed load balancers.",
+          "readOnly": true
         },
         "vipConfig": {
           "$ref": "VmwareAdminVipConfig",
@@ -5463,6 +5625,10 @@
           "$ref": "VmwareDhcpIpConfig",
           "description": "Configuration settings for a DHCP IP configuration."
         },
+        "haControlPlaneConfig": {
+          "$ref": "VmwareAdminHAControlPlaneConfig",
+          "description": "Configuration for HA admin cluster control plane."
+        },
         "hostConfig": {
           "$ref": "VmwareHostConfig",
           "description": "Represents common network settings irrespective of the host's IP address."
@@ -5488,6 +5654,39 @@
         "vcenterNetwork": {
           "description": "vcenter_network specifies vCenter network name.",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "VmwareAdminSeesawConfig": {
+      "description": "VmwareSeesawConfig represents configuration parameters for an already existing Seesaw load balancer. IMPORTANT: Please note that the Anthos On-Prem API will not generate or update Seesaw configurations it can only bind a pre-existing configuration to a new user cluster. IMPORTANT: When attempting to create a user cluster with a pre-existing Seesaw load balancer you will need to follow some preparation steps before calling the 'CreateVmwareCluster' API method. First you will need to create the user cluster's namespace via kubectl. The namespace will need to use the following naming convention : -gke-onprem-mgmt or -gke-onprem-mgmt depending on whether you used the 'VmwareCluster.local_name' to disambiguate collisions; for more context see the documentation of 'VmwareCluster.local_name'. Once the namespace is created you will need to create a secret resource via kubectl. This secret will contain copies of your Seesaw credentials. The Secret must be called 'user-cluster-creds' and contain Seesaw's SSH and Cert credentials. The credentials must be keyed with the following names: 'seesaw-ssh-private-key', 'seesaw-ssh-public-key', 'seesaw-ssh-ca-key', 'seesaw-ssh-ca-cert'.",
+      "id": "VmwareAdminSeesawConfig",
+      "properties": {
+        "enableHa": {
+          "description": "Enable two load balancer VMs to achieve a highly-available Seesaw load balancer.",
+          "type": "boolean"
+        },
+        "group": {
+          "description": "In general the following format should be used for the Seesaw group name: seesaw-for-[cluster_name].",
+          "type": "string"
+        },
+        "ipBlocks": {
+          "description": "The IP Blocks to be used by the Seesaw load balancer",
+          "items": {
+            "$ref": "VmwareIpBlock"
+          },
+          "type": "array"
+        },
+        "masterIp": {
+          "description": "MasterIP is the IP announced by the master of Seesaw group.",
+          "type": "string"
+        },
+        "vms": {
+          "description": "Names of the VMs created for this Seesaw group.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "type": "object"
@@ -5769,8 +5968,7 @@
         },
         "vsphereConfig": {
           "$ref": "VmwareControlPlaneVsphereConfig",
-          "description": "Output only. Vsphere-specific config.",
-          "readOnly": true
+          "description": "Vsphere-specific config."
         }
       },
       "type": "object"
@@ -5792,10 +5990,6 @@
       "properties": {
         "datastore": {
           "description": "The Vsphere datastore used by the control plane Node.",
-          "type": "string"
-        },
-        "storagePolicyName": {
-          "description": "The Vsphere storage policy used by the control plane Node.",
           "type": "string"
         }
       },
@@ -6073,8 +6267,7 @@
         },
         "vsphereConfig": {
           "$ref": "VmwareVsphereConfig",
-          "description": "Output only. Specifies the vSphere config for node pool.",
-          "readOnly": true
+          "description": "Specifies the vSphere config for node pool."
         }
       },
       "type": "object"
@@ -6275,10 +6468,6 @@
         "resourcePool": {
           "description": "The name of the vCenter resource pool for the user cluster.",
           "type": "string"
-        },
-        "storagePolicyName": {
-          "description": "The name of the vCenter storage policy for the user cluster.",
-          "type": "string"
         }
       },
       "type": "object"
@@ -6323,10 +6512,6 @@
       "properties": {
         "datastore": {
           "description": "The name of the vCenter datastore. Inherited from the user cluster.",
-          "type": "string"
-        },
-        "storagePolicyName": {
-          "description": "The name of the vCenter storage policy. Inherited from the user cluster.",
           "type": "string"
         },
         "tags": {

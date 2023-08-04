@@ -755,7 +755,7 @@
       }
     }
   },
-  "revision": "20230612",
+  "revision": "20230717",
   "rootUrl": "https://containeranalysis.googleapis.com/",
   "schemas": {
     "AliasContext": {
@@ -825,7 +825,8 @@
       "id": "Assessment",
       "properties": {
         "cve": {
-          "description": "Holds the MITRE standard Common Vulnerabilities and Exposures (CVE) tracking number for the vulnerability.",
+          "deprecated": true,
+          "description": "Holds the MITRE standard Common Vulnerabilities and Exposures (CVE) tracking number for the vulnerability. Deprecated: Use vulnerability_id instead to denote CVEs.",
           "type": "string"
         },
         "impacts": {
@@ -877,6 +878,10 @@
             "This product contains a fix for this vulnerability.",
             "It is not known yet whether these versions are or are not affected by the vulnerability. However, it is still under investigation."
           ],
+          "type": "string"
+        },
+        "vulnerabilityId": {
+          "description": "The vulnerability identifier for this Assessment. Will hold one of common identifiers e.g. CVE, GHSA etc.",
           "type": "string"
         }
       },
@@ -997,6 +1002,52 @@
       },
       "type": "object"
     },
+    "BuildDefinition": {
+      "id": "BuildDefinition",
+      "properties": {
+        "buildType": {
+          "type": "string"
+        },
+        "externalParameters": {
+          "additionalProperties": {
+            "description": "Properties of the object.",
+            "type": "any"
+          },
+          "type": "object"
+        },
+        "internalParameters": {
+          "additionalProperties": {
+            "description": "Properties of the object.",
+            "type": "any"
+          },
+          "type": "object"
+        },
+        "resolvedDependencies": {
+          "items": {
+            "$ref": "ResourceDescriptor"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "BuildMetadata": {
+      "id": "BuildMetadata",
+      "properties": {
+        "finishedOn": {
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "invocationId": {
+          "type": "string"
+        },
+        "startedOn": {
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "BuildNote": {
       "description": "Note holding the version of the provider's builder and the signature of the provenance message in the build details occurrence.",
       "id": "BuildNote",
@@ -1012,6 +1063,10 @@
       "description": "Details of a build occurrence.",
       "id": "BuildOccurrence",
       "properties": {
+        "inTotoSlsaProvenanceV1": {
+          "$ref": "InTotoSlsaProvenanceV1",
+          "description": "In-Toto Slsa Provenance V1 represents a slsa provenance meeting the slsa spec, wrapped in an in-toto statement. This allows for direct jsonification of a to-spec in-toto slsa statement with a to-spec slsa provenance."
+        },
         "intotoProvenance": {
           "$ref": "InTotoProvenance",
           "description": "Deprecated. See InTotoStatement for the replacement. In-toto Provenance representation as defined in spec."
@@ -2174,7 +2229,7 @@
           ],
           "enumDescriptions": [
             "Unspecified.",
-            "Bucket is located in user-owned project in the same region as the build. The builder service account must have access to create and write to GCS buckets in the build project."
+            "Bucket is located in user-owned project in the same region as the build. The builder service account must have access to create and write to Cloud Storage buckets in the build project."
           ],
           "type": "string"
         },
@@ -2218,6 +2273,14 @@
             "CLOUD_LOGGING_ONLY",
             "NONE"
           ],
+          "enumDeprecated": [
+            false,
+            false,
+            false,
+            true,
+            false,
+            false
+          ],
           "enumDescriptions": [
             "The service determines the logging mode. The default is `LEGACY`. Do not rely on the default logging behavior as it may change in the future.",
             "Build logs are stored in Cloud Logging and Cloud Storage.",
@@ -2235,14 +2298,16 @@
             "N1_HIGHCPU_8",
             "N1_HIGHCPU_32",
             "E2_HIGHCPU_8",
-            "E2_HIGHCPU_32"
+            "E2_HIGHCPU_32",
+            "E2_MEDIUM"
           ],
           "enumDescriptions": [
             "Standard machine type.",
             "Highcpu machine with 8 CPUs.",
             "Highcpu machine with 32 CPUs.",
             "Highcpu e2 machine with 8 CPUs.",
-            "Highcpu e2 machine with 32 CPUs."
+            "Highcpu e2 machine with 32 CPUs.",
+            "E2 machine with 1 CPU."
           ],
           "type": "string"
         },
@@ -2308,6 +2373,7 @@
           "type": "array"
         },
         "workerPool": {
+          "deprecated": true,
           "description": "This field deprecated; please use `pool.name` instead.",
           "type": "string"
         }
@@ -3208,6 +3274,10 @@
           "description": "The last time this resource was scanned.",
           "format": "google-datetime",
           "type": "string"
+        },
+        "sbomStatus": {
+          "$ref": "SBOMStatus",
+          "description": "The status of an SBOM generation."
         }
       },
       "type": "object"
@@ -3695,6 +3765,28 @@
         "recipe": {
           "$ref": "Recipe",
           "description": "Identifies the configuration used for the build. When combined with materials, this SHOULD fully describe the build, such that re-running this recipe results in bit-for-bit identical output (if the build is reproducible). required"
+        }
+      },
+      "type": "object"
+    },
+    "InTotoSlsaProvenanceV1": {
+      "id": "InTotoSlsaProvenanceV1",
+      "properties": {
+        "_type": {
+          "description": "InToto spec defined at https://github.com/in-toto/attestation/tree/main/spec#statement",
+          "type": "string"
+        },
+        "predicate": {
+          "$ref": "SlsaProvenanceV1"
+        },
+        "predicateType": {
+          "type": "string"
+        },
+        "subject": {
+          "items": {
+            "$ref": "Subject"
+          },
+          "type": "array"
         }
       },
       "type": "object"
@@ -4440,6 +4532,27 @@
       },
       "type": "object"
     },
+    "ProvenanceBuilder": {
+      "id": "ProvenanceBuilder",
+      "properties": {
+        "builderDependencies": {
+          "items": {
+            "$ref": "ResourceDescriptor"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "Publisher": {
       "description": "Publisher contains information about the publisher of this Note.",
       "id": "Publisher",
@@ -4566,6 +4679,58 @@
       },
       "type": "object"
     },
+    "ResourceDescriptor": {
+      "id": "ResourceDescriptor",
+      "properties": {
+        "annotations": {
+          "additionalProperties": {
+            "type": "any"
+          },
+          "type": "object"
+        },
+        "content": {
+          "format": "byte",
+          "type": "string"
+        },
+        "digest": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "downloadLocation": {
+          "type": "string"
+        },
+        "mediaType": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "RunDetails": {
+      "id": "RunDetails",
+      "properties": {
+        "builder": {
+          "$ref": "ProvenanceBuilder"
+        },
+        "byproducts": {
+          "items": {
+            "$ref": "ResourceDescriptor"
+          },
+          "type": "array"
+        },
+        "metadata": {
+          "$ref": "BuildMetadata"
+        }
+      },
+      "type": "object"
+    },
     "SBOMReferenceNote": {
       "description": "The note representing an SBOM reference.",
       "id": "SBOMReferenceNote",
@@ -4599,6 +4764,31 @@
             "$ref": "EnvelopeSignature"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "SBOMStatus": {
+      "description": "The status of an SBOM generation.",
+      "id": "SBOMStatus",
+      "properties": {
+        "error": {
+          "description": "If there was an error generating an SBOM, this will indicate what that error was.",
+          "type": "string"
+        },
+        "sbomState": {
+          "description": "The progress of the SBOM generation.",
+          "enum": [
+            "SBOM_STATE_UNSPECIFIED",
+            "PENDING",
+            "COMPLETE"
+          ],
+          "enumDescriptions": [
+            "Default unknown state.",
+            "SBOM scanning is pending.",
+            "SBOM scanning has completed."
+          ],
+          "type": "string"
         }
       },
       "type": "object"
@@ -4759,6 +4949,19 @@
         "recipe": {
           "$ref": "SlsaRecipe",
           "description": "Identifies the configuration used for the build. When combined with materials, this SHOULD fully describe the build, such that re-running this recipe results in bit-for-bit identical output (if the build is reproducible). required"
+        }
+      },
+      "type": "object"
+    },
+    "SlsaProvenanceV1": {
+      "description": "Keep in sync with schema at https://github.com/slsa-framework/slsa/blob/main/docs/provenance/schema/v1/provenance.proto Builder renamed to ProvenanceBuilder because of Java conflicts.",
+      "id": "SlsaProvenanceV1",
+      "properties": {
+        "buildDefinition": {
+          "$ref": "BuildDefinition"
+        },
+        "runDetails": {
+          "$ref": "RunDetails"
         }
       },
       "type": "object"
@@ -5098,7 +5301,8 @@
       "id": "VexAssessment",
       "properties": {
         "cve": {
-          "description": "Holds the MITRE standard Common Vulnerabilities and Exposures (CVE) tracking number for the vulnerability.",
+          "deprecated": true,
+          "description": "Holds the MITRE standard Common Vulnerabilities and Exposures (CVE) tracking number for the vulnerability. Deprecated: Use vulnerability_id instead to denote CVEs.",
           "type": "string"
         },
         "impacts": {
@@ -5146,6 +5350,10 @@
             "This product contains a fix for this vulnerability.",
             "It is not known yet whether these versions are or are not affected by the vulnerability. However, it is still under investigation."
           ],
+          "type": "string"
+        },
+        "vulnerabilityId": {
+          "description": "The vulnerability identifier for this Assessment. Will hold one of common identifiers e.g. CVE, GHSA etc.",
           "type": "string"
         }
       },
