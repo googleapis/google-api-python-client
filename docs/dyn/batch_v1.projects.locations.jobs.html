@@ -115,7 +115,7 @@ Args:
 { # The Cloud Batch Job description.
   &quot;allocationPolicy&quot;: { # A Job&#x27;s resource allocation policy describes when, where, and how compute resources should be allocated for the Job. # Compute resource allocation for all TaskGroups in the Job.
     &quot;instances&quot;: [ # Describe instances that can be created by this AllocationPolicy. Only instances[0] is supported now.
-      { # Either an InstancePolicy or an instance template.
+      { # InstancePolicyOrTemplate lets you define the type of resources to use for this job either with an InstancePolicy or an instance template. If undefined, Batch picks the type of VM to use and doesn&#x27;t include optional VM resources such as GPUs and extra disks.
         &quot;installGpuDrivers&quot;: True or False, # Set this field true if users want Batch to help fetch drivers from a third party location and install them for GPUs specified in policy.accelerators or instance_template on their behalf. Default is false. For Container-Optimized Image cases, Batch will install the accelerator driver following milestones of https://cloud.google.com/container-optimized-os/docs/release-notes. For non Container-Optimized Image cases, following https://github.com/GoogleCloudPlatform/compute-gpu-installation/blob/main/linux/install_gpu_driver.py.
         &quot;instanceTemplate&quot;: &quot;A String&quot;, # Name of an instance template used to create VMs. Named the field as &#x27;instance_template&#x27; instead of &#x27;template&#x27; to avoid c++ keyword conflict.
         &quot;policy&quot;: { # InstancePolicy describes an instance type and resources attached to each VM created by this InstancePolicy. # InstancePolicy.
@@ -134,7 +134,7 @@ Args:
             &quot;snapshot&quot;: &quot;A String&quot;, # Name of a snapshot used as the data source. Snapshot is not supported as boot disk now.
             &quot;type&quot;: &quot;A String&quot;, # Disk type as shown in `gcloud compute disk-types list`. For example, local SSD uses type &quot;local-ssd&quot;. Persistent disks and boot disks use &quot;pd-balanced&quot;, &quot;pd-extreme&quot;, &quot;pd-ssd&quot; or &quot;pd-standard&quot;.
           },
-          &quot;disks&quot;: [ # Non-boot disks to be attached for each VM created by this InstancePolicy. New disks will be deleted when the VM is deleted.
+          &quot;disks&quot;: [ # Non-boot disks to be attached for each VM created by this InstancePolicy. New disks will be deleted when the VM is deleted. A non bootable disk is a disk that can be of a device with a file system or a raw storage drive that is not ready for data storage and accessing.
             { # A new or an existing persistent disk (PD) or a local ssd attached to a VM instance.
               &quot;deviceName&quot;: &quot;A String&quot;, # Device name that the guest operating system will see. It is used by Runnable.volumes field to mount disks. So please specify the device_name if you want Batch to help mount the disk, and it should match the device_name field in volumes.
               &quot;existingDisk&quot;: &quot;A String&quot;, # Name of an existing PD.
@@ -192,12 +192,12 @@ Args:
   &quot;name&quot;: &quot;A String&quot;, # Output only. Job name. For example: &quot;projects/123456/locations/us-central1/jobs/job01&quot;.
   &quot;notifications&quot;: [ # Notification configurations.
     { # Notification configurations.
-      &quot;message&quot;: { # Message details. Describe the attribute that a message should have. Without specified message attributes, no message will be sent by default. # The attribute requirements of messages to be sent to this Pub/Sub topic. Without this field, no message will be sent.
+      &quot;message&quot;: { # Message details. Describe the conditions under which messages will be sent. If no attribute is defined, no message will be sent by default. One message should specify either the job or the task level attributes, but not both. For example, job level: JOB_STATE_CHANGED and/or a specified new_job_state; task level: TASK_STATE_CHANGED and/or a specified new_task_state. # The attribute requirements of messages to be sent to this Pub/Sub topic. Without this field, no message will be sent.
         &quot;newJobState&quot;: &quot;A String&quot;, # The new job state.
         &quot;newTaskState&quot;: &quot;A String&quot;, # The new task state.
         &quot;type&quot;: &quot;A String&quot;, # The message type.
       },
-      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The Pub/Sub topic where notifications like the job state changes will be published. This topic exist in the same project as the job and billings will be charged to this project. If not specified, no Pub/Sub messages will be sent. Topic format: `projects/{project}/topics/{topic}`.
+      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The Pub/Sub topic where notifications like the job state changes will be published. The topic must exist in the same project as the job and billings will be charged to this project. If not specified, no Pub/Sub messages will be sent. Topic format: `projects/{project}/topics/{topic}`.
     },
   ],
   &quot;priority&quot;: &quot;A String&quot;, # Priority of the Job. The valid value range is [0, 100). Default value is 0. Higher value indicates higher priority. A job with higher priority value is more likely to run earlier if all other requirements are satisfied.
@@ -261,10 +261,10 @@ Args:
         },
       ],
       &quot;taskSpec&quot;: { # Spec of a task # Required. Tasks in the group share the same task spec.
-        &quot;computeResource&quot;: { # Compute resource requirements # ComputeResource requirements.
+        &quot;computeResource&quot;: { # Compute resource requirements. ComputeResource defines the amount of resources required for each task. Make sure your tasks have enough resources to successfully run. If you also define the types of resources for a job to use with the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure both fields are compatible with each other. # ComputeResource requirements.
           &quot;bootDiskMib&quot;: &quot;A String&quot;, # Extra boot disk size in MiB for each task.
-          &quot;cpuMilli&quot;: &quot;A String&quot;, # The milliCPU count.
-          &quot;memoryMib&quot;: &quot;A String&quot;, # Memory in MiB.
+          &quot;cpuMilli&quot;: &quot;A String&quot;, # The milliCPU count. `cpuMilli` defines the amount of CPU resources per task in milliCPU units. For example, `1000` corresponds to 1 vCPU per task. If undefined, the default value is `2000`. If you also define the VM&#x27;s machine type using the `machineType` in [InstancePolicy](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicy) field or inside the `instanceTemplate` in the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure the CPU resources for both fields are compatible with each other and with how many tasks you want to allow to run on the same VM at the same time. For example, if you specify the `n2-standard-2` machine type, which has 2 vCPUs each, you are recommended to set `cpuMilli` no more than `2000`, or you are recommended to run two tasks on the same VM if you set `cpuMilli` to `1000` or less.
+          &quot;memoryMib&quot;: &quot;A String&quot;, # Memory in MiB. `memoryMib` defines the amount of memory per task in MiB units. If undefined, the default value is `2000`. If you also define the VM&#x27;s machine type using the `machineType` in [InstancePolicy](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicy) field or inside the `instanceTemplate` in the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure the memory resources for both fields are compatible with each other and with how many tasks you want to allow to run on the same VM at the same time. For example, if you specify the `n2-standard-2` machine type, which has 8 GiB each, you are recommended to set `memoryMib` to no more than `8192`, or you are recommended to run two tasks on the same VM if you set `memoryMib` to `4096` or less.
         },
         &quot;environment&quot;: { # An Environment describes a collection of environment variables to set when executing Tasks. # Environment variables to set before running the Task.
           &quot;encryptedVariables&quot;: { # An encrypted JSON dictionary where the key/value pairs correspond to environment variable names and their values.
@@ -373,7 +373,7 @@ Returns:
     { # The Cloud Batch Job description.
   &quot;allocationPolicy&quot;: { # A Job&#x27;s resource allocation policy describes when, where, and how compute resources should be allocated for the Job. # Compute resource allocation for all TaskGroups in the Job.
     &quot;instances&quot;: [ # Describe instances that can be created by this AllocationPolicy. Only instances[0] is supported now.
-      { # Either an InstancePolicy or an instance template.
+      { # InstancePolicyOrTemplate lets you define the type of resources to use for this job either with an InstancePolicy or an instance template. If undefined, Batch picks the type of VM to use and doesn&#x27;t include optional VM resources such as GPUs and extra disks.
         &quot;installGpuDrivers&quot;: True or False, # Set this field true if users want Batch to help fetch drivers from a third party location and install them for GPUs specified in policy.accelerators or instance_template on their behalf. Default is false. For Container-Optimized Image cases, Batch will install the accelerator driver following milestones of https://cloud.google.com/container-optimized-os/docs/release-notes. For non Container-Optimized Image cases, following https://github.com/GoogleCloudPlatform/compute-gpu-installation/blob/main/linux/install_gpu_driver.py.
         &quot;instanceTemplate&quot;: &quot;A String&quot;, # Name of an instance template used to create VMs. Named the field as &#x27;instance_template&#x27; instead of &#x27;template&#x27; to avoid c++ keyword conflict.
         &quot;policy&quot;: { # InstancePolicy describes an instance type and resources attached to each VM created by this InstancePolicy. # InstancePolicy.
@@ -392,7 +392,7 @@ Returns:
             &quot;snapshot&quot;: &quot;A String&quot;, # Name of a snapshot used as the data source. Snapshot is not supported as boot disk now.
             &quot;type&quot;: &quot;A String&quot;, # Disk type as shown in `gcloud compute disk-types list`. For example, local SSD uses type &quot;local-ssd&quot;. Persistent disks and boot disks use &quot;pd-balanced&quot;, &quot;pd-extreme&quot;, &quot;pd-ssd&quot; or &quot;pd-standard&quot;.
           },
-          &quot;disks&quot;: [ # Non-boot disks to be attached for each VM created by this InstancePolicy. New disks will be deleted when the VM is deleted.
+          &quot;disks&quot;: [ # Non-boot disks to be attached for each VM created by this InstancePolicy. New disks will be deleted when the VM is deleted. A non bootable disk is a disk that can be of a device with a file system or a raw storage drive that is not ready for data storage and accessing.
             { # A new or an existing persistent disk (PD) or a local ssd attached to a VM instance.
               &quot;deviceName&quot;: &quot;A String&quot;, # Device name that the guest operating system will see. It is used by Runnable.volumes field to mount disks. So please specify the device_name if you want Batch to help mount the disk, and it should match the device_name field in volumes.
               &quot;existingDisk&quot;: &quot;A String&quot;, # Name of an existing PD.
@@ -450,12 +450,12 @@ Returns:
   &quot;name&quot;: &quot;A String&quot;, # Output only. Job name. For example: &quot;projects/123456/locations/us-central1/jobs/job01&quot;.
   &quot;notifications&quot;: [ # Notification configurations.
     { # Notification configurations.
-      &quot;message&quot;: { # Message details. Describe the attribute that a message should have. Without specified message attributes, no message will be sent by default. # The attribute requirements of messages to be sent to this Pub/Sub topic. Without this field, no message will be sent.
+      &quot;message&quot;: { # Message details. Describe the conditions under which messages will be sent. If no attribute is defined, no message will be sent by default. One message should specify either the job or the task level attributes, but not both. For example, job level: JOB_STATE_CHANGED and/or a specified new_job_state; task level: TASK_STATE_CHANGED and/or a specified new_task_state. # The attribute requirements of messages to be sent to this Pub/Sub topic. Without this field, no message will be sent.
         &quot;newJobState&quot;: &quot;A String&quot;, # The new job state.
         &quot;newTaskState&quot;: &quot;A String&quot;, # The new task state.
         &quot;type&quot;: &quot;A String&quot;, # The message type.
       },
-      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The Pub/Sub topic where notifications like the job state changes will be published. This topic exist in the same project as the job and billings will be charged to this project. If not specified, no Pub/Sub messages will be sent. Topic format: `projects/{project}/topics/{topic}`.
+      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The Pub/Sub topic where notifications like the job state changes will be published. The topic must exist in the same project as the job and billings will be charged to this project. If not specified, no Pub/Sub messages will be sent. Topic format: `projects/{project}/topics/{topic}`.
     },
   ],
   &quot;priority&quot;: &quot;A String&quot;, # Priority of the Job. The valid value range is [0, 100). Default value is 0. Higher value indicates higher priority. A job with higher priority value is more likely to run earlier if all other requirements are satisfied.
@@ -519,10 +519,10 @@ Returns:
         },
       ],
       &quot;taskSpec&quot;: { # Spec of a task # Required. Tasks in the group share the same task spec.
-        &quot;computeResource&quot;: { # Compute resource requirements # ComputeResource requirements.
+        &quot;computeResource&quot;: { # Compute resource requirements. ComputeResource defines the amount of resources required for each task. Make sure your tasks have enough resources to successfully run. If you also define the types of resources for a job to use with the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure both fields are compatible with each other. # ComputeResource requirements.
           &quot;bootDiskMib&quot;: &quot;A String&quot;, # Extra boot disk size in MiB for each task.
-          &quot;cpuMilli&quot;: &quot;A String&quot;, # The milliCPU count.
-          &quot;memoryMib&quot;: &quot;A String&quot;, # Memory in MiB.
+          &quot;cpuMilli&quot;: &quot;A String&quot;, # The milliCPU count. `cpuMilli` defines the amount of CPU resources per task in milliCPU units. For example, `1000` corresponds to 1 vCPU per task. If undefined, the default value is `2000`. If you also define the VM&#x27;s machine type using the `machineType` in [InstancePolicy](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicy) field or inside the `instanceTemplate` in the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure the CPU resources for both fields are compatible with each other and with how many tasks you want to allow to run on the same VM at the same time. For example, if you specify the `n2-standard-2` machine type, which has 2 vCPUs each, you are recommended to set `cpuMilli` no more than `2000`, or you are recommended to run two tasks on the same VM if you set `cpuMilli` to `1000` or less.
+          &quot;memoryMib&quot;: &quot;A String&quot;, # Memory in MiB. `memoryMib` defines the amount of memory per task in MiB units. If undefined, the default value is `2000`. If you also define the VM&#x27;s machine type using the `machineType` in [InstancePolicy](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicy) field or inside the `instanceTemplate` in the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure the memory resources for both fields are compatible with each other and with how many tasks you want to allow to run on the same VM at the same time. For example, if you specify the `n2-standard-2` machine type, which has 8 GiB each, you are recommended to set `memoryMib` to no more than `8192`, or you are recommended to run two tasks on the same VM if you set `memoryMib` to `4096` or less.
         },
         &quot;environment&quot;: { # An Environment describes a collection of environment variables to set when executing Tasks. # Environment variables to set before running the Task.
           &quot;encryptedVariables&quot;: { # An encrypted JSON dictionary where the key/value pairs correspond to environment variable names and their values.
@@ -673,7 +673,7 @@ Returns:
     { # The Cloud Batch Job description.
   &quot;allocationPolicy&quot;: { # A Job&#x27;s resource allocation policy describes when, where, and how compute resources should be allocated for the Job. # Compute resource allocation for all TaskGroups in the Job.
     &quot;instances&quot;: [ # Describe instances that can be created by this AllocationPolicy. Only instances[0] is supported now.
-      { # Either an InstancePolicy or an instance template.
+      { # InstancePolicyOrTemplate lets you define the type of resources to use for this job either with an InstancePolicy or an instance template. If undefined, Batch picks the type of VM to use and doesn&#x27;t include optional VM resources such as GPUs and extra disks.
         &quot;installGpuDrivers&quot;: True or False, # Set this field true if users want Batch to help fetch drivers from a third party location and install them for GPUs specified in policy.accelerators or instance_template on their behalf. Default is false. For Container-Optimized Image cases, Batch will install the accelerator driver following milestones of https://cloud.google.com/container-optimized-os/docs/release-notes. For non Container-Optimized Image cases, following https://github.com/GoogleCloudPlatform/compute-gpu-installation/blob/main/linux/install_gpu_driver.py.
         &quot;instanceTemplate&quot;: &quot;A String&quot;, # Name of an instance template used to create VMs. Named the field as &#x27;instance_template&#x27; instead of &#x27;template&#x27; to avoid c++ keyword conflict.
         &quot;policy&quot;: { # InstancePolicy describes an instance type and resources attached to each VM created by this InstancePolicy. # InstancePolicy.
@@ -692,7 +692,7 @@ Returns:
             &quot;snapshot&quot;: &quot;A String&quot;, # Name of a snapshot used as the data source. Snapshot is not supported as boot disk now.
             &quot;type&quot;: &quot;A String&quot;, # Disk type as shown in `gcloud compute disk-types list`. For example, local SSD uses type &quot;local-ssd&quot;. Persistent disks and boot disks use &quot;pd-balanced&quot;, &quot;pd-extreme&quot;, &quot;pd-ssd&quot; or &quot;pd-standard&quot;.
           },
-          &quot;disks&quot;: [ # Non-boot disks to be attached for each VM created by this InstancePolicy. New disks will be deleted when the VM is deleted.
+          &quot;disks&quot;: [ # Non-boot disks to be attached for each VM created by this InstancePolicy. New disks will be deleted when the VM is deleted. A non bootable disk is a disk that can be of a device with a file system or a raw storage drive that is not ready for data storage and accessing.
             { # A new or an existing persistent disk (PD) or a local ssd attached to a VM instance.
               &quot;deviceName&quot;: &quot;A String&quot;, # Device name that the guest operating system will see. It is used by Runnable.volumes field to mount disks. So please specify the device_name if you want Batch to help mount the disk, and it should match the device_name field in volumes.
               &quot;existingDisk&quot;: &quot;A String&quot;, # Name of an existing PD.
@@ -750,12 +750,12 @@ Returns:
   &quot;name&quot;: &quot;A String&quot;, # Output only. Job name. For example: &quot;projects/123456/locations/us-central1/jobs/job01&quot;.
   &quot;notifications&quot;: [ # Notification configurations.
     { # Notification configurations.
-      &quot;message&quot;: { # Message details. Describe the attribute that a message should have. Without specified message attributes, no message will be sent by default. # The attribute requirements of messages to be sent to this Pub/Sub topic. Without this field, no message will be sent.
+      &quot;message&quot;: { # Message details. Describe the conditions under which messages will be sent. If no attribute is defined, no message will be sent by default. One message should specify either the job or the task level attributes, but not both. For example, job level: JOB_STATE_CHANGED and/or a specified new_job_state; task level: TASK_STATE_CHANGED and/or a specified new_task_state. # The attribute requirements of messages to be sent to this Pub/Sub topic. Without this field, no message will be sent.
         &quot;newJobState&quot;: &quot;A String&quot;, # The new job state.
         &quot;newTaskState&quot;: &quot;A String&quot;, # The new task state.
         &quot;type&quot;: &quot;A String&quot;, # The message type.
       },
-      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The Pub/Sub topic where notifications like the job state changes will be published. This topic exist in the same project as the job and billings will be charged to this project. If not specified, no Pub/Sub messages will be sent. Topic format: `projects/{project}/topics/{topic}`.
+      &quot;pubsubTopic&quot;: &quot;A String&quot;, # The Pub/Sub topic where notifications like the job state changes will be published. The topic must exist in the same project as the job and billings will be charged to this project. If not specified, no Pub/Sub messages will be sent. Topic format: `projects/{project}/topics/{topic}`.
     },
   ],
   &quot;priority&quot;: &quot;A String&quot;, # Priority of the Job. The valid value range is [0, 100). Default value is 0. Higher value indicates higher priority. A job with higher priority value is more likely to run earlier if all other requirements are satisfied.
@@ -819,10 +819,10 @@ Returns:
         },
       ],
       &quot;taskSpec&quot;: { # Spec of a task # Required. Tasks in the group share the same task spec.
-        &quot;computeResource&quot;: { # Compute resource requirements # ComputeResource requirements.
+        &quot;computeResource&quot;: { # Compute resource requirements. ComputeResource defines the amount of resources required for each task. Make sure your tasks have enough resources to successfully run. If you also define the types of resources for a job to use with the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure both fields are compatible with each other. # ComputeResource requirements.
           &quot;bootDiskMib&quot;: &quot;A String&quot;, # Extra boot disk size in MiB for each task.
-          &quot;cpuMilli&quot;: &quot;A String&quot;, # The milliCPU count.
-          &quot;memoryMib&quot;: &quot;A String&quot;, # Memory in MiB.
+          &quot;cpuMilli&quot;: &quot;A String&quot;, # The milliCPU count. `cpuMilli` defines the amount of CPU resources per task in milliCPU units. For example, `1000` corresponds to 1 vCPU per task. If undefined, the default value is `2000`. If you also define the VM&#x27;s machine type using the `machineType` in [InstancePolicy](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicy) field or inside the `instanceTemplate` in the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure the CPU resources for both fields are compatible with each other and with how many tasks you want to allow to run on the same VM at the same time. For example, if you specify the `n2-standard-2` machine type, which has 2 vCPUs each, you are recommended to set `cpuMilli` no more than `2000`, or you are recommended to run two tasks on the same VM if you set `cpuMilli` to `1000` or less.
+          &quot;memoryMib&quot;: &quot;A String&quot;, # Memory in MiB. `memoryMib` defines the amount of memory per task in MiB units. If undefined, the default value is `2000`. If you also define the VM&#x27;s machine type using the `machineType` in [InstancePolicy](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicy) field or inside the `instanceTemplate` in the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure the memory resources for both fields are compatible with each other and with how many tasks you want to allow to run on the same VM at the same time. For example, if you specify the `n2-standard-2` machine type, which has 8 GiB each, you are recommended to set `memoryMib` to no more than `8192`, or you are recommended to run two tasks on the same VM if you set `memoryMib` to `4096` or less.
         },
         &quot;environment&quot;: { # An Environment describes a collection of environment variables to set when executing Tasks. # Environment variables to set before running the Task.
           &quot;encryptedVariables&quot;: { # An encrypted JSON dictionary where the key/value pairs correspond to environment variable names and their values.
@@ -942,7 +942,7 @@ Returns:
     { # The Cloud Batch Job description.
       &quot;allocationPolicy&quot;: { # A Job&#x27;s resource allocation policy describes when, where, and how compute resources should be allocated for the Job. # Compute resource allocation for all TaskGroups in the Job.
         &quot;instances&quot;: [ # Describe instances that can be created by this AllocationPolicy. Only instances[0] is supported now.
-          { # Either an InstancePolicy or an instance template.
+          { # InstancePolicyOrTemplate lets you define the type of resources to use for this job either with an InstancePolicy or an instance template. If undefined, Batch picks the type of VM to use and doesn&#x27;t include optional VM resources such as GPUs and extra disks.
             &quot;installGpuDrivers&quot;: True or False, # Set this field true if users want Batch to help fetch drivers from a third party location and install them for GPUs specified in policy.accelerators or instance_template on their behalf. Default is false. For Container-Optimized Image cases, Batch will install the accelerator driver following milestones of https://cloud.google.com/container-optimized-os/docs/release-notes. For non Container-Optimized Image cases, following https://github.com/GoogleCloudPlatform/compute-gpu-installation/blob/main/linux/install_gpu_driver.py.
             &quot;instanceTemplate&quot;: &quot;A String&quot;, # Name of an instance template used to create VMs. Named the field as &#x27;instance_template&#x27; instead of &#x27;template&#x27; to avoid c++ keyword conflict.
             &quot;policy&quot;: { # InstancePolicy describes an instance type and resources attached to each VM created by this InstancePolicy. # InstancePolicy.
@@ -961,7 +961,7 @@ Returns:
                 &quot;snapshot&quot;: &quot;A String&quot;, # Name of a snapshot used as the data source. Snapshot is not supported as boot disk now.
                 &quot;type&quot;: &quot;A String&quot;, # Disk type as shown in `gcloud compute disk-types list`. For example, local SSD uses type &quot;local-ssd&quot;. Persistent disks and boot disks use &quot;pd-balanced&quot;, &quot;pd-extreme&quot;, &quot;pd-ssd&quot; or &quot;pd-standard&quot;.
               },
-              &quot;disks&quot;: [ # Non-boot disks to be attached for each VM created by this InstancePolicy. New disks will be deleted when the VM is deleted.
+              &quot;disks&quot;: [ # Non-boot disks to be attached for each VM created by this InstancePolicy. New disks will be deleted when the VM is deleted. A non bootable disk is a disk that can be of a device with a file system or a raw storage drive that is not ready for data storage and accessing.
                 { # A new or an existing persistent disk (PD) or a local ssd attached to a VM instance.
                   &quot;deviceName&quot;: &quot;A String&quot;, # Device name that the guest operating system will see. It is used by Runnable.volumes field to mount disks. So please specify the device_name if you want Batch to help mount the disk, and it should match the device_name field in volumes.
                   &quot;existingDisk&quot;: &quot;A String&quot;, # Name of an existing PD.
@@ -1019,12 +1019,12 @@ Returns:
       &quot;name&quot;: &quot;A String&quot;, # Output only. Job name. For example: &quot;projects/123456/locations/us-central1/jobs/job01&quot;.
       &quot;notifications&quot;: [ # Notification configurations.
         { # Notification configurations.
-          &quot;message&quot;: { # Message details. Describe the attribute that a message should have. Without specified message attributes, no message will be sent by default. # The attribute requirements of messages to be sent to this Pub/Sub topic. Without this field, no message will be sent.
+          &quot;message&quot;: { # Message details. Describe the conditions under which messages will be sent. If no attribute is defined, no message will be sent by default. One message should specify either the job or the task level attributes, but not both. For example, job level: JOB_STATE_CHANGED and/or a specified new_job_state; task level: TASK_STATE_CHANGED and/or a specified new_task_state. # The attribute requirements of messages to be sent to this Pub/Sub topic. Without this field, no message will be sent.
             &quot;newJobState&quot;: &quot;A String&quot;, # The new job state.
             &quot;newTaskState&quot;: &quot;A String&quot;, # The new task state.
             &quot;type&quot;: &quot;A String&quot;, # The message type.
           },
-          &quot;pubsubTopic&quot;: &quot;A String&quot;, # The Pub/Sub topic where notifications like the job state changes will be published. This topic exist in the same project as the job and billings will be charged to this project. If not specified, no Pub/Sub messages will be sent. Topic format: `projects/{project}/topics/{topic}`.
+          &quot;pubsubTopic&quot;: &quot;A String&quot;, # The Pub/Sub topic where notifications like the job state changes will be published. The topic must exist in the same project as the job and billings will be charged to this project. If not specified, no Pub/Sub messages will be sent. Topic format: `projects/{project}/topics/{topic}`.
         },
       ],
       &quot;priority&quot;: &quot;A String&quot;, # Priority of the Job. The valid value range is [0, 100). Default value is 0. Higher value indicates higher priority. A job with higher priority value is more likely to run earlier if all other requirements are satisfied.
@@ -1088,10 +1088,10 @@ Returns:
             },
           ],
           &quot;taskSpec&quot;: { # Spec of a task # Required. Tasks in the group share the same task spec.
-            &quot;computeResource&quot;: { # Compute resource requirements # ComputeResource requirements.
+            &quot;computeResource&quot;: { # Compute resource requirements. ComputeResource defines the amount of resources required for each task. Make sure your tasks have enough resources to successfully run. If you also define the types of resources for a job to use with the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure both fields are compatible with each other. # ComputeResource requirements.
               &quot;bootDiskMib&quot;: &quot;A String&quot;, # Extra boot disk size in MiB for each task.
-              &quot;cpuMilli&quot;: &quot;A String&quot;, # The milliCPU count.
-              &quot;memoryMib&quot;: &quot;A String&quot;, # Memory in MiB.
+              &quot;cpuMilli&quot;: &quot;A String&quot;, # The milliCPU count. `cpuMilli` defines the amount of CPU resources per task in milliCPU units. For example, `1000` corresponds to 1 vCPU per task. If undefined, the default value is `2000`. If you also define the VM&#x27;s machine type using the `machineType` in [InstancePolicy](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicy) field or inside the `instanceTemplate` in the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure the CPU resources for both fields are compatible with each other and with how many tasks you want to allow to run on the same VM at the same time. For example, if you specify the `n2-standard-2` machine type, which has 2 vCPUs each, you are recommended to set `cpuMilli` no more than `2000`, or you are recommended to run two tasks on the same VM if you set `cpuMilli` to `1000` or less.
+              &quot;memoryMib&quot;: &quot;A String&quot;, # Memory in MiB. `memoryMib` defines the amount of memory per task in MiB units. If undefined, the default value is `2000`. If you also define the VM&#x27;s machine type using the `machineType` in [InstancePolicy](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicy) field or inside the `instanceTemplate` in the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure the memory resources for both fields are compatible with each other and with how many tasks you want to allow to run on the same VM at the same time. For example, if you specify the `n2-standard-2` machine type, which has 8 GiB each, you are recommended to set `memoryMib` to no more than `8192`, or you are recommended to run two tasks on the same VM if you set `memoryMib` to `4096` or less.
             },
             &quot;environment&quot;: { # An Environment describes a collection of environment variables to set when executing Tasks. # Environment variables to set before running the Task.
               &quot;encryptedVariables&quot;: { # An encrypted JSON dictionary where the key/value pairs correspond to environment variable names and their values.
