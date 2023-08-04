@@ -148,7 +148,7 @@ def _should_retry_response(resp_status, content):
 
 
 def _retry_request(
-    http, num_retries, req_type, sleep, rand, uri, method, *args, **kwargs
+    http, num_retries, req_type, sleep, rand, url, method, *args, **kwargs
 ):
     """Retries an HTTP request multiple times while handling errors.
 
@@ -160,7 +160,7 @@ def _retry_request(
       num_retries: Maximum number of retries.
       req_type: Type of the request (used for logging retries).
       sleep, rand: Functions to sleep for random time between retries.
-      uri: URI to be requested.
+      url: URI to be requested.
       method: HTTP method to be used.
       args, kwargs: Additional arguments passed to http.request.
 
@@ -181,14 +181,18 @@ def _retry_request(
                 num_retries,
                 req_type,
                 method,
-                uri,
+                url,
                 resp.status if resp else exception,
             )
             sleep(sleep_time)
 
         try:
             exception = None
-            resp, content = http.request(uri, method, *args, **kwargs)
+            response = http.request(url=url, method=method, **kwargs)
+            headers = dict(response.headers)
+            headers['status'] = response.status_code
+            resp = httplib2.Response(headers)
+            content = response.content
         # Retry on SSL errors and socket timeout errors.
         except _ssl_SSLError as ssl_error:
             exception = ssl_error
@@ -928,7 +932,7 @@ class HttpRequest(object):
             self._rand,
             str(self.uri),
             method=str(self.method),
-            body=self.body,
+            data=self.body,
             headers=self.headers,
         )
 
@@ -1685,9 +1689,9 @@ class RequestMockBuilder(object):
         self,
         http,
         postproc,
-        uri,
+        url,
         method="GET",
-        body=None,
+        data=None,
         headers=None,
         methodId=None,
         resumable=None,
@@ -1738,25 +1742,29 @@ class HttpMock(object):
             self.data = None
         self.response_headers = headers
         self.headers = None
-        self.uri = None
+        self.url = None
         self.method = None
-        self.body = None
+        self.data = None
         self.headers = None
 
     def request(
         self,
-        uri,
+        url,
         method="GET",
-        body=None,
+        data=None,
         headers=None,
         redirections=1,
         connection_type=None,
     ):
-        self.uri = uri
+        self.url = url
         self.method = method
-        self.body = body
+        self.data = data
         self.headers = headers
-        return httplib2.Response(self.response_headers), self.data
+        response = requests.models.Response()
+        response.headers = self.response_headers
+        response._content=self.data
+        response.status_code=self.response_headers['status']
+        return response
 
     def close(self):
         return None
@@ -1797,15 +1805,15 @@ class HttpMockSequence(object):
 
     def request(
         self,
-        uri,
+        url,
         method="GET",
-        body=None,
+        data=None,
         headers=None,
         redirections=1,
         connection_type=None,
     ):
         # Remember the request so after the fact this mock can be examined
-        self.request_sequence.append((uri, method, body, headers))
+        self.request_sequence.append((url, method, data, headers))
         resp, content = self._iterable.pop(0)
         if isinstance(content, str):
             content = content.encode("utf-8")
@@ -1815,12 +1823,12 @@ class HttpMockSequence(object):
         elif content == b"echo_request_headers_as_json":
             content = json.dumps(headers)
         elif content == b"echo_request_body":
-            if hasattr(body, "read"):
-                content = body.read()
+            if hasattr(data, "read"):
+                content = data.read()
             else:
-                content = body
+                content = data
         elif content == b"echo_request_uri":
-            content = uri
+            content = url
         if isinstance(content, str):
             content = content.encode("utf-8")
         return httplib2.Response(resp), content
@@ -1849,9 +1857,9 @@ def set_user_agent(http, user_agent):
 
     # The closure that will replace 'httplib2.Http.request'.
     def new_request(
-        uri,
+        url,
         method="GET",
-        body=None,
+        data=None,
         headers=None,
         redirections=httplib2.DEFAULT_MAX_REDIRECTS,
         connection_type=None,
@@ -1864,9 +1872,9 @@ def set_user_agent(http, user_agent):
         else:
             headers["user-agent"] = user_agent
         resp, content = request_orig(
-            uri,
+            url,
             method=method,
-            body=body,
+            body=data,
             headers=headers,
             redirections=redirections,
             connection_type=connection_type,
@@ -1899,9 +1907,9 @@ def tunnel_patch(http):
 
     # The closure that will replace 'httplib2.Http.request'.
     def new_request(
-        uri,
+        url,
         method="GET",
-        body=None,
+        data=None,
         headers=None,
         redirections=httplib2.DEFAULT_MAX_REDIRECTS,
         connection_type=None,
@@ -1917,9 +1925,9 @@ def tunnel_patch(http):
             headers["x-http-method-override"] = "PATCH"
             method = "POST"
         resp, content = request_orig(
-            uri,
+            url,
             method=method,
-            body=body,
+            data=data,
             headers=headers,
             redirections=redirections,
             connection_type=connection_type,
@@ -1929,6 +1937,77 @@ def tunnel_patch(http):
     http.request = new_request
     return http
 
+import requests
+
+
+class _Http(object):
+    def __init__(self, timeout=None):
+        """Constructor.
+
+        Args:
+          timeout(int): number of seconds to wait before a socket timeout.
+            If None is passed for timeout then a default timeout value will be used.
+        """
+
+        self.credentials = httplib2.Credentials()
+
+        # Key/cert
+        self.certificates = httplib2.KeyCerts()
+
+        # authorization objects
+        self.authorizations = []
+
+        # If set to False then no redirects are followed, even safe ones.
+        self.follow_redirects = True
+
+        self.redirect_codes = httplib2.REDIRECT_CODES
+
+        # Which HTTP methods do we apply optimistic concurrency to, i.e.
+        # which methods get an "if-match:" etag header added to them.
+        self.optimistic_concurrency_methods = ["PUT", "PATCH"]
+
+        self.safe_methods = list(httplib2.SAFE_METHODS)
+
+        # If 'follow_redirects' is True, and this is set to True then
+        # all redirecs are followed, including unsafe ones.
+        self.follow_all_redirects = False
+
+        self.ignore_etag = False
+
+        self.force_exception_to_status_code = False
+
+        self.timeout = timeout
+
+        # Keep Authorization: headers on a redirect.
+        self.forward_authorization_headers = False
+
+    def request(  # pylint: disable=invalid-name
+        self,
+        url,
+        method='GET',
+        data=None,
+        headers=None,
+        redirections=None,
+        timeout=None):
+        """Makes an HTTP request using httplib2 semantics."""
+
+        if timeout is None:
+            if self.timeout is not None:
+                timeout = self.timeout
+            elif socket.getdefaulttimeout() is not None:
+                timeout = socket.getdefaulttimeout()
+            else:
+                timeout = DEFAULT_HTTP_TIMEOUT_SEC
+
+        with requests.Session() as session:
+            session.max_redirects = redirections
+            response = session.request(
+                method, url, data=data, headers=headers, timeout=timeout
+            )
+            headers = dict(response.headers)
+            headers['status'] = response.status_code
+            content = response.content
+        return httplib2.Response(headers), content
 
 def build_http():
     """Builds httplib2.Http object
@@ -1941,11 +2020,7 @@ def build_http():
 
     before interacting with this method.
     """
-    if socket.getdefaulttimeout() is not None:
-        http_timeout = socket.getdefaulttimeout()
-    else:
-        http_timeout = DEFAULT_HTTP_TIMEOUT_SEC
-    http = httplib2.Http(timeout=http_timeout)
+    http = _Http()
     # 308's are used by several Google APIs (Drive, YouTube)
     # for Resumable Uploads rather than Permanent Redirects.
     # This asks httplib2 to exclude 308s from the status codes

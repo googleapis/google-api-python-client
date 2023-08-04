@@ -19,6 +19,7 @@ import httplib2
 try:
     import google.auth
     import google.auth.credentials
+    import google.auth.transport.requests
 
     HAS_GOOGLE_AUTH = True
 except ImportError:  # pragma: NO COVER
@@ -112,14 +113,7 @@ def authorized_http(credentials):
     from googleapiclient.http import build_http
 
     if HAS_GOOGLE_AUTH and isinstance(credentials, google.auth.credentials.Credentials):
-        if google_auth_httplib2 is None:
-            raise ValueError(
-                "Credentials from google.auth specified, but "
-                "google-api-python-client is unable to use these credentials "
-                "unless google-auth-httplib2 is installed. Please install "
-                "google-auth-httplib2."
-            )
-        return google_auth_httplib2.AuthorizedHttp(credentials, http=build_http())
+        return google.auth.transport.requests.AuthorizedSession(credentials)
     else:
         return credentials.authorize(build_http())
 
@@ -131,7 +125,7 @@ def refresh_credentials(credentials):
     # and likely tear a hole in spacetime.
     refresh_http = httplib2.Http()
     if HAS_GOOGLE_AUTH and isinstance(credentials, google.auth.credentials.Credentials):
-        request = google_auth_httplib2.Request(refresh_http)
+        request = google.auth.transport.requests.Request(refresh_http)
         return credentials.refresh(request)
     else:
         return credentials.refresh(refresh_http)
