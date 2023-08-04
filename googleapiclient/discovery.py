@@ -318,7 +318,8 @@ def build(
     # If discovery_http was created by this function, we are done with it
     # and can safely close it
     if http is None:
-        discovery_http.close()
+        if hasattr(discovery_http, "close"):
+            discovery_http.close()
 
     if service is None:
         raise UnknownApiNameOrVersion("name: %s  version: %s" % (serviceName, version))
@@ -633,18 +634,7 @@ def build_from_document(
                     adc_cert_path, adc_key_path
                 )
         if client_cert_to_use:
-            cert_path, key_path, passphrase = client_cert_to_use()
-
-            # The http object we built could be google_auth_httplib2.AuthorizedHttp
-            # or httplib2.Http. In the first case we need to extract the wrapped
-            # httplib2.Http object from google_auth_httplib2.AuthorizedHttp.
-            http_channel = (
-                http.http
-                if google_auth_httplib2
-                and isinstance(http, google_auth_httplib2.AuthorizedHttp)
-                else http
-            )
-            http_channel.add_certificate(key_path, cert_path, "", passphrase)
+            raise Exception("Not supported")
 
         # If user doesn't provide api endpoint via client options, decide which
         # api endpoint to use.
@@ -1426,7 +1416,8 @@ class Resource(object):
         # httplib2 leaves sockets open by default.
         # Cleanup using the `close` method.
         # https://github.com/httplib2/httplib2/issues/148
-        self._http.close()
+        if hasattr(self._http, "close"):
+            self._http.close()
 
     def _set_service_methods(self):
         self._add_basic_methods(self._resourceDesc, self._rootDesc, self._schema)

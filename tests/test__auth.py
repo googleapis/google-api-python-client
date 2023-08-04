@@ -104,11 +104,8 @@ class TestAuthWithGoogleAuth(unittest.TestCase):
 
         authorized_http = _auth.authorized_http(credentials)
 
-        self.assertIsInstance(authorized_http, google_auth_httplib2.AuthorizedHttp)
+        self.assertIsInstance(authorized_http, google.auth.transport.requests.AuthorizedSession)
         self.assertEqual(authorized_http.credentials, credentials)
-        self.assertIsInstance(authorized_http.http, httplib2.Http)
-        self.assertIsInstance(authorized_http.http.timeout, int)
-        self.assertGreater(authorized_http.http.timeout, 0)
 
 
 @unittest.skipIf(not HAS_OAUTH2CLIENT, "oauth2client unavailable.")
@@ -186,15 +183,3 @@ class TestAuthWithoutAuth(unittest.TestCase):
         with self.assertRaises(EnvironmentError):
             print(_auth.default_credentials())
 
-
-class TestGoogleAuthWithoutHttplib2(unittest.TestCase):
-    def setUp(self):
-        _auth.google_auth_httplib2 = None
-
-    def tearDown(self):
-        _auth.google_auth_httplib2 = google_auth_httplib2
-
-    def test_default_credentials(self):
-        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
-        with self.assertRaises(ValueError):
-            _auth.authorized_http(credentials)

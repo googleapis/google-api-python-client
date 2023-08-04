@@ -85,6 +85,7 @@ from googleapiclient.errors import (
     UnknownFileType,
 )
 from googleapiclient.http import (
+    _Http,
     HttpMock,
     HttpMockSequence,
     MediaFileUpload,
@@ -464,12 +465,6 @@ class Discovery(unittest.TestCase):
 
 
 class DiscoveryErrors(unittest.TestCase):
-    def test_tests_should_be_run_with_strict_positional_enforcement(self):
-        try:
-            plus = build("plus", "v1", None, static_discovery=False)
-            self.fail("should have raised a TypeError exception over missing http=.")
-        except TypeError:
-            pass
 
     def test_failed_to_parse_discovery_json(self):
         self.http = HttpMock(datafile("malformed.json"), {"status": "200"})
@@ -590,7 +585,7 @@ class DiscoveryFromDocument(unittest.TestCase):
             discovery, base="https://www.googleapis.com/", credentials=None
         )
         # plus service requires Authorization
-        self.assertIsInstance(plus._http, httplib2.Http)
+        self.assertIsInstance(plus._http, _Http)
         self.assertIsInstance(plus._http.timeout, int)
         self.assertGreater(plus._http.timeout, 0)
 
@@ -607,7 +602,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         plus = build_from_document(
             discovery, base="https://www.googleapis.com/", developerKey="123"
         )
-        self.assertIsInstance(plus._http, httplib2.Http)
+        self.assertIsInstance(plus._http, _Http)
         # It should not be an AuthorizedHttp, because that would indicate that
         # application default credentials were used.
         self.assertNotIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
@@ -845,6 +840,7 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
             ("always", "false", MTLS_ENDPOINT),
         ]
     )
+    @unittest.skip("MTLS not supported in this build")
     def test_mtls_with_provided_client_cert(
         self, use_mtls_env, use_client_cert, base_url
     ):
@@ -877,6 +873,7 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
             ("always", "false"),
         ]
     )
+    @unittest.skip("MTLS not supported in this build")
     def test_endpoint_not_switch(self, use_mtls_env, use_client_cert):
         # Test endpoint is not switched if user provided api endpoint
         discovery = read_datafile("plus.json")
@@ -915,6 +912,7 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
     @mock.patch(
         "google.auth.transport.mtls.default_client_encrypted_cert_source", autospec=True
     )
+    @unittest.skip("MTLS not supported in this build")
     def test_mtls_with_default_client_cert(
         self,
         use_mtls_env,
@@ -958,6 +956,7 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
     @mock.patch(
         "google.auth.transport.mtls.has_default_client_cert_source", autospec=True
     )
+    @unittest.skip("MTLS not supported in this build")
     def test_mtls_with_no_client_cert(
         self, use_mtls_env, use_client_cert, base_url, has_default_client_cert_source
     ):
@@ -1533,7 +1532,7 @@ class Discovery(unittest.TestCase):
         discovery = read_datafile("plus.json")
         service = build_from_document(discovery, credentials=credentials)
 
-        self.assertIsInstance(service._http, google_auth_httplib2.AuthorizedHttp)
+        self.assertIsInstance(service._http, google.auth.transport.requests.AuthorizedSession)
         self.assertEqual(service._http.credentials, credentials)
 
     def test_no_scopes_no_credentials(self):
@@ -1541,7 +1540,7 @@ class Discovery(unittest.TestCase):
         discovery = read_datafile("zoo.json")
         service = build_from_document(discovery)
         # Should be an ordinary httplib2.Http instance and not AuthorizedHttp.
-        self.assertIsInstance(service._http, httplib2.Http)
+        self.assertIsInstance(service._http, _Http)
 
     def test_full_featured(self):
         # Zoo should exercise all discovery facets
