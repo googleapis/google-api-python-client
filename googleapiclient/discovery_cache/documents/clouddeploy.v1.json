@@ -1451,7 +1451,7 @@
       }
     }
   },
-  "revision": "20230719",
+  "revision": "20230727",
   "rootUrl": "https://clouddeploy.googleapis.com/",
   "schemas": {
     "AbandonReleaseRequest": {
@@ -1649,6 +1649,14 @@
             "type": "integer"
           },
           "type": "array"
+        },
+        "postdeploy": {
+          "$ref": "Postdeploy",
+          "description": "Optional. Configuration for the postdeploy job of the last phase. If this is not configured, postdeploy job will not be present."
+        },
+        "predeploy": {
+          "$ref": "Predeploy",
+          "description": "Optional. Configuration for the predeploy job of the first phase. If this is not configured, predeploy job will not be present."
         },
         "verify": {
           "description": "Whether to run verify tests after each percentage deployment.",
@@ -2014,7 +2022,7 @@
           ],
           "enumDescriptions": [
             "No reason for failure is specified.",
-            "Cloud Build is not available, either because it is not enabled or because Cloud Deploy has insufficient permissions. See [Required permission](/deploy/docs/cloud-deploy-service-account#required_permissions).",
+            "Cloud Build is not available, either because it is not enabled or because Cloud Deploy has insufficient permissions. See [Required permission](https://cloud.google.com/deploy/docs/cloud-deploy-service-account#required_permissions).",
             "The deploy operation did not complete successfully; check Cloud Build logs.",
             "The deploy build did not complete within the alloted time.",
             "There were missing resources in the runtime environment required for a canary deployment. Check the Cloud Build logs for more information.",
@@ -2078,6 +2086,16 @@
           "description": "Output only. The deploy Job. This is the deploy job in the phase.",
           "readOnly": true
         },
+        "postdeployJob": {
+          "$ref": "Job",
+          "description": "Output only. The postdeploy Job. This is the postdeploy job in the phase. This is the last job of the phase.",
+          "readOnly": true
+        },
+        "predeployJob": {
+          "$ref": "Job",
+          "description": "Output only. The predeploy Job. This is the predeploy job in the phase. This is the first job of the phase.",
+          "readOnly": true
+        },
         "verifyJob": {
           "$ref": "Job",
           "description": "Output only. The verify Job. Runs after a deploy if the deploy succeeds.",
@@ -2124,13 +2142,17 @@
               "EXECUTION_ENVIRONMENT_USAGE_UNSPECIFIED",
               "RENDER",
               "DEPLOY",
-              "VERIFY"
+              "VERIFY",
+              "PREDEPLOY",
+              "POSTDEPLOY"
             ],
             "enumDescriptions": [
               "Default value. This value is unused.",
               "Use for rendering.",
               "Use for deploying and deployment hooks.",
-              "Use for deployment verification."
+              "Use for deployment verification.",
+              "Use for predeploy job execution.",
+              "Use for postdeploy job execution."
             ],
             "type": "string"
           },
@@ -2255,6 +2277,16 @@
           "readOnly": true,
           "type": "string"
         },
+        "postdeployJob": {
+          "$ref": "PostdeployJob",
+          "description": "Output only. A postdeploy Job.",
+          "readOnly": true
+        },
+        "predeployJob": {
+          "$ref": "PredeployJob",
+          "description": "Output only. A predeploy Job.",
+          "readOnly": true
+        },
         "skipMessage": {
           "description": "Output only. Additional information on why the Job was skipped, if available.",
           "readOnly": true,
@@ -2344,6 +2376,16 @@
           "description": "Output only. ID of the `Rollout` phase this `JobRun` belongs in.",
           "readOnly": true,
           "type": "string"
+        },
+        "postdeployJobRun": {
+          "$ref": "PostdeployJobRun",
+          "description": "Output only. Information specific to a postdeploy `JobRun`.",
+          "readOnly": true
+        },
+        "predeployJobRun": {
+          "$ref": "PredeployJobRun",
+          "description": "Output only. Information specific to a predeploy `JobRun`.",
+          "readOnly": true
         },
         "startTime": {
           "description": "Output only. Time at which the `JobRun` was started.",
@@ -2847,6 +2889,14 @@
           "description": "Required. The ID to assign to the `Rollout` phase. This value must consist of lower-case letters, numbers, and hyphens, start with a letter and end with a letter or a number, and have a max length of 63 characters. In other words, it must match the following regex: `^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$`.",
           "type": "string"
         },
+        "postdeploy": {
+          "$ref": "Postdeploy",
+          "description": "Optional. Configuration for the postdeploy job of this phase. If this is not configured, postdeploy job will not be present for this phase."
+        },
+        "predeploy": {
+          "$ref": "Predeploy",
+          "description": "Optional. Configuration for the predeploy job of this phase. If this is not configured, predeploy job will not be present for this phase."
+        },
         "profiles": {
           "description": "Skaffold profiles to use when rendering the manifest for this phase. These are in addition to the profiles list specified in the `DeliveryPipeline` stage.",
           "items": {
@@ -2923,6 +2973,136 @@
           "description": "Specifies the format of the policy. Valid values are `0`, `1`, and `3`. Requests that specify an invalid value are rejected. Any operation that affects conditional role bindings must specify version `3`. This requirement applies to the following operations: * Getting a policy that includes a conditional role binding * Adding a conditional role binding to a policy * Changing a conditional role binding in a policy * Removing any role binding, with or without a condition, from a policy that includes conditions **Important:** If you use IAM Conditions, you must include the `etag` field whenever you call `setIamPolicy`. If you omit this field, then IAM allows you to overwrite a version `3` policy with a version `1` policy, and all of the conditions in the version `3` policy are lost. If a policy does not include any conditions, operations on that policy may specify any valid version or leave the field unset. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).",
           "format": "int32",
           "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Postdeploy": {
+      "description": "Postdeploy contains the postdeploy job configuration information.",
+      "id": "Postdeploy",
+      "properties": {
+        "actions": {
+          "description": "Optional. A sequence of skaffold custom actions to invoke during execution of the postdeploy job.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PostdeployJob": {
+      "description": "A postdeploy Job.",
+      "id": "PostdeployJob",
+      "properties": {
+        "actions": {
+          "description": "Output only. The custom actions that the postdeploy Job executes.",
+          "items": {
+            "type": "string"
+          },
+          "readOnly": true,
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PostdeployJobRun": {
+      "description": "PostdeployJobRun contains information specific to a postdeploy `JobRun`.",
+      "id": "PostdeployJobRun",
+      "properties": {
+        "build": {
+          "description": "Output only. The resource name of the Cloud Build `Build` object that is used to execute the custom actions associated with the postdeploy Job. Format is projects/{project}/locations/{location}/builds/{build}.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "failureCause": {
+          "description": "Output only. The reason the postdeploy failed. This will always be unspecified while the postdeploy is in progress or if it succeeded.",
+          "enum": [
+            "FAILURE_CAUSE_UNSPECIFIED",
+            "CLOUD_BUILD_UNAVAILABLE",
+            "EXECUTION_FAILED",
+            "DEADLINE_EXCEEDED",
+            "CLOUD_BUILD_REQUEST_FAILED"
+          ],
+          "enumDescriptions": [
+            "No reason for failure is specified.",
+            "Cloud Build is not available, either because it is not enabled or because Cloud Deploy has insufficient permissions. See [required permission](https://cloud.google.com/deploy/docs/cloud-deploy-service-account#required_permissions).",
+            "The postdeploy operation did not complete successfully; check Cloud Build logs.",
+            "The postdeploy build did not complete within the alloted time.",
+            "Cloud Build failed to fulfill Cloud Deploy's request. See failure_message for additional details."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "failureMessage": {
+          "description": "Output only. Additional information about the postdeploy failure, if available.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Predeploy": {
+      "description": "Predeploy contains the predeploy job configuration information.",
+      "id": "Predeploy",
+      "properties": {
+        "actions": {
+          "description": "Optional. A sequence of skaffold custom actions to invoke during execution of the predeploy job.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PredeployJob": {
+      "description": "A predeploy Job.",
+      "id": "PredeployJob",
+      "properties": {
+        "actions": {
+          "description": "Output only. The custom actions that the predeploy Job executes.",
+          "items": {
+            "type": "string"
+          },
+          "readOnly": true,
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PredeployJobRun": {
+      "description": "PredeployJobRun contains information specific to a predeploy `JobRun`.",
+      "id": "PredeployJobRun",
+      "properties": {
+        "build": {
+          "description": "Output only. The resource name of the Cloud Build `Build` object that is used to execute the custom actions associated with the predeploy Job. Format is projects/{project}/locations/{location}/builds/{build}.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "failureCause": {
+          "description": "Output only. The reason the predeploy failed. This will always be unspecified while the predeploy is in progress or if it succeeded.",
+          "enum": [
+            "FAILURE_CAUSE_UNSPECIFIED",
+            "CLOUD_BUILD_UNAVAILABLE",
+            "EXECUTION_FAILED",
+            "DEADLINE_EXCEEDED",
+            "CLOUD_BUILD_REQUEST_FAILED"
+          ],
+          "enumDescriptions": [
+            "No reason for failure is specified.",
+            "Cloud Build is not available, either because it is not enabled or because Cloud Deploy has insufficient permissions. See [required permission](https://cloud.google.com/deploy/docs/cloud-deploy-service-account#required_permissions).",
+            "The predeploy operation did not complete successfully; check Cloud Build logs.",
+            "The predeploy build did not complete within the alloted time.",
+            "Cloud Build failed to fulfill Cloud Deploy's request. See failure_message for additional details."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "failureMessage": {
+          "description": "Output only. Additional information about the predeploy failure, if available.",
+          "readOnly": true,
+          "type": "string"
         }
       },
       "type": "object"
@@ -3271,7 +3451,7 @@
           ],
           "enumDescriptions": [
             "No reason for failure is specified.",
-            "Cloud Build is not available, either because it is not enabled or because Cloud Deploy has insufficient permissions. See [required permission](/deploy/docs/cloud-deploy-service-account#required_permissions).",
+            "Cloud Build is not available, either because it is not enabled or because Cloud Deploy has insufficient permissions. See [required permission](https://cloud.google.com/deploy/docs/cloud-deploy-service-account#required_permissions).",
             "The deploy operation did not complete successfully; check Cloud Build logs.",
             "Deployment did not complete within the alloted time.",
             "Release is in a failed state.",
@@ -3596,6 +3776,14 @@
       "description": "Standard represents the standard deployment strategy.",
       "id": "Standard",
       "properties": {
+        "postdeploy": {
+          "$ref": "Postdeploy",
+          "description": "Optional. Configuration for the postdeploy job. If this is not configured, postdeploy job will not be present."
+        },
+        "predeploy": {
+          "$ref": "Predeploy",
+          "description": "Optional. Configuration for the predeploy job. If this is not configured, predeploy job will not be present."
+        },
         "verify": {
           "description": "Whether to verify a deployment.",
           "type": "boolean"
@@ -3820,13 +4008,15 @@
             "FAILURE_CAUSE_UNSPECIFIED",
             "CLOUD_BUILD_UNAVAILABLE",
             "EXECUTION_FAILED",
-            "CLOUD_BUILD_REQUEST_FAILED"
+            "CLOUD_BUILD_REQUEST_FAILED",
+            "CUSTOM_ACTION_NOT_FOUND"
           ],
           "enumDescriptions": [
             "No reason for failure is specified.",
-            "Cloud Build is not available, either because it is not enabled or because Cloud Deploy has insufficient permissions. See [required permission](/deploy/docs/cloud-deploy-service-account#required_permissions).",
+            "Cloud Build is not available, either because it is not enabled or because Cloud Deploy has insufficient permissions. See [required permission](https://cloud.google.com/deploy/docs/cloud-deploy-service-account#required_permissions).",
             "The render operation did not complete successfully; check Cloud Build logs.",
-            "Cloud Build failed to fulfill Cloud Deploy's request. See failure_message for additional details."
+            "Cloud Build failed to fulfill Cloud Deploy's request. See failure_message for additional details.",
+            "The render operation did not complete successfully because the custom action required for predeploy or postdeploy was not found in the skaffold configuration. See failure_message for additional details."
           ],
           "readOnly": true,
           "type": "string"
@@ -3981,7 +4171,7 @@
           ],
           "enumDescriptions": [
             "No reason for failure is specified.",
-            "Cloud Build is not available, either because it is not enabled or because Cloud Deploy has insufficient permissions. See [required permission](/deploy/docs/cloud-deploy-service-account#required_permissions).",
+            "Cloud Build is not available, either because it is not enabled or because Cloud Deploy has insufficient permissions. See [required permission](https://cloud.google.com/deploy/docs/cloud-deploy-service-account#required_permissions).",
             "The verify operation did not complete successfully; check Cloud Build logs.",
             "The verify build did not complete within the alloted time.",
             "No Skaffold verify configuration was found.",
