@@ -703,6 +703,7 @@
 ## language
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/language_v1.html)
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/language_v1beta2.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/language_v2.html)
 
 
 ## libraryagent
