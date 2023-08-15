@@ -50,6 +50,11 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/advisorynotifications_v1.html)
 
 
+## aiplatform
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/aiplatform_v1.html)
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/aiplatform_v1beta1.html)
+
+
 ## alertcenter
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/alertcenter_v1beta1.html)
 
@@ -249,10 +254,6 @@
 
 ## cloudchannel
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudchannel_v1.html)
-
-
-## clouddebugger
-* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/clouddebugger_v2.html)
 
 
 ## clouddeploy
