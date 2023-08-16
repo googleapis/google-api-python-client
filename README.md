@@ -97,7 +97,23 @@ virtualenv <your-env>
 
 ## Supported Python Versions
 
-Python 3.7, 3.8, 3.9, 3.10 and 3.11 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions.
+This client library is compatible with all current `active`_ and `maintenance`_ versions of
+Python.
+
+Python >= 3.7
+
+.. _active: https://devguide.python.org/devcycle/#in-development-main-branch
+.. _maintenance: https://devguide.python.org/devcycle/#maintenance-branches
+
+**NOTE**:
+Python 3.7 was marked as `unsupported`_ by the python community in June 2023.
+We recommend that all developers upgrade to Python 3.8 and newer as soon as
+they can. Support for Python 3.7 will be removed from all client libraries after
+January 1 2024. lient libraries that support Python 3.7 will continue to be available
+for download, but releases after January 1 2024 will only target Python 3.8 and
+newer.
+
+.. _unsupported: https://devguide.python.org/versions/#unsupported-versions
 
 ## Unsupported Python Versions
 
