@@ -859,6 +859,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/playdeveloperreporting_v1beta1.html)
 
 
+## playgrouping
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/playgrouping_v1alpha1.html)
+
+
 ## playintegrity
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/playintegrity_v1.html)
 
