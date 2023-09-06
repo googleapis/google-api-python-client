@@ -250,6 +250,7 @@
 
 ## cloudbuild
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbuild_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudbuild_v2.html)
 
 
 ## cloudchannel
@@ -859,6 +860,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/playdeveloperreporting_v1beta1.html)
 
 
+## playgrouping
+* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/playgrouping_v1alpha1.html)
+
+
 ## playintegrity
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/playintegrity_v1.html)
 
@@ -1183,6 +1188,7 @@
 
 
 ## workstations
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/workstations_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/workstations_v1beta.html)
 
 
