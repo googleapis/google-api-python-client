@@ -913,6 +913,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/pubsublite_v1.html)
 
 
+## rapidmigrationassessment
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/rapidmigrationassessment_v1.html)
+
+
 ## readerrevenuesubscriptionlinking
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/readerrevenuesubscriptionlinking_v1.html)
 
