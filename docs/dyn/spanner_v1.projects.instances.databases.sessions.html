@@ -78,6 +78,9 @@ h1, h2, h3 {
   <code><a href="#batchCreate">batchCreate(database, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Creates multiple new sessions. This API can be used to initialize a session cache on the clients. See https://goo.gl/TgSFN2 for best practices on session cache management.</p>
 <p class="toc_element">
+  <code><a href="#batchWrite">batchWrite(session, body=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Batches the supplied mutation groups in a collection of efficient transactions. All mutations in a group are committed atomically. However, mutations across groups can be committed non-atomically in an unspecified order and thus, they must be independent of each other. Partial failure is possible, i.e., some groups may have been committed successfully, while some may have failed. The results of individual batches are streamed into the response as the batches are applied. BatchWrite requests are not replay protected, meaning that each mutation group may be applied more than once. Replays of non-idempotent mutations may have undesirable effects. For example, replays of an insert mutation may produce an already exists error or result in additional rows if using generated or commit timestamp-based keys. We recommend structuring your mutation groups to be idempotent to avoid this issue.</p>
+<p class="toc_element">
   <code><a href="#beginTransaction">beginTransaction(session, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Begins a new transaction. This step can often be skipped: Read, ExecuteSql and Commit can begin a new transaction as a side-effect.</p>
 <p class="toc_element">
@@ -168,6 +171,127 @@ Returns:
       &quot;name&quot;: &quot;A String&quot;, # Output only. The name of the session. This is always system-assigned.
     },
   ],
+}</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="batchWrite">batchWrite(session, body=None, x__xgafv=None)</code>
+  <pre>Batches the supplied mutation groups in a collection of efficient transactions. All mutations in a group are committed atomically. However, mutations across groups can be committed non-atomically in an unspecified order and thus, they must be independent of each other. Partial failure is possible, i.e., some groups may have been committed successfully, while some may have failed. The results of individual batches are streamed into the response as the batches are applied. BatchWrite requests are not replay protected, meaning that each mutation group may be applied more than once. Replays of non-idempotent mutations may have undesirable effects. For example, replays of an insert mutation may produce an already exists error or result in additional rows if using generated or commit timestamp-based keys. We recommend structuring your mutation groups to be idempotent to avoid this issue.
+
+Args:
+  session: string, Required. The session in which the batch request is to be run. (required)
+  body: object, The request body.
+    The object takes the form of:
+
+{ # The request for BatchWrite.
+  &quot;mutationGroups&quot;: [ # Required. The groups of mutations to be applied.
+    { # A group of mutations to be committed together. Related mutations should be placed in a group. For example, two mutations inserting rows with the same primary key prefix in both parent and child tables are related.
+      &quot;mutations&quot;: [ # Required. The mutations in this group.
+        { # A modification to one or more Cloud Spanner rows. Mutations can be applied to a Cloud Spanner database by sending them in a Commit call.
+          &quot;delete&quot;: { # Arguments to delete operations. # Delete rows from a table. Succeeds whether or not the named rows were present.
+            &quot;keySet&quot;: { # `KeySet` defines a collection of Cloud Spanner keys and/or key ranges. All the keys are expected to be in the same table or index. The keys need not be sorted in any particular way. If the same key is specified multiple times in the set (for example if two ranges, two keys, or a key and a range overlap), Cloud Spanner behaves as if the key were only specified once. # Required. The primary keys of the rows within table to delete. The primary keys must be specified in the order in which they appear in the `PRIMARY KEY()` clause of the table&#x27;s equivalent DDL statement (the DDL statement used to create the table). Delete is idempotent. The transaction will succeed even if some or all rows do not exist.
+              &quot;all&quot;: True or False, # For convenience `all` can be set to `true` to indicate that this `KeySet` matches all keys in the table or index. Note that any keys specified in `keys` or `ranges` are only yielded once.
+              &quot;keys&quot;: [ # A list of specific keys. Entries in `keys` should have exactly as many elements as there are columns in the primary or index key with which this `KeySet` is used. Individual key values are encoded as described here.
+                [
+                  &quot;&quot;,
+                ],
+              ],
+              &quot;ranges&quot;: [ # A list of key ranges. See KeyRange for more information about key range specifications.
+                { # KeyRange represents a range of rows in a table or index. A range has a start key and an end key. These keys can be open or closed, indicating if the range includes rows with that key. Keys are represented by lists, where the ith value in the list corresponds to the ith component of the table or index primary key. Individual values are encoded as described here. For example, consider the following table definition: CREATE TABLE UserEvents ( UserName STRING(MAX), EventDate STRING(10) ) PRIMARY KEY(UserName, EventDate); The following keys name rows in this table: &quot;Bob&quot;, &quot;2014-09-23&quot; Since the `UserEvents` table&#x27;s `PRIMARY KEY` clause names two columns, each `UserEvents` key has two elements; the first is the `UserName`, and the second is the `EventDate`. Key ranges with multiple components are interpreted lexicographically by component using the table or index key&#x27;s declared sort order. For example, the following range returns all events for user `&quot;Bob&quot;` that occurred in the year 2015: &quot;start_closed&quot;: [&quot;Bob&quot;, &quot;2015-01-01&quot;] &quot;end_closed&quot;: [&quot;Bob&quot;, &quot;2015-12-31&quot;] Start and end keys can omit trailing key components. This affects the inclusion and exclusion of rows that exactly match the provided key components: if the key is closed, then rows that exactly match the provided components are included; if the key is open, then rows that exactly match are not included. For example, the following range includes all events for `&quot;Bob&quot;` that occurred during and after the year 2000: &quot;start_closed&quot;: [&quot;Bob&quot;, &quot;2000-01-01&quot;] &quot;end_closed&quot;: [&quot;Bob&quot;] The next example retrieves all events for `&quot;Bob&quot;`: &quot;start_closed&quot;: [&quot;Bob&quot;] &quot;end_closed&quot;: [&quot;Bob&quot;] To retrieve events before the year 2000: &quot;start_closed&quot;: [&quot;Bob&quot;] &quot;end_open&quot;: [&quot;Bob&quot;, &quot;2000-01-01&quot;] The following range includes all rows in the table: &quot;start_closed&quot;: [] &quot;end_closed&quot;: [] This range returns all users whose `UserName` begins with any character from A to C: &quot;start_closed&quot;: [&quot;A&quot;] &quot;end_open&quot;: [&quot;D&quot;] This range returns all users whose `UserName` begins with B: &quot;start_closed&quot;: [&quot;B&quot;] &quot;end_open&quot;: [&quot;C&quot;] Key ranges honor column sort order. For example, suppose a table is defined as follows: CREATE TABLE DescendingSortedTable { Key INT64, ... ) PRIMARY KEY(Key DESC); The following range retrieves all rows with key values between 1 and 100 inclusive: &quot;start_closed&quot;: [&quot;100&quot;] &quot;end_closed&quot;: [&quot;1&quot;] Note that 100 is passed as the start, and 1 is passed as the end, because `Key` is a descending column in the schema.
+                  &quot;endClosed&quot;: [ # If the end is closed, then the range includes all rows whose first `len(end_closed)` key columns exactly match `end_closed`.
+                    &quot;&quot;,
+                  ],
+                  &quot;endOpen&quot;: [ # If the end is open, then the range excludes rows whose first `len(end_open)` key columns exactly match `end_open`.
+                    &quot;&quot;,
+                  ],
+                  &quot;startClosed&quot;: [ # If the start is closed, then the range includes all rows whose first `len(start_closed)` key columns exactly match `start_closed`.
+                    &quot;&quot;,
+                  ],
+                  &quot;startOpen&quot;: [ # If the start is open, then the range excludes rows whose first `len(start_open)` key columns exactly match `start_open`.
+                    &quot;&quot;,
+                  ],
+                },
+              ],
+            },
+            &quot;table&quot;: &quot;A String&quot;, # Required. The table whose rows will be deleted.
+          },
+          &quot;insert&quot;: { # Arguments to insert, update, insert_or_update, and replace operations. # Insert new rows in a table. If any of the rows already exist, the write or transaction fails with error `ALREADY_EXISTS`.
+            &quot;columns&quot;: [ # The names of the columns in table to be written. The list of columns must contain enough columns to allow Cloud Spanner to derive values for all primary key columns in the row(s) to be modified.
+              &quot;A String&quot;,
+            ],
+            &quot;table&quot;: &quot;A String&quot;, # Required. The table whose rows will be written.
+            &quot;values&quot;: [ # The values to be written. `values` can contain more than one list of values. If it does, then multiple rows are written, one for each entry in `values`. Each list in `values` must have exactly as many entries as there are entries in columns above. Sending multiple lists is equivalent to sending multiple `Mutation`s, each containing one `values` entry and repeating table and columns. Individual values in each list are encoded as described here.
+              [
+                &quot;&quot;,
+              ],
+            ],
+          },
+          &quot;insertOrUpdate&quot;: { # Arguments to insert, update, insert_or_update, and replace operations. # Like insert, except that if the row already exists, then its column values are overwritten with the ones provided. Any column values not explicitly written are preserved. When using insert_or_update, just as when using insert, all `NOT NULL` columns in the table must be given a value. This holds true even when the row already exists and will therefore actually be updated.
+            &quot;columns&quot;: [ # The names of the columns in table to be written. The list of columns must contain enough columns to allow Cloud Spanner to derive values for all primary key columns in the row(s) to be modified.
+              &quot;A String&quot;,
+            ],
+            &quot;table&quot;: &quot;A String&quot;, # Required. The table whose rows will be written.
+            &quot;values&quot;: [ # The values to be written. `values` can contain more than one list of values. If it does, then multiple rows are written, one for each entry in `values`. Each list in `values` must have exactly as many entries as there are entries in columns above. Sending multiple lists is equivalent to sending multiple `Mutation`s, each containing one `values` entry and repeating table and columns. Individual values in each list are encoded as described here.
+              [
+                &quot;&quot;,
+              ],
+            ],
+          },
+          &quot;replace&quot;: { # Arguments to insert, update, insert_or_update, and replace operations. # Like insert, except that if the row already exists, it is deleted, and the column values provided are inserted instead. Unlike insert_or_update, this means any values not explicitly written become `NULL`. In an interleaved table, if you create the child table with the `ON DELETE CASCADE` annotation, then replacing a parent row also deletes the child rows. Otherwise, you must delete the child rows before you replace the parent row.
+            &quot;columns&quot;: [ # The names of the columns in table to be written. The list of columns must contain enough columns to allow Cloud Spanner to derive values for all primary key columns in the row(s) to be modified.
+              &quot;A String&quot;,
+            ],
+            &quot;table&quot;: &quot;A String&quot;, # Required. The table whose rows will be written.
+            &quot;values&quot;: [ # The values to be written. `values` can contain more than one list of values. If it does, then multiple rows are written, one for each entry in `values`. Each list in `values` must have exactly as many entries as there are entries in columns above. Sending multiple lists is equivalent to sending multiple `Mutation`s, each containing one `values` entry and repeating table and columns. Individual values in each list are encoded as described here.
+              [
+                &quot;&quot;,
+              ],
+            ],
+          },
+          &quot;update&quot;: { # Arguments to insert, update, insert_or_update, and replace operations. # Update existing rows in a table. If any of the rows does not already exist, the transaction fails with error `NOT_FOUND`.
+            &quot;columns&quot;: [ # The names of the columns in table to be written. The list of columns must contain enough columns to allow Cloud Spanner to derive values for all primary key columns in the row(s) to be modified.
+              &quot;A String&quot;,
+            ],
+            &quot;table&quot;: &quot;A String&quot;, # Required. The table whose rows will be written.
+            &quot;values&quot;: [ # The values to be written. `values` can contain more than one list of values. If it does, then multiple rows are written, one for each entry in `values`. Each list in `values` must have exactly as many entries as there are entries in columns above. Sending multiple lists is equivalent to sending multiple `Mutation`s, each containing one `values` entry and repeating table and columns. Individual values in each list are encoded as described here.
+              [
+                &quot;&quot;,
+              ],
+            ],
+          },
+        },
+      ],
+    },
+  ],
+  &quot;requestOptions&quot;: { # Common request options for various APIs. # Common options for this request.
+    &quot;priority&quot;: &quot;A String&quot;, # Priority for the request.
+    &quot;requestTag&quot;: &quot;A String&quot;, # A per-request tag which can be applied to queries or reads, used for statistics collection. Both request_tag and transaction_tag can be specified for a read or query that belongs to a transaction. This field is ignored for requests where it&#x27;s not applicable (e.g. CommitRequest). Legal characters for `request_tag` values are all printable characters (ASCII 32 - 126) and the length of a request_tag is limited to 50 characters. Values that exceed this limit are truncated. Any leading underscore (_) characters will be removed from the string.
+    &quot;transactionTag&quot;: &quot;A String&quot;, # A tag used for statistics collection about this transaction. Both request_tag and transaction_tag can be specified for a read or query that belongs to a transaction. The value of transaction_tag should be the same for all requests belonging to the same transaction. If this request doesn&#x27;t belong to any transaction, transaction_tag will be ignored. Legal characters for `transaction_tag` values are all printable characters (ASCII 32 - 126) and the length of a transaction_tag is limited to 50 characters. Values that exceed this limit are truncated. Any leading underscore (_) characters will be removed from the string.
+  },
+}
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # The result of applying a batch of mutations.
+  &quot;commitTimestamp&quot;: &quot;A String&quot;, # The commit timestamp of the transaction that applied this batch. Present if `status` is `OK`, absent otherwise.
+  &quot;indexes&quot;: [ # The mutation groups applied in this batch. The values index into the `mutation_groups` field in the corresponding `BatchWriteRequest`.
+    42,
+  ],
+  &quot;status&quot;: { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). # An `OK` status indicates success. Any other status indicates a failure.
+    &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+    &quot;details&quot;: [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
+      {
+        &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+      },
+    ],
+    &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
+  },
 }</pre>
 </div>
 
