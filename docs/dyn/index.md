@@ -139,6 +139,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1.html)
 
 
+## backupdr
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/backupdr_v1.html)
+
+
 ## baremetalsolution
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/baremetalsolution_v2.html)
 
