@@ -59,6 +59,12 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/alertcenter_v1beta1.html)
 
 
+## alloydb
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/alloydb_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/alloydb_v1alpha.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/alloydb_v1beta.html)
+
+
 ## analytics
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/analytics_v3.html)
 
