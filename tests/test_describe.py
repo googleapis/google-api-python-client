@@ -21,8 +21,12 @@ from googleapiclient import describe
 # run this test file using nox -s "unit-3.8(oauth2client=None)" -- -k test_describe.py
 
 class TestDescribe(unittest.TestCase):
-    def test_example(self):
+    def test_safe_version(self):
         self.assertTrue(describe.safe_version("testingv1.3") == "testingv1_3")
+
+    def test_unsafe_version(self):
+        self.assertTrue(describe.unsafe_version("testingv1_3") == "testingv1.3")
+
 
 
 if __name__ == "__main__":
