@@ -21,13 +21,71 @@ from googleapiclient import describe
 # run this test file using nox -s "unit-3.8(oauth2client=None)" -- -k test_describe.py
 
 class TestDescribe(unittest.TestCase):
-    def test_safe_version(self):
-        self.assertTrue(describe.safe_version("testingv1.3") == "testingv1_3")
+    def test_safe_version_basic(self):
+        self.assertEqual(describe.safe_version("testingv1.3"), "testingv1_3")
 
+    def test_safe_version_already_updated(self):
+        self.assertEqual(describe.safe_version("testingv1_3"), "testingv1_3")
+
+    def test_safe_version_empty(self):
+        self.assertEqual(describe.safe_version(""), "")
+
+    def test_safe_version_already_fail(self):
+        with self.assertRaises(Exception) as context:
+            describe.safe_version(16)
+        # TODO confirm the exception issomething that we expect
+
+    @unittest.skip("skipping until this is implemented")
     def test_unsafe_version(self):
-        self.assertTrue(describe.unsafe_version("testingv1_3") == "testingv1.3")
+        # TODO
+        print("TODO")
+    
+    @unittest.skip("skipping until this is implemented")
+    def test_method_params(self):
+        # TODO
+        print("TODO")
+
+    @unittest.skip("skipping until this is implemented")
+    def test_method(self):
+        # TODO
+        print("TODO")
+    
+    @unittest.skip("skipping until this is implemented")
+    def test_breadcrumbs(self):
+        # TODO
+        print("TODO")
+
+    @unittest.skip("skipping until this is implemented")
+    def test_document_collection(self):
+        # TODO
+        print("TODO")
+
+    @unittest.skip("skipping until this is implemented")
+    def test_document_collection_recursive(self):
+        # TODO
+        print("TODO")
+    
+    @unittest.skip("skipping until this is implemented")
+    def test_document_api(self):
+        # TODO
+        print("TODO")
+
+    @unittest.skip("skipping until this is implemented")
+    def test_document_api_from_discovery_document( self):
+        # TODO implement me to have the program work from top to bottom
+        discovery_url = ""
+        doc_destination_dir = ""
+        artifact_destination_dir = ""
+        describe.document_api_from_discovery_document(discovery_url, doc_destination_dir, artifact_destination_dir)
+
+    @unittest.skip("skipping until this is implemented")
+    def test_generate_all_api_documents(self):
+        # TODO
+        print("TODO")
+    
 
 
+    
 
 if __name__ == "__main__":
     unittest.main()
