@@ -30,16 +30,25 @@ class TestDescribe(unittest.TestCase):
     def test_safe_version_empty(self):
         self.assertEqual(describe.safe_version(""), "")
 
-    def test_safe_version_already_fail(self):
+    def test_safe_version_fail(self):
         with self.assertRaises(Exception) as context:
             describe.safe_version(16)
         # TODO confirm the exception issomething that we expect
 
-    @unittest.skip("skipping until this is implemented")
-    def test_unsafe_version(self):
-        # TODO
-        print("TODO")
+    def test_unsafe_version_basic(self):
+        self.assertEqual(describe.unsafe_version("testingv1_3"), "testingv1.3")
     
+    def test_unsafe_version_already_updated(self):
+        self.assertEqual(describe.unsafe_version("testingv1.3"), "testingv1.3")
+    
+    def test_unsafe_version_empty(self):
+        self.assertEqual(describe.unsafe_version(""), "")
+
+    def test_unsafe_version_fail(self):
+        with self.assertRaises(Exception) as context:
+            describe.unsafe_version(16)
+        # TODO confirm the exception issomething that we expect
+
     @unittest.skip("skipping until this is implemented")
     def test_method_params(self):
         # TODO
