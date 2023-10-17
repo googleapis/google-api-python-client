@@ -468,6 +468,7 @@
 ## displayvideo
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v2.html)
+* [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v3.html)
 
 
 ## dlp
@@ -980,6 +981,7 @@
 
 ## safebrowsing
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/safebrowsing_v4.html)
+* [v5](http://googleapis.github.io/google-api-python-client/docs/dyn/safebrowsing_v5.html)
 
 
 ## sasportal
