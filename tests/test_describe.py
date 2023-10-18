@@ -49,10 +49,12 @@ class TestDescribe(unittest.TestCase):
             describe.unsafe_version(16)
         # TODO confirm the exception issomething that we expect
 
-    @unittest.skip("skipping until this is implemented")
     def test_method_params(self):
-        # TODO
-        print("TODO")
+        self.assertTrue(describe.method_params("This function performs a specific operation.\n\nArgs:\n     test_param_1: A test parameter.\n    required_param: (required) The required parameter for the function.\n     test_param_2: Another test parameter.\n\nReturns:\n    The result of the operation.\n\nRaises:\n\n    ValueError: If the input is invalid or out of range.") == "required_param, test_param_1=None, test_param_2=None")
+        self.assertTrue(describe.method_params("Random test string with no Args:") == "")
+        self.assertFalse(describe.method_params("This function performs a specific operation.\n\nArgs:\n     test_param_1: A test parameter.\n    required_param: (required) The required parameter for the function.\n     test_param_2: Another test parameter.\n\nReturns:\n    The result of the operation.\n\nRaises:\n\n    ValueError: If the input is invalid or out of range.") == "test_param_1=None, required_param, test_param_2=None")
+        with self.assertRaises(AttributeError):
+            describe.method_params(5)
 
     @unittest.skip("skipping until this is implemented")
     def test_method(self):
