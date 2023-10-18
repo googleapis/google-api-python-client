@@ -59,10 +59,33 @@ class TestDescribe(unittest.TestCase):
         # TODO
         print("TODO")
     
-    @unittest.skip("skipping until this is implemented")
-    def test_breadcrumbs(self):
-        # TODO
-        print("TODO")
+    def test_breadcrumbs_basic(self):
+        self.assertEqual(describe.breadcrumbs(
+            "resource1.resource2.resource3", #resources (path)
+            {"title": "Document Title"} ), #root_discovery document
+            #returned string
+            '<a href="resource1.html">Document Title</a> . <a href="resource1.resource2.html">resource2</a> . <a href="resource1.resource2.resource3.html">resource3</a>')
+        
+    def test_breadcrumbs_no_title(self):
+        self.assertEqual(describe.breadcrumbs(
+            "resource1.resource2.resource3", #resources (path)
+            {"not title": "Title"} ), #root_discovery document
+            #returned string
+            '<a href="resource1.html">resource1</a> . <a href="resource1.resource2.html">resource2</a> . <a href="resource1.resource2.resource3.html">resource3</a>')
+
+    def test_breadcrumbs_empty_root_discovery(self):
+        self.assertEqual(describe.breadcrumbs(
+            "resource1.resource2.resource3", #resources (path)
+            {} ), #root_discovery document
+            #returned string
+            '<a href="resource1.html">resource1</a> . <a href="resource1.resource2.html">resource2</a> . <a href="resource1.resource2.resource3.html">resource3</a>')
+        
+    def test_breadcrumbs_empty_path(self):
+        self.assertEqual(describe.breadcrumbs(
+            "", #resources (path)
+            {"title": "Title"} ), #root_discovery document
+            #returned string
+            '<a href=".html">Title</a>')
 
     @unittest.skip("skipping until this is implemented")
     def test_document_collection(self):
