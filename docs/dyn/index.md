@@ -59,6 +59,12 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/alertcenter_v1beta1.html)
 
 
+## alloydb
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/alloydb_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/alloydb_v1alpha.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/alloydb_v1beta.html)
+
+
 ## analytics
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/analytics_v3.html)
 
@@ -462,6 +468,7 @@
 ## displayvideo
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v2.html)
+* [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v3.html)
 
 
 ## dlp
@@ -974,6 +981,7 @@
 
 ## safebrowsing
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/safebrowsing_v4.html)
+* [v5](http://googleapis.github.io/google-api-python-client/docs/dyn/safebrowsing_v5.html)
 
 
 ## sasportal
@@ -1160,6 +1168,10 @@
 ## vmmigration
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/vmmigration_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/vmmigration_v1alpha1.html)
+
+
+## vmwareengine
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/vmwareengine_v1.html)
 
 
 ## vpcaccess
