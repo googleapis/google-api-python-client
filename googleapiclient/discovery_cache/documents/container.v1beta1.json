@@ -2565,7 +2565,7 @@
       }
     }
   },
-  "revision": "20231001",
+  "revision": "20231012",
   "rootUrl": "https://container.googleapis.com/",
   "schemas": {
     "AcceleratorConfig": {
@@ -3763,6 +3763,10 @@
           "$ref": "NetworkTags",
           "description": "The desired network tags that apply to all auto-provisioned node pools in autopilot clusters and node auto-provisioning enabled clusters."
         },
+        "desiredNodePoolAutoConfigResourceManagerTags": {
+          "$ref": "ResourceManagerTags",
+          "description": "The desired resource manager tags that apply to all auto-provisioned node pools in autopilot clusters and node auto-provisioning enabled clusters."
+        },
         "desiredNodePoolAutoscaling": {
           "$ref": "NodePoolAutoscaling",
           "description": "Autoscaler configuration for the node pool specified in desired_node_pool_id. If there is only one pool in the cluster and desired_node_pool_id is not provided then the change applies to that single node pool."
@@ -4283,11 +4287,13 @@
           "enum": [
             "CHANNEL_UNSPECIFIED",
             "CHANNEL_DISABLED",
+            "CHANNEL_EXPERIMENTAL",
             "CHANNEL_STANDARD"
           ],
           "enumDescriptions": [
             "Default value.",
             "Gateway API support is disabled",
+            "Gateway API support is enabled, experimental CRDs are installed",
             "Gateway API support is enabled, standard CRDs are installed"
           ],
           "type": "string"
@@ -4450,6 +4456,10 @@
             "Nodes receive infrastructure and hypervisor updates on a periodic basis, minimizing the number of maintenance operations (live migrations or terminations) on an individual VM. This may mean underlying VMs will take longer to receive an update than if it was configured for AS_NEEDED. Security updates will still be applied as soon as they are available."
           ],
           "type": "string"
+        },
+        "opportunisticMaintenanceStrategy": {
+          "$ref": "OpportunisticMaintenanceStrategy",
+          "description": "Strategy that will trigger maintenance on behalf of the customer."
         }
       },
       "type": "object"
@@ -5567,6 +5577,10 @@
           "description": "The resource labels for the node pool to use to annotate any related Google Compute Engine resources.",
           "type": "object"
         },
+        "resourceManagerTags": {
+          "$ref": "ResourceManagerTags",
+          "description": "A map of resource manager tag keys and values to be attached to the nodes."
+        },
         "sandboxConfig": {
           "$ref": "SandboxConfig",
           "description": "Sandbox configuration for this node."
@@ -5868,6 +5882,10 @@
         "networkTags": {
           "$ref": "NetworkTags",
           "description": "The list of instance tags applied to all nodes. Tags are used to identify valid sources or targets for network firewalls and are specified by the client during cluster creation. Each tag within the list must comply with RFC1035."
+        },
+        "resourceManagerTags": {
+          "$ref": "ResourceManagerTags",
+          "description": "Resource manager tag keys and values to be attached to the nodes for managing Compute Engine firewalls using Network Firewall Policies."
         }
       },
       "type": "object"
@@ -6059,7 +6077,8 @@
             "SET_NODE_POOL_SIZE",
             "SET_NETWORK_POLICY",
             "SET_MAINTENANCE_POLICY",
-            "RESIZE_CLUSTER"
+            "RESIZE_CLUSTER",
+            "FLEET_FEATURE_UPGRADE"
           ],
           "enumDeprecated": [
             false,
@@ -6079,6 +6098,7 @@
             false,
             true,
             true,
+            false,
             false
           ],
           "enumDescriptions": [
@@ -6099,7 +6119,8 @@
             "The node pool is being resized. With the exception of resizing to or from size zero, the node pool is generally usable during this operation.",
             "Unused. Updating network policy uses UPDATE_CLUSTER.",
             "Unused. Updating maintenance policy uses UPDATE_CLUSTER.",
-            "The control plane is being resized. This operation type is initiated by GKE. These operations are often performed preemptively to ensure that the control plane has sufficient resources and is not typically an indication of issues. For more details, see [documentation on resizes](https://cloud.google.com/kubernetes-engine/docs/concepts/maintenance-windows-and-exclusions#repairs)."
+            "The control plane is being resized. This operation type is initiated by GKE. These operations are often performed preemptively to ensure that the control plane has sufficient resources and is not typically an indication of issues. For more details, see [documentation on resizes](https://cloud.google.com/kubernetes-engine/docs/concepts/maintenance-windows-and-exclusions#repairs).",
+            "Fleet features of GKE Enterprise are being upgraded. The cluster should be assumed to be blocked for other upgrades until the operation finishes."
           ],
           "type": "string"
         },
@@ -6190,6 +6211,28 @@
             "The operation is done, either cancelled or completed.",
             "The operation is aborting."
           ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "OpportunisticMaintenanceStrategy": {
+      "description": "Strategy that will trigger maintenance on behalf of the customer.",
+      "id": "OpportunisticMaintenanceStrategy",
+      "properties": {
+        "maintenanceAvailabilityWindow": {
+          "description": "The window of time that opportunistic maintenance can run. Example: A setting of 14 days implies that opportunistic maintenance can only be ran in the 2 weeks leading up to the scheduled maintenance date. Setting 28 days allows opportunistic maintenance to run at any time in the scheduled maintenance window (all `PERIODIC` maintenance is set 28 days in advance).",
+          "format": "google-duration",
+          "type": "string"
+        },
+        "minNodesPerPool": {
+          "description": "The minimum nodes required to be available in a pool. Blocks maintenance if it would cause the number of running nodes to dip below this value.",
+          "format": "int64",
+          "type": "string"
+        },
+        "nodeIdleTimeWindow": {
+          "description": "The amount of time that a node can remain idle (no customer owned workloads running), before triggering maintenance.",
+          "format": "google-duration",
           "type": "string"
         }
       },
@@ -6530,6 +6573,20 @@
         "resourceType": {
           "description": "Resource name \"cpu\", \"memory\" or gpu-specific string.",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ResourceManagerTags": {
+      "description": "A map of resource manager tag keys and values to be attached to the nodes for managing Compute Engine firewalls using Network Firewall Policies. Tags must be according to specifications in https://cloud.google.com/vpc/docs/tags-firewalls-overview#specifications. A maximum of 5 tag key-value pairs can be specified. Existing tags will be replaced with new values.",
+      "id": "ResourceManagerTags",
+      "properties": {
+        "tags": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Tags must be in one of the following formats ([KEY]=[VALUE]) 1. `tagKeys/{tag_key_id}=tagValues/{tag_value_id}` 2. `{org_id}/{tag_key_name}={tag_value_name}` 3. `{project_id}/{tag_key_name}={tag_value_name}`",
+          "type": "object"
         }
       },
       "type": "object"
@@ -7565,6 +7622,10 @@
         "resourceLabels": {
           "$ref": "ResourceLabels",
           "description": "The resource labels for the node pool to use to annotate any related Google Compute Engine resources."
+        },
+        "resourceManagerTags": {
+          "$ref": "ResourceManagerTags",
+          "description": "Desired resource manager tag keys and values to be attached to the nodes for managing Compute Engine firewalls using Network Firewall Policies. Existing tags will be replaced with new values."
         },
         "tags": {
           "$ref": "NetworkTags",
