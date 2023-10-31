@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.106.0](https://github.com/googleapis/google-api-python-client/compare/v2.105.0...v2.106.0) (2023-10-31)
+
+
+### Features
+
+* **aiplatform:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/7bdb02a3ab59e7e1f15df898fdd0b0e0596a1f92 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **analyticsadmin:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/5779a441640f840f866736514a66718a5ed07e80 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **androiddeviceprovisioning:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/160c287e0dd64e2576f787b66fd6b9d7cf7e155e ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **appengine:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/d6c3c723660b03319bae6ab0573b83d9f340cc07 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **assuredworkloads:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/2d0f2c5b561c1844be7f382155ec232a214c1f5c ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **batch:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/38e594da9323540fa904a25d385c76b4fc6edb2c ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **cloudbilling:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/d536b311d73aeac6ae0af89f3bcc22a204ce53f9 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **compute:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/204fa5aa6b49170f4c7641fe147e51f361e1b9c1 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **connectors:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/e6171f5380b7a0eb1fbf3a7b910f2c9fef0112b7 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **contentwarehouse:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/84de9162568c3c9ac9a1589534a107512d88e14b ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **dataflow:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/af59b3870e78f4c6841623b8aa68a850902b8f86 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **dataproc:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/01acfe0787e47037aca16f96dbefc164d449f8ca ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **gmail:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/4dc6c3595923f51dbcad4e1e3aee1b6cd183b814 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **identitytoolkit:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/3380caef861f8e81556738d2e3bed73a04c29d16 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **metastore:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/270ef650a7a7e678cd37faaf90ff3a5e4c23252a ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **mybusinesslodging:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/0f6e412d1a75d101acb5eb03e5d2f36384f11376 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **notebooks:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/419948bd02ef47dec5456f9d1ce341eb19d0f738 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **places:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/fb2cf0d1f3198a33f39e515472dbb2f4ae4720d6 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **recaptchaenterprise:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/2985fd0f9c76efa304e9e16db3c362ebb654f11a ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **run:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/954b59d3bc80fa007ac65a69f9337456fc8da06f ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **servicenetworking:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/8eda3cbe99c0fc35a66edd52e40cda7b30f35bc9 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **spanner:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/d046f6e7f0b7be466423e06f9339c6edf911b97e ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **sqladmin:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/c487e30ff7ee30d86201e0d4bc0076b553c69863 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **testing:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/35d4629dbe736ea689dfd8d04ae9425b9862b4ec ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **texttospeech:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/44ffbb0a7bbbfc6452e57a05c213523774578364 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **vmmigration:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/f9cd5f95977effb262b17ce5d5b4c4895872954c ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+* **workflowexecutions:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/c24e2608c3996d57b5e062fcb33c58f83f8838d7 ([e40139d](https://github.com/googleapis/google-api-python-client/commit/e40139ded573066644065b6676e64db8eddc684c))
+
 ## [2.105.0](https://github.com/googleapis/google-api-python-client/compare/v2.104.0...v2.105.0) (2023-10-24)
 
 
