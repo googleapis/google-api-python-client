@@ -1126,6 +1126,7 @@
 
 ## trafficdirector
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/trafficdirector_v2.html)
+* [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/trafficdirector_v3.html)
 
 
 ## transcoder
