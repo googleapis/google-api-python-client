@@ -28,8 +28,7 @@ if sys.version_info < (3, 7):
 import io
 import os
 
-from setuptools import find_namespace_packages
-from setuptools import setup
+from setuptools import find_namespace_packages, setup
 
 packages = [
     package
