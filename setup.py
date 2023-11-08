@@ -28,9 +28,14 @@ if sys.version_info < (3, 7):
 import io
 import os
 
+from setuptools import find_namespace_packages
 from setuptools import setup
 
-packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
+packages = [
+    package
+    for package in find_namespace_packages()
+    if package.startswith("apiclient") or package.startswith("googleapiclient")
+]
 
 install_requires = [
     "httplib2>=0.15.0,<1.dev0",
