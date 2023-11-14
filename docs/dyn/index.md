@@ -737,6 +737,10 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/logging_v2.html)
 
 
+## looker
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/looker_v1.html)
+
+
 ## managedidentities
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/managedidentities_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/managedidentities_v1alpha1.html)
