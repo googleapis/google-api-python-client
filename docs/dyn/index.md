@@ -174,6 +174,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigqueryconnection_v1beta1.html)
 
 
+## bigquerydatapolicy
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigquerydatapolicy_v1.html)
+
+
 ## bigquerydatatransfer
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigquerydatatransfer_v1.html)
 
