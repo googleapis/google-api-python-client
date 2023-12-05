@@ -1192,6 +1192,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/vpcaccess_v1beta1.html)
 
 
+## walletobjects
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/walletobjects_v1.html)
+
+
 ## webfonts
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/webfonts_v1.html)
 
