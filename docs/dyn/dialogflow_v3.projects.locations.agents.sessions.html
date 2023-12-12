@@ -91,6 +91,9 @@ h1, h2, h3 {
 <p class="toc_element">
   <code><a href="#matchIntent">matchIntent(session, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Returns preliminary intent match results, doesn't change the session status.</p>
+<p class="toc_element">
+  <code><a href="#submitAnswerFeedback">submitAnswerFeedback(session, body=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Updates the feedback received from the user for a single turn of the bot response.</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="close">close()</code>
@@ -128,8 +131,12 @@ Args:
       &quot;audio&quot;: &quot;A String&quot;, # The natural language speech audio to be processed. A single request can contain up to 2 minutes of speech audio data. The transcribed text cannot contain more than 256 bytes. For non-streaming audio detect intent, both `config` and `audio` must be provided. For streaming audio detect intent, `config` must be provided in the first request and `audio` must be provided in all following requests.
       &quot;config&quot;: { # Instructs the speech recognizer on how to process the audio content. # Required. Instructs the speech recognizer how to process the speech audio.
         &quot;audioEncoding&quot;: &quot;A String&quot;, # Required. Audio encoding of the audio content to process.
+        &quot;bargeInConfig&quot;: { # Configuration of the barge-in behavior. Barge-in instructs the API to return a detected utterance at a proper time while the client is playing back the response audio from a previous request. When the client sees the utterance, it should stop the playback and immediately get ready for receiving the responses for the current request. The barge-in handling requires the client to start streaming audio input as soon as it starts playing back the audio from the previous response. The playback is modeled into two phases: * No barge-in phase: which goes first and during which speech detection should not be carried out. * Barge-in phase: which follows the no barge-in phase and during which the API starts speech detection and may inform the client that an utterance has been detected. Note that no-speech event is not expected in this phase. The client provides this configuration in terms of the durations of those two phases. The durations are measured in terms of the audio length from the the start of the input audio. No-speech event is a response with END_OF_UTTERANCE without any transcript following up. # Configuration of barge-in behavior during the streaming of input audio.
+          &quot;noBargeInDuration&quot;: &quot;A String&quot;, # Duration that is not eligible for barge-in at the beginning of the input audio.
+          &quot;totalDuration&quot;: &quot;A String&quot;, # Total duration for the playback at the beginning of the input audio.
+        },
         &quot;enableWordInfo&quot;: True or False, # Optional. If `true`, Dialogflow returns SpeechWordInfo in StreamingRecognitionResult with information about the recognized speech words, e.g. start and end time offsets. If false or unspecified, Speech doesn&#x27;t return any word-level information.
-        &quot;model&quot;: &quot;A String&quot;, # Optional. Which Speech model to select for the given request. Select the model best suited to your domain to get best results. If a model is not explicitly specified, then we auto-select a model based on the parameters in the InputAudioConfig. If enhanced speech model is enabled for the agent and an enhanced version of the specified model for the language does not exist, then the speech is recognized using the standard version of the specified model. Refer to [Cloud Speech API documentation](https://cloud.google.com/speech-to-text/docs/basics#select-model) for more details. If you specify a model, the following models typically have the best performance: - phone_call (best for Agent Assist and telephony) - latest_short (best for Dialogflow non-telephony) - command_and_search (best for very short utterances and commands)
+        &quot;model&quot;: &quot;A String&quot;, # Optional. Which Speech model to select for the given request. For more information, see [Speech models](https://cloud.google.com/dialogflow/cx/docs/concept/speech-models).
         &quot;modelVariant&quot;: &quot;A String&quot;, # Optional. Which variant of the Speech model to use.
         &quot;phraseHints&quot;: [ # Optional. A list of strings containing words and phrases that the speech recognizer should recognize with higher likelihood. See [the Cloud Speech documentation](https://cloud.google.com/speech-to-text/docs/basics#phrase-hints) for more details.
           &quot;A String&quot;,
@@ -173,6 +180,33 @@ Args:
     },
     &quot;payload&quot;: { # This field can be used to pass custom data into the webhook associated with the agent. Arbitrary JSON objects are supported. Some integrations that query a Dialogflow agent may provide additional information in the payload. In particular, for the Dialogflow Phone Gateway integration, this field has the form: ``` { &quot;telephony&quot;: { &quot;caller_id&quot;: &quot;+18558363987&quot; } } ```
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+    },
+    &quot;searchConfig&quot;: { # Search configuration for UCS search queries. # Optional. Search configuration for UCS search queries.
+      &quot;boostSpecs&quot;: [ # Optional. Boosting configuration for the datastores.
+        { # Boost specifications for data stores.
+          &quot;dataStores&quot;: [ # Optional. Data Stores where the boosting configuration is applied. The full names of the referenced data stores. Formats: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store}` `projects/{project}/locations/{location}/dataStores/{data_store}
+            &quot;A String&quot;,
+          ],
+          &quot;spec&quot;: [ # Optional. A list of boosting specifications.
+            { # Boost specification to boost certain documents. A copy of google.cloud.discoveryengine.v1main.BoostSpec, field documentation is available at https://cloud.google.com/generative-ai-app-builder/docs/reference/rest/v1alpha/BoostSpec
+              &quot;conditionBoostSpecs&quot;: [ # Optional. Condition boost specifications. If a document matches multiple conditions in the specifictions, boost scores from these specifications are all applied and combined in a non-linear way. Maximum number of specifications is 20.
+                { # Boost applies to documents which match a condition.
+                  &quot;boost&quot;: 3.14, # Optional. Strength of the condition boost, which should be in [-1, 1]. Negative boost means demotion. Default is 0.0. Setting to 1.0 gives the document a big promotion. However, it does not necessarily mean that the boosted document will be the top result at all times, nor that other documents will be excluded. Results could still be shown even when none of them matches the condition. And results that are significantly more relevant to the search query can still trump your heavily favored but irrelevant documents. Setting to -1.0 gives the document a big demotion. However, results that are deeply relevant might still be shown. The document will have an upstream battle to get a fairly high ranking, but it is not blocked out completely. Setting to 0.0 means no boost applied. The boosting condition is ignored.
+                  &quot;condition&quot;: &quot;A String&quot;, # Optional. An expression which specifies a boost condition. The syntax and supported fields are the same as a filter expression. Examples: * To boost documents with document ID &quot;doc_1&quot; or &quot;doc_2&quot;, and color &quot;Red&quot; or &quot;Blue&quot;: * (id: ANY(&quot;doc_1&quot;, &quot;doc_2&quot;)) AND (color: ANY(&quot;Red&quot;,&quot;Blue&quot;))
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      &quot;filterSpecs&quot;: [ # Optional. Filter configuration for the datastores.
+        { # Filter specifications for data stores.
+          &quot;dataStores&quot;: [ # Optional. Data Stores where the boosting configuration is applied. The full names of the referenced data stores. Formats: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store}` `projects/{project}/locations/{location}/dataStores/{data_store}
+            &quot;A String&quot;,
+          ],
+          &quot;filter&quot;: &quot;A String&quot;, # Optional. The filter expression to be applied. Expression syntax is documented at https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata#filter-expression-syntax
+        },
+      ],
     },
     &quot;sessionEntityTypes&quot;: [ # Additional session entity types to replace or extend developer entity types with. The entity synonyms apply to all languages and persist for the session of this query.
       { # Session entity types are referred to as **User** entity types and are entities that are built for an individual user such as favorites, preferences, playlists, and so on. You can redefine a session entity type at the session level to extend or replace a custom entity type at the user session level (we refer to the entity types defined at the agent level as &quot;custom entity types&quot;). Note: session entity types apply to all queries, regardless of the language. For more information about entity types, see the [Dialogflow documentation](https://cloud.google.com/dialogflow/docs/entities-overview).
@@ -238,6 +272,7 @@ Returns:
         &quot;enableStackdriverLogging&quot;: True or False, # If true, StackDriver logging is currently enabled.
       },
     },
+    &quot;allowAnswerFeedback&quot;: True or False, # Indicates whether the Thumbs up/Thumbs down rating controls are need to be shown for the response in the Dialogflow Messenger widget.
     &quot;currentPage&quot;: { # A Dialogflow CX conversation (session) can be described and visualized as a state machine. The states of a CX session are represented by pages. For each flow, you define many pages, where your combined pages can handle a complete conversation on the topics the flow is designed for. At any given moment, exactly one page is the current page, the current page is considered active, and the flow associated with that page is considered active. Every flow has a special start page. When a flow initially becomes active, the start page page becomes the current page. For each conversational turn, the current page will either stay the same or transition to another page. You configure each page to collect information from the end-user that is relevant for the conversational state represented by the page. For more information, see the [Page guide](https://cloud.google.com/dialogflow/cx/docs/concept/page). # The current Page. Some, not all fields are filled in this message, including but not limited to `name` and `display_name`.
       &quot;advancedSettings&quot;: { # Hierarchical advanced settings for agent/flow/page/fulfillment/parameter. Settings exposed at lower level overrides the settings exposed at higher level. Overriding occurs at the sub-setting level. For example, the playback_interruption_settings at fulfillment level only overrides the playback_interruption_settings at the agent level, leaving other settings at the agent level unchanged. DTMF settings does not override each other. DTMF settings set at different levels define DTMF detections running in parallel. Hierarchy: Agent-&gt;Flow-&gt;Page-&gt;Fulfillment/Parameter. # Hierarchical advanced settings for this page. The settings exposed at the lower level overrides the settings exposed at the higher level.
         &quot;audioExportGcsDestination&quot;: { # Google Cloud Storage location for a Dialogflow operation that writes or exports objects (e.g. exported agent or transcripts) outside of Dialogflow. # If present, incoming audio is exported by Dialogflow to the configured Google Cloud Storage destination. Exposed at the following levels: - Agent level - Flow level
@@ -1369,8 +1404,12 @@ Args:
         &quot;audio&quot;: &quot;A String&quot;, # The natural language speech audio to be processed. A single request can contain up to 2 minutes of speech audio data. The transcribed text cannot contain more than 256 bytes. For non-streaming audio detect intent, both `config` and `audio` must be provided. For streaming audio detect intent, `config` must be provided in the first request and `audio` must be provided in all following requests.
         &quot;config&quot;: { # Instructs the speech recognizer on how to process the audio content. # Required. Instructs the speech recognizer how to process the speech audio.
           &quot;audioEncoding&quot;: &quot;A String&quot;, # Required. Audio encoding of the audio content to process.
+          &quot;bargeInConfig&quot;: { # Configuration of the barge-in behavior. Barge-in instructs the API to return a detected utterance at a proper time while the client is playing back the response audio from a previous request. When the client sees the utterance, it should stop the playback and immediately get ready for receiving the responses for the current request. The barge-in handling requires the client to start streaming audio input as soon as it starts playing back the audio from the previous response. The playback is modeled into two phases: * No barge-in phase: which goes first and during which speech detection should not be carried out. * Barge-in phase: which follows the no barge-in phase and during which the API starts speech detection and may inform the client that an utterance has been detected. Note that no-speech event is not expected in this phase. The client provides this configuration in terms of the durations of those two phases. The durations are measured in terms of the audio length from the the start of the input audio. No-speech event is a response with END_OF_UTTERANCE without any transcript following up. # Configuration of barge-in behavior during the streaming of input audio.
+            &quot;noBargeInDuration&quot;: &quot;A String&quot;, # Duration that is not eligible for barge-in at the beginning of the input audio.
+            &quot;totalDuration&quot;: &quot;A String&quot;, # Total duration for the playback at the beginning of the input audio.
+          },
           &quot;enableWordInfo&quot;: True or False, # Optional. If `true`, Dialogflow returns SpeechWordInfo in StreamingRecognitionResult with information about the recognized speech words, e.g. start and end time offsets. If false or unspecified, Speech doesn&#x27;t return any word-level information.
-          &quot;model&quot;: &quot;A String&quot;, # Optional. Which Speech model to select for the given request. Select the model best suited to your domain to get best results. If a model is not explicitly specified, then we auto-select a model based on the parameters in the InputAudioConfig. If enhanced speech model is enabled for the agent and an enhanced version of the specified model for the language does not exist, then the speech is recognized using the standard version of the specified model. Refer to [Cloud Speech API documentation](https://cloud.google.com/speech-to-text/docs/basics#select-model) for more details. If you specify a model, the following models typically have the best performance: - phone_call (best for Agent Assist and telephony) - latest_short (best for Dialogflow non-telephony) - command_and_search (best for very short utterances and commands)
+          &quot;model&quot;: &quot;A String&quot;, # Optional. Which Speech model to select for the given request. For more information, see [Speech models](https://cloud.google.com/dialogflow/cx/docs/concept/speech-models).
           &quot;modelVariant&quot;: &quot;A String&quot;, # Optional. Which variant of the Speech model to use.
           &quot;phraseHints&quot;: [ # Optional. A list of strings containing words and phrases that the speech recognizer should recognize with higher likelihood. See [the Cloud Speech documentation](https://cloud.google.com/speech-to-text/docs/basics#phrase-hints) for more details.
             &quot;A String&quot;,
@@ -1414,6 +1453,33 @@ Args:
       },
       &quot;payload&quot;: { # This field can be used to pass custom data into the webhook associated with the agent. Arbitrary JSON objects are supported. Some integrations that query a Dialogflow agent may provide additional information in the payload. In particular, for the Dialogflow Phone Gateway integration, this field has the form: ``` { &quot;telephony&quot;: { &quot;caller_id&quot;: &quot;+18558363987&quot; } } ```
         &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+      },
+      &quot;searchConfig&quot;: { # Search configuration for UCS search queries. # Optional. Search configuration for UCS search queries.
+        &quot;boostSpecs&quot;: [ # Optional. Boosting configuration for the datastores.
+          { # Boost specifications for data stores.
+            &quot;dataStores&quot;: [ # Optional. Data Stores where the boosting configuration is applied. The full names of the referenced data stores. Formats: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store}` `projects/{project}/locations/{location}/dataStores/{data_store}
+              &quot;A String&quot;,
+            ],
+            &quot;spec&quot;: [ # Optional. A list of boosting specifications.
+              { # Boost specification to boost certain documents. A copy of google.cloud.discoveryengine.v1main.BoostSpec, field documentation is available at https://cloud.google.com/generative-ai-app-builder/docs/reference/rest/v1alpha/BoostSpec
+                &quot;conditionBoostSpecs&quot;: [ # Optional. Condition boost specifications. If a document matches multiple conditions in the specifictions, boost scores from these specifications are all applied and combined in a non-linear way. Maximum number of specifications is 20.
+                  { # Boost applies to documents which match a condition.
+                    &quot;boost&quot;: 3.14, # Optional. Strength of the condition boost, which should be in [-1, 1]. Negative boost means demotion. Default is 0.0. Setting to 1.0 gives the document a big promotion. However, it does not necessarily mean that the boosted document will be the top result at all times, nor that other documents will be excluded. Results could still be shown even when none of them matches the condition. And results that are significantly more relevant to the search query can still trump your heavily favored but irrelevant documents. Setting to -1.0 gives the document a big demotion. However, results that are deeply relevant might still be shown. The document will have an upstream battle to get a fairly high ranking, but it is not blocked out completely. Setting to 0.0 means no boost applied. The boosting condition is ignored.
+                    &quot;condition&quot;: &quot;A String&quot;, # Optional. An expression which specifies a boost condition. The syntax and supported fields are the same as a filter expression. Examples: * To boost documents with document ID &quot;doc_1&quot; or &quot;doc_2&quot;, and color &quot;Red&quot; or &quot;Blue&quot;: * (id: ANY(&quot;doc_1&quot;, &quot;doc_2&quot;)) AND (color: ANY(&quot;Red&quot;,&quot;Blue&quot;))
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        &quot;filterSpecs&quot;: [ # Optional. Filter configuration for the datastores.
+          { # Filter specifications for data stores.
+            &quot;dataStores&quot;: [ # Optional. Data Stores where the boosting configuration is applied. The full names of the referenced data stores. Formats: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store}` `projects/{project}/locations/{location}/dataStores/{data_store}
+              &quot;A String&quot;,
+            ],
+            &quot;filter&quot;: &quot;A String&quot;, # Optional. The filter expression to be applied. Expression syntax is documented at https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata#filter-expression-syntax
+          },
+        ],
       },
       &quot;sessionEntityTypes&quot;: [ # Additional session entity types to replace or extend developer entity types with. The entity synonyms apply to all languages and persist for the session of this query.
         { # Session entity types are referred to as **User** entity types and are entities that are built for an individual user such as favorites, preferences, playlists, and so on. You can redefine a session entity type at the session level to extend or replace a custom entity type at the user session level (we refer to the entity types defined at the agent level as &quot;custom entity types&quot;). Note: session entity types apply to all queries, regardless of the language. For more information about entity types, see the [Dialogflow documentation](https://cloud.google.com/dialogflow/docs/entities-overview).
@@ -1495,6 +1561,7 @@ Returns:
         &quot;enableStackdriverLogging&quot;: True or False, # If true, StackDriver logging is currently enabled.
       },
     },
+    &quot;allowAnswerFeedback&quot;: True or False, # Indicates whether the Thumbs up/Thumbs down rating controls are need to be shown for the response in the Dialogflow Messenger widget.
     &quot;currentPage&quot;: { # A Dialogflow CX conversation (session) can be described and visualized as a state machine. The states of a CX session are represented by pages. For each flow, you define many pages, where your combined pages can handle a complete conversation on the topics the flow is designed for. At any given moment, exactly one page is the current page, the current page is considered active, and the flow associated with that page is considered active. Every flow has a special start page. When a flow initially becomes active, the start page page becomes the current page. For each conversational turn, the current page will either stay the same or transition to another page. You configure each page to collect information from the end-user that is relevant for the conversational state represented by the page. For more information, see the [Page guide](https://cloud.google.com/dialogflow/cx/docs/concept/page). # The current Page. Some, not all fields are filled in this message, including but not limited to `name` and `display_name`.
       &quot;advancedSettings&quot;: { # Hierarchical advanced settings for agent/flow/page/fulfillment/parameter. Settings exposed at lower level overrides the settings exposed at higher level. Overriding occurs at the sub-setting level. For example, the playback_interruption_settings at fulfillment level only overrides the playback_interruption_settings at the agent level, leaving other settings at the agent level unchanged. DTMF settings does not override each other. DTMF settings set at different levels define DTMF detections running in parallel. Hierarchy: Agent-&gt;Flow-&gt;Page-&gt;Fulfillment/Parameter. # Hierarchical advanced settings for this page. The settings exposed at the lower level overrides the settings exposed at the higher level.
         &quot;audioExportGcsDestination&quot;: { # Google Cloud Storage location for a Dialogflow operation that writes or exports objects (e.g. exported agent or transcripts) outside of Dialogflow. # If present, incoming audio is exported by Dialogflow to the configured Google Cloud Storage destination. Exposed at the following levels: - Agent level - Flow level
@@ -2585,8 +2652,12 @@ Args:
       &quot;audio&quot;: &quot;A String&quot;, # The natural language speech audio to be processed. A single request can contain up to 2 minutes of speech audio data. The transcribed text cannot contain more than 256 bytes. For non-streaming audio detect intent, both `config` and `audio` must be provided. For streaming audio detect intent, `config` must be provided in the first request and `audio` must be provided in all following requests.
       &quot;config&quot;: { # Instructs the speech recognizer on how to process the audio content. # Required. Instructs the speech recognizer how to process the speech audio.
         &quot;audioEncoding&quot;: &quot;A String&quot;, # Required. Audio encoding of the audio content to process.
+        &quot;bargeInConfig&quot;: { # Configuration of the barge-in behavior. Barge-in instructs the API to return a detected utterance at a proper time while the client is playing back the response audio from a previous request. When the client sees the utterance, it should stop the playback and immediately get ready for receiving the responses for the current request. The barge-in handling requires the client to start streaming audio input as soon as it starts playing back the audio from the previous response. The playback is modeled into two phases: * No barge-in phase: which goes first and during which speech detection should not be carried out. * Barge-in phase: which follows the no barge-in phase and during which the API starts speech detection and may inform the client that an utterance has been detected. Note that no-speech event is not expected in this phase. The client provides this configuration in terms of the durations of those two phases. The durations are measured in terms of the audio length from the the start of the input audio. No-speech event is a response with END_OF_UTTERANCE without any transcript following up. # Configuration of barge-in behavior during the streaming of input audio.
+          &quot;noBargeInDuration&quot;: &quot;A String&quot;, # Duration that is not eligible for barge-in at the beginning of the input audio.
+          &quot;totalDuration&quot;: &quot;A String&quot;, # Total duration for the playback at the beginning of the input audio.
+        },
         &quot;enableWordInfo&quot;: True or False, # Optional. If `true`, Dialogflow returns SpeechWordInfo in StreamingRecognitionResult with information about the recognized speech words, e.g. start and end time offsets. If false or unspecified, Speech doesn&#x27;t return any word-level information.
-        &quot;model&quot;: &quot;A String&quot;, # Optional. Which Speech model to select for the given request. Select the model best suited to your domain to get best results. If a model is not explicitly specified, then we auto-select a model based on the parameters in the InputAudioConfig. If enhanced speech model is enabled for the agent and an enhanced version of the specified model for the language does not exist, then the speech is recognized using the standard version of the specified model. Refer to [Cloud Speech API documentation](https://cloud.google.com/speech-to-text/docs/basics#select-model) for more details. If you specify a model, the following models typically have the best performance: - phone_call (best for Agent Assist and telephony) - latest_short (best for Dialogflow non-telephony) - command_and_search (best for very short utterances and commands)
+        &quot;model&quot;: &quot;A String&quot;, # Optional. Which Speech model to select for the given request. For more information, see [Speech models](https://cloud.google.com/dialogflow/cx/docs/concept/speech-models).
         &quot;modelVariant&quot;: &quot;A String&quot;, # Optional. Which variant of the Speech model to use.
         &quot;phraseHints&quot;: [ # Optional. A list of strings containing words and phrases that the speech recognizer should recognize with higher likelihood. See [the Cloud Speech documentation](https://cloud.google.com/speech-to-text/docs/basics#phrase-hints) for more details.
           &quot;A String&quot;,
@@ -2630,6 +2701,33 @@ Args:
     },
     &quot;payload&quot;: { # This field can be used to pass custom data into the webhook associated with the agent. Arbitrary JSON objects are supported. Some integrations that query a Dialogflow agent may provide additional information in the payload. In particular, for the Dialogflow Phone Gateway integration, this field has the form: ``` { &quot;telephony&quot;: { &quot;caller_id&quot;: &quot;+18558363987&quot; } } ```
       &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+    },
+    &quot;searchConfig&quot;: { # Search configuration for UCS search queries. # Optional. Search configuration for UCS search queries.
+      &quot;boostSpecs&quot;: [ # Optional. Boosting configuration for the datastores.
+        { # Boost specifications for data stores.
+          &quot;dataStores&quot;: [ # Optional. Data Stores where the boosting configuration is applied. The full names of the referenced data stores. Formats: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store}` `projects/{project}/locations/{location}/dataStores/{data_store}
+            &quot;A String&quot;,
+          ],
+          &quot;spec&quot;: [ # Optional. A list of boosting specifications.
+            { # Boost specification to boost certain documents. A copy of google.cloud.discoveryengine.v1main.BoostSpec, field documentation is available at https://cloud.google.com/generative-ai-app-builder/docs/reference/rest/v1alpha/BoostSpec
+              &quot;conditionBoostSpecs&quot;: [ # Optional. Condition boost specifications. If a document matches multiple conditions in the specifictions, boost scores from these specifications are all applied and combined in a non-linear way. Maximum number of specifications is 20.
+                { # Boost applies to documents which match a condition.
+                  &quot;boost&quot;: 3.14, # Optional. Strength of the condition boost, which should be in [-1, 1]. Negative boost means demotion. Default is 0.0. Setting to 1.0 gives the document a big promotion. However, it does not necessarily mean that the boosted document will be the top result at all times, nor that other documents will be excluded. Results could still be shown even when none of them matches the condition. And results that are significantly more relevant to the search query can still trump your heavily favored but irrelevant documents. Setting to -1.0 gives the document a big demotion. However, results that are deeply relevant might still be shown. The document will have an upstream battle to get a fairly high ranking, but it is not blocked out completely. Setting to 0.0 means no boost applied. The boosting condition is ignored.
+                  &quot;condition&quot;: &quot;A String&quot;, # Optional. An expression which specifies a boost condition. The syntax and supported fields are the same as a filter expression. Examples: * To boost documents with document ID &quot;doc_1&quot; or &quot;doc_2&quot;, and color &quot;Red&quot; or &quot;Blue&quot;: * (id: ANY(&quot;doc_1&quot;, &quot;doc_2&quot;)) AND (color: ANY(&quot;Red&quot;,&quot;Blue&quot;))
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      &quot;filterSpecs&quot;: [ # Optional. Filter configuration for the datastores.
+        { # Filter specifications for data stores.
+          &quot;dataStores&quot;: [ # Optional. Data Stores where the boosting configuration is applied. The full names of the referenced data stores. Formats: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store}` `projects/{project}/locations/{location}/dataStores/{data_store}
+            &quot;A String&quot;,
+          ],
+          &quot;filter&quot;: &quot;A String&quot;, # Optional. The filter expression to be applied. Expression syntax is documented at https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata#filter-expression-syntax
+        },
+      ],
     },
     &quot;sessionEntityTypes&quot;: [ # Additional session entity types to replace or extend developer entity types with. The entity synonyms apply to all languages and persist for the session of this query.
       { # Session entity types are referred to as **User** entity types and are entities that are built for an individual user such as favorites, preferences, playlists, and so on. You can redefine a session entity type at the session level to extend or replace a custom entity type at the user session level (we refer to the entity types defined at the agent level as &quot;custom entity types&quot;). Note: session entity types apply to all queries, regardless of the language. For more information about entity types, see the [Dialogflow documentation](https://cloud.google.com/dialogflow/docs/entities-overview).
@@ -3621,6 +3719,50 @@ Returns:
   &quot;transcript&quot;: &quot;A String&quot;, # If natural language speech audio was provided as input, this field will contain the transcript for the audio.
   &quot;triggerEvent&quot;: &quot;A String&quot;, # If an event was provided as input, this field will contain a copy of the event name.
   &quot;triggerIntent&quot;: &quot;A String&quot;, # If an intent was provided as input, this field will contain a copy of the intent identifier. Format: `projects//locations//agents//intents/`.
+}</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="submitAnswerFeedback">submitAnswerFeedback(session, body=None, x__xgafv=None)</code>
+  <pre>Updates the feedback received from the user for a single turn of the bot response.
+
+Args:
+  session: string, Required. The name of the session the feedback was sent to. (required)
+  body: object, The request body.
+    The object takes the form of:
+
+{ # The request to set the feedback for a bot answer.
+  &quot;answerFeedback&quot;: { # Stores information about feedback provided by users about a response. # Required. Feedback provided for a bot answer.
+    &quot;customRating&quot;: &quot;A String&quot;, # Optional. Custom rating from the user about the provided answer, with maximum length of 1024 characters. For example, client could use a customized JSON object to indicate the rating.
+    &quot;rating&quot;: &quot;A String&quot;, # Optional. Rating from user for the specific Dialogflow response.
+    &quot;ratingReason&quot;: { # Stores extra information about why users provided thumbs down rating. # Optional. In case of thumbs down rating provided, users can optionally provide context about the rating.
+      &quot;feedback&quot;: &quot;A String&quot;, # Optional. Additional feedback about the rating. This field can be populated without choosing a predefined `reason`.
+      &quot;reasonLabels&quot;: [ # Optional. Custom reason labels for thumbs down rating provided by the user. The maximum number of labels allowed is 10 and the maximum length of a single label is 128 characters.
+        &quot;A String&quot;,
+      ],
+    },
+  },
+  &quot;responseId&quot;: &quot;A String&quot;, # Required. ID of the response to update its feedback. This is the same as DetectIntentResponse.response_id.
+  &quot;updateMask&quot;: &quot;A String&quot;, # Optional. The mask to control which fields to update. If the mask is not present, all fields will be updated.
+}
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # Stores information about feedback provided by users about a response.
+  &quot;customRating&quot;: &quot;A String&quot;, # Optional. Custom rating from the user about the provided answer, with maximum length of 1024 characters. For example, client could use a customized JSON object to indicate the rating.
+  &quot;rating&quot;: &quot;A String&quot;, # Optional. Rating from user for the specific Dialogflow response.
+  &quot;ratingReason&quot;: { # Stores extra information about why users provided thumbs down rating. # Optional. In case of thumbs down rating provided, users can optionally provide context about the rating.
+    &quot;feedback&quot;: &quot;A String&quot;, # Optional. Additional feedback about the rating. This field can be populated without choosing a predefined `reason`.
+    &quot;reasonLabels&quot;: [ # Optional. Custom reason labels for thumbs down rating provided by the user. The maximum number of labels allowed is 10 and the maximum length of a single label is 128 characters.
+      &quot;A String&quot;,
+    ],
+  },
 }</pre>
 </div>
 

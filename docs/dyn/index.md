@@ -12,7 +12,6 @@
 
 ## accesscontextmanager
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/accesscontextmanager_v1.html)
-* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/accesscontextmanager_v1beta.html)
 
 
 ## acmedns
@@ -126,6 +125,11 @@
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/appengine_v1beta.html)
 
 
+## apphub
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/apphub_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/apphub_v1alpha.html)
+
+
 ## area120tables
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/area120tables_v1alpha1.html)
 
@@ -172,6 +176,10 @@
 
 ## bigqueryconnection
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigqueryconnection_v1beta1.html)
+
+
+## bigquerydatapolicy
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigquerydatapolicy_v1.html)
 
 
 ## bigquerydatatransfer
@@ -563,6 +571,7 @@
 
 ## firebaseappdistribution
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseappdistribution_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseappdistribution_v1alpha.html)
 
 
 ## firebasedatabase
@@ -1186,6 +1195,10 @@
 ## vpcaccess
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/vpcaccess_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/vpcaccess_v1beta1.html)
+
+
+## walletobjects
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/walletobjects_v1.html)
 
 
 ## webfonts
