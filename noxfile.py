@@ -101,6 +101,7 @@ def unit(session, oauth2client):
         session.install(oauth2client)
 
     # Create and install wheels
+    session.install("setuptools", "wheel")
     session.run("python3", "setup.py", "bdist_wheel")
     session.install(os.path.join("dist", os.listdir("dist").pop()))
 
