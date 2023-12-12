@@ -2200,7 +2200,7 @@
       }
     }
   },
-  "revision": "20231029",
+  "revision": "20231128",
   "rootUrl": "https://sqladmin.googleapis.com/",
   "schemas": {
     "AclEntry": {
@@ -2248,12 +2248,16 @@
           "enum": [
             "SQL_API_WARNING_CODE_UNSPECIFIED",
             "REGION_UNREACHABLE",
-            "MAX_RESULTS_EXCEEDS_LIMIT"
+            "MAX_RESULTS_EXCEEDS_LIMIT",
+            "COMPROMISED_CREDENTIALS",
+            "INTERNAL_STATE_FAILURE"
           ],
           "enumDescriptions": [
             "An unknown or unset warning type from Cloud SQL API.",
             "Warning when one or more regions are not reachable. The returned result set may be incomplete.",
-            "Warning when user provided maxResults parameter exceeds the limit. The returned result set may be incomplete."
+            "Warning when user provided maxResults parameter exceeds the limit. The returned result set may be incomplete.",
+            "Warning when user tries to create/update a user with credentials that have previously been compromised by a public data breach.",
+            "Warning when the operation succeeds but some non-critical workflow state failed."
           ],
           "type": "string"
         },
@@ -3163,6 +3167,19 @@
         "settings": {
           "$ref": "Settings",
           "description": "The user settings."
+        },
+        "sqlNetworkArchitecture": {
+          "enum": [
+            "SQL_NETWORK_ARCHITECTURE_UNSPECIFIED",
+            "NEW_NETWORK_ARCHITECTURE",
+            "OLD_NETWORK_ARCHITECTURE"
+          ],
+          "enumDescriptions": [
+            "",
+            "Instance is a Tenancy Unit (TU) instance.",
+            "Instance is an Umbrella instance."
+          ],
+          "type": "string"
         },
         "state": {
           "description": "The current serving state of the Cloud SQL instance.",
@@ -4162,11 +4179,11 @@
           "description": "PSC settings for this instance."
         },
         "requireSsl": {
-          "description": "Whether SSL/TLS connections over IP are enforced. If set to false, then allow both non-SSL/non-TLS and SSL/TLS connections. For SSL/TLS connections, the client certificate won't be verified. If set to true, then only allow connections encrypted with SSL/TLS and with valid client certificates. If you want to enforce SSL/TLS without enforcing the requirement for valid client certificates, then use the `ssl_mode` flag instead of the legacy `require_ssl` flag.",
+          "description": "Use `ssl_mode` instead for MySQL and PostgreSQL. SQL Server uses this flag. Whether SSL/TLS connections over IP are enforced. If set to false, then allow both non-SSL/non-TLS and SSL/TLS connections. For SSL/TLS connections, the client certificate won't be verified. If set to true, then only allow connections encrypted with SSL/TLS and with valid client certificates. If you want to enforce SSL/TLS without enforcing the requirement for valid client certificates, then use the `ssl_mode` flag instead of the `require_ssl` flag.",
           "type": "boolean"
         },
         "sslMode": {
-          "description": "Specify how SSL/TLS is enforced in database connections. This flag is supported only for PostgreSQL. Use the legacy `require_ssl` flag for enforcing SSL/TLS in MySQL and SQL Server. But, for PostgreSQL, use the `ssl_mode` flag instead of the legacy `require_ssl` flag. To avoid the conflict between those flags in PostgreSQL, only the following value pairs are valid: * `ssl_mode=ALLOW_UNENCRYPTED_AND_ENCRYPTED` and `require_ssl=false` * `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=false` * `ssl_mode=TRUSTED_CLIENT_CERTIFICATE_REQUIRED` and `require_ssl=true` Note that the value of `ssl_mode` gets priority over the value of the legacy `require_ssl`. For example, for the pair `ssl_mode=ENCRYPTED_ONLY, require_ssl=false`, the `ssl_mode=ENCRYPTED_ONLY` means \"only accepts SSL connection\", while the `require_ssl=false` means \"both non-SSL and SSL connections are allowed\". The database respects `ssl_mode` in this case and only accepts SSL connections.",
+          "description": "SQL Server uses the `require_ssl` flag. You can set the value for this flag to 'true' or 'false'.",
           "enum": [
             "SSL_MODE_UNSPECIFIED",
             "ALLOW_UNENCRYPTED_AND_ENCRYPTED",
@@ -4265,12 +4282,14 @@
           "enum": [
             "SQL_UPDATE_TRACK_UNSPECIFIED",
             "canary",
-            "stable"
+            "stable",
+            "week5"
           ],
           "enumDescriptions": [
             "This is an unknown maintenance timing preference.",
             "For instance update that requires a restart, this update track indicates your instance prefer to restart for new version early in maintenance window.",
-            "For instance update that requires a restart, this update track indicates your instance prefer to let Cloud SQL choose the timing of restart (within its Maintenance window, if applicable)."
+            "For instance update that requires a restart, this update track indicates your instance prefer to let Cloud SQL choose the timing of restart (within its Maintenance window, if applicable).",
+            "For instance update that requires a restart, this update track indicates your instance prefer to let Cloud SQL choose the timing of restart (within its Maintenance window, if applicable) to be at least 5 weeks after the notification."
           ],
           "type": "string"
         }
@@ -4391,6 +4410,10 @@
       "description": "An Operation resource. For successful operations that return an Operation resource, only the fields relevant to the operation are populated in the resource.",
       "id": "Operation",
       "properties": {
+        "apiWarning": {
+          "$ref": "ApiWarning",
+          "description": "An Admin API warning message."
+        },
         "backupContext": {
           "$ref": "BackupContext",
           "description": "The context for backup operation, if applicable."
@@ -4729,6 +4752,10 @@
             "A combination of lowercase, uppercase, numeric, and non-alphanumeric characters."
           ],
           "type": "string"
+        },
+        "disallowCompromisedCredentials": {
+          "description": "Disallow credentials that have been previously compromised by a public data breach.",
+          "type": "boolean"
         },
         "disallowUsernameSubstring": {
           "description": "Disallow username as a part of the password.",
@@ -5180,7 +5207,9 @@
             "UNSUPPORTED_DATABASE_SETTINGS",
             "MYSQL_PARALLEL_IMPORT_INSUFFICIENT_PRIVILEGE",
             "LOCAL_INFILE_OFF",
-            "TURN_ON_PITR_AFTER_PROMOTE"
+            "TURN_ON_PITR_AFTER_PROMOTE",
+            "INCOMPATIBLE_DATABASE_MINOR_VERSION",
+            "SOURCE_MAX_SUBSCRIPTIONS"
           ],
           "enumDescriptions": [
             "",
@@ -5219,7 +5248,9 @@
             "The source instance has unsupported database settings for migration.",
             "The replication user is missing parallel import specific privileges. (e.g. LOCK TABLES) for MySQL.",
             "The global variable local_infile is off on external server replica.",
-            "This code instructs customers to turn on point-in-time recovery manually for the instance after promoting the Cloud SQL for PostgreSQL instance."
+            "This code instructs customers to turn on point-in-time recovery manually for the instance after promoting the Cloud SQL for PostgreSQL instance.",
+            "The minor version of replica database is incompatible with the source.",
+            "This warning message indicates that Cloud SQL uses the maximum number of subscriptions to migrate data from the source to the destination."
           ],
           "type": "string"
         }
