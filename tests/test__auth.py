@@ -135,13 +135,11 @@ class TestAuthWithOAuth2Client(unittest.TestCase):
 
     def test_credentials_from_file(self):
         with self.assertRaises(EnvironmentError):
-            credentials = _auth.credentials_from_file("credentials.json")
+            _auth.credentials_from_file("credentials.json")
 
     def test_default_credentials_with_scopes_and_quota_project(self):
         with self.assertRaises(EnvironmentError):
-            credentials = _auth.default_credentials(
-                scopes=["1", "2"], quota_project_id="my-project"
-            )
+            _auth.default_credentials(scopes=["1", "2"], quota_project_id="my-project")
 
     def test_with_scopes_non_scoped(self):
         credentials = mock.Mock(spec=oauth2client.client.Credentials)

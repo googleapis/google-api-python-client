@@ -136,7 +136,8 @@ class ChangeSummary:
             .reset_index(drop=True, level=1)
             # Transpose the DataFrame, Resulting Columns should be
             # ["Key", "CurrentValue", "New Value"]
-            .rename_axis(["Key"], axis=1).transpose()
+            .rename_axis(["Key"], axis=1)
+            .transpose()
             # Drop the index column
             .reset_index()
         )
@@ -208,7 +209,7 @@ class ChangeSummary:
         all_added = (
             parent_added_agg[
                 (parent_added_agg["Proportion"] == 1)
-                & (parent_added_agg["Added"] == True)
+                & (parent_added_agg["Added"] is True)
             ][["Parent", "NumLevels"]]
             .sort_values("NumLevels", ascending=True)
             .Parent.to_list()
@@ -220,7 +221,7 @@ class ChangeSummary:
         all_deleted = (
             parent_deleted_agg[
                 (parent_deleted_agg["Proportion"] == 1)
-                & (parent_deleted_agg["Deleted"] == True)
+                & (parent_deleted_agg["Deleted"] is True)
             ][["Parent", "NumLevels"]]
             .sort_values("NumLevels", ascending=True)
             .Parent.to_list()

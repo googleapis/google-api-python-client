@@ -125,6 +125,7 @@ STACK_QUERY_PARAMETER_DEFAULT_VALUE = {"type": "string", "location": "query"}
 # Library-specific reserved words beyond Python keywords.
 RESERVED_WORDS = frozenset(["body"])
 
+
 # patch _write_lines to avoid munging '\r' into '\n'
 # ( https://bugs.python.org/issue18886 https://bugs.python.org/issue19003 )
 class _BytesGenerator(BytesGenerator):
@@ -427,8 +428,8 @@ def _retrieve_discovery_doc(
         pass
 
     try:
-        service = json.loads(content)
-    except ValueError as e:
+        json.loads(content)
+    except ValueError:
         logger.error("Failed to parse as JSON: " + content)
         raise InvalidJsonError()
     if cache_discovery and cache:
@@ -611,7 +612,7 @@ def build_from_document(
         # Obtain client cert and create mTLS http channel if cert exists.
         client_cert_to_use = None
         use_client_cert = os.getenv(GOOGLE_API_USE_CLIENT_CERTIFICATE, "false")
-        if not use_client_cert in ("true", "false"):
+        if use_client_cert not in ("true", "false"):
             raise MutualTLSChannelError(
                 "Unsupported GOOGLE_API_USE_CLIENT_CERTIFICATE value. Accepted values: true, false"
             )
@@ -656,7 +657,7 @@ def build_from_document(
             )
             use_mtls_endpoint = os.getenv(GOOGLE_API_USE_MTLS_ENDPOINT, "auto")
 
-            if not use_mtls_endpoint in ("never", "auto", "always"):
+            if use_mtls_endpoint not in ("never", "auto", "always"):
                 raise MutualTLSChannelError(
                     "Unsupported GOOGLE_API_USE_MTLS_ENDPOINT value. Accepted values: never, auto, always"
                 )
@@ -1265,7 +1266,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         enumDesc = paramdesc.get("enumDescriptions", [])
         if enum and enumDesc:
             docs.append("    Allowed values\n")
-            for (name, desc) in zip(enum, enumDesc):
+            for name, desc in zip(enum, enumDesc):
                 docs.append("      %s - %s\n" % (name, desc))
     if "response" in methodDesc:
         if methodName.endswith("_media"):

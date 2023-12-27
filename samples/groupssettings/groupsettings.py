@@ -58,9 +58,7 @@ found at:
 
 with information from the APIs Console <https://code.google.com/apis/console>.
 
-""" % os.path.join(
-    os.path.dirname(__file__), CLIENT_SECRETS
-)
+""" % os.path.join(os.path.dirname(__file__), CLIENT_SECRETS)
 
 
 def access_settings(service, groupId, settings):
